@@ -85,8 +85,10 @@ impl Default for NetworkRpcQuotaConfiguration {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
+    #[structopt(skip)]
     /// The address that this node is listening on for new connections.
-    pub listen: Multiaddr,
+    pub listen: Option<Multiaddr>,
+    #[structopt(skip)]
     #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,
     #[serde(default)]
@@ -99,8 +101,10 @@ pub struct NetworkConfig {
     #[structopt(skip)]
     #[serde(skip)]
     network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
+    #[structopt(skip)]
     #[serde(skip)]
     self_peer_id: Option<PeerId>,
+    #[structopt(skip)]
     #[serde(skip)]
     self_address: Option<MultiaddrWithPeerId>,
     #[structopt(flatten)]
@@ -109,9 +113,11 @@ pub struct NetworkConfig {
 impl Default for NetworkConfig {
     fn default() -> Self {
         Self {
-            listen: format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
-                .parse()
-                .expect("Parse multi address fail."),
+            listen: Some(
+                format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
+                    .parse()
+                    .expect("Parse multi address fail."),
+            ),
             seeds: vec![],
             disable_mdns: None,
             disable_seed: None,
@@ -124,6 +130,13 @@ impl Default for NetworkConfig {
 }
 
 impl NetworkConfig {
+    pub fn listen(&self) -> Multiaddr {
+        self.listen.as_ref().cloned().unwrap_or(
+            format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
+                .parse()
+                .expect("Parse multi address fail."),
+        )
+    }
     pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
         self.network_keypair.clone().expect("Config should init.")
     }
@@ -145,11 +158,11 @@ impl NetworkConfig {
 
     fn prepare_peer_id(&mut self) {
         let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
-        let host = if is_memory_addr(&self.listen) {
-            self.listen.clone()
+        let addr = self.listen();
+        let host = if is_memory_addr(&addr) {
+            addr
         } else {
-            self.listen
-                .clone()
+            addr.clone()
                 .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
                 .expect("Replace multi address fail.")
         };
@@ -197,12 +210,12 @@ impl ConfigModule for NetworkConfig {
         let listen = if base.net.is_test() {
             memory_addr(port as u64)
         } else {
-            format!("/ip4/0.0.0.0/tcp/{}", port)
+            format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
                 .parse()
                 .expect("Parse multi address fail.")
         };
         Ok(Self {
-            listen,
+            listen: Some(listen),
             seeds,
             disable_mdns: opt.network.disable_mdns,
             disable_seed: opt.network.disable_seed,

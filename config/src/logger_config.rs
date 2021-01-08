@@ -20,10 +20,11 @@ pub struct LoggerConfig {
     pub disable_stderr: Option<bool>,
     #[structopt(name = "disable-file", long, help = "disable file logger")]
     pub disable_file: Option<bool>,
-    #[structopt(name = "max-file-size", long, default_value = "DEFAULT_MAX_FILE_SIZE")]
+    #[structopt(name = "max-file-size", long, default_value = "1073741824")]
     pub max_file_size: u64,
-    #[structopt(name = "max-backup", long, default_value = "DEFAULT_MAX_BACKUP")]
+    #[structopt(name = "max-backup", long, default_value = "7")]
     pub max_backup: u32,
+    #[structopt(skip)]
     #[serde(skip)]
     log_path: Option<PathBuf>,
 }

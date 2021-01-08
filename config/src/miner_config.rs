@@ -42,7 +42,9 @@ impl MinerConfig {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MinerClientConfig {
+    #[structopt(skip)]
     pub server: Option<String>,
+    #[structopt(skip)]
     pub plugin_path: Option<String>,
     #[structopt(long = "miner-thread")]
     /// Miner thread number, not work for dev network, default is 1

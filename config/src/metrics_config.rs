@@ -23,11 +23,7 @@ pub struct MetricsConfig {
         default_value = "DEFAULT_METRIC_SERVER_ADDRESS"
     )]
     pub address: String,
-    #[structopt(
-        name = "metrics-port",
-        long,
-        default_value = "DEFAULT_METRIC_SERVER_PORT"
-    )]
+    #[structopt(name = "metrics-port", long, default_value = "9101")]
     pub port: u16,
 }
 impl MetricsConfig {
