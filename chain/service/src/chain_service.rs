@@ -18,7 +18,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
     transaction::{Transaction, TransactionInfo},
@@ -119,9 +119,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             )),
             ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::BlockOption(
                 self.inner.main_block_by_uncle(uncle_id)?.map(Box::new),
-            )),
-            ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
-                self.inner.get_block_state_by_hash(hash)?.map(Box::new),
             )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,
@@ -323,10 +320,6 @@ impl ReadableChainService for ChainReaderServiceInner {
             }
         });
         Ok(headers)
-    }
-
-    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>> {
-        self.storage.get_block_state(hash)
     }
 
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>> {

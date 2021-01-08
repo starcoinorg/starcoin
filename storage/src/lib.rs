@@ -18,7 +18,6 @@ use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -102,9 +101,6 @@ pub trait BlockStore {
 
     fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
 
-    //TODO cleanup this api.
-    fn get_headers(&self) -> Result<Vec<HashValue>>;
-
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
     /// get the block id which contains the given `tnx_id`
@@ -112,11 +108,9 @@ pub trait BlockStore {
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
 
-    fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>>;
-
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
 
-    fn commit_block(&self, block: Block, state: BlockState) -> Result<()>;
+    fn commit_block(&self, block: Block) -> Result<()>;
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
 
@@ -294,10 +288,6 @@ impl BlockStore for Storage {
         )))
     }
 
-    fn get_headers(&self) -> Result<Vec<HashValue>> {
-        self.block_storage.get_headers()
-    }
-
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_storage.get(block_id)
     }
@@ -310,16 +300,12 @@ impl BlockStore for Storage {
         self.block_storage.get_blocks(ids)
     }
 
-    fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
-        self.block_storage.get_block_state(block_id)
-    }
-
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.block_storage.get_body(block_id)
     }
 
-    fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
-        self.block_storage.commit_block(block, state)
+    fn commit_block(&self, block: Block) -> Result<()> {
+        self.block_storage.commit_block(block)
     }
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {

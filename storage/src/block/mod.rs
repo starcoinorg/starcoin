@@ -12,26 +12,8 @@ use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::peer_info::PeerId;
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct StorageBlock {
-    block: Block,
-    state: BlockState,
-}
-
-impl StorageBlock {
-    fn new(block: Block, state: BlockState) -> Self {
-        Self { block, state }
-    }
-}
-
-impl Into<(Block, BlockState)> for StorageBlock {
-    fn into(self) -> (Block, BlockState) {
-        (self.block, self.state)
-    }
-}
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
@@ -56,12 +38,7 @@ impl From<(Block, Option<PeerId>, String)> for FailedBlock {
     }
 }
 
-define_storage!(
-    BlockInnerStorage,
-    HashValue,
-    StorageBlock,
-    BLOCK_PREFIX_NAME
-);
+define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
@@ -110,7 +87,7 @@ pub struct BlockStorage {
     failed_block_storage: FailedBlockStorage,
 }
 
-impl ValueCodec for StorageBlock {
+impl ValueCodec for Block {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -162,15 +139,14 @@ impl BlockStorage {
             failed_block_storage: FailedBlockStorage::new(instance),
         }
     }
-    pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
+    pub fn save(&self, block: Block) -> Result<()> {
         debug!(
             "insert block:{}, parent:{}",
             block.header().id(),
             block.header().parent_hash()
         );
         let block_id = block.header().id();
-        let storage_block = StorageBlock::new(block, state);
-        self.block_store.put(block_id, storage_block)
+        self.block_store.put(block_id, block)
     }
 
     pub fn save_header(&self, header: BlockHeader) -> Result<()> {
@@ -190,33 +166,18 @@ impl BlockStorage {
     }
 
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
-        Ok(
-            if let Some(storage_block) = self.block_store.get(block_id)? {
-                let (block, _) = storage_block.into();
-                Some(block)
-            } else {
-                None
-            },
-        )
+        self.block_store.get(block_id)
     }
 
     pub fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
-        Ok(self
-            .block_store
-            .multiple_get(ids)?
-            .into_iter()
-            .map(|storage_block| match storage_block {
-                Some(storage_block) => Some(storage_block.block),
-                None => None,
-            })
-            .collect())
+        Ok(self.block_store.multiple_get(ids)?.into_iter().collect())
     }
 
     pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.body_store.get(block_id)
     }
 
-    pub fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
+    pub fn commit_block(&self, block: Block) -> Result<()> {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
@@ -224,7 +185,7 @@ impl BlockStorage {
         //save body
         self.save_body(block_id, body)?;
         //save block cache
-        self.save(block, state)
+        self.save(block)
     }
 
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
@@ -233,17 +194,6 @@ impl BlockStorage {
 
     pub fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.get(block_id)
-    }
-
-    pub fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
-        Ok(
-            if let Some(storage_block) = self.block_store.get(block_id)? {
-                let (_, block_state) = storage_block.into();
-                Some(block_state)
-            } else {
-                None
-            },
-        )
     }
 
     pub fn get_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
