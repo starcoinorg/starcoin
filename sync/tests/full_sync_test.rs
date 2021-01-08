@@ -30,7 +30,7 @@ fn test_sync_by_notification() {
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
     second_config.network.seeds = vec![first_config.network.self_address()];
-    second_config.miner.disable_miner_client = false;
+    second_config.miner.disable_miner_client = Some(false);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
     // stop sync service and just use notification message to sync.

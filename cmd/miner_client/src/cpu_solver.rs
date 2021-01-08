@@ -54,7 +54,7 @@ impl Solver for CpuSolver {
         nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u32)>,
         mut stop_rx: mpsc::UnboundedReceiver<bool>,
     ) {
-        let thread_num = self.config.thread_num;
+        let thread_num = self.config.miner_thread();
         let worker_txs = (0..thread_num)
             .map(|i| {
                 let worker_name = format!("starcoin-miner-cpu-worker-{}", i);

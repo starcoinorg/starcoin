@@ -15,7 +15,7 @@ use txpool::TxPoolService;
 #[stest::test]
 fn test_txn_sync_actor() {
     let mut first_config = NodeConfig::random_for_test();
-    first_config.miner.disable_miner_client = false;
+    first_config.miner.disable_miner_client = Some(false);
     let first_network_address = first_config.network.self_address();
     let first_config = Arc::new(first_config);
     let first_node = run_node_by_config(first_config.clone()).unwrap();
@@ -31,7 +31,7 @@ fn test_txn_sync_actor() {
 
     let mut second_config = NodeConfig::random_for_test();
     second_config.network.seeds = vec![first_network_address];
-    second_config.miner.disable_miner_client = false;
+    second_config.miner.disable_miner_client = Some(false);
     let second_config = Arc::new(second_config);
 
     let second_node = run_node_by_config(second_config.clone()).unwrap();

@@ -27,7 +27,7 @@ fn main() {
         MinerClientConfig {
             server: Some(opts.server.clone()),
             plugin_path: opts.plugin_path,
-            thread_num: opts.thread_num,
+            miner_thread: Some(opts.thread_num),
             enable_stderr: true,
         }
     };

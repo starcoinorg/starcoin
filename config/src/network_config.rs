@@ -82,7 +82,7 @@ impl Default for NetworkRpcQuotaConfiguration {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
     /// The address that this node is listening on for new connections.
@@ -90,17 +90,37 @@ pub struct NetworkConfig {
     #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,
     #[serde(default)]
-    pub disable_mdns: bool,
+    /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
+    pub disable_mdns: Option<bool>,
     //TODO skip this field, do not persistence this flag to config. this change will break network config.
-    pub disable_seed: bool,
+    #[structopt(long = "disable-seed")]
+    /// Do not connect to seed node, include builtin and config seed.
+    pub disable_seed: Option<bool>,
+    #[structopt(skip)]
     #[serde(skip)]
     network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
     #[serde(skip)]
     self_peer_id: Option<PeerId>,
     #[serde(skip)]
     self_address: Option<MultiaddrWithPeerId>,
-    #[serde(default)]
+    #[structopt(flatten)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
+}
+impl Default for NetworkConfig {
+    fn default() -> Self {
+        Self {
+            listen: format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
+                .parse()
+                .expect("Parse multi address fail."),
+            seeds: vec![],
+            disable_mdns: None,
+            disable_seed: None,
+            network_keypair: None,
+            self_peer_id: None,
+            self_address: None,
+            network_rpc_quotas: NetworkRpcQuotaConfiguration::default(),
+        }
+    }
 }
 
 impl NetworkConfig {
@@ -110,6 +130,13 @@ impl NetworkConfig {
 
     pub fn self_address(&self) -> MultiaddrWithPeerId {
         self.self_address.clone().expect("Config should init.")
+    }
+
+    pub fn disable_mdns(&self) -> bool {
+        self.disable_mdns.unwrap_or(false)
+    }
+    pub fn disable_seed(&self) -> bool {
+        self.disable_seed.unwrap_or(false)
     }
 
     pub fn self_peer_id(&self) -> PeerId {
@@ -174,17 +201,15 @@ impl ConfigModule for NetworkConfig {
                 .parse()
                 .expect("Parse multi address fail.")
         };
-        let disable_mdns = opt.disable_mdns.unwrap_or(false);
-        let disable_seed = opt.disable_seed.unwrap_or(false);
         Ok(Self {
             listen,
             seeds,
-            disable_mdns,
-            disable_seed,
+            disable_mdns: opt.network.disable_mdns,
+            disable_seed: opt.network.disable_seed,
             network_keypair: Some(Arc::new(Self::load_or_generate_keypair(opt, base)?)),
             self_peer_id: None,
             self_address: None,
-            network_rpc_quotas: opt.network_rpc_quotas.clone(),
+            network_rpc_quotas: opt.network.network_rpc_quotas.clone(),
         })
     }
 
@@ -203,8 +228,8 @@ impl ConfigModule for NetworkConfig {
         }
 
         self.network_keypair = Some(Arc::new(Self::load_or_generate_keypair(opt, base)?));
-        if let Some(disable) = opt.disable_seed {
-            self.disable_seed = disable;
+        if opt.network.disable_seed.is_some() {
+            self.disable_seed = opt.network.disable_seed;
         }
         self.prepare_peer_id();
 

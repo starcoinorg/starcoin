@@ -22,7 +22,7 @@ use types::{
 #[stest::test]
 fn test_miner() {
     let mut config = NodeConfig::random_for_test();
-    config.miner.disable_miner_client = false;
+    config.miner.disable_miner_client = Some(false);
     let config = Arc::new(config);
     let handle = test_helper::run_node_by_config(config.clone()).unwrap();
     let bus = handle.bus().unwrap();

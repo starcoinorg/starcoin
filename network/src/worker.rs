@@ -34,7 +34,7 @@ pub fn build_network_worker(
         TransportConfig::MemoryOnly
     } else {
         TransportConfig::Normal {
-            enable_mdns: !node_config.network.disable_mdns,
+            enable_mdns: !node_config.network.disable_mdns(),
             allow_private_ipv4: true,
             wasm_external_transport: None,
         }
@@ -71,7 +71,7 @@ pub fn build_network_worker(
         None => vec![],
     };
     let self_peer_id = node_config.network.self_peer_id();
-    let boot_nodes = if node_config.network.disable_seed {
+    let boot_nodes = if node_config.network.disable_seed() {
         vec![]
     } else {
         let mut boot_nodes = node_config.network.seeds.clone();

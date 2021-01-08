@@ -59,7 +59,7 @@ fn test_multi_client() -> Result<()> {
 #[stest::test(timeout = 120)]
 fn test_client_reconnect() -> Result<()> {
     let mut node_config = NodeConfig::random_for_test();
-    node_config.miner.disable_miner_client = false;
+    node_config.miner.disable_miner_client = Some(false);
     let config = Arc::new(node_config);
     let url = config.rpc.get_ws_address().unwrap();
     debug!("url:{}", url);
