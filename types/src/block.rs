@@ -50,7 +50,7 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
             let s = <String>::deserialize(deserializer)?;
             let literal = s.strip_prefix("0x").unwrap_or(&s);
             let hex_len = literal.len();
-            let mut result = if hex_len % 2 != 0 {
+            let result = if hex_len % 2 != 0 {
                 let mut hex_str = String::with_capacity(hex_len + 1);
                 hex_str.push('0');
                 hex_str.push_str(literal);
@@ -58,17 +58,12 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
             } else {
                 hex::decode(literal).map_err(D::Error::custom)?
             };
-            let len = result.len();
-            let padded_result = if len < 4 {
-                let mut padded = Vec::with_capacity(4);
-                padded.resize(4 - len, 0u8);
-                padded.append(&mut result);
-                padded
-            } else {
-                result
-            };
+
+            if result.len() < 4 {
+                return Err(D::Error::custom("Invalid block header extra len"));
+            }
             let mut extra = [0u8; 4];
-            extra.copy_from_slice(&padded_result);
+            extra.copy_from_slice(&result);
             Ok(BlockHeaderExtra::new(extra))
         } else {
             #[derive(::serde::Deserialize)]
@@ -88,7 +83,6 @@ impl Serialize for BlockHeaderExtra {
         if serializer.is_human_readable() {
             format!("0x{}", hex::encode(self.0)).serialize(serializer)
         } else {
-            // See comment in deserialize.
             serializer.serialize_newtype_struct("BlockHeaderExtra", &self.0)
         }
     }
