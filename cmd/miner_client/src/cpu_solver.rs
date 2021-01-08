@@ -7,6 +7,7 @@ use futures_channel::mpsc::{unbounded, UnboundedSender};
 use logger::prelude::*;
 use rand::Rng;
 use starcoin_config::{ConsensusStrategy, MinerClientConfig, TimeService};
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::U256;
 use std::ops::Range;
 use std::sync::Arc;
@@ -68,6 +69,7 @@ impl Solver for CpuSolver {
                     .spawn(move || {
                         let mut hash_counter = 0u64;
                         let start = Instant::now();
+                        let extra = BlockHeaderExtra::new([0u8; 4]);
                         loop {
                             if rx.try_next().is_ok() {
                                 break;
@@ -86,7 +88,7 @@ impl Solver for CpuSolver {
                                 }
                                 strategy => {
                                     let nonce = Self::nonce_generator(&nonce_range);
-                                    if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce) {
+                                    if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce, extra) {
                                         let pow_hash_u256: U256 = pow_hash.into();
                                         let target = difficult_to_target(diff);
                                         hash_counter += 1;

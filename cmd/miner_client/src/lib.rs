@@ -16,11 +16,13 @@ use starcoin_types::system_events::MintBlockEvent;
 use std::sync::Arc;
 
 pub use starcoin_config::ConsensusStrategy;
+use starcoin_types::block::BlockHeaderExtra;
 pub use starcoin_types::U256;
 
 pub trait JobClient: Send + Unpin + Sync + Clone {
     fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>>;
-    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()>;
+    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra)
+        -> Result<()>;
     fn time_service(&self) -> Arc<dyn TimeService>;
 }
 
@@ -40,4 +42,5 @@ pub trait Solver: Send + DynClone {
 pub struct SealEvent {
     minting_blob: Vec<u8>,
     nonce: u32,
+    extra: BlockHeaderExtra,
 }

@@ -5,6 +5,7 @@ use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_crypto::HashValue;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
@@ -16,11 +17,14 @@ use thiserror::Error;
 pub enum ConsensusVerifyError {
     #[error("Verify Difficulty Error, expect: {expect}, got: {real}")]
     VerifyDifficultyError { expect: U256, real: U256 },
-    #[error("Verify Nonce Error, expect target: {target}, got: {real}, nonce: {}")]
+    #[error(
+        "Verify Nonce Error, expect target: {target}, got: {real}, nonce: {nonce}, extra: {extra}"
+    )]
     VerifyNonceError {
         target: U256,
         real: U256,
         nonce: u32,
+        extra: BlockHeaderExtra,
     },
 }
 
@@ -35,9 +39,10 @@ pub trait Consensus {
         _time_service: &dyn TimeService,
     ) -> u32 {
         let mut nonce = generate_nonce();
+        let extra = BlockHeaderExtra::new([0u8; 4]);
         loop {
             let pow_hash: U256 = self
-                .calculate_pow_hash(mining_hash, nonce)
+                .calculate_pow_hash(mining_hash, nonce, extra)
                 .expect("calculate hash should work")
                 .into();
             let target = difficult_to_target(difficulty);
@@ -56,7 +61,12 @@ pub trait Consensus {
     }
 
     /// Calculate the Pow hash for header
-    fn calculate_pow_hash(&self, pow_header_blob: &[u8], nonce: u32) -> Result<HashValue>;
+    fn calculate_pow_hash(
+        &self,
+        pow_header_blob: &[u8],
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<HashValue>;
 
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
     fn create_block(
@@ -67,7 +77,8 @@ pub trait Consensus {
         let mining_hash = block_template.as_pow_header_blob();
         let consensus_nonce =
             self.solve_consensus_nonce(&mining_hash, block_template.difficulty, time_service);
-        Ok(block_template.into_block(consensus_nonce))
+        let extra = BlockHeaderExtra::new([0u8; 4]);
+        Ok(block_template.into_block(consensus_nonce, extra))
     }
     /// Inner helper for verify and unit testing
     fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {
@@ -83,14 +94,18 @@ pub trait Consensus {
             .into());
         }
         let nonce = header.nonce;
+        let extra = header.extra;
         let pow_header_blob = header.as_pow_header_blob();
-        let pow_hash: U256 = self.calculate_pow_hash(&pow_header_blob, nonce)?.into();
+        let pow_hash: U256 = self
+            .calculate_pow_hash(&pow_header_blob, nonce, extra)?
+            .into();
         let target = difficult_to_target(difficulty);
         if pow_hash > target {
             return Err(ConsensusVerifyError::VerifyNonceError {
                 target,
                 real: pow_hash,
                 nonce,
+                extra,
             }
             .into());
         }

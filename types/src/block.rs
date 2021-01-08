@@ -12,14 +12,81 @@ use starcoin_crypto::{
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
+use serde::de::Error;
 use serde::export::Formatter;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 /// Type for block number.
 pub type BlockNumber = u64;
+
+/// Type for block header extra
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct BlockHeaderExtra([u8; 4]);
+
+impl BlockHeaderExtra {
+    pub fn new(extra: [u8; 4]) -> Self {
+        Self(extra)
+    }
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+impl std::fmt::Display for BlockHeaderExtra {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockHeaderExtra {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            let literal = s.strip_prefix("0x").unwrap_or(&s);
+            let hex_len = literal.len();
+            let result = if hex_len % 2 != 0 {
+                let mut hex_str = String::with_capacity(hex_len + 1);
+                hex_str.push('0');
+                hex_str.push_str(literal);
+                hex::decode(&hex_str).map_err(D::Error::custom)?
+            } else {
+                hex::decode(literal).map_err(D::Error::custom)?
+            };
+
+            if result.len() < 4 {
+                return Err(D::Error::custom("Invalid block header extra len"));
+            }
+            let mut extra = [0u8; 4];
+            extra.copy_from_slice(&result);
+            Ok(BlockHeaderExtra::new(extra))
+        } else {
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "BlockHeaderExtra")]
+            struct Value([u8; 4]);
+            let value = Value::deserialize(deserializer)?;
+            Ok(BlockHeaderExtra::new(value.0))
+        }
+    }
+}
+
+impl Serialize for BlockHeaderExtra {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            format!("0x{}", hex::encode(self.0)).serialize(serializer)
+        } else {
+            serializer.serialize_newtype_struct("BlockHeaderExtra", &self.0)
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
 pub struct BlockIdAndNumber {
@@ -73,6 +140,8 @@ pub struct BlockHeader {
     pub body_hash: HashValue,
     /// The chain id
     pub chain_id: ChainId,
+    /// block header extra
+    pub extra: BlockHeaderExtra,
 }
 
 impl BlockHeader {
@@ -89,6 +158,7 @@ impl BlockHeader {
         nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        extra: BlockHeaderExtra,
     ) -> BlockHeader {
         Self::new_with_auth(
             parent_hash,
@@ -104,6 +174,7 @@ impl BlockHeader {
             nonce,
             body_hash,
             chain_id,
+            extra,
         )
     }
 
@@ -121,6 +192,7 @@ impl BlockHeader {
         nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        extra: BlockHeaderExtra,
     ) -> BlockHeader {
         BlockHeader {
             parent_hash,
@@ -136,6 +208,7 @@ impl BlockHeader {
             nonce,
             body_hash,
             chain_id,
+            extra,
         }
     }
 
@@ -215,6 +288,7 @@ impl BlockHeader {
         nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        extra: BlockHeaderExtra,
     ) -> Self {
         Self {
             parent_hash,
@@ -230,6 +304,7 @@ impl BlockHeader {
             nonce,
             body_hash,
             chain_id,
+            extra,
         }
     }
 
@@ -248,6 +323,7 @@ impl BlockHeader {
             nonce: 0,
             body_hash: HashValue::random(),
             chain_id: ChainId::test(),
+            extra: BlockHeaderExtra([0u8; 4]),
         }
     }
 }
@@ -395,6 +471,7 @@ impl Block {
         state_root: HashValue,
         difficulty: U256,
         nonce: u32,
+        extra: BlockHeaderExtra,
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
@@ -408,6 +485,7 @@ impl Block {
             nonce,
             block_body.hash(),
             chain_id,
+            extra,
         );
         Self {
             header,
@@ -566,6 +644,7 @@ pub struct BlockTemplate {
     pub chain_id: ChainId,
     /// Block difficulty
     pub difficulty: U256,
+    /// Block consensus strategy
     pub strategy: ConsensusStrategy,
 }
 
@@ -602,7 +681,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block(self, nonce: u32) -> Block {
+    pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -617,6 +696,7 @@ impl BlockTemplate {
             nonce,
             self.body_hash,
             self.chain_id,
+            extra,
         );
         Block {
             header,
@@ -655,7 +735,7 @@ impl BlockTemplate {
         blob
     }
 
-    pub fn into_block_header(self, nonce: u32) -> BlockHeader {
+    pub fn into_block_header(self, nonce: u32, extra: BlockHeaderExtra) -> BlockHeader {
         BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -670,6 +750,7 @@ impl BlockTemplate {
             nonce,
             self.body_hash,
             self.chain_id,
+            extra,
         )
     }
 

@@ -56,6 +56,7 @@ use tokio_compat::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
+
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 
@@ -825,11 +826,16 @@ impl RpcClient {
         )
         .map_err(map_err)
     }
-    pub fn miner_submit(&self, minting_blob: Vec<u8>, nonce: u32) -> anyhow::Result<()> {
+    pub fn miner_submit(
+        &self,
+        minting_blob: String,
+        nonce: u32,
+        extra: String,
+    ) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .miner_client
-                .submit(minting_blob, nonce)
+                .submit(minting_blob, nonce, extra)
                 .compat()
                 .await
         })
@@ -837,13 +843,14 @@ impl RpcClient {
     }
     pub async fn miner_submit_async(
         &self,
-        minting_blob: Vec<u8>,
+        minting_blob: String,
         nonce: u32,
+        extra: String,
     ) -> anyhow::Result<()> {
         self.call_rpc_async(|inner| async move {
             inner
                 .miner_client
-                .submit(minting_blob, nonce)
+                .submit(minting_blob, nonce, extra)
                 .compat()
                 .await
         })
