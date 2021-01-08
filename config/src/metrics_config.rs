@@ -20,7 +20,7 @@ pub struct MetricsConfig {
         name = "address",
         long,
         help = "address",
-        default_value = "DEFAULT_METRIC_SERVER_ADDRESS"
+        default_value = DEFAULT_METRIC_SERVER_ADDRESS
     )]
     pub address: String,
     #[structopt(name = "metrics-port", long, default_value = "9101")]

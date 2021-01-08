@@ -49,7 +49,7 @@ pub struct MinerClientConfig {
     #[structopt(long = "miner-thread")]
     /// Miner thread number, not work for dev network, default is 1
     pub miner_thread: Option<u16>,
-    #[structopt(long = "enable-stderr")]
+    #[structopt(skip)]
     #[serde(skip)]
     pub enable_stderr: bool,
 }

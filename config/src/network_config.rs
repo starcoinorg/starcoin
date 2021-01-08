@@ -91,6 +91,7 @@ pub struct NetworkConfig {
     #[structopt(skip)]
     #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,
+    #[structopt(long = "disable-mdns")]
     #[serde(default)]
     /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
     pub disable_mdns: Option<bool>,
@@ -131,11 +132,11 @@ impl Default for NetworkConfig {
 
 impl NetworkConfig {
     pub fn listen(&self) -> Multiaddr {
-        self.listen.as_ref().cloned().unwrap_or(
+        self.listen.as_ref().cloned().unwrap_or_else(|| {
             format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
                 .parse()
-                .expect("Parse multi address fail."),
-        )
+                .expect("Parse multi address fail.")
+        })
     }
     pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
         self.network_keypair.clone().expect("Config should init.")
@@ -162,8 +163,7 @@ impl NetworkConfig {
         let host = if is_memory_addr(&addr) {
             addr
         } else {
-            addr.clone()
-                .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
+            addr.replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
                 .expect("Replace multi address fail.")
         };
         self.self_address = Some(MultiaddrWithPeerId::new(host, peer_id.clone().into()));
