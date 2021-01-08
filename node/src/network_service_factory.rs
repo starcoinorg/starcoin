@@ -29,26 +29,9 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
         let network_rpc_service = ctx.service_ref::<NetworkRpcService>()?.clone();
         let peer_message_handle = NodePeerMessageHandler::new(txpool_service, block_relayer);
 
-        //TODO move get chain info to storage.
-        let startup_info = storage
-            .get_startup_info()?
-            .ok_or_else(|| format_err!("Can not find startup_info"))?;
-        let genesis_hash = genesis.block().header().id();
-        let head_block_hash = startup_info.main;
-        let head_block_header = storage
-            .get_block_header_by_hash(head_block_hash)?
-            .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;
-
-        let head_block_info = storage
-            .get_block_info(head_block_hash)?
-            .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-
-        let chain_info = ChainInfo::new(
-            config.net().chain_id(),
-            genesis_hash,
-            ChainStatus::new(head_block_header, head_block_info),
-        );
-
+        let chain_info = storage
+            .get_chain_info()?
+            .ok_or_else(|| format_err!("Can not get chain info."))?;
         let actor_service = NetworkActorService::new(
             config,
             chain_info,
