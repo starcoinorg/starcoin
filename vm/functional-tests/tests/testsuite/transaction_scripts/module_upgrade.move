@@ -41,7 +41,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 1515
+// check: 1373
 
 //! new-transaction
 //! sender: alice
@@ -58,7 +58,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 840
+// check: 564
 //
 //! new-transaction
 //! sender: alice
@@ -75,7 +75,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 89
+// check: 61
 
 //! new-transaction
 //! sender: alice
@@ -99,7 +99,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 453
+// check: 209
 
 //! block-prologue
 //! author: genesis
@@ -128,7 +128,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 380
+// check: 161
 
 //! block-prologue
 //! author: genesis
@@ -152,7 +152,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 88
+// check: 48
 
 //! block-prologue
 //! author: genesis
@@ -173,4 +173,4 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 186
+// check: 109
