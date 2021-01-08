@@ -13,6 +13,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
+use starcoin_types::startup_info::StartupInfo;
 use starcoin_vm_types::time::TimeService;
 use std::sync::Arc;
 use traits::{ChainReader, WriteableChainService};
@@ -25,7 +26,7 @@ pub async fn create_writeable_block_chain() -> (
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, startup_info, _) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, chain_info, _) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
@@ -33,7 +34,7 @@ pub async fn create_writeable_block_chain() -> (
     (
         WriteBlockChainService::new(
             node_config.clone(),
-            startup_info,
+            StartupInfo::new(chain_info.head().id()),
             storage.clone(),
             txpool_service,
             bus,

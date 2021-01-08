@@ -12,6 +12,7 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::BlockStore;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
+use starcoin_types::startup_info::StartupInfo;
 use std::time::SystemTime;
 use structopt::StructOpt;
 
@@ -45,24 +46,22 @@ impl CommandAction for GenDataCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let global_opt = ctx.global_opt();
-        let (config, storage, mut startup_info, genesis, account) =
-            init_or_load_data_dir(global_opt, None)?;
-        let genesis_hash = genesis.block().header().id();
-        if startup_info.main != genesis_hash {
+        let (config, storage, chain_info, account) = init_or_load_data_dir(global_opt, None)?;
+        if chain_info.head().id() != chain_info.genesis_hash() {
             warn!("start block is not genesis.")
         }
         let begin = SystemTime::now();
         let mut mock_chain = MockChain::new_with_storage(
             config.net().clone(),
             storage.clone(),
-            startup_info.main,
+            chain_info.head().id(),
             account,
         )?;
         let mut latest_header = mock_chain.head().current_header();
         for i in 0..opt.count {
             latest_header = mock_chain.produce_and_apply()?;
-            startup_info.main = latest_header.id();
-            storage.save_startup_info(startup_info.clone())?;
+            let startup_info = StartupInfo::new(latest_header.id());
+            storage.save_startup_info(startup_info)?;
             if i % 10 == 0 {
                 println!(
                     "latest_block: {:?}, {:?}",

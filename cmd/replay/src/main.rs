@@ -69,10 +69,9 @@ fn main() {
         ))
         .unwrap(),
     );
-    let (startup_info, _) =
-        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
-            .expect("init storage by genesis fail.");
-    let chain = BlockChain::new(net.time_service(), startup_info.main, storage)
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
+        .expect("init storage by genesis fail.");
+    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)
         .expect("create block chain should success.");
     //read from first chain
     let begin = SystemTime::now();
@@ -95,12 +94,15 @@ fn main() {
         ))
         .unwrap(),
     );
-    let (startup_info2, _) =
-        Genesis::init_and_check_storage(&net, storage2.clone(), to_dir.as_ref())
-            .expect("init storage by genesis fail.");
+    let (chain_info2, _) = Genesis::init_and_check_storage(&net, storage2.clone(), to_dir.as_ref())
+        .expect("init storage by genesis fail.");
 
-    let mut chain2 = BlockChain::new(net.time_service(), startup_info2.main, storage2)
-        .expect("create block chain should success.");
+    let mut chain2 = BlockChain::new(
+        net.time_service(),
+        chain_info2.status().head().id(),
+        storage2,
+    )
+    .expect("create block chain should success.");
     let begin = SystemTime::now();
     for block in block_vec {
         match opts.verifier {

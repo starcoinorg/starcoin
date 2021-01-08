@@ -21,6 +21,7 @@ use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -97,6 +98,13 @@ pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
 
+    fn get_genesis(&self) -> Result<Option<HashValue>>;
+
+    fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
+
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
+
+    //TODO cleanup this api.
     fn get_headers(&self) -> Result<Vec<HashValue>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
@@ -266,6 +274,36 @@ impl BlockStore for Storage {
 
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
         self.chain_info_storage.save_startup_info(startup_info)
+    }
+
+    fn get_genesis(&self) -> Result<Option<HashValue>> {
+        self.chain_info_storage.get_genesis()
+    }
+
+    fn save_genesis(&self, genesis_hash: HashValue) -> Result<()> {
+        self.chain_info_storage.save_genesis(genesis_hash)
+    }
+
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
+        let genesis_hash = match self.get_genesis()? {
+            Some(genesis_hash) => genesis_hash,
+            None => return Ok(None),
+        };
+        let startup_info = match self.get_startup_info()? {
+            Some(startup_info) => startup_info,
+            None => return Ok(None),
+        };
+        let head_block = self
+            .get_block_header_by_hash(startup_info.main)?
+            .ok_or_else(|| format_err!("Startup block {:?} should exist", startup_info.main))?;
+        let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
+            format_err!("Startup block info {:?} should exist", startup_info.main)
+        })?;
+        Ok(Some(ChainInfo::new(
+            head_block.chain_id,
+            genesis_hash,
+            ChainStatus::new(head_block, head_block_info),
+        )))
     }
 
     fn get_headers(&self) -> Result<Vec<HashValue>> {

@@ -11,7 +11,6 @@ use pin_utils::core_reexport::time::Duration;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::BlockChain;
 use starcoin_genesis::Genesis;
-use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::peer_info::PeerInfo;
@@ -104,13 +103,17 @@ pub async fn test_full_sync_new_node() -> Result<()> {
 #[stest::test]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
-    let (storage, startup_info, _) = Genesis::init_storage_for_test(&net)?;
+    let (storage, chain_info, _) = Genesis::init_storage_for_test(&net)?;
 
-    let block_info = storage.get_block_info(startup_info.main)?.unwrap();
-    let chain = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
+    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage.clone())?;
     let (sender, _) = unbounded();
-    let mut block_collector =
-        BlockCollector::new_with_handle(block_info, chain, sender, DummyNetworkService, true);
+    let mut block_collector = BlockCollector::new_with_handle(
+        chain_info.status().info.clone(),
+        chain,
+        sender,
+        DummyNetworkService,
+        true,
+    );
     let mut header = BlockHeader::random();
     header.number = 1;
     let body = BlockBody::new(Vec::new(), None);
