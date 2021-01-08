@@ -189,44 +189,33 @@ impl IntoIterator for PeerSelector {
 mod tests {
     use crate::peer_provider::PeerSelector;
     use starcoin_crypto::HashValue;
-    use starcoin_types::block::BlockHeader;
     use starcoin_types::peer_info::{PeerId, PeerInfo};
     use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+    use starcoin_types::U256;
 
+    fn mock_chain_status(total_difficulty: U256) -> ChainStatus {
+        let mut status = ChainStatus::random();
+        status.info.total_difficulty = total_difficulty;
+        status
+    }
     #[test]
     fn test_peer_selector() {
         let peers = vec![
             PeerInfo::new(
                 PeerId::random(),
-                ChainInfo::new(
-                    1.into(),
-                    HashValue::zero(),
-                    ChainStatus::new(BlockHeader::random(), 100.into()),
-                ),
+                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
             ),
             PeerInfo::new(
                 PeerId::random(),
-                ChainInfo::new(
-                    1.into(),
-                    HashValue::zero(),
-                    ChainStatus::new(BlockHeader::random(), 99.into()),
-                ),
+                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(99.into())),
             ),
             PeerInfo::new(
                 PeerId::random(),
-                ChainInfo::new(
-                    1.into(),
-                    HashValue::zero(),
-                    ChainStatus::new(BlockHeader::random(), 100.into()),
-                ),
+                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
             ),
             PeerInfo::new(
                 PeerId::random(),
-                ChainInfo::new(
-                    1.into(),
-                    HashValue::zero(),
-                    ChainStatus::new(BlockHeader::random(), 1.into()),
-                ),
+                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(1.into())),
             ),
         ];
 

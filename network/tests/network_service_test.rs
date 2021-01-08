@@ -13,10 +13,11 @@ use network_p2p_types::{random_memory_addr, MultiaddrWithPeerId};
 use starcoin_config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
 use starcoin_crypto::hash::HashValue;
 use starcoin_network::build_network_worker;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{AccumulatorInfo, Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::cmpact_block::CompactBlock;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::U256;
 use std::sync::Arc;
 use std::{thread, time::Duration};
 
@@ -152,7 +153,7 @@ async fn test_event_notify_receive() {
                 Block::new(BlockHeader::random(), BlockBody::new_empty()),
                 vec![],
             ),
-            1.into(),
+            mock_block_info(1.into()),
         ),
     );
     let mut receiver = network2.message_handler.channel();
@@ -169,12 +170,18 @@ async fn test_event_notify_receive_repeat_block() {
 
     let msg_send1 = PeerMessage::new_compact_block(
         network2.peer_id(),
-        CompactBlockMessage::new(CompactBlock::new(block.clone(), vec![]), 1.into()),
+        CompactBlockMessage::new(
+            CompactBlock::new(block.clone(), vec![]),
+            mock_block_info(1.into()),
+        ),
     );
 
     let msg_send2 = PeerMessage::new_compact_block(
         network2.peer_id(),
-        CompactBlockMessage::new(CompactBlock::new(block.clone(), vec![]), 1.into()),
+        CompactBlockMessage::new(
+            CompactBlock::new(block.clone(), vec![]),
+            mock_block_info(1.into()),
+        ),
     );
 
     let mut receiver = network2.message_handler.channel();
@@ -235,6 +242,15 @@ async fn test_event_notify_receive_repeat_transaction() {
     assert!(msg_receive3.is_err());
 }
 
+fn mock_block_info(total_difficulty: U256) -> BlockInfo {
+    BlockInfo::new(
+        HashValue::random(),
+        AccumulatorInfo::default(),
+        total_difficulty,
+        AccumulatorInfo::default(),
+    )
+}
+
 #[stest::test]
 async fn test_event_broadcast() {
     let mut nodes = test_helper::build_network_cluster(3).await.unwrap();
@@ -250,7 +266,7 @@ async fn test_event_broadcast() {
     let notification = NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::new(
         CompactBlock::new(block.clone(), vec![]),
         //difficulty should > genesis block difficulty.
-        10.into(),
+        mock_block_info(10.into()),
     )));
     node1.service_ref.broadcast(notification.clone());
 

@@ -46,7 +46,7 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
         let chain_info = ChainInfo::new(
             config.net().chain_id(),
             genesis_hash,
-            ChainStatus::new(head_block_header, head_block_info.total_difficulty),
+            ChainStatus::new(head_block_header, head_block_info),
         );
 
         let actor_service = NetworkActorService::new(

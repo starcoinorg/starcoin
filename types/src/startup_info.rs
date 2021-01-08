@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockHeader;
+use crate::block::{BlockHeader, BlockInfo};
 use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
 use starcoin_uint::U256;
 use starcoin_vm_types::genesis_config::ChainId;
@@ -68,22 +69,38 @@ impl ChainInfo {
 /// The latest status of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainStatus {
-    head: BlockHeader,
-    total_difficulty: U256,
+    /// Chain head block's header.
+    pub head: BlockHeader,
+    /// Chain block info
+    pub info: BlockInfo,
 }
 
 impl ChainStatus {
-    pub fn new(head: BlockHeader, total_difficulty: U256) -> Self {
-        Self {
-            head,
-            total_difficulty,
-        }
+    pub fn new(head: BlockHeader, info: BlockInfo) -> Self {
+        Self { head, info }
     }
 
     pub fn random() -> Self {
+        let head = BlockHeader::random();
+        let block_info = BlockInfo::new(
+            head.id(),
+            AccumulatorInfo::new(
+                head.accumulator_root,
+                vec![],
+                rand::random::<u64>(),
+                rand::random::<u64>(),
+            ),
+            U256::from(rand::random::<u64>()),
+            AccumulatorInfo::new(
+                head.parent_block_accumulator_root,
+                vec![],
+                head.number - 1,
+                rand::random::<u64>(),
+            ),
+        );
         Self {
-            head: BlockHeader::random(),
-            total_difficulty: U256::from(rand::random::<u64>()),
+            head,
+            info: block_info,
         }
     }
 
@@ -91,12 +108,16 @@ impl ChainStatus {
         &self.head
     }
 
-    pub fn total_difficulty(&self) -> U256 {
-        self.total_difficulty
+    pub fn info(&self) -> &BlockInfo {
+        &self.info
     }
 
-    pub fn into_inner(self) -> (BlockHeader, U256) {
-        (self.head, self.total_difficulty)
+    pub fn total_difficulty(&self) -> U256 {
+        self.info.total_difficulty
+    }
+
+    pub fn into_inner(self) -> (BlockHeader, BlockInfo) {
+        (self.head, self.info)
     }
 }
 

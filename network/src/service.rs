@@ -347,7 +347,7 @@ impl Inner {
                 }
                 NotificationMessage::CompactBlock(compact_block_message) => {
                     let block_header = compact_block_message.compact_block.header.clone();
-                    let total_difficulty = compact_block_message.total_difficulty;
+                    let total_difficulty = compact_block_message.block_info.total_difficulty;
                     let block_id = block_header.id();
                     debug!(
                         "Receive new compact block from {:?} with hash {:?}",
@@ -358,9 +358,10 @@ impl Inner {
                         total_difficulty, peer_info
                     );
                     peer_info.known_blocks.put(block_id, ());
-                    peer_info
-                        .peer_info
-                        .update_chain_status(ChainStatus::new(block_header, total_difficulty));
+                    peer_info.peer_info.update_chain_status(ChainStatus::new(
+                        block_header,
+                        compact_block_message.block_info.clone(),
+                    ));
 
                     if self.self_peer.known_blocks.contains(&block_id) {
                         None
@@ -436,7 +437,7 @@ impl Inner {
         match &notification {
             NotificationMessage::CompactBlock(msg) => {
                 let id = msg.compact_block.header.id();
-                let total_difficulty = msg.total_difficulty;
+                let total_difficulty = msg.block_info.total_difficulty;
                 debug!(
                     "update self network chain status, total_difficulty is {}, peer_info is {:?}",
                     total_difficulty, self.self_peer.peer_info

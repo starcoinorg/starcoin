@@ -67,10 +67,7 @@ impl SyncService2 {
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
 
         Ok(Self {
-            sync_status: SyncStatus::new(ChainStatus::new(
-                head_block.header,
-                head_block_info.total_difficulty,
-            )),
+            sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
             config,
             storage,
@@ -426,7 +423,7 @@ impl EventHandler<Self, NewHeadBlock> for SyncService2 {
         let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
-            block.total_difficulty(),
+            block.block_info.clone(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }
