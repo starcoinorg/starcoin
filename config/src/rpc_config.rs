@@ -337,6 +337,11 @@ impl ConfigModule for RpcConfig {
             self.ws.max_request_body_size = opt.ws.max_request_body_size;
         }
         info!("Websocket rpc address: {:?}", self.get_ws_address());
+
+        // cli option override config file.
+        if let Some(r) = opt.block_query_max_range {
+            self.block_query_max_range = r;
+        }
         Ok(())
     }
 }
