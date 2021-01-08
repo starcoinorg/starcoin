@@ -18,6 +18,7 @@
 <b>use</b> <a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="../../modules/doc/DummyToken.md#0x1_DummyToken">0x1::DummyToken</a>;
 <b>use</b> <a href="../../modules/doc/Epoch.md#0x1_Epoch">0x1::Epoch</a>;
+<b>use</b> <a href="../../modules/doc/Option.md#0x1_Option">0x1::Option</a>;
 <b>use</b> <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="../../modules/doc/STC.md#0x1_STC">0x1::STC</a>;
 <b>use</b> <a href="../../modules/doc/Signer.md#0x1_Signer">0x1::Signer</a>;
@@ -155,6 +156,7 @@
     <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
         &genesis_account,
         <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_two_phase">PackageTxnManager::get_strategy_two_phase</a>(),
+        <a href="../../modules/doc/Option.md#0x1_Option_some">Option::some</a>(0),
     );
     // stc should be initialized after genesis_account's <b>module</b> upgrade strategy set.
     {

@@ -43,9 +43,7 @@ pub mod language_storage {
     };
 }
 
-pub mod move_resource {
-    pub use move_core_types::move_resource::MoveResource;
-}
+pub mod move_resource;
 
 pub mod transaction_argument {
     pub use move_core_types::transaction_argument::*;
@@ -53,13 +51,18 @@ pub mod transaction_argument {
 
 pub mod parser {
     use crate::language_storage::TypeTag;
-    use anyhow::{format_err, Result};
-    pub use move_core_types::parser::{parse_transaction_argument, parse_type_tags};
+    use anyhow::{bail, Result};
+    use move_core_types::language_storage::StructTag;
+    pub use move_core_types::parser::{
+        parse_transaction_argument, parse_type_tag, parse_type_tags,
+    };
 
-    pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
-        parse_type_tags(s)?
-            .pop()
-            .ok_or_else(|| format_err!("parse type fail from {}", s))
+    pub fn parse_struct_tag(s: &str) -> Result<StructTag> {
+        let type_tag = parse_type_tag(s)?;
+        match type_tag {
+            TypeTag::Struct(st) => Ok(st),
+            t => bail!("expect a struct tag, found: {:?}", t),
+        }
     }
 }
 

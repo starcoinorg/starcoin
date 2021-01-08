@@ -8,7 +8,6 @@ use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
-use starcoin_types::language_storage::ResourceKey;
 use starcoin_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_types::{
     access_path::AccessPath,
@@ -108,8 +107,8 @@ impl FakeExecutor {
     }
 
     pub fn read_timestamp(&self) -> u64 {
-        let resource_key = ResourceKey::new(genesis_address(), GlobalTimeOnChain::struct_tag());
-        let ap = AccessPath::resource_access_path(&resource_key);
+        let ap =
+            AccessPath::resource_access_path(genesis_address(), GlobalTimeOnChain::struct_tag());
         let data_blob = self
             .data_store
             .get(&ap)

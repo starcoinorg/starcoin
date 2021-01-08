@@ -6,6 +6,8 @@
 
 #![forbid(unsafe_code)]
 #![allow(dead_code)]
+//TODO fix
+#![allow(clippy::unit_arg)]
 //! This module implements [`JellyfishMerkleTree`] backed by storage module. The tree itself doesn't
 //! persist anything, but realizes the logic of R/W only. The write path will produce all the
 //! intermediate results in a batch for storage layer to commit and the read path will return
@@ -91,8 +93,12 @@ use blob::Blob;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
+use serde::{de::DeserializeOwned, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use std::collections::{BTreeMap, BTreeSet};
+use std::marker::PhantomData;
 use tree_cache::TreeCache;
 
 fn create_literal_hash(word: &str) -> HashValue {
@@ -108,30 +114,31 @@ pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
 /// `TreeReader` defines the interface between
 /// [`JellyfishMerkleTree`](struct.JellyfishMerkleTree.html)
 /// and underlying storage holding nodes.
-pub trait TreeReader {
+pub trait TreeReader<K: RawKey> {
     /// Gets node given a node key. Returns error if the node does not exist.
-    fn get_node(&self, node_key: &NodeKey) -> Result<Node> {
+    fn get_node(&self, node_key: &NodeKey) -> Result<Node<K>> {
         self.get_node_option(node_key)?
             .ok_or_else(|| format_err!("Missing node at {:?}.", node_key))
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>>;
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>>;
 
     /// Gets the rightmost leaf. Note that this assumes we are in the process of restoring the tree
     /// and all nodes are at the same version.
-    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
-        Ok(None)
+    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode<K>)>> {
+        //TODO
+        unimplemented!()
     }
 }
 
-pub trait TreeWriter {
+pub trait TreeWriter<K: RawKey> {
     /// Writes a node batch into storage.
-    fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()>;
+    fn write_node_batch(&self, node_batch: &NodeBatch<K>) -> Result<()>;
 }
 
 /// Node batch that will be written into db atomically with other batches.
-pub type NodeBatch = BTreeMap<NodeKey, Node>;
+pub type NodeBatch<K> = BTreeMap<NodeKey, Node<K>>;
 /// [`StaleNodeIndex`](struct.StaleNodeIndex.html) batch that will be written into db atomically
 /// with other batches.
 pub type StaleNodeIndexBatch = BTreeSet<StaleNodeIndex>;
@@ -150,34 +157,109 @@ pub struct StaleNodeIndex {
 /// [`StaleNodeIndexBatch`](type.StaleNodeIndexBatch.html) and some stats of nodes that represents
 /// the incremental updates of a tree and pruning indices after applying a write set,
 /// which is a vector of `hashed_account_address` and `new_account_state_blob` pairs.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct TreeUpdateBatch {
-    pub node_batch: NodeBatch,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreeUpdateBatch<K: RawKey> {
+    pub node_batch: NodeBatch<K>,
     pub stale_node_index_batch: StaleNodeIndexBatch,
     pub num_new_leaves: usize,
     pub num_stale_leaves: usize,
 }
 
-/// The Jellyfish Merkle tree data structure. See [`crate`] for description.
-pub struct JellyfishMerkleTree<'a, R: 'a + TreeReader> {
-    reader: &'a R,
+impl<K> Default for TreeUpdateBatch<K>
+where
+    K: RawKey,
+{
+    fn default() -> Self {
+        Self {
+            node_batch: NodeBatch::default(),
+            stale_node_index_batch: StaleNodeIndexBatch::default(),
+            num_new_leaves: 0,
+            num_stale_leaves: 0,
+        }
+    }
 }
 
-impl<'a, R> JellyfishMerkleTree<'a, R>
+pub trait RawKey: Clone + Ord {
+    /// Raw key's hash, will used as tree's nibble path
+    /// Directly use origin byte's sha3_256 hash, do not use CryptoHash to add salt.
+    fn key_hash(&self) -> HashValue {
+        HashValue::sha3_256_of(
+            self.encode_key()
+                .expect("Serialize key failed when hash.")
+                .as_slice(),
+        )
+    }
+
+    /// Encode the raw key, the raw key's bytes will store to leaf node.
+    fn encode_key(&self) -> Result<Vec<u8>>;
+
+    fn decode_key(bytes: &[u8]) -> Result<Self>;
+}
+
+impl<T> RawKey for T
 where
-    R: 'a + TreeReader,
+    T: Clone + Ord + Serialize + DeserializeOwned,
+{
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        scs::to_bytes(self)
+    }
+
+    fn decode_key(bytes: &[u8]) -> Result<Self> {
+        scs::from_bytes(bytes)
+    }
+}
+
+//FIXME
+#[allow(clippy::unit_arg)]
+#[derive(Clone, Debug, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub struct HashValueKey(pub HashValue);
+
+impl RawKey for HashValueKey {
+    fn key_hash(&self) -> HashValue {
+        self.0
+    }
+
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        Ok(self.0.to_vec())
+    }
+
+    fn decode_key(bytes: &[u8]) -> Result<Self> {
+        Ok(HashValueKey(HashValue::from_slice(bytes)?))
+    }
+}
+
+impl From<HashValue> for HashValueKey {
+    fn from(hash: HashValue) -> Self {
+        HashValueKey(hash)
+    }
+}
+
+/// The Jellyfish Merkle tree data structure. See [`crate`] for description.
+pub struct JellyfishMerkleTree<'a, K: RawKey, R: 'a + TreeReader<K>> {
+    reader: &'a R,
+    raw_key: PhantomData<K>,
+}
+
+impl<'a, K, R> JellyfishMerkleTree<'a, K, R>
+where
+    K: RawKey,
+    R: 'a + TreeReader<K>,
 {
     /// Creates a `JellyfishMerkleTree` backed by the given [`TreeReader`](trait.TreeReader.html).
     pub fn new(reader: &'a R) -> Self {
-        Self { reader }
+        Self {
+            reader,
+            raw_key: PhantomData,
+        }
     }
 
     #[cfg(test)]
     pub fn put_blob_set(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(HashValue, Blob)>,
-    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        blob_set: Vec<(K, Blob)>,
+    ) -> Result<(HashValue, TreeUpdateBatch<K>)> {
         let blob_set = blob_set
             .into_iter()
             .map(|(k, v)| (k, Some(v)))
@@ -196,8 +278,8 @@ where
     pub fn delete(
         &self,
         state_root_hash: Option<HashValue>,
-        key: HashValue,
-    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        key: K,
+    ) -> Result<(HashValue, TreeUpdateBatch<K>)> {
         self.updates(state_root_hash, vec![(key, None)])
     }
 
@@ -205,8 +287,8 @@ where
     pub fn insert_all(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(HashValue, Blob)>,
-    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        blob_set: Vec<(K, Blob)>,
+    ) -> Result<(HashValue, TreeUpdateBatch<K>)> {
         let blob_set = blob_set
             .into_iter()
             .map(|(k, v)| (k, Some(v)))
@@ -217,8 +299,8 @@ where
     pub fn updates(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(HashValue, Option<Blob>)>,
-    ) -> Result<(HashValue, TreeUpdateBatch)> {
+        blob_set: Vec<(K, Option<Blob>)>,
+    ) -> Result<(HashValue, TreeUpdateBatch<K>)> {
         let (root_hashes, tree_update_batch) = self.puts(state_root_hash, vec![blob_set])?;
         assert_eq!(
             root_hashes.len(),
@@ -272,8 +354,8 @@ where
     fn puts(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_sets: Vec<Vec<(HashValue, Option<Blob>)>>,
-    ) -> Result<(Vec<HashValue>, TreeUpdateBatch)> {
+        blob_sets: Vec<Vec<(K, Option<Blob>)>>,
+    ) -> Result<(Vec<HashValue>, TreeUpdateBatch<K>)> {
         let mut tree_cache = TreeCache::new(self.reader, state_root_hash);
         for (_idx, blob_set) in blob_sets.into_iter().enumerate() {
             assert!(
@@ -291,13 +373,9 @@ where
         Ok(tree_cache.into())
     }
 
-    fn put(
-        key: HashValue,
-        blob: Option<Blob>,
-        // version: Version,
-        tree_cache: &mut TreeCache<R>,
-    ) -> Result<()> {
-        let nibble_path = NibblePath::new(key.to_vec());
+    fn put(key: K, blob: Option<Blob>, tree_cache: &mut TreeCache<R, K>) -> Result<()> {
+        let key_hash = key.key_hash();
+        let nibble_path = NibblePath::new(key_hash.to_vec());
 
         // Get the root node. If this is the first operation, it would get the root node from the
         // underlying db. Otherwise it most likely would come from `cache`.
@@ -305,13 +383,8 @@ where
         let mut nibble_iter = nibble_path.nibbles();
 
         // Start insertion from the root node.
-        let (new_root_node_key, _) = Self::insert_at(
-            *root_node_key,
-            // version,
-            &mut nibble_iter,
-            blob,
-            tree_cache,
-        )?;
+        let (new_root_node_key, _) =
+            Self::insert_at(*root_node_key, &mut nibble_iter, key, blob, tree_cache)?;
 
         tree_cache.set_root_node_key(new_root_node_key);
         Ok(())
@@ -323,29 +396,24 @@ where
     /// for this tree is the length of the hash of account addresses.
     fn insert_at(
         node_key: NodeKey,
-        // version: Version,
         nibble_iter: &mut NibbleIterator,
+        key: K,
         blob: Option<Blob>,
-        tree_cache: &mut TreeCache<R>,
-    ) -> Result<(NodeKey, Node)> {
+        tree_cache: &mut TreeCache<R, K>,
+    ) -> Result<(NodeKey, Node<K>)> {
         let node = tree_cache.get_node(&node_key)?;
         match node {
             Node::Internal(internal_node) => Self::insert_at_internal_node(
                 node_key,
                 internal_node,
-                // version,
                 nibble_iter,
+                key,
                 blob,
                 tree_cache,
             ),
-            Node::Leaf(leaf_node) => Self::insert_at_leaf_node(
-                node_key,
-                leaf_node,
-                // version,
-                nibble_iter,
-                blob,
-                tree_cache,
-            ),
+            Node::Leaf(leaf_node) => {
+                Self::insert_at_leaf_node(node_key, leaf_node, nibble_iter, key, blob, tree_cache)
+            }
             Node::Null => {
                 if blob.is_none() {
                     return Ok((node_key, node));
@@ -353,7 +421,7 @@ where
 
                 let blob = blob.unwrap();
                 tree_cache.delete_node(&node_key, false);
-                Self::create_leaf_node(&nibble_iter, blob, tree_cache)
+                Self::create_leaf_node(key, blob, tree_cache)
             }
         }
     }
@@ -364,11 +432,11 @@ where
     fn insert_at_internal_node(
         node_key: NodeKey,
         internal_node: InternalNode,
-        // version: Version,
         nibble_iter: &mut NibbleIterator,
+        key: K,
         blob: Option<Blob>,
-        tree_cache: &mut TreeCache<R>,
-    ) -> Result<(NodeKey, Node)> {
+        tree_cache: &mut TreeCache<R, K>,
+    ) -> Result<(NodeKey, Node<K>)> {
         // Find the next node to visit following the next nibble as index.
         let child_index = nibble_iter.next().expect("Ran out of nibbles");
 
@@ -378,12 +446,12 @@ where
             Some(child) => {
                 // let child_node_key = node_key.gen_child_node_key(child.version, child_index);
                 let child_node_key = child.hash;
-                Self::insert_at(child_node_key, nibble_iter, blob, tree_cache)?
+                Self::insert_at(child_node_key, nibble_iter, key, blob, tree_cache)?
             }
             None if blob.is_some() => {
                 let blob = blob.unwrap();
                 // let new_child_node_key = node_key.gen_child_node_key(version, child_index);
-                Self::create_leaf_node(nibble_iter, blob, tree_cache)?
+                Self::create_leaf_node(key, blob, tree_cache)?
             }
             _ => return Ok((node_key, Node::from(internal_node))),
         };
@@ -424,7 +492,7 @@ where
             let leaf_node = tree_cache.get_node(&leaf.hash)?;
             Ok((leaf.hash, leaf_node))
         } else {
-            let new_internal_node: Node = InternalNode::new(children).into();
+            let new_internal_node: Node<K> = InternalNode::new(children).into();
             // Cache this new internal node.
             tree_cache.put_node(new_internal_node.hash(), new_internal_node.clone())?;
             Ok((new_internal_node.hash(), new_internal_node))
@@ -436,12 +504,12 @@ where
     /// [`NodeKey`](node_type/struct.NodeKey.html).
     fn insert_at_leaf_node(
         node_key: NodeKey,
-        existing_leaf_node: LeafNode,
-        // version: Version,
+        existing_leaf_node: LeafNode<K>,
         nibble_iter: &mut NibbleIterator,
+        key: K,
         blob: Option<Blob>,
-        tree_cache: &mut TreeCache<R>,
-    ) -> Result<(NodeKey, Node)> {
+        tree_cache: &mut TreeCache<R, K>,
+    ) -> Result<(NodeKey, Node<K>)> {
         // We are on a leaf node but trying to insert another node, so we may diverge.
         // We always delete the existing leaf node here because it will not be referenced anyway
         // since this version.
@@ -450,7 +518,8 @@ where
         // visited part of the nibble iter of the incoming key and advances the existing leaf
         // nibble iterator by the length of that prefix.
         let mut visited_nibble_iter = nibble_iter.visited_nibbles();
-        let existing_leaf_nibble_path = NibblePath::new(existing_leaf_node.account_key().to_vec());
+        let existing_leaf_nibble_path =
+            NibblePath::new(existing_leaf_node.raw_key().key_hash().to_vec());
         let mut existing_leaf_nibble_iter = existing_leaf_nibble_path.nibbles();
         skip_common_prefix(&mut visited_nibble_iter, &mut existing_leaf_nibble_iter);
 
@@ -486,12 +555,7 @@ where
             } else {
                 // Else create the new leaf node with the same address but new blob content.
                 tree_cache.delete_node(&node_key, true /* is_leaf */);
-                return Ok(Self::create_leaf_node(
-                    // node_key,
-                    nibble_iter,
-                    blob,
-                    tree_cache,
-                )?);
+                return Ok(Self::create_leaf_node(key, blob, tree_cache)?);
             }
         }
 
@@ -520,12 +584,7 @@ where
             Child::new(existing_leaf_node.crypto_hash(), true /* is_leaf */),
         );
 
-        let (_, new_leaf_node) = Self::create_leaf_node(
-            // node_key.gen_child_node_key(version, new_leaf_index),
-            nibble_iter,
-            blob,
-            tree_cache,
-        )?;
+        let (_, new_leaf_node) = Self::create_leaf_node(key, blob, tree_cache)?;
         children.insert(
             new_leaf_index,
             Child::new(new_leaf_node.hash(), true /* is_leaf */),
@@ -533,7 +592,7 @@ where
 
         let internal_node = InternalNode::new(children);
         let mut next_internal_node = internal_node.clone();
-        let internal_node: Node = internal_node.into();
+        let internal_node: Node<K> = internal_node.into();
         tree_cache.put_node(internal_node.hash(), internal_node)?;
 
         for _i in 0..num_common_nibbles_below_internal {
@@ -547,28 +606,23 @@ where
             );
             let internal_node = InternalNode::new(children);
             next_internal_node = internal_node.clone();
-            let internal_node: Node = internal_node.into();
+            let internal_node: Node<K> = internal_node.into();
             tree_cache.put_node(internal_node.hash(), internal_node)?;
         }
 
-        let next_internal_node: Node = next_internal_node.into();
+        let next_internal_node: Node<K> = next_internal_node.into();
         Ok((next_internal_node.hash(), next_internal_node))
     }
 
     /// Helper function for creating leaf nodes. Returns the newly created leaf node.
     fn create_leaf_node(
-        // node_key: NodeKey,
-        nibble_iter: &NibbleIterator,
+        key: K,
         blob: Blob,
-        tree_cache: &mut TreeCache<R>,
-    ) -> Result<(NodeKey, Node)> {
+        tree_cache: &mut TreeCache<R, K>,
+    ) -> Result<(NodeKey, Node<K>)> {
         // Get the underlying bytes of nibble_iter which must be a key, i.e., hashed account address
         // with `HashValue::LENGTH` bytes.
-        let new_leaf_node = Node::new_leaf(
-            HashValue::from_slice(nibble_iter.get_nibble_path().bytes())
-                .expect("LeafNode must have full nibble path."),
-            blob,
-        );
+        let new_leaf_node = Node::new_leaf(key, blob);
         let node_key = new_leaf_node.hash();
         tree_cache.put_node(node_key, new_leaf_node.clone())?;
         Ok((node_key, new_leaf_node))
@@ -578,7 +632,7 @@ where
     pub fn get_with_proof(
         &self,
         state_root_hash: HashValue,
-        key: HashValue, // TODO should use &HashValue at here?
+        key: HashValue,
     ) -> Result<(Option<Blob>, SparseMerkleProof)> {
         // Empty tree just returns proof with no sibling hash.
         // let mut next_node_key = NodeKey::new_empty_path(version);
@@ -613,13 +667,13 @@ where
                 }
                 Node::Leaf(leaf_node) => {
                     return Ok((
-                        if leaf_node.account_key() == key {
+                        if leaf_node.raw_key().key_hash() == key {
                             Some(leaf_node.blob().clone())
                         } else {
                             None
                         },
                         SparseMerkleProof::new(
-                            Some((leaf_node.account_key(), leaf_node.blob_hash())),
+                            Some((leaf_node.raw_key().key_hash(), leaf_node.blob_hash())),
                             {
                                 siblings.reverse();
                                 siblings

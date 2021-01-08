@@ -3,7 +3,7 @@
 
 use crate::access_path::AccessPath;
 use crate::account_address::AccountAddress;
-use move_core_types::move_resource::MoveResource;
+use crate::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 pub const _STRATEGY_ARBITRARY: u8 = 0;
@@ -32,5 +32,5 @@ impl MoveResource for ModuleUpgradeStrategy {
 }
 
 pub fn access_path_for_module_upgrade_strategy(address: AccountAddress) -> AccessPath {
-    AccessPath::new(address, ModuleUpgradeStrategy::resource_path())
+    AccessPath::resource_access_path(address, ModuleUpgradeStrategy::struct_tag())
 }

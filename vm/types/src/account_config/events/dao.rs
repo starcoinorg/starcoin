@@ -1,6 +1,6 @@
+use crate::move_resource::MoveResource;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]

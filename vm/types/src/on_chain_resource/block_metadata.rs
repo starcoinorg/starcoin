@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::event::EventHandle;
+use crate::move_resource::MoveResource;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 

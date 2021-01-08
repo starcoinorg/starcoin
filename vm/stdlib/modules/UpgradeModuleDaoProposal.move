@@ -5,7 +5,6 @@ module UpgradeModuleDaoProposal {
     use 0x1::Signer;
     use 0x1::Option;
     use 0x1::Dao;
-    use 0x1::Block;
     use 0x1::Errors;
 
     spec module {
@@ -93,7 +92,6 @@ module UpgradeModuleDaoProposal {
             &cap.cap,
             package_hash,
             version,
-            Block::get_current_block_number(),
         );
     }
     spec fun submit_module_upgrade_plan {

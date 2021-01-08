@@ -4,7 +4,7 @@ use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::multi_ed25519::MultiEd25519PrivateKey;
 use starcoin_crypto::{HashValue, PrivateKey, SigningKey, Uniform};
 // use starcoin_rpc_api::types::pubsub::Kind;
-use starcoin_types::access_path::{AccessPath, DataType};
+use starcoin_types::access_path::{AccessPath, DataPath, DataType};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::AccountResource;
 use starcoin_types::block_metadata::BlockMetadata;
@@ -25,6 +25,7 @@ fn main() {
 fn generate() -> Result<(), Error> {
     let mut tracer = Tracer::new(TracerConfig::default());
     let mut samples = Samples::new();
+    tracer.trace_type::<DataPath>(&samples)?;
     tracer.trace_type::<AccessPath>(&samples)?;
     tracer.trace_value(&mut samples, &HashValue::zero())?;
     {

@@ -15,17 +15,12 @@ pub struct Blob {
 
 impl fmt::Debug for Blob {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // let decoded = bcs::from_bytes(&self.blob)
-        //     .map(|account_state: AccountState| format!("{:#?}", account_state))
-        //     .unwrap_or_else(|_| String::from("[fail]"));
-
         write!(
             f,
             "Blob {{ \n \
              Raw: 0x{} \n \
              }}",
             hex::encode(&self.blob),
-            // decoded,
         )
     }
 }
@@ -37,8 +32,8 @@ impl AsRef<[u8]> for Blob {
 }
 
 impl From<Blob> for Vec<u8> {
-    fn from(account_state_blob: Blob) -> Vec<u8> {
-        account_state_blob.blob
+    fn from(blob: Blob) -> Vec<u8> {
+        blob.blob
     }
 }
 

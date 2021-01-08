@@ -112,7 +112,7 @@ pub fn test_wallet_unlock() -> Result<()> {
 }
 
 #[test]
-pub fn test_diem_wallet() -> Result<()> {
+pub fn test_wallet_account() -> Result<()> {
     use core::convert::{From, TryFrom};
     use scs::SCSCodec;
     use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature};
@@ -182,14 +182,13 @@ pub fn test_diem_wallet() -> Result<()> {
         ])
     );
 
-    let path = StructTag {
+    let struct_tag = StructTag {
         address: CORE_CODE_ADDRESS,
         module: Identifier::from(IdentStr::new("Account")?),
         name: Identifier::from(IdentStr::new("Account")?),
         type_params: vec![],
     };
-    println!("path hash is {:?}", path.hash());
-    let access_path = AccessPath::new(address, path.access_vector());
+    let access_path = AccessPath::resource_access_path(address, struct_tag);
     println!("access path is {:?}", access_path);
     let stxn_bytes = vec![
         125, 67, 213, 38, 157, 219, 137, 205, 183, 247, 184, 18, 104, 155, 241, 53, 7, 0, 0, 0, 0,

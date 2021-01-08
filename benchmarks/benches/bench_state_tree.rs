@@ -4,6 +4,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
+use forkable_jellyfish_merkle::HashValueKey;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::RocksdbConfig;
 use starcoin_state_store_api::StateNodeStore;
@@ -75,7 +76,7 @@ fn bench_put_and_commit(c: &mut Criterion) {
                         std::iter::repeat(0u8)
                             .take(*n as usize)
                             .map(|_| {
-                                let key = HashValue::random_with_rng(&mut rng);
+                                let key = HashValueKey(HashValue::random_with_rng(&mut rng));
                                 let value =
                                     Blob::from(HashValue::random_with_rng(&mut rng).to_vec());
                                 (key, value)
@@ -100,14 +101,14 @@ fn bench_put_and_commit(c: &mut Criterion) {
 criterion_group!(benches, bench_get_with_proof, bench_put_and_commit);
 criterion_main!(benches);
 
-fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
+fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValueKey, Blob> {
     assert!(seed.len() < 32);
     let mut actual_seed = [0u8; 32];
     actual_seed[..seed.len()].copy_from_slice(&seed);
     let mut rng: StdRng = StdRng::from_seed(actual_seed);
     let mut kvs = HashMap::new();
     for _i in 0..num_keys {
-        let key = HashValue::random_with_rng(&mut rng);
+        let key = HashValueKey(HashValue::random_with_rng(&mut rng));
         let value = Blob::from(HashValue::random_with_rng(&mut rng).to_vec());
         kvs.insert(key, value);
     }
@@ -124,10 +125,10 @@ fn new_empty_store<P: AsRef<Path> + Clone>(p: P) -> Arc<Storage> {
 }
 
 fn prepare_tree(
-    state_tree: &StateTree,
+    state_tree: &StateTree<HashValueKey>,
     seed: &[u8],
     num_keys: usize,
-) -> (HashMap<HashValue, Blob>, HashValue) {
+) -> (HashMap<HashValueKey, Blob>, HashValue) {
     let kvs = gen_kv_from_seed(seed, num_keys);
     for (k, v) in kvs.clone() {
         state_tree.put(k, v.into());

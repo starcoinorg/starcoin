@@ -48,9 +48,10 @@ impl<'a> Resolver<'a> {
         if let Some(module) = self.cache.get(&module_id) {
             return Ok(module);
         }
+        let access_path = AccessPath::from(&module_id);
         let blob = self
             .state
-            .get(&AccessPath::code_access_path(&module_id))?
+            .get(&access_path)?
             .ok_or_else(|| anyhow!("Module {:?} can't be found", module_id))?;
         let compiled_module = CompiledModule::deserialize(&blob).map_err(|status| {
             anyhow!(

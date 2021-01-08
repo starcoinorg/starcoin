@@ -8,8 +8,8 @@ use crate::{
     account_config::{BurnEvent, DepositEvent, MintEvent, WithdrawEvent},
     event::EventKey,
 };
+use crate::{language_storage::TypeTag, move_resource::MoveResource};
 use anyhow::{Error, Result};
-use move_core_types::{language_storage::TypeTag, move_resource::MoveResource};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use std::{convert::TryFrom, ops::Deref};

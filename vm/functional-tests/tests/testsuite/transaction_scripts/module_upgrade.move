@@ -49,16 +49,17 @@ script {
     use 0x1::Config;
     use 0x1::Version;
     use 0x1::PackageTxnManager;
+    use 0x1::Option;
 
     fun update_module_upgrade_strategy(account: &signer) {
         Config::publish_new_config<Version::Version>(account, Version::new_version(1));
-        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase());
+        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(1));
     }
 }
 // check: EXECUTED
 // check: gas_used
-// check: 807
-
+// check: 840
+//
 //! new-transaction
 //! sender: alice
 script {
@@ -172,4 +173,4 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 200
+// check: 186

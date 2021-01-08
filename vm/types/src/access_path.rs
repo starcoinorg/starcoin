@@ -39,62 +39,124 @@
 //! `path` will be set to "/a" and use the `get_prefix()` method from statedb
 
 use crate::account_address::AccountAddress;
-use anyhow::Result;
-use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, CODE_TAG, RESOURCE_TAG};
+use crate::identifier::Identifier;
+use crate::parser::parse_struct_tag;
+use anyhow::{bail, Result};
+use forkable_jellyfish_merkle::RawKey;
+use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, TypeTag};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
+use proptest::{collection::vec, prelude::*};
+#[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use serde::{Deserialize, Serialize};
-use serde_helpers::{deserialize_binary, serialize_binary};
-use starcoin_crypto::hash::{CryptoHash, CryptoHasher, HashValue};
-use std::convert::TryFrom;
+use rand::prelude::{Distribution, SliceRandom};
+use rand::rngs::OsRng;
+use rand::Rng;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use starcoin_crypto::hash::HashValue;
 use std::fmt;
-#[derive(
-    Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHasher, CryptoHash,
-)]
+use std::str::FromStr;
+
+#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct AccessPath {
     pub address: AccountAddress,
-    #[serde(
-        deserialize_with = "deserialize_binary",
-        serialize_with = "serialize_binary"
-    )]
-    pub path: Vec<u8>,
+    pub path: DataPath,
 }
 
 impl AccessPath {
-    pub const CODE_TAG: u8 = 0;
-    pub const RESOURCE_TAG: u8 = 1;
-
-    pub fn new(address: AccountAddress, path: Vec<u8>) -> Self {
+    pub fn new(address: AccountAddress, path: DataPath) -> Self {
         AccessPath { address, path }
     }
 
-    pub fn resource_access_vec(tag: &StructTag) -> Vec<u8> {
-        tag.access_vector()
+    pub fn resource_access_path(address: AccountAddress, struct_tag: StructTag) -> Self {
+        Self::new(address, Self::resource_data_path(struct_tag))
     }
 
-    /// Convert Accesses into a byte offset which would be used by the storage layer to resolve
-    /// where fields are stored.
-    pub fn resource_access_path(key: &ResourceKey) -> AccessPath {
-        let path = AccessPath::resource_access_vec(&key.type_());
-        AccessPath {
-            address: key.address().to_owned(),
-            path,
+    pub fn code_access_path(address: AccountAddress, module_name: Identifier) -> AccessPath {
+        AccessPath::new(address, Self::code_data_path(module_name))
+    }
+
+    pub fn resource_data_path(tag: StructTag) -> DataPath {
+        DataPath::Resource(tag)
+    }
+
+    pub fn code_data_path(module_name: ModuleName) -> DataPath {
+        DataPath::Code(module_name)
+    }
+
+    pub fn into_inner(self) -> (AccountAddress, DataPath) {
+        let address = self.address;
+        let path = self.path;
+        (address, path)
+    }
+
+    pub fn random_code() -> AccessPath {
+        AccessPath::new(AccountAddress::random(), DataPath::Code(random_identity()))
+    }
+
+    pub fn random_resource() -> AccessPath {
+        let struct_tag = StructTag {
+            address: AccountAddress::random(),
+            module: random_identity(),
+            name: random_identity(),
+            type_params: vec![],
+        };
+        AccessPath::new(AccountAddress::random(), DataPath::Resource(struct_tag))
+    }
+}
+
+impl Serialize for AccessPath {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            serializer.serialize_str(self.to_string().as_str())
+        } else {
+            serializer.serialize_newtype_struct("AccessPath", &(self.address, self.path.clone()))
         }
     }
+}
 
-    fn code_access_path_vec(key: &ModuleId) -> Vec<u8> {
-        key.access_vector()
-    }
-
-    pub fn code_access_path(key: &ModuleId) -> AccessPath {
-        let path = AccessPath::code_access_path_vec(key);
-        AccessPath {
-            address: *key.address(),
-            path,
+impl<'de> Deserialize<'de> for AccessPath {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            AccessPath::from_str(&s).map_err(D::Error::custom)
+        } else {
+            // In order to preserve the Serde data model and help analysis tools,
+            // make sure to wrap our value in a container with the same name
+            // as the original type.
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "AccessPath")]
+            struct Value(AccountAddress, DataPath);
+            let value = Value::deserialize(deserializer)?;
+            Ok(AccessPath::new(value.0, value.1))
         }
     }
+}
+
+//TODO move to a suitable mod
+struct IdentifierSymbols;
+
+impl Distribution<char> for IdentifierSymbols {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> char {
+        //TODO add more valid identity char
+        *b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            .choose(rng)
+            .unwrap() as char
+    }
+}
+
+fn random_identity() -> Identifier {
+    let rng = OsRng;
+    let id: String = rng.sample_iter(&IdentifierSymbols).take(7).collect();
+    Identifier::new(id).unwrap()
 }
 
 impl fmt::Debug for AccessPath {
@@ -102,43 +164,26 @@ impl fmt::Debug for AccessPath {
         write!(
             f,
             "AccessPath {{ address: {:x}, path: {} }}",
-            self.address,
-            hex::encode(&self.path)
+            self.address, self.path
         )
     }
 }
 
 impl fmt::Display for AccessPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.path.len() < 1 + HashValue::LENGTH {
-            write!(f, "{:?}", self)
-        } else {
-            write!(f, "AccessPath {{ address: {:x}, ", self.address)?;
-            match self.path[0] {
-                RESOURCE_TAG => write!(f, "type: Resource, ")?,
-                CODE_TAG => write!(f, "type: Module, ")?,
-                tag => write!(f, "type: {:?}, ", tag)?,
-            };
-            write!(
-                f,
-                "hash: {:?}, ",
-                hex::encode(&self.path[1..=HashValue::LENGTH])
-            )?;
-            write!(
-                f,
-                "suffix: {:?} }} ",
-                String::from_utf8_lossy(&self.path[1 + HashValue::LENGTH..])
-            )
-        }
+        write!(f, "{}/{}", self.address, self.path)
     }
 }
 
 impl From<&ModuleId> for AccessPath {
     fn from(id: &ModuleId) -> AccessPath {
-        AccessPath {
-            address: *id.address(),
-            path: id.access_vector(),
-        }
+        AccessPath::code_access_path(*id.address(), id.name().to_owned())
+    }
+}
+
+impl From<&ResourceKey> for AccessPath {
+    fn from(key: &ResourceKey) -> AccessPath {
+        AccessPath::resource_access_path(key.address(), key.type_().clone())
     }
 }
 
@@ -182,59 +227,201 @@ impl DataType {
     pub fn storage_index(self) -> usize {
         self.type_index() as usize
     }
+
+    pub fn from_index(idx: u8) -> Result<Self> {
+        Ok(Self::try_from_primitive(idx)?)
+    }
 }
 
-pub fn into_inner(access_path: AccessPath) -> Result<(AccountAddress, DataType, HashValue)> {
-    let address = access_path.address;
-    let path = &access_path.path;
-    let data_type = DataType::try_from(path[0])?;
-    let hash = access_path.hash();
-    Ok((address, data_type, hash))
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for DataType {
+    type Parameters = ();
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        prop_oneof![Just(DataType::CODE), Just(DataType::RESOURCE),].boxed()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
 }
 
-pub fn new(address: AccountAddress, data_type: DataType, hash: HashValue) -> AccessPath {
-    let mut path = vec![data_type.into()];
-    path.extend(hash.to_vec());
-    AccessPath::new(address, path)
+pub type ModuleName = Identifier;
+
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug)]
+pub enum DataPath {
+    Code(ModuleName),
+    Resource(StructTag),
 }
 
-pub fn random_code() -> AccessPath {
-    new(
-        AccountAddress::random(),
-        DataType::CODE,
-        HashValue::random(),
-    )
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for DataPath {
+    type Parameters = ();
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        prop_oneof![
+            (any::<Identifier>()).prop_map(DataPath::Code),
+            (
+                any::<AccountAddress>(),
+                any::<Identifier>(),
+                any::<Identifier>(),
+                vec(any::<TypeTag>(), 0..4),
+            )
+                .prop_map(|(address, module, name, type_params)| DataPath::Resource(
+                    StructTag {
+                        address,
+                        module,
+                        name,
+                        type_params,
+                    }
+                )),
+        ]
+        .boxed()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
 }
 
-pub fn random_resource() -> AccessPath {
-    new(
-        AccountAddress::random(),
-        DataType::RESOURCE,
-        HashValue::random(),
-    )
+impl DataPath {
+    pub fn is_code(&self) -> bool {
+        matches!(self, DataPath::Code(_))
+    }
+    pub fn is_resource(&self) -> bool {
+        matches!(self, DataPath::Resource(_))
+    }
+    pub fn as_struct_tag(&self) -> Option<&StructTag> {
+        match self {
+            DataPath::Resource(struct_tag) => Some(struct_tag),
+            _ => None,
+        }
+    }
+    pub fn data_type(&self) -> DataType {
+        match self {
+            DataPath::Code(_) => DataType::CODE,
+            DataPath::Resource(_) => DataType::RESOURCE,
+        }
+    }
+
+    pub fn key_hash(&self) -> HashValue {
+        match self {
+            DataPath::Resource(struct_tag) => struct_tag.key_hash(),
+            DataPath::Code(module_name) => module_name.key_hash(),
+        }
+    }
+}
+
+impl fmt::Display for DataPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let storage_index = self.data_type().storage_index();
+        match self {
+            DataPath::Resource(struct_tag) => {
+                write!(f, "{}/{}", storage_index, struct_tag)
+            }
+            DataPath::Code(module_name) => {
+                write!(f, "{}/{}", storage_index, module_name)
+            }
+        }
+    }
+}
+
+impl FromStr for AccessPath {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts = s.split('/').collect::<Vec<_>>();
+        if parts.len() != 3 {
+            bail!("Invalid access_path string: {}", s);
+        }
+        let address = AccountAddress::from_str(parts[0])?;
+        let data_type = DataType::from_index(parts[1].parse()?)?;
+        let data_path = match data_type {
+            DataType::CODE => AccessPath::code_data_path(Identifier::new(parts[2])?),
+            DataType::RESOURCE => AccessPath::resource_data_path(parse_struct_tag(parts[2])?),
+        };
+        Ok(AccessPath::new(address, data_path))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::account_config::AccountResource;
-    use crate::language_storage::ModuleId;
-    use crate::move_resource::MoveResource;
-    use move_core_types::identifier::Identifier;
 
     #[test]
     fn test_data_type() {
-        let (_address, data_type, _hash) = into_inner(AccessPath::new(
-            AccountAddress::random(),
-            AccountResource::resource_path(),
-        ))
-        .unwrap();
-        assert_eq!(data_type, DataType::RESOURCE);
+        let (_address, data_path) = AccessPath::random_resource().into_inner();
+        assert_eq!(data_path.data_type(), DataType::RESOURCE);
 
-        let (_address, data_type, _hash) = into_inner(AccessPath::code_access_path(
-            &ModuleId::new(AccountAddress::random(), Identifier::new("Test").unwrap()),
-        ))
-        .unwrap();
-        assert_eq!(data_type, DataType::CODE);
+        let (_address, data_path) = AccessPath::random_code().into_inner();
+        assert_eq!(data_path.data_type(), DataType::CODE);
+    }
+
+    #[test]
+    fn test_access_path_str_valid() {
+        let r1 = format!(
+            "{}/1/0x00000000000000000000000000000001::Account::Account",
+            AccountAddress::random()
+        );
+        let test_cases = vec!["0x00000000000000000000000000000000/0/Account", 
+                              "0x00000000000000000000000000000001/0/Account", 
+                              "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Account",
+                              "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+                              r1.as_str()];
+        for case in test_cases {
+            let access_path = AccessPath::from_str(case).unwrap();
+            assert_eq!(case.to_owned(), access_path.to_string())
+        }
+    }
+
+    #[test]
+    fn test_access_path_str_invalid() {
+        //invalid address
+        let r1 = format!(
+            "{}00/1/0x00000000000000000000000000000001::Account::Account",
+            AccountAddress::random()
+        );
+        let test_cases = vec![
+            // invalid struct tag
+            "0x00000000000000000000000000000001/1/Account", 
+            // invalid module name
+            "0x00000000000000000000000000000001/0/0x00000000000000000000000000000001::Account::Account", 
+            //invalid data type
+            "0x00000000000000000000000000000001/3/Account", 
+            //too many `/`
+            "0x00000000000000000000000000000001/0/Account/xxx",
+            "0x00000000000000000000000000000001/0//Account",
+            //too less '`'
+            "0x00000000000000000000000000000001/1",
+            r1.as_str()];
+        for case in test_cases {
+            let access_path = AccessPath::from_str(case);
+            assert!(
+                access_path.is_err(),
+                "expect err in access_path case: {}, but got ok",
+                case
+            );
+        }
+    }
+
+    #[test]
+    fn test_bad_case_from_protest() {
+        //The struct name contains '_' will will encounter parse error
+        //This may be the parser error, or the identity's arbitrary error
+        let access_path_str =
+            "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::a::A_";
+        let access_path = AccessPath::from_str(access_path_str);
+        assert!(access_path.is_err());
+    }
+
+    proptest! {
+        //TODO enable this test, when test_bad_case_from_protest is fixed.
+        #[ignore]
+        #[test]
+        fn test_access_path(access_path in any::<AccessPath>()){
+           let bytes = scs::to_bytes(&access_path).expect("access_path serialize should ok.");
+           let access_path2 = scs::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
+           prop_assert_eq!(&access_path, &access_path2);
+           let access_path_str = access_path.to_string();
+           let access_path3 = AccessPath::from_str(access_path_str.as_str()).expect("access_path from str should ok");
+           prop_assert_eq!(&access_path, &access_path3);
+           let json_str = serde_json::to_string(&access_path).expect("access_path to json str should ok");
+           let access_path4 = serde_json::from_str::<AccessPath>(json_str.as_str()).expect("access_path from json str should ok");
+            prop_assert_eq!(&access_path, &access_path4);
+        }
     }
 }
