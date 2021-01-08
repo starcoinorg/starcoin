@@ -12,7 +12,7 @@ use crate::storage::StorageInstance;
 use crate::Storage;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockState};
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_uint::U256;
@@ -40,6 +40,7 @@ fn test_block() {
         0,
         HashValue::random(),
         ChainId::test(),
+        BlockHeaderExtra::new([0u8; 4]),
     );
     storage
         .block_storage
@@ -101,6 +102,7 @@ fn test_block_number() {
         0,
         HashValue::random(),
         ChainId::test(),
+        BlockHeaderExtra::new([0u8; 4]),
     );
     storage
         .block_storage

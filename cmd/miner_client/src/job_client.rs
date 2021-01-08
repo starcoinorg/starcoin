@@ -1,5 +1,4 @@
 use crate::JobClient;
-use actix::clock::Duration;
 use anyhow::Result;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, Future, TryStreamExt};
@@ -9,13 +8,15 @@ use logger::prelude::*;
 use serde::export::Option::Some;
 use starcoin_config::{RealTimeService, TimeService};
 use starcoin_rpc_client::RpcClient;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct JobRpcClient {
     rpc_client: Arc<RpcClient>,
-    seal_sender: UnboundedSender<(Vec<u8>, u32)>,
+    seal_sender: UnboundedSender<(Vec<u8>, u32, BlockHeaderExtra)>,
     time_service: Arc<dyn TimeService>,
 }
 
@@ -23,10 +24,14 @@ impl JobRpcClient {
     pub fn new(rpc_client: RpcClient) -> Self {
         let rpc_client = Arc::new(rpc_client);
         let seal_client = rpc_client.clone();
-        let (seal_sender, mut seal_receiver) = unbounded();
+        let (seal_sender, mut seal_receiver) = unbounded::<(Vec<u8>, u32, BlockHeaderExtra)>();
         let fut = async move {
-            while let Some((minting_blob, nonce)) = seal_receiver.next().await {
-                if let Err(e) = seal_client.miner_submit(minting_blob, nonce) {
+            while let Some((minting_blob, nonce, extra)) = seal_receiver.next().await {
+                if let Err(e) = seal_client.miner_submit(
+                    hex::encode(minting_blob),
+                    nonce,
+                    hex::encode(extra.to_vec()),
+                ) {
                     error!("Submit seal error: {}", e);
                     Delay::new(Duration::from_secs(1)).await;
                 }
@@ -52,10 +57,18 @@ impl JobRpcClient {
                         while let Some(item) = stream.next().await {
                             match item {
                                 Ok(b) => {
+                                    let blob = match hex::decode(b.minting_blob) {
+                                        Ok(blob) => blob,
+                                        Err(e) => {
+                                            error!("Invalid blob:{}", e);
+                                            continue;
+                                        }
+                                    };
                                     let event = MintBlockEvent::new(
                                         b.strategy,
-                                        b.minting_blob,
+                                        blob,
                                         b.difficulty,
+                                        b.block_number,
                                     );
                                     info!(
                                         "Receive mint event, minting_blob: {}, difficulty: {}",
@@ -99,8 +112,14 @@ impl JobClient for JobRpcClient {
         Ok(self.forward_mint_block_stream())
     }
 
-    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()> {
-        self.seal_sender.unbounded_send((minting_blob, nonce))?;
+    fn submit_seal(
+        &self,
+        minting_blob: Vec<u8>,
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<()> {
+        self.seal_sender
+            .unbounded_send((minting_blob, nonce, extra))?;
         Ok(())
     }
 

@@ -7,6 +7,7 @@ use anyhow::Result;
 use cryptonight::cryptonight_r;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::U256;
 
 #[derive(Default)]
@@ -25,8 +26,13 @@ impl Consensus for CryptoNightConsensus {
     }
 
     /// CryptoNight-R
-    fn calculate_pow_hash(&self, mining_hash: &[u8], nonce: u32) -> Result<HashValue> {
-        let mix_hash = set_header_nonce(mining_hash, nonce);
+    fn calculate_pow_hash(
+        &self,
+        mining_hash: &[u8],
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<HashValue> {
+        let mix_hash = set_header_nonce(mining_hash, nonce, extra);
         let pow_hash = cryptonight_r(&mix_hash, mix_hash.len());
         HashValue::from_slice(pow_hash.as_slice())
     }

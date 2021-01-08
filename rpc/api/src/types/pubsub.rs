@@ -133,6 +133,7 @@ impl TryInto<Filter> for EventFilter {
 #[serde(deny_unknown_fields)]
 pub struct MintBlock {
     pub strategy: ConsensusStrategy,
-    pub minting_blob: Vec<u8>,
+    pub minting_blob: String,
     pub difficulty: U256,
+    pub block_number: u64,
 }

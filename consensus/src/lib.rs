@@ -11,10 +11,11 @@ use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::time::TimeService;
+use std::io::Write;
 
 pub mod argon;
 pub mod cn;
@@ -36,14 +37,14 @@ pub fn difficult_to_target(difficulty: U256) -> U256 {
     U256::max_value() / difficulty
 }
 
-pub fn set_header_nonce(header: &[u8], nonce: u32) -> Vec<u8> {
+pub fn set_header_nonce(header: &[u8], nonce: u32, extra: BlockHeaderExtra) -> Vec<u8> {
     let len = header.len();
     if len != 76 {
         return vec![];
     }
     let mut header = header.to_owned();
-
     let _ = header[39..].as_mut().write_u32::<LittleEndian>(nonce);
+    let _ = header[35..39].as_mut().write_all(&extra.to_vec());
     header
 }
 
@@ -93,12 +94,19 @@ impl Consensus for ConsensusStrategy {
         }
     }
 
-    fn calculate_pow_hash(&self, mining_hash: &[u8], nonce: u32) -> Result<HashValue> {
+    fn calculate_pow_hash(
+        &self,
+        mining_hash: &[u8],
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<HashValue> {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.calculate_pow_hash(mining_hash, nonce),
-            ConsensusStrategy::Argon => ARGON.calculate_pow_hash(mining_hash, nonce),
-            ConsensusStrategy::Keccak => KECCAK.calculate_pow_hash(mining_hash, nonce),
-            ConsensusStrategy::CryptoNight => CRYPTONIGHT.calculate_pow_hash(mining_hash, nonce),
+            ConsensusStrategy::Dummy => DUMMY.calculate_pow_hash(mining_hash, nonce, extra),
+            ConsensusStrategy::Argon => ARGON.calculate_pow_hash(mining_hash, nonce, extra),
+            ConsensusStrategy::Keccak => KECCAK.calculate_pow_hash(mining_hash, nonce, extra),
+            ConsensusStrategy::CryptoNight => {
+                CRYPTONIGHT.calculate_pow_hash(mining_hash, nonce, extra)
+            }
         }
     }
 }

@@ -189,7 +189,7 @@ async fn test_rollback() -> Result<()> {
         assert_eq!(excluded_txns.untouched_txns.len(), 0);
 
         let block_template = open_block.finalize()?;
-        let block = block_template.into_block(0);
+        let block = block_template.into_block(0, types::block::BlockHeaderExtra::new([0u8; 4]));
         Ok::<_, anyhow::Error>(block)
     };
 

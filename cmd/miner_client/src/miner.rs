@@ -11,6 +11,7 @@ use futures::SinkExt;
 use logger::prelude::*;
 use starcoin_config::MinerClientConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
@@ -38,8 +39,8 @@ impl<C: JobClient> MinerClient<C> {
             current_task: None,
         })
     }
-    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) {
-        if let Err(err) = self.job_client.submit_seal(minting_blob, nonce) {
+    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra) {
+        if let Err(err) = self.job_client.submit_seal(minting_blob, nonce, extra) {
             error!("Submit seal to failed: {}", err);
             return;
         }
@@ -89,6 +90,7 @@ impl<C: JobClient> ActorService for MinerClientService<C> {
             .map(|(minting_blob, nonce)| SealEvent {
                 minting_blob,
                 nonce,
+                extra: BlockHeaderExtra::new([0u8; 4]),
             });
         ctx.add_stream(seals);
         Ok(())
@@ -118,6 +120,7 @@ impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> 
 
 impl<C: JobClient> EventHandler<Self, SealEvent> for MinerClientService<C> {
     fn handle_event(&mut self, event: SealEvent, _ctx: &mut ServiceContext<MinerClientService<C>>) {
-        self.inner.submit_seal(event.minting_blob, event.nonce)
+        self.inner
+            .submit_seal(event.minting_blob, event.nonce, event.extra)
     }
 }

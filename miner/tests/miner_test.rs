@@ -6,7 +6,9 @@ use futures::executor::block_on;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
-use starcoin_miner::{CreateBlockTemplateRequest, CreateBlockTemplateService, MinerService};
+use starcoin_miner::{
+    BlockHeaderExtra, CreateBlockTemplateRequest, CreateBlockTemplateService, MinerService,
+};
 use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
@@ -27,6 +29,7 @@ fn test_miner() {
     let handle = test_helper::run_node_by_config(config.clone()).unwrap();
     let bus = handle.bus().unwrap();
     let time_service = config.net().time_service();
+    let extra = BlockHeaderExtra::new([0u8; 4]);
     let fut = async move {
         let new_block_receiver = bus.oneshot::<NewHeadBlock>().await.unwrap();
         bus.broadcast(GenerateBlockEvent::new(false)).unwrap();
@@ -45,6 +48,7 @@ fn test_miner() {
         // mint client submit seal
         bus.broadcast(SubmitSealEvent {
             nonce,
+            extra,
             minting_blob: mint_block_event.minting_blob.clone(),
         })
         .unwrap();
@@ -110,7 +114,11 @@ async fn test_miner_service() {
         .consensus()
         .solve_consensus_nonce(&minting_blob, diff, config.net().time_service().as_ref());
     miner
-        .notify(SubmitSealEvent::new(minting_blob, nonce))
+        .notify(SubmitSealEvent::new(
+            minting_blob,
+            nonce,
+            BlockHeaderExtra::new([0u8; 4]),
+        ))
         .unwrap();
 
     registry.shutdown_system().await.unwrap();

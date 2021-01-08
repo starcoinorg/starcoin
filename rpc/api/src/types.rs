@@ -17,7 +17,8 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary, UncleSummary,
+    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockNumber, BlockSummary, EpochUncleSummary,
+    UncleSummary,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -165,6 +166,8 @@ pub struct BlockHeaderView {
     pub nonce: u32,
     /// hash for block body
     pub body_hash: HashValue,
+    /// block header extra
+    pub extra: BlockHeaderExtra,
     /// The chain id
     pub chain_id: u8,
 }
@@ -184,6 +187,7 @@ impl From<BlockHeader> for BlockHeaderView {
             difficulty: origin.difficulty,
             nonce: origin.nonce,
             body_hash: origin.body_hash,
+            extra: origin.extra,
             chain_id: origin.chain_id.id(),
         }
     }

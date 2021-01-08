@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metrics::MINER_METRICS;
+use crate::BlockHeaderExtra;
 use starcoin_metrics::HistogramTimer;
 use types::block::{Block, BlockTemplate};
 
@@ -39,8 +40,8 @@ impl MintTask {
         }
     }
 
-    pub fn finish(self, nonce: u32) -> Block {
-        let block = self.block_template.into_block(nonce);
+    pub fn finish(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
+        let block = self.block_template.into_block(nonce, extra);
         self.metrics_timer.observe_duration();
         block
     }
