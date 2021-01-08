@@ -23,10 +23,10 @@ pub struct MockChain {
 
 impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
-        let (storage, startup_info, _) =
+        let (storage, chain_info, _) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), startup_info.main, storage)?;
+        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)?;
         let miner = AccountInfo::random();
         Ok(Self {
             net,

@@ -5,7 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::{BlockState, BlockSummary, EpochUncleSummary};
+use starcoin_types::block::{BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
@@ -23,7 +23,6 @@ pub trait ReadableChainService {
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
-    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     fn get_transaction_block_hash(&self, txn_hash: HashValue) -> Result<Option<HashValue>>;
@@ -83,7 +82,6 @@ pub trait ChainAsyncService:
         block_id: HashValue,
         uncle_id: HashValue,
     ) -> Result<Vec<BlockHeader>>;
-    async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
     async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
@@ -175,17 +173,6 @@ where
             Ok(headers)
         } else {
             bail!("get_headers response type error.")
-        }
-    }
-
-    async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>> {
-        if let ChainResponse::BlockState(block_state) = self
-            .send(ChainRequest::GetBlockStateByHash(*hash))
-            .await??
-        {
-            Ok(block_state.map(|block| *block))
-        } else {
-            bail!("get_block_state_by_hash response type error")
         }
     }
 

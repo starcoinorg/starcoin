@@ -139,7 +139,7 @@ pub async fn build_network(
         config.network.seeds = vec![seed];
     }
     let node_config = Arc::new(config);
-    let (storage, _startup_info, genesis) = Genesis::init_storage_for_test(node_config.net())?;
+    let (storage, _chain_info, genesis) = Genesis::init_storage_for_test(node_config.net())?;
     registry.put_shared(genesis).await?;
     registry.put_shared(node_config.clone()).await?;
     registry.put_shared(storage.clone()).await?;

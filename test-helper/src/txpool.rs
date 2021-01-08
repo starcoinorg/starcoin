@@ -25,7 +25,7 @@ pub async fn start_txpool_with_size(
     let node_config = Arc::new(config);
     // let node_config = Arc::new(NodeConfig::random_for_test());
 
-    let (storage, _startup_info, _) =
+    let (storage, _chain_info, _) =
         Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();

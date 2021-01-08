@@ -788,12 +788,6 @@ impl ExecutedBlock {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub enum BlockState {
-    Executed,
-    Verified,
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockSummary {
     pub block_header: BlockHeader,

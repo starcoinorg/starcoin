@@ -18,9 +18,9 @@ use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -56,7 +56,6 @@ pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
-pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const TRANSACTION_BLOCK_PREFIX_NAME: ColumnFamilyName = "txn_block";
@@ -78,7 +77,6 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         BLOCK_PREFIX_NAME,
         BLOCK_HEADER_PREFIX_NAME,
         BLOCK_BODY_PREFIX_NAME,
-        BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
         BLOCK_TRANSACTIONS_PREFIX_NAME,
         TRANSACTION_BLOCK_PREFIX_NAME,
@@ -97,7 +95,11 @@ pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
 
-    fn get_headers(&self) -> Result<Vec<HashValue>>;
+    fn get_genesis(&self) -> Result<Option<HashValue>>;
+
+    fn save_genesis(&self, genesis_hash: HashValue) -> Result<()>;
+
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
@@ -106,25 +108,13 @@ pub trait BlockStore {
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
 
-    fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>>;
-
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
 
-    fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
-
-    fn commit_block(&self, block: Block, state: BlockState) -> Result<()>;
-
-    fn get_latest_block_header(&self) -> Result<Option<BlockHeader>>;
-
-    fn get_latest_block(&self) -> Result<Option<Block>>;
+    fn commit_block(&self, block: Block) -> Result<()>;
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>>;
-
-    fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
-
-    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
 
     fn save_block_transactions(
         &self,
@@ -268,8 +258,34 @@ impl BlockStore for Storage {
         self.chain_info_storage.save_startup_info(startup_info)
     }
 
-    fn get_headers(&self) -> Result<Vec<HashValue>> {
-        self.block_storage.get_headers()
+    fn get_genesis(&self) -> Result<Option<HashValue>> {
+        self.chain_info_storage.get_genesis()
+    }
+
+    fn save_genesis(&self, genesis_hash: HashValue) -> Result<()> {
+        self.chain_info_storage.save_genesis(genesis_hash)
+    }
+
+    fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
+        let genesis_hash = match self.get_genesis()? {
+            Some(genesis_hash) => genesis_hash,
+            None => return Ok(None),
+        };
+        let startup_info = match self.get_startup_info()? {
+            Some(startup_info) => startup_info,
+            None => return Ok(None),
+        };
+        let head_block = self
+            .get_block_header_by_hash(startup_info.main)?
+            .ok_or_else(|| format_err!("Startup block {:?} should exist", startup_info.main))?;
+        let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
+            format_err!("Startup block info {:?} should exist", startup_info.main)
+        })?;
+        Ok(Some(ChainInfo::new(
+            head_block.chain_id,
+            genesis_hash,
+            ChainStatus::new(head_block, head_block_info),
+        )))
     }
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
@@ -284,28 +300,12 @@ impl BlockStore for Storage {
         self.block_storage.get_blocks(ids)
     }
 
-    fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {
-        self.block_storage.get_block_state(block_id)
-    }
-
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.block_storage.get_body(block_id)
     }
 
-    fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
-        self.block_storage.get_number(number)
-    }
-
-    fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
-        self.block_storage.commit_block(block, state)
-    }
-
-    fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
-        self.block_storage.get_latest_block_header()
-    }
-
-    fn get_latest_block(&self) -> Result<Option<Block>> {
-        self.block_storage.get_latest_block()
+    fn commit_block(&self, block: Block) -> Result<()> {
+        self.block_storage.commit_block(block)
     }
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
@@ -314,14 +314,6 @@ impl BlockStore for Storage {
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_storage.get_block_by_hash(block_id)
-    }
-
-    fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.block_storage.get_block_header_by_number(number)
-    }
-
-    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        self.block_storage.get_block_by_number(number)
     }
 
     fn save_block_transactions(

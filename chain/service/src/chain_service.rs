@@ -18,7 +18,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
     transaction::{Transaction, TransactionInfo},
@@ -119,9 +119,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             )),
             ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::BlockOption(
                 self.inner.main_block_by_uncle(uncle_id)?.map(Box::new),
-            )),
-            ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
-                self.inner.get_block_state_by_hash(hash)?.map(Box::new),
             )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,
@@ -325,10 +322,6 @@ impl ReadableChainService for ChainReaderServiceInner {
         Ok(headers)
     }
 
-    fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>> {
-        self.storage.get_block_state(hash)
-    }
-
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>> {
         self.storage.get_block_info(hash)
     }
@@ -515,13 +508,13 @@ mod tests {
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (storage, startup_info, _) = test_helper::Genesis::init_storage_for_test(config.net())?;
+        let (storage, chain_info, _) = test_helper::Genesis::init_storage_for_test(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;
-        let chain_info = service_ref.main_status().await?;
-        assert_eq!(chain_info.head().id(), startup_info.main);
+        let chain_status = service_ref.main_status().await?;
+        assert_eq!(&chain_status, chain_info.status());
         Ok(())
     }
 }

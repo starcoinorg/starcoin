@@ -4,6 +4,7 @@
 use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::CHAIN_INFO_PREFIX_NAME;
 use anyhow::Result;
+use crypto::HashValue;
 use starcoin_types::startup_info::StartupInfo;
 use std::convert::TryInto;
 
@@ -23,6 +24,7 @@ pub type ChainInfoStorage = InnerStorage<ChainInfoColumnFamily>;
 
 impl ChainInfoStorage {
     const STARTUP_INFO_KEY: &'static str = "startup_info";
+    const GENESIS_KEY: &'static str = "genesis";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
@@ -36,6 +38,21 @@ impl ChainInfoStorage {
         self.put(
             Self::STARTUP_INFO_KEY.as_bytes().to_vec(),
             startup_info.try_into()?,
+        )
+    }
+
+    pub fn get_genesis(&self) -> Result<Option<HashValue>> {
+        self.get(Self::GENESIS_KEY.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(Some(HashValue::from_slice(bytes.as_slice())?)),
+                None => Ok(None),
+            })
+    }
+
+    pub fn save_genesis(&self, genesis_block_hash: HashValue) -> Result<()> {
+        self.put(
+            Self::GENESIS_KEY.as_bytes().to_vec(),
+            genesis_block_hash.to_vec(),
         )
     }
 }
