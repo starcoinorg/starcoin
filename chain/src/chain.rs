@@ -41,17 +41,15 @@ use std::option::Option::Some;
 use std::{collections::HashSet, sync::Arc};
 use storage::Store;
 
-//TODO consider add BlockInfo to ChainStatus.
-pub struct ChainStatusWithInfo {
+pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
-    pub info: BlockInfo,
     pub head: Block,
 }
 
 pub struct BlockChain {
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
-    status: ChainStatusWithInfo,
+    status: ChainStatusWithBlock,
     statedb: ChainStateDB,
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
@@ -90,9 +88,8 @@ impl BlockChain {
                 AccumulatorStoreType::Block,
                 storage.as_ref(),
             ),
-            status: ChainStatusWithInfo {
-                status: ChainStatus::new(head.header.clone(), block_info.total_difficulty),
-                info: block_info,
+            status: ChainStatusWithBlock {
+                status: ChainStatus::new(head.header.clone(), block_info),
                 head,
             },
             statedb: chain_state,
@@ -450,11 +447,11 @@ impl BlockChain {
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
-        let block_info = BlockInfo::new_with_accumulator_info(
+        let block_info = BlockInfo::new(
             block_id,
             txn_accumulator_info,
-            block_accumulator_info,
             total_difficulty,
+            block_accumulator_info,
         );
 
         watch(CHAIN_WATCH_NAME, "n25");
@@ -634,7 +631,7 @@ impl ChainReader for BlockChain {
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
         match block_id {
             Some(block_id) => self.storage.get_block_info(block_id),
-            None => Ok(Some(self.status.info.clone())),
+            None => Ok(Some(self.status.status.info().clone())),
         }
     }
 
@@ -938,9 +935,8 @@ impl ChainWriter for BlockChain {
                 self.uncles.insert(header.id());
             });
         }
-        self.status = ChainStatusWithInfo {
-            status: ChainStatus::new(block.header().clone(), block_info.total_difficulty),
-            info: block_info.clone(),
+        self.status = ChainStatusWithBlock {
+            status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         };
         Ok(executed_block)
