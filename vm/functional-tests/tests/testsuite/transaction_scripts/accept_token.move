@@ -5,5 +5,5 @@
 stdlib_script::accept_token
 
 // check: gas_used
-// check: 63
+// check: 37
 // check: EXECUTED

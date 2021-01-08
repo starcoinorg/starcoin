@@ -659,8 +659,7 @@ pub struct GenesisConfig {
     pub vm_config: VMConfig,
     /// Script allow list and Module publish option
     pub publishing_option: VMPublishingOption,
-    /// VM gas constants config.
-    pub gas_constants: GasConstants,
+    /// consensus config
     pub consensus_config: ConsensusConfig,
     /// association account's key pair
     pub association_key_pair: (Option<Arc<MultiEd25519KeyShard>>, MultiEd25519PublicKey),
@@ -779,7 +778,7 @@ static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
 static LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
     Lazy::new(|| AbstractMemorySize::new(600));
 
-static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
+pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: GasUnits::new(4),
         global_memory_per_byte_write_cost: GasUnits::new(9),
@@ -818,7 +817,6 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::Open,
-        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -869,7 +867,6 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::Open,
-        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -922,7 +919,6 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::Open,
-        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -977,7 +973,6 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::CustomScripts,
-        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -1030,7 +1025,6 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::Open,
-        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,

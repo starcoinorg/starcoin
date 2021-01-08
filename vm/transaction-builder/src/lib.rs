@@ -410,36 +410,90 @@ pub fn build_stdlib_package(
                 //gas constants
                 TransactionArgument::U64(
                     genesis_config
+                        .vm_config
+                        .gas_schedule
                         .gas_constants
                         .global_memory_per_byte_cost
                         .get(),
                 ),
                 TransactionArgument::U64(
                     genesis_config
+                        .vm_config
+                        .gas_schedule
                         .gas_constants
                         .global_memory_per_byte_write_cost
                         .get(),
                 ),
                 TransactionArgument::U64(
-                    genesis_config.gas_constants.min_transaction_gas_units.get(),
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .min_transaction_gas_units
+                        .get(),
                 ),
-                TransactionArgument::U64(
-                    genesis_config.gas_constants.large_transaction_cutoff.get(),
-                ),
-                TransactionArgument::U64(genesis_config.gas_constants.intrinsic_gas_per_byte.get()),
                 TransactionArgument::U64(
                     genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .large_transaction_cutoff
+                        .get(),
+                ),
+                TransactionArgument::U64(
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .intrinsic_gas_per_byte
+                        .get(),
+                ),
+                TransactionArgument::U64(
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
                         .gas_constants
                         .maximum_number_of_gas_units
                         .get(),
                 ),
-                TransactionArgument::U64(genesis_config.gas_constants.min_price_per_gas_unit.get()),
-                TransactionArgument::U64(genesis_config.gas_constants.max_price_per_gas_unit.get()),
                 TransactionArgument::U64(
-                    genesis_config.gas_constants.max_transaction_size_in_bytes,
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .min_price_per_gas_unit
+                        .get(),
                 ),
-                TransactionArgument::U64(genesis_config.gas_constants.gas_unit_scaling_factor),
-                TransactionArgument::U64(genesis_config.gas_constants.default_account_size.get()),
+                TransactionArgument::U64(
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .max_price_per_gas_unit
+                        .get(),
+                ),
+                TransactionArgument::U64(
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .max_transaction_size_in_bytes,
+                ),
+                TransactionArgument::U64(
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .gas_unit_scaling_factor,
+                ),
+                TransactionArgument::U64(
+                    genesis_config
+                        .vm_config
+                        .gas_schedule
+                        .gas_constants
+                        .default_account_size
+                        .get(),
+                ),
                 // dao config params
                 TransactionArgument::U64(genesis_config.dao_config.voting_delay),
                 TransactionArgument::U64(genesis_config.dao_config.voting_period),

@@ -16,6 +16,8 @@ script {
         Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
         Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
         Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
         // gas used out
     }
 }
