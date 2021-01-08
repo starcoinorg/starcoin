@@ -24,7 +24,7 @@ use types::{
 #[stest::test]
 fn test_miner() {
     let mut config = NodeConfig::random_for_test();
-    config.miner.enable_miner_client = false;
+    config.miner.disable_miner_client = Some(false);
     let config = Arc::new(config);
     let handle = test_helper::run_node_by_config(config.clone()).unwrap();
     let bus = handle.bus().unwrap();
@@ -64,7 +64,7 @@ fn test_miner() {
 #[stest::test]
 async fn test_miner_service() {
     let mut config = NodeConfig::random_for_test();
-    config.miner.enable_mint_empty_block = true;
+    config.miner.disable_mint_empty_block = Some(false);
     let registry = RegistryService::launch();
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();

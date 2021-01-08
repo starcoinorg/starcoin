@@ -13,7 +13,7 @@ use std::thread;
 #[stest::test]
 fn test_run_node() {
     let mut node_config = NodeConfig::random_for_test();
-    node_config.network.disable_seed = true;
+    node_config.network.disable_seed = Some(true);
     let config = Arc::new(node_config);
     let handle = run_node(config).unwrap();
     let services = handle.list_service().unwrap();
@@ -25,7 +25,7 @@ fn test_run_node() {
 #[stest::test]
 fn test_generate_block() {
     let mut node_config = NodeConfig::random_for_test();
-    node_config.network.disable_seed = true;
+    node_config.network.disable_seed = Some(true);
     let config = Arc::new(node_config);
     let handle = run_node(config).unwrap();
     let node_service = handle.node_service();

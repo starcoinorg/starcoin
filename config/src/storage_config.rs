@@ -5,14 +5,21 @@ use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use structopt::StructOpt;
 
 /// Port selected RocksDB options for tuning underlying rocksdb instance of DiemDB.
 /// see https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h
 /// for detailed explanations.
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(default, deny_unknown_fields)]
 pub struct RocksdbConfig {
+    #[structopt(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
     pub max_open_files: i32,
+    #[structopt(
+        name = "rocksdb-max-total-wal-sizes",
+        long,
+        help = "rocksdb max total WAL sizes"
+    )]
     pub max_total_wal_size: u64,
 }
 
@@ -52,14 +59,20 @@ impl Default for RocksdbConfig {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct StorageConfig {
+    #[structopt(long = "dir", parse(from_os_str), conflicts_with("dir"))]
     dir: PathBuf,
+    #[structopt(
+        long = "absolute-dir",
+        parse(from_os_str),
+        conflicts_with("absolute-dir")
+    )]
     #[serde(skip)]
     absolute_dir: Option<PathBuf>,
+    #[structopt(flatten)]
     /// Rocksdb-specific configurations
-    #[serde(default)]
     pub rocksdb_config: RocksdbConfig,
 }
 

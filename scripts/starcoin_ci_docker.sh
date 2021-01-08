@@ -63,7 +63,7 @@ function start_cluster() {
     rpc_address="127.0.0.1"
   fi
 
-  start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} --rpc-address 0.0.0.0 --disable-seed
+  start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} --rpc-address 0.0.0.0 --disable-seed=true
   sleep 5
   seed_peer_id=$(docker-machine ssh $cluster_name-0 grep 'Local\ node\ identity\ is:\ ' $cfg_root/starcoin-0/$net/starcoin.log | awk '{print $8}' | tac | head -n 1)
   seed=/ip4/$seed_host/tcp/9840/p2p/$seed_peer_id

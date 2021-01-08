@@ -49,7 +49,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         }
         let mut node_config = NodeConfig::random_for_test();
 
-        node_config.network.listen = random_memory_addr();
+        node_config.network.listen = Some(random_memory_addr());
         node_config.network.seeds = boot_nodes;
 
         info!(
@@ -57,7 +57,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
             node_config.network.listen, node_config.network.seeds
         );
         if first_addr.is_none() {
-            first_addr = Some(node_config.network.listen.clone());
+            first_addr = node_config.network.listen.clone();
         }
         let mut protocols = NotificationMessage::protocols();
         protocols.push(TEST_NOTIF_PROTOCOL_NAME.into());

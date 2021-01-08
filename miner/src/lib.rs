@@ -74,9 +74,10 @@ impl MinerService {
                 .send(CreateBlockTemplateRequest)
                 .await?
         })?;
-        if block_template.body.transactions.is_empty() && !self.config.miner.enable_mint_empty_block
+        if block_template.body.transactions.is_empty()
+            && self.config.miner.is_disable_mint_empty_block()
         {
-            debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
+            debug!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
             Ok(())
         } else {
             debug!("Mint block template: {:?}", block_template);

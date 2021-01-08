@@ -30,11 +30,11 @@ pub fn build_network_worker(
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
 ) -> Result<NetworkWorker> {
     let node_name = node_config.node_name();
-    let transport_config = if is_memory_addr(&node_config.network.listen) {
+    let transport_config = if is_memory_addr(&node_config.network.listen()) {
         TransportConfig::MemoryOnly
     } else {
         TransportConfig::Normal {
-            enable_mdns: node_config.network.enable_mdns,
+            enable_mdns: !node_config.network.disable_mdns(),
             allow_private_ipv4: true,
             wasm_external_transport: None,
         }
@@ -71,7 +71,7 @@ pub fn build_network_worker(
         None => vec![],
     };
     let self_peer_id = node_config.network.self_peer_id();
-    let boot_nodes = if node_config.network.disable_seed {
+    let boot_nodes = if node_config.network.disable_seed() {
         vec![]
     } else {
         let mut boot_nodes = node_config.network.seeds.clone();
@@ -87,7 +87,7 @@ pub fn build_network_worker(
         boot_nodes
     };
     let config = NetworkConfiguration {
-        listen_addresses: vec![node_config.network.listen.clone()],
+        listen_addresses: vec![node_config.network.listen()],
         boot_nodes,
         node_key: {
             let secret = identity::ed25519::SecretKey::from_bytes(

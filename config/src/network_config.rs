@@ -82,28 +82,62 @@ impl Default for NetworkRpcQuotaConfiguration {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
-    // The address that this node is listening on for new connections.
-    pub listen: Multiaddr,
+    #[structopt(skip)]
+    /// The address that this node is listening on for new connections.
+    pub listen: Option<Multiaddr>,
+    #[structopt(skip)]
     #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,
+    #[structopt(long = "disable-mdns")]
     #[serde(default)]
-    pub enable_mdns: bool,
+    /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
+    pub disable_mdns: Option<bool>,
     //TODO skip this field, do not persistence this flag to config. this change will break network config.
-    pub disable_seed: bool,
+    #[structopt(long = "disable-seed")]
+    /// Do not connect to seed node, include builtin and config seed.
+    pub disable_seed: Option<bool>,
+    #[structopt(skip)]
     #[serde(skip)]
     network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
+    #[structopt(skip)]
     #[serde(skip)]
     self_peer_id: Option<PeerId>,
+    #[structopt(skip)]
     #[serde(skip)]
     self_address: Option<MultiaddrWithPeerId>,
-    #[serde(default)]
+    #[structopt(flatten)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
+}
+impl Default for NetworkConfig {
+    fn default() -> Self {
+        Self {
+            listen: Some(
+                format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
+                    .parse()
+                    .expect("Parse multi address fail."),
+            ),
+            seeds: vec![],
+            disable_mdns: None,
+            disable_seed: None,
+            network_keypair: None,
+            self_peer_id: None,
+            self_address: None,
+            network_rpc_quotas: NetworkRpcQuotaConfiguration::default(),
+        }
+    }
 }
 
 impl NetworkConfig {
+    pub fn listen(&self) -> Multiaddr {
+        self.listen.as_ref().cloned().unwrap_or_else(|| {
+            format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
+                .parse()
+                .expect("Parse multi address fail.")
+        })
+    }
     pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
         self.network_keypair.clone().expect("Config should init.")
     }
@@ -112,18 +146,24 @@ impl NetworkConfig {
         self.self_address.clone().expect("Config should init.")
     }
 
+    pub fn disable_mdns(&self) -> bool {
+        self.disable_mdns.unwrap_or(false)
+    }
+    pub fn disable_seed(&self) -> bool {
+        self.disable_seed.unwrap_or(false)
+    }
+
     pub fn self_peer_id(&self) -> PeerId {
         self.self_peer_id.clone().expect("Config should init.")
     }
 
     fn prepare_peer_id(&mut self) {
         let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
-        let host = if is_memory_addr(&self.listen) {
-            self.listen.clone()
+        let addr = self.listen();
+        let host = if is_memory_addr(&addr) {
+            addr
         } else {
-            self.listen
-                .clone()
-                .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
+            addr.replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
                 .expect("Replace multi address fail.")
         };
         self.self_address = Some(MultiaddrWithPeerId::new(host, peer_id.clone().into()));
@@ -170,19 +210,19 @@ impl ConfigModule for NetworkConfig {
         let listen = if base.net.is_test() {
             memory_addr(port as u64)
         } else {
-            format!("/ip4/0.0.0.0/tcp/{}", port)
+            format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
                 .parse()
                 .expect("Parse multi address fail.")
         };
         Ok(Self {
-            listen,
+            listen: Some(listen),
             seeds,
-            enable_mdns: opt.enable_mdns,
-            disable_seed: opt.disable_seed,
+            disable_mdns: opt.network.disable_mdns,
+            disable_seed: opt.network.disable_seed,
             network_keypair: Some(Arc::new(Self::load_or_generate_keypair(opt, base)?)),
             self_peer_id: None,
             self_address: None,
-            network_rpc_quotas: opt.network_rpc_quotas.clone(),
+            network_rpc_quotas: opt.network.network_rpc_quotas.clone(),
         })
     }
 
@@ -201,7 +241,9 @@ impl ConfigModule for NetworkConfig {
         }
 
         self.network_keypair = Some(Arc::new(Self::load_or_generate_keypair(opt, base)?));
-        self.disable_seed = opt.disable_seed;
+        if opt.network.disable_seed.is_some() {
+            self.disable_seed = opt.network.disable_seed;
+        }
         self.prepare_peer_id();
 
         Ok(())

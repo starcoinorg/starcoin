@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
+use clap::arg_enum;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
+use structopt::StructOpt;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct SyncConfig {
+    #[structopt(long, possible_values = &SyncMode::variants(), case_insensitive = false)]
+    /// Sync mode:  Light, Fast, Full, eg.
     sync_mode: SyncMode,
 }
 
@@ -24,25 +26,25 @@ impl SyncConfig {
     }
 
     pub fn is_state_sync(&self) -> bool {
-        self.sync_mode == SyncMode::FAST
+        self.sync_mode == SyncMode::Fast
     }
 
     pub fn is_light(&self) -> bool {
-        self.sync_mode == SyncMode::LIGHT
+        self.sync_mode == SyncMode::Lignt
     }
 }
 
 impl ConfigModule for SyncConfig {
     fn default_with_opt(opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
-        let sync_mode = opt.sync_mode.unwrap_or(SyncMode::FULL);
+        let sync_mode = opt.sync_mode.clone().unwrap_or(SyncMode::Full);
         Ok(SyncConfig { sync_mode })
     }
 
     fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
-        if let Some(sync_mode) = opt.sync_mode {
+        if let Some(sync_mode) = opt.sync_mode.clone() {
             self.sync_mode = sync_mode;
         }
-        if self.sync_mode == SyncMode::LIGHT || self.sync_mode == SyncMode::FAST {
+        if self.sync_mode == SyncMode::Lignt || self.sync_mode == SyncMode::Fast {
             bail!("{} is not supported yet.", self.sync_mode);
         }
         info!("Sync mode : {:?} : {:?}", opt.sync_mode, self.sync_mode);
@@ -50,40 +52,17 @@ impl ConfigModule for SyncConfig {
     }
 }
 //TODO remove SyncMode.
-#[allow(non_camel_case_types)]
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(tag = "type")]
+arg_enum! {
+#[derive(Debug,Clone, Deserialize, PartialEq, Serialize)]
 pub enum SyncMode {
-    LIGHT,
-    FAST,
-    FULL,
-}
-
-impl FromStr for SyncMode {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "light" => Ok(SyncMode::LIGHT),
-            "fast" => Ok(SyncMode::FAST),
-            "full" => Ok(SyncMode::FULL),
-            _ => Err(format_err!("")),
-        }
-    }
-}
-
-impl Display for SyncMode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SyncMode::LIGHT => write!(f, "light"),
-            SyncMode::FAST => write!(f, "fast"),
-            SyncMode::FULL => write!(f, "full"),
-        }
+    Lignt,
+    Fast,
+    Full,
     }
 }
 
 impl Default for SyncMode {
     fn default() -> Self {
-        SyncMode::FULL
+        SyncMode::Full
     }
 }

@@ -198,37 +198,14 @@ pub struct StarcoinOpt {
     /// Rpc address, default is 127.0.0.1
     pub rpc_address: Option<String>,
 
-    #[structopt(long = "miner-thread")]
-    /// Miner thread number, not work for dev network, default is 1
-    pub miner_thread: Option<u16>,
-
-    #[structopt(long = "disable-std-log")]
-    /// Disable std error log output.
-    pub disable_std_log: bool,
-
-    #[structopt(long = "disable-file-log")]
-    /// Disable std error log output.
-    pub disable_file_log: bool,
-
-    #[structopt(long = "disable-metrics")]
-    /// Disable metrics.
-    pub disable_metrics: bool,
-
-    #[structopt(long = "disable-miner-client")]
-    /// Don't start a miner client in node.
-    pub disable_miner_client: bool,
-
-    #[structopt(long = "disable-seed")]
-    /// Do not connect to seed node, include builtin and config seed.
-    pub disable_seed: bool,
-
-    #[structopt(long = "enable-mdns")]
-    /// Enable p2p mdns discovery, for automatically discover the peer from the local network.
-    pub enable_mdns: bool,
-
-    #[structopt(long = "disable-mint-empty-block")]
-    /// Do not mint empty block, default is true in Dev network.
-    pub disable_mint_empty_block: Option<bool>,
+    #[structopt(flatten)]
+    pub logger: LoggerConfig,
+    #[structopt(flatten)]
+    pub metrics: MetricsConfig,
+    #[structopt(flatten)]
+    pub miner: MinerConfig,
+    #[structopt(flatten)]
+    pub network: NetworkConfig,
 
     #[structopt(long = "watch-timeout")]
     /// Watch timeout in seconds
@@ -249,8 +226,6 @@ pub struct StarcoinOpt {
     pub ipc: IpcConfiguration,
     #[structopt(flatten)]
     pub api_quotas: ApiQuotaConfiguration,
-    #[structopt(flatten)]
-    pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -444,9 +419,7 @@ impl NodeConfig {
                 }
             }
         };
-
         config.after_load(opt, &base)?;
-        save_config(&config, &config_file_path)?;
         Ok(config)
     }
 

@@ -18,8 +18,7 @@ async fn test_in_async() -> Result<()> {
 }
 
 fn do_client_test() -> Result<()> {
-    let mut node_config = NodeConfig::random_for_test();
-    node_config.miner.enable_miner_client = false;
+    let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
     let ipc_file = config.rpc.get_ipc_file().to_path_buf();
     let url = config.rpc.get_ws_address().unwrap();
@@ -60,7 +59,7 @@ fn test_multi_client() -> Result<()> {
 #[stest::test(timeout = 120)]
 fn test_client_reconnect() -> Result<()> {
     let mut node_config = NodeConfig::random_for_test();
-    node_config.miner.enable_miner_client = false;
+    node_config.miner.disable_miner_client = Some(false);
     let config = Arc::new(node_config);
     let url = config.rpc.get_ws_address().unwrap();
     debug!("url:{}", url);
@@ -92,8 +91,7 @@ fn test_client_reconnect() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 fn test_client_reconnect_subscribe() -> Result<()> {
-    let mut node_config = NodeConfig::random_for_test();
-    node_config.miner.enable_miner_client = true;
+    let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
     let url = config.rpc.get_ws_address().unwrap();
     debug!("url:{}", url);
