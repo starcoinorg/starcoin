@@ -3,7 +3,7 @@
 use crate::define_storage;
 use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
-    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
+    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
     TRANSACTION_BLOCK_PREFIX_NAME,
 };
@@ -12,7 +12,7 @@ use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -75,12 +75,6 @@ define_storage!(
     BLOCK_BODY_PREFIX_NAME
 );
 define_storage!(
-    BlockNumberStorage,
-    BlockNumber,
-    HashValue,
-    BLOCK_NUM_PREFIX_NAME
-);
-define_storage!(
     BlockTransactionsStorage,
     HashValue,
     Vec<HashValue>,
@@ -110,7 +104,6 @@ pub struct BlockStorage {
     block_store: BlockInnerStorage,
     header_store: BlockHeaderStorage,
     body_store: BlockBodyStorage,
-    number_store: BlockNumberStorage,
     block_txns_store: BlockTransactionsStorage,
     txn_block_store: TransactionBlockStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
@@ -163,7 +156,6 @@ impl BlockStorage {
             block_store: BlockInnerStorage::new(instance.clone()),
             header_store: BlockHeaderStorage::new(instance.clone()),
             body_store: BlockBodyStorage::new(instance.clone()),
-            number_store: BlockNumberStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             txn_block_store: TransactionBlockStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
@@ -197,10 +189,6 @@ impl BlockStorage {
         self.body_store.put(block_id, body)
     }
 
-    pub fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
-        self.number_store.put(number, block_id)
-    }
-
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
         Ok(
             if let Some(storage_block) = self.block_store.get(block_id)? {
@@ -228,35 +216,15 @@ impl BlockStorage {
         self.body_store.get(block_id)
     }
 
-    pub fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
-        self.number_store.get(number)
-    }
-
     pub fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
         let (header, body) = block.clone().into_inner();
         //save header
         let block_id = header.id();
-        self.save_header(header.clone())?;
-        //save number
-        self.save_number(header.number(), block_id)?;
+        self.save_header(header)?;
         //save body
         self.save_body(block_id, body)?;
         //save block cache
         self.save(block, state)
-    }
-
-    pub fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
-        let max_number = self.number_store.get_len()?;
-        if max_number == 0 {
-            return Ok(None);
-        }
-        self.get_block_header_by_number(max_number - 1)
-    }
-
-    pub fn get_latest_block(&self) -> Result<Option<Block>> {
-        //get storage current len
-        let max_number = self.number_store.get_len()?;
-        self.get_block_by_number(max_number - 1)
     }
 
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
@@ -276,20 +244,6 @@ impl BlockStorage {
                 None
             },
         )
-    }
-
-    pub fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        match self.number_store.get(number)? {
-            Some(block_id) => self.get_block_header_by_hash(block_id),
-            None => bail!("can't find block header by number:{}", number),
-        }
-    }
-
-    pub fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        match self.number_store.get(number)? {
-            Some(block_id) => self.get(block_id),
-            None => Ok(None),
-        }
     }
 
     pub fn get_transactions(&self, block_id: HashValue) -> Result<Vec<HashValue>> {

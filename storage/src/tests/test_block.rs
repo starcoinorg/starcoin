@@ -122,34 +122,16 @@ fn test_block_number() {
         .block_storage
         .save_body(block_id, block_body1.clone())
         .unwrap();
-    let block1 = Block::new(block_header1.clone(), block_body1);
+    let block1 = Block::new(block_header1, block_body1);
 
     // save block1
     storage
         .block_storage
         .save(block1.clone(), BlockState::Executed)
         .unwrap();
-    let block_number1 = block_header1.number();
-    storage
-        .block_storage
-        .save_number(block_number1, block_id)
-        .unwrap();
+
     //read to block2
     let block2 = storage.block_storage.get(block_id).unwrap();
     assert!(block2.is_some());
     assert_eq!(block1, block2.unwrap());
-    //get number to block3
-    let block3 = storage
-        .block_storage
-        .get_block_by_number(block_number1)
-        .unwrap()
-        .unwrap();
-    assert_eq!(block1, block3);
-    //get header by number
-    let block4_header = storage
-        .block_storage
-        .get_block_header_by_number(block_number1)
-        .unwrap()
-        .unwrap();
-    assert_eq!(block_header1, block4_header);
 }

@@ -57,7 +57,6 @@ pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
-pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const TRANSACTION_BLOCK_PREFIX_NAME: ColumnFamilyName = "txn_block";
@@ -79,7 +78,6 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         BLOCK_PREFIX_NAME,
         BLOCK_HEADER_PREFIX_NAME,
         BLOCK_BODY_PREFIX_NAME,
-        BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
         BLOCK_TRANSACTIONS_PREFIX_NAME,
         TRANSACTION_BLOCK_PREFIX_NAME,
@@ -118,21 +116,11 @@ pub trait BlockStore {
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
 
-    fn get_number(&self, number: u64) -> Result<Option<HashValue>>;
-
     fn commit_block(&self, block: Block, state: BlockState) -> Result<()>;
-
-    fn get_latest_block_header(&self) -> Result<Option<BlockHeader>>;
-
-    fn get_latest_block(&self) -> Result<Option<Block>>;
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>>;
-
-    fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>>;
-
-    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>>;
 
     fn save_block_transactions(
         &self,
@@ -330,20 +318,8 @@ impl BlockStore for Storage {
         self.block_storage.get_body(block_id)
     }
 
-    fn get_number(&self, number: u64) -> Result<Option<HashValue>> {
-        self.block_storage.get_number(number)
-    }
-
     fn commit_block(&self, block: Block, state: BlockState) -> Result<()> {
         self.block_storage.commit_block(block, state)
-    }
-
-    fn get_latest_block_header(&self) -> Result<Option<BlockHeader>> {
-        self.block_storage.get_latest_block_header()
-    }
-
-    fn get_latest_block(&self) -> Result<Option<Block>> {
-        self.block_storage.get_latest_block()
     }
 
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
@@ -352,14 +328,6 @@ impl BlockStore for Storage {
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_storage.get_block_by_hash(block_id)
-    }
-
-    fn get_block_header_by_number(&self, number: u64) -> Result<Option<BlockHeader>> {
-        self.block_storage.get_block_header_by_number(number)
-    }
-
-    fn get_block_by_number(&self, number: u64) -> Result<Option<Block>> {
-        self.block_storage.get_block_by_number(number)
     }
 
     fn save_block_transactions(

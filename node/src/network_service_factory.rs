@@ -5,15 +5,12 @@ use crate::peer_message_handler::NodePeerMessageHandler;
 use anyhow::{format_err, Result};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_config::NodeConfig;
-use starcoin_genesis::Genesis;
 use starcoin_network::{NetworkActorService, NetworkServiceRef};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
-use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::peer_info::RpcInfo;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::sync::Arc;
 
 pub struct NetworkServiceFactory;
@@ -21,7 +18,6 @@ pub struct NetworkServiceFactory;
 impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
     fn create(ctx: &mut ServiceContext<NetworkActorService>) -> Result<NetworkActorService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let genesis = ctx.get_shared::<Genesis>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let rpc_info = RpcInfo::new(starcoin_network_rpc_api::gen_client::get_rpc_info());
         let txpool_service = ctx.service_ref::<TxPoolActorService>()?.clone();
