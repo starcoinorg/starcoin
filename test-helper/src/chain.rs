@@ -10,10 +10,10 @@ use starcoin_traits::ChainWriter;
 use starcoin_types::genesis_config::ChainNetwork;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
-    let (storage, startup_info, _) =
+    let (storage, chain_info, _) =
         Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
-    let block_chain = BlockChain::new(net.time_service(), *startup_info.get_main(), storage)?;
+    let block_chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)?;
     Ok(block_chain)
 }
 

@@ -189,10 +189,10 @@ impl NodeService {
             DBStorage::new(config.storage.dir(), config.storage.rocksdb_config)?,
         ))?);
         registry.put_shared(storage.clone()).await?;
-        let (startup_info, genesis) =
+        let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
-        info!("Start node with startup info: {}", startup_info);
+        info!("Start node with chain info: {}", chain_info);
 
         registry.put_shared(genesis).await?;
 

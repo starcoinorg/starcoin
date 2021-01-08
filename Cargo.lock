@@ -8592,6 +8592,7 @@ dependencies = [
  "rand_core 0.6.1",
  "ref-cast",
  "serde",
+ "serde_json",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",

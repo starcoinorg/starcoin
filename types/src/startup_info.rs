@@ -4,6 +4,7 @@
 use crate::block::{BlockHeader, BlockInfo};
 use anyhow::Result;
 use scs::SCSCodec;
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
@@ -63,6 +64,16 @@ impl ChainInfo {
             genesis_hash: HashValue::random(),
             status: ChainStatus::random(),
         }
+    }
+}
+
+impl std::fmt::Display for ChainInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_| std::fmt::Error)?
+        )
     }
 }
 

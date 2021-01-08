@@ -36,9 +36,8 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
     opt.data_dir = Some(temp_path.path().to_path_buf());
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&opt).unwrap());
-    let (storage, startup_info, genesis) =
-        StarcoinGenesis::init_storage_for_test(node_config.net())
-            .expect("init storage by genesis fail.");
+    let (storage, chain_info, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
+        .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
     let miner_account = AccountInfo::random();
     let inner = Inner::new(
@@ -53,7 +52,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
 
     let block_template = inner.create_block_template().unwrap();
     assert_eq!(block_template.parent_hash, genesis_id);
-    assert_eq!(block_template.parent_hash, *startup_info.get_main());
+    assert_eq!(block_template.parent_hash, chain_info.head().id());
     assert_eq!(block_template.number, 1);
 }
 

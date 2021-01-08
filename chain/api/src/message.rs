@@ -8,7 +8,7 @@ use starcoin_types::block::BlockSummary;
 use starcoin_types::block::EpochUncleSummary;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     contract_event::ContractEventInfo,
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
@@ -44,7 +44,6 @@ pub enum ChainRequest {
         txn_hash: HashValue,
     },
     GetBlocksByNumber(Option<BlockNumber>, u64),
-    GetBlockStateByHash(HashValue),
     MainEvents(Filter),
     GetBlockIds {
         start_number: BlockNumber,
@@ -84,7 +83,6 @@ pub enum ChainResponse {
     MainEvents(Vec<ContractEventInfo>),
     None,
     Conn(Result<()>),
-    BlockState(Option<Box<BlockState>>),
     EpochInfo(EpochInfo),
     GlobalTime(GlobalTimeOnChain),
     HashVec(Vec<HashValue>),

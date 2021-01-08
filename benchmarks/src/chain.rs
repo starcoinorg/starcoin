@@ -41,11 +41,11 @@ impl ChainBencher {
             ))
             .unwrap(),
         );
-        let (startup_info, _) =
+        let (chain_info, _) =
             Genesis::init_and_check_storage(&net, storage.clone(), temp_path.path())
                 .expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), startup_info.main, storage)
+        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)
             .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 

@@ -23,7 +23,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     contract_event::ContractEvent,
     error::BlockExecutorError,
     stress_test::TPS,
@@ -499,9 +499,7 @@ impl BlockChain {
         storage.save_block_transactions(block_id, txn_id_vec)?;
         // save transactions
         storage.save_transaction_batch(transactions)?;
-        //TODO rework on blockstate
-        let block_state = BlockState::Executed;
-        storage.commit_block(block, block_state)?;
+        storage.commit_block(block)?;
         storage.save_block_info(block_info)?;
         Ok(())
     }
