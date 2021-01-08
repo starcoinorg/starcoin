@@ -95,11 +95,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::HeadBlock() => {
                 Ok(ChainResponse::Block(Box::new(self.inner.main_head_block())))
             }
-            ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(Box::new(
-                self.inner.main_block_by_number(number)?.ok_or_else(|| {
-                    format_err!("Can not find block from main by number {:?}", number)
-                })?,
-            ))),
+            ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::BlockOption(
+                self.inner.main_block_by_number(number)?.map(Box::new),
+            )),
             ChainRequest::GetBlockHeaderByNumber(number) => {
                 Ok(ChainResponse::BlockHeaderOption(Box::new(Some(
                     self.inner
@@ -134,11 +132,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetHeadChainStatus() => Ok(ChainResponse::ChainStatus(Box::new(
                 self.inner.main.status(),
             ))),
-            ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
-                self.inner
-                    .get_transaction(hash)?
-                    .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
-            ))),
+            ChainRequest::GetTransaction(hash) => Ok(ChainResponse::TransactionOption(
+                self.inner.get_transaction(hash)?.map(Box::new),
+            )),
             ChainRequest::GetTransactionBlock(txn_id) => {
                 let block_id = self.inner.get_transaction_block_hash(txn_id)?;
                 let block = match block_id {

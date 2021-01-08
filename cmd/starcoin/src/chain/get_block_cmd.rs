@@ -30,7 +30,9 @@ impl CommandAction for GetBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let block = client.chain_get_block_by_hash(opt.hash)?;
+        let block = client
+            .chain_get_block_by_hash(opt.hash)?
+            .ok_or_else(|| anyhow::format_err!("block {} not found", opt.hash))?;
 
         Ok(block.header)
     }

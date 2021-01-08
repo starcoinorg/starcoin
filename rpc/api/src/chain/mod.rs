@@ -25,10 +25,10 @@ pub trait ChainApi {
     fn info(&self) -> FutureResult<ChainInfoView>;
     /// Get chain block info
     #[rpc(name = "chain.get_block_by_hash")]
-    fn get_block_by_hash(&self, block_hash: HashValue) -> FutureResult<BlockView>;
+    fn get_block_by_hash(&self, block_hash: HashValue) -> FutureResult<Option<BlockView>>;
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_number")]
-    fn get_block_by_number(&self, number: BlockNumber) -> FutureResult<BlockView>;
+    fn get_block_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockView>>;
     /// Get latest `count` blocks before `number`. if `number` is absent, use head block number.
     #[rpc(name = "chain.get_blocks_by_number")]
     fn get_blocks_by_number(
@@ -38,7 +38,8 @@ pub trait ChainApi {
     ) -> FutureResult<Vec<BlockView>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
-    fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<TransactionView>;
+    fn get_transaction(&self, transaction_hash: HashValue)
+        -> FutureResult<Option<TransactionView>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction_info")]
     fn get_transaction_info(

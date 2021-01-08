@@ -211,6 +211,9 @@ pub struct StarcoinOpt {
     /// Watch timeout in seconds
     pub watch_timeout: Option<u64>,
 
+    #[structopt(long = "event-query-max-block-range")]
+    pub block_query_max_range: Option<u64>,
+
     #[structopt(long = "genesis-config")]
     /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     /// This option only work for node init start.

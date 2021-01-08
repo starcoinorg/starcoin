@@ -226,6 +226,8 @@ pub struct RpcConfig {
     #[serde(default)]
     pub ipc: IpcConfiguration,
     pub rpc_address: IpAddr,
+
+    pub block_query_max_range: u64,
 }
 
 impl RpcConfig {
@@ -280,6 +282,7 @@ impl ConfigModule for RpcConfig {
             ipc: opt.ipc.clone(),
             api_quota: opt.api_quotas.clone(),
             rpc_address,
+            block_query_max_range: opt.block_query_max_range.unwrap_or(128),
         };
 
         if base.net.is_test() {
@@ -334,6 +337,11 @@ impl ConfigModule for RpcConfig {
             self.ws.max_request_body_size = opt.ws.max_request_body_size;
         }
         info!("Websocket rpc address: {:?}", self.get_ws_address());
+
+        // cli option override config file.
+        if let Some(r) = opt.block_query_max_range {
+            self.block_query_max_range = r;
+        }
         Ok(())
     }
 }

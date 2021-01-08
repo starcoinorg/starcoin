@@ -29,7 +29,9 @@ impl CommandAction for GetBlockByNumberCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let block = client.chain_get_block_by_number(opt.number)?;
+        let block = client
+            .chain_get_block_by_number(opt.number)?
+            .ok_or_else(|| anyhow::format_err!("block of height {} not found", opt.number))?;
         Ok(block.header)
     }
 }
