@@ -3,30 +3,32 @@
 
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, Result};
+use forkable_jellyfish_merkle::proof::SparseMerkleProof;
+use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
-use merkle_tree::proof::SparseMerkleProof;
-use parking_lot::{Mutex, MutexGuard, RwLock};
+use parking_lot::{Mutex, RwLock};
 use scs::SCSCodec;
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+pub use starcoin_state_api::{
+    ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
+};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNodeStore, StateTree};
+use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
-    access_path::{self, AccessPath, DataType},
+    access_path::{AccessPath, DataType},
     account_address::AccountAddress,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
+use starcoin_vm_types::access_path::{DataPath, ModuleName};
+use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_view::StateView;
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
 use thiserror::Error;
-
-pub use starcoin_state_api::{
-    ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
-};
-use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use std::collections::HashSet;
 
 #[derive(Error, Debug)]
 pub enum StateError {
@@ -54,50 +56,48 @@ impl CacheItem {
 
 /// represent AccountState in runtime memory.
 struct AccountStateObject {
-    address: AccountAddress,
     //TODO if use RefCell at here, compile error for ActorRef async interface
     // the trait `std::marker::Sync` is not implemented for AccountStateObject
     // refactor AccountStateObject to a readonly object.
-    trees: Mutex<Vec<Option<StateTree>>>,
+    code_tree: Mutex<Option<StateTree<ModuleName>>>,
+    resource_tree: Mutex<StateTree<StructTag>>,
     store: Arc<dyn StateNodeStore>,
 }
 
 impl AccountStateObject {
-    pub fn new(
-        address: AccountAddress,
-        account_state: AccountState,
-        store: Arc<dyn StateNodeStore>,
-    ) -> Self {
-        let trees = account_state
-            .storage_roots()
-            .iter()
-            .map(|root| match root {
-                Some(root) => Some(StateTree::new(store.clone(), Some(*root))),
-                None => None,
-            })
-            .collect();
+    pub fn new(account_state: AccountState, store: Arc<dyn StateNodeStore>) -> Self {
+        let code_tree = account_state
+            .code_root()
+            .map(|root| StateTree::<ModuleName>::new(store.clone(), Some(root)));
+        let resource_tree =
+            StateTree::<StructTag>::new(store.clone(), Some(account_state.resource_root()));
+
         Self {
-            address,
-            trees: Mutex::new(trees),
+            code_tree: Mutex::new(code_tree),
+            resource_tree: Mutex::new(resource_tree),
             store,
         }
     }
 
-    pub fn new_account(address: AccountAddress, store: Arc<dyn StateNodeStore>) -> Self {
-        let mut trees = vec![None; DataType::LENGTH];
-        trees[0] = Some(StateTree::new(store.clone(), None));
+    pub fn empty_account(store: Arc<dyn StateNodeStore>) -> Self {
+        let resource_tree = StateTree::<StructTag>::new(store.clone(), None);
         Self {
-            address,
-            trees: Mutex::new(trees),
+            code_tree: Mutex::new(None),
+            resource_tree: Mutex::new(resource_tree),
             store,
         }
     }
 
-    pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
-        let trees = self.trees.lock();
-        match trees[data_type.storage_index()].as_ref() {
-            Some(tree) => tree.get(key_hash),
-            None => Ok(None),
+    pub fn get(&self, data_path: &DataPath) -> Result<Option<Vec<u8>>> {
+        match data_path {
+            DataPath::Code(module_name) => Ok(self
+                .code_tree
+                .lock()
+                .as_ref()
+                .map(|tree| tree.get(module_name))
+                .transpose()?
+                .flatten()),
+            DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
         }
     }
 
@@ -105,102 +105,101 @@ impl AccountStateObject {
     /// NOTICE: Any un-committed modification will not visible to the method.
     pub fn get_with_proof(
         &self,
-        data_type: DataType,
-        key_hash: &HashValue,
+        data_path: &DataPath,
     ) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        let trees = self.trees.lock();
-        match trees[data_type.storage_index()].as_ref() {
-            Some(tree) => tree.get_with_proof(key_hash),
-            None => Ok((None, SparseMerkleProof::new(None, vec![]))),
+        match data_path {
+            DataPath::Code(module_name) => Ok(self
+                .code_tree
+                .lock()
+                .as_ref()
+                .map(|tree| tree.get_with_proof(module_name))
+                .transpose()?
+                .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
+            DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
         }
     }
 
-    pub fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
-        let mut trees = self.trees.lock();
-        if trees[data_type.storage_index()].as_ref().is_none() {
-            trees[data_type.storage_index()] = Some(StateTree::new(self.store.clone(), None));
+    pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
+        match data_path {
+            DataPath::Code(module_name) => {
+                if self.code_tree.lock().is_none() {
+                    *self.code_tree.lock() =
+                        Some(StateTree::<ModuleName>::new(self.store.clone(), None));
+                }
+                self.code_tree
+                    .lock()
+                    .as_ref()
+                    .expect("state tree must exist after set.")
+                    .put(module_name, value);
+            }
+            DataPath::Resource(struct_tag) => {
+                self.resource_tree.lock().put(struct_tag, value);
+            }
         }
-        let tree = trees[data_type.storage_index()]
-            .as_ref()
-            .expect("state tree must exist after set.");
-        tree.put(key_hash, value);
     }
 
-    pub fn remove(&self, data_type: DataType, key_hash: &HashValue) -> Result<()> {
-        if data_type.is_code() {
+    pub fn remove(&self, data_path: &DataPath) -> Result<()> {
+        if data_path.is_code() {
             bail!("Not supported remove code currently.");
         }
-        let trees = self.trees.lock();
-        let tree = trees[data_type.storage_index()].as_ref();
-        match tree {
-            Some(tree) => tree.remove(key_hash),
-            None => bail!(
-                "Can not find storage root fro data_type {:?} at: {:?}",
-                data_type,
-                self.address
-            ),
-        }
+        let struct_tag = data_path
+            .as_struct_tag()
+            .expect("DataPath must been struct tag at here.");
+        self.resource_tree.lock().remove(struct_tag);
         Ok(())
     }
 
     pub fn is_dirty(&self) -> bool {
-        let trees = self.trees.lock();
-        for tree in trees.iter() {
-            if let Some(tree) = tree {
-                if tree.is_dirty() {
-                    return true;
-                }
+        if self.resource_tree.lock().is_dirty() {
+            return true;
+        }
+        if let Some(code_tree) = self.code_tree.lock().as_ref() {
+            if code_tree.is_dirty() {
+                return true;
             }
         }
         false
     }
 
     pub fn commit(&self) -> Result<AccountState> {
-        let trees = self.trees.lock();
-        for tree in trees.iter() {
-            if let Some(tree) = tree {
-                if tree.is_dirty() {
-                    tree.commit()?;
+        {
+            let code_tree = self.code_tree.lock();
+            if let Some(code_tree) = code_tree.as_ref() {
+                if code_tree.is_dirty() {
+                    code_tree.commit()?;
                 }
             }
         }
-
-        Ok(Self::build_state(trees))
+        {
+            let resource_tree = self.resource_tree.lock();
+            if resource_tree.is_dirty() {
+                resource_tree.commit()?;
+            }
+        }
+        Ok(self.to_state())
     }
 
     pub fn flush(&self) -> Result<()> {
-        let trees = self.trees.lock();
-        for tree in trees.iter() {
-            if let Some(tree) = tree {
-                tree.flush()?;
-            }
+        self.resource_tree.lock().flush()?;
+        if let Some(code_tree) = self.code_tree.lock().as_ref() {
+            code_tree.flush()?;
         }
+
         Ok(())
     }
 
-    fn build_state(trees: MutexGuard<Vec<Option<StateTree>>>) -> AccountState {
-        let storage_roots = trees
-            .iter()
-            .map(|tree| match tree {
-                Some(tree) => Some(tree.root_hash()),
-                None => None,
-            })
-            .collect();
-
-        AccountState::new(storage_roots)
-    }
-
     fn to_state(&self) -> AccountState {
-        let trees = self.trees.lock();
-        Self::build_state(trees)
+        let code_root = self.code_tree.lock().as_ref().map(|tree| tree.root_hash());
+        let resource_root = self.resource_tree.lock().root_hash();
+        AccountState::new(code_root, resource_root)
     }
 }
 
 pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
-    state_tree: StateTree,
-    cache: Mutex<LruCache<HashValue, CacheItem>>,
+    state_tree: StateTree<AccountAddress>,
+    cache: Mutex<LruCache<AccountAddress, CacheItem>>,
     updates: RwLock<HashSet<AccountAddress>>,
 }
 
@@ -235,7 +234,7 @@ impl ChainStateDB {
         }
     }
 
-    fn new_state_tree(&self, root_hash: HashValue) -> StateTree {
+    fn new_state_tree<K: RawKey>(&self, root_hash: HashValue) -> StateTree<K> {
         StateTree::new(self.store.clone(), Some(root_hash))
     }
 
@@ -249,13 +248,13 @@ impl ChainStateDB {
             Some(account_state_object) => Ok(account_state_object),
             None => {
                 if create {
-                    let account_state_object = Arc::new(AccountStateObject::new_account(
-                        *account_address,
-                        self.store.clone(),
-                    ));
-                    let address_hash = account_address.crypto_hash();
+                    let account_state_object =
+                        Arc::new(AccountStateObject::empty_account(self.store.clone()));
                     let mut cache = self.cache.lock();
-                    cache.put(address_hash, CacheItem::new(account_state_object.clone()));
+                    cache.put(
+                        *account_address,
+                        CacheItem::new(account_state_object.clone()),
+                    );
                     Ok(account_state_object)
                 } else {
                     Err(AccountNotExist(*account_address).into())
@@ -268,35 +267,30 @@ impl ChainStateDB {
         &self,
         account_address: &AccountAddress,
     ) -> Result<Option<Arc<AccountStateObject>>> {
-        let address_hash = account_address.crypto_hash();
         let mut cache = self.cache.lock();
-        let item = cache.get(&address_hash);
+        let item = cache.get(account_address);
         let object = match item {
             Some(item) => item.as_object(),
             None => {
                 let object = self
-                    .get_account_state_by_hash(&address_hash)?
+                    .get_account_state(account_address)?
                     .map(|account_state| {
-                        Arc::new(AccountStateObject::new(
-                            *account_address,
-                            account_state,
-                            self.store.clone(),
-                        ))
+                        Arc::new(AccountStateObject::new(account_state, self.store.clone()))
                     });
                 let cache_item = match &object {
                     Some(object) => CacheItem::new(object.clone()),
                     None => CacheItem::AccountNotExist(),
                 };
-                cache.put(address_hash, cache_item);
+                cache.put(*account_address, cache_item);
                 object
             }
         };
         Ok(object)
     }
 
-    fn get_account_state_by_hash(&self, address_hash: &HashValue) -> Result<Option<AccountState>> {
+    fn get_account_state(&self, account_address: &AccountAddress) -> Result<Option<AccountState>> {
         self.state_tree
-            .get(address_hash)
+            .get(account_address)
             .and_then(|value| match value {
                 Some(v) => Ok(Some(AccountState::decode(v.as_slice())?)),
                 None => Ok(None),
@@ -308,10 +302,11 @@ impl ChainState for ChainStateDB {}
 
 impl StateView for ChainStateDB {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
+        let account_address = &access_path.address;
+        let data_path = &access_path.path;
         self.get_account_state_object_option(&account_address)
             .and_then(|account_state| match account_state {
-                Some(account_state) => account_state.get(data_type, &hash),
+                Some(account_state) => account_state.get(&data_path),
                 None => Ok(None),
             })
     }
@@ -331,9 +326,9 @@ impl StateView for ChainStateDB {
 
 impl ChainStateReader for ChainStateDB {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        let (account_address, data_type, hash) = access_path::into_inner(access_path.clone())?;
-        let address_hash = account_address.crypto_hash();
-        let (account_state, account_proof) = self.state_tree.get_with_proof(&address_hash)?;
+        let account_address = &access_path.address;
+        let data_path = &access_path.path;
+        let (account_state, account_proof) = self.state_tree.get_with_proof(account_address)?;
         let account_state = account_state
             .map(|v| AccountState::decode(v.as_slice()))
             .transpose()?;
@@ -343,8 +338,7 @@ impl ChainStateReader for ChainStateDB {
                 StateProof::new(None, account_proof, SparseMerkleProof::default()),
             ),
             Some(account_state) => {
-                let account_state_object =
-                    self.get_account_state_object(&account_address, false)?;
+                let account_state_object = self.get_account_state_object(account_address, false)?;
                 ensure!(
                     !account_state_object.is_dirty(),
                     "account {} has uncommitted modification",
@@ -358,7 +352,7 @@ impl ChainStateReader for ChainStateDB {
                 );
 
                 let (resource_value, resource_proof) =
-                    account_state_object.get_with_proof(data_type, &hash)?;
+                    account_state_object.get_with_proof(data_path)?;
                 StateWithProof::new(
                     resource_value,
                     StateProof::new(Some(account_state.encode()?), account_proof, resource_proof),
@@ -383,13 +377,23 @@ impl ChainStateReader for ChainStateDB {
         //TODO performance optimize.
         let global_states = self.state_tree.dump()?;
         let mut account_states = vec![];
-        for (address_hash, account_state_bytes) in global_states.iter() {
+        for (address_bytes, account_state_bytes) in global_states.iter() {
             let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
 
             let mut state_sets = vec![];
-            for storage_root in account_state.storage_roots().iter() {
+            for (idx, storage_root) in account_state.storage_roots().iter().enumerate() {
                 let state_set = match storage_root {
-                    Some(storage_root) => Some(self.new_state_tree(*storage_root).dump()?),
+                    Some(storage_root) => {
+                        let data_type = DataType::from_index(idx as u8)?;
+                        match data_type {
+                            DataType::CODE => {
+                                Some(self.new_state_tree::<ModuleName>(*storage_root).dump()?)
+                            }
+                            DataType::RESOURCE => {
+                                Some(self.new_state_tree::<StructTag>(*storage_root).dump()?)
+                            }
+                        }
+                    }
                     None => None,
                 };
 
@@ -397,7 +401,10 @@ impl ChainStateReader for ChainStateDB {
             }
             let account_state_set = AccountStateSet::new(state_sets);
 
-            account_states.push((*address_hash, account_state_set));
+            account_states.push((
+                AccountAddress::decode_key(address_bytes.as_slice())?,
+                account_state_set,
+            ));
         }
         Ok(ChainStateSet::new(account_states))
     }
@@ -421,38 +428,49 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
-        for (address_hash, account_state_set) in chain_state_set.state_sets() {
-            let account_state = self
-                .get_account_state_by_hash(address_hash)?
-                .unwrap_or_default();
-            let mut new_storage_roots = vec![];
-            for (storage_root, state_set) in account_state
-                .storage_roots()
-                .iter()
-                .zip(account_state_set.into_iter())
-            {
-                let new_storage_root = match (storage_root, state_set) {
-                    (Some(storage_root), Some(state_set)) => {
-                        let state_tree = self.new_state_tree(*storage_root);
-                        state_tree.apply(state_set.clone())?;
-                        state_tree.flush()?;
-                        Some(state_tree.root_hash())
-                    }
-                    (Some(storage_root), None) => Some(*storage_root),
-                    (None, Some(state_set)) => {
-                        let state_tree = StateTree::new(self.store.clone(), None);
-                        state_tree.apply(state_set.clone())?;
-                        state_tree.flush()?;
-                        Some(state_tree.root_hash())
-                    }
-                    (None, None) => None,
-                };
-                new_storage_roots.push(new_storage_root);
-            }
+        for (address, account_state_set) in chain_state_set.state_sets() {
+            let (code_root, resource_root) = match self.get_account_state(address)? {
+                Some(account_state) => (
+                    account_state.code_root(),
+                    Some(account_state.resource_root()),
+                ),
+                None => (None, None),
+            };
+            let code_root = match (code_root, account_state_set.code_set()) {
+                (Some(storage_root), Some(state_set)) => {
+                    let state_tree = self.new_state_tree::<ModuleName>(storage_root);
+                    state_tree.apply(state_set.clone())?;
+                    state_tree.flush()?;
+                    Some(state_tree.root_hash())
+                }
+                (Some(storage_root), None) => Some(storage_root),
+                (None, Some(state_set)) => {
+                    let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
+                    state_tree.apply(state_set.clone())?;
+                    state_tree.flush()?;
+                    Some(state_tree.root_hash())
+                }
+                (None, None) => None,
+            };
 
-            let new_account_state = AccountState::new(new_storage_roots);
-            self.state_tree
-                .put(*address_hash, new_account_state.try_into()?);
+            let resource_root = match (resource_root, account_state_set.resource_set()) {
+                (Some(storage_root), Some(state_set)) => {
+                    let state_tree = self.new_state_tree::<StructTag>(storage_root);
+                    state_tree.apply(state_set.clone())?;
+                    state_tree.flush()?;
+                    state_tree.root_hash()
+                }
+                (Some(storage_root), None) => storage_root,
+                (None, Some(state_set)) => {
+                    let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
+                    state_tree.apply(state_set.clone())?;
+                    state_tree.flush()?;
+                    state_tree.root_hash()
+                }
+                (None, None) => unreachable!("this should never happened"),
+            };
+            let new_account_state = AccountState::new(code_root, resource_root);
+            self.state_tree.put(*address, new_account_state.try_into()?);
         }
         self.state_tree.commit()?;
         self.state_tree.flush()?;
@@ -464,18 +482,17 @@ impl ChainStateWriter for ChainStateDB {
         for (access_path, write_op) in write_set {
             //update self updates record
             locks.insert(access_path.address);
-            let (account_address, data_type, key_hash) =
-                access_path::into_inner(access_path.clone())?;
+            let (account_address, data_path) = access_path.into_inner();
             match write_op {
                 WriteOp::Value(value) => {
                     let account_state_object =
                         self.get_account_state_object(&account_address, true)?;
-                    account_state_object.set(data_type, key_hash, value.clone());
+                    account_state_object.set(data_path, value);
                 }
                 WriteOp::Deletion => {
                     let account_state_object =
                         self.get_account_state_object(&account_address, false)?;
-                    account_state_object.remove(data_type, &key_hash)?;
+                    account_state_object.remove(&data_path)?;
                 }
             }
         }
@@ -485,10 +502,9 @@ impl ChainStateWriter for ChainStateDB {
     fn commit(&self) -> Result<HashValue> {
         // cache commit
         for address in self.updates.read().iter() {
-            let address_hash = address.crypto_hash();
             let account_state_object = self.get_account_state_object(address, false)?;
             let state = account_state_object.commit()?;
-            self.state_tree.put(address_hash, state.try_into()?);
+            self.state_tree.put(*address, state.try_into()?);
         }
         self.state_tree.commit()
     }
@@ -529,7 +545,7 @@ mod tests {
     fn test_state_proof() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let access_path = access_path::random_resource();
+        let access_path = AccessPath::random_resource();
         let state0 = random_bytes();
         chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0.clone()))?;
 
@@ -537,7 +553,10 @@ mod tests {
         let state1 = chain_state_db.get(&access_path)?;
         assert!(state1.is_some());
         assert_eq!(state0, state1.unwrap());
+        println!("{}", access_path.address.key_hash());
+        println!("{}", access_path.key_hash());
         let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
+        println!("{:?}", state_with_proof);
         state_with_proof.proof.verify(
             state_root,
             access_path,
@@ -550,7 +569,7 @@ mod tests {
     fn test_state_db() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let access_path = access_path::random_resource();
+        let access_path = AccessPath::random_resource();
 
         let state0 = random_bytes();
         chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0))?;
@@ -567,7 +586,7 @@ mod tests {
     fn test_state_db_dump_and_apply() -> Result<()> {
         let storage = MockStateNodeStore::new();
         let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-        let access_path = access_path::random_resource();
+        let access_path = AccessPath::random_resource();
         let state0 = random_bytes();
         chain_state_db.apply_write_set(to_write_set(access_path, state0))?;
         chain_state_db.commit()?;

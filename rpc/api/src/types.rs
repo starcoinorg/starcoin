@@ -670,14 +670,14 @@ impl From<WriteOp> for WriteOpView {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AccessPathView {
     pub address: AccountAddress,
-    pub path: StrView<Vec<u8>>,
+    pub path: String,
 }
 
 impl From<AccessPath> for AccessPathView {
     fn from(ap: AccessPath) -> Self {
         Self {
             address: ap.address,
-            path: StrView(ap.path),
+            path: ap.path.to_string(),
         }
     }
 }

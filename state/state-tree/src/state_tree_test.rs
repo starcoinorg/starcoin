@@ -1,16 +1,29 @@
 use super::*;
 use crate::mock::MockStateNodeStore;
 use anyhow::Result;
+use forkable_jellyfish_merkle::{HashValueKey, RawKey};
 use starcoin_crypto::hash::*;
 use std::sync::Arc;
+
+/// change the `n`th nibble to `nibble`
+pub fn update_nibble(original_key: &HashValueKey, n: usize, nibble: u8) -> HashValueKey {
+    assert!(nibble < 16);
+    let mut key = original_key.key_hash().to_vec();
+    key[n / 2] = if n % 2 == 0 {
+        key[n / 2] & 0x0f | nibble << 4
+    } else {
+        key[n / 2] & 0xf0 | nibble
+    };
+    HashValueKey(HashValue::from_slice(&key).unwrap())
+}
 
 #[test]
 pub fn test_put_blob() -> Result<()> {
     let s = MockStateNodeStore::new();
-    let state = StateTree::new(Arc::new(s), None);
+    let state = StateTree::<HashValueKey>::new(Arc::new(s), None);
     assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
-    let hash_value = HashValue::random();
+    let hash_value = HashValue::random().into();
 
     let account1 = update_nibble(&hash_value, 0, 1);
     let account1 = update_nibble(&account1, 2, 2);
@@ -85,7 +98,7 @@ pub fn test_state_proof() -> Result<()> {
     let state = StateTree::new(Arc::new(s), None);
     assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
-    let hash_value = HashValue::random();
+    let hash_value = HashValue::random().into();
 
     let account1 = update_nibble(&hash_value, 0, 1);
     // re-update to make sure account2 never equal to account1
@@ -102,25 +115,24 @@ pub fn test_state_proof() -> Result<()> {
     assert!(value.is_some());
     assert_eq!(value.unwrap(), vec![0, 0, 0]);
     let expected_value = Some(vec![0u8, 0, 0].into());
-    proof.verify(new_root_hash, account1, expected_value.as_ref())?;
+    proof.verify(new_root_hash, account1.key_hash(), expected_value.as_ref())?;
 
     state.remove(&account1);
     let new_root_hash = state.commit()?;
     let (value, proof) = state.get_with_proof(&account1)?;
     assert!(value.is_none());
-    proof.verify(new_root_hash, account1, None)?;
+    proof.verify(new_root_hash, account1.key_hash(), None)?;
 
     Ok(())
 }
 
 #[test]
 pub fn test_state_commit() -> Result<()> {
-    // TODO: once storage support batch put, finish this.
     let s = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(s), None);
     assert_eq!(state.root_hash(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
-    let hash_value = HashValue::random();
+    let hash_value = HashValue::random().into();
 
     let account1 = update_nibble(&hash_value, 0, 1);
     let account1 = update_nibble(&account1, 2, 2);
@@ -145,7 +157,7 @@ pub fn test_state_commit() -> Result<()> {
 pub fn test_state_dump() -> Result<()> {
     let s = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(s), None);
-    let hash_value = HashValue::random();
+    let hash_value = HashValueKey(HashValue::random());
     let value = vec![1u8, 2u8];
     state.put(hash_value, value);
     state.commit()?;
@@ -158,7 +170,7 @@ pub fn test_state_dump() -> Result<()> {
 pub fn test_repeat_commit() -> Result<()> {
     let s = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(s), None);
-    let hash_value = HashValue::random();
+    let hash_value = HashValueKey(HashValue::random());
     let value = vec![1u8, 2u8];
     state.put(hash_value, value.clone());
     state.commit()?;

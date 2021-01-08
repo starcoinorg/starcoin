@@ -4,7 +4,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{blob::Blob, mock_tree_store::MockTreeStore, JellyfishMerkleTree};
+use crate::{blob::Blob, mock_tree_store::MockTreeStore, HashValueKey, JellyfishMerkleTree};
 use starcoin_crypto::HashValue;
 use std::collections::HashMap;
 
@@ -26,7 +26,7 @@ pub fn plus_one(key: HashValue) -> HashValue {
 
 /// Initializes a DB with a set of key-value pairs by inserting one key at each version.
 #[allow(clippy::all)]
-pub fn init_mock_db(kvs: &HashMap<HashValue, Blob>) -> (MockTreeStore, Option<HashValue>) {
+pub fn init_mock_db(kvs: &HashMap<HashValueKey, Blob>) -> (MockTreeStore, Option<HashValue>) {
     assert!(!kvs.is_empty());
 
     let db = MockTreeStore::default();

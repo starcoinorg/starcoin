@@ -1,9 +1,8 @@
 ---
 AccessPath:
-  STRUCT:
-    - address:
-        TYPENAME: AccountAddress
-    - path: BYTES
+  TUPLESTRUCT:
+    - TYPENAME: AccountAddress
+    - TYPENAME: DataPath
 AccountAddress:
   NEWTYPESTRUCT:
     TUPLEARRAY:
@@ -65,6 +64,16 @@ ContractEventV0:
     - type_tag:
         TYPENAME: TypeTag
     - event_data: BYTES
+DataPath:
+  ENUM:
+    0:
+      Code:
+        NEWTYPE:
+          TYPENAME: Identifier
+    1:
+      Resource:
+        NEWTYPE:
+          TYPENAME: StructTag
 DataType:
   ENUM:
     0:

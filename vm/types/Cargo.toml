@@ -34,6 +34,7 @@ starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-uint = { path = "../../types/uint" }
 starcoin-accumulator = { path = "../../core/accumulator"}
 network-p2p-types = { path = "../../network-p2p/types"}
+forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 
 [dev-dependencies]
 proptest = "0.10.1"

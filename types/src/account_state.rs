@@ -17,15 +17,10 @@ pub struct AccountState {
 }
 
 impl AccountState {
-    pub fn new(mut storage_roots: Vec<Option<HashValue>>) -> AccountState {
-        if storage_roots.len() < DataType::LENGTH {
-            storage_roots.extend(vec![None; DataType::LENGTH - storage_roots.len()]);
-        }
-        assert_eq!(
-            storage_roots.len(),
-            DataType::LENGTH,
-            "Storage root length must equals DataType length"
-        );
+    pub fn new(code_root: Option<HashValue>, resource_root: HashValue) -> AccountState {
+        let mut storage_roots = vec![None; DataType::LENGTH];
+        storage_roots[DataType::CODE.storage_index()] = code_root;
+        storage_roots[DataType::RESOURCE.storage_index()] = Some(resource_root);
         Self { storage_roots }
     }
 
@@ -40,14 +35,6 @@ impl AccountState {
 
     pub fn storage_roots(&self) -> &[Option<HashValue>] {
         self.storage_roots.as_slice()
-    }
-}
-
-impl Default for AccountState {
-    fn default() -> Self {
-        Self {
-            storage_roots: vec![None; DataType::LENGTH],
-        }
     }
 }
 

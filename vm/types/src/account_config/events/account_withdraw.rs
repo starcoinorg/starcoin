@@ -1,20 +1,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
+use crate::account_config::constants::ACCOUNT_MODULE_NAME;
+use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::Result;
-use move_core_types::move_resource::MoveResource;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-
-/// The path to the withdraw event counter for an Account resource.
-/// It can be used to query the event DB for the given event.
-pub static ACCOUNT_WITHDRAW_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
-    let mut path = AccountResource::resource_path();
-    path.extend_from_slice(b"/withdraw_events_count/");
-    path
-});
 
 /// Struct that represents a SentPaymentEvent.
 #[derive(Debug, Serialize, Deserialize)]

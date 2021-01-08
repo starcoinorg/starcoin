@@ -1,23 +1,14 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
+use crate::account_config::constants::ACCOUNT_MODULE_NAME;
 use crate::contract_event::ContractEvent;
 use crate::language_storage::TypeTag;
+use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::{Error, Result};
-use move_core_types::move_resource::MoveResource;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-
-/// The path to the accept token event counter for an Account resource.
-/// It can be used to query the event DB for the given event.
-pub static ACCEPT_TOKEN_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
-    let mut path = AccountResource::resource_path();
-    path.extend_from_slice(b"/accept_token_events_count/");
-    path
-});
 
 /// Struct that represents a AcceptTokenEvent.
 #[derive(Debug, Serialize, Deserialize)]

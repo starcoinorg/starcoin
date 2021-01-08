@@ -151,9 +151,9 @@ pub fn access_path_for_config(
     config_name: Identifier,
     params: Vec<TypeTag>,
 ) -> AccessPath {
-    AccessPath::new(
+    AccessPath::resource_access_path(
         address,
-        AccessPath::resource_access_vec(&StructTag {
+        StructTag {
             address: CORE_CODE_ADDRESS,
             module: Identifier::new("Config").unwrap(),
             name: Identifier::new("Config").unwrap(),
@@ -163,6 +163,6 @@ pub fn access_path_for_config(
                 name: config_name,
                 type_params: params,
             })],
-        }),
+        },
     )
 }

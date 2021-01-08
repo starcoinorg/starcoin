@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
-use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
+use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
-    access_path::{self, AccessPath},
+    access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
     account_state::AccountState,
@@ -54,7 +54,7 @@ impl StateProof {
         access_path: AccessPath,
         access_resource_blob: Option<&[u8]>,
     ) -> Result<()> {
-        let (account_address, data_type, ap_hash) = access_path::into_inner(access_path)?;
+        let (account_address, data_path) = access_path.into_inner();
         match self.account_state.as_ref() {
             None => {
                 ensure!(
@@ -64,7 +64,7 @@ impl StateProof {
             }
             Some(s) => {
                 let account_state = AccountState::try_from(s.as_ref())?;
-                match account_state.storage_roots()[data_type.storage_index()] {
+                match account_state.storage_roots()[data_path.data_type().storage_index()] {
                     None => {
                         ensure!(
                             access_resource_blob.is_none(),
@@ -73,16 +73,18 @@ impl StateProof {
                     }
                     Some(expected_hash) => {
                         let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
-                        self.account_state_proof
-                            .verify(expected_hash, ap_hash, blob.as_ref())?;
+                        self.account_state_proof.verify(
+                            expected_hash,
+                            data_path.key_hash(),
+                            blob.as_ref(),
+                        )?;
                     }
                 }
             }
         }
-        let address_hash = account_address.crypto_hash();
         self.account_proof.verify(
             expected_root_hash,
-            address_hash,
+            account_address.key_hash(),
             self.account_state.as_ref(),
         )
     }

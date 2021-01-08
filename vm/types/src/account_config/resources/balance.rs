@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::access_path::DataPath;
 use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
@@ -42,8 +43,8 @@ impl BalanceResource {
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
-    pub fn access_path_for(token_type_tag: TypeTag) -> Vec<u8> {
-        AccessPath::resource_access_vec(&BalanceResource::struct_tag_for_token(token_type_tag))
+    pub fn access_path_for(token_type_tag: TypeTag) -> DataPath {
+        AccessPath::resource_data_path(BalanceResource::struct_tag_for_token(token_type_tag))
     }
 }
 

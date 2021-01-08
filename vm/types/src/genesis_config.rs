@@ -6,6 +6,7 @@ use crate::event::EventHandle;
 use crate::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
 };
+use crate::move_resource::MoveResource;
 use crate::on_chain_config::DaoConfig;
 use crate::on_chain_config::{
     ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
@@ -16,7 +17,6 @@ use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{bail, ensure, format_err, Result};
-use move_core_types::move_resource::MoveResource;
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;

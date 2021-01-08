@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use move_core_types::move_resource::MoveResource;
+use crate::move_resource::MoveResource;
 
 const TIMESTAMP_MODULE_NAME: &str = "Timestamp";
 

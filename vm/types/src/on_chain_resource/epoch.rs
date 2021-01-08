@@ -1,10 +1,10 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::access_path::AccessPath;
+use crate::access_path::{AccessPath, DataPath};
 use crate::event::EventHandle;
 use crate::genesis_config::ConsensusStrategy;
+use crate::move_resource::MoveResource;
 use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
-use move_core_types::move_resource::MoveResource;
 use serde::export::TryFrom;
 use serde::{Deserialize, Serialize};
 
@@ -113,8 +113,8 @@ impl Epoch {
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
-    pub fn access_path_for() -> Vec<u8> {
-        AccessPath::resource_access_vec(&Epoch::struct_tag_for_epoch())
+    pub fn data_path_for() -> DataPath {
+        AccessPath::resource_data_path(Epoch::struct_tag_for_epoch())
     }
 }
 
@@ -212,7 +212,7 @@ impl EpochData {
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
-    pub fn access_path_for() -> Vec<u8> {
-        AccessPath::resource_access_vec(&EpochData::struct_tag_for_epoch())
+    pub fn data_path_for() -> DataPath {
+        AccessPath::resource_data_path(EpochData::struct_tag_for_epoch())
     }
 }
