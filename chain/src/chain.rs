@@ -12,7 +12,7 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, ExecutedBlock,
-    VerifiedBlock, VerifyBlockField,
+    MintedUncleNumber, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
@@ -38,7 +38,7 @@ use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 use storage::Store;
 
 pub struct ChainStatusWithBlock {
@@ -53,7 +53,7 @@ pub struct BlockChain {
     statedb: ChainStateDB,
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
-    uncles: HashSet<HashValue>,
+    uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
 }
 
@@ -69,10 +69,10 @@ impl BlockChain {
         Self::new_with_uncles(time_service, head, None, storage)
     }
 
-    pub fn new_with_uncles(
+    fn new_with_uncles(
         time_service: Arc<dyn TimeService>,
         head_block: Block,
-        uncles: Option<HashSet<HashValue>>,
+        uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
     ) -> Result<Self> {
         let block_info = storage
@@ -97,14 +97,13 @@ impl BlockChain {
                 AccumulatorStoreType::Block,
                 storage.as_ref(),
             ),
-            status: ChainStatusWithInfo {
-                status: ChainStatus::new(head_block.header.clone(), block_info.total_difficulty),
-                info: block_info,
+            status: ChainStatusWithBlock {
+                status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
             },
             statedb: chain_state,
             storage,
-            uncles: HashSet::new(),
+            uncles: HashMap::new(),
             epoch,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
@@ -169,19 +168,19 @@ impl BlockChain {
 
     //TODO lazy init uncles cache.
     pub fn update_uncle_cache(&mut self) -> Result<()> {
-        self.uncles = self.epoch_uncles()?.iter().cloned().collect();
+        self.uncles = self.epoch_uncles()?;
         Ok(())
     }
 
-    fn epoch_uncles(&self) -> Result<Vec<HashValue>> {
+    fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
         let epoch = &self.epoch;
-        let mut uncles = Vec::new();
+        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
         let mut block = self.head_block();
         let mut number = block.header().number();
         loop {
             if let Some(block_uncles) = block.uncles() {
-                block_uncles.iter().for_each(|header| {
-                    uncles.push(header.id());
+                block_uncles.iter().for_each(|uncle_header| {
+                    uncles.insert(uncle_header.id(), block.header().number());
                 });
             }
             if number == 0 {
@@ -766,14 +765,14 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
-        let mut uncles: HashSet<HashValue> = HashSet::new();
-        self.uncles.iter().for_each(|uncle_id| {
-            if let Ok(Some(uncle)) = self.storage.get_block_header_by_hash(*uncle_id) {
-                if uncle.number() < head.header().number() {
-                    uncles.insert(*uncle_id);
+        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
+        self.uncles
+            .iter()
+            .for_each(|(uncle_id, minted_uncle_number)| {
+                if *minted_uncle_number < head.header().number() {
+                    uncles.insert(*uncle_id, *minted_uncle_number);
                 }
-            }
-        });
+            });
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
@@ -782,7 +781,7 @@ impl ChainReader for BlockChain {
         )
     }
 
-    fn epoch_uncles(&self) -> &HashSet<HashValue> {
+    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber> {
         &self.uncles
     }
 
@@ -959,8 +958,9 @@ impl ChainWriter for BlockChain {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = block.uncles() {
-            block_uncles.iter().for_each(|header| {
-                self.uncles.insert(header.id());
+            block_uncles.iter().for_each(|uncle_header| {
+                self.uncles
+                    .insert(uncle_header.id(), block.header().number());
             });
         }
         self.status = ChainStatusWithBlock {
