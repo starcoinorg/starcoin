@@ -8,4 +8,5 @@ WORKDIR /starcoin
 RUN set -eux;  sudo apt-get update -y \
   && bash ./scripts/dev_setup_rust.sh \
   &&  bash ./scripts/dev_setup_apt.sh \
+  &&  bash ./scripts/ops_setup_apt.sh \
   && sudo rm -rf /var/lib/apt/lists/*
