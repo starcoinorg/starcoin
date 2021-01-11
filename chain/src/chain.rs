@@ -765,6 +765,13 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
+        ensure!(
+            head.header().number() >= self.epoch.start_block_number() - 1,
+            "Can only fork branch in same epoch {:}:{:}:{:?}.",
+            block_id,
+            head.header().number(),
+            self.epoch
+        );
         let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
         self.uncles
             .iter()
