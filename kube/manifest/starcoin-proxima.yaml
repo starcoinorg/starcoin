@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: starcoin-svc
+  namespace: starcoin-proxima
+spec:
+  selector:
+    app: starcoin
+  ports:
+    -
+      protocol: TCP
+      port: 9840
+      targetPort: 9840
+      name: peer
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: starcoin
+  namespace: starcoin-proxima
+  labels:
+    app: starcoin
+    network: proxima
+spec:
+  selector:
+    matchLabels:
+      app: starcoin
+  serviceName: starcoin-svc
+  replicas: 3
+  template:
+    metadata:
+      name: starcoin
+      labels:
+        app: starcoin
+        network: proxima
+    spec:
+      containers:
+      - name: starcoin
+        image: starcoin/starcoin:v0.9.3
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          -
+            rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
+            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+            node_key=${node_keys[$id]};
+            if [ ! -z $node_key ]; then
+              node_key_flag="--node-key ${node_key}";
+            fi;
+            /starcoin/starcoin -n proxima -d /sc-data --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+        ports:
+          - containerPort: 9840
+            hostPort: 9840
+        volumeMounts:
+        - name: starcoin-volume
+          mountPath: /sc-data
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NODE_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: node-keys
+                key: node-keys
+  volumeClaimTemplates:
+  - metadata:
+      name: starcoin-volume
+      namespace: starcoin-proxima
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi

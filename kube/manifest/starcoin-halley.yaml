@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: starcoin-svc
+  namespace: starcoin-halley
 spec:
   selector:
     app: starcoin
@@ -17,14 +18,14 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: starcoin
+  namespace: starcoin-halley
   labels:
     app: starcoin
-    network: proxima
+    network: halley
 spec:
   selector:
     matchLabels:
       app: starcoin
-      network: proxima
   serviceName: starcoin-svc
   replicas: 3
   template:
@@ -32,24 +33,28 @@ spec:
       name: starcoin
       labels:
         app: starcoin
-        network: proxima
+        network: halley
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.10.0
+        image: starcoin/starcoin:latest
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
           -
-            rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
+            rm -rf /sc-data/halley/starcoin.ipc /sc-data/halley/starcoindb/db/starcoindb/LOCK;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n proxima -d /sc-data --disable-mdns=true $node_key_flag --rpc-address 0.0.0.0;
+            /starcoin/starcoin -n halley -d /sc-data --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+            if [ $ret -eq 120 ]; then
+            echo "Start failed with gensis mismatch code 120, clean data...";
+            rm -rf /sc-data/halley/ &>/dev/null;
+            fi;
         ports:
           - containerPort: 9840
             hostPort: 9840
@@ -66,19 +71,10 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-          - name: SEED
-            valueFrom:
-              configMapKeyRef:
-                name: starcoin-config
-                key: seed
-          - name: DISABLE_SEED
-            valueFrom:
-              configMapKeyRef:
-                name: starcoin-config
-                key: start_disable_seed_node
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume
+      namespace: starcoin-halley
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
