@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: runner
-          image: starcoin/starcoin-runner:v2.275.1.20210104
+          image: starcoin/starcoin-runner:v2.275.1.20210111
           imagePullPolicy: Always
           command:
             - bash
