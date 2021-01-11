@@ -51,5 +51,7 @@ jobs:
           labels: ${{ steps.docker_meta.outputs.labels }}
       - name: deploy cluster
         shell: bash
+        env:
+          IMAGE_VERSION: ${{steps.docker_meta.outputs.version}}
         run: |
-          kubectl patch --namespace starcoin-halley statefulset starcoin --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"starcoin/starcoin:'${steps.docker_meta.outputs.version}'"}]'
+          kubectl patch --namespace starcoin-halley statefulset starcoin --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"starcoin/starcoin:'${IMAGE_VERSION}'"}]'
