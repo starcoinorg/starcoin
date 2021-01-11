@@ -14,7 +14,7 @@ starcoin-types = {path = "../types"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 chrono = "0.4"
-byteorder = "1.3.2"
+byteorder = "1.4.2"
 lru = "0.6.2"
 parking_lot = "0.11.1"
 proptest = { version = "0.10.1", optional = true }
