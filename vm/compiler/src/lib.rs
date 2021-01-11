@@ -1,16 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::contract::{Contract, ModuleContract};
 /// A wrap to move-lang compiler
 use crate::shared::Address;
 use anyhow::{bail, ensure, Result};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::bytecode_verifier::verify_module;
-use starcoin_vm_types::errors::Location;
+use starcoin_vm_types::compatibility::Compatibility;
+use starcoin_vm_types::{
+    errors::Location,
+    errors::VMResult,
+};
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::normalized::Module;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -21,8 +24,6 @@ pub use move_lang::{
     errors::*,
     move_compile, move_compile_and_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
-
-mod contract;
 
 pub mod errors {
     pub use move_lang::errors::*;
@@ -138,41 +139,26 @@ pub fn compile_source_string_no_report(
     })
 }
 
-/// pre_module must has bean verified, return new code verified CompiledModule
-pub fn check_compat_and_verify_module(pre_code: &[u8], new_code: &[u8]) -> Result<CompiledModule> {
-    let pre_module = CompiledModule::deserialize(pre_code)
-        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
-    let new_module = CompiledModule::deserialize(new_code)
-        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
-
-    if let Err(e) = verify_module(&new_module) {
-        return Err(e.into_vm_status().into());
-    }
-
-    let pre_contract = ModuleContract::new(&pre_module);
-    let new_contract = ModuleContract::new(&new_module);
-    new_contract.compat_with(&pre_contract)?;
-    Ok(new_module)
-}
 
 /// check module compatibility
-pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> Result<CompiledModule> {
+pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
     let pre_module = CompiledModule::deserialize(pre_code)
-        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
+        .map_err(|e| e.finish(Location::Undefined))?;
     let new_module = CompiledModule::deserialize(new_code)
-        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
+        .map_err(|e| e.finish(Location::Undefined))?;
 
-    let pre_contract = ModuleContract::new(&pre_module);
-    let new_contract = ModuleContract::new(&new_module);
-    new_contract.compat_with(&pre_contract)?;
-    Ok(new_module)
+    let old = Module::new(&pre_module);
+    let new = Module::new(&new_module);
+
+    Ok(Compatibility::check(&old, &new).is_fully_compatible())
 }
 
 /// check module compatibility
 pub fn check_compiled_module_compat(pre: &CompiledModule, new: &CompiledModule) -> bool {
-    let pre_contract = ModuleContract::new(pre);
-    let new_contract = ModuleContract::new(new);
-    new_contract.is_compat_with(&pre_contract)
+    let old = Module::new(pre);
+    let new = Module::new(new);
+
+    Compatibility::check(&old, &new).is_fully_compatible()
 }
 
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
@@ -317,19 +303,7 @@ mod tests {
             .1
             .unwrap()
             .serialize();
-        match check_compat_and_verify_module(pre_code.as_slice(), new_code.as_slice()) {
-            Err(e) => {
-                if expect {
-                    panic!(e)
-                } else {
-                    debug!("expected checked compat error: {:?}", e);
-                }
-            }
-            Ok(_) => {
-                if !expect {
-                    panic!("expect not compat, but compat.")
-                }
-            }
-        }
+        let compatible = check_module_compat(pre_code.as_slice(), new_code.as_slice()).unwrap();
+        assert_eq!(compatible, expect);
     }
 }

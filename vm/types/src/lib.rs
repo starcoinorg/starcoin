@@ -93,6 +93,14 @@ pub mod file_format {
     pub use vm::file_format::*;
 }
 
+pub mod normalized {
+    pub use vm::normalized::*;
+}
+
+pub mod compatibility {
+    pub use vm::compatibility::*;
+}
+
 pub mod views {
     pub use vm::views::*;
 }
