@@ -130,9 +130,9 @@ impl NodeService {
             );
         }
         if config.logger.disable_stderr() {
-            logger_handle.enable_stderr();
-        } else {
             logger_handle.disable_stderr();
+        } else {
+            logger_handle.enable_stderr();
         }
 
         // start metric server
