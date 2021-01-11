@@ -15,4 +15,4 @@ COPY $RELEASE_PATH/starcoin \
      $RELEASE_PATH/starcoin_indexer \
      /starcoin/
      
-CMD ["starcoin"]
+CMD ["/starcoin/starcoin"]
