@@ -38,9 +38,10 @@ impl CommandAction for StatEpochCommand {
         let epoch_count = end_number / epoch_block_count + 1;
         let chain_info = client.chain_info().unwrap();
         let end_number = chain_info.head.number.0;
+        dbg!(epoch_count);
         // get epoch_info
         let mut epoch_number = 1;
-        let mut vec_epoch = vec![];
+        let vec_epoch = vec![];
         while epoch_number < epoch_count {
             let mut block_number = epoch_number * 240 - 1;
             if block_number >= end_number {
@@ -48,12 +49,16 @@ impl CommandAction for StatEpochCommand {
             }
             let epoch = client.get_epoch_info_by_number(block_number).unwrap();
             println!(
-                "epoch: {:?}, {:?}, {:?}",
+                "epoch: {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
                 epoch.number(),
                 epoch.block_time_target(),
-                epoch.epoch_data().uncles()
+                epoch.total_reward(),
+                epoch.reward_per_block(),
+                epoch.reward_per_uncle_percent(),
+                epoch.epoch_data().uncles(),
+                epoch.epoch_data().total_gas(),
             );
-            vec_epoch.push(epoch);
+            // vec_epoch.push(epoch);
             epoch_number += 1;
         }
         Ok(vec_epoch)

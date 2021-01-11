@@ -165,7 +165,12 @@ impl EpochInfo {
     pub fn total_reward(&self) -> u128 {
         self.epoch_data.total_reward
     }
-
+    pub fn reward_per_block(&self) -> u128 {
+        self.epoch.reward_per_block
+    }
+    pub fn reward_per_uncle_percent(&self) -> u64 {
+        self.epoch.reward_per_uncle_percent
+    }
     pub fn number(&self) -> u64 {
         self.epoch.number()
     }
@@ -195,6 +200,10 @@ impl EpochData {
 
     pub fn uncles(&self) -> u64 {
         self.uncles
+    }
+
+    pub fn total_gas(&self) -> u128 {
+        self.total_gas
     }
 
     pub fn total_reward(&self) -> u128 {

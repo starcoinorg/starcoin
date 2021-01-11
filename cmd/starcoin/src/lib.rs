@@ -100,6 +100,11 @@ pub fn add_command(
                         .subcommand(chain::StatTPSCommand)
                         .subcommand(chain::StatEpochCommand)
                         .subcommand(chain::StatBlockCommand),
+                )
+                .subcommand(
+                    Command::with_name("verify")
+                        .subcommand(chain::VerifyBlockCommand)
+                        .subcommand(chain::VerifyEpochCommand),
                 ),
         )
         .command(
