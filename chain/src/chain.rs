@@ -766,7 +766,7 @@ impl ChainReader for BlockChain {
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
         ensure!(
-            head.header().number() >= self.epoch.start_block_number() - 1,
+            head.header().number() + 1 >= self.epoch.start_block_number(),
             "Can only fork branch in same epoch {:}:{:}:{:?}.",
             block_id,
             head.header().number(),
