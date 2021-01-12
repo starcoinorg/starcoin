@@ -316,12 +316,15 @@ pub mod sync_score_metrics;
 #[cfg(test)]
 mod tests;
 
+use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::{FindSubTargetTask, InnerSyncTask};
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use futures::channel::mpsc::unbounded;
 use network::NetworkServiceRef;
+use network_api::messages::PeerEvent;
 use network_api::{NetworkService, PeerSelector};
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use traits::ChainReader;
@@ -340,6 +343,7 @@ pub fn full_sync_task<H, A, F, N>(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
     Arc<TaskEventCounterHandle>,
+    PeerEventHandle,
 )>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
@@ -384,7 +388,11 @@ where
     .generate();
     let (fut, _) = sync_task.with_handle();
 
+    let (peer_sender, mut peer_receiver) = unbounded::<PeerEvent>();
+    let peer_event_handle = PeerEventHandle::new(peer_sender);
+
     let event_handle_clone = event_handle.clone();
+
     let all_fut = async move {
         let ancestor = fut.await?;
         let mut ancestor_event_handle = ancestor_event_handle;
@@ -398,6 +406,12 @@ where
         let mut latest_block_chain;
         let mut latest_peers = peers;
         loop {
+            while let Ok(Some(peer_event)) = peer_receiver.try_next() {
+                if let PeerEvent::Open(peer_id, chain_info) = peer_event {
+                    latest_peers.push(PeerInfo::new(peer_id, *chain_info));
+                }
+            }
+
             // sub target
             let target_number = latest_ancestor.number + 1000;
             let sub_target_task = FindSubTargetTask::new(
@@ -445,5 +459,5 @@ where
     };
     let task = TaskFuture::new(all_fut.boxed());
     let (fut, handle) = task.with_handle();
-    Ok((fut, handle, event_handle))
+    Ok((fut, handle, event_handle, peer_event_handle))
 }
