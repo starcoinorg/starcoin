@@ -1,11 +1,5 @@
 name: Build and Test
 on:
-  push:
-    # only build master
-    branches:
-      - master
-    paths-ignore:
-      - '**.md'
   pull_request:
     branches:
       - master
@@ -27,7 +21,6 @@ jobs:
           toolchain: stable
           components: rustfmt,clippy
       - name: run fmt check
-        if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -39,7 +32,6 @@ jobs:
         with:
           command: clean
       - name: run cargo check
-        if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
         env:
           RUSTFLAGS: -D warnings
@@ -52,12 +44,10 @@ jobs:
           command: build
           args: --all
       - name: test
-        if: github.ref != 'refs/heads/master'
         run: bash ./scripts/auto_rerun_test.sh
       - name: check changed files
         run: bash ./scripts/changed-files.sh
       - name: integration test dev environment
-        if: github.ref != 'refs/heads/master'
         env:
           RUST_LOG: info
           RUST_BACKTRACE: full
@@ -66,23 +56,3 @@ jobs:
         with:
           command: test
           args: --test integration -- -e cmd
-      - name: build-release
-        # only build release on master branch
-        if: github.ref == 'refs/heads/master'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all
-      - uses: actions/upload-artifact@v2
-        # only upload master branch artifact.
-        if: github.ref == 'refs/heads/master'
-        with:
-          name: starcoin-artifact
-          path: target/release/starcoin*
-      - name: deploy node
-        # only deploy master branch build.
-        if: github.ref == 'refs/heads/master'
-        env:
-          node_keys: ${{ secrets.STARCOIN_NET_NODE_KEYS }}
-        shell: bash
-        run: NODE_KEYS=${node_keys} ./scripts/starcoin_ci_docker.sh 3 starcoin-node halley

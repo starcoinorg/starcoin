@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runner-debug-deployment
+  labels:
+    app: runner-debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: runner-debug
+  template:
+    metadata:
+      labels:
+        app: runner-debug
+    spec:
+      containers:
+        - name: runner
+          image: starcoin/starcoin-runner:v2.275.1.20210111
+          imagePullPolicy: Always
+          command:
+            - bash
+            - -c
+          args:
+            -
+              while true; do sleep 10 ; echo "sleep"; done;
+      serviceAccountName: github-runner

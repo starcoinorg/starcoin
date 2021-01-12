@@ -7,9 +7,9 @@ spec:
     spec:
       nodeSelector:
         doks.digitalocean.com/node-pool: ci-pool2
-      image: starcoin/starcoin-runner:v2.275.1.20210104
+      image: starcoin/starcoin-runner:v2.275.1.20210111
       repository: starcoinorg/starcoin
-
+      serviceAccountName: github-runner
       resources:
         requests:
           cpu: "24.0"

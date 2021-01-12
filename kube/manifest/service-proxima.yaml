@@ -7,6 +7,7 @@ metadata:
     network: proxima
     statefulset.kubernetes.io/pod-name: starcoin-0
   name: starcoin-0
+  namespace: starcoin-proxima
 spec:
   ports:
   - port: 9840
@@ -46,6 +47,7 @@ metadata:
     network: proxima
     statefulset.kubernetes.io/pod-name: starcoin-1
   name: starcoin-1
+  namespace: starcoin-proxima
 spec:
   ports:
   - port: 9840
@@ -85,6 +87,7 @@ metadata:
     network: proxima
     statefulset.kubernetes.io/pod-name: starcoin-2
   name: starcoin-2
+  namespace: starcoin-proxima
 spec:
   ports:
   - port: 9840
