@@ -8,12 +8,9 @@ use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::compatibility::Compatibility;
-use starcoin_vm_types::{
-    errors::Location,
-    errors::VMResult,
-};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::normalized::Module;
+use starcoin_vm_types::{errors::Location, errors::VMResult};
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -133,19 +130,18 @@ pub fn compile_source_string_no_report(
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    move_compile(&targets, deps, Some(sender), None, false).map(|(f, u)| {
+    move_compile(&targets, deps, Some(sender), None, true).map(|(f, u)| {
         let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
         (f, compiled_result)
     })
 }
 
-
 /// check module compatibility
 pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
-    let pre_module = CompiledModule::deserialize(pre_code)
-        .map_err(|e| e.finish(Location::Undefined))?;
-    let new_module = CompiledModule::deserialize(new_code)
-        .map_err(|e| e.finish(Location::Undefined))?;
+    let pre_module =
+        CompiledModule::deserialize(pre_code).map_err(|e| e.finish(Location::Undefined))?;
+    let new_module =
+        CompiledModule::deserialize(new_code).map_err(|e| e.finish(Location::Undefined))?;
 
     let old = Module::new(&pre_module);
     let new = Module::new(&new_module);
