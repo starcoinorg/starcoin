@@ -34,6 +34,9 @@ pub struct TxPoolConfig {
 }
 
 impl TxPoolConfig {
+    pub fn set_max_count(&mut self, max_count: u64) {
+        self.max_count = Some(max_count);
+    }
     pub fn max_count(&self) -> u64 {
         self.max_count.clone().unwrap_or(4096)
     }
