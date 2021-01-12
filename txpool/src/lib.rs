@@ -18,11 +18,16 @@ use starcoin_txpool_api::{PropagateNewTransactions, TxnStatusFullEvent};
 use std::sync::Arc;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
-use types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
+use types::{
+    sync_status::SyncStatus, system_events::SyncStatusChangeEvent,
+    transaction::SignedUserTransaction,
+};
 
+use actix::clock::Duration;
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::TxStatus;
 use serde::export::Option::Some;
+use starcoin_state_api::AccountStateReader;
 pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
@@ -58,6 +63,29 @@ impl TxPoolActorService {
             None => false,
         }
     }
+
+    fn transactions_to_propagate(&self) -> Result<Vec<SignedUserTransaction>> {
+        let propagate_for_blocks: u64 = self.inner.node_config.tx_pool.propagate_for_blocks();
+        let min_txn_to_propagate: usize = self.inner.node_config.tx_pool.min_tx_to_propagate();
+
+        let statedb = self.inner.get_chain_reader();
+        let reader = AccountStateReader::new(&statedb);
+        let block_gas_limit = reader.get_epoch()?.block_gas_limit();
+        // TODO: fetch from a gas constants
+        let min_tx_gas = 200;
+
+        let max_len = std::cmp::max(
+            min_txn_to_propagate,
+            (block_gas_limit / min_tx_gas * propagate_for_blocks) as usize,
+        );
+        let current_timestamp = reader.get_timestamp()?.seconds();
+        Ok(self
+            .inner
+            .get_pending(max_len as u64, current_timestamp)
+            .into_iter()
+            .map(|t| t.signed().clone())
+            .collect())
+    }
 }
 
 impl ServiceFactory<Self> for TxPoolActorService {
@@ -88,6 +116,20 @@ impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.add_stream(self.inner.subscribe_txns());
+
+        // propagate txn every x seconds.
+        let myself = self.clone();
+        let interval = self.inner.node_config.tx_pool.tx_propagate_interval();
+        ctx.run_interval(Duration::from_secs(interval), move |ctx| {
+            match myself.transactions_to_propagate() {
+                Ok(txns) => ctx.broadcast(PropagateNewTransactions::new(txns)),
+                Err(e) => log::error!(
+                    "txpool: fail to get transaction to propagate. err: {:?}",
+                    &e
+                ),
+            };
+        });
+
         Ok(())
     }
 
@@ -121,7 +163,6 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
                 .with_label_values(&["count"])
                 .set(txn_count as i64);
         }
-        // TODO: need peer info to do more accurate sending.
         let mut txns = vec![];
         for (h, s) in item.iter() {
             match *s {

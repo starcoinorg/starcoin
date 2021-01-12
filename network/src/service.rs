@@ -16,6 +16,7 @@ use network_api::messages::{
 use network_api::peer_score::LinearScore;
 use network_api::{NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
+use rand::RngCore;
 use smallvec::alloc::borrow::Cow;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -478,7 +479,9 @@ impl Inner {
                 });
                 let origin_txn_len = msg.txns.len();
                 let mut send_peer_count: usize = 0;
-                for (peer_id, peer) in &mut self.peers {
+                let selected_peers = select_peers_for_transactions(&self.peers, |_| true);
+                for peer_id in selected_peers {
+                    let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
                     let txns_unhandled = msg
                         .txns
                         .iter()
@@ -530,4 +533,27 @@ impl Inner {
             }
         }
     }
+}
+
+// TODO: should change into config.
+const MIN_PEERS_PROPAGATION: usize = 4;
+const MAX_PEERS_PROPAGATION: usize = 128;
+
+fn select_peers_for_transactions<F>(peers: &HashMap<PeerId, Peer>, filter: F) -> Vec<PeerId>
+where
+    F: Fn(&PeerId) -> bool,
+{
+    let peers_len = peers.len();
+    // sqrt(x)/x scaled to max u32
+    let fraction = ((peers_len as f64).powf(-0.5) * (u32::max_value() as f64).round()) as u32;
+    let small = peers_len < MIN_PEERS_PROPAGATION;
+
+    let mut random = rand::thread_rng();
+    peers
+        .keys()
+        .cloned()
+        .filter(filter)
+        .filter(|_| small || random.next_u32() < fraction)
+        .take(MAX_PEERS_PROPAGATION)
+        .collect()
 }

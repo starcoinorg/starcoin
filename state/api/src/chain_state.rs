@@ -292,6 +292,11 @@ impl<'a> AccountStateReader<'a> {
         self.get_balance_by_type(address, token_code.into())
     }
 
+    pub fn get_epoch(&self) -> Result<Epoch> {
+        self.get_resource::<Epoch>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))
+    }
+
     pub fn get_epoch_info(&self) -> Result<EpochInfo> {
         let epoch = self
             .get_resource::<Epoch>(genesis_address())?
