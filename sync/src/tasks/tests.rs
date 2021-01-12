@@ -43,7 +43,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -75,7 +75,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     ));
     //sync again
     let target = arc_node1.chain().get_block_info(None)?.unwrap();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -148,7 +148,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -183,7 +183,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -234,7 +234,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -294,7 +294,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -331,7 +331,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -385,7 +385,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
