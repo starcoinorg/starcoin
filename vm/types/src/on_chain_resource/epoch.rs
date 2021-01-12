@@ -146,6 +146,10 @@ impl EpochInfo {
         self.epoch.start_block_number
     }
 
+    pub fn start_time(&self) -> u64 {
+        self.epoch.start_time
+    }
+
     pub fn end_block_number(&self) -> u64 {
         self.epoch.end_block_number
     }

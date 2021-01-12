@@ -104,7 +104,8 @@ pub fn add_command(
                 .subcommand(
                     Command::with_name("verify")
                         .subcommand(chain::VerifyBlockCommand)
-                        .subcommand(chain::VerifyEpochCommand),
+                        .subcommand(chain::VerifyEpochCommand)
+                        .subcommand(chain::VerifyNodeCommand),
                 ),
         )
         .command(

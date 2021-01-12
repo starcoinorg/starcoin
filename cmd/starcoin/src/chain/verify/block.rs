@@ -16,7 +16,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "block")]
 pub struct BlockOpt {
-    #[structopt(name = "number", long, short = "b", default_value = "0")]
+    #[structopt(name = "number", long, short = "n", default_value = "0")]
     block_number: u64,
 }
 
@@ -54,22 +54,28 @@ impl CommandAction for VerifyBlockCommand {
             let block = client.chain_get_block_by_number(number)?.unwrap();
             block_map.insert(number, block.clone());
         }
-        let mut index = start + 1;
-        while index < end {
+        let mut continue_large = 0u64;
+        for index in start + 1..end {
             let block1 = block_map.get(&(index - 1)).unwrap();
             let block2 = block_map.get(&index).unwrap();
             let time_differ = block2.header.timestamp.0 - block1.header.timestamp.0;
 
             if time_differ > block_time_target {
-                warn!("time larger than target: {:?} {:?}", index, time_differ);
+                warn!(
+                    "time larger than target:{:?} {:?} {:?}",
+                    continue_large, index, time_differ
+                );
+                continue_large += 1;
+                assert!(continue_large < 4u64);
+            } else {
+                continue_large = 0u64;
             }
             // assert!(time_differ <= block_time_target);
             info!("time verify ok: {:?}", index);
-            index += 1;
         }
+
         // difficulty
-        let mut index = start;
-        while index < end {
+        for index in start..end {
             let mut block_diff_vec = VecDeque::new();
             let min = if index > difficulty_window {
                 index - difficulty_window
@@ -93,20 +99,14 @@ impl CommandAction for VerifyBlockCommand {
                 let block = block_map.get(&index).unwrap();
                 let difficulty = target_to_difficulty(target);
                 assert_eq!(block.header.difficulty, difficulty);
-            // if block.header.difficulty != difficulty {
-            //     warn!("index difficulty err: {:?}", index);
-            // } else {
-            //     info!("difficulty verify ok: {:?}", index);
-            // }
+                info!("difficulty verify ok: {:?}", index);
             } else {
                 warn!("index err: {:?}, start: {}, end {:}", index, start, end);
             }
-            index += 1;
         }
 
         //gas check
-        let index = start;
-        while index < end {
+        for index in start..end {
             let block = block_map.get(&index).unwrap();
             let block_gas = block.header.gas_used.0;
             let txn_vec = block.body.txn_hashes();
@@ -121,6 +121,7 @@ impl CommandAction for VerifyBlockCommand {
                 total_gas += gas;
             }
             assert_eq!(block_gas, total_gas);
+            info!("gas verify ok: {:?}", index);
         }
 
         Ok("verify ok!".parse()?)
