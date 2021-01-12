@@ -276,13 +276,12 @@ impl StarcoinVM {
             if !compatible {
                 warn!("Check module compat error: {:?}", module_id);
                 return Err(errors::verification_error(
-                    // Todo: replace with BACKWARD_INCOMPATIBLE_MODULE_UPDATE
-                    StatusCode::VERIFICATION_ERROR,
+                    StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE,
                     IndexKind::ModuleHandle,
                     compiled_module.self_handle_idx().0,
                 )
-                    .finish(Location::Undefined)
-                    .into_vm_status());
+                .finish(Location::Undefined)
+                .into_vm_status());
             }
         }
         Ok(())
