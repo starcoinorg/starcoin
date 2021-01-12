@@ -406,13 +406,9 @@ where
         let mut latest_block_chain;
         let mut latest_peers = peers;
         loop {
-            loop {
-                if let Ok(Some(peer_event)) = peer_receiver.try_next() {
-                    if let PeerEvent::Open(peer_id, chain_info) = peer_event {
-                        latest_peers.push(PeerInfo::new(peer_id, *chain_info));
-                    }
-                } else {
-                    break;
+            while let Ok(Some(peer_event)) = peer_receiver.try_next() {
+                if let PeerEvent::Open(peer_id, chain_info) = peer_event {
+                    latest_peers.push(PeerInfo::new(peer_id, *chain_info));
                 }
             }
 
