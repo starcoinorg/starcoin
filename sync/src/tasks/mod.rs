@@ -323,7 +323,6 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
-use futures::StreamExt;
 use network::NetworkServiceRef;
 use network_api::messages::PeerEvent;
 use network_api::{NetworkService, PeerSelector};
@@ -389,10 +388,11 @@ where
     .generate();
     let (fut, _) = sync_task.with_handle();
 
-    let (peer_sender, peer_receiver) = unbounded::<PeerEvent>();
+    let (peer_sender, mut peer_receiver) = unbounded::<PeerEvent>();
     let peer_event_handle = PeerEventHandle::new(peer_sender);
 
     let event_handle_clone = event_handle.clone();
+
     let all_fut = async move {
         let ancestor = fut.await?;
         let mut ancestor_event_handle = ancestor_event_handle;
@@ -405,11 +405,14 @@ where
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
         let mut latest_peers = peers;
-        let mut peer_reader = peer_receiver.fuse();
         loop {
-            while let Some(peer_event) = peer_reader.next().await {
-                if let PeerEvent::Open(peer_id, chain_info) = peer_event {
-                    latest_peers.push(PeerInfo::new(peer_id, *chain_info));
+            loop {
+                if let Ok(Some(peer_event)) = peer_receiver.try_next() {
+                    if let PeerEvent::Open(peer_id, chain_info) = peer_event {
+                        latest_peers.push(PeerInfo::new(peer_id, *chain_info));
+                    }
+                } else {
+                    break;
                 }
             }
 
