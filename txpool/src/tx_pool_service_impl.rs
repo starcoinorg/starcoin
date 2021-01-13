@@ -17,6 +17,7 @@ use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
+use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::sync::Arc;
 use storage::Store;
@@ -43,9 +44,9 @@ impl TxPoolService {
         };
         let queue = TxnQueue::new(
             tx_pool::Options {
-                max_count: pool_config.max_count as usize,
-                max_mem_usage: pool_config.max_mem_usage as usize,
-                max_per_sender: pool_config.max_per_sender as usize,
+                max_count: pool_config.max_count() as usize,
+                max_mem_usage: pool_config.max_mem_usage() as usize,
+                max_per_sender: pool_config.max_per_sender() as usize,
             },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
@@ -172,7 +173,7 @@ impl TxPoolSyncService for TxPoolService {
 pub(crate) type TxnQueue = TransactionQueue;
 #[derive(Clone)]
 pub(crate) struct Inner {
-    node_config: Arc<NodeConfig>,
+    pub(crate) node_config: Arc<NodeConfig>,
     queue: Arc<TxnQueue>,
     chain_header: Arc<RwLock<BlockHeader>>,
     storage: Arc<dyn Store>,
@@ -201,6 +202,12 @@ impl Inner {
         self.sequence_number_cache.clear();
     }
 
+    pub(crate) fn get_chain_reader(&self) -> ChainStateDB {
+        ChainStateDB::new(
+            self.storage.clone().into_super_arc(),
+            Some(self.get_chain_header().state_root),
+        )
+    }
     pub(crate) fn get_chain_header(&self) -> BlockHeader {
         self.chain_header.read().clone()
     }

@@ -207,6 +207,9 @@ pub struct StarcoinOpt {
     #[structopt(flatten)]
     pub network: NetworkConfig,
 
+    #[structopt(flatten)]
+    pub txpool: TxPoolConfig,
+
     #[structopt(long = "watch-timeout")]
     /// Watch timeout in seconds
     pub watch_timeout: Option<u64>,
