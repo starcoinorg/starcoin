@@ -13,7 +13,7 @@ use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
     ReportReputation, TransactionsMessage,
 };
-use network_api::peer_score::LinearScore;
+use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
 use rand::RngCore;
@@ -265,7 +265,7 @@ pub(crate) struct Inner {
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     sync_status: Option<SyncStatus>,
     metrics: Option<NetworkMetrics>,
-    score_handler: LinearScore,
+    score_handler: Arc<dyn Score<BlockBroadcastEntry> + 'static>,
 }
 
 impl Inner {
@@ -286,7 +286,7 @@ impl Inner {
             peer_message_handler: Arc::new(peer_message_handler),
             sync_status: None,
             metrics,
-            score_handler: LinearScore::new(10),
+            score_handler: Arc::new(LinearScore::new(10)),
         })
     }
 
@@ -379,13 +379,21 @@ impl Inner {
                 } else {
                     debug!("Ignore notification message from peer: {}, protocol: {} , because node is not synchronized.", peer_id, protocol);
                 }
-                BROADCAST_SCORE_METRICS.report_new(peer_id, self.score_handler.linear());
+                BROADCAST_SCORE_METRICS.report_new(
+                    peer_id,
+                    self.score_handler
+                        .execute(BlockBroadcastEntry::new(true, HandleState::Succ)),
+                );
             } else {
                 debug!(
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
-                BROADCAST_SCORE_METRICS.report_old(peer_id, self.score_handler.percentage(10));
+                BROADCAST_SCORE_METRICS.report_old(
+                    peer_id,
+                    self.score_handler
+                        .execute(BlockBroadcastEntry::new(false, HandleState::Succ)),
+                );
             };
         } else {
             error!(

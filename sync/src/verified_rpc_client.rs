@@ -27,6 +27,7 @@ use starcoin_types::{
 };
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::sync::Arc;
 
 pub trait RpcVerify<C: Clone> {
     fn filter<T, F>(&mut self, rpc_data: Vec<T>, hash_fun: F) -> Vec<T>
@@ -108,7 +109,7 @@ impl From<&GetBlockHeadersByNumber> for RpcEntryVerify<BlockNumber> {
 pub struct VerifiedRpcClient {
     peer_selector: PeerSelector,
     client: NetworkRpcClient,
-    score_handler: InverseScore,
+    score_handler: Arc<dyn Score<u32> + 'static>,
 }
 
 impl VerifiedRpcClient {
@@ -123,7 +124,7 @@ impl VerifiedRpcClient {
         Self {
             peer_selector,
             client,
-            score_handler: InverseScore::new(100, 60),
+            score_handler: Arc::new(InverseScore::new(100, 60)),
         }
     }
 
