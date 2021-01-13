@@ -6,6 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use serde::Serialize;
+use starcoin_types::U256;
 use structopt::StructOpt;
 
 /// Get stat of gas for blocks.
@@ -22,10 +23,15 @@ pub struct BlockOpt {
 pub struct BlockStatView {
     pub number: u64,
     pub gas_used: u64,
+    pub difficulty: U256,
 }
 impl BlockStatView {
-    fn new(number: u64, gas_used: u64) -> Self {
-        Self { number, gas_used }
+    fn new(number: u64, gas_used: u64, difficulty: U256) -> Self {
+        Self {
+            number,
+            gas_used,
+            difficulty,
+        }
     }
 }
 pub struct StatBlockCommand;
@@ -56,7 +62,11 @@ impl CommandAction for StatBlockCommand {
             let block = client
                 .chain_get_block_by_number(block_number)?
                 .ok_or_else(|| anyhow::format_err!("block of height {} not found", block_number))?;
-            let stat_view = BlockStatView::new(block.header.number.0, block.header.gas_used.0);
+            let stat_view = BlockStatView::new(
+                block.header.number.0,
+                block.header.gas_used.0,
+                block.header.difficulty,
+            );
             println!("{:?}", stat_view);
             vec_stat_block.push(stat_view);
             block_number += 1;
