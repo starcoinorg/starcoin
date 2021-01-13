@@ -31,7 +31,7 @@ log = "0.4.13"
 
 [dev-dependencies]
 starcoin-resource-viewer = {path = "../vm/resource-viewer"}
-tempfile = "3.1.0"
+tempfile = "3.2.0"
 starcoin-consensus = { path = "../consensus" }
 test-helper= {path = "../test-helper"}
 

@@ -22,7 +22,7 @@ move-core-types = {git = "https://github.com/starcoinorg/diem", rev="640ab177ad3
 bcs = "0.1.2"
 
 [dev-dependencies]
-tempfile = "3.1.0"
+tempfile = "3.2.0"
 
 [features]
 default = []
