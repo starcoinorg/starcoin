@@ -45,7 +45,7 @@ fn sanity_check_testsuite_impl(
                 .expect("path to string should success")
                 .to_string(),
         ),
-        false
+        false,
     )?;
     let errors = match units_or_errors {
         Err(errors) => errors,
