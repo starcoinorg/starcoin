@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::{full_sync_task, AncestorEvent, VerifiedRpcClientFactory};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
@@ -36,6 +37,7 @@ pub struct SyncTaskHandle {
     task_begin: Option<BlockIdAndNumber>,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
+    peer_event_handle: PeerEventHandle,
 }
 
 pub enum SyncStage {
@@ -151,7 +153,7 @@ impl SyncService2 {
 
             let fetcher_factory = Arc::new(VerifiedRpcClientFactory::new(network));
 
-            let (fut, task_handle, task_event_handle) = full_sync_task(
+            let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
                 current_block_id,
                 target.block_info.clone(),
                 skip_pow_verify,
@@ -167,6 +169,7 @@ impl SyncService2 {
                 target,
                 task_handle,
                 task_event_handle,
+                peer_event_handle,
             })?;
             Ok(Some(fut.await?))
             //Ok(())
@@ -262,6 +265,13 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
         if self.sync_status.is_prepare() {
             return;
         }
+
+        if let SyncStage::Synchronizing(task_handle) = &mut self.stage {
+            if let Err(e) = task_handle.peer_event_handle.push(msg.clone()) {
+                error!("[sync] Push PeerEvent error: {:?}", e);
+            }
+        }
+
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("[sync] connect new peer:{:?}", open_peer_id);
@@ -292,17 +302,23 @@ pub struct SyncBeginEvent {
     target: SyncTarget,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
+    peer_event_handle: PeerEventHandle,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
     fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
-        let (target, task_handle, task_event_handle) =
-            (msg.target, msg.task_handle, msg.task_event_handle);
+        let (target, task_handle, task_event_handle, peer_event_handle) = (
+            msg.target,
+            msg.task_handle,
+            msg.task_event_handle,
+            msg.peer_event_handle,
+        );
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
             task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
+            peer_event_handle,
         };
         match std::mem::replace(
             &mut self.stage,

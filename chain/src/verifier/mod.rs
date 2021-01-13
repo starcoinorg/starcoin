@@ -127,7 +127,7 @@ pub trait BlockVerifier {
             && epoch.end_block_number() > block_header.number()
             && current_chain.exist_block(block_header.parent_hash())?
             && !current_chain.exist_block(block_header.id())?
-            && !uncles.contains(&block_header.id())
+            && uncles.get(&block_header.id()).is_none()
             && block_header.number() <= current_chain.current_header().number())
     }
 }
