@@ -21,7 +21,7 @@ pub async fn start_txpool_with_size(
     ServiceRef<RegistryService>,
 ) {
     let mut config = NodeConfig::random_for_test();
-    config.tx_pool.max_count = pool_size;
+    config.tx_pool.set_max_count(pool_size);
     let node_config = Arc::new(config);
     // let node_config = Arc::new(NodeConfig::random_for_test());
 
