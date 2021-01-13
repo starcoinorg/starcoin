@@ -84,7 +84,6 @@ members = [
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/replay",
-    "cmd/verify",
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
