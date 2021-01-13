@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 bitflags = "1.2.0"
-bytes = "0.5.0"
+bytes = "1.0.1"
 derive_more = "0.99.11"
 rand = "0.7.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
