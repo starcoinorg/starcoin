@@ -186,7 +186,6 @@ pub fn load_bytecode_file<P: AsRef<Path>>(file_path: P) -> Result<(Vec<u8>, bool
 mod tests {
     use super::*;
     use crate::command_line::parse_address;
-    use starcoin_logger::prelude::*;
     use starcoin_vm_types::language_storage::CORE_CODE_ADDRESS;
 
     #[test]
