@@ -8616,21 +8616,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-verify"
-version = "0.10.0"
-dependencies = [
- "sp-utils",
- "starcoin-chain",
- "starcoin-config",
- "starcoin-genesis",
- "starcoin-logger",
- "starcoin-storage",
- "starcoin-traits",
- "starcoin-vm-types",
- "structopt 0.3.21",
-]
-
-[[package]]
 name = "starcoin-vm-runtime"
 version = "0.10.0"
 dependencies = [
