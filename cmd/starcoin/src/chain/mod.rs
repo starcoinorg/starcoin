@@ -15,6 +15,7 @@ mod list_block_cmd;
 mod stat;
 mod tps;
 pub mod uncle;
+mod verify;
 
 pub use epoch_info::*;
 pub use get_block_by_number_cmd::*;
@@ -29,3 +30,4 @@ pub use info_cmd::*;
 pub use list_block_cmd::*;
 pub use stat::{StatBlockCommand, StatEpochCommand, StatTPSCommand};
 pub use tps::*;
+pub use verify::*;
