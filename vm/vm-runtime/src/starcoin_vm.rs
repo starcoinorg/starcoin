@@ -271,19 +271,18 @@ impl StarcoinVM {
             let pre_version = session
                 .load_module(&module_id)
                 .map_err(|e| e.into_vm_status())?;
-            check_module_compat(pre_version.as_slice(), module.code()).map_err(|e| {
-                {
-                    warn!("Check module compat error: {:?}", e);
-                    errors::verification_error(
-                        //TODO define error code for compat.
-                        StatusCode::VERIFICATION_ERROR,
-                        IndexKind::ModuleHandle,
-                        compiled_module.self_handle_idx().0,
-                    )
-                }
+            let compatible = check_module_compat(pre_version.as_slice(), module.code())
+                .map_err(|e| e.into_vm_status())?;
+            if !compatible {
+                warn!("Check module compat error: {:?}", module_id);
+                return Err(errors::verification_error(
+                    StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE,
+                    IndexKind::ModuleHandle,
+                    compiled_module.self_handle_idx().0,
+                )
                 .finish(Location::Undefined)
-                .into_vm_status()
-            })?;
+                .into_vm_status());
+            }
         }
         Ok(())
     }
