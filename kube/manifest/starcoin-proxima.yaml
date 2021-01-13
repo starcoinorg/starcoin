@@ -50,7 +50,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n proxima -d /sc-data --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+            /starcoin/starcoin -n proxima -d /sc-data --enable-mdns $node_key_flag --rpc-address 0.0.0.0;
         ports:
           - containerPort: 9840
             hostPort: 9840
@@ -67,6 +67,8 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
+      nodeSelector:
+        doks.digitalocean.com/node-pool: node-pool2
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

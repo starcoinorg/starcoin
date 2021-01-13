@@ -71,6 +71,8 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
+      nodeSelector:
+        doks.digitalocean.com/node-pool: node-pool2
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume
