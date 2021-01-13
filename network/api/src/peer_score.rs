@@ -1,4 +1,4 @@
-pub trait Score<Entry> {
+pub trait Score<Entry>: Sync + Send {
     fn execute(&self, entry: Entry) -> i64;
 }
 
@@ -30,6 +30,12 @@ pub enum HandleState {
 pub struct BlockBroadcastEntry {
     new: bool,
     state: HandleState,
+}
+
+impl BlockBroadcastEntry {
+    pub fn new(new: bool, state: HandleState) -> Self {
+        Self { new, state }
+    }
 }
 
 #[derive(Clone)]
