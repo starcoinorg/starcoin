@@ -24,7 +24,7 @@ use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
-use starcoin_txpool_api::PropagateNewTransactions;
+use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
@@ -75,7 +75,7 @@ impl NetworkActorService {
 impl ActorService for NetworkActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
-        ctx.subscribe::<PropagateNewTransactions>();
+        ctx.subscribe::<PropagateTransactions>();
         let worker = self
             .worker
             .take()
@@ -96,7 +96,7 @@ impl ActorService for NetworkActorService {
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
-        ctx.unsubscribe::<PropagateNewTransactions>();
+        ctx.unsubscribe::<PropagateTransactions>();
         if let Some(abort_handle) = self.network_worker_handle.take() {
             abort_handle.abort();
         }
@@ -179,18 +179,17 @@ impl EventHandler<Self, PeerMessage> for NetworkActorService {
 }
 
 // handle txn relayer
-impl EventHandler<Self, PropagateNewTransactions> for NetworkActorService {
+impl EventHandler<Self, PropagateTransactions> for NetworkActorService {
     fn handle_event(
         &mut self,
-        msg: PropagateNewTransactions,
+        msg: PropagateTransactions,
         _ctx: &mut ServiceContext<NetworkActorService>,
     ) {
-        let txns = msg.propagate_transaction();
-        debug_assert!(
-            !txns.is_empty(),
-            "broadcast PropagateNewTransactions is empty."
-        );
-        debug!("propagate new txns, len: {}", txns.len());
+        let txns = msg.transaction_to_propagate();
+        if txns.is_empty() {
+            return;
+        }
+        debug!("prepare to propagate txns, len: {}", txns.len());
         self.inner
             .broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
                 txns,

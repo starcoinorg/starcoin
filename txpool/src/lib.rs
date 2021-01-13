@@ -14,7 +14,7 @@ use anyhow::{format_err, Result};
 use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_txpool_api::{PropagateNewTransactions, TxnStatusFullEvent};
+use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
 use std::sync::Arc;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
@@ -26,8 +26,8 @@ use types::{
 use actix::clock::Duration;
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::TxStatus;
-use serde::export::Option::Some;
 use starcoin_state_api::AccountStateReader;
+use std::sync::atomic::{AtomicBool, Ordering};
 pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
@@ -40,6 +40,7 @@ mod tx_pool_service_impl;
 #[derive(Clone)]
 pub struct TxPoolActorService {
     inner: Inner,
+    next_propagation_ready: Arc<AtomicBool>,
     sync_status: Option<SyncStatus>,
 }
 
@@ -54,6 +55,7 @@ impl TxPoolActorService {
         Self {
             inner,
             sync_status: None,
+            next_propagation_ready: Arc::new(AtomicBool::new(true)),
         }
     }
 
@@ -111,23 +113,37 @@ impl ServiceFactory<Self> for TxPoolActorService {
         Ok(Self::new(txpool_service.get_inner()))
     }
 }
-
+impl TxPoolActorService {
+    fn try_propagate_txns(&self, ctx: &mut ServiceContext<Self>) {
+        if self.next_propagation_ready.load(Ordering::Relaxed) {
+            match self.transactions_to_propagate() {
+                Err(e) => {
+                    log::error!("txpool: fail to get txn to propagate, err: {}", &e)
+                }
+                Ok(txs) => {
+                    if self
+                        .next_propagation_ready
+                        .compare_and_swap(true, false, Ordering::AcqRel)
+                    {
+                        let request =
+                            PropagateTransactions::new(txs, self.next_propagation_ready.clone());
+                        ctx.broadcast(request);
+                    }
+                }
+            }
+        }
+    }
+}
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.add_stream(self.inner.subscribe_txns());
 
-        // propagate txn every x seconds.
+        // every x seconds, we tick a txn propagation.
         let myself = self.clone();
         let interval = self.inner.node_config.tx_pool.tx_propagate_interval();
         ctx.run_interval(Duration::from_secs(interval), move |ctx| {
-            match myself.transactions_to_propagate() {
-                Ok(txns) => ctx.broadcast(PropagateNewTransactions::new(txns)),
-                Err(e) => log::error!(
-                    "txpool: fail to get transaction to propagate. err: {:?}",
-                    &e
-                ),
-            };
+            myself.try_propagate_txns(ctx)
         });
 
         Ok(())
@@ -148,6 +164,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
 /// Listen to txn status, and propagate to remote peers if necessary.
 impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
     fn handle_event(&mut self, item: TxnStatusFullEvent, ctx: &mut ServiceContext<Self>) {
+        // do metrics.
         {
             let status = self.inner.pool_status().status;
             let mem_usage = status.mem_usage;
@@ -162,32 +179,25 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
             TXPOOL_STATUS_GAUGE_VEC
                 .with_label_values(&["count"])
                 .set(txn_count as i64);
-        }
-        let mut txns = vec![];
-        for (h, s) in item.iter() {
-            match *s {
-                TxStatus::Added => {
-                    TXPOOL_TXNS_GAUGE.inc();
-                }
-                TxStatus::Rejected => {}
-                _ => {
-                    TXPOOL_TXNS_GAUGE.dec();
-                }
-            }
 
-            if *s != TxStatus::Added {
-                continue;
-            }
+            for (_, s) in item.iter() {
+                match *s {
+                    TxStatus::Added => {
+                        TXPOOL_TXNS_GAUGE.inc();
+                    }
+                    TxStatus::Rejected => {}
+                    _ => {
+                        TXPOOL_TXNS_GAUGE.dec();
+                    }
+                }
 
-            if let Some(txn) = self.inner.queue().find(h) {
-                txns.push(txn.signed().clone());
+                if *s != TxStatus::Added {
+                    continue;
+                }
             }
-        }
-        if txns.is_empty() {
-            return;
         }
         //TODO direct send broadcast message to network.
-        ctx.broadcast(PropagateNewTransactions::new(txns));
+        self.try_propagate_txns(ctx);
     }
 }
 
