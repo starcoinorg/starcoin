@@ -3,7 +3,7 @@
 
 use crate::block::{BlockHeader, BlockInfo};
 use anyhow::Result;
-use scs::SCSCodec;
+use scs::{SCSCodec, Sample};
 use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
@@ -95,13 +95,13 @@ impl ChainStatus {
         let head = BlockHeader::random();
         let block_info = BlockInfo::new(
             head.id(),
+            U256::from(rand::random::<u64>()),
             AccumulatorInfo::new(
                 head.accumulator_root,
                 vec![],
                 rand::random::<u64>(),
                 rand::random::<u64>(),
             ),
-            U256::from(rand::random::<u64>()),
             AccumulatorInfo::new(
                 head.parent_block_accumulator_root,
                 vec![],
@@ -129,6 +129,15 @@ impl ChainStatus {
 
     pub fn into_inner(self) -> (BlockHeader, BlockInfo) {
         (self.head, self.info)
+    }
+}
+
+impl Sample for ChainStatus {
+    fn sample() -> Self {
+        Self {
+            head: BlockHeader::sample(),
+            info: BlockInfo::sample(),
+        }
     }
 }
 

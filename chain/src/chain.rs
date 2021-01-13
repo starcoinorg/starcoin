@@ -461,8 +461,8 @@ impl BlockChain {
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
         let block_info = BlockInfo::new(
             block_id,
-            txn_accumulator_info,
             total_difficulty,
+            txn_accumulator_info,
             block_accumulator_info,
         );
 

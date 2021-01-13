@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::genesis_address;
 use crate::{
     access::ModuleAccess,
     account_address::AccountAddress,
@@ -8,6 +9,7 @@ use crate::{
     transaction::{Module, Script},
 };
 use anyhow::{ensure, Result};
+use scs::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use vm::errors::Location;
@@ -15,7 +17,6 @@ use vm::errors::Location;
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Package {
     ///Package's all Module must at same address.
-    /// TODO(optimize): remove package_address from serialization, it can be derived from modules.
     package_address: AccountAddress,
     modules: Vec<Module>,
     init_script: Option<Script>,
@@ -92,5 +93,15 @@ impl Package {
 
     pub fn into_inner(self) -> (AccountAddress, Vec<Module>, Option<Script>) {
         (self.package_address, self.modules, self.init_script)
+    }
+}
+
+impl Sample for Package {
+    fn sample() -> Self {
+        Self {
+            package_address: genesis_address(),
+            modules: vec![Module::sample()],
+            init_script: None,
+        }
     }
 }

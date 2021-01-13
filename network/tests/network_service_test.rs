@@ -245,8 +245,8 @@ async fn test_event_notify_receive_repeat_transaction() {
 fn mock_block_info(total_difficulty: U256) -> BlockInfo {
     BlockInfo::new(
         HashValue::random(),
-        AccumulatorInfo::default(),
         total_difficulty,
+        AccumulatorInfo::default(),
         AccumulatorInfo::default(),
     )
 }

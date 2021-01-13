@@ -49,6 +49,12 @@ where
 
 pub use bcs::{is_human_readable, serialize_into, serialized_size, Error};
 
+pub trait Sample {
+    /// A default construct for generate type Sample data for test or document.
+    /// Please ensure return same data when call sample fn.
+    fn sample() -> Self;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
