@@ -447,7 +447,9 @@ impl Inner {
                 let (protocol_name, message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
-                for (peer_id, peer) in &mut self.peers {
+                let selected_peers = select_random_peers(&self.peers, |_| true);
+                for peer_id in selected_peers {
+                    let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
                     if peer.known_blocks.contains(&id)
                         || peer.peer_info.total_difficulty() >= total_difficulty
                     {
@@ -478,7 +480,7 @@ impl Inner {
                 });
                 let origin_txn_len = msg.txns.len();
                 let mut send_peer_count: usize = 0;
-                let selected_peers = select_peers_for_transactions(&self.peers, |_| true);
+                let selected_peers = select_random_peers(&self.peers, |_| true);
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
                     let txns_unhandled = msg
@@ -538,7 +540,7 @@ impl Inner {
 const MIN_PEERS_PROPAGATION: usize = 4;
 const MAX_PEERS_PROPAGATION: usize = 128;
 
-fn select_peers_for_transactions<F>(peers: &HashMap<PeerId, Peer>, filter: F) -> Vec<PeerId>
+fn select_random_peers<F>(peers: &HashMap<PeerId, Peer>, filter: F) -> Vec<PeerId>
 where
     F: Fn(&PeerId) -> bool,
 {
