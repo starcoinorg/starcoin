@@ -1,0 +1,16 @@
+{
+  "block_id": "0x46ad8999000531a1a5e3a69ccf60e8f3fb9d1797c75b57932da8e7780b32fc6f",
+  "total_difficulty": "0x00",
+  "txn_accumulator_info": {
+    "accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "frozen_subtree_roots": [],
+    "num_leaves": 0,
+    "num_nodes": 0
+  },
+  "block_accumulator_info": {
+    "accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "frozen_subtree_roots": [],
+    "num_leaves": 0,
+    "num_nodes": 0
+  }
+}
