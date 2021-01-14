@@ -29,6 +29,8 @@ where
     fn create(&self, peers: Vec<PeerInfo>) -> F;
 
     fn network(&self) -> N;
+
+    fn create_by_fetcher(&self, peers: Vec<PeerInfo>, fetcher: &F) -> F;
 }
 
 pub struct VerifiedRpcClientFactory {
@@ -49,6 +51,16 @@ impl FetcherFactory<VerifiedRpcClient, NetworkServiceRef> for VerifiedRpcClientF
 
     fn network(&self) -> NetworkServiceRef {
         self.network.clone()
+    }
+
+    fn create_by_fetcher(
+        &self,
+        peers: Vec<PeerInfo>,
+        fetcher: &VerifiedRpcClient,
+    ) -> VerifiedRpcClient {
+        let peer_detail_vec = peers.into_iter().map(|peer| peer.into()).collect();
+        let peer_selector = PeerSelector::new_with_score(peer_detail_vec);
+        VerifiedRpcClient::new(peer_selector, self.network.clone())
     }
 }
 
@@ -405,6 +417,7 @@ where
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
         let mut latest_peers = peers;
+        let mut fetcher = Arc::new(fetcher_factory.clone().create(latest_peers.clone()));
         loop {
             while let Ok(Some(peer_event)) = peer_receiver.try_next() {
                 if let PeerEvent::Open(peer_id, chain_info) = peer_event {
@@ -424,7 +437,11 @@ where
                 .await
                 .map_err(TaskError::BreakError)?;
             latest_peers = peers;
-            let fetcher = Arc::new(fetcher_factory.clone().create(latest_peers.clone()));
+            fetcher = Arc::new(
+                fetcher_factory
+                    .clone()
+                    .create_by_fetcher(latest_peers.clone(), &fetcher),
+            );
 
             let real_target = match sub_target {
                 None => target_block_accumulator.clone(),
@@ -435,7 +452,7 @@ where
                 real_target,
                 storage.clone(),
                 block_event_handle.clone(),
-                fetcher,
+                fetcher.clone(),
                 event_handle_clone.clone(),
                 time_service.clone(),
                 fetcher_factory.clone().network(),
