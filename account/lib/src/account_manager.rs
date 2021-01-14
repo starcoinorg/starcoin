@@ -194,7 +194,7 @@ impl AccountManager {
             None => Err(AccountError::AccountLocked(signer_address)),
             Some(p) => {
                 let account = Account::load(signer_address, p.as_str(), self.store.clone())?
-                    .ok_or_else(|| AccountError::AccountNotExist(signer_address))?;
+                    .ok_or(AccountError::AccountNotExist(signer_address))?;
                 Ok(account.sign_message(message))
             }
         }
