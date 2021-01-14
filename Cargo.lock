@@ -6676,7 +6676,26 @@ dependencies = [
  "include_dir",
  "maplit",
  "serde",
- "serde-reflection",
+ "serde-reflection 0.3.1",
+ "serde_bytes",
+ "serde_yaml",
+ "structopt 0.3.21",
+ "textwrap 0.12.1",
+]
+
+[[package]]
+name = "serde-generate"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "075353ee504a2b099d4fd0b5d452b6bde115e8bbe61a6ec11d3ef834924e64f9"
+dependencies = [
+ "bcs",
+ "bincode",
+ "heck",
+ "include_dir",
+ "maplit",
+ "serde",
+ "serde-reflection 0.3.2",
  "serde_bytes",
  "serde_yaml",
  "structopt 0.3.21",
@@ -6708,6 +6727,16 @@ dependencies = [
 name = "serde-reflection"
 version = "0.3.1"
 source = "git+https://github.com/starcoinorg/serde-reflection?rev=128903725d0e057f1c8675b413995cf2e4bdf26d#128903725d0e057f1c8675b413995cf2e4bdf26d"
+dependencies = [
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "serde-reflection"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "695ca48311bdeac687d09bbd558de507f0874a401c56cce52ee5665705f817f3"
 dependencies = [
  "serde",
  "thiserror",
@@ -7478,11 +7507,10 @@ version = "0.10.0"
 dependencies = [
  "anyhow",
  "serde",
- "serde-generate",
- "serde-reflection",
+ "serde-generate 0.17.0",
+ "serde-reflection 0.3.2",
  "serde_yaml",
  "starcoin-crypto",
- "starcoin-rpc-api",
  "starcoin-types",
 ]
 
@@ -9708,8 +9736,8 @@ dependencies = [
  "bcs",
  "diem-workspace-hack",
  "move-core-types",
- "serde-generate",
- "serde-reflection",
+ "serde-generate 0.13.0",
+ "serde-reflection 0.3.1",
  "serde_yaml",
  "starcoin-vm-types",
  "structopt 0.3.21",
