@@ -40,5 +40,4 @@ comment:
 ignore:
   - "benchmarks"
   - "testsuite"
-  - "test-helper"
   - "vm/move-prover"

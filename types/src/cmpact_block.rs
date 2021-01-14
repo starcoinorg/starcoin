@@ -1,5 +1,6 @@
 use crate::block::{Block, BlockHeader};
 use crate::transaction::{SignedUserTransaction, Transaction};
+use scs::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -44,5 +45,11 @@ impl CompactBlock {
 impl From<Block> for CompactBlock {
     fn from(block: Block) -> Self {
         CompactBlock::new(block, vec![])
+    }
+}
+
+impl Sample for CompactBlock {
+    fn sample() -> Self {
+        Block::sample().into()
     }
 }

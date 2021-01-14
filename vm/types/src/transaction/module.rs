@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use scs::Sample;
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
@@ -33,5 +34,24 @@ impl fmt::Debug for Module {
         f.debug_struct("Module")
             .field("code", &hex::encode(&self.code))
             .finish()
+    }
+}
+
+impl Sample for Module {
+    ///Sample module's source code:
+    /// ```move
+    /// address 0x1{
+    ///     module M{
+    ///     }
+    /// }
+    /// ```
+    ///
+    fn sample() -> Self {
+        Self {
+            code: hex::decode(
+                "a11ceb0b01000000030100020702020804100000014d0000000000000000000000000000000100",
+            )
+            .expect("decode sample module should success"),
+        }
     }
 }

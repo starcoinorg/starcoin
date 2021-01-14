@@ -3,20 +3,21 @@
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::transaction::SignedUserTransaction;
-use starcoin_crypto::{
-    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
-    HashValue,
-};
-
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::transaction::SignedUserTransaction;
 use crate::U256;
+use scs::Sample;
 use serde::de::Error;
 use serde::export::Formatter;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_crypto::hash::{ACCUMULATOR_PLACEHOLDER_HASH, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
+    HashValue,
+};
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 /// Type for block number.
@@ -328,6 +329,27 @@ impl BlockHeader {
     }
 }
 
+impl Sample for BlockHeader {
+    fn sample() -> Self {
+        Self {
+            parent_hash: HashValue::zero(),
+            parent_block_accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
+            timestamp: 1610110515000,
+            number: 0,
+            author: genesis_address(),
+            author_auth_key: None,
+            accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
+            state_root: *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            gas_used: 0,
+            difficulty: U256::from(1),
+            nonce: 0,
+            body_hash: BlockBody::sample().crypto_hash(),
+            chain_id: ChainId::test(),
+            extra: BlockHeaderExtra([0u8; 4]),
+        }
+    }
+}
+
 impl Into<RawBlockHeader> for BlockHeader {
     fn into(self) -> RawBlockHeader {
         RawBlockHeader {
@@ -421,6 +443,15 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
 impl Into<Vec<SignedUserTransaction>> for BlockBody {
     fn into(self) -> Vec<SignedUserTransaction> {
         self.transactions
+    }
+}
+
+impl Sample for BlockBody {
+    fn sample() -> Self {
+        Self {
+            transactions: vec![],
+            uncles: None,
+        }
     }
 }
 
@@ -538,16 +569,25 @@ impl std::fmt::Display for Block {
     }
 }
 
+impl Sample for Block {
+    fn sample() -> Self {
+        Self {
+            header: BlockHeader::sample(),
+            body: BlockBody::sample(),
+        }
+    }
+}
+
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
-    /// The transaction accumulator info
-    pub txn_accumulator_info: AccumulatorInfo,
     /// The total difficulty.
     pub total_difficulty: U256,
+    /// The transaction accumulator info
+    pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
 }
@@ -555,20 +595,16 @@ pub struct BlockInfo {
 impl BlockInfo {
     pub fn new(
         block_id: HashValue,
-        txn_accumulator_info: AccumulatorInfo,
         total_difficulty: U256,
+        txn_accumulator_info: AccumulatorInfo,
         block_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
             block_id,
-            txn_accumulator_info,
             total_difficulty,
+            txn_accumulator_info,
             block_accumulator_info,
         }
-    }
-
-    pub fn into_inner(self) -> (HashValue, AccumulatorInfo, U256, AccumulatorInfo) {
-        self.into()
     }
 
     pub fn id(&self) -> HashValue {
@@ -592,14 +628,14 @@ impl BlockInfo {
     }
 }
 
-impl Into<(HashValue, AccumulatorInfo, U256, AccumulatorInfo)> for BlockInfo {
-    fn into(self) -> (HashValue, AccumulatorInfo, U256, AccumulatorInfo) {
-        (
-            self.block_id,
-            self.txn_accumulator_info,
-            self.total_difficulty,
-            self.block_accumulator_info,
-        )
+impl Sample for BlockInfo {
+    fn sample() -> Self {
+        Self {
+            block_id: BlockHeader::sample().id(),
+            total_difficulty: 0.into(),
+            txn_accumulator_info: AccumulatorInfo::sample(),
+            block_accumulator_info: AccumulatorInfo::sample(),
+        }
     }
 }
 

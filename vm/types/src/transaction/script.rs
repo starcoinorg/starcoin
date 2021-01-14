@@ -3,11 +3,10 @@
 
 use crate::transaction::transaction_argument::TransactionArgument;
 use move_core_types::language_storage::TypeTag;
+use scs::Sample;
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
-#[allow(dead_code)]
-pub const SCRIPT_HASH_LENGTH: usize = 32;
 
 /// Call a Move script.
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -54,6 +53,19 @@ impl fmt::Debug for Script {
             .field("ty_args", &self.ty_args)
             .field("args", &self.args)
             .finish()
+    }
+}
+
+impl Sample for Script {
+    /// Sample script source code:
+    /// vm/stdlib/transaction_scripts/empty_script.move
+    fn sample() -> Self {
+        Self {
+            code: hex::decode("a11ceb0b0100000001050001000000000102")
+                .expect("Decode sample script should success."),
+            ty_args: vec![],
+            args: vec![],
+        }
     }
 }
 

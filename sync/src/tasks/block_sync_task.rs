@@ -371,8 +371,8 @@ mod tests {
             let block_id = block.id();
             let block_info = BlockInfo::new(
                 block_id,
-                AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
                 U256::from(1),
+                AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
                 AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
             );
             self.store.lock().unwrap().insert(
