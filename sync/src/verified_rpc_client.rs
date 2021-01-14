@@ -128,12 +128,15 @@ impl VerifiedRpcClient {
         }
     }
 
-    pub fn execute_score(&self, time: u32) -> i64 {
+    fn execute_score(&self, time: u32) -> i64 {
         self.score_handler.execute(time)
     }
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
-        self.peer_selector.bests().random().cloned()
+        self.peer_selector
+            .bests()
+            .random()
+            .and_then(|peer| Some(peer.peer_info().clone()))
     }
 
     pub fn random_peer(&self) -> Result<PeerId> {
@@ -284,7 +287,13 @@ impl VerifiedRpcClient {
         Ok(SyncTarget {
             block_header: header.clone(),
             block_info,
-            peers: self.peer_selector.selector().cloned(),
+            peers: self
+                .peer_selector
+                .selector()
+                .cloned()
+                .into_iter()
+                .map(|peer| peer.peer_info().clone())
+                .collect(),
         })
     }
 

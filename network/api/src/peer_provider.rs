@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::peer_score::ScoreCounter;
 use crate::PeerId;
 use crate::PeerInfo;
 use anyhow::Result;
@@ -9,12 +10,18 @@ use futures::{FutureExt, TryFutureExt};
 use itertools::Itertools;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockHeader, BlockNumber};
 
 pub trait PeerProvider: Send + Sync {
     fn best_peer(&self) -> BoxFuture<Result<Option<PeerInfo>>> {
         self.peer_selector()
-            .and_then(|selector| async move { Ok(selector.bests().random().cloned()) })
+            .and_then(|selector| async move {
+                Ok(selector
+                    .bests()
+                    .random()
+                    .and_then(|peer| Some(&peer.peer_info))
+                    .cloned())
+            })
             .boxed()
     }
 
@@ -33,11 +40,11 @@ pub trait PeerProvider: Send + Sync {
 }
 
 pub struct Selector<'a> {
-    peers: Vec<&'a PeerInfo>,
+    peers: Vec<&'a PeerDetail>,
 }
 
 impl<'a> Selector<'a> {
-    pub fn new(peers: Vec<&'a PeerInfo>) -> Self {
+    pub fn new(peers: Vec<&'a PeerDetail>) -> Self {
         Self { peers }
     }
 
@@ -45,15 +52,15 @@ impl<'a> Selector<'a> {
         Self::new(vec![])
     }
 
-    pub fn first(&self) -> Option<&PeerInfo> {
+    pub fn first(&self) -> Option<&PeerDetail> {
         self.peers.get(0).copied()
     }
 
     pub fn random_peer_id(&self) -> Option<PeerId> {
-        self.random().map(|info| info.peer_id())
+        self.random().map(|peer| peer.peer_info.peer_id())
     }
 
-    pub fn random(&self) -> Option<&PeerInfo> {
+    pub fn random(&self) -> Option<&PeerDetail> {
         self.peers.choose(&mut rand::thread_rng()).copied()
     }
 
@@ -75,7 +82,7 @@ impl<'a> Selector<'a> {
         Selector::new(
             self.peers
                 .into_iter()
-                .filter(|peer| predicate(peer))
+                .filter(|peer| predicate(&peer.peer_info))
                 .collect(),
         )
     }
@@ -84,28 +91,65 @@ impl<'a> Selector<'a> {
         self.filter(move |peer| peer.latest_header().number() >= block_number)
     }
 
-    pub fn cloned(self) -> Vec<PeerInfo> {
+    pub fn cloned(self) -> Vec<PeerDetail> {
         self.peers.into_iter().cloned().collect()
     }
 
     pub fn into_selector(self) -> PeerSelector {
-        PeerSelector::new(self.cloned())
+        PeerSelector::new_with_score(self.cloned())
     }
 }
 
-impl<'a> From<Vec<&'a PeerInfo>> for Selector<'a> {
-    fn from(peers: Vec<&'a PeerInfo>) -> Self {
+impl<'a> From<Vec<&'a PeerDetail>> for Selector<'a> {
+    fn from(peers: Vec<&'a PeerDetail>) -> Self {
         Self::new(peers)
     }
 }
 
 #[derive(Clone)]
+pub struct PeerDetail {
+    peer_info: PeerInfo,
+    score_counter: ScoreCounter,
+}
+
+impl PeerDetail {
+    pub fn peer_id(&self) -> PeerId {
+        self.peer_info.peer_id()
+    }
+
+    pub fn latest_header(&self) -> &BlockHeader {
+        self.peer_info.latest_header()
+    }
+
+    pub fn peer_info(&self) -> &PeerInfo {
+        &self.peer_info
+    }
+}
+
+impl From<PeerInfo> for PeerDetail {
+    fn from(peer: PeerInfo) -> Self {
+        Self {
+            peer_info: peer,
+            score_counter: ScoreCounter::default(),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct PeerSelector {
-    peers: Vec<PeerInfo>,
+    peers: Vec<PeerDetail>,
 }
 
 impl PeerSelector {
     pub fn new(peers: Vec<PeerInfo>) -> Self {
+        let peer_detail_vec = peers
+            .into_iter()
+            .map(|peer| -> PeerDetail { peer.into() })
+            .collect();
+        Self::new_with_score(peer_detail_vec)
+    }
+
+    pub fn new_with_score(peers: Vec<PeerDetail>) -> Self {
         Self { peers }
     }
 
@@ -116,7 +160,7 @@ impl PeerSelector {
         }
         let mut peers = self.peers;
         Self::sort(&mut peers);
-        Self::new(peers.into_iter().take(n).collect())
+        Self::new_with_score(peers.into_iter().take(n).collect())
     }
 
     /// Filter by the max total_difficulty
@@ -124,14 +168,16 @@ impl PeerSelector {
         if self.is_empty() {
             return Selector::empty();
         }
-        let peers: Vec<&PeerInfo> = vec![];
+        let peers: Vec<&PeerDetail> = vec![];
         let best_peers = self
             .peers
             .iter()
-            .sorted_by_key(|info| info.total_difficulty())
+            .sorted_by_key(|peer| peer.peer_info.total_difficulty())
             .rev()
             .fold(peers, |mut peers, peer| {
-                if peers.is_empty() || peer.total_difficulty() >= peers[0].total_difficulty() {
+                if peers.is_empty()
+                    || peer.peer_info.total_difficulty() >= peers[0].peer_info.total_difficulty()
+                {
                     peers.push(peer);
                 };
                 peers
@@ -147,19 +193,18 @@ impl PeerSelector {
         self.peers
             .iter()
             .choose(&mut rand::thread_rng())
-            .map(|info| info.peer_id())
+            .map(|peer| peer.peer_info.peer_id())
     }
 
     pub fn random(&self) -> Option<&PeerInfo> {
-        self.peers.iter().choose(&mut rand::thread_rng())
-    }
-
-    pub fn peers(&self) -> &[PeerInfo] {
-        self.peers.as_slice()
+        self.peers
+            .iter()
+            .choose(&mut rand::thread_rng())
+            .and_then(|peer| Some(&peer.peer_info))
     }
 
     pub fn first(&self) -> Option<&PeerInfo> {
-        self.peers.get(0)
+        self.peers.get(0).and_then(|peer| Some(&peer.peer_info))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -170,15 +215,15 @@ impl PeerSelector {
         self.peers.len()
     }
 
-    fn sort(peers: &mut Vec<PeerInfo>) {
-        peers.sort_by_key(|p| p.total_difficulty());
+    fn sort(peers: &mut Vec<PeerDetail>) {
+        peers.sort_by_key(|p| p.peer_info.total_difficulty());
         peers.reverse();
     }
 }
 
 impl IntoIterator for PeerSelector {
-    type Item = PeerInfo;
-    type IntoIter = std::vec::IntoIter<PeerInfo>;
+    type Item = PeerDetail;
+    type IntoIter = std::vec::IntoIter<PeerDetail>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.peers.into_iter()

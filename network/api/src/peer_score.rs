@@ -1,3 +1,22 @@
+#[derive(Clone)]
+pub struct ScoreCounter {
+    score: u64,
+    count: u64,
+}
+
+impl ScoreCounter {
+    pub fn inc_by(&mut self, score: i64) {
+        self.score += score as u64;
+        self.count += 1;
+    }
+}
+
+impl Default for ScoreCounter {
+    fn default() -> Self {
+        Self { score: 0, count: 0 }
+    }
+}
+
 pub trait Score<Entry>: Sync + Send {
     fn execute(&self, entry: Entry) -> i64;
 }

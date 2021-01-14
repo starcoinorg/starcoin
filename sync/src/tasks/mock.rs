@@ -99,6 +99,14 @@ impl FetcherFactory<Arc<SyncNodeMocker>, DummyNetworkService> for SyncNodeMocker
     fn network(&self) -> DummyNetworkService {
         self.network.clone()
     }
+
+    fn create_by_fetcher(
+        &self,
+        _peers: Vec<PeerInfo>,
+        _fetcher: &SyncNodeMocker,
+    ) -> Arc<SyncNodeMocker> {
+        self.fetch.clone()
+    }
 }
 
 pub struct SyncNodeMocker {
