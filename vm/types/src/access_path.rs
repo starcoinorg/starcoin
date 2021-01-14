@@ -43,7 +43,7 @@ use crate::identifier::Identifier;
 use crate::parser::parse_struct_tag;
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::RawKey;
-use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, TypeTag};
+use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
@@ -261,7 +261,7 @@ impl Arbitrary for DataPath {
                 any::<AccountAddress>(),
                 any::<Identifier>(),
                 any::<Identifier>(),
-                vec(any::<TypeTag>(), 0..4),
+                vec(any::<move_core_types::language_storage::TypeTag>(), 0..4),
             )
                 .prop_map(|(address, module, name, type_params)| DataPath::Resource(
                     StructTag {
