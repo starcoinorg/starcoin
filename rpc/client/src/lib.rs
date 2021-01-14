@@ -18,10 +18,10 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
-    AnnotatedMoveStruct, AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId,
-    ChainInfoView, ContractCall, DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction,
-    PeerInfoView, SignedUserTransactionView, StrView, TransactionInfoView, TransactionOutputView,
-    TransactionRequest, TransactionView,
+    AccountStateSetView, AnnotatedMoveStruct, AnnotatedMoveValue, BlockHeaderView,
+    BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunTransactionRequest,
+    EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView, StrView,
+    TransactionInfoView, TransactionOutputView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -560,6 +560,20 @@ impl RpcClient {
     ) -> anyhow::Result<Option<AccountState>> {
         self.call_rpc_blocking(|inner| async move {
             inner.state_client.get_account_state(address).compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn get_account_state_set(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Option<AccountStateSetView>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .state_client
+                .get_account_state_set(address)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }

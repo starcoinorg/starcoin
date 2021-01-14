@@ -14,6 +14,7 @@ use starcoin_state_api::{
 };
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
@@ -95,6 +96,13 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                         .get_account_state_by_root(account, state_root)?,
                 )
             }
+            StateRequest::GetAccountStateSet {
+                address,
+                state_root,
+            } => StateResponse::AccountStateSet(
+                self.service
+                    .get_account_state_set_with_root(address, state_root)?,
+            ),
         };
         Ok(response)
     }
@@ -125,6 +133,20 @@ impl Inner {
         Self {
             state_db: ChainStateDB::new(store, root_hash),
             time_service,
+        }
+    }
+
+    pub(crate) fn get_account_state_set_with_root(
+        &self,
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> Result<Option<AccountStateSet>> {
+        match state_root {
+            Some(root) => {
+                let reader = self.state_db.change_root(root);
+                reader.get_account_state_set(&address)
+            }
+            None => self.get_account_state_set(&address),
         }
     }
 
@@ -171,6 +193,9 @@ impl ChainStateReader for Inner {
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
         self.state_db.get_account_state(address)
+    }
+    fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        self.state_db.get_account_state_set(address)
     }
 
     fn state_root(&self) -> HashValue {

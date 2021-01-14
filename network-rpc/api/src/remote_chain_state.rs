@@ -9,7 +9,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::state_set::ChainStateSet;
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 
 #[derive(Clone)]
 pub struct RemoteChainStateReader {
@@ -84,7 +84,9 @@ impl ChainStateReader for RemoteChainStateReader {
             None => unreachable!(),
         }
     }
-
+    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        unimplemented!()
+    }
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
     }

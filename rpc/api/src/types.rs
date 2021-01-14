@@ -42,10 +42,18 @@ use starcoin_vm_types::transaction::{
 };
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
 use starcoin_vm_types::write_set::WriteOp;
+use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct AccountStateSetView {
+    pub codes: BTreeMap<Identifier, StrView<ByteCode>>,
+    pub resources: BTreeMap<StructTagView, AnnotatedMoveStruct>,
+}
+
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct TransactionRequest {
     /// Sender's address.
