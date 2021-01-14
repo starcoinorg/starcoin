@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - halleyk8s
   workflow_dispatch:
   release:
     types: [ published ]
@@ -56,4 +55,5 @@ jobs:
         run: |
           # use sha tag for force update
           SHA=$(git rev-parse --short=7 HEAD);
+          echo "sha: ${SHA}";
           kubectl patch --namespace starcoin-halley statefulset starcoin --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"starcoin/starcoin:sha-'${SHA}'"}]'
