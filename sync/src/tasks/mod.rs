@@ -58,8 +58,9 @@ impl FetcherFactory<VerifiedRpcClient, NetworkServiceRef> for VerifiedRpcClientF
         peers: Vec<PeerInfo>,
         fetcher: &VerifiedRpcClient,
     ) -> VerifiedRpcClient {
-        let peer_detail_vec = peers.into_iter().map(|peer| peer.into()).collect();
-        let peer_selector = PeerSelector::new_with_score(peer_detail_vec);
+        let peer_selector = fetcher
+            .selector()
+            .fork(peers.into_iter().map(|peer| peer.peer_id()).collect());
         VerifiedRpcClient::new(peer_selector, self.network.clone())
     }
 }
