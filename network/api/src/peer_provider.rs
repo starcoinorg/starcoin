@@ -153,6 +153,16 @@ impl PeerSelector {
         Self { peers }
     }
 
+    pub fn fork(&self, peers: Vec<PeerId>) -> Self {
+        let details = self
+            .peers
+            .iter()
+            .filter(|peer| peers.contains(&peer.peer_id()))
+            .map(|peer| peer.clone())
+            .collect();
+        Self::new_with_score(details)
+    }
+
     /// Get top N peers sorted by total_difficulty
     pub fn top(self, n: usize) -> Self {
         if self.is_empty() {
@@ -161,6 +171,13 @@ impl PeerSelector {
         let mut peers = self.peers;
         Self::sort(&mut peers);
         Self::new_with_score(peers.into_iter().take(n).collect())
+    }
+
+    pub fn peer_score(&self, peer_id: &PeerId, score: i64) {
+        self.peers
+            .iter()
+            .filter(|peer| &peer.peer_id() == peer_id)
+            .for_each(|peer| peer.score_counter.inc_by(score));
     }
 
     /// Filter by the max total_difficulty

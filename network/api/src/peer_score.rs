@@ -1,19 +1,27 @@
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
+
 #[derive(Clone)]
 pub struct ScoreCounter {
-    score: u64,
-    count: u64,
+    score: Arc<AtomicU64>,
+    count: Arc<AtomicU64>,
 }
 
 impl ScoreCounter {
-    pub fn inc_by(&mut self, score: i64) {
-        self.score += score as u64;
-        self.count += 1;
+    pub fn inc_by(&self, score: i64) {
+        self.score.fetch_add(score as u64, Ordering::SeqCst);
+        self.count.fetch_add(1, Ordering::SeqCst);
     }
 }
 
 impl Default for ScoreCounter {
     fn default() -> Self {
-        Self { score: 0, count: 0 }
+        Self {
+            score: Arc::new(AtomicU64::new(0)),
+            count: Arc::new(AtomicU64::new(0)),
+        }
     }
 }
 

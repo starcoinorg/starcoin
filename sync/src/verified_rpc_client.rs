@@ -128,7 +128,15 @@ impl VerifiedRpcClient {
         }
     }
 
-    fn execute_score(&self, time: u32) -> i64 {
+    pub fn selector(&self) -> &PeerSelector {
+        &self.peer_selector
+    }
+
+    pub fn record(&self, peer: &PeerId, score: i64) {
+        self.peer_selector.peer_score(peer, score);
+    }
+
+    fn score(&self, time: u32) -> i64 {
         self.score_handler.execute(time)
     }
 
@@ -409,7 +417,8 @@ impl VerifiedRpcClient {
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
         let _ = timer.stop_and_record();
         let time = (get_unix_ts_as_millis() - start_time) as u32;
-        let score = self.execute_score(time);
+        let score = self.score(time);
+        self.record(&peer_id, score);
         SYNC_SCORE_METRICS.update_metrics(peer_id.clone(), time, score);
         Ok(ids
             .into_iter()
