@@ -70,7 +70,7 @@ fn test_network_rpc() {
             .unwrap()
     });
     assert!(!resp.is_empty());
-    let state_root = resp[0].state_root;
+    let state_root = resp[0].state_root();
 
     let state_req = GetStateWithProof {
         state_root,

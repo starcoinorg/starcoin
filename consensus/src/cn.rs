@@ -30,7 +30,7 @@ impl Consensus for CryptoNightConsensus {
         &self,
         mining_hash: &[u8],
         nonce: u32,
-        extra: BlockHeaderExtra,
+        extra: &BlockHeaderExtra,
     ) -> Result<HashValue> {
         let mix_hash = set_header_nonce(mining_hash, nonce, extra);
         let pow_hash = cryptonight_r(&mix_hash, mix_hash.len());

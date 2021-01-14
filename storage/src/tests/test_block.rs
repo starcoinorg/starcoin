@@ -29,11 +29,12 @@ fn test_block() {
 
     let block_header1 = BlockHeader::new(
         HashValue::random(),
-        HashValue::random(),
         dt.timestamp_nanos() as u64,
         1,
         AccountAddress::random(),
+        None,
         HashValue::zero(),
+        HashValue::random(),
         HashValue::zero(),
         0,
         U256::zero(),
@@ -88,11 +89,12 @@ fn test_block_number() {
 
     let block_header1 = BlockHeader::new(
         HashValue::random(),
-        HashValue::random(),
         dt.timestamp_nanos() as u64,
         0,
         AccountAddress::random(),
+        None,
         HashValue::zero(),
+        HashValue::random(),
         HashValue::zero(),
         0,
         U256::zero(),

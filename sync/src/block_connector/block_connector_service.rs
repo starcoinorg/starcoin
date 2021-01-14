@@ -124,7 +124,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
-                                    block.header().number,
+                                    block.header().number(),
                                     peer_id
                                 );
                                 let _ = sync_service.notify(CheckSyncEvent::default());

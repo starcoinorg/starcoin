@@ -65,7 +65,7 @@ impl CommandAction for GenDataCommand {
             if i % 10 == 0 {
                 println!(
                     "latest_block: {:?}, {:?}",
-                    latest_header.number,
+                    latest_header.number(),
                     latest_header.id()
                 );
             }

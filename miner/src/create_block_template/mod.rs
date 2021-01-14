@@ -279,12 +279,12 @@ where
         let previous_header = self.chain.current_header();
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
-        if now_millis <= previous_header.timestamp {
+        if now_millis <= previous_header.timestamp() {
             info!(
                 "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
-                previous_header.timestamp, now_millis, previous_header.timestamp - now_millis,
+                previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
             );
-            now_millis = previous_header.timestamp + 1;
+            now_millis = previous_header.timestamp() + 1;
         }
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",

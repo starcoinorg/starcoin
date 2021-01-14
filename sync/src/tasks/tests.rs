@@ -12,7 +12,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::BlockChain;
 use starcoin_genesis::Genesis;
 use starcoin_storage::BlockStore;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeaderBuilder};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use std::sync::Arc;
@@ -114,8 +114,7 @@ pub async fn test_failed_block() -> Result<()> {
         DummyNetworkService,
         true,
     );
-    let mut header = BlockHeader::random();
-    header.number = 1;
+    let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
     let failed_block_id = failed_block.id();

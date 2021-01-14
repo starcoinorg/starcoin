@@ -191,7 +191,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                         .into_iter()
                         .map(|evt| ContractEventInfo {
                             block_hash,
-                            block_number: block.header().number,
+                            block_number: block.header().number(),
                             transaction_hash: txn_hash,
                             transaction_index: index as u32,
                             event: evt,

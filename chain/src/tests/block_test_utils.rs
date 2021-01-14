@@ -68,17 +68,19 @@ fn gen_header(
 ) -> BlockHeader {
     BlockHeader::new(
         parent_header.id(),
-        parent_header.accumulator_root(),
         parent_header.timestamp() + 1,
         parent_header.number() + 1,
-        parent_header.author,
+        parent_header.author(),
+        None,
         acc_root,
+        //TODO fixme
+        HashValue::random(),
         state_root,
         0,
         U256::zero(),
         0,
         body_hash,
-        parent_header.chain_id,
+        parent_header.chain_id(),
         BlockHeaderExtra::new([0u8; 4]),
     )
 }
@@ -147,12 +149,12 @@ prop_compose! {
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
         net.time_service().now_millis(),
-        p_header.author,
-        p_header.author_auth_key,
+        p_header.author(),
+        p_header.author_auth_key(),
         0,
-        p_header.number + 1,
+        p_header.number() + 1,
         net.chain_id(),
-        p_header.gas_used,
+        p_header.gas_used(),
     );
     txns.insert(0, Transaction::BlockMetadata(block_metadata));
 

@@ -49,7 +49,7 @@ impl PeerMessageHandler for NodePeerMessageHandler {
                 }
             }
             NotificationMessage::CompactBlock(message) => {
-                let header_time = message.compact_block.header.timestamp;
+                let header_time = message.compact_block.header.timestamp();
                 NODE_METRICS.block_latency.observe(
                     duration_since_epoch()
                         .as_millis()

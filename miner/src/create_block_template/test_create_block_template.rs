@@ -445,7 +445,7 @@ fn test_create_block_template_by_adjust_time() -> Result<()> {
         .genesis_config()
         .consensus()
         .create_block(template, node_config.net().time_service().as_ref())?;
-    assert!(block.header().timestamp > previous_block_time);
+    assert!(block.header().timestamp() > previous_block_time);
     inner.chain.apply(block)?;
     Ok(())
 }

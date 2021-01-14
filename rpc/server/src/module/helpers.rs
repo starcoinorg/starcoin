@@ -101,7 +101,7 @@ where
             .expiration_timestamp_secs
             .unwrap_or_else(|| self.node_config.net().time_service().now_secs() + 60 * 60 * 12); // default to 0.5d
 
-        let chain_id = self.chain.main_status().await?.head().chain_id;
+        let chain_id = self.chain.main_status().await?.head().chain_id();
         if let Some(cid) = txn_request.chain_id {
             if cid != chain_id.id() {
                 anyhow::bail!(
