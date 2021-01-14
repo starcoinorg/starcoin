@@ -9071,6 +9071,7 @@ dependencies = [
  "network-rpc-core",
  "rand 0.7.3",
  "serde",
+ "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-accumulator",

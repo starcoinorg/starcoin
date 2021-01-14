@@ -50,17 +50,11 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
             let literal = s.strip_prefix("0x").unwrap_or(&s);
-            let hex_len = literal.len();
-            let result = if hex_len % 2 != 0 {
-                let mut hex_str = String::with_capacity(hex_len + 1);
-                hex_str.push('0');
-                hex_str.push_str(literal);
-                hex::decode(&hex_str).map_err(D::Error::custom)?
-            } else {
-                hex::decode(literal).map_err(D::Error::custom)?
-            };
-
-            if result.len() < 4 {
+            if literal.len() != 8 {
+                return Err(D::Error::custom("Invalid block header extra len"));
+            }
+            let result = hex::decode(literal).map_err(D::Error::custom)?;
+            if result.len() != 4 {
                 return Err(D::Error::custom("Invalid block header extra len"));
             }
             let mut extra = [0u8; 4];
