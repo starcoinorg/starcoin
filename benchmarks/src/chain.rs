@@ -86,12 +86,11 @@ impl ChainBencher {
         let mut rng = rand::thread_rng();
         for _i in 0..times {
             let number = rng.gen_range(0, max_num);
-            assert!(self
-                .chain
-                .read()
-                .get_block_by_number(number)
-                .unwrap()
-                .is_some());
+            let block = self.chain.read().get_block_by_number(number).unwrap();
+            assert!(block.is_some());
+            // get block and try to use it.
+            let block = block.unwrap();
+            let _id = block.id();
         }
     }
 
