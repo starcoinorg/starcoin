@@ -205,7 +205,7 @@ impl Inner {
     pub(crate) fn get_chain_reader(&self) -> ChainStateDB {
         ChainStateDB::new(
             self.storage.clone().into_super_arc(),
-            Some(self.get_chain_header().state_root),
+            Some(self.get_chain_header().state_root()),
         )
     }
     pub(crate) fn get_chain_header(&self) -> BlockHeader {
@@ -217,7 +217,7 @@ impl Inner {
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
         // In this situation, we don't need to reimport invalid txn on chain_new_block.
-        let now_seconds = self.chain_header.read().timestamp / 1000;
+        let now_seconds = self.chain_header.read().timestamp() / 1000;
         self.queue.cull(self.get_pool_client(), now_seconds)
     }
 

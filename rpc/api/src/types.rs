@@ -175,20 +175,20 @@ impl From<BlockHeader> for BlockHeaderView {
     fn from(origin: BlockHeader) -> Self {
         BlockHeaderView {
             block_hash: origin.id(),
-            parent_hash: origin.parent_hash,
-            timestamp: origin.timestamp.into(),
-            number: origin.number.into(),
-            author: origin.author,
-            author_auth_key: origin.author_auth_key,
-            accumulator_root: origin.accumulator_root,
-            parent_block_accumulator_root: origin.parent_block_accumulator_root,
-            state_root: origin.state_root,
-            gas_used: origin.gas_used.into(),
-            difficulty: origin.difficulty,
-            nonce: origin.nonce,
-            body_hash: origin.body_hash,
-            extra: origin.extra,
-            chain_id: origin.chain_id.id(),
+            parent_hash: origin.parent_hash(),
+            timestamp: origin.timestamp().into(),
+            number: origin.number().into(),
+            author: origin.author(),
+            author_auth_key: origin.author_auth_key(),
+            accumulator_root: origin.accumulator_root(),
+            parent_block_accumulator_root: origin.parent_block_accumulator_root(),
+            state_root: origin.state_root(),
+            gas_used: origin.gas_used().into(),
+            difficulty: origin.difficulty(),
+            nonce: origin.nonce(),
+            body_hash: origin.body_hash(),
+            extra: *origin.extra(),
+            chain_id: origin.chain_id().id(),
         }
     }
 }
@@ -341,7 +341,7 @@ impl TransactionView {
     pub fn new(txn: Transaction, block: &Block) -> anyhow::Result<Self> {
         let transaction_hash = txn.id();
         let block_hash = block.id();
-        let block_number = block.header.number;
+        let block_number = block.header.number();
         let transaction_index = match &txn {
             Transaction::BlockMetadata(_) => 0,
             _ => block
@@ -487,7 +487,7 @@ impl TransactionInfoView {
 
         Ok(TransactionInfoView {
             block_hash,
-            block_number: txn_block.header().number.into(),
+            block_number: txn_block.header().number().into(),
             transaction_hash,
             transaction_index: index.map(|i| i + 1).unwrap_or_default() as u32,
             state_root_hash: txn_info.state_root_hash(),

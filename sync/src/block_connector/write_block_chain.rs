@@ -159,8 +159,8 @@ where
         self.config
             .net()
             .time_service()
-            .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp));
-        info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number, executed_block.block_info().total_difficulty, enacted_count, retracted_count);
+            .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp()));
+        info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number(), executed_block.block_info().total_difficulty, enacted_count, retracted_count);
         self.broadcast_new_head(executed_block);
         Ok(())
     }

@@ -282,7 +282,7 @@ impl BlockStore for Storage {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
         Ok(Some(ChainInfo::new(
-            head_block.chain_id,
+            head_block.chain_id(),
             genesis_hash,
             ChainStatus::new(head_block, head_block_info),
         )))

@@ -97,15 +97,15 @@ impl ChainStatus {
             head.id(),
             U256::from(rand::random::<u64>()),
             AccumulatorInfo::new(
-                head.accumulator_root,
+                head.accumulator_root(),
                 vec![],
                 rand::random::<u64>(),
                 rand::random::<u64>(),
             ),
             AccumulatorInfo::new(
-                head.parent_block_accumulator_root,
+                head.parent_block_accumulator_root(),
                 vec![],
-                head.number - 1,
+                head.number() - 1,
                 rand::random::<u64>(),
             ),
         );

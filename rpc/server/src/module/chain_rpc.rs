@@ -227,7 +227,7 @@ where
         let fut = async move {
             if filter.to_block.is_none() {
                 // if user hasn't specify the `to_block`, we use latest block as the to_block.
-                let header_block_number = service.main_head_header().await?.number;
+                let header_block_number = service.main_head_header().await?.number();
                 filter.to_block = Some(header_block_number);
             }
 

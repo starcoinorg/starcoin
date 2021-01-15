@@ -354,7 +354,7 @@ where
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
-    let current_block_number = current_block_header.number;
+    let current_block_number = current_block_header.number();
     let current_block_id = current_block_header.id();
     let current_block_info = storage
         .get_block_info(current_block_id)?

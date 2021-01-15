@@ -49,7 +49,7 @@ impl ServiceFactory<Self> for ChainStateService {
         })?;
         Ok(Self::new(
             storage,
-            Some(head_block.header().state_root),
+            Some(head_block.header().state_root()),
             config.net().time_service(),
         ))
     }

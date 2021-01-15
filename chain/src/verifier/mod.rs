@@ -99,8 +99,8 @@ pub trait BlockVerifier {
 
             verify_block!(
                 VerifyBlockField::Uncle,
-                uncle.number < header.number ,
-               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number
+                uncle.number() < header.number() ,
+               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
             );
 
             verify_block!(
@@ -147,10 +147,10 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            expect_number == new_block_header.number,
+            expect_number == new_block_header.number(),
             "Invalid block: Unexpect block number, expect:{}, got: {}.",
             expect_number,
-            new_block_header.number
+            new_block_header.number()
         );
 
         verify_block!(
@@ -159,7 +159,7 @@ impl BlockVerifier for BasicVerifier {
             "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
             current_id,
             new_block_parent,
-            new_block_header.number
+            new_block_header.number()
         );
 
         verify_block!(
@@ -168,7 +168,7 @@ impl BlockVerifier for BasicVerifier {
             "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
             current_id,
             new_block_parent,
-            new_block_header.number
+            new_block_header.number()
         );
 
         verify_block!(
@@ -177,7 +177,7 @@ impl BlockVerifier for BasicVerifier {
             "Invalid block: block timestamp too old, parent time:{}, block time: {}, number:{}.",
             current.timestamp(),
             new_block_header.timestamp(),
-            new_block_header.number
+            new_block_header.number()
         );
 
         let now = current_chain.time_service().now_millis();

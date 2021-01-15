@@ -336,12 +336,14 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
-                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.block_header.number, target_total_difficulty, current_total_difficulty);
+                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.block_header.number(), target_total_difficulty, current_total_difficulty);
                     self.stage = SyncStage::Done;
                     task_handle.cancel();
                 } else {
-                    let target_id_number =
-                        BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);
+                    let target_id_number = BlockIdAndNumber::new(
+                        target.block_header.id(),
+                        target.block_header.number(),
+                    );
                     self.sync_status
                         .sync_begin(target_id_number, target.block_info.total_difficulty);
                     ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
@@ -465,7 +467,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
                 if let Some(begin) = handle.task_begin.as_ref() {
-                    report.fix_percent(handle.target.block_header.number - begin.number);
+                    report.fix_percent(handle.target.block_header.number() - begin.number);
                 }
 
                 SyncProgressReport {
@@ -474,7 +476,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
                         .task_begin
                         .as_ref()
                         .map(|begin| -> u64 { begin.number }),
-                    target_number: handle.target.block_header.number,
+                    target_number: handle.target.block_header.number(),
                     target_difficulty: handle.target.block_info.total_difficulty,
                     target_peers: handle
                         .target

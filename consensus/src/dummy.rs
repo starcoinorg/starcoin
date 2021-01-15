@@ -55,7 +55,7 @@ impl Consensus for DummyConsensus {
         &self,
         _mining_hash: &[u8],
         _nonce: u32,
-        _extra: BlockHeaderExtra,
+        _extra: &BlockHeaderExtra,
     ) -> Result<HashValue> {
         unreachable!()
     }

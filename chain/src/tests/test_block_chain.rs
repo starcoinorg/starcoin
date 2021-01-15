@@ -108,11 +108,11 @@ fn test_block_chain() -> Result<()> {
     let block = mock_chain.produce()?;
     assert_eq!(block.header().number(), 1);
     mock_chain.apply(block)?;
-    assert_eq!(mock_chain.head().current_header().number, 1);
+    assert_eq!(mock_chain.head().current_header().number(), 1);
     let block = mock_chain.produce()?;
     assert_eq!(block.header().number(), 2);
     mock_chain.apply(block)?;
-    assert_eq!(mock_chain.head().current_header().number, 2);
+    assert_eq!(mock_chain.head().current_header().number(), 2);
     Ok(())
 }
 
@@ -122,7 +122,7 @@ fn test_halley_consensus() {
         MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Halley)).unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
-    assert_eq!(mock_chain.head().current_header().number, times);
+    assert_eq!(mock_chain.head().current_header().number(), times);
 }
 
 #[stest::test(timeout = 240)]
@@ -131,12 +131,12 @@ fn test_dev_consensus() {
     let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
     let global = mock_chain
         .head()
-        .get_global_time_by_number(mock_chain.head().current_header().number)
+        .get_global_time_by_number(mock_chain.head().current_header().number())
         .unwrap();
     net.time_service().adjust(global);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
-    assert_eq!(mock_chain.head().current_header().number, times);
+    assert_eq!(mock_chain.head().current_header().number(), times);
 }
 
 #[stest::test]

@@ -88,7 +88,7 @@ impl Solver for CpuSolver {
                                 }
                                 strategy => {
                                     let nonce = Self::nonce_generator(&nonce_range);
-                                    if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce, extra) {
+                                    if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce, &extra) {
                                         let pow_hash_u256: U256 = pow_hash.into();
                                         let target = difficult_to_target(diff);
                                         hash_counter += 1;

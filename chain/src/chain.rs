@@ -286,7 +286,7 @@ impl BlockChain {
     fn exist_block_filter(&self, block: Option<Block>) -> Result<Option<Block>> {
         Ok(match block {
             Some(block) => {
-                if self.check_exist_block(block.id(), block.header().number)? {
+                if self.check_exist_block(block.id(), block.header().number())? {
                     Some(block)
                 } else {
                     None
@@ -300,7 +300,7 @@ impl BlockChain {
     fn exist_header_filter(&self, header: Option<BlockHeader>) -> Result<Option<BlockHeader>> {
         Ok(match header {
             Some(header) => {
-                if self.check_exist_block(header.id(), header.number)? {
+                if self.check_exist_block(header.id(), header.number())? {
                     Some(header)
                 } else {
                     None
@@ -836,7 +836,7 @@ impl BlockChain {
     pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
         let reverse = filter.reverse;
         let chain_header = self.current_header();
-        let max_block_number = chain_header.number.min(filter.to_block);
+        let max_block_number = chain_header.number().min(filter.to_block);
 
         // quick return.
         if filter.from_block > max_block_number {
@@ -858,7 +858,7 @@ impl BlockChain {
                 ))
             })?;
             let block_id = block.id();
-            let block_number = block.header().number;
+            let block_number = block.header().number();
             let mut txn_info_ids = self
                 .storage
                 .get_block_txn_info_ids(block_id)?
@@ -894,7 +894,7 @@ impl BlockChain {
 
                 let filtered_event_with_info = filtered_events.map(|evt| ContractEventInfo {
                     block_hash: block_id,
-                    block_number: block.header().number,
+                    block_number: block.header().number(),
                     transaction_hash: txn_info.transaction_hash(),
                     transaction_index: *idx as u32,
                     event: evt,
@@ -938,12 +938,12 @@ impl BlockChain {
 
 impl ChainWriter for BlockChain {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool {
-        executed_block.block.header().parent_hash == self.status.status.head().id()
+        executed_block.block.header().parent_hash() == self.status.status.head().id()
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
-        debug_assert!(block.header().parent_hash == self.status.status.head().id());
+        debug_assert!(block.header().parent_hash() == self.status.status.head().id());
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
