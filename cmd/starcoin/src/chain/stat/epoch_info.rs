@@ -38,7 +38,6 @@ impl CommandAction for StatEpochCommand {
         let epoch_count = end_number / epoch_block_count + 1;
         let chain_info = client.chain_info().unwrap();
         let end_number = chain_info.head.number.0;
-        dbg!(epoch_count);
         // get epoch_info
         let mut epoch_number = 1;
         let vec_epoch = vec![];
