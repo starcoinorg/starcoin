@@ -12,7 +12,7 @@ rand = "0.7.3"
 pin-utils = "0.1.0"
 async-std = "1.8"
 futures = "0.3"
-futures-retry = "0.5.0"
+futures-retry = "0.6.0"
 itertools = { version = "0.10.0", default-features = false }
 pin-project = "1.0.1"
 futures-timer = "3.0"
