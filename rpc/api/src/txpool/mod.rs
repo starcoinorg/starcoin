@@ -6,7 +6,7 @@ use jsonrpc_derive::rpc;
 use starcoin_types::transaction::SignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
-use crate::types::SignedUserTransactionView;
+use crate::types::{SignedUserTransactionView, StrView};
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
@@ -19,6 +19,9 @@ pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_hex_transaction")]
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;
 
+    /// return current gas price
+    #[rpc(name = "txpool.gas_price")]
+    fn gas_price(&self) -> FutureResult<StrView<u64>>;
     /// get all pending txns in txpool of given sender.
     /// no matter the state of txn is ready or in future.
     #[rpc(name = "txpool.pending_txns_of_sender")]

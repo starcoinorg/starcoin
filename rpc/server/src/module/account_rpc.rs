@@ -8,7 +8,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_config::NodeConfig;
-use starcoin_rpc_api::types::TransactionRequest;
+use starcoin_rpc_api::types::{StrView, TransactionRequest};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
@@ -121,6 +121,18 @@ where
         }
         .map_err(map_err);
         Box::new(fut.boxed().compat())
+    }
+    fn sign(
+        &self,
+        address: AccountAddress,
+        data: StrView<Vec<u8>>,
+    ) -> FutureResult<StrView<Vec<u8>>> {
+        let account_service = self.account.clone();
+        let f = async move {
+            let signature = account_service.sign_message(address, data.0).await?;
+            Ok(signature.into())
+        };
+        Box::new(f.map_err(map_err).boxed().compat())
     }
 
     fn sign_txn_request(&self, txn_request: TransactionRequest) -> FutureResult<String> {

@@ -1,19 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use futures::future::TryFutureExt;
-use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
-use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
-use starcoin_types::transaction::SignedUserTransaction;
-
 use crate::module::{convert_to_rpc_error, map_err};
-use failure::_core::convert::TryInto;
+use futures::future::TryFutureExt;
 use scs::SCSCodec;
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
+use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
+use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::transaction::SignedUserTransaction;
+use std::convert::TryInto;
+
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
-use starcoin_rpc_api::types::SignedUserTransactionView;
-use starcoin_types::account_address::AccountAddress;
 
 pub struct TxPoolRpcImpl<S>
 where
@@ -62,6 +62,11 @@ where
                     .map_err(convert_to_rpc_error)
             });
         Box::new(jsonrpc_core::futures::done(result))
+    }
+
+    fn gas_price(&self) -> FutureResult<StrView<u64>> {
+        let gas_price = 1u64;
+        Box::new(jsonrpc_core::futures::finished(gas_price.into()))
     }
 
     fn pending_txns(
