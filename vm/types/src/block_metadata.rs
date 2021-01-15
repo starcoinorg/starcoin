@@ -9,7 +9,7 @@ use crate::account_config::genesis_address;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::AuthenticationKey;
 use scs::Sample;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
@@ -27,8 +27,11 @@ use starcoin_crypto::{
 /// 3. Once that special resource is modified, the other user transactions can read the consensus
 ///    info by calling into the read method of that resource, which would thus give users the
 ///    information such as the current block number.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, CryptoHasher, CryptoHash)]
+//TODO rename to BlockMetadataTransaction
 pub struct BlockMetadata {
+    #[serde(skip)]
+    id: Option<HashValue>,
     /// Parent block hash.
     parent_hash: HashValue,
     timestamp: u64,
@@ -51,7 +54,8 @@ impl BlockMetadata {
         chain_id: ChainId,
         parent_gas_used: u64,
     ) -> Self {
-        Self {
+        let mut txn = Self {
+            id: None,
             parent_hash,
             timestamp,
             author,
@@ -60,7 +64,9 @@ impl BlockMetadata {
             number,
             chain_id,
             parent_gas_used,
-        }
+        };
+        txn.id = Some(txn.crypto_hash());
+        txn
     }
 
     pub fn into_inner(
@@ -104,21 +110,53 @@ impl BlockMetadata {
     }
 
     pub fn id(&self) -> HashValue {
-        self.crypto_hash()
+        self.id
+            .expect("BlockMetadata's id should been Some after init.")
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockMetadata {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "BlockMetadata")]
+        struct BlockMetadataData {
+            parent_hash: HashValue,
+            timestamp: u64,
+            author: AccountAddress,
+            author_auth_key: Option<AuthenticationKey>,
+            uncles: u64,
+            number: u64,
+            chain_id: ChainId,
+            parent_gas_used: u64,
+        }
+        let data = BlockMetadataData::deserialize(deserializer)?;
+        Ok(Self::new(
+            data.parent_hash,
+            data.timestamp,
+            data.author,
+            data.author_auth_key,
+            data.uncles,
+            data.number,
+            data.chain_id,
+            data.parent_gas_used,
+        ))
     }
 }
 
 impl Sample for BlockMetadata {
     fn sample() -> Self {
-        Self {
-            parent_hash: HashValue::zero(),
-            timestamp: 0,
-            author: genesis_address(),
-            author_auth_key: None,
-            uncles: 0,
-            number: 0,
-            chain_id: ChainId::test(),
-            parent_gas_used: 0,
-        }
+        Self::new(
+            HashValue::zero(),
+            0,
+            genesis_address(),
+            None,
+            0,
+            0,
+            ChainId::test(),
+            0,
+        )
     }
 }
