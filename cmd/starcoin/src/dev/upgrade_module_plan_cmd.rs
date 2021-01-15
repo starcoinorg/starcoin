@@ -6,7 +6,7 @@ use crate::dev::sign_txn_helper::sign_txn_with_account_by_rpc_client;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_crypto::hash::HashValue;
 use starcoin_transaction_builder::build_module_upgrade_plan;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::TransactionPayload;
@@ -96,7 +96,7 @@ impl CommandAction for UpgradeModulePlanCommand {
             opt.expiration_time,
             TransactionPayload::Script(module_upgrade_plan),
         )?;
-        let txn_hash = signed_txn.crypto_hash();
+        let txn_hash = signed_txn.id();
         cli_state.client().submit_transaction(signed_txn)?;
 
         println!("txn {:#x} submitted.", txn_hash);

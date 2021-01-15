@@ -116,10 +116,7 @@ pub fn test_wallet_account() -> Result<()> {
     use core::convert::{From, TryFrom};
     use scs::SCSCodec;
     use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature};
-    use starcoin_crypto::{
-        hash::{CryptoHash, PlainCryptoHash},
-        HashValue,
-    };
+    use starcoin_crypto::{hash::CryptoHash, HashValue};
     use starcoin_types::transaction::authenticator::AuthenticationKey;
 
     let bytes = hex::decode("2c78c6fd8829de80451cda02310250b27307360ddc972d614fa0c8462ae41b3e")?;
@@ -211,6 +208,6 @@ pub fn test_wallet_account() -> Result<()> {
         211, 150, 199, 7, 37, 161, 6, 202, 7,
     ];
     let stxn = SignedUserTransaction::decode(&stxn_bytes)?;
-    println!("txn hash is {:?}", stxn.crypto_hash());
+    println!("txn hash is {:?}", stxn.id());
     Ok(())
 }

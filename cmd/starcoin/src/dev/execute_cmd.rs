@@ -6,7 +6,6 @@ use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_dev::playground;
 use starcoin_move_compiler::{
     compile_source_string_no_report, errors, load_bytecode_file, CompiledUnit, MOVE_EXTENSION,
@@ -208,7 +207,7 @@ impl CommandAction for ExecuteCommand {
         };
 
         let signed_txn = client.account_sign_txn(script_txn)?;
-        let txn_hash = signed_txn.crypto_hash();
+        let txn_hash = signed_txn.id();
         let output = if opt.local_mode {
             let state_view = RemoteStateReader::new(client)?;
             playground::dry_run(

@@ -6,7 +6,6 @@ use crate::dev::sign_txn_with_account_by_rpc_client;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::transaction::TransactionPayload;
 use structopt::StructOpt;
@@ -40,7 +39,7 @@ impl CommandAction for GenBlockCommand {
             3000,
             TransactionPayload::Script(empty),
         )?;
-        let txn_hash = signed_txn.crypto_hash();
+        let txn_hash = signed_txn.id();
         cli_state.client().submit_transaction(signed_txn)?;
 
         println!("txn {:#x} submitted.", txn_hash);

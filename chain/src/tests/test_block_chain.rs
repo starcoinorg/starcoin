@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use consensus::Consensus;
-use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_config::NodeConfig;
@@ -386,7 +386,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let tnx_hash = signed_txn_t2.crypto_hash();
+    let tnx_hash = signed_txn_t2.id();
     let (template_b2, excluded) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.authentication_key()),

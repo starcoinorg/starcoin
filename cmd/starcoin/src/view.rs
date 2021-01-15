@@ -5,7 +5,8 @@ use anyhow::{format_err, Error};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_crypto::HashValue;
+use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_rpc_api::types::{
     TransactionEventView, TransactionOutputAction, TransactionOutputView, TransactionVMStatus,
 };
@@ -72,7 +73,7 @@ pub struct TransactionView {
 impl From<SignedUserTransaction> for TransactionView {
     fn from(txn: SignedUserTransaction) -> Self {
         Self {
-            id: txn.raw_txn().crypto_hash(),
+            id: txn.id(),
             sender: txn.sender(),
             sequence_number: txn.sequence_number(),
             gas_unit_price: txn.gas_unit_price(),

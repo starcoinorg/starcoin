@@ -6,7 +6,7 @@ use crate::mutlisig_transaction::MultisigTransaction;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_crypto::hash::HashValue;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::fs::File;
 use std::io::Read;
@@ -43,7 +43,7 @@ impl CommandAction for ExecuteMultiSignedTxnCommand {
         let opt = ctx.opt();
         let client = ctx.state().client();
         let signed_txn = assemble_multisig_txn(opt.partial_signed_txns.clone())?;
-        let txn_hash = signed_txn.crypto_hash();
+        let txn_hash = signed_txn.id();
         client.submit_transaction(signed_txn)?;
 
         println!("txn {:#x} submitted.", txn_hash);

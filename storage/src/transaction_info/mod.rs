@@ -36,14 +36,14 @@ impl ValueCodec for TransactionInfo {
 
 impl TransactionInfoStore for TransactionInfoHashStorage {
     fn get_transaction_info(&self, _id: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        unimplemented!()
+        unreachable!()
     }
 
     fn get_transaction_info_by_hash(
         &self,
         _txn_hash: HashValue,
     ) -> Result<Vec<TransactionInfo>, Error> {
-        unimplemented!()
+        unreachable!()
     }
 
     fn get_transaction_info_ids_by_hash(
@@ -79,14 +79,14 @@ impl TransactionInfoStore for TransactionInfoStorage {
         &self,
         _txn_hash: HashValue,
     ) -> Result<Vec<TransactionInfo>, Error> {
-        unimplemented!()
+        unreachable!()
     }
 
     fn get_transaction_info_ids_by_hash(
         &self,
         _txn_hash: HashValue,
     ) -> Result<Vec<HashValue>, Error> {
-        unimplemented!()
+        unreachable!()
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {

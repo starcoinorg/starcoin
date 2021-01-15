@@ -1,6 +1,6 @@
 use config::NodeConfig;
 use executor::DEFAULT_EXPIRATION_TIME;
-use starcoin_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use starcoin_crypto::keygen::KeyGen;
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
@@ -47,7 +47,7 @@ fn test_txn_sync_actor() {
     let mut txns = txpool_2.get_pending_txns(None, Some(current_timestamp));
     assert_eq!(txns.len(), 1);
     let txn = txns.pop().unwrap();
-    assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
+    assert_eq!(user_txn.id(), txn.id());
     second_node.stop().unwrap();
     first_node.stop().unwrap();
 }

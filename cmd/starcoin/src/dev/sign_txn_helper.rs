@@ -112,7 +112,6 @@ pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
 mod tests {
     use super::*;
     use starcoin_config::NodeConfig;
-    use starcoin_crypto::hash::PlainCryptoHash;
     use starcoin_logger::prelude::*;
     use starcoin_node::NodeHandle;
     use starcoin_rpc_api::types::{AnnotatedMoveValueView, ContractCall, TransactionVMStatus};
@@ -189,7 +188,7 @@ mod tests {
             .client()
             .account_sign_txn(transfer_raw_txn)
             .unwrap();
-        let transfer_txn_id = transfer_txn.crypto_hash();
+        let transfer_txn_id = transfer_txn.id();
         cli_state
             .client()
             .submit_transaction(transfer_txn.clone())
@@ -254,7 +253,7 @@ mod tests {
         )
         .unwrap();
 
-        let proposal_txn_id = proposal_txn.crypto_hash();
+        let proposal_txn_id = proposal_txn.id();
         cli_state
             .client()
             .submit_transaction(proposal_txn.clone())
@@ -309,7 +308,7 @@ mod tests {
             cli_state.net().chain_id(),
         );
         let vote_txn = cli_state.client().account_sign_txn(vote_raw_txn).unwrap();
-        let vote_txn_id = vote_txn.crypto_hash();
+        let vote_txn_id = vote_txn.id();
         cli_state
             .client()
             .submit_transaction(vote_txn.clone())
@@ -341,7 +340,7 @@ mod tests {
             TransactionPayload::Script(module_upgrade_queue),
         )
         .unwrap();
-        let queue_txn_id = queue_txn.crypto_hash();
+        let queue_txn_id = queue_txn.id();
         cli_state
             .client()
             .submit_transaction(queue_txn.clone())
@@ -374,7 +373,7 @@ mod tests {
             TransactionPayload::Script(module_upgrade_plan),
         )
         .unwrap();
-        let plan_txn_id = plan_txn.crypto_hash();
+        let plan_txn_id = plan_txn.id();
         cli_state
             .client()
             .submit_transaction(plan_txn.clone())
@@ -399,7 +398,7 @@ mod tests {
             TransactionPayload::Package(test_upgrade_module_package),
         )
         .unwrap();
-        let package_txn_id = package_txn.crypto_hash();
+        let package_txn_id = package_txn.id();
         cli_state
             .client()
             .submit_transaction(package_txn.clone())
@@ -480,7 +479,7 @@ mod tests {
             .client()
             .account_sign_txn(only_new_module_strategy_raw_txn)
             .unwrap();
-        let only_new_module_strategy_txn_id = only_new_module_strategy_txn.crypto_hash();
+        let only_new_module_strategy_txn_id = only_new_module_strategy_txn.id();
         cli_state
             .client()
             .submit_transaction(only_new_module_strategy_txn.clone())
@@ -519,7 +518,7 @@ mod tests {
             TransactionPayload::Package(test_upgrade_module_package_1),
         )
         .unwrap();
-        let package_txn_id_1 = package_txn_1.crypto_hash();
+        let package_txn_id_1 = package_txn_1.id();
         cli_state
             .client()
             .submit_transaction(package_txn_1.clone())

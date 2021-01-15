@@ -4,7 +4,6 @@
 use anyhow::{bail, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
@@ -334,7 +333,7 @@ impl TxnMocker {
             user_txn.sender(),
             user_txn.sequence_number(),
         );
-        let txn_hash = user_txn.crypto_hash();
+        let txn_hash = user_txn.id();
         let result = self.client.submit_transaction(user_txn);
 
         // increase sequence number if added in pool.
@@ -393,7 +392,7 @@ impl TxnMocker {
             user_txn.sender(),
             user_txn.sequence_number(),
         );
-        let txn_hash = user_txn.crypto_hash();
+        let txn_hash = user_txn.id();
         let result = self.client.submit_transaction(user_txn);
 
         if matches!(result, Ok(_)) && blocking {

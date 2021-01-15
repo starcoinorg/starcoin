@@ -6,7 +6,6 @@ use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
@@ -93,7 +92,7 @@ impl CommandAction for GetCoinCommand {
             Duration::from_secs(300),
         )?;
         let txn = client.account_sign_txn(raw_txn)?;
-        let id = txn.crypto_hash();
+        let id = txn.id();
         client.submit_transaction(txn.clone())?;
         if !opt.no_blocking {
             ctx.state().watch_txn(id)?;
