@@ -37,19 +37,6 @@ where
         Box::new(fut.compat())
     }
 
-    fn get_hex(&self, access_path_hex: String) -> FutureResult<Option<Vec<u8>>> {
-        let access_path_bytes = match hex::decode(access_path_hex) {
-            Ok(t) => t,
-            Err(e) => return Box::new(jsonrpc_core::futures::failed(map_err(e.into()))),
-        };
-        let access_path = match AccessPath::decode(&access_path_bytes) {
-            Ok(t) => t,
-            Err(e) => return Box::new(jsonrpc_core::futures::failed(map_err(e))),
-        };
-        let fut = self.service.clone().get(access_path).map_err(map_err);
-        Box::new(fut.compat())
-    }
-
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProof> {
         let fut = self
             .service

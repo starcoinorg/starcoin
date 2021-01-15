@@ -1,9 +1,22 @@
 ---
+Identifier:
+  NEWTYPESTRUCT: STR
+DataPath:
+  ENUM:
+    0:
+      Code:
+        NEWTYPE:
+          TYPENAME: Identifier
+    1:
+      Resource:
+        NEWTYPE:
+          TYPENAME: StructTag
 AccessPath:
   STRUCT:
     - address:
         TYPENAME: AccountAddress
-    - path: BYTES
+    - path:
+        TYPENAME: DataPath
 AccountAddress:
   NEWTYPESTRUCT:
     TUPLEARRAY:
@@ -64,8 +77,6 @@ GeneralMetadataV0:
         OPTION: U64
 HashValue:
   NEWTYPESTRUCT: BYTES
-Identifier:
-  NEWTYPESTRUCT: STR
 Metadata:
   ENUM:
     0:
@@ -303,3 +314,14 @@ Kind:
       NewPendingTransactions: UNIT
     3:
       NewMintBlock: UNIT
+EventFilter:
+  STRUCT:
+    - from_block:
+        OPTION: U64
+    - to_block:
+        OPTION: U64
+    - event_keys:
+        SEQ:
+          TYPENAME: EventKey
+    - limit:
+        OPTION: U64
