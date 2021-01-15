@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:latest
+        image: starcoin/starcoin:master
         imagePullPolicy: Always
         command:
           - bash
@@ -51,6 +51,12 @@ spec:
               node_key_flag="--node-key ${node_key}";
             fi;
             /starcoin/starcoin -n halley -d /sc-data --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+            ret=$?;
+            if [ $ret -ne 0 ]; then
+              echo "Node start fail, try to remove config.";
+              rm /sc-data/halley/config.toml;
+              rm /sc-data/halley/genesis_config.json;
+            fi;
             if [ $ret -eq 120 ]; then
             echo "Start failed with gensis mismatch code 120, clean data...";
             rm -rf /sc-data/halley/ &>/dev/null;
