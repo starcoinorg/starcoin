@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::MoveStructView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
-use starcoin_rpc_api::types::StrView;
+use starcoin_rpc_api::types::{AnnotatedMoveStructView, StrView};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use structopt::StructOpt;
@@ -40,7 +39,7 @@ pub struct GetContractDataCommand;
 
 pub enum GetContractDataResult {
     Code(Option<String>),
-    Resource(Option<MoveStructView>),
+    Resource(Option<AnnotatedMoveStructView>),
 }
 impl Serialize for GetContractDataResult {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>

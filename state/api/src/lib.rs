@@ -14,6 +14,7 @@ pub use chain_state::{
 };
 use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
+use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::move_resource::MoveResource;
 pub use starcoin_vm_types::state_view::StateView;
 
@@ -40,6 +41,13 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
     }
 
     async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>>;
+
+    /// get account stateset on state_root(if empty, use current state root).
+    async fn get_account_state_set(
+        self,
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> Result<Option<AccountStateSet>>;
 
     async fn state_root(self) -> Result<HashValue>;
 
@@ -87,7 +95,23 @@ where
             panic!("Unexpect response type.")
         }
     }
-
+    async fn get_account_state_set(
+        self,
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> Result<Option<AccountStateSet>> {
+        let response = self
+            .send(StateRequest::GetAccountStateSet {
+                address,
+                state_root,
+            })
+            .await??;
+        if let StateResponse::AccountStateSet(state) = response {
+            Ok(state)
+        } else {
+            panic!("Unexpected response type.")
+        }
+    }
     async fn state_root(self) -> Result<HashValue> {
         let response = self.send(StateRequest::StateRoot()).await??;
         if let StateResponse::StateRoot(root) = response {

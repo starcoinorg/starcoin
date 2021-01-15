@@ -188,6 +188,16 @@ impl AccountStateObject {
         Ok(())
     }
 
+    fn to_state_set(&self) -> Result<AccountStateSet> {
+        let code_root = self
+            .code_tree
+            .lock()
+            .as_ref()
+            .map(|tree| tree.dump())
+            .transpose()?;
+        let resource_root = self.resource_tree.lock().dump()?;
+        Ok(AccountStateSet::new(vec![code_root, Some(resource_root)]))
+    }
     fn to_state(&self) -> AccountState {
         let code_root = self.code_tree.lock().as_ref().map(|tree| tree.root_hash());
         let resource_root = self.resource_tree.lock().root_hash();
@@ -366,6 +376,12 @@ impl ChainStateReader for ChainStateDB {
         Ok(self
             .get_account_state_object_option(address)?
             .map(|state_object| state_object.to_state()))
+    }
+
+    fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        self.get_account_state_object_option(address)?
+            .map(|s| s.to_state_set())
+            .transpose()
     }
 
     fn state_root(&self) -> HashValue {

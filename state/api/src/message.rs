@@ -5,6 +5,7 @@ use crate::StateWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
@@ -15,6 +16,10 @@ pub enum StateRequest {
     GetWithProof(AccessPath),
     GetWithProofByRoot(AccessPath, HashValue),
     GetAccountState(AccountAddress),
+    GetAccountStateSet {
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    },
     GetAccountStateByRoot(AccountAddress, HashValue),
     StateRoot(),
 }
@@ -29,5 +34,6 @@ pub enum StateResponse {
     StateWithProof(Box<StateWithProof>),
     StateRoot(HashValue),
     AccountState(Option<AccountState>),
+    AccountStateSet(Option<AccountStateSet>),
     None,
 }

@@ -52,7 +52,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
 
         let state_api = ctx
             .service_ref_opt::<ChainStateService>()?
-            .map(|service_ref| StateRpcImpl::new(service_ref.clone()));
+            .map(|service_ref| StateRpcImpl::new(service_ref.clone(), storage.clone()));
         let chain_state_service = ctx.service_ref::<ChainStateService>()?.clone();
         let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
         let account_service = ctx.service_ref_opt::<AccountService>()?.cloned();

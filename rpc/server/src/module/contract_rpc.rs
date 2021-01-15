@@ -10,8 +10,8 @@ use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
-    AnnotatedMoveStruct, AnnotatedMoveValue, ContractCall, DryRunTransactionRequest, StrView,
-    TransactionOutputView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunTransactionRequest,
+    StrView, TransactionOutputView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
@@ -87,7 +87,7 @@ where
         &self,
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
-    ) -> FutureResult<Option<AnnotatedMoveStruct>> {
+    ) -> FutureResult<Option<AnnotatedMoveStructView>> {
         let service = self.chain_state.clone();
         let playground = self.playground.clone();
         let f = async move {
@@ -103,13 +103,13 @@ where
                 Some(d) => {
                     let value =
                         playground.view_resource(state_root, &resource_type.0, d.as_slice())?;
-                    Ok(Some(value))
+                    Ok(Some(value.into()))
                 }
             }
         };
         Box::new(f.map_err(map_err).boxed().compat())
     }
-    fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValue>> {
+    fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValueView>> {
         let service = self.chain_state.clone();
         let playground = self.playground.clone();
         let ContractCall {
@@ -129,7 +129,7 @@ where
                 type_args.into_iter().map(|v| v.0).collect(),
                 args.into_iter().map(|v| v.0).collect(),
             )?;
-            Ok(output)
+            Ok(output.into_iter().map(Into::into).collect())
         }
         .map_err(map_err);
         Box::new(f.boxed().compat())

@@ -10,6 +10,7 @@ use starcoin_types::{
 };
 
 pub use self::gen_client::Client as StateClient;
+use crate::types::AccountStateSetView;
 
 #[rpc]
 pub trait StateApi {
@@ -21,6 +22,12 @@ pub trait StateApi {
 
     #[rpc(name = "state.get_account_state")]
     fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>>;
+
+    #[rpc(name = "state.get_account_state_set")]
+    fn get_account_state_set(
+        &self,
+        address: AccountAddress,
+    ) -> FutureResult<Option<AccountStateSetView>>;
 
     #[rpc(name = "state.get_state_root")]
     fn get_state_root(&self) -> FutureResult<HashValue>;

@@ -7,6 +7,7 @@ use starcoin_crypto::HashValue;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
+use starcoin_types::state_set::AccountStateSet;
 
 //TODO implement Mock service
 #[derive(Clone, Default)]
@@ -29,6 +30,14 @@ impl ChainStateAsyncService for MockChainStateService {
     }
 
     async fn get_account_state(self, _address: AccountAddress) -> Result<Option<AccountState>> {
+        unimplemented!()
+    }
+
+    async fn get_account_state_set(
+        self,
+        _address: AccountAddress,
+        _state_root: Option<HashValue>,
+    ) -> Result<Option<AccountStateSet>> {
         unimplemented!()
     }
 

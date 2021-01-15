@@ -6,6 +6,7 @@ use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     access_path::AccessPath,
@@ -111,6 +112,9 @@ pub trait ChainStateReader: StateView {
 
     /// Gets account state
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>>;
+
+    /// get whole state data of some account address.
+    fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>>;
 
     fn exist_account(&self, address: &AccountAddress) -> Result<bool> {
         self.get_account_state(address).map(|state| state.is_some())

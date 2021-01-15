@@ -8,7 +8,7 @@ use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::state_set::ChainStateSet;
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 
 pub struct RemoteStateReader<'a> {
     //TODO add cache.
@@ -41,6 +41,9 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
         self.state_root
     }
 
+    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        unimplemented!()
+    }
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
     }
