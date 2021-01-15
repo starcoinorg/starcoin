@@ -88,6 +88,7 @@ pub fn add_command(
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetEpochInfoByNumberCommand)
+                .subcommand(chain::GetGlobalTimeByNumberCommand)
                 .subcommand(chain::TPSCommand)
                 .subcommand(
                     Command::with_name("uncle")

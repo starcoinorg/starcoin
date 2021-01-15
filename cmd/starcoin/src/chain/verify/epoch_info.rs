@@ -81,7 +81,13 @@ impl CommandAction for VerifyEpochCommand {
             let last_time_target = last_epoch_info.block_time_target();
             let blocks = last_epoch_info.end_block_number() - last_epoch_info.start_block_number();
             let uncles_rate = last_epoch_info.uncles() * 1000 / blocks;
-            let total_time = client.get_global_time_by_number(block_number)?.milliseconds
+            let total_time = client
+                .chain_get_block_by_number(last_epoch_info.end_block_number())
+                .unwrap()
+                .unwrap()
+                .header
+                .timestamp
+                .0
                 - last_epoch_info.start_time();
             let avg_block_time = total_time / blocks;
             let chain_state_reader = RemoteStateReader::new(client)?;

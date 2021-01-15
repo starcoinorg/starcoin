@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use rand::Rng;
 use scmd::{CommandAction, ExecContext};
 use starcoin_consensus::difficulty::{get_next_target_helper, BlockDiffInfo};
 use starcoin_consensus::{difficult_to_target, target_to_difficulty};
@@ -40,6 +41,14 @@ impl CommandAction for VerifyBlockCommand {
         let epoch_info = client.get_epoch_info_by_number(block_number)?;
         let head = client.chain_info()?;
         let start = epoch_info.start_block_number();
+        let last_epoch_time_target = if epoch_info.number() > 0 {
+            client
+                .get_epoch_info_by_number(start - 1)?
+                .block_time_target()
+        } else {
+            epoch_info.block_time_target()
+        };
+
         let end = min(epoch_info.end_block_number(), head.head.number.0);
         let block_time_target = epoch_info.block_time_target() * 6;
 
@@ -50,10 +59,12 @@ impl CommandAction for VerifyBlockCommand {
         } else {
             start
         };
-        for number in load_start..end {
-            let block = client.chain_get_block_by_number(number)?.unwrap();
-            block_map.insert(number, block.clone());
+        //load block
+        let block_vec = client.chain_get_blocks_by_number(Some(end), end - load_start + 1)?;
+        for block in block_vec {
+            block_map.insert(block.header.number.0, block.clone());
         }
+
         let mut continue_large = 0u64;
         for index in start + 1..end {
             let block1 = block_map.get(&(index - 1)).unwrap();
@@ -75,54 +86,53 @@ impl CommandAction for VerifyBlockCommand {
         }
 
         // difficulty
-        for index in start..end {
-            let mut block_diff_vec = VecDeque::new();
-            let min = if index > difficulty_window {
-                index - difficulty_window
+        let mut random = rand::thread_rng();
+        let index: u64 = random.gen_range(start, end);
+        let mut block_diff_vec = VecDeque::new();
+        let min = if index > difficulty_window {
+            index - difficulty_window
+        } else {
+            1
+        };
+        info!("verify difficulty : min: {:?}, index: {}", min, index);
+        for i in min..index {
+            let block = block_map.get(&i).unwrap();
+            block_diff_vec.push_front(BlockDiffInfo::new(
+                block.header.timestamp.0,
+                difficult_to_target(block.header.difficulty),
+            ));
+        }
+        if !block_diff_vec.is_empty() {
+            let time_plan = if index == start {
+                last_epoch_time_target
             } else {
-                1
+                epoch_info.block_time_target()
             };
-            debug!("verify difficulty : min: {:?}, index: {}", min, index);
-            for i in min..index {
-                let block = block_map.get(&i).unwrap();
-                block_diff_vec.push_front(BlockDiffInfo::new(
-                    block.header.timestamp.0,
-                    difficult_to_target(block.header.difficulty),
-                ));
-            }
-            if !block_diff_vec.is_empty() {
-                let target = get_next_target_helper(
-                    Vec::from(block_diff_vec),
-                    epoch_info.block_time_target(),
-                )
-                .unwrap();
-                let block = block_map.get(&index).unwrap();
-                let difficulty = target_to_difficulty(target);
-                assert_eq!(block.header.difficulty, difficulty);
-                info!("difficulty verify ok: {:?}", index);
-            } else {
-                warn!("index err: {:?}, start: {}, end {:}", index, start, end);
-            }
+            let target = get_next_target_helper(Vec::from(block_diff_vec), time_plan).unwrap();
+            let block = block_map.get(&index).unwrap();
+            let difficulty = target_to_difficulty(target);
+            assert_eq!(block.header.difficulty, difficulty);
+            info!("difficulty verify ok: {:?}", index);
+        } else {
+            warn!("index err: {:?}, start: {}, end {:}", index, start, end);
         }
 
         //gas check
-        for index in start..end {
-            let block = block_map.get(&index).unwrap();
-            let block_gas = block.header.gas_used.0;
-            let txn_vec = block.body.txn_hashes();
-            let mut total_gas = 0u64;
-            for txn in txn_vec {
-                let gas = client
-                    .chain_get_transaction_info(txn)
-                    .unwrap()
-                    .unwrap()
-                    .gas_used
-                    .0;
-                total_gas += gas;
-            }
-            assert_eq!(block_gas, total_gas);
-            info!("gas verify ok: {:?}", index);
+        let block = block_map.get(&index).unwrap();
+        let block_gas = block.header.gas_used.0;
+        let txn_vec = block.body.txn_hashes();
+        let mut total_gas = 0u64;
+        for txn in txn_vec {
+            let gas = client
+                .chain_get_transaction_info(txn)
+                .unwrap()
+                .unwrap()
+                .gas_used
+                .0;
+            total_gas += gas;
         }
+        assert_eq!(block_gas, total_gas);
+        info!("gas verify ok: {:?}", index);
 
         Ok("verify ok!".parse()?)
     }

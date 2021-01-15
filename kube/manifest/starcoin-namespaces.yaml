@@ -22,3 +22,11 @@ metadata:
     network: main
   name: starcoin-main
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: starcoin
+    network: centauri
+  name: starcoin-centauri
+---
