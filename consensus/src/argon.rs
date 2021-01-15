@@ -29,7 +29,7 @@ impl Consensus for ArgonConsensus {
         &self,
         mining_hash: &[u8],
         nonce: u32,
-        extra: BlockHeaderExtra,
+        extra: &BlockHeaderExtra,
     ) -> Result<HashValue> {
         let mix_hash = set_header_nonce(mining_hash, nonce, extra);
         let config = Config {

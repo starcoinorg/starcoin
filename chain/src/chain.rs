@@ -12,7 +12,7 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, ExecutedBlock,
-    VerifiedBlock, VerifyBlockField,
+    MintedUncleNumber, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
@@ -37,8 +37,8 @@ use starcoin_vm_types::time::TimeService;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::cmp::min;
 use std::iter::Extend;
-use std::option::Option::Some;
-use std::{collections::HashSet, sync::Arc};
+use std::option::Option::{None, Some};
+use std::{collections::HashMap, sync::Arc};
 use storage::Store;
 
 pub struct ChainStatusWithBlock {
@@ -53,7 +53,7 @@ pub struct BlockChain {
     statedb: ChainStateDB,
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
-    uncles: HashSet<HashValue>,
+    uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
 }
 
@@ -66,11 +66,20 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        Self::new_with_uncles(time_service, head, None, storage)
+    }
+
+    fn new_with_uncles(
+        time_service: Arc<dyn TimeService>,
+        head_block: Block,
+        uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
+        storage: Arc<dyn Store>,
+    ) -> Result<Self> {
         let block_info = storage
-            .get_block_info(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block_hash))?;
+            .get_block_info(head_block.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
-        let state_root = head.header().state_root();
+        let state_root = head_block.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
@@ -89,16 +98,19 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithBlock {
-                status: ChainStatus::new(head.header.clone(), block_info),
-                head,
+                status: ChainStatus::new(head_block.header.clone(), block_info),
+                head: head_block,
             },
             statedb: chain_state,
             storage,
-            uncles: HashSet::new(),
+            uncles: HashMap::new(),
             epoch,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
-        chain.update_uncle_cache()?;
+        match uncles {
+            Some(data) => chain.uncles = data,
+            None => chain.update_uncle_cache()?,
+        }
         watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
@@ -156,19 +168,19 @@ impl BlockChain {
 
     //TODO lazy init uncles cache.
     pub fn update_uncle_cache(&mut self) -> Result<()> {
-        self.uncles = self.epoch_uncles()?.iter().cloned().collect();
+        self.uncles = self.epoch_uncles()?;
         Ok(())
     }
 
-    fn epoch_uncles(&self) -> Result<Vec<HashValue>> {
+    fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
         let epoch = &self.epoch;
-        let mut uncles = Vec::new();
+        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
         let mut block = self.head_block();
         let mut number = block.header().number();
         loop {
             if let Some(block_uncles) = block.uncles() {
-                block_uncles.iter().for_each(|header| {
-                    uncles.push(header.id());
+                block_uncles.iter().for_each(|uncle_header| {
+                    uncles.insert(uncle_header.id(), block.header().number());
                 });
             }
             if number == 0 {
@@ -274,7 +286,7 @@ impl BlockChain {
     fn exist_block_filter(&self, block: Option<Block>) -> Result<Option<Block>> {
         Ok(match block {
             Some(block) => {
-                if self.check_exist_block(block.id(), block.header().number)? {
+                if self.check_exist_block(block.id(), block.header().number())? {
                     Some(block)
                 } else {
                     None
@@ -288,7 +300,7 @@ impl BlockChain {
     fn exist_header_filter(&self, header: Option<BlockHeader>) -> Result<Option<BlockHeader>> {
         Ok(match header {
             Some(header) => {
-                if self.check_exist_block(header.id(), header.number)? {
+                if self.check_exist_block(header.id(), header.number())? {
                     Some(header)
                 } else {
                     None
@@ -449,8 +461,8 @@ impl BlockChain {
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
         let block_info = BlockInfo::new(
             block_id,
-            txn_accumulator_info,
             total_difficulty,
+            txn_accumulator_info,
             block_accumulator_info,
         );
 
@@ -749,10 +761,34 @@ impl ChainReader for BlockChain {
             "Block with id{} do not exists in current chain.",
             block_id
         );
-        BlockChain::new(self.time_service.clone(), block_id, self.storage.clone())
+        let head = self
+            .storage
+            .get_block_by_hash(block_id)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
+        ensure!(
+            head.header().number() + 1 >= self.epoch.start_block_number(),
+            "Can only fork branch in same epoch {:}:{:}:{:?}.",
+            block_id,
+            head.header().number(),
+            self.epoch
+        );
+        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
+        self.uncles
+            .iter()
+            .for_each(|(uncle_id, minted_uncle_number)| {
+                if *minted_uncle_number < head.header().number() {
+                    uncles.insert(*uncle_id, *minted_uncle_number);
+                }
+            });
+        BlockChain::new_with_uncles(
+            self.time_service.clone(),
+            head,
+            Some(uncles),
+            self.storage.clone(),
+        )
     }
 
-    fn epoch_uncles(&self) -> &HashSet<HashValue> {
+    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber> {
         &self.uncles
     }
 
@@ -800,7 +836,7 @@ impl BlockChain {
     pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
         let reverse = filter.reverse;
         let chain_header = self.current_header();
-        let max_block_number = chain_header.number.min(filter.to_block);
+        let max_block_number = chain_header.number().min(filter.to_block);
 
         // quick return.
         if filter.from_block > max_block_number {
@@ -822,7 +858,7 @@ impl BlockChain {
                 ))
             })?;
             let block_id = block.id();
-            let block_number = block.header().number;
+            let block_number = block.header().number();
             let mut txn_info_ids = self
                 .storage
                 .get_block_txn_info_ids(block_id)?
@@ -858,7 +894,7 @@ impl BlockChain {
 
                 let filtered_event_with_info = filtered_events.map(|evt| ContractEventInfo {
                     block_hash: block_id,
-                    block_number: block.header().number,
+                    block_number: block.header().number(),
                     transaction_hash: txn_info.transaction_hash(),
                     transaction_index: *idx as u32,
                     event: evt,
@@ -902,12 +938,12 @@ impl BlockChain {
 
 impl ChainWriter for BlockChain {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool {
-        executed_block.block.header().parent_hash == self.status.status.head().id()
+        executed_block.block.header().parent_hash() == self.status.status.head().id()
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
-        debug_assert!(block.header().parent_hash == self.status.status.head().id());
+        debug_assert!(block.header().parent_hash() == self.status.status.head().id());
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
@@ -929,8 +965,9 @@ impl ChainWriter for BlockChain {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = block.uncles() {
-            block_uncles.iter().for_each(|header| {
-                self.uncles.insert(header.id());
+            block_uncles.iter().for_each(|uncle_header| {
+                self.uncles
+                    .insert(uncle_header.id(), block.header().number());
             });
         }
         self.status = ChainStatusWithBlock {

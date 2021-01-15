@@ -4,9 +4,11 @@
 use crate::message::{AccountRequest, AccountResponse};
 use crate::AccountInfo;
 use anyhow::Result;
+use starcoin_crypto::multi_ed25519::MultiEd25519Signature;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
+use starcoin_types::transaction::authenticator::AccountSignature;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 #[async_trait::async_trait]
@@ -20,6 +22,9 @@ pub trait AccountAsyncService:
     async fn get_accounts(&self) -> Result<Vec<AccountInfo>>;
 
     async fn get_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
+
+    /// Signs the hash of data with given address.
+    async fn sign_message(&self, address: AccountAddress, message: Vec<u8>) -> Result<Vec<u8>>;
 
     async fn sign_txn(
         &self,
@@ -102,6 +107,25 @@ where
             Ok(*account)
         } else {
             panic!("Unexpect response type.")
+        }
+    }
+
+    async fn sign_message(&self, address: AccountAddress, message: Vec<u8>) -> Result<Vec<u8>> {
+        let response = self
+            .send(AccountRequest::SignMessage {
+                signer: address,
+                message,
+            })
+            .await??;
+        if let AccountResponse::MessageSignature(signature) = response {
+            Ok(match *signature {
+                AccountSignature::Single(_, s) => s.to_bytes().to_vec(),
+                AccountSignature::Multi(_, s) => {
+                    Into::<MultiEd25519Signature>::into(s).to_bytes().to_vec()
+                }
+            })
+        } else {
+            panic!("Unexpected response type.")
         }
     }
 

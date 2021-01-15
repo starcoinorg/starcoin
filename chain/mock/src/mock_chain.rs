@@ -91,7 +91,7 @@ impl MockChain {
             debug!("Change to new head: {:?}", self.head.current_header());
             self.net
                 .time_service()
-                .adjust(GlobalTimeOnChain::new(new_block.header().timestamp));
+                .adjust(GlobalTimeOnChain::new(new_block.header().timestamp()));
         } else {
             debug!(
                 "New block({:?})'s total_difficulty({:?}) <= head's total_difficulty({:?})",

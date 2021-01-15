@@ -6,9 +6,10 @@ use crate::{
     BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -35,15 +36,16 @@ pub struct HttpConfiguration {
         help = "rpc apiset to serve"
     )]
     pub apis: ApiSet,
-    #[structopt(name = "http-port", long, default_value = "9850")]
-    pub port: u16,
+    /// Default http port is 9850
+    #[structopt(name = "http-port", long)]
+    pub port: Option<u16>,
+    /// Default is 10M
     #[structopt(
         name = "http-max-request-body",
         long,
-        help = "max request body in bytes",
-        default_value = "10485760"
+        help = "max request body in bytes"
     )]
-    pub max_request_body_size: usize,
+    pub max_request_body_size: Option<usize>,
     #[structopt(name = "http-threads", long, help = "threads to use")]
     pub threads: Option<usize>,
     #[structopt(
@@ -61,11 +63,21 @@ impl Default for HttpConfiguration {
         Self {
             disable: false,
             apis: ApiSet::UnsafeContext,
-            max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
+            max_request_body_size: None,
             threads: None,
-            port: DEFAULT_HTTP_PORT,
+            port: None,
             ip_headers: None,
         }
+    }
+}
+
+impl HttpConfiguration {
+    pub fn max_request_body_size(&self) -> usize {
+        self.max_request_body_size
+            .unwrap_or(DEFAULT_MAX_REQUEST_BODY_SIZE)
+    }
+    pub fn threads(&self) -> usize {
+        self.threads.unwrap_or_else(num_cpus::get)
     }
 }
 
@@ -80,8 +92,9 @@ pub struct TcpConfiguration {
         default_value = "safe"
     )]
     pub apis: ApiSet,
-    #[structopt(name = "tcp-port", long, default_value = "9860")]
-    pub port: u16,
+    /// Default tcp port is 9860
+    #[structopt(name = "tcp-port", long)]
+    pub port: Option<u16>,
 }
 
 impl Default for TcpConfiguration {
@@ -89,7 +102,7 @@ impl Default for TcpConfiguration {
         Self {
             disable: false,
             apis: ApiSet::UnsafeContext,
-            port: DEFAULT_TCP_PORT,
+            port: None,
         }
     }
 }
@@ -109,15 +122,16 @@ pub struct WsConfiguration {
         default_value = "pubsub"
     )]
     pub apis: ApiSet,
-    #[structopt(name = "websocket-port", long, default_value = "9870")]
-    pub port: u16,
+    /// Default websocket port is 9870
+    #[structopt(name = "websocket-port", long)]
+    pub port: Option<u16>,
+    /// Default is 10M
     #[structopt(
         name = "websocket-max-request-body",
         long,
-        help = "max request body in bytes",
-        default_value = "10485760"
+        help = "max request body in bytes"
     )]
-    pub max_request_body_size: usize,
+    pub max_request_body_size: Option<usize>,
 }
 
 impl Default for WsConfiguration {
@@ -125,9 +139,16 @@ impl Default for WsConfiguration {
         Self {
             disable: false,
             apis: ApiSet::PubSub,
-            max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
-            port: DEFAULT_WEB_SOCKET_PORT,
+            max_request_body_size: None,
+            port: None,
         }
+    }
+}
+
+impl WsConfiguration {
+    pub fn max_request_body_size(&self) -> usize {
+        self.max_request_body_size
+            .unwrap_or(DEFAULT_MAX_REQUEST_BODY_SIZE)
     }
 }
 
@@ -230,6 +251,41 @@ pub struct RpcConfig {
     pub block_query_max_range: u64,
 }
 
+#[derive(Clone)]
+pub struct ListenAddress {
+    pub protocol: &'static str,
+    pub address: IpAddr,
+    pub port: u16,
+}
+
+impl ListenAddress {
+    pub fn new(protocol: &'static str, address: IpAddr, port: u16) -> Self {
+        Self {
+            protocol,
+            address,
+            port,
+        }
+    }
+}
+
+impl Into<SocketAddr> for ListenAddress {
+    fn into(self) -> SocketAddr {
+        SocketAddr::new(self.address, self.port)
+    }
+}
+
+impl std::fmt::Display for ListenAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}://{}:{}", self.protocol, self.address, self.port)
+    }
+}
+
+impl std::fmt::Debug for ListenAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 impl RpcConfig {
     pub fn get_ipc_file(&self) -> &Path {
         self.ipc
@@ -237,24 +293,36 @@ impl RpcConfig {
             .as_ref()
             .expect("config should init first.")
     }
-    pub fn get_http_address(&self) -> Option<String> {
+    pub fn get_http_address(&self) -> Option<ListenAddress> {
         if self.http.disable {
             return None;
         }
-        Some(format!("http://{}:{}", self.rpc_address, self.http.port))
+        Some(ListenAddress::new(
+            "http",
+            self.rpc_address,
+            self.http.port.unwrap_or(DEFAULT_HTTP_PORT),
+        ))
     }
-    pub fn get_tcp_address(&self) -> Option<String> {
+    pub fn get_tcp_address(&self) -> Option<ListenAddress> {
         if self.tcp.disable {
             return None;
         }
-        Some(format!("tcp://{}:{}", self.rpc_address, self.tcp.port))
+        Some(ListenAddress::new(
+            "tcp",
+            self.rpc_address,
+            self.tcp.port.unwrap_or(DEFAULT_TCP_PORT),
+        ))
     }
 
-    pub fn get_ws_address(&self) -> Option<String> {
+    pub fn get_ws_address(&self) -> Option<ListenAddress> {
         if self.ws.disable {
             return None;
         }
-        Some(format!("ws://{}:{}", self.rpc_address, self.ws.port))
+        Some(ListenAddress::new(
+            "ws",
+            self.rpc_address,
+            self.ws.port.unwrap_or(DEFAULT_WEB_SOCKET_PORT),
+        ))
     }
     #[cfg(not(windows))]
     pub fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
@@ -287,13 +355,13 @@ impl ConfigModule for RpcConfig {
 
         if base.net.is_test() {
             let ports = get_random_available_ports(3);
-            config.http.port = ports[0];
-            config.tcp.port = ports[1];
-            config.ws.port = ports[2];
+            config.http.port = Some(ports[0]);
+            config.tcp.port = Some(ports[1]);
+            config.ws.port = Some(ports[2]);
         } else if base.net.is_dev() {
-            config.http.port = get_available_port_from(DEFAULT_HTTP_PORT);
-            config.tcp.port = get_available_port_from(DEFAULT_TCP_PORT);
-            config.ws.port = get_available_port_from(DEFAULT_WEB_SOCKET_PORT);
+            config.http.port = Some(get_available_port_from(DEFAULT_HTTP_PORT));
+            config.tcp.port = Some(get_available_port_from(DEFAULT_TCP_PORT));
+            config.ws.port = Some(get_available_port_from(DEFAULT_WEB_SOCKET_PORT));
         }
 
         if config.ipc.ipc_file_path.is_none() {
@@ -304,11 +372,18 @@ impl ConfigModule for RpcConfig {
     }
 
     fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+        if let Some(rpc_address) = opt.rpc_address.clone() {
+            self.rpc_address = rpc_address.parse()?;
+        }
         if !opt.http.disable {
             self.http.disable = false;
             self.http.apis = opt.http.apis.clone();
-            self.http.port = opt.http.port;
-            self.http.max_request_body_size = opt.http.max_request_body_size;
+            if opt.http.port.is_some() {
+                self.http.port = opt.http.port;
+            }
+            if opt.http.max_request_body_size.is_some() {
+                self.http.max_request_body_size = opt.http.max_request_body_size;
+            }
             if opt.http.threads.is_some() {
                 self.http.threads = opt.http.threads;
             }
@@ -320,7 +395,9 @@ impl ConfigModule for RpcConfig {
         if !opt.tcp.disable {
             self.tcp.disable = false;
             self.tcp.apis = opt.tcp.apis.clone();
-            self.tcp.port = opt.tcp.port;
+            if opt.tcp.port.is_some() {
+                self.tcp.port = opt.tcp.port;
+            }
         }
         info!("TCP rpc address: {:?}", self.get_tcp_address());
         if !opt.ipc.disable {
@@ -333,8 +410,12 @@ impl ConfigModule for RpcConfig {
         if !opt.ws.disable {
             self.ws.disable = false;
             self.ws.apis = opt.ws.apis.clone();
-            self.ws.port = opt.ws.port;
-            self.ws.max_request_body_size = opt.ws.max_request_body_size;
+            if opt.ws.port.is_some() {
+                self.ws.port = opt.ws.port;
+            }
+            if opt.ws.max_request_body_size.is_some() {
+                self.ws.max_request_body_size = opt.ws.max_request_body_size;
+            }
         }
         info!("Websocket rpc address: {:?}", self.get_ws_address());
 

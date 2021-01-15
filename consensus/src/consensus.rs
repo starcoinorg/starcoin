@@ -42,7 +42,7 @@ pub trait Consensus {
         let extra = BlockHeaderExtra::new([0u8; 4]);
         loop {
             let pow_hash: U256 = self
-                .calculate_pow_hash(mining_hash, nonce, extra)
+                .calculate_pow_hash(mining_hash, nonce, &extra)
                 .expect("calculate hash should work")
                 .into();
             let target = difficult_to_target(difficulty);
@@ -65,7 +65,7 @@ pub trait Consensus {
         &self,
         pow_header_blob: &[u8],
         nonce: u32,
-        extra: BlockHeaderExtra,
+        extra: &BlockHeaderExtra,
     ) -> Result<HashValue>;
 
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
@@ -84,7 +84,9 @@ pub trait Consensus {
     fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {
         debug!(
             "verify_header_difficulty, calculate target:{}, header target: {}, nonce: {}",
-            difficulty, header.difficulty, header.nonce
+            difficulty,
+            header.difficulty(),
+            header.nonce()
         );
         if header.difficulty() != difficulty {
             return Err(ConsensusVerifyError::VerifyDifficultyError {
@@ -93,8 +95,8 @@ pub trait Consensus {
             }
             .into());
         }
-        let nonce = header.nonce;
-        let extra = header.extra;
+        let nonce = header.nonce();
+        let extra = header.extra();
         let pow_header_blob = header.as_pow_header_blob();
         let pow_hash: U256 = self
             .calculate_pow_hash(&pow_header_blob, nonce, extra)?
@@ -105,7 +107,7 @@ pub trait Consensus {
                 target,
                 real: pow_hash,
                 nonce,
-                extra,
+                extra: *extra,
             }
             .into());
         }

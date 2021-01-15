@@ -235,7 +235,7 @@ fn test_package_txn() -> Result<()> {
         assert!(verify_result.is_some());
         assert_eq!(
             verify_result.unwrap().status_code(),
-            StatusCode::VERIFICATION_ERROR
+            StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE
         );
     }
 

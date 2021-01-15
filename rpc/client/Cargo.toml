@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.37"
+anyhow = "1.0.38"
 thiserror = "1.0"
 # for RpcError convert.
 failure = "0.1"
@@ -20,7 +20,7 @@ hex = "~0.4"
 actix = "0.10.0"
 actix-rt = "1.1"
 tokio = "0.2"
-log = "0.4.11"
+log = "0.4.13"
 parking_lot = "0.11.1"
 jsonrpc-core = { version = "15.1.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "15.1.0"

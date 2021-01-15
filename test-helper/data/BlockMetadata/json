@@ -1,0 +1,12 @@
+{
+  "parent_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "timestamp": 0,
+  "author": "0x00000000000000000000000000000001",
+  "author_auth_key": null,
+  "uncles": 0,
+  "number": 0,
+  "chain_id": {
+    "id": 255
+  },
+  "parent_gas_used": 0
+}

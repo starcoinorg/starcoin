@@ -12,7 +12,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::BlockChain;
 use starcoin_genesis::Genesis;
 use starcoin_storage::BlockStore;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeaderBuilder};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use std::sync::Arc;
@@ -42,7 +42,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -74,7 +74,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     ));
     //sync again
     let target = arc_node1.chain().get_block_info(None)?.unwrap();
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -114,8 +114,7 @@ pub async fn test_failed_block() -> Result<()> {
         DummyNetworkService,
         true,
     );
-    let mut header = BlockHeader::random();
-    header.number = 1;
+    let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
     let failed_block_id = failed_block.id();
@@ -151,7 +150,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -186,7 +185,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -237,7 +236,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -297,7 +296,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -334,7 +333,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -388,7 +387,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         DummyNetworkService,
         arc_node1.clone(),
     ));
-    let (sync_task, task_handle, task_event_counter) = full_sync_task(
+    let (sync_task, task_handle, task_event_counter, _) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,

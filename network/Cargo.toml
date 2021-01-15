@@ -7,14 +7,14 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.37"
+anyhow = "1.0.38"
 futures = "0.3"
 
 actix = "0.10.0"
 actix-rt = "1.1"
 yamux = "0.8.0"
 futures-timer = "3.0"
-log = "0.4.11"
+log = "0.4.13"
 hex = "0.4.2"
 bytes = "0.5.0"
 

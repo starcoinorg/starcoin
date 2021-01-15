@@ -6,7 +6,7 @@ use anyhow::Result;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_txpool_api::PropagateNewTransactions;
+use starcoin_txpool_api::PropagateTransactions;
 use std::sync::Arc;
 use types::{
     sync_status::SyncStatus,
@@ -46,7 +46,7 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.subscribe::<NewHeadBlock>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
-            ctx.subscribe::<PropagateNewTransactions>();
+            ctx.subscribe::<PropagateTransactions>();
         }
         Ok(())
     }
@@ -55,7 +55,7 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
         if self.config.miner.is_disable_mint_empty_block() {
-            ctx.unsubscribe::<PropagateNewTransactions>();
+            ctx.unsubscribe::<PropagateTransactions>();
         }
         Ok(())
     }
@@ -75,8 +75,8 @@ impl EventHandler<Self, NewHeadBlock> for GenerateBlockEventPacemaker {
     }
 }
 
-impl EventHandler<Self, PropagateNewTransactions> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: PropagateNewTransactions, ctx: &mut ServiceContext<Self>) {
+impl EventHandler<Self, PropagateTransactions> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, _msg: PropagateTransactions, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
             self.send_event(false, ctx)
         } else {

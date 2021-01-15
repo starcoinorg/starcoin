@@ -16,13 +16,12 @@ use bytecode::{
     clean_and_optimize::CleanAndOptimizeProcessor,
     eliminate_imm_refs::EliminateImmRefsProcessor,
     eliminate_mut_refs::EliminateMutRefsProcessor,
-    function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder},
+    function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder, FunctionVariant},
     livevar_analysis::LiveVarAnalysisProcessor,
     memory_instrumentation::MemoryInstrumentationProcessor,
     packed_types_analysis::PackedTypesProcessor,
     reaching_def_analysis::ReachingDefProcessor,
     stackless_bytecode::{Bytecode, Operation},
-    test_instrumenter::TestInstrumenter,
     usage_analysis::{self, UsageProcessor},
 };
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream, WriteColor};
@@ -36,7 +35,7 @@ use move_lang::find_move_filenames;
 use move_model::{
     code_writer::CodeWriter,
     emit, emitln,
-    model::{GlobalEnv, ModuleId},
+    model::{GlobalEnv, ModuleId, QualifiedId, StructId},
     run_model_builder,
 };
 use once_cell::sync::Lazy;
@@ -259,13 +258,14 @@ fn check_modifies(env: &GlobalEnv, targets: &FunctionTargetsHolder) {
 
     for module_env in env.get_modules() {
         for func_env in module_env.get_functions() {
-            let caller_func_target = targets.get_target(&func_env);
+            let caller_func_target = targets.get_target(&func_env, FunctionVariant::Baseline);
             for code in caller_func_target.get_bytecode() {
                 if let Call(_, _, oper, _) = code {
                     if let Function(mid, fid, _) = oper {
                         let callee = mid.qualified(*fid);
                         let callee_func_env = env.get_function(callee);
-                        let callee_func_target = targets.get_target(&callee_func_env);
+                        let callee_func_target =
+                            targets.get_target(&callee_func_env, FunctionVariant::Baseline);
                         let callee_modified_memory =
                             usage_analysis::get_modified_memory(&callee_func_target);
                         caller_func_target.get_modify_targets().keys().for_each(|target| {
@@ -285,23 +285,47 @@ fn check_modifies(env: &GlobalEnv, targets: &FunctionTargetsHolder) {
     }
 }
 
-/// TODO(emmazzz): Right now this functions simply marks target modules and
-/// their dependency modules as should_translate, which is the same behavior
-/// as before.
-/// In a following PR, modify this function so it does the following three
-/// steps:
+/// This function analyzes the Move modules to be translated and the Move functions
+/// to be verified by doing the following:
 /// (1) Go through all invariants in the target modules and gather all resources
 ///     mentioned in the invariants.
 /// (2) Go through all functions in all modules. If a function modifies one of
-///     the resources in (1)(directly or indirectly?), then
+///     the resources in (1)directly, then
 ///     (a) Mark the function as should_verify and
 ///     (b) Mark the module owning the function as should_translate.
 /// (3) Propagate should_translate to dependency modules.
-fn verification_analysis(env: &mut GlobalEnv, _targets: &FunctionTargetsHolder) {
+fn verification_analysis(env: &mut GlobalEnv, targets: &FunctionTargetsHolder) {
+    let mut target_resources = BTreeSet::new();
+
+    // Collect all resources mentioned in the invariants in target modules
     for module_env in env.get_modules() {
         if !module_env.is_dependency() {
-            env.add_module_to_should_translate(module_env.get_id());
-            propagate_should_translate(env, module_env.get_id());
+            let module_id = module_env.get_id();
+            env.add_module_to_should_translate(module_id);
+            propagate_should_translate(env, module_id);
+            let mentioned_resources: BTreeSet<QualifiedId<StructId>> = env
+                .get_global_invariants_by_module(module_id)
+                .iter()
+                .flat_map(|id| env.get_global_invariant(*id).unwrap().mem_usage.clone())
+                .collect();
+            target_resources.extend(mentioned_resources);
+        }
+    }
+
+    for module_env in env.get_modules() {
+        let module_id = module_env.get_id();
+        for func_env in module_env.get_functions() {
+            let fun_target = targets.get_target(&func_env, FunctionVariant::Baseline);
+            let directly_modified_structs =
+                usage_analysis::get_directly_modified_memory(&fun_target);
+            // Verify the function if it modifies one of the target resources
+            if !directly_modified_structs.is_disjoint(&target_resources) {
+                // TODO(emmazzz): After implementing the called_only_by feature, if a function
+                // has `pragma called_only_by = M::f` then verify the caller 'M::f; instead.
+                module_env.add_fun_to_should_verify(func_env.get_id());
+                env.add_module_to_should_translate(module_id);
+                propagate_should_translate(env, module_id);
+            }
         }
     }
 }
@@ -348,7 +372,7 @@ fn create_and_process_bytecode(options: &Options, env: &GlobalEnv) -> FunctionTa
 }
 
 /// Function to create the transformation pipeline.
-fn create_bytecode_processing_pipeline(options: &Options) -> FunctionTargetPipeline {
+fn create_bytecode_processing_pipeline(_options: &Options) -> FunctionTargetPipeline {
     let mut res = FunctionTargetPipeline::default();
 
     // Add processors in order they are executed.
@@ -359,7 +383,6 @@ fn create_bytecode_processing_pipeline(options: &Options) -> FunctionTargetPipel
     res.add_processor(BorrowAnalysisProcessor::new());
     res.add_processor(MemoryInstrumentationProcessor::new());
     res.add_processor(CleanAndOptimizeProcessor::new());
-    res.add_processor(TestInstrumenter::new(options.prover.verify_scope));
     res.add_processor(UsageProcessor::new());
     res.add_processor(PackedTypesProcessor::new());
 

@@ -81,7 +81,7 @@ impl<'a> Selector<'a> {
     }
 
     pub fn filter_by_block_number(self, block_number: BlockNumber) -> Selector<'a> {
-        self.filter(move |peer| peer.latest_header().number >= block_number)
+        self.filter(move |peer| peer.latest_header().number() >= block_number)
     }
 
     pub fn cloned(self) -> Vec<PeerInfo> {

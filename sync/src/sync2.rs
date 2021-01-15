@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::{full_sync_task, AncestorEvent, VerifiedRpcClientFactory};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
@@ -36,6 +37,7 @@ pub struct SyncTaskHandle {
     task_begin: Option<BlockIdAndNumber>,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
+    peer_event_handle: PeerEventHandle,
 }
 
 pub enum SyncStage {
@@ -151,7 +153,7 @@ impl SyncService2 {
 
             let fetcher_factory = Arc::new(VerifiedRpcClientFactory::new(network));
 
-            let (fut, task_handle, task_event_handle) = full_sync_task(
+            let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
                 current_block_id,
                 target.block_info.clone(),
                 skip_pow_verify,
@@ -167,6 +169,7 @@ impl SyncService2 {
                 target,
                 task_handle,
                 task_event_handle,
+                peer_event_handle,
             })?;
             Ok(Some(fut.await?))
             //Ok(())
@@ -262,6 +265,13 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
         if self.sync_status.is_prepare() {
             return;
         }
+
+        if let SyncStage::Synchronizing(task_handle) = &mut self.stage {
+            if let Err(e) = task_handle.peer_event_handle.push(msg.clone()) {
+                error!("[sync] Push PeerEvent error: {:?}", e);
+            }
+        }
+
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("[sync] connect new peer:{:?}", open_peer_id);
@@ -292,17 +302,23 @@ pub struct SyncBeginEvent {
     target: SyncTarget,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
+    peer_event_handle: PeerEventHandle,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
     fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
-        let (target, task_handle, task_event_handle) =
-            (msg.target, msg.task_handle, msg.task_event_handle);
+        let (target, task_handle, task_event_handle, peer_event_handle) = (
+            msg.target,
+            msg.task_handle,
+            msg.task_event_handle,
+            msg.peer_event_handle,
+        );
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
             task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
+            peer_event_handle,
         };
         match std::mem::replace(
             &mut self.stage,
@@ -320,12 +336,14 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
-                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.block_header.number, target_total_difficulty, current_total_difficulty);
+                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.block_header.number(), target_total_difficulty, current_total_difficulty);
                     self.stage = SyncStage::Done;
                     task_handle.cancel();
                 } else {
-                    let target_id_number =
-                        BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);
+                    let target_id_number = BlockIdAndNumber::new(
+                        target.block_header.id(),
+                        target.block_header.number(),
+                    );
                     self.sync_status
                         .sync_begin(target_id_number, target.block_info.total_difficulty);
                     ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
@@ -449,7 +467,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
                 if let Some(begin) = handle.task_begin.as_ref() {
-                    report.fix_percent(handle.target.block_header.number - begin.number);
+                    report.fix_percent(handle.target.block_header.number() - begin.number);
                 }
 
                 SyncProgressReport {
@@ -458,7 +476,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
                         .task_begin
                         .as_ref()
                         .map(|begin| -> u64 { begin.number }),
-                    target_number: handle.target.block_header.number,
+                    target_number: handle.target.block_header.number(),
                     target_difficulty: handle.target.block_info.total_difficulty,
                     target_peers: handle
                         .target

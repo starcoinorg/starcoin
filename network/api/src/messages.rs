@@ -3,7 +3,7 @@
 
 use crate::ReputationChange;
 use anyhow::*;
-use scs::SCSCodec;
+use scs::{SCSCodec, Sample};
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;
@@ -31,6 +31,12 @@ impl TransactionsMessage {
     }
 }
 
+impl Sample for TransactionsMessage {
+    fn sample() -> Self {
+        Self::new(vec![SignedUserTransaction::sample()])
+    }
+}
+
 /// Message of sending or receive block notification to network
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CompactBlockMessage {
@@ -44,6 +50,12 @@ impl CompactBlockMessage {
             compact_block,
             block_info,
         }
+    }
+}
+
+impl Sample for CompactBlockMessage {
+    fn sample() -> Self {
+        Self::new(CompactBlock::sample(), BlockInfo::sample())
     }
 }
 

@@ -31,7 +31,10 @@ use crate::{
 };
 // DEBUG
 // use backtrace::Backtrace;
-use bytecode::{function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder};
+use bytecode::{
+    function_target::FunctionTarget,
+    function_target_pipeline::{FunctionTargetsHolder, FunctionVariant},
+};
 use move_model::model::{ConditionTag, NodeId};
 use once_cell::sync::Lazy;
 use std::num::ParseIntError;
@@ -123,11 +126,19 @@ impl<'env> BoogieWrapper<'env> {
             // different random seeds cause significant instabilities in verification times.
             // Thus by running multiple instances of Boogie with different random seeds, we can
             // potentially alleviate the instability.
-            let (seed, output) = ProverTaskRunner::run_tasks(
+            let (seed, output_res) = ProverTaskRunner::run_tasks(
                 task,
                 self.options.prover.num_instances,
                 self.options.prover.sequential_task,
             );
+            let output = match output_res {
+                Err(err) => panic!(
+                    "cannot execute boogie `{}`: {}",
+                    self.options.get_boogie_command("")[0],
+                    err
+                ),
+                Ok(out) => out,
+            };
             if self.options.prover.num_instances > 1 {
                 debug!("Boogie instance with seed {} finished first", seed);
             }
@@ -414,8 +425,8 @@ impl<'env> BoogieWrapper<'env> {
         if let Some(m) = &error.model {
             for (desc, values) in &m.tracked_exps {
                 let module_env = self.env.get_module(desc.module_id);
-                let loc = module_env.get_node_loc(desc.node_id);
-                let ty = module_env.get_node_type(desc.node_id);
+                let loc = module_env.env.get_node_loc(desc.node_id);
+                let ty = module_env.env.get_node_type(desc.node_id);
                 let value_display = values
                     .iter()
                     .filter_map(|v| Some(v.pretty_or_raw(self, m, &ty)).map(|p| self.render(&p)))
@@ -491,7 +502,9 @@ impl<'env> BoogieWrapper<'env> {
             _ => "",
         };
         if let Some(func_env) = self.env.get_enclosing_function(loc.clone()) {
-            let func_target = self.targets.get_target(&func_env);
+            let func_target = self
+                .targets
+                .get_target(&func_env, FunctionVariant::Baseline);
             let func_name = format!(
                 "{}",
                 func_target.get_name().display(func_target.symbol_pool())
@@ -993,7 +1006,9 @@ impl Model {
                 .env
                 .get_enclosing_function(loc.clone())
                 .ok_or_else(Self::invalid_track_info)?;
-            let func_target = wrapper.targets.get_target(&func_env);
+            let func_target = wrapper
+                .targets
+                .get_target(&func_env, FunctionVariant::Baseline);
             let var_idx = args[2]
                 .extract_number()
                 .ok_or_else(Self::invalid_track_info)
@@ -1028,7 +1043,9 @@ impl Model {
                 .env
                 .get_enclosing_function(loc.clone())
                 .ok_or_else(Self::invalid_track_info)?;
-            let func_target = wrapper.targets.get_target(&func_env);
+            let func_target = wrapper
+                .targets
+                .get_target(&func_env, FunctionVariant::Baseline);
             let code = args[2]
                 .extract_i128()
                 .ok_or_else(Self::invalid_track_info)?;
@@ -1066,7 +1083,7 @@ impl Model {
                     .extract_number()
                     .ok_or_else(Self::invalid_track_info)?,
             );
-            if module_env.get_node_type(node_id) == Type::Error {
+            if module_env.env.get_node_type(node_id) == Type::Error {
                 return Err(Self::invalid_track_info());
             }
             Ok((ExpDescriptor { module_id, node_id }, args[2].clone()))

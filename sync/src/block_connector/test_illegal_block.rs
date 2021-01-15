@@ -174,7 +174,11 @@ fn apply_legal_block(
 async fn test_verify_gas_limit(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.gas_used = u64::MAX;
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_gas_used(u64::MAX)
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -193,7 +197,11 @@ async fn test_verify_gas_limit_failed() {
 async fn test_verify_body_hash(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.body_hash = HashValue::random();
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_body_hash(HashValue::random())
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -212,7 +220,11 @@ async fn test_verify_body_hash_failed() {
 async fn test_verify_parent_id(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.parent_hash = HashValue::random();
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_parent_hash(HashValue::random())
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -236,7 +248,11 @@ async fn test_verify_parent_not_exist() {
 async fn test_verify_timestamp(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.timestamp = main.current_header().timestamp();
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_timestamp(main.current_header().timestamp())
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -255,11 +271,17 @@ async fn test_verify_timestamp_failed() {
 async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-            + 1000;
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_timestamp(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    + 1000,
+            )
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -278,7 +300,11 @@ async fn test_verify_future_timestamp_failed() {
 async fn test_verify_consensus(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main_with_halley().await;
     if !succ {
-        new_block.header.difficulty = U256::from(1024u64);
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_difficulty(U256::from(1024u64))
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -396,7 +422,10 @@ async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block>
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     if !succ {
-        uncle_header.timestamp = (duration_since_epoch().as_millis() + 1000) as u64;
+        uncle_header = uncle_header
+            .as_builder()
+            .with_timestamp((duration_since_epoch().as_millis() + 1000) as u64)
+            .build();
     }
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
@@ -451,7 +480,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let mut uncle_block_header = uncle_block.header().clone();
 
     if !succ {
-        uncle_block_header.nonce = 0;
+        uncle_block_header = uncle_block_header.as_builder().with_nonce(0).build();
     }
 
     // 3. main and create a new block with uncle block
@@ -490,7 +519,11 @@ async fn test_verify_illegal_uncle_consensus_failed() {
 async fn test_verify_state_root(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.state_root = HashValue::random();
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_state_root(HashValue::random())
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -509,7 +542,7 @@ async fn test_verify_state_root_failed() {
 async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.gas_used = 1;
+        new_block.header = new_block.header().as_builder().with_gas_used(1).build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -544,7 +577,11 @@ async fn test_verify_txn_count_failed() {
 async fn test_verify_accumulator_root(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.accumulator_root = HashValue::random();
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_accumulator_root(HashValue::random())
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -563,7 +600,11 @@ async fn test_verify_accumulator_root_failed() {
 async fn test_verify_block_accumulator_root(succ: bool) -> Result<()> {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
-        new_block.header.parent_block_accumulator_root = HashValue::random();
+        new_block.header = new_block
+            .header()
+            .as_builder()
+            .with_parent_block_accumulator_root(HashValue::random())
+            .build();
     }
     main.apply(new_block)?;
     Ok(())
@@ -583,9 +624,17 @@ async fn test_verify_block_number_failed(succ: bool, order: bool) {
     let (mut new_block, mut main) = new_block_and_main().await;
     if !succ {
         if order {
-            new_block.header.number -= 1;
+            new_block.header = new_block
+                .header()
+                .as_builder()
+                .with_number(new_block.header().number() - 1)
+                .build();
         } else {
-            new_block.header.number += 1;
+            new_block.header = new_block
+                .header()
+                .as_builder()
+                .with_number(new_block.header().number() + 1)
+                .build();
         }
     }
     let apply_failed = main.apply(new_block);
@@ -613,8 +662,10 @@ async fn test_verify_uncles_count(succ: bool) -> Result<Block> {
     let mut uncles = Vec::new();
     let times = if succ { 2 } else { 3 };
     for _i in 0..times {
-        let mut tmp = uncle_header.clone();
-        tmp.state_root = HashValue::random();
+        let tmp = uncle_header
+            .as_builder()
+            .with_state_root(HashValue::random())
+            .build();
         uncles.push(tmp);
     }
     apply_with_illegal_uncle(
@@ -630,9 +681,7 @@ async fn test_verify_uncles_count_failed() {
     assert!(test_verify_uncles_count(true).await.is_ok());
     let apply_failed = test_verify_uncles_count(false).await;
     assert!(apply_failed.is_err());
-    if let Err(apply_err) = apply_failed {
-        error!("apply failed : {:?}", apply_err);
-    }
+    debug!("expect apply failed : {:?}", apply_failed.err().unwrap());
 }
 
 async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
@@ -640,11 +689,16 @@ async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     if !succ {
-        uncle_header.number = writeable_block_chain_service
-            .get_main()
-            .current_header()
-            .number()
-            + 1;
+        uncle_header = uncle_header
+            .as_builder()
+            .with_number(
+                writeable_block_chain_service
+                    .get_main()
+                    .current_header()
+                    .number()
+                    + 1,
+            )
+            .build();
     }
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
@@ -809,7 +863,10 @@ async fn test_verify_uncle_and_parent_number_failed() {
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     let net = node_config.net();
-    uncle_header.number += 1;
+    uncle_header = uncle_header
+        .as_builder()
+        .with_number(uncle_header.number() + 1)
+        .build();
 
     let old_number = writeable_block_chain_service
         .get_main()

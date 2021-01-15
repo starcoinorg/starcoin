@@ -3,20 +3,21 @@
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::transaction::SignedUserTransaction;
-use starcoin_crypto::{
-    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
-    HashValue,
-};
-
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::transaction::SignedUserTransaction;
 use crate::U256;
+use scs::Sample;
 use serde::de::Error;
 use serde::export::Formatter;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_crypto::hash::{ACCUMULATOR_PLACEHOLDER_HASH, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
+    HashValue,
+};
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 /// Type for block number.
@@ -32,6 +33,9 @@ impl BlockHeaderExtra {
     }
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+    pub fn as_slice(&self) -> &[u8; 4] {
+        &self.0
     }
 }
 
@@ -49,17 +53,11 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
             let literal = s.strip_prefix("0x").unwrap_or(&s);
-            let hex_len = literal.len();
-            let result = if hex_len % 2 != 0 {
-                let mut hex_str = String::with_capacity(hex_len + 1);
-                hex_str.push('0');
-                hex_str.push_str(literal);
-                hex::decode(&hex_str).map_err(D::Error::custom)?
-            } else {
-                hex::decode(literal).map_err(D::Error::custom)?
-            };
-
-            if result.len() < 4 {
+            if literal.len() != 8 {
+                return Err(D::Error::custom("Invalid block header extra len"));
+            }
+            let result = hex::decode(literal).map_err(D::Error::custom)?;
+            if result.len() != 4 {
                 return Err(D::Error::custom("Invalid block header extra len"));
             }
             let mut extra = [0u8; 4];
@@ -112,80 +110,51 @@ impl From<BlockHeader> for BlockIdAndNumber {
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash)]
 pub struct BlockHeader {
+    #[serde(skip)]
+    id: Option<HashValue>,
     /// Parent hash.
-    pub parent_hash: HashValue,
+    parent_hash: HashValue,
     /// Block timestamp.
-    pub timestamp: u64,
+    timestamp: u64,
     /// Block number.
-    pub number: BlockNumber,
+    number: BlockNumber,
     /// Block author.
-    pub author: AccountAddress,
+    author: AccountAddress,
     /// Block author auth key.
-    pub author_auth_key: Option<AuthenticationKey>,
+    author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
-    pub accumulator_root: HashValue,
+    accumulator_root: HashValue,
     /// The parent block accumulator root hash.
-    pub parent_block_accumulator_root: HashValue,
+    /// TODO rename to block_accumulator_root
+    parent_block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
-    pub state_root: HashValue,
+    state_root: HashValue,
     /// Gas used for contracts execution.
-    pub gas_used: u64,
+    gas_used: u64,
     /// Block difficulty
-    pub difficulty: U256,
+    difficulty: U256,
+    //TODO move nonce to before extra
     /// Consensus nonce field.
-    pub nonce: u32,
+    nonce: u32,
     /// hash for block body
-    pub body_hash: HashValue,
+    body_hash: HashValue,
     /// The chain id
-    pub chain_id: ChainId,
+    chain_id: ChainId,
     /// block header extra
-    pub extra: BlockHeaderExtra,
+    extra: BlockHeaderExtra,
 }
 
 impl BlockHeader {
     pub fn new(
         parent_hash: HashValue,
-        parent_block_accumulator_root: HashValue,
-        timestamp: u64,
-        number: BlockNumber,
-        author: AccountAddress,
-        accumulator_root: HashValue,
-        state_root: HashValue,
-        gas_used: u64,
-        difficulty: U256,
-        nonce: u32,
-        body_hash: HashValue,
-        chain_id: ChainId,
-        extra: BlockHeaderExtra,
-    ) -> BlockHeader {
-        Self::new_with_auth(
-            parent_hash,
-            parent_block_accumulator_root,
-            timestamp,
-            number,
-            author,
-            None,
-            accumulator_root,
-            state_root,
-            gas_used,
-            difficulty,
-            nonce,
-            body_hash,
-            chain_id,
-            extra,
-        )
-    }
-
-    pub fn new_with_auth(
-        parent_hash: HashValue,
-        parent_block_accumulator_root: HashValue,
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
         author_auth_key: Option<AuthenticationKey>,
         accumulator_root: HashValue,
+        parent_block_accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
         difficulty: U256,
@@ -194,7 +163,8 @@ impl BlockHeader {
         chain_id: ChainId,
         extra: BlockHeaderExtra,
     ) -> BlockHeader {
-        BlockHeader {
+        let mut header = BlockHeader {
+            id: None,
             parent_hash,
             parent_block_accumulator_root,
             number,
@@ -209,7 +179,9 @@ impl BlockHeader {
             body_hash,
             chain_id,
             extra,
-        }
+        };
+        header.id = Some(header.crypto_hash());
+        header
     }
 
     pub fn as_pow_header_blob(&self) -> Vec<u8> {
@@ -226,7 +198,8 @@ impl BlockHeader {
     }
 
     pub fn id(&self) -> HashValue {
-        self.crypto_hash()
+        self.id
+            .expect("BlockHeader id should bean Some after init.")
     }
 
     pub fn parent_hash(&self) -> HashValue {
@@ -243,6 +216,10 @@ impl BlockHeader {
 
     pub fn author(&self) -> AccountAddress {
         self.author
+    }
+
+    pub fn author_auth_key(&self) -> Option<AuthenticationKey> {
+        self.author_auth_key
     }
 
     pub fn accumulator_root(&self) -> HashValue {
@@ -269,16 +246,22 @@ impl BlockHeader {
         self.parent_block_accumulator_root
     }
 
+    pub fn body_hash(&self) -> HashValue {
+        self.body_hash
+    }
+
     pub fn chain_id(&self) -> ChainId {
         self.chain_id
     }
+
+    pub fn extra(&self) -> &BlockHeaderExtra {
+        &self.extra
+    }
+
     pub fn is_genesis(&self) -> bool {
         self.number == 0
     }
 
-    pub fn body_hash(&self) -> HashValue {
-        self.body_hash
-    }
     pub fn genesis_block_header(
         parent_hash: HashValue,
         timestamp: u64,
@@ -290,41 +273,131 @@ impl BlockHeader {
         chain_id: ChainId,
         extra: BlockHeaderExtra,
     ) -> Self {
-        Self {
+        Self::new(
             parent_hash,
-            parent_block_accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
             timestamp,
-            number: 0,
-            author: CORE_CODE_ADDRESS,
-            author_auth_key: None,
+            0,
+            CORE_CODE_ADDRESS,
+            None,
             accumulator_root,
+            *ACCUMULATOR_PLACEHOLDER_HASH,
             state_root,
-            gas_used: 0,
+            0,
             difficulty,
             nonce,
             body_hash,
             chain_id,
             extra,
-        }
+        )
     }
 
     pub fn random() -> Self {
-        Self {
-            parent_hash: HashValue::random(),
-            parent_block_accumulator_root: HashValue::random(),
-            timestamp: rand::random(),
-            number: rand::random(),
-            author: AccountAddress::random(),
-            author_auth_key: None,
-            accumulator_root: HashValue::random(),
-            state_root: HashValue::random(),
-            gas_used: rand::random(),
-            difficulty: U256::max_value(),
-            nonce: 0,
-            body_hash: HashValue::random(),
-            chain_id: ChainId::test(),
-            extra: BlockHeaderExtra([0u8; 4]),
+        Self::new(
+            HashValue::random(),
+            rand::random(),
+            rand::random(),
+            AccountAddress::random(),
+            None,
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+            rand::random(),
+            U256::max_value(),
+            0,
+            HashValue::random(),
+            ChainId::test(),
+            BlockHeaderExtra([0u8; 4]),
+        )
+    }
+
+    pub fn as_builder(&self) -> BlockHeaderBuilder {
+        BlockHeaderBuilder::new_with(self.clone())
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockHeader {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "BlockHeader")]
+        struct BlockHeaderData {
+            parent_hash: HashValue,
+            timestamp: u64,
+            number: BlockNumber,
+            author: AccountAddress,
+            author_auth_key: Option<AuthenticationKey>,
+            accumulator_root: HashValue,
+            parent_block_accumulator_root: HashValue,
+            state_root: HashValue,
+            gas_used: u64,
+            difficulty: U256,
+            nonce: u32,
+            body_hash: HashValue,
+            chain_id: ChainId,
+            extra: BlockHeaderExtra,
         }
+
+        let header = BlockHeaderData::deserialize(deserializer)?;
+        Ok(Self::new(
+            header.parent_hash,
+            header.timestamp,
+            header.number,
+            header.author,
+            header.author_auth_key,
+            header.accumulator_root,
+            header.parent_block_accumulator_root,
+            header.state_root,
+            header.gas_used,
+            header.difficulty,
+            header.nonce,
+            header.body_hash,
+            header.chain_id,
+            header.extra,
+        ))
+    }
+}
+
+impl Default for BlockHeader {
+    fn default() -> Self {
+        Self::new(
+            HashValue::zero(),
+            0,
+            0,
+            AccountAddress::ZERO,
+            None,
+            HashValue::zero(),
+            HashValue::zero(),
+            HashValue::zero(),
+            0,
+            0.into(),
+            0,
+            HashValue::zero(),
+            ChainId::test(),
+            BlockHeaderExtra([0u8; 4]),
+        )
+    }
+}
+
+impl Sample for BlockHeader {
+    fn sample() -> Self {
+        Self::new(
+            HashValue::zero(),
+            1610110515000,
+            0,
+            genesis_address(),
+            None,
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            *ACCUMULATOR_PLACEHOLDER_HASH,
+            *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            0,
+            U256::from(1),
+            0,
+            BlockBody::sample().crypto_hash(),
+            ChainId::test(),
+            BlockHeaderExtra([0u8; 4]),
+        )
     }
 }
 
@@ -375,6 +448,105 @@ pub struct RawBlockHeader {
     pub chain_id: ChainId,
 }
 
+#[derive(Default)]
+pub struct BlockHeaderBuilder {
+    buffer: BlockHeader,
+}
+
+impl BlockHeaderBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn random() -> Self {
+        Self {
+            buffer: BlockHeader::random(),
+        }
+    }
+
+    fn new_with(buffer: BlockHeader) -> Self {
+        Self { buffer }
+    }
+
+    pub fn with_parent_hash(mut self, parent_hash: HashValue) -> Self {
+        self.buffer.parent_hash = parent_hash;
+        self
+    }
+
+    pub fn with_timestamp(mut self, timestamp: u64) -> Self {
+        self.buffer.timestamp = timestamp;
+        self
+    }
+
+    pub fn with_number(mut self, number: BlockNumber) -> Self {
+        self.buffer.number = number;
+        self
+    }
+
+    pub fn with_author(mut self, author: AccountAddress) -> Self {
+        self.buffer.author = author;
+        self
+    }
+
+    pub fn with_author_auth_key(mut self, author_auth_key: Option<AuthenticationKey>) -> Self {
+        self.buffer.author_auth_key = author_auth_key;
+        self
+    }
+
+    pub fn with_accumulator_root(mut self, accumulator_root: HashValue) -> Self {
+        self.buffer.accumulator_root = accumulator_root;
+        self
+    }
+
+    pub fn with_parent_block_accumulator_root(
+        mut self,
+        parent_block_accumulator_root: HashValue,
+    ) -> Self {
+        self.buffer.parent_block_accumulator_root = parent_block_accumulator_root;
+        self
+    }
+
+    pub fn with_state_root(mut self, state_root: HashValue) -> Self {
+        self.buffer.state_root = state_root;
+        self
+    }
+
+    pub fn with_gas_used(mut self, gas_used: u64) -> Self {
+        self.buffer.gas_used = gas_used;
+        self
+    }
+
+    pub fn with_difficulty(mut self, difficulty: U256) -> Self {
+        self.buffer.difficulty = difficulty;
+        self
+    }
+
+    pub fn with_body_hash(mut self, body_hash: HashValue) -> Self {
+        self.buffer.body_hash = body_hash;
+        self
+    }
+
+    pub fn with_chain_id(mut self, chain_id: ChainId) -> Self {
+        self.buffer.chain_id = chain_id;
+        self
+    }
+
+    pub fn with_nonce(mut self, nonce: u32) -> Self {
+        self.buffer.nonce = nonce;
+        self
+    }
+
+    pub fn with_extra(mut self, extra: BlockHeaderExtra) -> Self {
+        self.buffer.extra = extra;
+        self
+    }
+
+    pub fn build(mut self) -> BlockHeader {
+        self.buffer.id = Some(self.buffer.crypto_hash());
+        self.buffer
+    }
+}
+
 #[derive(
     Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
@@ -421,6 +593,15 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
 impl Into<Vec<SignedUserTransaction>> for BlockBody {
     fn into(self) -> Vec<SignedUserTransaction> {
         self.transactions
+    }
+}
+
+impl Sample for BlockBody {
+    fn sample() -> Self {
+        Self {
+            transactions: vec![],
+            uncles: None,
+        }
     }
 }
 
@@ -538,16 +719,25 @@ impl std::fmt::Display for Block {
     }
 }
 
+impl Sample for Block {
+    fn sample() -> Self {
+        Self {
+            header: BlockHeader::sample(),
+            body: BlockBody::sample(),
+        }
+    }
+}
+
 /// `BlockInfo` is the object we store in the storage. It consists of the
 /// block as well as the execution result of this block.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
-    /// The transaction accumulator info
-    pub txn_accumulator_info: AccumulatorInfo,
     /// The total difficulty.
     pub total_difficulty: U256,
+    /// The transaction accumulator info
+    pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
 }
@@ -555,20 +745,16 @@ pub struct BlockInfo {
 impl BlockInfo {
     pub fn new(
         block_id: HashValue,
-        txn_accumulator_info: AccumulatorInfo,
         total_difficulty: U256,
+        txn_accumulator_info: AccumulatorInfo,
         block_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
             block_id,
-            txn_accumulator_info,
             total_difficulty,
+            txn_accumulator_info,
             block_accumulator_info,
         }
-    }
-
-    pub fn into_inner(self) -> (HashValue, AccumulatorInfo, U256, AccumulatorInfo) {
-        self.into()
     }
 
     pub fn id(&self) -> HashValue {
@@ -592,14 +778,14 @@ impl BlockInfo {
     }
 }
 
-impl Into<(HashValue, AccumulatorInfo, U256, AccumulatorInfo)> for BlockInfo {
-    fn into(self) -> (HashValue, AccumulatorInfo, U256, AccumulatorInfo) {
-        (
-            self.block_id,
-            self.txn_accumulator_info,
-            self.total_difficulty,
-            self.block_accumulator_info,
-        )
+impl Sample for BlockInfo {
+    fn sample() -> Self {
+        Self {
+            block_id: BlockHeader::sample().id(),
+            total_difficulty: 0.into(),
+            txn_accumulator_info: AccumulatorInfo::sample(),
+            block_accumulator_info: AccumulatorInfo::sample(),
+        }
     }
 }
 
@@ -668,14 +854,14 @@ impl BlockTemplate {
     }
 
     pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
-        let header = BlockHeader::new_with_auth(
+        let header = BlockHeader::new(
             self.parent_hash,
-            self.parent_block_accumulator_root,
             self.timestamp,
             self.number,
             self.author,
             self.author_auth_key,
             self.accumulator_root,
+            self.parent_block_accumulator_root,
             self.state_root,
             self.gas_used,
             self.difficulty,
@@ -722,14 +908,14 @@ impl BlockTemplate {
     }
 
     pub fn into_block_header(self, nonce: u32, extra: BlockHeaderExtra) -> BlockHeader {
-        BlockHeader::new_with_auth(
+        BlockHeader::new(
             self.parent_hash,
-            self.parent_block_accumulator_root,
             self.timestamp,
             self.number,
             self.author,
             self.author_auth_key,
             self.accumulator_root,
+            self.parent_block_accumulator_root,
             self.state_root,
             self.gas_used,
             self.difficulty,

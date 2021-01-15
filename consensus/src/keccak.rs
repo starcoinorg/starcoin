@@ -30,7 +30,7 @@ impl Consensus for KeccakConsensus {
         &self,
         mining_hash: &[u8],
         nonce: u32,
-        extra: BlockHeaderExtra,
+        extra: &BlockHeaderExtra,
     ) -> Result<HashValue> {
         let mix_hash = set_header_nonce(mining_hash, nonce, extra);
         let pow_hash = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice());

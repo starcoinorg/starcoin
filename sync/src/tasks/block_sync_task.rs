@@ -253,7 +253,7 @@ where
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
         let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
-        let timestamp = block.header().timestamp;
+        let timestamp = block.header().timestamp();
         match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
@@ -296,7 +296,7 @@ mod tests {
     use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
     use starcoin_accumulator::MerkleAccumulator;
     use starcoin_crypto::HashValue;
-    use starcoin_types::block::BlockHeader;
+    use starcoin_types::block::BlockHeaderBuilder;
     use starcoin_types::U256;
     use std::collections::HashMap;
     use std::sync::Mutex;
@@ -348,8 +348,7 @@ mod tests {
         let store = Arc::new(MockAccumulatorStore::new());
         let accumulator = MerkleAccumulator::new_empty(store);
         for i in 0..total_blocks {
-            let mut header = BlockHeader::random();
-            header.number = i;
+            let header = BlockHeaderBuilder::random().with_number(i).build();
             let block = Block::new(header, vec![]);
             accumulator.append(&[block.id()]).unwrap();
             fetcher.put(block);
@@ -371,8 +370,8 @@ mod tests {
             let block_id = block.id();
             let block_info = BlockInfo::new(
                 block_id,
-                AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
                 U256::from(1),
+                AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
                 AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
             );
             self.store.lock().unwrap().insert(
@@ -413,7 +412,7 @@ mod tests {
             .iter()
             .map(|block_data| {
                 assert!(block_data.info.is_none());
-                block_data.block.header().number as i64
+                block_data.block.header().number() as i64
             })
             .fold(-1, |parent, current| {
                 //ensure return block is ordered
@@ -444,7 +443,7 @@ mod tests {
             .unwrap()
             .iter()
             .for_each(|(_block_id, block)| {
-                if block.header().number % 2 == 0 {
+                if block.header().number() % 2 == 0 {
                     local_store.mock(block)
                 }
             });
@@ -461,7 +460,7 @@ mod tests {
                 } else {
                     assert!(block_data.info.is_none())
                 }
-                block_data.block.header().number as i64
+                block_data.block.header().number() as i64
             })
             .fold(-1, |parent, current| {
                 //ensure return block is ordered

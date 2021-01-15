@@ -10,6 +10,7 @@ use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountResult};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{Uniform, ValidCryptoMaterial};
+use starcoin_types::transaction::authenticator::AccountSignature;
 use starcoin_types::{
     account_address::AccountAddress,
     account_config::token_code::TokenCode,
@@ -181,6 +182,21 @@ impl AccountManager {
                 }))
             }
             None => Ok(None),
+        }
+    }
+    pub fn sign_message(
+        &self,
+        signer_address: AccountAddress,
+        message: Vec<u8>,
+    ) -> AccountResult<AccountSignature> {
+        let pass = self.key_cache.write().get_pass(&signer_address);
+        match pass {
+            None => Err(AccountError::AccountLocked(signer_address)),
+            Some(p) => {
+                let account = Account::load(signer_address, p.as_str(), self.store.clone())?
+                    .ok_or(AccountError::AccountNotExist(signer_address))?;
+                Ok(account.sign_message(message))
+            }
         }
     }
 

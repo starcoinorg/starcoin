@@ -65,14 +65,14 @@ impl OpenedBlock {
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
-        let chain_id = previous_header.chain_id;
+        let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
             previous_block_id,
             block_timestamp,
             author,
             author_auth_key,
             uncles.len() as u64,
-            previous_header.number + 1,
+            previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
         );

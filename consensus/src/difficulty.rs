@@ -14,15 +14,15 @@ use std::convert::TryInto;
 pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let epoch = chain.epoch();
     let current_header = chain.current_header();
-    if current_header.number <= 1 {
-        return Ok(difficult_to_target(current_header.difficulty));
+    if current_header.number() <= 1 {
+        return Ok(difficult_to_target(current_header.difficulty()));
     }
-    let start_window_num = if current_header.number < epoch.block_difficulty_window() {
+    let start_window_num = if current_header.number() < epoch.block_difficulty_window() {
         1
     } else {
-        current_header.number - epoch.block_difficulty_window() + 1
+        current_header.number() - epoch.block_difficulty_window() + 1
     };
-    let blocks: Result<Vec<BlockDiffInfo>> = (start_window_num..current_header.number + 1)
+    let blocks: Result<Vec<BlockDiffInfo>> = (start_window_num..current_header.number() + 1)
         .rev()
         .map(|n| {
             chain
@@ -34,7 +34,9 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let target = get_next_target_helper(blocks?, epoch.block_time_target())?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
-        current_header.number, epoch, target
+        current_header.number(),
+        epoch,
+        target
     );
     Ok(target)
 }
@@ -108,8 +110,8 @@ impl BlockDiffInfo {
 impl From<BlockHeader> for BlockDiffInfo {
     fn from(block_header: BlockHeader) -> Self {
         Self {
-            timestamp: block_header.timestamp,
-            target: difficult_to_target(block_header.difficulty),
+            timestamp: block_header.timestamp(),
+            target: difficult_to_target(block_header.difficulty()),
         }
     }
 }

@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.37"
+anyhow = "1.0.38"
 once_cell = "1.5.2"
 starcoin-types = {path = "../types"}
 starcoin-config = { path = "../config"}
@@ -27,7 +27,7 @@ stest = {path = "../commons/stest"}
 storage = { package="starcoin-storage", path = "../storage"}
 stdlib = { package="stdlib", path = "../vm/stdlib"}
 starcoin-move-compiler = { path = "../vm/compiler"}
-log = "0.4.11"
+log = "0.4.13"
 
 [dev-dependencies]
 starcoin-resource-viewer = {path = "../vm/resource-viewer"}

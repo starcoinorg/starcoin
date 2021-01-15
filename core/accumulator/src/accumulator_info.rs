@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use scs::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::{
@@ -62,5 +63,11 @@ impl Default for AccumulatorInfo {
             num_leaves: 0,
             num_nodes: 0,
         }
+    }
+}
+
+impl Sample for AccumulatorInfo {
+    fn sample() -> Self {
+        Self::default()
     }
 }

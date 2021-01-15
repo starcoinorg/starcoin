@@ -11,19 +11,19 @@ determinator = "0.1.1"
 serde = { version = "1.0.117", features = ["derive"] }
 serde_json = "1.0.61"
 structopt = "0.3.21"
-anyhow = "1.0.37"
+anyhow = "1.0.38"
 colored-diff = "0.2.2"
 guppy = { version = "0.6.2", features = ["summaries"] }
 indoc = "1.0.3"
 toml = "0.5.8"
 env_logger = "0.8.2"
-log = "0.4.11"
+log = "0.4.13"
 chrono = "0.4.19"
 globset = "0.4.6"
 regex = "1.4.3"
 rayon = "1.5.0"
 indexmap = "1.6.1"
-x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="640ab177ad31c665aa8bb4240d58560debdf24b7" }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="640ab177ad31c665aa8bb4240d58560debdf24b7" }
-diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="640ab177ad31c665aa8bb4240d58560debdf24b7" }
-diem-x = { package="x", git = "https://github.com/starcoinorg/diem", rev="640ab177ad31c665aa8bb4240d58560debdf24b7" }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="907b74dfec93290c8e271dc0beffb29a09ffe67d" }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="907b74dfec93290c8e271dc0beffb29a09ffe67d" }
+diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="907b74dfec93290c8e271dc0beffb29a09ffe67d" }
+diem-x = { package="x", git = "https://github.com/starcoinorg/diem", rev="907b74dfec93290c8e271dc0beffb29a09ffe67d" }

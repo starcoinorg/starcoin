@@ -4,7 +4,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::STC_TOKEN_CODE_STR;
+use crate::account_config::{genesis_address, STC_TOKEN_CODE_STR};
+use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
 use crate::{
@@ -15,9 +16,9 @@ use crate::{
     write_set::WriteSet,
 };
 use anyhow::{format_err, Error, Result};
+use scs::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
-use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use starcoin_crypto::{
     ed25519::*,
@@ -28,13 +29,13 @@ use starcoin_crypto::{
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
-use crate::block_metadata::BlockMetadata;
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
-pub use script::{ArgumentABI, Script, ScriptABI, TypeArgumentABI, SCRIPT_HASH_LENGTH};
+pub use script::{ArgumentABI, Script, ScriptABI, TypeArgumentABI};
+use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
@@ -237,6 +238,20 @@ impl RawUserTransaction {
     }
 }
 
+impl Sample for RawUserTransaction {
+    fn sample() -> Self {
+        Self::new_module(
+            genesis_address(),
+            0,
+            Module::sample(),
+            0,
+            1,
+            3600,
+            ChainId::test(),
+        )
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
@@ -432,23 +447,24 @@ impl SignedUserTransaction {
         Ok(SignatureCheckedTransaction(self))
     }
 
-    //TODO
+    ///TODO cfg test
     pub fn mock() -> Self {
-        let mut gen = KeyGen::from_os_rng();
-        let (private_key, public_key) = gen.generate_keypair();
+        let (private_key, public_key) = genesis_key_pair();
         let raw_txn = RawUserTransaction::mock();
-        raw_txn.sign(&private_key, public_key).unwrap().into_inner()
-    }
-
-    pub fn mock_from(compiled_script: Vec<u8>) -> Self {
-        let mut gen = KeyGen::from_os_rng();
-        let (private_key, public_key) = gen.generate_keypair();
-        let raw_txn = RawUserTransaction::mock_from(compiled_script);
         raw_txn.sign(&private_key, public_key).unwrap().into_inner()
     }
 
     pub fn id(&self) -> HashValue {
         self.crypto_hash()
+    }
+}
+
+impl Sample for SignedUserTransaction {
+    fn sample() -> Self {
+        let raw_txn = RawUserTransaction::sample();
+        let (private_key, public_key) = genesis_key_pair();
+        let signature = private_key.sign(&raw_txn);
+        Self::ed25519(raw_txn, public_key, signature)
     }
 }
 
@@ -631,13 +647,25 @@ impl TransactionInfo {
     }
 }
 
+impl Sample for TransactionInfo {
+    fn sample() -> Self {
+        Self::new(
+            SignedUserTransaction::sample().id(),
+            *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            &[],
+            0,
+            KeptVMStatus::Executed,
+        )
+    }
+}
+
 /// `Transaction` will be the transaction type used internally in the diem node to represent the
 /// transaction to be processed and persisted.
 ///
 /// We suppress the clippy warning here as we would expect most of the transaction to be user
 /// transaction.
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Transaction {
     /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
     /// transaction, etc.
@@ -657,7 +685,7 @@ impl Transaction {
     pub fn id(&self) -> HashValue {
         match self {
             Transaction::UserTransaction(signed) => signed.id(),
-            _ => self.crypto_hash(),
+            Transaction::BlockMetadata(block_metadata) => block_metadata.id(),
         }
     }
 }
