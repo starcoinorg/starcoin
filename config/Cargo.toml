@@ -23,6 +23,7 @@ hex= "0.4.2"
 num_enum = "0.5.1"
 rand = "0.7.3"
 rand_core = { version = "0.6.0", default-features = false }
+num_cpus = "1.10"
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
 network-p2p-types = { path = "../network-p2p/types"}

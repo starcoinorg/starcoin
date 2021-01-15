@@ -31,7 +31,6 @@ use starcoin_rpc_api::{
 };
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
 use std::collections::HashSet;
-use std::net::SocketAddr;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -180,10 +179,8 @@ impl RpcService {
     }
 
     fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
-        Ok(if self.config.rpc.http.disable {
-            None
-        } else {
-            let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.http.port);
+        Ok(if let Some(addr) = self.config.rpc.get_http_address() {
+            let address = addr.into();
             let apis = self.config.rpc.http.apis.list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
@@ -192,20 +189,20 @@ impl RpcService {
                     AccessControlAllowOrigin::Null,
                     AccessControlAllowOrigin::Any,
                 ]))
-                .threads(self.config.rpc.http.threads.unwrap_or_else(num_cpus::get))
-                .max_request_body_size(self.config.rpc.http.max_request_body_size)
+                .threads(self.config.rpc.http.threads())
+                .max_request_body_size(self.config.rpc.http.max_request_body_size())
                 .health_api(("/status", "status"))
                 .start_http(&address)?;
             info!("Rpc: http server start at :{}", address);
             Some(http)
+        } else {
+            None
         })
     }
 
     fn start_tcp(&self) -> Result<Option<jsonrpc_tcp_server::Server>> {
-        Ok(if self.config.rpc.tcp.disable {
-            None
-        } else {
-            let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.tcp.port);
+        Ok(if let Some(addr) = self.config.rpc.get_tcp_address() {
+            let address = addr.into();
             let apis = self.config.rpc.tcp.apis.list_apis();
 
             let io_handler = self.api_registry.get_apis(apis);
@@ -214,22 +211,24 @@ impl RpcService {
                 .start(&address)?;
             info!("Rpc: tcp server start at: {}", address);
             Some(tcp_server)
+        } else {
+            None
         })
     }
 
     fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
-        Ok(if self.config.rpc.ws.disable {
-            None
-        } else {
-            let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.ws.port);
+        Ok(if let Some(addr) = self.config.rpc.get_ws_address() {
+            let address = addr.into();
             let apis = self.config.rpc.ws.apis.list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
                 .session_meta_extractor(WsExtractor)
-                .max_payload(self.config.rpc.ws.max_request_body_size)
+                .max_payload(self.config.rpc.ws.max_request_body_size())
                 .start(&address)?;
             info!("Rpc: websocket server start at: {}", address);
             Some(ws_server)
+        } else {
+            None
         })
     }
 

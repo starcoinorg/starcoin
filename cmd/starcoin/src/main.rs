@@ -49,10 +49,10 @@ fn run() -> Result<()> {
                                     "Attach a new console by ipc: starcoin -c {} console",
                                     ipc_file.to_str().expect("invalid ipc file path.")
                                 );
-                                if let Some(http_address) = config.rpc.get_http_address() {
+                                if let Some(ws_address) = config.rpc.get_ws_address() {
                                     info!(
                                         "Attach a new console by rpc: starcoin -c {} console",
-                                        http_address
+                                        ws_address
                                     );
                                 }
                                 info!("Starcoin node started.");
