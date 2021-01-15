@@ -39,7 +39,8 @@ fn do_client_test() -> Result<()> {
     let status1 = ipc_client.node_info()?;
     info!("ipc_client status: {:?}", status1);
 
-    let ws_client = RpcClient::connect_websocket(url.as_str()).expect("connect websocket fail.");
+    let ws_client =
+        RpcClient::connect_websocket(url.to_string().as_str()).expect("connect websocket fail.");
     let status = ws_client.node_info()?;
     info!("ws_client node_status: {:?}", status);
     local_client.close();
@@ -56,8 +57,6 @@ fn test_multi_client() -> Result<()> {
     do_client_test()
 }
 
-//TODO remove ignore after test port conflict resolve.
-#[ignore]
 #[stest::test(timeout = 120)]
 fn test_client_reconnect() -> Result<()> {
     let mut node_config = NodeConfig::random_for_test();
@@ -70,7 +69,8 @@ fn test_client_reconnect() -> Result<()> {
     let node_handle = test_helper::run_node_by_config(config.clone())?;
     std::thread::sleep(Duration::from_millis(300));
 
-    let ws_client = RpcClient::connect_websocket(url.as_str()).expect("connect websocket fail.");
+    let ws_client =
+        RpcClient::connect_websocket(url.to_string().as_str()).expect("connect websocket fail.");
     let status = ws_client.node_info()?;
     info!("ws_client node_status: {:?}", status);
 
@@ -91,8 +91,6 @@ fn test_client_reconnect() -> Result<()> {
     Ok(())
 }
 
-//TODO remove ignore after test port conflict resolve.
-#[ignore]
 #[stest::test(timeout = 120)]
 fn test_client_reconnect_subscribe() -> Result<()> {
     let node_config = NodeConfig::random_for_test();
@@ -104,7 +102,8 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     let node_handle = test_helper::run_node_by_config(config.clone())?;
     std::thread::sleep(Duration::from_millis(300));
 
-    let ws_client = RpcClient::connect_websocket(url.as_str()).expect("connect websocket fail.");
+    let ws_client =
+        RpcClient::connect_websocket(url.to_string().as_str()).expect("connect websocket fail.");
     let stream1 = ws_client.subscribe_new_mint_blocks()?;
     let handle1 = async_std::task::spawn(async move {
         stream1

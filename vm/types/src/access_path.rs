@@ -161,11 +161,7 @@ fn random_identity() -> Identifier {
 
 impl fmt::Debug for AccessPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "AccessPath {{ address: {:x}, path: {} }}",
-            self.address, self.path
-        )
+        write!(f, "{}", self)
     }
 }
 
