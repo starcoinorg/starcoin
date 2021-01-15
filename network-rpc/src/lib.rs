@@ -58,15 +58,15 @@ impl NetworkRpcService {
         let rpc_server = NetworkRpcServer::new(rpc_impl.to_delegate());
 
         let limiters = ApiLimiters::new(
-            Into::<QuotaWrapper>::into(quotas.default_global_api_quota).0,
+            Into::<QuotaWrapper>::into(quotas.default_global_api_quota()).0,
             quotas
-                .custom_global_api_quota
+                .custom_global_api_quota()
                 .into_iter()
                 .map(|(k, v)| (k, Into::<QuotaWrapper>::into(v).0))
                 .collect(),
-            Into::<QuotaWrapper>::into(quotas.default_user_api_quota).0,
+            Into::<QuotaWrapper>::into(quotas.default_user_api_quota()).0,
             quotas
-                .custom_user_api_quota
+                .custom_user_api_quota()
                 .into_iter()
                 .map(|(k, v)| (k, Into::<QuotaWrapper>::into(v).0))
                 .collect(),

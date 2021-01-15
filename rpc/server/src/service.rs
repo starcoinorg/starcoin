@@ -102,7 +102,7 @@ impl RpcService {
         DEV: DevApi,
         Contract: ContractApi,
     {
-        let mut api_registry = ApiRegistry::new(config.rpc.api_quota.clone());
+        let mut api_registry = ApiRegistry::new(config.rpc.api_quotas.clone());
 
         api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
         if let Some(node_manager_api) = node_manager_api {
@@ -158,20 +158,14 @@ impl RpcService {
             None
         } else {
             let ipc_file = self.config.rpc.get_ipc_file();
-            let apis: HashSet<Api> = self.config.rpc.ipc.apis.list_apis();
+            let apis: HashSet<Api> = self.config.rpc.ipc.apis().list_apis();
             let io_handler = self.api_registry.get_apis(apis);
 
             info!("Ipc rpc server start at :{:?}", ipc_file);
             Some(
                 jsonrpc_ipc_server::ServerBuilder::new(io_handler)
                     .session_meta_extractor(RpcExtractor {
-                        http_ip_headers: self
-                            .config
-                            .rpc
-                            .http
-                            .ip_headers
-                            .clone()
-                            .unwrap_or_default(),
+                        http_ip_headers: self.config.rpc.http.ip_headers(),
                     })
                     .start(ipc_file.to_str().expect("Path to string should success."))?,
             )
@@ -181,7 +175,7 @@ impl RpcService {
     fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
         Ok(if let Some(addr) = self.config.rpc.get_http_address() {
             let address = addr.into();
-            let apis = self.config.rpc.http.apis.list_apis();
+            let apis = self.config.rpc.http.apis().list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
                 .meta_extractor(RpcExtractor::default())
@@ -203,7 +197,7 @@ impl RpcService {
     fn start_tcp(&self) -> Result<Option<jsonrpc_tcp_server::Server>> {
         Ok(if let Some(addr) = self.config.rpc.get_tcp_address() {
             let address = addr.into();
-            let apis = self.config.rpc.tcp.apis.list_apis();
+            let apis = self.config.rpc.tcp.apis().list_apis();
 
             let io_handler = self.api_registry.get_apis(apis);
             let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
@@ -219,7 +213,7 @@ impl RpcService {
     fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
         Ok(if let Some(addr) = self.config.rpc.get_ws_address() {
             let address = addr.into();
-            let apis = self.config.rpc.ws.apis.list_apis();
+            let apis = self.config.rpc.ws.apis().list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
                 .session_meta_extractor(WsExtractor)

@@ -4,58 +4,69 @@
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use structopt::StructOpt;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {
+    #[serde(skip)]
     #[structopt(long = "disable-mint-empty-block")]
-    /// Do not mint empty block, default is true in Dev network.
+    /// Do not mint empty block, default is true in Dev network, only support cli.
     pub disable_mint_empty_block: Option<bool>,
-    #[structopt(long = "block-gas-limit")]
+
+    #[structopt(long = "miner-block-gas-limit")]
+    /// Node local block_gas_limit, use min(config.block_gas_limit, onchain.block_gas_limit)
     pub block_gas_limit: Option<u64>,
+
     #[structopt(long = "disable-miner-client")]
     /// Don't start a miner client in node.
+    /// This flag support both cli and config file.
     pub disable_miner_client: Option<bool>,
-    #[structopt(flatten)]
-    pub client_config: MinerClientConfig,
+
+    #[structopt(long = "miner-thread")]
+    /// Miner client thread number, not work for dev network, default is 1
+    pub miner_thread: Option<u16>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    base: Option<Arc<BaseConfig>>,
 }
-impl Default for MinerConfig {
-    fn default() -> Self {
-        Self {
-            disable_mint_empty_block: None,
-            block_gas_limit: None,
-            disable_miner_client: None,
-            client_config: MinerClientConfig::default(),
-        }
-    }
-}
+
 impl MinerConfig {
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init")
+    }
     pub fn disable_miner_client(&self) -> bool {
         self.disable_miner_client.unwrap_or(false)
     }
     pub fn is_disable_mint_empty_block(&self) -> bool {
-        self.disable_mint_empty_block.unwrap_or(false)
+        self.disable_mint_empty_block
+            .unwrap_or_else(|| self.base().net().is_dev())
+    }
+    pub fn miner_client_config(&self) -> Option<MinerClientConfig> {
+        if self.disable_miner_client() {
+            return None;
+        }
+        Some(MinerClientConfig {
+            server: None,
+            plugin_path: None,
+            miner_thread: self.miner_thread.unwrap_or(1),
+            enable_stderr: true,
+        })
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
-#[serde(deny_unknown_fields)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct MinerClientConfig {
-    #[structopt(skip)]
     pub server: Option<String>,
-    #[structopt(skip)]
     pub plugin_path: Option<String>,
-    #[structopt(long = "miner-thread")]
-    /// Miner thread number, not work for dev network, default is 1
-    pub miner_thread: Option<u16>,
-    #[structopt(skip)]
-    #[serde(skip)]
+    pub miner_thread: u16,
     pub enable_stderr: bool,
 }
 impl MinerClientConfig {
     pub fn miner_thread(&self) -> u16 {
-        self.miner_thread.unwrap_or(1)
+        self.miner_thread
     }
 }
 impl Default for MinerClientConfig {
@@ -63,48 +74,27 @@ impl Default for MinerClientConfig {
         Self {
             server: None,
             plugin_path: None,
-            miner_thread: Some(1),
+            miner_thread: 1,
             enable_stderr: false,
         }
     }
 }
 impl ConfigModule for MinerConfig {
-    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        // only dev network is on demand mine at default.
-        let disable_mint_empty_block = opt
-            .miner
-            .disable_mint_empty_block
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| base.net.is_dev());
-        Ok(Self {
-            disable_mint_empty_block: Some(disable_mint_empty_block),
-            block_gas_limit: None,
-            disable_miner_client: opt.miner.disable_miner_client,
-            client_config: MinerClientConfig {
-                server: None,
-                plugin_path: None,
-                miner_thread: opt.miner.client_config.miner_thread,
-                enable_stderr: false,
-            },
-        })
-    }
-
-    fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
-        // only dev network is on demand mine at default.
-        let disable_mint_empty_block = opt
-            .miner
-            .disable_mint_empty_block
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| base.net.is_dev());
-        self.disable_mint_empty_block = Some(disable_mint_empty_block);
-        if opt.miner.client_config.miner_thread.is_some() {
-            self.client_config.miner_thread = opt.miner.client_config.miner_thread;
+    fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
+        if opt.miner.miner_thread.is_some() {
+            self.miner_thread = opt.miner.miner_thread;
         }
         if opt.miner.disable_miner_client.is_some() {
             self.disable_miner_client = opt.miner.disable_miner_client;
         }
+        if opt.miner.disable_mint_empty_block.is_some() {
+            self.disable_mint_empty_block = opt.miner.disable_mint_empty_block;
+        }
+        if opt.miner.block_gas_limit.is_some() {
+            self.block_gas_limit = opt.miner.block_gas_limit;
+        }
+
         Ok(())
     }
 }

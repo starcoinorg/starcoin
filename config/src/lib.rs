@@ -5,18 +5,16 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
 use git_version::git_version;
-use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
-use starcoin_crypto::{
-    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-    test_utils::KeyPair,
-};
 use starcoin_logger::prelude::*;
 use std::convert::TryFrom;
+use std::fs;
 use std::fs::create_dir_all;
 use std::fs::File;
+use std::io;
 use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -60,7 +58,6 @@ pub use starcoin_vm_types::genesis_config::{
 };
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig};
-pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
 
 pub static CRATE_VERSION: &str = crate_version!();
@@ -174,30 +171,17 @@ pub struct StarcoinOpt {
     #[structopt(long, short = "n", help = OPT_NET_HELP)]
     pub net: Option<ChainNetworkID>,
 
-    #[structopt(long)]
-    /// P2P network seed, if want add more seeds, please edit config file.
-    pub seed: Option<MultiaddrWithPeerId>,
+    #[structopt(long = "watch-timeout")]
+    /// Watch timeout in seconds
+    pub watch_timeout: Option<u64>,
 
-    #[structopt(long = "node-name")]
-    /// Node network name, just for display, if absent will generate a random name.
-    pub node_name: Option<String>,
+    #[structopt(long = "genesis-config")]
+    /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
+    /// This option only work for node init start.
+    pub genesis_config: Option<String>,
 
-    #[structopt(long = "node-key")]
-    /// Node network private key, only work for first init.
-    pub node_key: Option<String>,
-
-    #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
-    /// Node network private key file, only work for first init.
-    pub node_key_file: Option<PathBuf>,
-
-    #[structopt(long = "sync-mode", short = "s")]
-    /// Sync mode. Included value(full, fast, light).
-    pub sync_mode: Option<SyncMode>,
-
-    #[structopt(long = "rpc-address")]
-    /// Rpc address, default is 127.0.0.1
-    pub rpc_address: Option<String>,
-
+    #[structopt(flatten)]
+    pub rpc: RpcConfig,
     #[structopt(flatten)]
     pub logger: LoggerConfig,
     #[structopt(flatten)]
@@ -206,32 +190,10 @@ pub struct StarcoinOpt {
     pub miner: MinerConfig,
     #[structopt(flatten)]
     pub network: NetworkConfig,
-
     #[structopt(flatten)]
     pub txpool: TxPoolConfig,
-
-    #[structopt(long = "watch-timeout")]
-    /// Watch timeout in seconds
-    pub watch_timeout: Option<u64>,
-
-    #[structopt(long = "event-query-max-block-range")]
-    pub block_query_max_range: Option<u64>,
-
-    #[structopt(long = "genesis-config")]
-    /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
-    /// This option only work for node init start.
-    pub genesis_config: Option<String>,
-
     #[structopt(flatten)]
-    pub http: HttpConfiguration,
-    #[structopt(flatten)]
-    pub tcp: TcpConfiguration,
-    #[structopt(flatten)]
-    pub ws: WsConfiguration,
-    #[structopt(flatten)]
-    pub ipc: IpcConfiguration,
-    #[structopt(flatten)]
-    pub api_quotas: ApiQuotaConfiguration,
+    pub storage: StorageConfig,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -267,7 +229,6 @@ impl Default for DataDirPath {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BaseConfig {
     net: ChainNetwork,
-    node_name: String,
     base_data_dir: DataDirPath,
     data_dir: PathBuf,
 }
@@ -296,10 +257,8 @@ impl BaseConfig {
             opt.genesis_config.clone(),
         )?;
         let net = ChainNetwork::new(id, genesis_config);
-        let node_name = opt.node_name.clone().unwrap_or_else(generate_node_name);
         Ok(Self {
             net,
-            node_name,
             base_data_dir,
             data_dir,
         })
@@ -359,26 +318,20 @@ impl BaseConfig {
     pub fn base_data_dir(&self) -> DataDirPath {
         self.base_data_dir.clone()
     }
-    pub fn node_name(&self) -> &str {
-        self.node_name.as_str()
-    }
 }
 
 pub trait ConfigModule: Sized {
-    /// Generate default config by the global command line option.
-    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self>;
-    /// Init config after load config from file.
-    /// Init the skip files or load external config from file, or overwrite config by global command line option.
-    fn after_load(&mut self, _opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+    /// Init the skip field or overwrite config by global command line option.
+    fn merge_with_opt(&mut self, _opt: &StarcoinOpt, _base: Arc<BaseConfig>) -> Result<()> {
         Ok(())
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
     #[serde(skip)]
-    base: Option<BaseConfig>,
+    base: Option<Arc<BaseConfig>>,
     pub network: NetworkConfig,
     pub rpc: RpcConfig,
     pub miner: MinerConfig,
@@ -399,33 +352,33 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn config_path(&self) -> PathBuf {
+        self.base().data_dir().join(CONFIG_FILE_PATH)
+    }
+
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
-        let base = BaseConfig::default_with_opt(opt)?;
+        let base = Arc::new(BaseConfig::default_with_opt(opt)?);
         let data_dir = base.data_dir();
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
         let config_file_path = data_dir.join(CONFIG_FILE_PATH);
-        if !config_file_path.exists() {
+        let config = if !config_file_path.exists() {
             info!(
                 "Config file not exist, generate default config to: {:?}",
                 config_file_path
             );
-            let config = NodeConfig::default_with_opt(opt, &base)?;
+            // generate default config and merge with opt, the init opt item will persistence to config
+            let mut config = NodeConfig::default();
+            config.merge_with_opt(opt, base.clone())?;
             save_config(&config, &config_file_path)?;
-        }
-        info!("Load config from: {:?}", config_file_path);
-        let mut config: NodeConfig = match load_config(&config_file_path) {
-            Ok(config) => config,
-            Err(e) => {
-                if base.net.is_dev() || base.net.is_test() || base.net.is_halley() {
-                    info!("Load config error: {:?}, use default config.", e);
-                    NodeConfig::default_with_opt(opt, &base)?
-                } else {
-                    return Err(e);
-                }
-            }
+            config
+        } else {
+            // if config file exist, load the config, and overwrite the config with option in memory, do not persistence to config again.
+            info!("Load config from: {:?}", config_file_path);
+            let mut config: NodeConfig = load_config(&config_file_path)?;
+            config.merge_with_opt(opt, base.clone())?;
+            config
         };
-        config.after_load(opt, &base)?;
         Ok(config)
     }
 
@@ -441,38 +394,23 @@ impl NodeConfig {
         self.base.as_ref().expect("Base must exist after init.")
     }
 
-    pub fn node_name(&self) -> &str {
-        self.base().node_name()
+    pub fn node_name(&self) -> String {
+        self.network.node_name()
     }
 }
 
 impl NodeConfig {
-    pub fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        Ok(Self {
-            base: Some(base.clone()),
-            network: NetworkConfig::default_with_opt(opt, &base)?,
-            rpc: RpcConfig::default_with_opt(opt, &base)?,
-            miner: MinerConfig::default_with_opt(opt, &base)?,
-            storage: StorageConfig::default_with_opt(opt, &base)?,
-            tx_pool: TxPoolConfig::default_with_opt(opt, &base)?,
-            sync: SyncConfig::default_with_opt(opt, &base)?,
-            vault: AccountVaultConfig::default_with_opt(opt, &base)?,
-            metrics: MetricsConfig::default_with_opt(opt, &base)?,
-            logger: LoggerConfig::default_with_opt(opt, &base)?,
-        })
-    }
-
-    pub fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
+    pub fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base.clone());
-        self.network.after_load(opt, base)?;
-        self.rpc.after_load(opt, base)?;
-        self.miner.after_load(opt, base)?;
-        self.storage.after_load(opt, base)?;
-        self.tx_pool.after_load(opt, base)?;
-        self.sync.after_load(opt, base)?;
-        self.vault.after_load(opt, base)?;
-        self.metrics.after_load(opt, base)?;
-        self.logger.after_load(opt, base)?;
+        self.network.merge_with_opt(opt, base.clone())?;
+        self.rpc.merge_with_opt(opt, base.clone())?;
+        self.miner.merge_with_opt(opt, base.clone())?;
+        self.storage.merge_with_opt(opt, base.clone())?;
+        self.tx_pool.merge_with_opt(opt, base.clone())?;
+        self.sync.merge_with_opt(opt, base.clone())?;
+        self.vault.merge_with_opt(opt, base.clone())?;
+        self.metrics.merge_with_opt(opt, base.clone())?;
+        self.logger.merge_with_opt(opt, base)?;
         Ok(())
     }
 }
@@ -482,12 +420,18 @@ where
     T: Serialize + DeserializeOwned,
     P: AsRef<Path>,
 {
+    let mut file = File::create(output_file)?;
+    file.write_all(&to_toml(c)?.as_bytes())?;
+    Ok(())
+}
+
+fn to_toml<T>(c: &T) -> Result<String>
+where
+    T: Serialize + DeserializeOwned,
+{
     // fix toml table problem, see https://github.com/alexcrichton/toml-rs/issues/142
     let c = toml::value::Value::try_from(c)?;
-    let contents = toml::to_vec(&c)?;
-    let mut file = File::create(output_file)?;
-    file.write_all(&contents)?;
-    Ok(())
+    Ok(toml::to_string(&c)?)
 }
 
 pub(crate) fn load_config<T, P>(path: P) -> Result<T>
@@ -513,33 +457,54 @@ where
     P: AsRef<Path>,
 {
     let contents: String = hex::encode(key);
-    let mut file = File::create(output_file)?;
+    let mut file = open_key_file(output_file)?;
     file.write_all(contents.as_bytes())?;
     Ok(())
 }
 
-pub(crate) fn decode_key(hex_str: &str) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
+pub(crate) fn decode_key(hex_str: &str) -> Result<(Ed25519PrivateKey, Ed25519PublicKey)> {
     let bytes_out: Vec<u8> = hex::decode(hex_str)?;
     let pri_key = Ed25519PrivateKey::try_from(bytes_out.as_slice())?;
-    Ok(KeyPair::from(pri_key))
+    let pub_key = Ed25519PublicKey::from(&pri_key);
+    Ok((pri_key, pub_key))
 }
 
-pub(crate) fn load_key<P: AsRef<Path>>(
-    path: P,
-) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
-    let content = std::fs::read_to_string(path)?;
+pub(crate) fn load_key<P: AsRef<Path>>(path: P) -> Result<(Ed25519PrivateKey, Ed25519PublicKey)> {
+    let content = fs::read_to_string(path)?;
     decode_key(content.as_str())
 }
 
-//TODO remove this method and remove KeyPair dependency.
-pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
+pub(crate) fn gen_keypair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
     let mut gen = KeyGen::from_os_rng();
-    let (private_key, public_key) = gen.generate_keypair();
-    KeyPair {
-        private_key,
-        public_key,
-    }
+    gen.generate_keypair()
 }
+
+/// Opens a file containing a secret key in write mode.
+#[cfg(unix)]
+fn open_key_file<P>(path: P) -> io::Result<fs::File>
+where
+    P: AsRef<Path>,
+{
+    use std::os::unix::fs::OpenOptionsExt;
+    fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)
+}
+
+/// Opens a file containing a secret key in write mode.
+#[cfg(not(unix))]
+fn open_key_file<P>(path: P) -> Result<fs::File, io::Error>
+where
+    P: AsRef<Path>,
+{
+    fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+}
+
 const NODE_NAME_MAX_LENGTH: usize = 64;
 /// Generate a valid random name for the node
 fn generate_node_name() -> String {
@@ -558,6 +523,7 @@ fn generate_node_name() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use network_p2p_types::MultiaddrWithPeerId;
 
     #[test]
     fn test_generate_and_load() -> Result<()> {
@@ -566,23 +532,28 @@ mod tests {
             let temp_path = temp_path();
             opt.net = Some(net.into());
             opt.data_dir = Some(temp_path.path().to_path_buf());
-            opt.node_name = Some("test-node-1".to_string());
             let config = NodeConfig::load_with_opt(&opt)?;
             let config2 = NodeConfig::load_with_opt(&opt)?;
-            assert_eq!(config, config2, "test config for network {} fail.", net);
+            assert_eq!(
+                to_toml(&config)?,
+                to_toml(&config2)?,
+                "test config for network {} fail.",
+                net
+            );
         }
         Ok(())
     }
 
     #[test]
     fn test_custom_chain_genesis() -> Result<()> {
-        let mut opt = StarcoinOpt::default();
         let net = ChainNetworkID::from_str("test1:123")?;
         let temp_path = temp_path();
-        opt.net = Some(net);
-        opt.data_dir = Some(temp_path.path().to_path_buf());
-        opt.node_name = Some("test-node-1".to_string());
-        opt.genesis_config = Some(BuiltinNetworkID::Test.to_string());
+        let opt = StarcoinOpt {
+            net: Some(net),
+            data_dir: Some(temp_path.path().to_path_buf()),
+            genesis_config: Some(BuiltinNetworkID::Test.to_string()),
+            ..StarcoinOpt::default()
+        };
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(
@@ -602,6 +573,32 @@ mod tests {
         genesis_config.save(file_path.as_path())?;
         let genesis_config2 = GenesisConfig::load(file_path.as_path())?;
         assert_eq!(genesis_config, genesis_config2);
+        Ok(())
+    }
+
+    #[test]
+    fn test_example_config_compact() -> Result<()> {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let example_dir = path.join("example");
+        for net in BuiltinNetworkID::networks() {
+            let mut opt = StarcoinOpt {
+                net: Some(net.into()),
+                data_dir: Some(example_dir.clone()),
+                ..StarcoinOpt::default()
+            };
+            opt.network.seeds = Some(vec![MultiaddrWithPeerId::from_str(
+                "/ip4/198.51.100.19/tcp/30333/p2p/QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV",
+            )?]);
+
+            let config = NodeConfig::load_with_opt(&opt)?;
+            let config2 = NodeConfig::load_with_opt(&opt)?;
+            assert_eq!(
+                to_toml(&config)?,
+                to_toml(&config2)?,
+                "test config for network {} fail.",
+                net
+            );
+        }
         Ok(())
     }
 }

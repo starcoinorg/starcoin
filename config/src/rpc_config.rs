@@ -9,33 +9,33 @@ use anyhow::Result;
 use serde::__private::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
-use std::net::{IpAddr, SocketAddr};
+use std::collections::HashSet;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::num::NonZeroU32;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::sync::Arc;
 use structopt::StructOpt;
 
-const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 //10M
+const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
 const DEFAULT_HTTP_PORT: u16 = 9850;
 const DEFAULT_TCP_PORT: u16 = 9860;
 const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
+const DEFAULT_RPC_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 128;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct HttpConfiguration {
+    #[serde(skip)]
     #[structopt(
         name = "disable-http-rpc",
         long,
         help = "disable http jsonrpc endpoint"
     )]
     pub disable: bool,
-    #[structopt(
-        name = "http-apis",
-        long,
-        default_value = "safe",
-        help = "rpc apiset to serve"
-    )]
-    pub apis: ApiSet,
+    #[structopt(name = "http-apis", long, help = "rpc apiset to serve")]
+    pub apis: Option<ApiSet>,
     /// Default http port is 9850
     #[structopt(name = "http-port", long)]
     pub port: Option<u16>,
@@ -52,23 +52,10 @@ pub struct HttpConfiguration {
         name = "http-ip-headers",
         long,
         use_delimiter = true,
-        help = "list of http header which identify a ip",
-        default_value = "X-Real-IP,X-Forwarded-For"
+        help = "list of http header which identify a ip"
     )]
+    /// Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
-}
-
-impl Default for HttpConfiguration {
-    fn default() -> Self {
-        Self {
-            disable: false,
-            apis: ApiSet::UnsafeContext,
-            max_request_body_size: None,
-            threads: None,
-            port: None,
-            ip_headers: None,
-        }
-    }
 }
 
 impl HttpConfiguration {
@@ -79,49 +66,87 @@ impl HttpConfiguration {
     pub fn threads(&self) -> usize {
         self.threads.unwrap_or_else(num_cpus::get)
     }
+    pub fn apis(&self) -> &ApiSet {
+        self.apis.as_ref().unwrap_or(&ApiSet::UnsafeContext)
+    }
+    pub fn ip_headers(&self) -> Vec<String> {
+        self.ip_headers
+            .clone()
+            .unwrap_or_else(|| vec!["X-Real-IP".to_string(), "X-Forwarded-For".to_string()])
+    }
+
+    pub fn merge(&mut self, o: &Self) -> Result<()> {
+        if o.disable {
+            self.disable = true;
+        }
+        if o.apis.is_some() {
+            self.apis = o.apis.clone();
+        }
+        if o.port.is_some() {
+            self.port = o.port;
+        }
+        if o.max_request_body_size.is_some() {
+            self.max_request_body_size = o.max_request_body_size;
+        }
+        if o.threads.is_some() {
+            self.threads = o.threads;
+        }
+        if o.ip_headers.is_some() {
+            let mut ip_headers: HashSet<String> = self
+                .ip_headers
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            ip_headers.extend(o.ip_headers.clone().unwrap_or_default());
+            self.ip_headers = Some(ip_headers.into_iter().collect());
+        }
+        Ok(())
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct TcpConfiguration {
+    #[serde(skip)]
     #[structopt(name = "disable-tcp-rpc", long, help = "disable tcp jsonrpc endpoint")]
     pub disable: bool,
-    #[structopt(
-        name = "tcp-apis",
-        long,
-        help = "rpc apiset to serve",
-        default_value = "safe"
-    )]
-    pub apis: ApiSet,
+    #[structopt(name = "tcp-apis", long, help = "rpc apiset to serve")]
+    pub apis: Option<ApiSet>,
     /// Default tcp port is 9860
     #[structopt(name = "tcp-port", long)]
     pub port: Option<u16>,
 }
 
-impl Default for TcpConfiguration {
-    fn default() -> Self {
-        Self {
-            disable: false,
-            apis: ApiSet::UnsafeContext,
-            port: None,
+impl TcpConfiguration {
+    pub fn apis(&self) -> &ApiSet {
+        self.apis.as_ref().unwrap_or(&ApiSet::UnsafeContext)
+    }
+
+    pub fn merge(&mut self, o: &Self) -> Result<()> {
+        if o.disable {
+            self.disable = true;
         }
+        if o.apis.is_some() {
+            self.apis = o.apis.clone();
+        }
+        if o.port.is_some() {
+            self.port = o.port;
+        }
+        Ok(())
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct WsConfiguration {
+    #[serde(skip)]
     #[structopt(
         name = "disable-websocket-rpc",
         long,
         help = "disable websocket jsonrpc endpoint"
     )]
     pub disable: bool,
-    #[structopt(
-        name = "websocket-apis",
-        long,
-        help = "rpc apiset to serve",
-        default_value = "pubsub"
-    )]
-    pub apis: ApiSet,
+    #[structopt(name = "websocket-apis", long, help = "rpc apiset to serve")]
+    pub apis: Option<ApiSet>,
     /// Default websocket port is 9870
     #[structopt(name = "websocket-port", long)]
     pub port: Option<u16>,
@@ -134,124 +159,194 @@ pub struct WsConfiguration {
     pub max_request_body_size: Option<usize>,
 }
 
-impl Default for WsConfiguration {
-    fn default() -> Self {
-        Self {
-            disable: false,
-            apis: ApiSet::PubSub,
-            max_request_body_size: None,
-            port: None,
-        }
-    }
-}
-
 impl WsConfiguration {
     pub fn max_request_body_size(&self) -> usize {
         self.max_request_body_size
             .unwrap_or(DEFAULT_MAX_REQUEST_BODY_SIZE)
     }
+    pub fn apis(&self) -> &ApiSet {
+        self.apis.as_ref().unwrap_or(&ApiSet::PubSub)
+    }
+    pub fn merge(&mut self, o: &Self) -> Result<()> {
+        if o.disable {
+            self.disable = true;
+        }
+        if o.apis.is_some() {
+            self.apis = o.apis.clone();
+        }
+        if o.port.is_some() {
+            self.port = o.port;
+        }
+        if o.max_request_body_size.is_some() {
+            self.max_request_body_size = o.max_request_body_size;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct IpcConfiguration {
+    #[serde(skip)]
     #[structopt(name = "disable-ipc-rpc", long, help = "disable ipc jsonrpc endpoint")]
     pub disable: bool,
-    #[structopt(
-        name = "ipc-apis",
-        long,
-        help = "rpc apiset to serve",
-        default_value = "ipc"
-    )]
-    pub apis: ApiSet,
-    #[structopt(name = "ipc-file", long, help = "ipc file")]
-    pub ipc_file_path: Option<PathBuf>,
+    #[structopt(name = "ipc-apis", long, help = "rpc apiset to serve")]
+    pub apis: Option<ApiSet>,
 }
 
 impl Default for IpcConfiguration {
     fn default() -> Self {
         Self {
             disable: false,
-            apis: ApiSet::IpcContext,
-            ipc_file_path: None,
+            apis: None,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+impl IpcConfiguration {
+    pub fn apis(&self) -> &ApiSet {
+        self.apis.as_ref().unwrap_or(&ApiSet::IpcContext)
+    }
+    pub fn merge(&mut self, o: &Self) -> Result<()> {
+        if o.disable {
+            self.disable = true;
+        }
+        if o.apis.is_some() {
+            self.apis = o.apis.clone();
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct ApiQuotaConfiguration {
     #[structopt(
-        name = "default-global-jsonrpc-quota",
+        name = "jsonrpc-default-global-api-quota",
         long,
-        help = "default api quota, eg: 1000/s",
-        default_value = "1000/s"
+        help = "default api quota, eg: 1000/s"
     )]
-    pub default_global_api_quota: ApiQuotaConfig,
+    pub default_global_api_quota: Option<ApiQuotaConfig>,
 
     // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
     // my_program -D a=1 -D b=2
     #[structopt(
-    name = "custom-global-jsonrpc-quota",
+    name = "jsonrpc-custom-global-api-quota",
     long,
     help = "customize api quota, eg: node.info=100/s",
     number_of_values = 1,
     parse(try_from_str = parse_key_val)
     )]
-    pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
+    pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
     #[structopt(
-        name = "default-user-jsonrpc-quota",
+        name = "jsonrpc-default-user-api-quota",
         long,
-        help = "default api quota of user, eg: 1000/s",
-        default_value = "1000/s"
+        help = "default api quota of user, eg: 1000/s"
     )]
-    pub default_user_api_quota: ApiQuotaConfig,
+    pub default_user_api_quota: Option<ApiQuotaConfig>,
 
     #[structopt(
-    name = "custom-user-jsonrpc-quota",
+    name = "jsonrpc-custom-user-api-quota",
     long,
     help = "customize api quota of user, eg: node.info=100/s",
     number_of_values = 1,
     parse(try_from_str = parse_key_val)
     )]
-    pub custom_user_api_quota: Vec<(String, ApiQuotaConfig)>,
+    pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 }
 
-impl Default for ApiQuotaConfiguration {
-    fn default() -> Self {
-        Self {
-            default_global_api_quota: ApiQuotaConfig {
+impl ApiQuotaConfiguration {
+    pub fn default_global_api_quota(&self) -> ApiQuotaConfig {
+        self.default_global_api_quota
+            .clone()
+            .unwrap_or(ApiQuotaConfig {
                 max_burst: NonZeroU32::new(1000).unwrap(),
                 duration: QuotaDuration::Second,
-            },
-            custom_global_api_quota: vec![],
-            default_user_api_quota: ApiQuotaConfig {
+            })
+    }
+
+    pub fn custom_global_api_quota(&self) -> Vec<(String, ApiQuotaConfig)> {
+        self.custom_global_api_quota.clone().unwrap_or_default()
+    }
+
+    pub fn default_user_api_quota(&self) -> ApiQuotaConfig {
+        self.default_user_api_quota
+            .clone()
+            .unwrap_or(ApiQuotaConfig {
                 max_burst: NonZeroU32::new(50).unwrap(),
                 duration: QuotaDuration::Second,
-            },
-            custom_user_api_quota: vec![],
+            })
+    }
+
+    pub fn custom_user_api_quota(&self) -> Vec<(String, ApiQuotaConfig)> {
+        self.custom_user_api_quota.clone().unwrap_or_default()
+    }
+
+    pub fn merge(&mut self, o: &Self) -> Result<()> {
+        if o.default_global_api_quota.is_some() {
+            self.default_global_api_quota = o.default_global_api_quota.clone();
         }
+        //TODO should merge two vec?
+        if o.custom_global_api_quota.is_some() {
+            self.custom_global_api_quota = o.custom_global_api_quota.clone();
+        }
+        if o.default_user_api_quota.is_some() {
+            self.default_user_api_quota = o.default_user_api_quota.clone();
+        }
+        if o.custom_user_api_quota.is_some() {
+            self.custom_user_api_quota = o.custom_user_api_quota.clone();
+        }
+        Ok(())
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct RpcConfig {
     #[serde(default)]
-    pub api_quota: ApiQuotaConfiguration,
-    #[serde(default)]
-    pub tcp: TcpConfiguration,
-    #[serde(default)]
+    #[structopt(flatten)]
     pub http: HttpConfiguration,
-    #[serde(default)]
-    pub ws: WsConfiguration,
-    #[serde(default)]
-    pub ipc: IpcConfiguration,
-    pub rpc_address: IpAddr,
 
-    pub block_query_max_range: u64,
+    #[serde(default)]
+    #[structopt(flatten)]
+    pub tcp: TcpConfiguration,
+
+    #[serde(default)]
+    #[structopt(flatten)]
+    pub ws: WsConfiguration,
+
+    #[serde(default)]
+    #[structopt(flatten)]
+    pub ipc: IpcConfiguration,
+
+    #[serde(default)]
+    #[structopt(flatten)]
+    pub api_quotas: ApiQuotaConfiguration,
+
+    #[structopt(long = "rpc-address")]
+    /// Rpc address, default is 127.0.0.1
+    pub rpc_address: Option<IpAddr>,
+
+    #[structopt(long = "event-query-max-block-range")]
+    pub block_query_max_range: Option<u64>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    http_address: Option<ListenAddress>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    tcp_address: Option<ListenAddress>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    ws_address: Option<ListenAddress>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    base: Option<Arc<BaseConfig>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct ListenAddress {
     pub protocol: &'static str,
     pub address: IpAddr,
@@ -287,142 +382,153 @@ impl std::fmt::Debug for ListenAddress {
 }
 
 impl RpcConfig {
-    pub fn get_ipc_file(&self) -> &Path {
-        self.ipc
-            .ipc_file_path
-            .as_ref()
-            .expect("config should init first.")
+    pub fn rpc_address(&self) -> IpAddr {
+        self.rpc_address.clone().unwrap_or(DEFAULT_RPC_ADDRESS)
     }
+
+    pub fn get_ipc_file(&self) -> PathBuf {
+        let base = self.base();
+        Self::get_ipc_file_by_base(base)
+    }
+
     pub fn get_http_address(&self) -> Option<ListenAddress> {
-        if self.http.disable {
-            return None;
-        }
-        Some(ListenAddress::new(
-            "http",
-            self.rpc_address,
-            self.http.port.unwrap_or(DEFAULT_HTTP_PORT),
-        ))
+        self.http_address.clone()
     }
+
     pub fn get_tcp_address(&self) -> Option<ListenAddress> {
-        if self.tcp.disable {
-            return None;
-        }
-        Some(ListenAddress::new(
-            "tcp",
-            self.rpc_address,
-            self.tcp.port.unwrap_or(DEFAULT_TCP_PORT),
-        ))
+        self.tcp_address.clone()
     }
 
     pub fn get_ws_address(&self) -> Option<ListenAddress> {
-        if self.ws.disable {
-            return None;
-        }
-        Some(ListenAddress::new(
-            "ws",
-            self.rpc_address,
-            self.ws.port.unwrap_or(DEFAULT_WEB_SOCKET_PORT),
-        ))
+        self.ws_address.clone()
     }
+
+    pub fn block_query_max_range(&self) -> u64 {
+        self.block_query_max_range
+            .unwrap_or(DEFAULT_BLOCK_QUERY_MAX_RANGE)
+    }
+
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
+
+    fn generate_address(&mut self) -> Result<()> {
+        let base = self.base();
+        let (http_port, tcp_port, ws_port) = if base.net().is_test() {
+            let ports = get_random_available_ports(3);
+            (
+                self.http.port.unwrap_or(ports[0]),
+                self.tcp.port.unwrap_or(ports[1]),
+                self.ws.port.unwrap_or(ports[2]),
+            )
+        } else if base.net().is_dev() {
+            (
+                self.http
+                    .port
+                    .unwrap_or_else(|| get_available_port_from(DEFAULT_HTTP_PORT)),
+                self.tcp
+                    .port
+                    .unwrap_or_else(|| get_available_port_from(DEFAULT_TCP_PORT)),
+                self.ws
+                    .port
+                    .unwrap_or_else(|| get_available_port_from(DEFAULT_WEB_SOCKET_PORT)),
+            )
+        } else {
+            (
+                self.http.port.unwrap_or(DEFAULT_HTTP_PORT),
+                self.tcp.port.unwrap_or(DEFAULT_TCP_PORT),
+                self.ws.port.unwrap_or(DEFAULT_WEB_SOCKET_PORT),
+            )
+        };
+        self.http_address = if self.http.disable {
+            None
+        } else {
+            Some(ListenAddress::new("http", self.rpc_address(), http_port))
+        };
+        self.tcp_address = if self.tcp.disable {
+            None
+        } else {
+            Some(ListenAddress::new("tcp", self.rpc_address(), tcp_port))
+        };
+        self.ws_address = if self.ws.disable {
+            None
+        } else {
+            Some(ListenAddress::new("ws", self.rpc_address(), ws_port))
+        };
+        Ok(())
+    }
+
     #[cfg(not(windows))]
-    pub fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
+    fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
         base.data_dir().join(DEFAULT_IPC_FILE)
     }
 
     #[cfg(windows)]
-    pub fn get_ipc_file_by_base(_base: &BaseConfig) -> PathBuf {
-        PathBuf::from(r"\\.\pipe").join(DEFAULT_IPC_FILE)
+    fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
+        PathBuf::from(r"\\.\pipe")
+            .join("starcoin")
+            .join(base.net().id().dir_name())
+            .join(DEFAULT_IPC_FILE)
     }
 }
 
 impl ConfigModule for RpcConfig {
-    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        let rpc_address: IpAddr = opt
-            .rpc_address
-            .clone()
-            .unwrap_or_else(|| "0.0.0.0".to_string())
-            .parse()?;
+    // fn init(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
+    //     let rpc_address: IpAddr = opt
+    //         .rpc_address
+    //         .clone()
+    //         .unwrap_or_else(|| "0.0.0.0".to_string())
+    //         .parse()?;
+    //
+    //     let mut config = Self {
+    //         ws: opt.ws.clone(),
+    //         tcp: opt.tcp.clone(),
+    //         http: opt.http.clone(),
+    //         ipc: opt.ipc.clone(),
+    //         api_quota: opt.api_quotas.clone(),
+    //         rpc_address,
+    //         block_query_max_range: opt.block_query_max_range.unwrap_or(128),
+    //     };
+    //
+    //     if base.net.is_test() {
+    //         let ports = get_random_available_ports(3);
+    //         config.http.port = Some(ports[0]);
+    //         config.tcp.port = Some(ports[1]);
+    //         config.ws.port = Some(ports[2]);
+    //     } else if base.net.is_dev() {
+    //         config.http.port = Some(get_available_port_from(DEFAULT_HTTP_PORT));
+    //         config.tcp.port = Some(get_available_port_from(DEFAULT_TCP_PORT));
+    //         config.ws.port = Some(get_available_port_from(DEFAULT_WEB_SOCKET_PORT));
+    //     }
+    //
+    //     if config.ipc.ipc_file_path.is_none() {
+    //         config.ipc.ipc_file_path = Some(Self::get_ipc_file_by_base(base));
+    //     }
+    //
+    //     Ok(config)
+    // }
 
-        let mut config = Self {
-            ws: opt.ws.clone(),
-            tcp: opt.tcp.clone(),
-            http: opt.http.clone(),
-            ipc: opt.ipc.clone(),
-            api_quota: opt.api_quotas.clone(),
-            rpc_address,
-            block_query_max_range: opt.block_query_max_range.unwrap_or(128),
-        };
-
-        if base.net.is_test() {
-            let ports = get_random_available_ports(3);
-            config.http.port = Some(ports[0]);
-            config.tcp.port = Some(ports[1]);
-            config.ws.port = Some(ports[2]);
-        } else if base.net.is_dev() {
-            config.http.port = Some(get_available_port_from(DEFAULT_HTTP_PORT));
-            config.tcp.port = Some(get_available_port_from(DEFAULT_TCP_PORT));
-            config.ws.port = Some(get_available_port_from(DEFAULT_WEB_SOCKET_PORT));
+    fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
+        if opt.rpc.rpc_address.is_some() {
+            self.rpc_address = opt.rpc.rpc_address;
         }
-
-        if config.ipc.ipc_file_path.is_none() {
-            config.ipc.ipc_file_path = Some(Self::get_ipc_file_by_base(base));
+        if opt.rpc.block_query_max_range.is_some() {
+            self.block_query_max_range = opt.rpc.block_query_max_range;
         }
+        self.http.merge(&opt.rpc.http)?;
+        self.tcp.merge(&opt.rpc.tcp)?;
+        self.ws.merge(&opt.rpc.ws)?;
+        self.ipc.merge(&opt.rpc.ipc)?;
+        self.api_quotas.merge(&opt.rpc.api_quotas)?;
 
-        Ok(config)
-    }
+        self.generate_address()?;
 
-    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
-        if let Some(rpc_address) = opt.rpc_address.clone() {
-            self.rpc_address = rpc_address.parse()?;
-        }
-        if !opt.http.disable {
-            self.http.disable = false;
-            self.http.apis = opt.http.apis.clone();
-            if opt.http.port.is_some() {
-                self.http.port = opt.http.port;
-            }
-            if opt.http.max_request_body_size.is_some() {
-                self.http.max_request_body_size = opt.http.max_request_body_size;
-            }
-            if opt.http.threads.is_some() {
-                self.http.threads = opt.http.threads;
-            }
-            if opt.http.ip_headers.is_some() {
-                self.http.ip_headers = opt.http.ip_headers.clone();
-            }
-        }
         info!("Http rpc address: {:?}", self.get_http_address());
-        if !opt.tcp.disable {
-            self.tcp.disable = false;
-            self.tcp.apis = opt.tcp.apis.clone();
-            if opt.tcp.port.is_some() {
-                self.tcp.port = opt.tcp.port;
-            }
-        }
         info!("TCP rpc address: {:?}", self.get_tcp_address());
-        if !opt.ipc.disable {
-            self.ipc.apis = opt.ipc.apis.clone();
-            if opt.ipc.ipc_file_path.is_some() {
-                self.ipc.ipc_file_path = opt.ipc.ipc_file_path.clone();
-            }
-        }
-        info!("Ipc file path: {:?}", self.ipc.ipc_file_path);
-        if !opt.ws.disable {
-            self.ws.disable = false;
-            self.ws.apis = opt.ws.apis.clone();
-            if opt.ws.port.is_some() {
-                self.ws.port = opt.ws.port;
-            }
-            if opt.ws.max_request_body_size.is_some() {
-                self.ws.max_request_body_size = opt.ws.max_request_body_size;
-            }
-        }
         info!("Websocket rpc address: {:?}", self.get_ws_address());
+        info!("Ipc file path: {:?}", self.get_ipc_file());
 
-        // cli option override config file.
-        if let Some(r) = opt.block_query_max_range {
-            self.block_query_max_range = r;
-        }
         Ok(())
     }
 }

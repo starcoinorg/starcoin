@@ -3,43 +3,45 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::Arc;
 use structopt::StructOpt;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+static DEFAULT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("account_vaults"));
+
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct AccountVaultConfig {
-    #[structopt(long = "vault-dir", parse(from_os_str), conflicts_with("vault-dir"))]
+    #[structopt(long = "vault-dir", parse(from_os_str))]
     /// Account vault dir config.
-    dir: PathBuf,
+    /// Default: account_vaults in data_dir
+    dir: Option<PathBuf>,
+
     #[serde(skip)]
-    absolute_dir: Option<PathBuf>,
+    #[structopt(skip)]
+    base: Option<Arc<BaseConfig>>,
 }
 
 impl AccountVaultConfig {
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
+
     pub fn dir(&self) -> PathBuf {
-        self.absolute_dir
-            .as_ref()
-            .cloned()
-            .expect("config should init first.")
+        let path = self.dir.as_ref().unwrap_or(&DEFAULT_DIR);
+        if path.is_absolute() {
+            path.clone()
+        } else {
+            self.base().data_dir().join(path)
+        }
     }
 }
 
 impl ConfigModule for AccountVaultConfig {
-    fn default_with_opt(_opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
-        Ok(Self {
-            dir: PathBuf::from("account_vaults"),
-            absolute_dir: None,
-        })
-    }
-
-    fn after_load(&mut self, _opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
-        self.absolute_dir = Some(if self.dir.is_relative() {
-            base.data_dir().join(&self.dir)
-        } else {
-            self.dir.clone()
-        });
+    fn merge_with_opt(&mut self, _opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
         Ok(())
     }
 }

@@ -5,7 +5,9 @@ use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_system::get_free_mem_size;
+use std::sync::Arc;
 use structopt::StructOpt;
+
 pub const DEFAULT_MEM_SIZE: u64 = 128 * 1024 * 1024; // 128M
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, StructOpt)]
@@ -44,7 +46,18 @@ impl TxPoolConfig {
         self.max_per_sender.clone().unwrap_or(128)
     }
     pub fn max_mem_usage(&self) -> u64 {
-        self.max_mem_usage.clone().unwrap_or(DEFAULT_MEM_SIZE)
+        self.max_mem_usage
+            .clone()
+            .unwrap_or_else(|| match get_free_mem_size() {
+                Ok(free) => {
+                    if free > 0 {
+                        free / 2
+                    } else {
+                        DEFAULT_MEM_SIZE
+                    }
+                }
+                Err(_) => DEFAULT_MEM_SIZE,
+            })
     }
     pub fn tx_propagate_interval(&self) -> u64 {
         self.tx_propagate_interval.unwrap_or(2)
@@ -58,23 +71,7 @@ impl TxPoolConfig {
 }
 
 impl ConfigModule for TxPoolConfig {
-    fn default_with_opt(opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
-        let mut txpool_config = opt.txpool.clone();
-        txpool_config
-            .max_mem_usage
-            .get_or_insert_with(|| match get_free_mem_size() {
-                Ok(free) => {
-                    if free > 0 {
-                        free / 2
-                    } else {
-                        DEFAULT_MEM_SIZE
-                    }
-                }
-                Err(_) => DEFAULT_MEM_SIZE,
-            });
-        Ok(txpool_config)
-    }
-    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+    fn merge_with_opt(&mut self, opt: &StarcoinOpt, _base: Arc<BaseConfig>) -> Result<()> {
         let txpool_opt = &opt.txpool;
         if let Some(m) = txpool_opt.max_mem_usage.as_ref() {
             self.max_mem_usage = Some(*m);

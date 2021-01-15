@@ -74,11 +74,14 @@ pub fn build_network_worker(
     let boot_nodes = if node_config.network.disable_seed() {
         vec![]
     } else {
-        let mut boot_nodes = node_config.network.seeds.clone();
+        let mut boot_nodes = node_config.network.seeds();
         boot_nodes.extend(node_config.net().boot_nodes().iter().cloned());
         boot_nodes.retain(|node| {
             if &node.peer_id == self_peer_id.origin() {
-                warn!("Self peer_id({}) contains in boot nodes.", self_peer_id);
+                info!(
+                    "Self peer_id({}) contains in boot nodes, removed.",
+                    self_peer_id
+                );
                 false
             } else {
                 true
@@ -91,7 +94,7 @@ pub fn build_network_worker(
         boot_nodes,
         node_key: {
             let secret = identity::ed25519::SecretKey::from_bytes(
-                &mut node_config.network.network_keypair().private_key.to_bytes(),
+                &mut node_config.network.network_keypair().0.to_bytes(),
             )
             .expect("decode network node key should success.");
             NodeKeyConfig::Ed25519(Secret::Input(secret))
@@ -99,7 +102,7 @@ pub fn build_network_worker(
         notifications_protocols: protocols,
         request_response_protocols: rpc_protocols,
         transport: transport_config,
-        node_name: node_name.to_string(),
+        node_name,
         client_version: starcoin_config::APP_NAME_WITH_VERSION.clone(),
         ..NetworkConfiguration::default()
     };

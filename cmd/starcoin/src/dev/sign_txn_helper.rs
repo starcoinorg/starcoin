@@ -208,8 +208,7 @@ mod tests {
 
     #[stest::test(timeout = 300)]
     fn test_upgrade_module() {
-        let mut node_config = NodeConfig::random_for_test();
-        node_config.network.disable_seed = Some(true);
+        let node_config = NodeConfig::random_for_test();
         let config = Arc::new(node_config);
         let node_handle = run_node_by_config(config.clone()).unwrap();
         let rpc_service = node_handle.rpc_service().unwrap();
@@ -436,8 +435,7 @@ mod tests {
 
     #[stest::test(timeout = 300)]
     fn test_only_new_module() {
-        let mut node_config = NodeConfig::random_for_test();
-        node_config.network.disable_seed = Some(true);
+        let node_config = NodeConfig::random_for_test();
         let config = Arc::new(node_config);
         let node_handle = run_node_by_config(config.clone()).unwrap();
         let rpc_service = node_handle.rpc_service().unwrap();

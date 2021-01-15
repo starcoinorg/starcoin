@@ -120,13 +120,12 @@ impl NodeService {
         logger_handle: Arc<LoggerHandle>,
     ) -> Result<NodeHandle, NodeStartError> {
         info!("Final data-dir is : {:?}", config.data_dir());
-        if config.logger.enable_file() {
-            let file_log_path = config.logger.get_log_path();
+        if let Some(file_log_path) = config.logger.get_log_path() {
             info!("Write log to file: {:?}", file_log_path);
             logger_handle.enable_file(
                 file_log_path,
-                config.logger.max_file_size,
-                config.logger.max_backup,
+                config.logger.max_file_size(),
+                config.logger.max_backup(),
             );
         }
         if config.logger.disable_stderr() {
@@ -136,11 +135,8 @@ impl NodeService {
         }
 
         // start metric server
-        if !config.metrics.disable_metrics() {
-            starcoin_metrics::metric_server::start_server(
-                config.metrics.address.clone(),
-                config.metrics.port,
-            );
+        if let Some(metrics_address) = config.metrics.metrics_address() {
+            starcoin_metrics::metric_server::start_server(metrics_address);
         }
 
         let (start_sender, start_receiver) = oneshot::channel();
@@ -186,7 +182,7 @@ impl NodeService {
         let bus = registry.service_ref::<BusService>().await?;
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(config.storage.dir(), config.storage.rocksdb_config)?,
+            DBStorage::new(config.storage.dir(), config.storage.rocksdb_config())?,
         ))?);
         registry.put_shared(storage.clone()).await?;
         let (chain_info, genesis) =
@@ -202,7 +198,7 @@ impl NodeService {
 
         let vault_config = &config.vault;
         let account_storage =
-            AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config)?;
+            AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config())?;
         registry
             .put_shared::<AccountStorage>(account_storage.clone())
             .await?;
@@ -246,8 +242,7 @@ impl NodeService {
         registry.register::<CreateBlockTemplateService>().await?;
         registry.register::<MinerService>().await?;
 
-        if !config.miner.disable_miner_client() {
-            let miner_client_config = config.miner.client_config.clone();
+        if let Some(miner_client_config) = config.miner.miner_client_config() {
             registry.put_shared(miner_client_config).await?;
             let job_client = JobBusClient::new(bus.clone(), config.net().time_service());
             registry.put_shared(job_client).await?;

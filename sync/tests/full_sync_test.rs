@@ -1,6 +1,6 @@
 mod test_sync;
 
-use config::{NodeConfig, SyncMode};
+use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_service_registry::ActorService;
@@ -13,7 +13,7 @@ use traits::ChainAsyncService;
 
 #[stest::test(timeout = 120)]
 fn test_full_sync() {
-    test_sync::test_sync(SyncMode::Full)
+    test_sync::test_sync()
 }
 
 #[ignore]
@@ -29,7 +29,7 @@ fn test_sync_by_notification() {
 
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
-    second_config.network.seeds = vec![first_config.network.self_address()];
+    second_config.network.seeds = Some(vec![first_config.network.self_address()]);
     second_config.miner.disable_miner_client = Some(false);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
@@ -86,9 +86,8 @@ fn test_broadcast_with_difficulty() {
 
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
-    second_config.network.seeds = vec![first_config.network.self_address()];
+    second_config.network.seeds = Some(vec![first_config.network.self_address()]);
     //second_config.miner.enable_miner_client = false;
-    second_config.sync.set_mode(SyncMode::Full);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
     let second_chain = second_node.chain_service().unwrap();

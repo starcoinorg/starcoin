@@ -44,7 +44,7 @@ fn run() -> Result<()> {
                             }
                             None => {
                                 let ipc_file = config.rpc.get_ipc_file();
-                                helper::wait_until_file_created(ipc_file)?;
+                                helper::wait_until_file_created(ipc_file.as_path())?;
                                 info!(
                                     "Attach a new console by ipc: starcoin -c {} console",
                                     ipc_file.to_str().expect("invalid ipc file path.")

@@ -3,8 +3,10 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::Arc;
 use structopt::StructOpt;
 
 /// Port selected RocksDB options for tuning underlying rocksdb instance of DiemDB.
@@ -23,35 +25,29 @@ pub struct RocksdbConfig {
     pub max_total_wal_size: u64,
 }
 
-impl Default for RocksdbConfig {
-    #[cfg(any(target_os = "linux"))]
-    fn default() -> Self {
-        Self {
-            // Set max_open_files to 10k instead of -1 to avoid keep-growing memory in accordance
-            // with the number of files.
-            max_open_files: 2_000,
-            // For now we set the max total WAL size to be 1G. This config can be useful when column
-            // families are updated at non-uniform frequencies.
-            max_total_wal_size: 1u64 << 30,
-        }
-    }
-    #[cfg(windows)]
-    fn default() -> Self {
-        Self {
-            // Set max_open_files to 256 instead of -1 to avoid keep-growing memory in accordance
-            // with the number of files.
-            max_open_files: 256,
-            // For now we set the max total WAL size to be 1G. This config can be useful when column
-            // families are updated at non-uniform frequencies.
-            max_total_wal_size: 1u64 << 30,
-        }
-    }
+impl RocksdbConfig {
     #[cfg(any(target_os = "macos"))]
+    fn default_max_open_files() -> i32 {
+        256
+    }
+
+    #[cfg(any(target_os = "linux"))]
+    fn default_max_open_files() -> i32 {
+        2_000
+    }
+
+    #[cfg(windows)]
+    fn default_max_open_files() -> i32 {
+        256
+    }
+}
+
+impl Default for RocksdbConfig {
     fn default() -> Self {
         Self {
             // Set max_open_files to 256 instead of -1 to avoid keep-growing memory in accordance
             // with the number of files.
-            max_open_files: 256,
+            max_open_files: Self::default_max_open_files(),
             // For now we set the max total WAL size to be 1G. This config can be useful when column
             // families are updated at non-uniform frequencies.
             max_total_wal_size: 1u64 << 30,
@@ -59,47 +55,54 @@ impl Default for RocksdbConfig {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+static DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
+
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct StorageConfig {
-    #[structopt(long = "dir", parse(from_os_str), conflicts_with("dir"))]
-    dir: PathBuf,
+    #[structopt(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
+    pub max_open_files: Option<i32>,
     #[structopt(
-        long = "absolute-dir",
-        parse(from_os_str),
-        conflicts_with("absolute-dir")
+        name = "rocksdb-max-total-wal-sizes",
+        long,
+        help = "rocksdb max total WAL sizes"
     )]
+    pub max_total_wal_size: Option<u64>,
+
     #[serde(skip)]
-    absolute_dir: Option<PathBuf>,
-    #[structopt(flatten)]
-    /// Rocksdb-specific configurations
-    pub rocksdb_config: RocksdbConfig,
+    #[structopt(skip)]
+    base: Option<Arc<BaseConfig>>,
 }
 
 impl StorageConfig {
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
+
     pub fn dir(&self) -> PathBuf {
-        self.absolute_dir
-            .as_ref()
-            .cloned()
-            .expect("config should init first.")
+        self.base().data_dir().join(DEFAULT_DB_DIR.as_path())
+    }
+
+    pub fn rocksdb_config(&self) -> RocksdbConfig {
+        let default = RocksdbConfig::default();
+        RocksdbConfig {
+            max_open_files: self.max_open_files.unwrap_or(default.max_open_files),
+            max_total_wal_size: self
+                .max_total_wal_size
+                .unwrap_or(default.max_total_wal_size),
+        }
     }
 }
 
 impl ConfigModule for StorageConfig {
-    fn default_with_opt(_opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
-        Ok(Self {
-            dir: PathBuf::from("starcoindb/db"),
-            absolute_dir: None,
-            rocksdb_config: RocksdbConfig::default(),
-        })
-    }
-
-    fn after_load(&mut self, _opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
-        self.absolute_dir = Some(if self.dir.is_relative() {
-            base.data_dir().join(&self.dir)
-        } else {
-            self.dir.clone()
-        });
+    fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
+        if opt.storage.max_open_files.is_some() {
+            self.max_open_files = opt.storage.max_open_files;
+        }
+        if opt.storage.max_total_wal_size.is_some() {
+            self.max_total_wal_size = opt.storage.max_total_wal_size;
+        }
         Ok(())
     }
 }

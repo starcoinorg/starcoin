@@ -9,10 +9,7 @@ use hyper::{
 };
 use prometheus::{Encoder, TextEncoder};
 use starcoin_logger::prelude::*;
-use std::{
-    net::{SocketAddr, ToSocketAddrs},
-    thread,
-};
+use std::{net::SocketAddr, thread};
 use tokio::runtime;
 
 fn encode_metrics(encoder: impl Encoder) -> Vec<u8> {
@@ -46,14 +43,7 @@ async fn serve_metrics(req: Request<Body>) -> Result<Response<Body>, hyper::Erro
     Ok(resp)
 }
 
-pub fn start_server(host: String, port: u16) {
-    // Only called from places that guarantee that host is parsable, but this must be assumed.
-    let addr: SocketAddr = (host.as_str(), port)
-        .to_socket_addrs()
-        .unwrap_or_else(|_| unreachable!("Failed to parse {}:{} as address", host, port))
-        .next()
-        .unwrap();
-
+pub fn start_server(addr: SocketAddr) {
     // metric process info.
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {

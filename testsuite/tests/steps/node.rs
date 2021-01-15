@@ -15,7 +15,6 @@ pub fn steps() -> Steps<MyWorld> {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetworkID::TEST);
             opt.metrics.disable_metrics = Some(true);
-            opt.network.disable_seed = Some(true);
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             info!("config: {:?}", config);
             world.node_config = Some(config)
@@ -24,7 +23,6 @@ pub fn steps() -> Steps<MyWorld> {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetworkID::DEV);
             opt.metrics.disable_metrics = Some(true);
-            opt.network.disable_seed = Some(true);
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
         })
