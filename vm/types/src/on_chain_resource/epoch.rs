@@ -5,7 +5,7 @@ use crate::event::EventHandle;
 use crate::genesis_config::ConsensusStrategy;
 use crate::move_resource::MoveResource;
 use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
-use serde::export::TryFrom;
+use serde::__private::TryFrom;
 use serde::{Deserialize, Serialize};
 
 /// The Epoch resource held under an account.

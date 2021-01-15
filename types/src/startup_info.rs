@@ -4,7 +4,7 @@
 use crate::block::{BlockHeader, BlockInfo};
 use anyhow::Result;
 use scs::{SCSCodec, Sample};
-use serde::export::Formatter;
+use serde::__private::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;

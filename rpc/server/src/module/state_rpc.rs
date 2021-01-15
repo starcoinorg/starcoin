@@ -3,7 +3,6 @@
 
 use crate::module::map_err;
 use futures::future::TryFutureExt;
-use scs::SCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::state::StateApi;
 use starcoin_rpc_api::FutureResult;
