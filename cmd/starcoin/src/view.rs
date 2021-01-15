@@ -3,19 +3,15 @@
 
 use anyhow::{format_err, Error};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
-use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
-use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_rpc_api::types::{
-    StrView, StructTagView, TransactionEventView, TransactionOutputAction, TransactionOutputView,
-    TransactionVMStatus,
+    TransactionEventView, TransactionOutputAction, TransactionOutputView, TransactionVMStatus,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
@@ -386,61 +382,4 @@ pub struct UncleInfo {
     pub uncle_view: starcoin_rpc_api::types::BlockHeaderView,
     pub uncle_parent_view: starcoin_rpc_api::types::BlockHeaderView,
     pub block_view: starcoin_rpc_api::types::BlockHeaderView,
-}
-
-/// only used to display in cli.
-#[derive(Serialize)]
-pub struct MoveStructView {
-    is_resource: bool,
-    type_: StructTagView,
-    value: HashMap<Identifier, MoveValueView>,
-}
-
-impl From<AnnotatedMoveStruct> for MoveStructView {
-    fn from(s: AnnotatedMoveStruct) -> Self {
-        let AnnotatedMoveStruct {
-            is_resource,
-            type_,
-            value,
-        } = s;
-        MoveStructView {
-            is_resource,
-            type_: StrView(type_),
-            value: value
-                .into_iter()
-                .map(|(f, v)| (f, MoveValueView(v)))
-                .collect(),
-        }
-    }
-}
-
-/// only used to display in cli.
-struct MoveValueView(AnnotatedMoveValue);
-impl Serialize for MoveValueView {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        match &self.0 {
-            AnnotatedMoveValue::U8(d) => d.serialize(serializer),
-            AnnotatedMoveValue::U64(d) => d.serialize(serializer),
-            AnnotatedMoveValue::U128(d) => d.serialize(serializer),
-            AnnotatedMoveValue::Bool(d) => d.serialize(serializer),
-            AnnotatedMoveValue::Address(d) => d.serialize(serializer),
-            AnnotatedMoveValue::Vector(v) => {
-                let mut serializer = serializer.serialize_seq(Some(v.len()))?;
-                for elem in v {
-                    serializer.serialize_element(&MoveValueView(elem.clone()))?;
-                }
-                serializer.end()
-            }
-            AnnotatedMoveValue::Bytes(bytes) => {
-                format!("0x{}", hex::encode(bytes)).serialize(serializer)
-            }
-            AnnotatedMoveValue::Struct(s) => {
-                let view: MoveStructView = s.clone().into();
-                view.serialize(serializer)
-            }
-        }
-    }
 }

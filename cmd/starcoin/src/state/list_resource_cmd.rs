@@ -5,14 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
-use starcoin_rpc_api::types::StructTagView;
-use starcoin_rpc_client::RemoteStateReader;
-use starcoin_types::access_path::AccessPath;
+use starcoin_rpc_api::types::{AnnotatedMoveStructView, StructTagView};
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::account_struct_tag;
-use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::parser::parse_struct_tag;
 use std::collections::BTreeMap;
 use structopt::StructOpt;
 
@@ -30,7 +24,7 @@ impl CommandAction for ListResourceCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ListResourceOpt;
-    type ReturnItem = BTreeMap<StructTagView, AnnotatedMoveStruct>;
+    type ReturnItem = BTreeMap<StructTagView, AnnotatedMoveStructView>;
 
     fn run(
         &self,

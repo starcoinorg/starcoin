@@ -18,7 +18,7 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStruct, AnnotatedMoveValue, BlockHeaderView,
+    AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
     BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunTransactionRequest,
     EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView, StrView,
     TransactionInfoView, TransactionOutputView, TransactionRequest, TransactionView,
@@ -503,7 +503,7 @@ impl RpcClient {
         &self,
         addr: AccountAddress,
         resource_type: StructTag,
-    ) -> anyhow::Result<Option<AnnotatedMoveStruct>> {
+    ) -> anyhow::Result<Option<AnnotatedMoveStructView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .contract_client
@@ -578,7 +578,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValue>> {
+    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValueView>> {
         self.call_rpc_blocking(
             |inner| async move { inner.contract_client.call(call).compat().await },
         )

@@ -5,7 +5,6 @@ mod node_api_types;
 pub mod pubsub;
 
 pub use node_api_types::*;
-pub use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 
 use jsonrpc_core_client::RpcChannel;
 use scs::SCSCodec;
@@ -14,6 +13,7 @@ use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
+use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
@@ -48,10 +48,59 @@ use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AnnotatedMoveStructView {
+    pub is_resource: bool,
+    pub type_: StructTagView,
+    pub value: Vec<(Identifier, AnnotatedMoveValueView)>,
+}
+impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
+    fn from(origin: AnnotatedMoveStruct) -> Self {
+        Self {
+            is_resource: origin.is_resource,
+            type_: StrView(origin.type_),
+            value: origin
+                .value
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum AnnotatedMoveValueView {
+    U8(u8),
+    U64(StrView<u64>),
+    U128(StrView<u128>),
+    Bool(bool),
+    Address(AccountAddress),
+    Vector(Vec<AnnotatedMoveValueView>),
+    Bytes(StrView<Vec<u8>>),
+    Struct(AnnotatedMoveStructView),
+}
+
+impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
+    fn from(origin: AnnotatedMoveValue) -> Self {
+        match origin {
+            AnnotatedMoveValue::U8(u) => AnnotatedMoveValueView::U8(u),
+            AnnotatedMoveValue::U64(u) => AnnotatedMoveValueView::U64(StrView(u)),
+            AnnotatedMoveValue::U128(u) => AnnotatedMoveValueView::U128(StrView(u)),
+            AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
+            AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(data),
+            AnnotatedMoveValue::Vector(data) => {
+                AnnotatedMoveValueView::Vector(data.into_iter().map(Into::into).collect())
+            }
+            AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
+            AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
+        }
+    }
+}
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct AccountStateSetView {
     pub codes: BTreeMap<Identifier, StrView<ByteCode>>,
-    pub resources: BTreeMap<StructTagView, AnnotatedMoveStruct>,
+    pub resources: BTreeMap<StructTagView, AnnotatedMoveStructView>,
 }
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]

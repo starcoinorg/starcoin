@@ -8,7 +8,9 @@ use scs::SCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::state::StateApi;
-use starcoin_rpc_api::types::{AccountStateSetView, AnnotatedMoveStruct, StrView, StructTagView};
+use starcoin_rpc_api::types::{
+    AccountStateSetView, AnnotatedMoveStructView, StrView, StructTagView,
+};
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::{ChainStateAsyncService, StateWithProof};
 use starcoin_state_tree::StateNodeStore;
@@ -96,7 +98,7 @@ where
                         .collect();
 
                     let resources: Result<
-                        BTreeMap<StructTagView, AnnotatedMoveStruct>,
+                        BTreeMap<StructTagView, AnnotatedMoveStructView>,
                         anyhow::Error,
                     > = s
                         .resource_set()
@@ -107,7 +109,7 @@ where
                             let struct_tag = StructTag::decode(k.as_slice())?;
                             let struct_data =
                                 annotator.view_struct(struct_tag.clone(), v.as_slice())?;
-                            Ok((StrView(struct_tag), struct_data))
+                            Ok((StrView(struct_tag), struct_data.into()))
                         })
                         .collect();
                     Ok(Some(AccountStateSetView {

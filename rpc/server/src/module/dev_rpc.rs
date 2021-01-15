@@ -6,7 +6,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::dev::DevApi;
-use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
+use starcoin_rpc_api::types::{AnnotatedMoveValueView, ContractCall};
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
 
@@ -34,7 +34,7 @@ impl<S> DevApi for DevRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValue>> {
+    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValueView>> {
         let service = self.service.clone();
         let playground = self.playground.clone();
         let ContractCall {
@@ -54,7 +54,7 @@ where
                 type_args.into_iter().map(|v| v.0).collect(),
                 args.into_iter().map(|v| v.0).collect(),
             )?;
-            Ok(output)
+            Ok(output.into_iter().map(Into::into).collect())
         }
         .map_err(map_err);
         Box::new(f.boxed().compat())
