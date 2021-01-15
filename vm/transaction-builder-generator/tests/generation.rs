@@ -37,14 +37,14 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
         serdegen::python3::Installer::new(src_dir_path.clone(), /* package */ None);
 
     let config = serdegen::CodeGeneratorConfig::new("starcoin_types".to_string())
-        .with_encodings(vec![serdegen::Encoding::Lcs, serdegen::Encoding::Bincode]);
+        .with_encodings(vec![serdegen::Encoding::Bcs, serdegen::Encoding::Bincode]);
     installer.install_module(&config, &registry).unwrap();
 
     // installer
     //     .install_module("starcoin_types", &registry)
     //     .unwrap();
     installer.install_serde_runtime().unwrap();
-    installer.install_lcs_runtime().unwrap();
+    installer.install_bcs_runtime().unwrap();
 
     let stdlib_dir_path = src_dir_path.join("starcoin_stdlib");
     std::fs::create_dir_all(stdlib_dir_path.clone()).unwrap();
@@ -113,7 +113,7 @@ fn test_that_rust_code_compiles() {
 
     let installer = serdegen::rust::Installer::new(dir.path().to_path_buf());
     let config = serdegen::CodeGeneratorConfig::new("starcoin-types".to_string())
-        .with_encodings(vec![serdegen::Encoding::Lcs, serdegen::Encoding::Bincode]);
+        .with_encodings(vec![serdegen::Encoding::Bcs, serdegen::Encoding::Bincode]);
     installer.install_module(&config, &registry).unwrap();
 
     // installer
@@ -185,10 +185,10 @@ fn test_that_cpp_code_compiles_and_demo_runs() {
     //     .install_module("starcoin_types", &registry)
     //     .unwrap();
     // lcs_installer.install_serde_runtime().unwrap();
-    // lcs_installer.install_lcs_runtime().unwrap();
+    // lcs_installer.install_bcs_runtime().unwrap();
 
     let config = serdegen::CodeGeneratorConfig::new("starcoin_types".to_string())
-        .with_encodings(vec![serdegen::Encoding::Lcs, serdegen::Encoding::Bincode]);
+        .with_encodings(vec![serdegen::Encoding::Bcs, serdegen::Encoding::Bincode]);
     installer.install_module(&config, &registry).unwrap();
 
     let abi_installer = buildgen::cpp::Installer::new(dir.path().to_path_buf());
@@ -232,10 +232,10 @@ fn test_that_java_code_compiles_and_demo_runs() {
     //     .install_module("org.starcoin.types", &registry)
     //     .unwrap();
     // lcs_installer.install_serde_runtime().unwrap();
-    // lcs_installer.install_lcs_runtime().unwrap();
+    // lcs_installer.install_bcs_runtime().unwrap();
 
     let config = serdegen::CodeGeneratorConfig::new("org.starcoin.types".to_string())
-        .with_encodings(vec![serdegen::Encoding::Lcs, serdegen::Encoding::Bincode]);
+        .with_encodings(vec![serdegen::Encoding::Bcs, serdegen::Encoding::Bincode]);
     installer.install_module(&config, &registry).unwrap();
 
     let abi_installer = buildgen::java::Installer::new(dir.path().to_path_buf());

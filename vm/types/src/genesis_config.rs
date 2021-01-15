@@ -20,8 +20,8 @@ use anyhow::{bail, ensure, format_err, Result};
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
+use serde::__private::fmt::Debug;
 use serde::de::Error;
-use serde::export::fmt::Debug;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
 use starcoin_crypto::{

@@ -15,7 +15,7 @@ use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use log::info;
-use serde::export::{Formatter, PhantomData};
+use serde::__private::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
