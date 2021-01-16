@@ -5,7 +5,6 @@ pub mod message;
 
 use crate::message::{ContractEventNotification, Event, Notification, ThinBlock};
 use anyhow::{format_err, Result};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{Storage, Store};
@@ -93,11 +92,7 @@ impl ChainNotifyHandlerService {
     pub fn notify_new_block(&self, block: &Block, ctx: &mut ServiceContext<Self>) {
         let thin_block = ThinBlock::new(
             block.header().clone(),
-            block
-                .transactions()
-                .iter()
-                .map(|t| t.crypto_hash())
-                .collect(),
+            block.transactions().iter().map(|t| t.id()).collect(),
         );
         ctx.broadcast(Notification(thin_block));
     }

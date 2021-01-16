@@ -4,7 +4,7 @@
 use crate::pool::AccountSeqNumberClient;
 use crate::TxStatus;
 use anyhow::Result;
-use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use crypto::keygen::KeyGen;
 use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
@@ -83,11 +83,11 @@ async fn test_tx_pool() -> Result<()> {
         config.net(),
     );
     let txn = txn.as_signed_user_txn()?.clone();
-    let txn_hash = txn.crypto_hash();
+    let txn_hash = txn.id();
     let mut result = txpool_service.add_txns(vec![txn]);
     assert!(result.pop().unwrap().is_ok());
     let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0));
-    assert_eq!(pending_txns.pop().unwrap().crypto_hash(), txn_hash);
+    assert_eq!(pending_txns.pop().unwrap().id(), txn_hash);
 
     let next_sequence_number =
         txpool_service.next_sequence_number(account_config::association_address());

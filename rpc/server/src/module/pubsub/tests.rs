@@ -11,7 +11,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
@@ -191,7 +191,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let txn_id = txn.crypto_hash();
+    let txn_id = txn.id();
     txpool_service.add_txns(vec![txn]).pop().unwrap().unwrap();
     let mut receiver = receiver.compat();
     let res = receiver.next().await.transpose().unwrap();

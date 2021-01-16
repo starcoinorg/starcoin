@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_crypto::hash::HashValue;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::compiled_transaction_script;
@@ -123,7 +123,7 @@ impl CommandAction for ExecuteBuildInCommand {
         );
 
         let signed_txn = client.account_sign_txn(script_txn)?;
-        let txn_hash = signed_txn.crypto_hash();
+        let txn_hash = signed_txn.id();
         client.submit_transaction(signed_txn)?;
         println!("txn {:#x} submitted.", txn_hash);
 

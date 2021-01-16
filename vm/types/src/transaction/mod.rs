@@ -17,7 +17,7 @@ use crate::{
 };
 use anyhow::{format_err, Error, Result};
 use scs::Sample;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use starcoin_crypto::{
@@ -302,8 +302,11 @@ impl From<TransactionPayloadType> for u8 {
 /// **IMPORTANT:** The signature of a `SignedUserTransaction` is not guaranteed to be verified. For a
 /// transaction whose signature is statically guaranteed to be verified, see
 /// [`SignatureCheckedTransaction`].
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, CryptoHasher, CryptoHash)]
 pub struct SignedUserTransaction {
+    #[serde(skip)]
+    id: Option<HashValue>,
+
     /// The raw transaction
     raw_txn: RawUserTransaction,
 
@@ -362,10 +365,13 @@ impl SignedUserTransaction {
         raw_txn: RawUserTransaction,
         authenticator: TransactionAuthenticator,
     ) -> SignedUserTransaction {
-        SignedUserTransaction {
+        let mut txn = Self {
+            id: None,
             raw_txn,
             authenticator,
-        }
+        };
+        txn.id = Some(txn.crypto_hash());
+        txn
     }
 
     pub fn ed25519(
@@ -374,10 +380,7 @@ impl SignedUserTransaction {
         signature: Ed25519Signature,
     ) -> SignedUserTransaction {
         let authenticator = TransactionAuthenticator::ed25519(public_key, signature);
-        SignedUserTransaction {
-            raw_txn,
-            authenticator,
-        }
+        Self::new(raw_txn, authenticator)
     }
 
     pub fn multi_ed25519(
@@ -386,10 +389,7 @@ impl SignedUserTransaction {
         signature: MultiEd25519Signature,
     ) -> SignedUserTransaction {
         let authenticator = TransactionAuthenticator::multi_ed25519(public_key, signature);
-        SignedUserTransaction {
-            raw_txn,
-            authenticator,
-        }
+        Self::new(raw_txn, authenticator)
     }
 
     pub fn authenticator(&self) -> TransactionAuthenticator {
@@ -455,7 +455,24 @@ impl SignedUserTransaction {
     }
 
     pub fn id(&self) -> HashValue {
-        self.crypto_hash()
+        self.id
+            .expect("SignedUserTransaction's id should bean Some after init.")
+    }
+}
+
+impl<'de> Deserialize<'de> for SignedUserTransaction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "SignedUserTransaction")]
+        struct SignedUserTransactionData {
+            raw_txn: RawUserTransaction,
+            authenticator: TransactionAuthenticator,
+        }
+        let data = SignedUserTransactionData::deserialize(deserializer)?;
+        Ok(Self::new(data.raw_txn, data.authenticator))
     }
 }
 

@@ -11,7 +11,7 @@ pub(crate) mod scoring;
 pub(crate) mod verifier;
 
 pub use client::{AccountSeqNumberClient, Client};
-use crypto::hash::{HashValue, PlainCryptoHash};
+use crypto::hash::HashValue;
 pub use queue::{Status, TransactionQueue};
 use std::ops::Deref;
 use transaction_pool as tx_pool;
@@ -26,7 +26,6 @@ pub type Gas = u64;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnverifiedUserTransaction {
     txn: transaction::SignedUserTransaction,
-    hash: HashValue,
 }
 
 impl UnverifiedUserTransaction {
@@ -34,8 +33,8 @@ impl UnverifiedUserTransaction {
         &self.txn
     }
 
-    pub fn hash(&self) -> &HashValue {
-        &self.hash
+    pub fn hash(&self) -> HashValue {
+        self.txn.id()
     }
 }
 
@@ -47,11 +46,7 @@ impl From<UnverifiedUserTransaction> for transaction::SignedUserTransaction {
 
 impl From<transaction::SignedUserTransaction> for UnverifiedUserTransaction {
     fn from(user_txn: transaction::SignedUserTransaction) -> Self {
-        let hash = user_txn.crypto_hash();
-        UnverifiedUserTransaction {
-            txn: user_txn,
-            hash,
-        }
+        UnverifiedUserTransaction { txn: user_txn }
     }
 }
 
@@ -107,10 +102,10 @@ pub enum PoolTransaction {
 impl PoolTransaction {
     /// Return transaction hash
     pub fn hash(&self) -> HashValue {
-        match *self {
-            PoolTransaction::Unverified(ref tx) => *tx.hash(),
-            PoolTransaction::Retracted(ref tx) => *tx.hash(),
-            PoolTransaction::Local(ref tx) => tx.crypto_hash(),
+        match self {
+            PoolTransaction::Unverified(ref tx) => tx.hash(),
+            PoolTransaction::Retracted(ref tx) => tx.hash(),
+            PoolTransaction::Local(ref tx) => tx.id(),
         }
     }
 
@@ -174,7 +169,7 @@ impl VerifiedTransaction {
     /// 1. for tests
     /// 2. In case we are converting pending block transactions that are already in the queue to match the function signature.
     pub fn from_pending_block_transaction(tx: transaction::SignedUserTransaction) -> Self {
-        let hash = tx.crypto_hash();
+        let hash = tx.id();
         let sender = tx.sender();
         VerifiedTransaction {
             transaction: tx.into(),

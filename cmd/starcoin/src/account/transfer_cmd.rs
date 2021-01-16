@@ -6,7 +6,6 @@ use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
@@ -136,7 +135,7 @@ impl CommandAction for TransferCommand {
             ctx.state().net().chain_id(),
         );
         let txn = client.account_sign_txn(raw_txn)?;
-        let txn_hash = txn.crypto_hash();
+        let txn_hash = txn.id();
         client.submit_transaction(txn)?;
 
         let mut output_view = ExecutionOutputView::new(txn_hash);

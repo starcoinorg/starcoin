@@ -23,7 +23,7 @@ use starcoin_types::{
     cmpact_block::{CompactBlock, ShortId},
     peer_info::PeerId,
     system_events::NewHeadBlock,
-    transaction::{SignedUserTransaction, Transaction},
+    transaction::SignedUserTransaction,
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
@@ -80,11 +80,10 @@ impl BlockRelayer {
                 if prefilled_txn.index as usize >= txns.len() {
                     continue;
                 }
-                txns[prefilled_txn.index as usize] = Some(prefilled_txn.clone().tx);
+                let id = prefilled_txn.tx.id();
+                txns[prefilled_txn.index as usize] = Some(prefilled_txn.tx);
                 BLOCK_RELAYER_METRICS.txns_filled_from_prefill.inc();
-                missing_txn_short_ids.remove(&ShortId(
-                    Transaction::UserTransaction(prefilled_txn.tx).id(),
-                ));
+                missing_txn_short_ids.remove(&ShortId(id));
             }
             // Fetch the missing txns from peer
             let missing_txn_ids: Vec<HashValue> = missing_txn_short_ids

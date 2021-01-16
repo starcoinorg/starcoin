@@ -9,6 +9,11 @@ struct TestStruct {
     str_field: String,
 }
 
+#[derive(Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+struct TestStruct2 {
+    str_field: String,
+}
+
 #[test]
 fn test_crypto_hash() {
     let o = TestStruct {
@@ -22,4 +27,12 @@ fn test_crypto_hash() {
     let hash1 = o.crypto_hash();
     let hash2 = o2.crypto_hash();
     assert_eq!(hash1, hash2);
+
+    let o3 = TestStruct2 {
+        str_field: "hello".to_string(),
+    };
+
+    assert_eq!(scs::to_bytes(&o).unwrap(), scs::to_bytes(&o3).unwrap());
+    let hash3 = o3.crypto_hash();
+    assert_ne!(hash1, hash3);
 }
