@@ -6,7 +6,6 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_rpc_api::types::{
     TransactionEventView, TransactionOutputAction, TransactionOutputView, TransactionVMStatus,
 };
