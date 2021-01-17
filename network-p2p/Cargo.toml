@@ -62,7 +62,7 @@ features = ["dns", "identify", "kad", "mdns", "mplex", "noise", "ping", "request
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}
-async-std = "1.8"
+async-std = "1.9"
 tempfile = "3.1.0"
 
 
