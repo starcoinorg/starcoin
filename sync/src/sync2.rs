@@ -12,7 +12,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
-use network_api::PeerProvider;
+use network_api::{PeerProvider, PeerSelector};
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -125,14 +125,9 @@ impl SyncService2 {
                 //return Ok(());
                 return Err(format_err!("[sync] No peers to sync."));
             }
-            let peer_selector = if !peers.is_empty() {
-                peer_selector
-                    .selector()
-                    .filter(move |peer_info| peers.contains(&peer_info.peer_id()))
-                    .into_selector()
-            } else {
-                peer_selector
-            };
+            if !peers.is_empty() {
+                peer_selector.retain(peers.as_ref())
+            }
             if peer_selector.is_empty() {
                 //info!("[sync] No peers to sync.");
                 return Err(format_err!("[sync] No peers to sync."));
@@ -154,7 +149,8 @@ impl SyncService2 {
                 return Ok(None);
             }
 
-            let fetcher_factory = Arc::new(VerifiedRpcClientFactory::new(network));
+            let peer_selector = PeerSelector::new(target.peers.clone());
+            let rpc_client = Arc::new(VerifiedRpcClient::new(peer_selector, network.clone()));
 
             let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
                 current_block_id,
@@ -163,9 +159,9 @@ impl SyncService2 {
                 config.net().time_service(),
                 storage.clone(),
                 connector_service.clone(),
-                target.peers.clone(),
+                rpc_client,
                 self_ref.clone(),
-                fetcher_factory,
+                network.clone(),
             )?;
 
             self_ref.notify(SyncBeginEvent {

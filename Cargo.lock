@@ -4559,6 +4559,7 @@ dependencies = [
  "itertools 0.10.0",
  "network-p2p-types",
  "network-rpc-core",
+ "parking_lot 0.11.1",
  "rand 0.7.3",
  "rand_distr",
  "serde",
