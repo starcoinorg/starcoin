@@ -12,6 +12,7 @@ use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
 use starcoin_types::block::BlockHeader;
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 pub trait PeerProvider: Send + Sync {
@@ -59,6 +60,10 @@ impl PeerDetail {
     pub fn peer_info(&self) -> &PeerInfo {
         &self.peer_info
     }
+
+    pub fn score(&self) -> u64 {
+        self.score_counter.score()
+    }
 }
 
 impl From<PeerInfo> for PeerDetail {
@@ -73,6 +78,12 @@ impl From<PeerInfo> for PeerDetail {
 #[derive(Clone)]
 pub struct PeerSelector {
     peers: Arc<Mutex<Vec<PeerDetail>>>,
+}
+
+impl Debug for PeerSelector {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "peer len : {:?}", self.peers.lock().len(),)
+    }
 }
 
 impl PeerSelector {
@@ -209,6 +220,14 @@ impl PeerSelector {
     fn sort(peers: &mut Vec<PeerDetail>) {
         peers.sort_by_key(|p| p.peer_info.total_difficulty());
         peers.reverse();
+    }
+
+    pub fn scores(&self) -> Vec<(PeerId, u64)> {
+        self.peers
+            .lock()
+            .iter()
+            .map(|peer| (peer.peer_id(), peer.score_counter.score()))
+            .collect()
     }
 }
 

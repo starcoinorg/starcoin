@@ -96,3 +96,10 @@ pub struct SyncStartRequest {
 impl ServiceRequest for SyncStartRequest {
     type Response = Result<()>;
 }
+
+#[derive(Debug, Clone)]
+pub struct PeerScoreRequest;
+
+impl ServiceRequest for PeerScoreRequest {
+    type Response = Option<Vec<(PeerId, u64)>>;
+}

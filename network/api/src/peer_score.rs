@@ -14,6 +14,10 @@ impl ScoreCounter {
         self.score.fetch_add(score as u64, Ordering::SeqCst);
         self.count.fetch_add(1, Ordering::SeqCst);
     }
+
+    pub fn score(&self) -> u64 {
+        self.score.load(Ordering::SeqCst)
+    }
 }
 
 impl Default for ScoreCounter {
