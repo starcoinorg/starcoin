@@ -8,6 +8,7 @@ use logger::prelude::*;
 use network::get_unix_ts_as_millis;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
+use rand::prelude::{IteratorRandom, SliceRandom};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -141,10 +142,13 @@ impl VerifiedRpcClient {
     }
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
-        self.peer_selector
-            .bests()
-            .random()
-            .and_then(|peer| Some(peer.peer_info().clone()))
+        if let Some(peers) = self.peer_selector.bests() {
+            peers
+                .choose(&mut rand::thread_rng())
+                .and_then(|peer| Some(peer.clone()))
+        } else {
+            None
+        }
     }
 
     pub fn random_peer(&self) -> Result<PeerId> {
@@ -267,9 +271,12 @@ impl VerifiedRpcClient {
 
     pub async fn get_sync_target(&self) -> Result<SyncTarget> {
         //TODO optimize target selector,
-        let selector = self.peer_selector.bests();
-        let peer = selector
-            .random()
+        let best_peers = self
+            .peer_selector
+            .bests()
+            .ok_or_else(|| format_err!("No best peer to request"))?;
+        let peer = best_peers
+            .choose(&mut rand::thread_rng())
             .ok_or_else(|| format_err!("No peer to request"))?;
         let peer_id = peer.peer_id();
         let header = peer.latest_header();
@@ -295,13 +302,7 @@ impl VerifiedRpcClient {
         Ok(SyncTarget {
             block_header: header.clone(),
             block_info,
-            peers: self
-                .peer_selector
-                .selector()
-                .cloned()
-                .into_iter()
-                .map(|peer| peer.peer_info().clone())
-                .collect(),
+            peers: self.peer_selector.peers(),
         })
     }
 

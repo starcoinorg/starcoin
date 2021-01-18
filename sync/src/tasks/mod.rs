@@ -21,16 +21,12 @@ use stream_task::{
     Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
 };
 
-pub trait FetcherFactory<F, N>: Send + Sync
-where
-    F: BlockIdFetcher + BlockFetcher,
-    N: NetworkService + 'static,
-{
-    fn create(&self, peers: Vec<PeerInfo>) -> F;
+pub trait PeerOperator: Send + Sync {
+    fn filter(&self, peers: Vec<PeerId>);
 
-    fn network(&self) -> N;
+    fn new_peer(&self, info: PeerInfo);
 
-    fn create_by_fetcher(&self, peers: Vec<PeerInfo>, fetcher: &F) -> F;
+    fn peers(&self) -> Option<Vec<PeerId>>;
 }
 
 pub struct VerifiedRpcClientFactory {
@@ -40,28 +36,6 @@ pub struct VerifiedRpcClientFactory {
 impl VerifiedRpcClientFactory {
     pub fn new(network: NetworkServiceRef) -> Self {
         Self { network }
-    }
-}
-
-impl FetcherFactory<VerifiedRpcClient, NetworkServiceRef> for VerifiedRpcClientFactory {
-    fn create(&self, peers: Vec<PeerInfo>) -> VerifiedRpcClient {
-        let peer_selector = PeerSelector::new(peers);
-        VerifiedRpcClient::new(peer_selector, self.network.clone())
-    }
-
-    fn network(&self) -> NetworkServiceRef {
-        self.network.clone()
-    }
-
-    fn create_by_fetcher(
-        &self,
-        peers: Vec<PeerInfo>,
-        fetcher: &VerifiedRpcClient,
-    ) -> VerifiedRpcClient {
-        let peer_selector = fetcher
-            .selector()
-            .fork(peers.into_iter().map(|peer| peer.peer_id()).collect());
-        VerifiedRpcClient::new(peer_selector, self.network.clone())
     }
 }
 
@@ -88,6 +62,20 @@ pub trait BlockIdFetcher: Send + Sync {
     ) -> BoxFuture<Result<Vec<BlockInfo>>>;
 
     fn find_best_peer(&self) -> Option<PeerInfo>;
+}
+
+impl PeerOperator for VerifiedRpcClient {
+    fn filter(&self, peers: Vec<PeerId>) {
+        unimplemented!()
+    }
+
+    fn new_peer(&self, info: PeerInfo) {
+        unimplemented!()
+    }
+
+    fn peers(&self) -> Option<Vec<PeerId>> {
+        unimplemented!()
+    }
 }
 
 impl BlockIdFetcher for VerifiedRpcClient {
@@ -121,6 +109,23 @@ impl BlockIdFetcher for VerifiedRpcClient {
 
     fn find_best_peer(&self) -> Option<PeerInfo> {
         self.best_peer()
+    }
+}
+
+impl<T> PeerOperator for Arc<T>
+where
+    T: BlockIdFetcher,
+{
+    fn filter(&self, peers: Vec<PeerId>) {
+        unimplemented!()
+    }
+
+    fn new_peer(&self, info: PeerInfo) {
+        unimplemented!()
+    }
+
+    fn peers(&self) -> Option<Vec<PeerId>> {
+        unimplemented!()
     }
 }
 
@@ -349,9 +354,9 @@ pub fn full_sync_task<H, A, F, N>(
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     block_event_handle: H,
-    peers: Vec<PeerInfo>,
+    fetcher: Arc<F>,
     ancestor_event_handle: A,
-    fetcher_factory: Arc<dyn FetcherFactory<F, N>>,
+    network: N,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -361,7 +366,7 @@ pub fn full_sync_task<H, A, F, N>(
 where
     H: BlockConnectedEventHandle + Sync + 'static,
     A: AncestorEventHandle + Sync + 'static,
-    F: BlockIdFetcher + BlockFetcher + 'static,
+    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
     N: NetworkService + 'static,
 {
     let current_block_header = storage
@@ -387,7 +392,7 @@ where
             current_block_number,
             target_block_number,
             10,
-            fetcher_factory.create(peers.clone()),
+            fetcher.clone(),
         ),
         3,
         max_retry_times,
@@ -417,32 +422,22 @@ where
         }
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
-        let mut latest_peers = peers;
-        let mut fetcher = Arc::new(fetcher_factory.clone().create(latest_peers.clone()));
+
         loop {
             while let Ok(Some(peer_event)) = peer_receiver.try_next() {
                 if let PeerEvent::Open(peer_id, chain_info) = peer_event {
-                    latest_peers.push(PeerInfo::new(peer_id, *chain_info));
+                    fetcher.new_peer(PeerInfo::new(peer_id, *chain_info));
                 }
             }
 
             // sub target
             let target_number = latest_ancestor.number + 1000;
-            let sub_target_task = FindSubTargetTask::new(
-                latest_peers.clone(),
-                fetcher_factory.clone().create(latest_peers.clone()),
-                target_number,
-            );
+            let sub_target_task = FindSubTargetTask::new(fetcher.clone(), target_number);
             let (peers, sub_target) = sub_target_task
                 .sub_target()
                 .await
                 .map_err(TaskError::BreakError)?;
-            latest_peers = peers;
-            fetcher = Arc::new(
-                fetcher_factory
-                    .clone()
-                    .create_by_fetcher(latest_peers.clone(), &fetcher),
-            );
+            fetcher.filter(peers);
 
             let real_target = match sub_target {
                 None => target_block_accumulator.clone(),
@@ -456,7 +451,7 @@ where
                 fetcher.clone(),
                 event_handle_clone.clone(),
                 time_service.clone(),
-                fetcher_factory.clone().network(),
+                network.clone(),
             );
             let (block_chain, _) = inner
                 .do_sync(

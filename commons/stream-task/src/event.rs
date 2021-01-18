@@ -235,7 +235,6 @@ impl TaskEventCounterHandle {
     }
 
     pub fn total_report(&self) -> Option<TaskProgressReport> {
-        info!("total_report");
         if let Some(current_counter) = self.current_counter.lock().unwrap().as_ref().take() {
             let task_name = current_counter.task_name.clone();
             let mut reports = self
