@@ -157,24 +157,29 @@ static OPT_NET_HELP: &str = r#"Chain Network
     Custom network first start should also set the `genesis-config` option.
     Use starcoin_generator command to generate a genesis config."#;
 
-#[derive(Debug, Clone, StructOpt, Default)]
+#[derive(Clone, Debug, StructOpt, Default, Serialize, Deserialize)]
 #[structopt(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long, short = "c")]
     /// Connect and attach to a node
     pub connect: Option<Connect>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long, short = "d", parse(from_os_str))]
     /// Path to data dir
     pub data_dir: Option<PathBuf>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long, short = "n", help = OPT_NET_HELP)]
     pub net: Option<ChainNetworkID>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "watch-timeout")]
     /// Watch timeout in seconds
     pub watch_timeout: Option<u64>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "genesis-config")]
     /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     /// This option only work for node init start.
@@ -194,6 +199,18 @@ pub struct StarcoinOpt {
     pub txpool: TxPoolConfig,
     #[structopt(flatten)]
     pub storage: StorageConfig,
+    #[structopt(flatten)]
+    pub sync: SyncConfig,
+}
+
+impl std::fmt::Display for StarcoinOpt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_e| std::fmt::Error)?
+        )
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -343,6 +360,16 @@ pub struct NodeConfig {
     pub logger: LoggerConfig,
 }
 
+impl std::fmt::Display for NodeConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_e| std::fmt::Error)?
+        )
+    }
+}
+
 impl NodeConfig {
     pub fn random_for_test() -> Self {
         let opt = StarcoinOpt {
@@ -379,6 +406,7 @@ impl NodeConfig {
             config.merge_with_opt(opt, base.clone())?;
             config
         };
+        info!("Final config: {}", config);
         Ok(config)
     }
 

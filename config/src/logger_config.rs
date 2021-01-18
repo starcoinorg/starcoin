@@ -17,12 +17,19 @@ const DEFAULT_MAX_BACKUP: u32 = 7;
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct LoggerConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "logger-disable-stderr", long, help = "disable stderr logger")]
     pub disable_stderr: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "logger-disable-file", long, help = "disable file logger")]
     pub disable_file: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "logger-max-file-size", long)]
     pub max_file_size: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "logger-max-backup", long)]
     pub max_backup: Option<u32>,
 

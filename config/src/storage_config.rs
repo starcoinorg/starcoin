@@ -60,8 +60,11 @@ static DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct StorageConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
     pub max_open_files: Option<i32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "rocksdb-max-total-wal-sizes",
         long,

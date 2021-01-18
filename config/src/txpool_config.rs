@@ -13,23 +13,32 @@ pub const DEFAULT_MEM_SIZE: u64 = 128 * 1024 * 1024; // 128M
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct TxPoolConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "txpool-max-count", long)]
     /// Maximal number of transactions in the pool. default to 4096
     max_count: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "txpool-max-per-sender", long)]
     /// Maximal number of transactions from single sender. default to 128
     max_per_sender: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "txpool-max-mem-usage", long)]
     /// Maximal memory usage. Default to half of current free mem of system.
     max_mem_usage: Option<u64>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "txpool-tx-propagate-interval", long)]
     /// interval(s) of tx propagation timer. default to 2.
     tx_propagate_interval: Option<u64>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "txpool-min-tx-propagate", long)]
     /// interval(s) of tx propagation timer, default to 256.
     min_tx_to_propagate: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "txpool-propagate-for-blocks", long)]
     /// max blocks to propagate txns for.
     propagate_for_blocks: Option<u64>,

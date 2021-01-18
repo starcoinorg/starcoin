@@ -16,12 +16,17 @@ pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MetricsConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "disable-metrics", long, help = "disable metrics")]
     /// disable the metrics server, this flag support both cli and config.
     pub disable_metrics: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "metrics-address", long)]
     /// Metrics server listen address, default is 0.0.0.0
     pub address: Option<IpAddr>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "metrics-port", long)]
     /// Metrics server port, default is 9101
     pub port: Option<u16>,

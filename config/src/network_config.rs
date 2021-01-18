@@ -28,6 +28,7 @@ static NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct NetworkRpcQuotaConfiguration {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "p2prpc-default-global-api-quota",
         long,
@@ -35,17 +36,19 @@ pub struct NetworkRpcQuotaConfiguration {
     )]
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
-    // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
-    // my_program -D a=1 -D b=2
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "p2prpc-custom-global-api-quota",
         long,
-        help = "customize global p2p rpc quota, eg: get_block=100/s",
         number_of_values = 1,
         parse(try_from_str = parse_key_val)
     )]
+    /// customize global p2p rpc quota, eg: get_block=100/s
+    /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
+    /// my_program -D a=1 -D b=2
     pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "p2prpc-default-user-api-quota",
         long,
@@ -53,6 +56,7 @@ pub struct NetworkRpcQuotaConfiguration {
     )]
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "p2prpc-custom-user-api-quota",
         long,
@@ -111,6 +115,7 @@ impl NetworkRpcQuotaConfiguration {
 #[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "node-name")]
     /// Node network name, just for display, if absent will generate a random name.
     pub node_name: Option<String>,
@@ -121,10 +126,12 @@ pub struct NetworkConfig {
     /// This option is skip for config file, only support cli option, after init will write the key to node_key_file
     pub node_key: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "seed")]
     /// P2P network seed
     pub seeds: Option<Vec<MultiaddrWithPeerId>>,

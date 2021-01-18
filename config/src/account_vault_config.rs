@@ -14,6 +14,7 @@ static DEFAULT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("account_vaults")
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct AccountVaultConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "vault-dir", parse(from_os_str))]
     /// Account vault dir config.
     /// Default: account_vaults in data_dir

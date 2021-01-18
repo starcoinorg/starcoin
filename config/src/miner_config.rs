@@ -15,15 +15,18 @@ pub struct MinerConfig {
     /// Do not mint empty block, default is true in Dev network, only support cli.
     pub disable_mint_empty_block: Option<bool>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "miner-block-gas-limit")]
     /// Node local block_gas_limit, use min(config.block_gas_limit, onchain.block_gas_limit)
     pub block_gas_limit: Option<u64>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "disable-miner-client")]
     /// Don't start a miner client in node.
     /// This flag support both cli and config file.
     pub disable_miner_client: Option<bool>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "miner-thread")]
     /// Miner client thread number, not work for dev network, default is 1
     pub miner_thread: Option<u16>,

@@ -34,20 +34,30 @@ pub struct HttpConfiguration {
         help = "disable http jsonrpc endpoint"
     )]
     pub disable: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "http-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
+
     /// Default http port is 9850
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "http-port", long)]
     pub port: Option<u16>,
+
     /// Default is 10M
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "http-max-request-body",
         long,
         help = "max request body in bytes"
     )]
     pub max_request_body_size: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "http-threads", long, help = "threads to use")]
     pub threads: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "http-ip-headers",
         long,
@@ -110,10 +120,14 @@ pub struct TcpConfiguration {
     #[serde(skip)]
     #[structopt(name = "disable-tcp-rpc", long, help = "disable tcp jsonrpc endpoint")]
     pub disable: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "tcp-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
-    /// Default tcp port is 9860
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "tcp-port", long)]
+    /// Default tcp port is 9860
     pub port: Option<u16>,
 }
 
@@ -145,17 +159,19 @@ pub struct WsConfiguration {
         help = "disable websocket jsonrpc endpoint"
     )]
     pub disable: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "websocket-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
-    /// Default websocket port is 9870
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "websocket-port", long)]
+    /// Default websocket port is 9870
     pub port: Option<u16>,
-    /// Default is 10M
-    #[structopt(
-        name = "websocket-max-request-body",
-        long,
-        help = "max request body in bytes"
-    )]
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "websocket-max-request-body", long)]
+    /// Max request body in bytes, Default is 10M
     pub max_request_body_size: Option<usize>,
 }
 
@@ -189,6 +205,8 @@ pub struct IpcConfiguration {
     #[serde(skip)]
     #[structopt(name = "disable-ipc-rpc", long, help = "disable ipc jsonrpc endpoint")]
     pub disable: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "ipc-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
 }
@@ -219,6 +237,7 @@ impl IpcConfiguration {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct ApiQuotaConfiguration {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "jsonrpc-default-global-api-quota",
         long,
@@ -226,8 +245,7 @@ pub struct ApiQuotaConfiguration {
     )]
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
-    // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
-    // my_program -D a=1 -D b=2
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
     name = "jsonrpc-custom-global-api-quota",
     long,
@@ -235,8 +253,11 @@ pub struct ApiQuotaConfiguration {
     number_of_values = 1,
     parse(try_from_str = parse_key_val)
     )]
+    /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
+    /// my_program -D a=1 -D b=2
     pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "jsonrpc-default-user-api-quota",
         long,
@@ -244,6 +265,7 @@ pub struct ApiQuotaConfiguration {
     )]
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
     name = "jsonrpc-custom-user-api-quota",
     long,
@@ -322,10 +344,12 @@ pub struct RpcConfig {
     #[structopt(flatten)]
     pub api_quotas: ApiQuotaConfiguration,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "rpc-address")]
     /// Rpc address, default is 127.0.0.1
     pub rpc_address: Option<IpAddr>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "event-query-max-block-range")]
     pub block_query_max_range: Option<u64>,
 
@@ -473,41 +497,6 @@ impl RpcConfig {
 }
 
 impl ConfigModule for RpcConfig {
-    // fn init(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-    //     let rpc_address: IpAddr = opt
-    //         .rpc_address
-    //         .clone()
-    //         .unwrap_or_else(|| "0.0.0.0".to_string())
-    //         .parse()?;
-    //
-    //     let mut config = Self {
-    //         ws: opt.ws.clone(),
-    //         tcp: opt.tcp.clone(),
-    //         http: opt.http.clone(),
-    //         ipc: opt.ipc.clone(),
-    //         api_quota: opt.api_quotas.clone(),
-    //         rpc_address,
-    //         block_query_max_range: opt.block_query_max_range.unwrap_or(128),
-    //     };
-    //
-    //     if base.net.is_test() {
-    //         let ports = get_random_available_ports(3);
-    //         config.http.port = Some(ports[0]);
-    //         config.tcp.port = Some(ports[1]);
-    //         config.ws.port = Some(ports[2]);
-    //     } else if base.net.is_dev() {
-    //         config.http.port = Some(get_available_port_from(DEFAULT_HTTP_PORT));
-    //         config.tcp.port = Some(get_available_port_from(DEFAULT_TCP_PORT));
-    //         config.ws.port = Some(get_available_port_from(DEFAULT_WEB_SOCKET_PORT));
-    //     }
-    //
-    //     if config.ipc.ipc_file_path.is_none() {
-    //         config.ipc.ipc_file_path = Some(Self::get_ipc_file_by_base(base));
-    //     }
-    //
-    //     Ok(config)
-    // }
-
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
         if opt.rpc.rpc_address.is_some() {
