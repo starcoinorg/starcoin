@@ -1,4 +1,4 @@
-use config::{NodeConfig, SyncMode};
+use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
 use std::thread::sleep;
@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Duration};
 use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
 
-pub fn test_sync(sync_mode: SyncMode) {
+pub fn test_sync() {
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
@@ -24,9 +24,8 @@ pub fn test_sync(sync_mode: SyncMode) {
 
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
-    second_config.network.seeds = vec![first_config.network.self_address()];
+    second_config.network.seeds = Some(vec![first_config.network.self_address()]);
     second_config.miner.disable_miner_client = Some(false);
-    second_config.sync.set_mode(sync_mode);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
     let second_chain = second_node.chain_service().unwrap();

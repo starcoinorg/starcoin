@@ -2,163 +2,186 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    decode_key, get_available_port_from, get_random_available_port, load_key, parse_key_val,
-    ApiQuotaConfig, BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
+    decode_key, generate_node_name, get_available_port_from, get_random_available_port, load_key,
+    parse_key_val, ApiQuotaConfig, BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
 };
-use anyhow::{bail, Result};
+use anyhow::Result;
 use network_p2p_types::{
     is_memory_addr, memory_addr,
     multiaddr::{Multiaddr, Protocol},
     MultiaddrWithPeerId,
 };
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{
-    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-    test_utils::KeyPair,
-};
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerId;
+use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::num::NonZeroU32;
+use std::path::PathBuf;
 use std::sync::Arc;
 use structopt::StructOpt;
 
 pub static DEFAULT_NETWORK_PORT: u16 = 9840;
-static NETWORK_KEY_FILE: &str = "network_key";
+static NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key"));
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct NetworkRpcQuotaConfiguration {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
-        name = "default-global-p2prpc-quota",
+        name = "p2prpc-default-global-api-quota",
         long,
-        help = "default global p2p rpc quota, eg: 1000/s",
-        default_value = "1000/s"
+        help = "default global p2p rpc quota, eg: 1000/s"
     )]
-    pub default_global_api_quota: ApiQuotaConfig,
+    pub default_global_api_quota: Option<ApiQuotaConfig>,
 
-    // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
-    // my_program -D a=1 -D b=2
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
-        name = "custom-global-p2prpc-quota",
+        name = "p2prpc-custom-global-api-quota",
         long,
-        help = "customize global p2p rpc quota, eg: get_block=100/s",
         number_of_values = 1,
         parse(try_from_str = parse_key_val)
     )]
-    pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
+    /// customize global p2p rpc quota, eg: get_block=100/s
+    /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
+    /// my_program -D a=1 -D b=2
+    pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
-        name = "default-user-p2prpc-quota",
+        name = "p2prpc-default-user-api-quota",
         long,
-        help = "default p2p rpc quota of a peer, eg: 1000/s",
-        default_value = "1000/s"
+        help = "default p2p rpc quota of a peer, eg: 1000/s"
     )]
-    pub default_user_api_quota: ApiQuotaConfig,
+    pub default_user_api_quota: Option<ApiQuotaConfig>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
-        name = "custom-user-p2prpc-quota",
+        name = "p2prpc-custom-user-api-quota",
         long,
         help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
         parse(try_from_str = parse_key_val),
         number_of_values = 1
     )]
-    pub custom_user_api_quota: Vec<(String, ApiQuotaConfig)>,
+    pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 }
 
-impl Default for NetworkRpcQuotaConfiguration {
-    fn default() -> Self {
-        Self {
-            default_global_api_quota: ApiQuotaConfig {
+impl NetworkRpcQuotaConfiguration {
+    pub fn default_global_api_quota(&self) -> ApiQuotaConfig {
+        self.default_global_api_quota
+            .clone()
+            .unwrap_or(ApiQuotaConfig {
                 max_burst: NonZeroU32::new(1000).unwrap(),
                 duration: QuotaDuration::Second,
-            },
-            custom_global_api_quota: vec![],
-            default_user_api_quota: ApiQuotaConfig {
+            })
+    }
+
+    pub fn custom_global_api_quota(&self) -> Vec<(String, ApiQuotaConfig)> {
+        self.custom_global_api_quota.clone().unwrap_or_default()
+    }
+
+    pub fn default_user_api_quota(&self) -> ApiQuotaConfig {
+        self.default_user_api_quota
+            .clone()
+            .unwrap_or(ApiQuotaConfig {
                 max_burst: NonZeroU32::new(50).unwrap(),
                 duration: QuotaDuration::Second,
-            },
-            custom_user_api_quota: vec![],
+            })
+    }
+
+    pub fn custom_user_api_quota(&self) -> Vec<(String, ApiQuotaConfig)> {
+        self.custom_user_api_quota.clone().unwrap_or_default()
+    }
+
+    pub fn merge(&mut self, o: &Self) -> Result<()> {
+        if o.default_global_api_quota.is_some() {
+            self.default_global_api_quota = o.default_global_api_quota.clone();
         }
+        //TODO should merge two vec?
+        if o.custom_global_api_quota.is_some() {
+            self.custom_global_api_quota = o.custom_global_api_quota.clone();
+        }
+        if o.default_user_api_quota.is_some() {
+            self.default_user_api_quota = o.default_user_api_quota.clone();
+        }
+        if o.custom_user_api_quota.is_some() {
+            self.custom_user_api_quota = o.custom_user_api_quota.clone();
+        }
+        Ok(())
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
-    #[structopt(skip)]
-    /// The address that this node is listening on for new connections.
-    pub listen: Option<Multiaddr>,
-    #[structopt(skip)]
-    #[serde(default)]
-    pub seeds: Vec<MultiaddrWithPeerId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long = "node-name")]
+    /// Node network name, just for display, if absent will generate a random name.
+    pub node_name: Option<String>,
+
+    #[serde(skip)]
+    #[structopt(long = "node-key")]
+    /// Node network private key string
+    /// This option is skip for config file, only support cli option, after init will write the key to node_key_file
+    pub node_key: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    /// Node network private key file, default is network_key under the data dir.
+    pub node_key_file: Option<PathBuf>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long = "seed")]
+    /// P2P network seed
+    pub seeds: Option<Vec<MultiaddrWithPeerId>>,
+
+    #[serde(skip)]
     #[structopt(long = "disable-mdns")]
-    #[serde(default)]
     /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
+    /// disable_mdns is true in default, so need use Option.
     pub disable_mdns: Option<bool>,
-    //TODO skip this field, do not persistence this flag to config. this change will break network config.
+
+    #[serde(skip)]
     #[structopt(long = "disable-seed")]
     /// Do not connect to seed node, include builtin and config seed.
-    pub disable_seed: Option<bool>,
-    #[structopt(skip)]
-    #[serde(skip)]
-    network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
-    #[structopt(skip)]
-    #[serde(skip)]
-    self_peer_id: Option<PeerId>,
-    #[structopt(skip)]
-    #[serde(skip)]
-    self_address: Option<MultiaddrWithPeerId>,
+    /// This option is skip for config file, only support cli option.
+    pub disable_seed: bool,
+
     #[structopt(flatten)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
-}
-impl Default for NetworkConfig {
-    fn default() -> Self {
-        Self {
-            listen: Some(
-                format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
-                    .parse()
-                    .expect("Parse multi address fail."),
-            ),
-            seeds: vec![],
-            disable_mdns: None,
-            disable_seed: None,
-            network_keypair: None,
-            self_peer_id: None,
-            self_address: None,
-            network_rpc_quotas: NetworkRpcQuotaConfiguration::default(),
-        }
-    }
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    listen: Option<Multiaddr>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    network_keypair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
 }
 
 impl NetworkConfig {
-    pub fn listen(&self) -> Multiaddr {
-        self.listen.as_ref().cloned().unwrap_or_else(|| {
-            format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
-                .parse()
-                .expect("Parse multi address fail.")
-        })
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
     }
-    pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
-        self.network_keypair.clone().expect("Config should init.")
+
+    pub fn listen(&self) -> Multiaddr {
+        self.listen.clone().expect("Config should init.")
+    }
+
+    pub fn seeds(&self) -> Vec<MultiaddrWithPeerId> {
+        self.seeds.clone().unwrap_or_default()
+    }
+
+    pub fn network_keypair(&self) -> &(Ed25519PrivateKey, Ed25519PublicKey) {
+        self.network_keypair.as_ref().expect("Config should init.")
     }
 
     pub fn self_address(&self) -> MultiaddrWithPeerId {
-        self.self_address.clone().expect("Config should init.")
-    }
-
-    pub fn disable_mdns(&self) -> bool {
-        self.disable_mdns.unwrap_or(false)
-    }
-    pub fn disable_seed(&self) -> bool {
-        self.disable_seed.unwrap_or(false)
-    }
-
-    pub fn self_peer_id(&self) -> PeerId {
-        self.self_peer_id.clone().expect("Config should init.")
-    }
-
-    fn prepare_peer_id(&mut self) {
-        let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
         let addr = self.listen();
         let host = if is_memory_addr(&addr) {
             addr
@@ -166,86 +189,115 @@ impl NetworkConfig {
             addr.replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
                 .expect("Replace multi address fail.")
         };
-        self.self_address = Some(MultiaddrWithPeerId::new(host, peer_id.clone().into()));
-        self.self_peer_id = Some(peer_id);
+        MultiaddrWithPeerId::new(host, self.self_peer_id().into())
     }
 
-    fn load_or_generate_keypair(
-        opt: &StarcoinOpt,
-        base: &BaseConfig,
-    ) -> Result<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
-        let data_dir = base.data_dir();
-        let path = data_dir.join(NETWORK_KEY_FILE);
-        if path.exists() {
-            load_key(&path)
+    pub fn disable_mdns(&self) -> bool {
+        // mdns is disable by default.
+        self.disable_mdns.unwrap_or(true)
+    }
+    pub fn disable_seed(&self) -> bool {
+        self.disable_seed
+    }
+
+    pub fn self_peer_id(&self) -> PeerId {
+        PeerId::from_ed25519_public_key(self.network_keypair().1.clone())
+    }
+
+    pub fn node_name(&self) -> String {
+        self.node_name.clone().unwrap_or_else(generate_node_name)
+    }
+
+    fn node_key_file(&self) -> PathBuf {
+        let path = self.node_key_file.as_ref().unwrap_or(&NETWORK_KEY_FILE);
+        if path.is_absolute() {
+            path.clone()
         } else {
-            let keypair = match (&opt.node_key, &opt.node_key_file) {
-                (Some(_), Some(_)) => bail!("Only one of node-key and node-key-file can be set."),
-                (Some(node_key), None) => decode_key(node_key)?,
-                (None, Some(node_key_file)) => load_key(node_key_file)?,
-                (None, None) => crate::gen_keypair(),
-            };
-            crate::save_key(&keypair.private_key.to_bytes(), &path)?;
-            Ok(keypair)
+            self.base().data_dir().join(path.as_path())
         }
     }
-}
 
-impl ConfigModule for NetworkConfig {
-    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        let seeds = opt
-            .seed
-            .as_ref()
-            .map(|seed| vec![seed.clone()])
-            .unwrap_or_default();
+    /// node key loader step:
+    /// 1. if node_key is Some, directly decode the key.
+    /// 2. try load node key from node_key_file
+    /// 3. if node_key_file is not exists, generate and save key to the node_key_file.
+    fn load_or_generate_keypair(&mut self) -> Result<()> {
+        let keypair = match self.node_key.as_ref() {
+            Some(node_key) => decode_key(node_key)?,
+            None => {
+                let path = self.node_key_file();
+                if path.exists() {
+                    load_key(&path)?
+                } else {
+                    let keypair = crate::gen_keypair();
+                    crate::save_key(&keypair.0.to_bytes(), &path)?;
+                    keypair
+                }
+            }
+        };
+        self.network_keypair = Some(keypair);
+        Ok(())
+    }
 
-        let port = if base.net.is_test() {
+    fn generate_listen_address(&mut self) -> Result<()> {
+        let base = self.base();
+        let port = if base.net().is_test() {
             get_random_available_port()
-        } else if base.net.is_dev() {
+        } else if base.net().is_dev() {
             get_available_port_from(DEFAULT_NETWORK_PORT)
         } else {
             DEFAULT_NETWORK_PORT
         };
+
         //test env use in memory transport.
-        let listen = if base.net.is_test() {
+        let listen = if base.net().is_test() {
             memory_addr(port as u64)
         } else {
             format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
                 .parse()
                 .expect("Parse multi address fail.")
         };
-        Ok(Self {
-            listen: Some(listen),
-            seeds,
-            disable_mdns: opt.network.disable_mdns,
-            disable_seed: opt.network.disable_seed,
-            network_keypair: Some(Arc::new(Self::load_or_generate_keypair(opt, base)?)),
-            self_peer_id: None,
-            self_address: None,
-            network_rpc_quotas: opt.network.network_rpc_quotas.clone(),
-        })
+        self.listen = Some(listen);
+        Ok(())
     }
+}
 
-    fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
-        if let Some(opt_seed) = &opt.seed {
-            if self.seeds.contains(opt_seed) {
-                warn!(
-                    "Command line option seed {:?} has contains in config file.",
-                    opt_seed
-                );
-            } else {
-                self.seeds.push(opt_seed.clone());
-                debug!("Add command line option seed {:?} to config", self.seeds);
-            }
-            info!("Final bootstrap seeds: {:?}", self.seeds);
+impl ConfigModule for NetworkConfig {
+    fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
+
+        let mut seeds = HashSet::new();
+        seeds.extend(self.seeds.clone().unwrap_or_default());
+        seeds.extend(opt.network.seeds.clone().unwrap_or_default());
+
+        self.seeds = Some(seeds.into_iter().collect());
+        info!("Final bootstrap seeds: {:?}", self.seeds.as_ref().unwrap());
+
+        self.network_rpc_quotas
+            .merge(&opt.network.network_rpc_quotas)?;
+
+        if opt.network.node_name.is_some() {
+            self.node_name = opt.network.node_name.clone();
         }
 
-        self.network_keypair = Some(Arc::new(Self::load_or_generate_keypair(opt, base)?));
-        if opt.network.disable_seed.is_some() {
+        if self.node_name.is_none() {
+            self.node_name = Some(generate_node_name())
+        }
+
+        if opt.network.node_key.is_some() {
+            self.node_key = opt.network.node_key.clone();
+        }
+
+        if opt.network.disable_seed {
             self.disable_seed = opt.network.disable_seed;
         }
-        self.prepare_peer_id();
 
+        if opt.network.listen.is_some() {
+            self.listen = opt.network.listen.clone();
+        }
+
+        self.load_or_generate_keypair()?;
+        self.generate_listen_address()?;
         Ok(())
     }
 }

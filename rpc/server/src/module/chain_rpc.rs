@@ -233,7 +233,7 @@ where
 
             let filter: Filter = filter.try_into()?;
 
-            let max_block_range = config.rpc.block_query_max_range;
+            let max_block_range = config.rpc.block_query_max_range();
             // if the from~to range is bigger than what we configured, return invalid param error.
             if filter
                 .to_block

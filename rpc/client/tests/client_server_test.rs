@@ -20,7 +20,7 @@ async fn test_in_async() -> Result<()> {
 fn do_client_test() -> Result<()> {
     let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
-    let ipc_file = config.rpc.get_ipc_file().to_path_buf();
+    let ipc_file = config.rpc.get_ipc_file();
     let url = config.rpc.get_ws_address().unwrap();
     debug!("url:{}", url);
     debug!("data_dir:{:?}", config.data_dir());
