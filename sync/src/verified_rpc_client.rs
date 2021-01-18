@@ -8,7 +8,7 @@ use logger::prelude::*;
 use network::get_unix_ts_as_millis;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
-use rand::prelude::{IteratorRandom, SliceRandom};
+use rand::prelude::SliceRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;

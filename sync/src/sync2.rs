@@ -3,7 +3,7 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::peer_event_handle::PeerEventHandle;
-use crate::tasks::{full_sync_task, AncestorEvent, VerifiedRpcClientFactory};
+use crate::tasks::{full_sync_task, AncestorEvent};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use chain::BlockChain;

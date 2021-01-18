@@ -13,7 +13,6 @@ use starcoin_accumulator::Accumulator;
 use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{block::BlockNumber, time::TimeService};
 use std::sync::Arc;
 use stream_task::{Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle};
@@ -66,13 +65,11 @@ where
             let mut hashs = Vec::new();
             hashs.push(target_id);
             //2. filter other peers
-            if let Some(peers) = self.fetcher.peers() {
-                for peer_id in peers {
-                    if best_peer.peer_id() != peer_id {
-                        if let Some(id) = self.block_id_from_peer(peer_id.clone()).await {
-                            if id == target_id {
-                                target_peers.push(peer_id);
-                            }
+            for peer_id in self.fetcher.peers() {
+                if best_peer.peer_id() != peer_id {
+                    if let Some(id) = self.block_id_from_peer(peer_id.clone()).await {
+                        if id == target_id {
+                            target_peers.push(peer_id);
                         }
                     }
                 }

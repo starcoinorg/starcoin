@@ -48,15 +48,17 @@ impl MockBlockIdFetcher {
 }
 
 impl PeerOperator for MockBlockIdFetcher {
-    fn filter(&self, peers: Vec<PeerId>) {
+    fn filter(&self, peers: &Vec<PeerId>) {
         unimplemented!()
     }
 
-    fn new_peer(&self, info: PeerInfo) {
+    fn new_peer(&self, peer_info: PeerInfo) {
         unimplemented!()
     }
 
-    fn peers(&self) -> Option<Vec<PeerId>>;
+    fn peers(&self) -> Vec<PeerId> {
+        unimplemented!()
+    }
 }
 
 impl BlockIdFetcher for MockBlockIdFetcher {
@@ -167,15 +169,15 @@ impl SyncNodeMocker {
 }
 
 impl PeerOperator for SyncNodeMocker {
-    fn filter(&self, peers: Vec<PeerId>) {
+    fn filter(&self, peers: &Vec<PeerId>) {
         unimplemented!()
     }
 
-    fn new_peer(&self, info: PeerInfo) {
+    fn new_peer(&self, peer_info: PeerInfo) {
         unimplemented!()
     }
 
-    fn peers(&self) -> Option<Vec<PeerId>> {
+    fn peers(&self) -> Vec<PeerId> {
         unimplemented!()
     }
 }
