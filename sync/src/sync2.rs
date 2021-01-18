@@ -20,8 +20,8 @@ use starcoin_service_registry::{
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncServiceHandler,
-    SyncStartRequest, SyncStatusRequest, SyncTarget,
+    PeerScoreRequest, SyncCancelRequest, SyncProgressReport, SyncProgressRequest,
+    SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::peer_info::PeerId;
@@ -38,6 +38,7 @@ pub struct SyncTaskHandle {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_event_handle: PeerEventHandle,
+    peer_selector: PeerSelector,
 }
 
 pub enum SyncStage {
@@ -150,7 +151,10 @@ impl SyncService2 {
             }
 
             let peer_selector = PeerSelector::new(target.peers.clone());
-            let rpc_client = Arc::new(VerifiedRpcClient::new(peer_selector, network.clone()));
+            let rpc_client = Arc::new(VerifiedRpcClient::new(
+                peer_selector.clone(),
+                network.clone(),
+            ));
 
             let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
                 current_block_id,
@@ -169,6 +173,7 @@ impl SyncService2 {
                 task_handle,
                 task_event_handle,
                 peer_event_handle,
+                peer_selector,
             })?;
             Ok(Some(fut.await?))
             //Ok(())
@@ -302,15 +307,17 @@ pub struct SyncBeginEvent {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_event_handle: PeerEventHandle,
+    peer_selector: PeerSelector,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
     fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
-        let (target, task_handle, task_event_handle, peer_event_handle) = (
+        let (target, task_handle, task_event_handle, peer_event_handle, peer_selector) = (
             msg.target,
             msg.task_handle,
             msg.task_event_handle,
             msg.peer_event_handle,
+            msg.peer_selector,
         );
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
@@ -318,6 +325,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
             task_handle: task_handle.clone(),
             task_event_handle,
             peer_event_handle,
+            peer_selector,
         };
         match std::mem::replace(
             &mut self.stage,
@@ -452,6 +460,19 @@ impl ServiceHandler<Self, SyncStatusRequest> for SyncService2 {
         _ctx: &mut ServiceContext<SyncService2>,
     ) -> SyncStatus {
         self.sync_status.clone()
+    }
+}
+
+impl ServiceHandler<Self, PeerScoreRequest> for SyncService2 {
+    fn handle(
+        &mut self,
+        _msg: PeerScoreRequest,
+        _ctx: &mut ServiceContext<SyncService2>,
+    ) -> Option<Vec<(PeerId, u64)>> {
+        match &mut self.stage {
+            SyncStage::Synchronizing(handle) => Some(handle.peer_selector.scores()),
+            _ => None,
+        }
     }
 }
 

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncStartRequest, SyncStatusRequest,
+    PeerScoreRequest, SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncStartRequest,
+    SyncStatusRequest,
 };
 use anyhow::Result;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
@@ -25,6 +26,7 @@ pub trait SyncServiceHandler:
     + ServiceHandler<Self, SyncProgressRequest>
     + ServiceHandler<Self, SyncCancelRequest>
     + ServiceHandler<Self, SyncStartRequest>
+    + ServiceHandler<Self, PeerScoreRequest>
 {
 }
 
