@@ -22,21 +22,11 @@ use stream_task::{
 };
 
 pub trait PeerOperator: Send + Sync {
-    fn filter(&self, peers: Vec<PeerId>);
+    fn filter(&self, peers: &Vec<PeerId>);
 
-    fn new_peer(&self, info: PeerInfo);
+    fn new_peer(&self, beer_info: PeerInfo);
 
-    fn peers(&self) -> Option<Vec<PeerId>>;
-}
-
-pub struct VerifiedRpcClientFactory {
-    network: NetworkServiceRef,
-}
-
-impl VerifiedRpcClientFactory {
-    pub fn new(network: NetworkServiceRef) -> Self {
-        Self { network }
-    }
+    fn peers(&self) -> Vec<PeerId>;
 }
 
 pub trait BlockIdFetcher: Send + Sync {
@@ -65,16 +55,20 @@ pub trait BlockIdFetcher: Send + Sync {
 }
 
 impl PeerOperator for VerifiedRpcClient {
-    fn filter(&self, peers: Vec<PeerId>) {
-        unimplemented!()
+    fn filter(&self, peers: &Vec<PeerId>) {
+        self.selector().retain(peers)
     }
 
-    fn new_peer(&self, info: PeerInfo) {
-        unimplemented!()
+    fn new_peer(&self, peer_info: PeerInfo) {
+        self.selector().add_peer(peer_info);
     }
 
-    fn peers(&self) -> Option<Vec<PeerId>> {
-        unimplemented!()
+    fn peers(&self) -> Vec<PeerId> {
+        self.selector()
+            .peers()
+            .into_iter()
+            .map(|peer_info| peer_info.peer_id())
+            .collect()
     }
 }
 
@@ -114,18 +108,18 @@ impl BlockIdFetcher for VerifiedRpcClient {
 
 impl<T> PeerOperator for Arc<T>
 where
-    T: BlockIdFetcher,
+    T: PeerOperator,
 {
-    fn filter(&self, peers: Vec<PeerId>) {
-        unimplemented!()
+    fn filter(&self, peers: &Vec<PeerId>) {
+        PeerOperator::filter(self.as_ref(), peers)
     }
 
-    fn new_peer(&self, info: PeerInfo) {
-        unimplemented!()
+    fn new_peer(&self, peer_info: PeerInfo) {
+        PeerOperator::new_peer(self.as_ref(), peer_info)
     }
 
-    fn peers(&self) -> Option<Vec<PeerId>> {
-        unimplemented!()
+    fn peers(&self) -> Vec<PeerId> {
+        PeerOperator::peers(self.as_ref())
     }
 }
 
@@ -341,9 +335,8 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
-use network::NetworkServiceRef;
 use network_api::messages::PeerEvent;
-use network_api::{NetworkService, PeerSelector};
+use network_api::NetworkService;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use traits::ChainReader;
 
@@ -437,7 +430,7 @@ where
                 .sub_target()
                 .await
                 .map_err(TaskError::BreakError)?;
-            fetcher.filter(peers);
+            fetcher.filter(&peers);
 
             let real_target = match sub_target {
                 None => target_block_accumulator.clone(),

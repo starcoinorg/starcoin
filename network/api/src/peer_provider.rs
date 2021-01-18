@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::peer_score::ScoreCounter;
+use crate::PeerId;
 use crate::PeerInfo;
-use crate::{NetworkService, PeerId};
 use anyhow::Result;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
@@ -11,7 +11,7 @@ use itertools::Itertools;
 use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
-use starcoin_types::block::{BlockHeader, BlockNumber};
+use starcoin_types::block::BlockHeader;
 use std::sync::Arc;
 
 pub trait PeerProvider: Send + Sync {
@@ -121,6 +121,21 @@ impl PeerSelector {
             .iter()
             .filter(|peer| &peer.peer_id() == peer_id)
             .for_each(|peer| peer.score_counter.inc_by(score));
+    }
+
+    fn peer_exist(&self, peer_id: &PeerId) -> bool {
+        for peer in self.peers.lock().iter() {
+            if &peer.peer_id() == peer_id {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn add_peer(&self, peer_info: PeerInfo) {
+        if !self.peer_exist(&peer_info.peer_id()) {
+            self.peers.lock().push(peer_info.into());
+        }
     }
 
     /// Filter by the max total_difficulty
