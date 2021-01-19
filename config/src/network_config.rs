@@ -142,7 +142,7 @@ pub struct NetworkConfig {
     #[serde(skip)]
     #[structopt(long = "disable-mdns")]
     /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
-    /// disable_mdns is true in default, so need use Option.
+    /// disable_mdns is true in default.
     pub disable_mdns: Option<bool>,
 
     #[serde(skip)]
@@ -294,8 +294,10 @@ impl ConfigModule for NetworkConfig {
         let mut seeds = HashSet::new();
         seeds.extend(self.seeds.clone().unwrap_or_default());
         seeds.extend(opt.network.seeds.clone().unwrap_or_default());
-
-        self.seeds = Some(seeds.into_iter().collect());
+        let mut seed: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
+        //keep order in config
+        seed.sort();
+        self.seeds = Some(seed);
 
         if opt.network.disable_seed {
             self.disable_seed = opt.network.disable_seed;

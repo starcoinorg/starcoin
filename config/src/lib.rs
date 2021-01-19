@@ -204,6 +204,8 @@ pub struct StarcoinOpt {
     pub storage: StorageConfig,
     #[structopt(flatten)]
     pub sync: SyncConfig,
+    #[structopt(flatten)]
+    pub vault: AccountVaultConfig,
 }
 
 impl std::fmt::Display for StarcoinOpt {

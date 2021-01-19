@@ -28,43 +28,37 @@ const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 128;
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct HttpConfiguration {
     #[serde(skip)]
-    #[structopt(
-        name = "disable-http-rpc",
-        long,
-        help = "disable http jsonrpc endpoint"
-    )]
+    #[structopt(name = "disable-http-rpc", long)]
+    ///disable http jsonrpc endpoint
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "http-apis", long, help = "rpc apiset to serve")]
+    #[structopt(name = "http-apis", long)]
+    ///rpc apiset to serve
     pub apis: Option<ApiSet>,
 
-    /// Default http port is 9850
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "http-port", long)]
+    /// Default http port is 9850
     pub port: Option<u16>,
 
-    /// Default is 10M
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "http-max-request-body",
         long,
         help = "max request body in bytes"
     )]
+    ///max request body in bytes, Default is 10M
     pub max_request_body_size: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "http-threads", long, help = "threads to use")]
+    #[structopt(name = "http-threads", long)]
+    /// How many thread to use for http service.
     pub threads: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
-        name = "http-ip-headers",
-        long,
-        use_delimiter = true,
-        help = "list of http header which identify a ip"
-    )]
-    /// Default: X-Real-IP,X-Forwarded-For
+    #[structopt(name = "http-ip-headers", long, use_delimiter = true)]
+    /// list of http header which identify a ip, Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
 }
 

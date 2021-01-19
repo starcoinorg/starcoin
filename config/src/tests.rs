@@ -3,7 +3,6 @@
 
 use super::*;
 use crate::helper::to_toml;
-use network_p2p_types::MultiaddrWithPeerId;
 
 #[test]
 fn test_generate_and_load() -> Result<()> {
@@ -61,14 +60,59 @@ fn test_example_config_compact() -> Result<()> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let example_dir = path.join("example");
     for net in BuiltinNetworkID::networks() {
-        let mut opt = StarcoinOpt {
-            net: Some(net.into()),
-            data_dir: Some(example_dir.clone()),
-            ..StarcoinOpt::default()
-        };
-        opt.network.seeds = Some(vec![MultiaddrWithPeerId::from_str(
-            "/ip4/198.51.100.19/tcp/30333/p2p/QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV",
-        )?]);
+        let net_str = net.to_string();
+        let args = vec![
+            "starcoin",
+            "-n",
+            net_str.as_str(),
+            "-d",
+            example_dir.to_str().unwrap(),
+            //Network
+            "--seed",
+            "/ip4/1.2.3.3/tcp/9840/p2p/QmRZ6ZwVzhJ6xpVV1CEve2RKiUzK4y2pSx3eg2cvQMsT4f",
+            "--seed",
+            "/ip4/1.2.3.4/tcp/9840/p2p/12D3KooWCfUex27aoqaKScponiLB4N4FWbgmbHYjVoRebGrQaRYk",
+            "--node-name",
+            "alice-node1",
+            //P2P
+            "--p2prpc-default-global-api-quota",
+            "2000/s",
+            //HTTP
+            "--http-apis",
+            "safe",
+            "--jsonrpc-default-global-api-quota",
+            "2000/s",
+            "--jsonrpc-custom-user-api-quota",
+            "chain.info=100/s",
+            //TCP
+            "--tcp-apis",
+            "safe",
+            //Websocket
+            "--websocket-apis",
+            "pubsub",
+            //IPC
+            "--ipc-apis",
+            "ipc",
+            //Miner
+            "--miner-thread",
+            "3",
+            //TXPool
+            "--txpool-max-count",
+            "8192",
+            //Logger
+            "--logger-max-backup",
+            "100",
+            //Metrics
+            "--metrics-address",
+            "127.0.0.1",
+            //Storage
+            "--rocksdb-max-open-files",
+            "40960",
+            //Vault
+            "--vault-dir",
+            "/data/my_starcoin_vault",
+        ];
+        let opt = StarcoinOpt::from_iter_safe(args)?;
 
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
