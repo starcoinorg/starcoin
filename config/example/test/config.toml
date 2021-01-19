@@ -1,0 +1,28 @@
+[logger]
+
+[metrics]
+
+[miner]
+
+[network]
+node_name = "glib-bedroom-6488"
+seeds = ["/ip4/198.51.100.19/tcp/30333/p2p/QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV"]
+
+[network.network_rpc_quotas]
+[rpc.api_quotas]
+
+[rpc.http]
+
+[rpc.ipc]
+
+[rpc.tcp]
+
+[rpc.ws]
+
+[storage]
+
+[sync]
+
+[tx_pool]
+
+[vault]

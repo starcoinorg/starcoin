@@ -29,13 +29,13 @@ pub fn init_or_load_data_dir(
     }
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(config.storage.dir(), config.storage.rocksdb_config)?,
+        DBStorage::new(config.storage.dir(), config.storage.rocksdb_config())?,
     ))?);
     let (chain_info, _genesis) =
         Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
     let vault_config = &config.vault;
     let account_storage =
-        AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config)?;
+        AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config())?;
     let manager = AccountManager::new(account_storage)?;
     let account = match manager.default_account_info()? {
         Some(account) => account,

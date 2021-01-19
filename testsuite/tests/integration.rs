@@ -71,7 +71,7 @@ pub fn steps() -> Steps<MyWorld> {
         .given("ipc rpc client", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
             let ipc_file = node_config.rpc.get_ipc_file();
-            helper::wait_until_file_created(ipc_file.clone()).expect("ipc file must exist");
+            helper::wait_until_file_created(ipc_file.as_path()).expect("ipc file must exist");
             let client = RpcClient::connect_ipc(ipc_file).expect("Connect by ipc fail.");
             info!("dev node local rpc client created!");
             world.default_rpc_client = Some(Arc::new(client))

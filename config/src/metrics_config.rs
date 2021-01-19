@@ -6,60 +6,86 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 use structopt::StructOpt;
 
-pub static DEFAULT_METRIC_SERVER_ADDRESS: &str = "0.0.0.0";
+pub static DEFAULT_METRIC_SERVER_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MetricsConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "disable-metrics", long, help = "disable metrics")]
+    /// disable the metrics server, this flag support both cli and config.
     pub disable_metrics: Option<bool>,
-    #[structopt(
-        name = "address",
-        long,
-        help = "address",
-        default_value = DEFAULT_METRIC_SERVER_ADDRESS
-    )]
-    pub address: String,
-    #[structopt(name = "metrics-port", long, default_value = "9101")]
-    pub port: u16,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "metrics-address", long)]
+    /// Metrics server listen address, default is 0.0.0.0
+    pub address: Option<IpAddr>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "metrics-port", long)]
+    /// Metrics server port, default is 9101
+    pub port: Option<u16>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    metrics_address: Option<SocketAddr>,
 }
 impl MetricsConfig {
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
+
     pub fn disable_metrics(&self) -> bool {
         self.disable_metrics.unwrap_or(false)
     }
-}
-impl Default for MetricsConfig {
-    fn default() -> Self {
-        Self {
-            disable_metrics: None,
-            address: DEFAULT_METRIC_SERVER_ADDRESS.to_string(),
-            port: DEFAULT_METRIC_SERVER_PORT,
-        }
-    }
-}
-impl ConfigModule for MetricsConfig {
-    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        let port = if base.net.is_test() {
-            get_random_available_port()
-        } else if base.net.is_dev() {
-            get_available_port_from(DEFAULT_METRIC_SERVER_PORT)
-        } else {
-            DEFAULT_METRIC_SERVER_PORT
-        };
-        Ok(Self {
-            disable_metrics: opt.metrics.disable_metrics,
-            address: DEFAULT_METRIC_SERVER_ADDRESS.to_string(),
-            port,
-        })
+
+    pub fn metrics_address(&self) -> Option<SocketAddr> {
+        self.metrics_address
     }
 
-    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+    fn generate_address(&mut self) -> Result<()> {
+        if !self.disable_metrics() {
+            self.metrics_address = Some(SocketAddr::new(
+                self.address.unwrap_or(DEFAULT_METRIC_SERVER_ADDRESS),
+                self.port.unwrap_or_else(|| {
+                    let base = self.base();
+                    if base.net.is_test() {
+                        get_random_available_port()
+                    } else if base.net.is_dev() {
+                        get_available_port_from(DEFAULT_METRIC_SERVER_PORT)
+                    } else {
+                        DEFAULT_METRIC_SERVER_PORT
+                    }
+                }),
+            ));
+        }
+        Ok(())
+    }
+}
+
+impl ConfigModule for MetricsConfig {
+    fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
+        self.base = Some(base);
+
         if opt.metrics.disable_metrics.is_some() {
             self.disable_metrics = opt.metrics.disable_metrics;
         }
+        if opt.metrics.address.is_some() {
+            self.address = opt.metrics.address;
+        }
+        if opt.metrics.port.is_some() {
+            self.port = opt.metrics.port;
+        }
+        self.generate_address()?;
         Ok(())
     }
 }

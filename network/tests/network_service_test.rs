@@ -9,7 +9,7 @@ use network_api::messages::{
     CompactBlockMessage, NotificationMessage, PeerMessage, TransactionsMessage,
 };
 use network_api::{Multiaddr, NetworkService};
-use network_p2p_types::{random_memory_addr, MultiaddrWithPeerId};
+use network_p2p_types::MultiaddrWithPeerId;
 use starcoin_config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
 use starcoin_crypto::hash::HashValue;
 use starcoin_network::build_network_worker;
@@ -49,15 +49,15 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         }
         let mut node_config = NodeConfig::random_for_test();
 
-        node_config.network.listen = Some(random_memory_addr());
-        node_config.network.seeds = boot_nodes;
+        node_config.network.seeds = Some(boot_nodes);
 
         info!(
             "listen:{:?},boots {:?}",
-            node_config.network.listen, node_config.network.seeds
+            node_config.network.listen(),
+            node_config.network.seeds
         );
         if first_addr.is_none() {
-            first_addr = node_config.network.listen.clone();
+            first_addr = Some(node_config.network.listen());
         }
         let mut protocols = NotificationMessage::protocols();
         protocols.push(TEST_NOTIF_PROTOCOL_NAME.into());
