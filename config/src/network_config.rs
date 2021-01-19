@@ -13,6 +13,8 @@ use network_p2p_types::{
     MultiaddrWithPeerId,
 };
 use once_cell::sync::Lazy;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
@@ -175,7 +177,29 @@ impl NetworkConfig {
     }
 
     pub fn seeds(&self) -> Vec<MultiaddrWithPeerId> {
-        self.seeds.clone().unwrap_or_default()
+        if self.disable_seed {
+            return vec![];
+        }
+        let mut seeds: HashSet<MultiaddrWithPeerId> =
+            self.seeds.clone().unwrap_or_default().into_iter().collect();
+        seeds.extend(self.base().net().boot_nodes().iter().cloned());
+
+        let self_peer_id = self.self_peer_id();
+        seeds.retain(|node| {
+            if &node.peer_id == self_peer_id.origin() {
+                info!(
+                    "Self peer_id({}) contains in boot nodes, removed.",
+                    self_peer_id
+                );
+                false
+            } else {
+                true
+            }
+        });
+        let mut seeds: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
+        // shuffle seeds, connect seeds with random orders.
+        seeds.shuffle(&mut thread_rng());
+        seeds
     }
 
     pub fn network_keypair(&self) -> &(Ed25519PrivateKey, Ed25519PublicKey) {
@@ -272,7 +296,16 @@ impl ConfigModule for NetworkConfig {
         seeds.extend(opt.network.seeds.clone().unwrap_or_default());
 
         self.seeds = Some(seeds.into_iter().collect());
-        info!("Final bootstrap seeds: {:?}", self.seeds.as_ref().unwrap());
+
+        if opt.network.disable_seed {
+            self.disable_seed = opt.network.disable_seed;
+        }
+
+        info!(
+            "Final bootstrap seeds: {:?}, disable_seed: {}",
+            self.seeds.as_ref().unwrap(),
+            self.disable_seed
+        );
 
         self.network_rpc_quotas
             .merge(&opt.network.network_rpc_quotas)?;
@@ -287,10 +320,6 @@ impl ConfigModule for NetworkConfig {
 
         if opt.network.node_key.is_some() {
             self.node_key = opt.network.node_key.clone();
-        }
-
-        if opt.network.disable_seed {
-            self.disable_seed = opt.network.disable_seed;
         }
 
         if opt.network.listen.is_some() {
