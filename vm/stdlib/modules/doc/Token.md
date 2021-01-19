@@ -1627,14 +1627,39 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 
-<pre><code><b>aborts_if</b> precision &gt; <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>;
-<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
-<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_RegisterTokenAbortsIf">RegisterTokenAbortsIf</a>&lt;TokenType&gt;;
+<b>include</b> <a href="Token.md#0x1_Token_RegisterTokenEnsures">RegisterTokenEnsures</a>&lt;TokenType&gt;;
+</code></pre>
+
+
+
+
+<a name="0x1_Token_RegisterTokenAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Token.md#0x1_Token_RegisterTokenAbortsIf">RegisterTokenAbortsIf</a>&lt;TokenType&gt; {
+    precision: u8;
+    account: signer;
+    <b>aborts_if</b> precision &gt; <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>;
+    <b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Token_RegisterTokenEnsures"></a>
+
+
+<pre><code><b>schema</b> <a href="Token.md#0x1_Token_RegisterTokenEnsures">RegisterTokenEnsures</a>&lt;TokenType&gt; {
+    account: signer;
+    <b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+    <b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+    <b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+}
 </code></pre>
 
 

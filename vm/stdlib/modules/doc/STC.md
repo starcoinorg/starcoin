@@ -235,7 +235,7 @@ Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC
 
 
 <pre><code><b>pragma</b> verify;
-<b>pragma</b> aborts_if_is_strict;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 
@@ -251,7 +251,7 @@ Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_RegisterTokenAbortsIf">Token::RegisterTokenAbortsIf</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;{precision: <a href="STC.md#0x1_STC_PRECISION">PRECISION</a>};
 </code></pre>
 
 
