@@ -11,8 +11,10 @@ use itertools::Itertools;
 use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
+use rand::Rng;
 use starcoin_types::block::BlockHeader;
 use std::fmt::{Debug, Formatter};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 pub trait PeerProvider: Send + Sync {
@@ -77,12 +79,13 @@ impl From<PeerInfo> for PeerDetail {
 
 #[derive(Clone)]
 pub struct PeerSelector {
-    peers: Arc<Mutex<Vec<PeerDetail>>>,
+    details: Arc<Mutex<Vec<PeerDetail>>>,
+    total_score: Arc<AtomicU64>,
 }
 
 impl Debug for PeerSelector {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "peer len : {:?}", self.peers.lock().len(),)
+        write!(f, "peer len : {:?}", self.details.lock().len(),)
     }
 }
 
@@ -97,12 +100,13 @@ impl PeerSelector {
 
     pub fn new_with_score(peers: Vec<PeerDetail>) -> Self {
         Self {
-            peers: Arc::new(Mutex::new(peers)),
+            details: Arc::new(Mutex::new(peers)),
+            total_score: Arc::new(AtomicU64::new(0)),
         }
     }
 
     pub fn peer_info(&self, peer_id: &PeerId) -> Option<PeerInfo> {
-        self.peers
+        self.details
             .lock()
             .iter()
             .find(|peer| &peer.peer_id() == peer_id)
@@ -114,7 +118,7 @@ impl PeerSelector {
         if self.is_empty() {
             return Vec::new();
         }
-        let mut peers = self.peers.lock();
+        let mut peers = self.details.lock();
         Self::sort(&mut peers);
         let mut top: Vec<PeerId> = Vec::new();
         for peer in peers.iter() {
@@ -127,15 +131,16 @@ impl PeerSelector {
     }
 
     pub fn peer_score(&self, peer_id: &PeerId, score: i64) {
-        self.peers
+        self.details
             .lock()
             .iter()
             .filter(|peer| &peer.peer_id() == peer_id)
             .for_each(|peer| peer.score_counter.inc_by(score));
+        self.total_score.fetch_add(score as u64, Ordering::SeqCst);
     }
 
     fn peer_exist(&self, peer_id: &PeerId) -> bool {
-        for peer in self.peers.lock().iter() {
+        for peer in self.details.lock().iter() {
             if &peer.peer_id() == peer_id {
                 return true;
             }
@@ -145,7 +150,7 @@ impl PeerSelector {
 
     pub fn add_peer(&self, peer_info: PeerInfo) {
         if !self.peer_exist(&peer_info.peer_id()) {
-            self.peers.lock().push(peer_info.into());
+            self.details.lock().push(peer_info.into());
         }
     }
 
@@ -156,7 +161,7 @@ impl PeerSelector {
         }
         let peers: Vec<PeerInfo> = vec![];
         let best_peers = self
-            .peers
+            .details
             .lock()
             .iter()
             .sorted_by_key(|peer| peer.peer_info.total_difficulty())
@@ -173,7 +178,7 @@ impl PeerSelector {
     }
 
     pub fn peers(&self) -> Vec<PeerInfo> {
-        self.peers
+        self.details
             .lock()
             .iter()
             .map(|peer| peer.peer_info().clone())
@@ -181,21 +186,57 @@ impl PeerSelector {
     }
 
     pub fn retain(&self, peers: &Vec<PeerId>) {
-        self.peers
-            .lock()
-            .retain(|peer| peers.contains(&peer.peer_id()))
+        let mut score: u64 = 0;
+        self.details.lock().retain(|peer| -> bool {
+            let flag = peers.contains(&peer.peer_id());
+            if flag {
+                score += peer.score_counter.score();
+            }
+            flag
+        });
+        self.total_score.store(score, Ordering::SeqCst);
     }
 
     pub fn random_peer_id(&self) -> Option<PeerId> {
-        self.peers
+        self.weighted_random_peer_id()
+    }
+
+    pub fn _common_peer_id(&self) -> Option<PeerId> {
+        self.details
             .lock()
             .iter()
             .choose(&mut rand::thread_rng())
             .map(|peer| peer.peer_info.peer_id())
     }
 
+    pub fn weighted_random_peer_id(&self) -> Option<PeerId> {
+        if self.is_empty() {
+            return None;
+        }
+
+        if self.len() == 1 {
+            return self
+                .details
+                .lock()
+                .get(0)
+                .and_then(|peer| Some(peer.peer_id()));
+        }
+
+        let mut random = rand::thread_rng();
+        let total_score = self.total_score.load(Ordering::SeqCst);
+        let random_score: u64 = random.gen_range(1, total_score);
+        let mut tmp_score: u64 = 0;
+        for peer_detail in self.details.lock().iter() {
+            tmp_score += peer_detail.score_counter.score();
+            if tmp_score > random_score {
+                return Some(peer_detail.peer_id());
+            }
+        }
+        None
+    }
+
     pub fn random(&self) -> Option<PeerInfo> {
-        self.peers
+        self.details
             .lock()
             .iter()
             .choose(&mut rand::thread_rng())
@@ -203,18 +244,18 @@ impl PeerSelector {
     }
 
     pub fn first(&self) -> Option<PeerInfo> {
-        self.peers
+        self.details
             .lock()
             .get(0)
             .and_then(|peer| Some(peer.peer_info.clone()))
     }
 
     pub fn is_empty(&self) -> bool {
-        self.peers.lock().is_empty()
+        self.details.lock().is_empty()
     }
 
     pub fn len(&self) -> usize {
-        self.peers.lock().len()
+        self.details.lock().len()
     }
 
     fn sort(peers: &mut Vec<PeerDetail>) {
@@ -223,7 +264,7 @@ impl PeerSelector {
     }
 
     pub fn scores(&self) -> Vec<(PeerId, u64)> {
-        self.peers
+        self.details
             .lock()
             .iter()
             .map(|peer| (peer.peer_id(), peer.score_counter.score()))
