@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as SyncManagerClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
-use starcoin_sync_api::SyncProgressReport;
+use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
@@ -23,4 +23,7 @@ pub trait SyncManagerApi {
 
     #[rpc(name = "sync.progress")]
     fn progress(&self) -> FutureResult<Option<SyncProgressReport>>;
+
+    #[rpc(name = "sync.score")]
+    fn sync_peer_score(&self) -> FutureResult<PeerScoreResponse>;
 }

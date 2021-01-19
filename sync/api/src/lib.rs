@@ -100,6 +100,17 @@ impl ServiceRequest for SyncStartRequest {
 #[derive(Debug, Clone)]
 pub struct PeerScoreRequest;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerScoreResponse {
+    peers: Option<Vec<(PeerId, u64)>>,
+}
+
 impl ServiceRequest for PeerScoreRequest {
-    type Response = Option<Vec<(PeerId, u64)>>;
+    type Response = PeerScoreResponse;
+}
+
+impl From<Option<Vec<(PeerId, u64)>>> for PeerScoreResponse {
+    fn from(peers: Option<Vec<(PeerId, u64)>>) -> Self {
+        Self { peers }
+    }
 }

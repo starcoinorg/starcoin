@@ -20,8 +20,8 @@ use starcoin_service_registry::{
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    PeerScoreRequest, SyncCancelRequest, SyncProgressReport, SyncProgressRequest,
-    SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
+    PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
+    SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::peer_info::PeerId;
@@ -467,11 +467,12 @@ impl ServiceHandler<Self, PeerScoreRequest> for SyncService2 {
         &mut self,
         _msg: PeerScoreRequest,
         _ctx: &mut ServiceContext<SyncService2>,
-    ) -> Option<Vec<(PeerId, u64)>> {
-        match &mut self.stage {
+    ) -> PeerScoreResponse {
+        let resp = match &mut self.stage {
             SyncStage::Synchronizing(handle) => Some(handle.peer_selector.scores()),
             _ => None,
-        }
+        };
+        resp.into()
     }
 }
 

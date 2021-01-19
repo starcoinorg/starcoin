@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    PeerScoreRequest, SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncStartRequest,
-    SyncStatusRequest,
+    PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
+    SyncProgressRequest, SyncStartRequest, SyncStatusRequest,
 };
 use anyhow::Result;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
@@ -18,6 +18,8 @@ pub trait SyncAsyncService: Clone + std::marker::Unpin + Send + Sync {
     /// if `force` is true, will cancel current task and start a new task.
     /// if peers is not empty, will try sync with the special peers.
     async fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Result<()>;
+
+    async fn sync_peer_score(&self) -> Result<PeerScoreResponse>;
 }
 
 pub trait SyncServiceHandler:
@@ -54,5 +56,9 @@ where
             skip_pow_verify,
         })
         .await?
+    }
+
+    async fn sync_peer_score(&self) -> Result<PeerScoreResponse> {
+        self.send(PeerScoreRequest {}).await
     }
 }
