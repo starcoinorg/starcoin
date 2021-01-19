@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_vault_config::AccountVaultConfig;
+use crate::helper::{load_config, save_config};
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
 use git_version::git_version;
@@ -27,6 +28,7 @@ mod account_vault_config;
 mod api_config;
 mod api_quota;
 mod available_port;
+mod helper;
 mod logger_config;
 mod metrics_config;
 mod miner_config;
@@ -34,6 +36,8 @@ mod network_config;
 mod rpc_config;
 mod storage_config;
 mod sync_config;
+#[cfg(test)]
+mod tests;
 mod txpool_config;
 
 pub use api_config::{Api, ApiSet};
@@ -45,7 +49,6 @@ pub use diem_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
-use names::{Generator, Name};
 pub use network_config::{NetworkConfig, NetworkRpcQuotaConfiguration};
 pub use rpc_config::{
     ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, RpcConfig, TcpConfiguration,
@@ -439,194 +442,6 @@ impl NodeConfig {
         self.vault.merge_with_opt(opt, base.clone())?;
         self.metrics.merge_with_opt(opt, base.clone())?;
         self.logger.merge_with_opt(opt, base)?;
-        Ok(())
-    }
-}
-
-pub(crate) fn save_config<T, P>(c: &T, output_file: P) -> Result<()>
-where
-    T: Serialize + DeserializeOwned,
-    P: AsRef<Path>,
-{
-    let mut file = File::create(output_file)?;
-    file.write_all(&to_toml(c)?.as_bytes())?;
-    Ok(())
-}
-
-fn to_toml<T>(c: &T) -> Result<String>
-where
-    T: Serialize + DeserializeOwned,
-{
-    // fix toml table problem, see https://github.com/alexcrichton/toml-rs/issues/142
-    let c = toml::value::Value::try_from(c)?;
-    Ok(toml::to_string(&c)?)
-}
-
-pub(crate) fn load_config<T, P>(path: P) -> Result<T>
-where
-    T: Serialize + DeserializeOwned,
-    P: AsRef<Path>,
-{
-    let mut file = File::open(&path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    parse(&contents)
-}
-
-fn parse<T>(serialized: &str) -> Result<T>
-where
-    T: Serialize + DeserializeOwned,
-{
-    Ok(toml::from_str(&serialized)?)
-}
-
-pub(crate) fn save_key<P>(key: &[u8], output_file: P) -> Result<()>
-where
-    P: AsRef<Path>,
-{
-    let contents: String = hex::encode(key);
-    let mut file = open_key_file(output_file)?;
-    file.write_all(contents.as_bytes())?;
-    Ok(())
-}
-
-pub(crate) fn decode_key(hex_str: &str) -> Result<(Ed25519PrivateKey, Ed25519PublicKey)> {
-    let bytes_out: Vec<u8> = hex::decode(hex_str)?;
-    let pri_key = Ed25519PrivateKey::try_from(bytes_out.as_slice())?;
-    let pub_key = Ed25519PublicKey::from(&pri_key);
-    Ok((pri_key, pub_key))
-}
-
-pub(crate) fn load_key<P: AsRef<Path>>(path: P) -> Result<(Ed25519PrivateKey, Ed25519PublicKey)> {
-    let content = fs::read_to_string(path)?;
-    decode_key(content.as_str())
-}
-
-pub(crate) fn gen_keypair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
-    let mut gen = KeyGen::from_os_rng();
-    gen.generate_keypair()
-}
-
-/// Opens a file containing a secret key in write mode.
-#[cfg(unix)]
-fn open_key_file<P>(path: P) -> io::Result<fs::File>
-where
-    P: AsRef<Path>,
-{
-    use std::os::unix::fs::OpenOptionsExt;
-    fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(path)
-}
-
-/// Opens a file containing a secret key in write mode.
-#[cfg(not(unix))]
-fn open_key_file<P>(path: P) -> Result<fs::File, io::Error>
-where
-    P: AsRef<Path>,
-{
-    fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-}
-
-const NODE_NAME_MAX_LENGTH: usize = 64;
-/// Generate a valid random name for the node
-fn generate_node_name() -> String {
-    loop {
-        let node_name = Generator::with_naming(Name::Numbered)
-            .next()
-            .expect("RNG is available on all supported platforms; qed");
-        let count = node_name.chars().count();
-
-        if count < NODE_NAME_MAX_LENGTH {
-            return node_name;
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use network_p2p_types::MultiaddrWithPeerId;
-
-    #[test]
-    fn test_generate_and_load() -> Result<()> {
-        for net in BuiltinNetworkID::networks() {
-            let mut opt = StarcoinOpt::default();
-            let temp_path = temp_path();
-            opt.net = Some(net.into());
-            opt.data_dir = Some(temp_path.path().to_path_buf());
-            let config = NodeConfig::load_with_opt(&opt)?;
-            let config2 = NodeConfig::load_with_opt(&opt)?;
-            assert_eq!(
-                to_toml(&config)?,
-                to_toml(&config2)?,
-                "test config for network {} fail.",
-                net
-            );
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn test_custom_chain_genesis() -> Result<()> {
-        let net = ChainNetworkID::from_str("test1:123")?;
-        let temp_path = temp_path();
-        let opt = StarcoinOpt {
-            net: Some(net),
-            data_dir: Some(temp_path.path().to_path_buf()),
-            genesis_config: Some(BuiltinNetworkID::Test.to_string()),
-            ..StarcoinOpt::default()
-        };
-        let config = NodeConfig::load_with_opt(&opt)?;
-        let config2 = NodeConfig::load_with_opt(&opt)?;
-        assert_eq!(
-            config, config2,
-            "test config for network {:?} fail.",
-            opt.net
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_genesis_config_save_and_load() -> Result<()> {
-        let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-        genesis_config.timestamp = 1000;
-        let temp_path = temp_path();
-        let file_path = temp_path.path().join(GENESIS_CONFIG_FILE_NAME);
-        genesis_config.save(file_path.as_path())?;
-        let genesis_config2 = GenesisConfig::load(file_path.as_path())?;
-        assert_eq!(genesis_config, genesis_config2);
-        Ok(())
-    }
-
-    #[test]
-    fn test_example_config_compact() -> Result<()> {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let example_dir = path.join("example");
-        for net in BuiltinNetworkID::networks() {
-            let mut opt = StarcoinOpt {
-                net: Some(net.into()),
-                data_dir: Some(example_dir.clone()),
-                ..StarcoinOpt::default()
-            };
-            opt.network.seeds = Some(vec![MultiaddrWithPeerId::from_str(
-                "/ip4/198.51.100.19/tcp/30333/p2p/QmSk5HQbn6LhUwDiNMseVUjuRYhEtYj4aUZ6WfWoGURpdV",
-            )?]);
-
-            let config = NodeConfig::load_with_opt(&opt)?;
-            let config2 = NodeConfig::load_with_opt(&opt)?;
-            assert_eq!(
-                to_toml(&config)?,
-                to_toml(&config2)?,
-                "test config for network {} fail.",
-                net
-            );
-        }
         Ok(())
     }
 }

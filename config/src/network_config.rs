@@ -1,9 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::helper::{decode_key, gen_keypair, generate_node_name, load_key, save_key};
 use crate::{
-    decode_key, generate_node_name, get_available_port_from, get_random_available_port, load_key,
-    parse_key_val, ApiQuotaConfig, BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
+    get_available_port_from, get_random_available_port, parse_key_val, ApiQuotaConfig, BaseConfig,
+    ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
 use network_p2p_types::{
@@ -229,8 +230,8 @@ impl NetworkConfig {
                 if path.exists() {
                     load_key(&path)?
                 } else {
-                    let keypair = crate::gen_keypair();
-                    crate::save_key(&keypair.0.to_bytes(), &path)?;
+                    let keypair = gen_keypair();
+                    save_key(&keypair.0.to_bytes(), &path)?;
                     keypair
                 }
             }
