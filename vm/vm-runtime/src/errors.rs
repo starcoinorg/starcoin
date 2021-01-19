@@ -67,7 +67,9 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, PROLOGUE_SCRIPT_NOT_ALLOWED) => StatusCode::UNKNOWN_SCRIPT,
                 (REQUIRES_ADDRESS, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
                 (INVALID_STATE, ENOT_GENESIS) => StatusCode::NOT_GENESIS,
-                (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => StatusCode::CONFIG_VALUE_DOES_NOT_EXIST,
+                (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
+                    StatusCode::CONFIG_VALUE_DOES_NOT_EXIST
+                }
                 (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => StatusCode::INVALID_TIMESTAMP,
                 (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => StatusCode::COIN_DEPOSIT_IS_ZERO,
                 (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => StatusCode::DESTROY_TOKEN_NON_ZERO,
