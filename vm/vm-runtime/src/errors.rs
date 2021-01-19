@@ -19,7 +19,6 @@ const PROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
 
 const EINSUFFICIENT_BALANCE: u64 = 10;
 const ENOT_GENESIS_ACCOUNT: u64 = 11;
-// Todo: haven't found proper StatusCode for below Error Code
 const ENOT_GENESIS: u64 = 12;
 const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13;
 const EINVALID_TIMESTAMP: u64 = 14;
@@ -67,31 +66,12 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 }
                 (INVALID_ARGUMENT, PROLOGUE_SCRIPT_NOT_ALLOWED) => StatusCode::UNKNOWN_SCRIPT,
                 (REQUIRES_ADDRESS, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
-                (INVALID_STATE, ENOT_GENESIS) => {
-                    warn!("prologue runtime : INVALID_STATE, ENOT_GENESIS");
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-                }
-                (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
-                    warn!("prologue runtime : INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST");
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-                }
-                (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => {
-                    warn!("prologue runtime : INVALID_ARGUMENT, EINVALID_TIMESTAMP");
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-                }
-                (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => {
-                    warn!("prologue runtime : INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO");
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-                }
-                (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => {
-                    warn!("prologue runtime : INVALID_STATE, EDESTROY_TOKEN_NON_ZERO");
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-                }
-                (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => {
-                    warn!("prologue runtime : INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH");
-                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-                }
-                // ToDo add corresponding error code into StatusCode
+                (INVALID_STATE, ENOT_GENESIS) => StatusCode::NOT_GENESIS,
+                (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => StatusCode::CONFIG_VALUE_DOES_NOT_EXIST,
+                (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => StatusCode::INVALID_TIMESTAMP,
+                (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => StatusCode::COIN_DEPOSIT_IS_ZERO,
+                (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => StatusCode::DESTROY_TOKEN_NON_ZERO,
+                (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => StatusCode::BLOCK_NUMBER_MISMATCH,
                 (category, reason) => {
                     warn!(
                         "prologue runtime unknown: category({}), reason:({})",
@@ -114,10 +94,6 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
     Err(match status {
         VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
-            error!(
-                "[starcoin_vm] Epilogue error: {:?} (Category: {:?} Reason: {:?}",
-                code, category, reason
-            );
             match (category, reason) {
                 (LIMIT_EXCEEDED, EINSUFFICIENT_BALANCE) => {
                     if location != account_module_abort() {}
