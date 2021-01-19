@@ -6,7 +6,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
-use starcoin_sync_api::{SyncAsyncService, SyncProgressReport};
+use starcoin_sync_api::{PeerScoreResponse, SyncAsyncService, SyncProgressReport};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
@@ -64,6 +64,16 @@ where
         let service = self.service.clone();
         let fut = async move {
             let result = service.progress().await?;
+            Ok(result)
+        }
+        .map_err(map_err);
+        Box::new(fut.boxed().compat())
+    }
+
+    fn sync_peer_score(&self) -> FutureResult<PeerScoreResponse> {
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.sync_peer_score().await?;
             Ok(result)
         }
         .map_err(map_err);

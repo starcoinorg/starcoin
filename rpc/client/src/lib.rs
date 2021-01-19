@@ -31,7 +31,7 @@ use starcoin_rpc_api::{
 };
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_state_api::StateWithProof;
-use starcoin_sync_api::SyncProgressReport;
+use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -948,6 +948,13 @@ impl RpcClient {
     pub fn sync_progress(&self) -> anyhow::Result<Option<SyncProgressReport>> {
         self.call_rpc_blocking(|inner| async move { inner.sync_client.progress().compat().await })
             .map_err(map_err)
+    }
+
+    pub fn sync_peer_score(&self) -> anyhow::Result<PeerScoreResponse> {
+        self.call_rpc_blocking(
+            |inner| async move { inner.sync_client.sync_peer_score().compat().await },
+        )
+        .map_err(map_err)
     }
 
     pub fn sync_start(
