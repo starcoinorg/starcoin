@@ -61,6 +61,7 @@ impl BlockClient {
                 block_metadata: txn.block_metadata,
                 user_transaction: txn.user_transaction,
                 events,
+                timestamp: block.header.timestamp.0,
             })
         }
         let user_transactions = match &block.body {
@@ -82,6 +83,7 @@ impl BlockClient {
                 events,
                 user_transaction: Some(user_txn),
                 block_metadata: None,
+                timestamp: block.header.timestamp.0,
             })
         }
         Ok(BlockData { block, txns_data })
