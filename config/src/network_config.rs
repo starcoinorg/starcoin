@@ -1,9 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::helper::{decode_key, gen_keypair, generate_node_name, load_key, save_key};
 use crate::{
-    decode_key, generate_node_name, get_available_port_from, get_random_available_port, load_key,
-    parse_key_val, ApiQuotaConfig, BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
+    get_available_port_from, get_random_available_port, parse_key_val, ApiQuotaConfig, BaseConfig,
+    ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
 use network_p2p_types::{
@@ -12,6 +13,8 @@ use network_p2p_types::{
     MultiaddrWithPeerId,
 };
 use once_cell::sync::Lazy;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
@@ -139,7 +142,7 @@ pub struct NetworkConfig {
     #[serde(skip)]
     #[structopt(long = "disable-mdns")]
     /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
-    /// disable_mdns is true in default, so need use Option.
+    /// disable_mdns is true in default.
     pub disable_mdns: Option<bool>,
 
     #[serde(skip)]
@@ -174,7 +177,29 @@ impl NetworkConfig {
     }
 
     pub fn seeds(&self) -> Vec<MultiaddrWithPeerId> {
-        self.seeds.clone().unwrap_or_default()
+        if self.disable_seed {
+            return vec![];
+        }
+        let mut seeds: HashSet<MultiaddrWithPeerId> =
+            self.seeds.clone().unwrap_or_default().into_iter().collect();
+        seeds.extend(self.base().net().boot_nodes().iter().cloned());
+
+        let self_peer_id = self.self_peer_id();
+        seeds.retain(|node| {
+            if &node.peer_id == self_peer_id.origin() {
+                info!(
+                    "Self peer_id({}) contains in boot nodes, removed.",
+                    self_peer_id
+                );
+                false
+            } else {
+                true
+            }
+        });
+        let mut seeds: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
+        // shuffle seeds, connect seeds with random orders.
+        seeds.shuffle(&mut thread_rng());
+        seeds
     }
 
     pub fn network_keypair(&self) -> &(Ed25519PrivateKey, Ed25519PublicKey) {
@@ -229,8 +254,8 @@ impl NetworkConfig {
                 if path.exists() {
                     load_key(&path)?
                 } else {
-                    let keypair = crate::gen_keypair();
-                    crate::save_key(&keypair.0.to_bytes(), &path)?;
+                    let keypair = gen_keypair();
+                    save_key(&keypair.0.to_bytes(), &path)?;
                     keypair
                 }
             }
@@ -269,9 +294,20 @@ impl ConfigModule for NetworkConfig {
         let mut seeds = HashSet::new();
         seeds.extend(self.seeds.clone().unwrap_or_default());
         seeds.extend(opt.network.seeds.clone().unwrap_or_default());
+        let mut seed: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
+        //keep order in config
+        seed.sort();
+        self.seeds = Some(seed);
 
-        self.seeds = Some(seeds.into_iter().collect());
-        info!("Final bootstrap seeds: {:?}", self.seeds.as_ref().unwrap());
+        if opt.network.disable_seed {
+            self.disable_seed = opt.network.disable_seed;
+        }
+
+        info!(
+            "Final bootstrap seeds: {:?}, disable_seed: {}",
+            self.seeds.as_ref().unwrap(),
+            self.disable_seed
+        );
 
         self.network_rpc_quotas
             .merge(&opt.network.network_rpc_quotas)?;
@@ -286,10 +322,6 @@ impl ConfigModule for NetworkConfig {
 
         if opt.network.node_key.is_some() {
             self.node_key = opt.network.node_key.clone();
-        }
-
-        if opt.network.disable_seed {
-            self.disable_seed = opt.network.disable_seed;
         }
 
         if opt.network.listen.is_some() {
