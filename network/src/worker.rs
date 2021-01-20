@@ -70,25 +70,7 @@ pub fn build_network_worker(
             .collect::<Vec<_>>(),
         None => vec![],
     };
-    let self_peer_id = node_config.network.self_peer_id();
-    let boot_nodes = if node_config.network.disable_seed() {
-        vec![]
-    } else {
-        let mut boot_nodes = node_config.network.seeds();
-        boot_nodes.extend(node_config.net().boot_nodes().iter().cloned());
-        boot_nodes.retain(|node| {
-            if &node.peer_id == self_peer_id.origin() {
-                info!(
-                    "Self peer_id({}) contains in boot nodes, removed.",
-                    self_peer_id
-                );
-                false
-            } else {
-                true
-            }
-        });
-        boot_nodes
-    };
+    let boot_nodes = node_config.network.seeds();
     let config = NetworkConfiguration {
         listen_addresses: vec![node_config.network.listen()],
         boot_nodes,

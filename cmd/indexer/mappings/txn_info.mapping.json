@@ -1,6 +1,9 @@
 {
   "mappings": {
     "properties": {
+      "timestamp": {
+        "type": "date"
+      },
       "block_hash": {
         "type": "text",
         "fields": {

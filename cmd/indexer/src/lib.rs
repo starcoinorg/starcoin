@@ -16,6 +16,7 @@ pub struct TransactionData {
     pub block_metadata: Option<BlockMetadataView>,
     pub user_transaction: Option<SignedUserTransactionView>,
     pub events: Vec<TransactionEventView>,
+    pub timestamp: u64,
 }
 #[derive(Clone, Debug)]
 pub struct BlockData {
