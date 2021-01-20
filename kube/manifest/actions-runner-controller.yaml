@@ -5130,16 +5130,6 @@ spec:
     spec:
       containers:
       - args:
-        - --secure-listen-address=0.0.0.0:8443
-        - --upstream=http://127.0.0.1:8080/
-        - --logtostderr=true
-        - --v=10
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.1
-        name: kube-rbac-proxy
-        ports:
-        - containerPort: 8443
-          name: https
-      - args:
         - --metrics-addr=127.0.0.1:8080
         - --enable-leader-election
         - --sync-period=5m
@@ -5166,7 +5156,7 @@ spec:
               optional: true
         - name: GITHUB_APP_PRIVATE_KEY
           value: /etc/actions-runner-controller/github_app_private_key
-        image: summerwind/actions-runner-controller:v0.16.0
+        image: summerwind/actions-runner-controller:v0.16.1
         name: manager
         ports:
         - containerPort: 9443
@@ -5186,6 +5176,16 @@ spec:
         - mountPath: /etc/actions-runner-controller
           name: controller-manager
           readOnly: true
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.1
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
       terminationGracePeriodSeconds: 10
       volumes:
       - name: cert
