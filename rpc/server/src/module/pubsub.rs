@@ -13,7 +13,7 @@ use parking_lot::RwLock;
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_miner::{MinerService, NewMinerClientRequest};
+use starcoin_miner::{MinerClientSubscribeRequest, MinerService};
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{BlockView, TransactionEventView};
@@ -305,7 +305,12 @@ impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
             subscriber,
             NewMintBlockHandler,
         ));
-        match block_on(async { self.miner_service.send(NewMinerClientRequest).await? }) {
+        let subscribers_num = self.mint_block_subscribers.len() as u32;
+        match block_on(async {
+            self.miner_service
+                .send(MinerClientSubscribeRequest::Add(subscribers_num))
+                .await?
+        }) {
             Ok(Some(event)) => {
                 if let Err(err) = sender.unbounded_send(event) {
                     error!("Failed to send MintBlockEvent: {}", err);
@@ -398,6 +403,10 @@ impl ServiceHandler<Self, Unsubscribe> for PubSubService {
         self.new_header_subscribers.remove(&msg.0);
         self.new_event_subscribers.remove(&msg.0);
         self.mint_block_subscribers.remove(&msg.0);
+        self.miner_service
+            .do_send(MinerClientSubscribeRequest::Remove(
+                self.mint_block_subscribers.len() as u32,
+            ));
         if let Some(h) = self.new_pending_txn_tasks.write().remove(&msg.0) {
             h.abort();
         }
