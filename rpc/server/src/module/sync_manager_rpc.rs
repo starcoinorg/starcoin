@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use network_api::PeerStrategy;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_sync_api::{PeerScoreResponse, SyncAsyncService, SyncProgressReport};
@@ -50,10 +51,18 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> FutureResult<()> {
+    fn start(
+        &self,
+        force: bool,
+        peers: Vec<PeerId>,
+        skip_pow_verify: bool,
+        strategy: Option<PeerStrategy>,
+    ) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move {
-            service.start(force, peers, skip_pow_verify).await?;
+            service
+                .start(force, peers, skip_pow_verify, strategy)
+                .await?;
             Ok(())
         }
         .map_err(map_err);

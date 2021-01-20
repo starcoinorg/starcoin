@@ -8,6 +8,7 @@ use failure::Fail;
 use futures03::channel::oneshot;
 use futures03::{TryStream, TryStreamExt};
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
+use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
 use parking_lot::Mutex;
 use starcoin_account_api::AccountInfo;
@@ -962,11 +963,12 @@ impl RpcClient {
         force: bool,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
+        strategy: Option<PeerStrategy>,
     ) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .sync_client
-                .start(force, peers, skip_pow_verify)
+                .start(force, peers, skip_pow_verify, strategy)
                 .compat()
                 .await
         })

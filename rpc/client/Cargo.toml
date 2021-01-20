@@ -44,6 +44,7 @@ starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-p2p-types = { path = "../../network-p2p/types"}
+network-api = {path = "../../network/api", package="network-api"}
 
 [dev-dependencies]
 starcoin-rpc-server = { path = "../server" }

@@ -12,6 +12,7 @@ use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -39,7 +40,7 @@ pub trait PeerProvider: Send + Sync {
 
     fn peer_selector(&self) -> BoxFuture<Result<PeerSelector>> {
         self.peer_set()
-            .and_then(|peers| async move { Ok(PeerSelector::new(peers)) })
+            .and_then(|peers| async move { Ok(PeerSelector::new(peers, PeerStrategy::default())) })
             .boxed()
     }
 }
@@ -66,6 +67,10 @@ impl PeerDetail {
     pub fn score(&self) -> u64 {
         self.score_counter.score()
     }
+
+    pub fn avg_score(&self) -> u64 {
+        self.score_counter.avg()
+    }
 }
 
 impl From<PeerInfo> for PeerDetail {
@@ -77,10 +82,53 @@ impl From<PeerInfo> for PeerDetail {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum PeerStrategy {
+    Random,
+    WeightedRandom,
+    Top,
+    Avg,
+}
+
+impl Default for PeerStrategy {
+    fn default() -> Self {
+        PeerStrategy::Random
+    }
+}
+
+impl std::fmt::Display for PeerStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display = match self {
+            Self::Random => "random",
+            Self::WeightedRandom => "weighted",
+            Self::Top => "top",
+            Self::Avg => "avg",
+        };
+        write!(f, "{}", display)
+    }
+}
+
+impl std::str::FromStr for PeerStrategy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use self::PeerStrategy::*;
+
+        match s {
+            "random" => Ok(Random),
+            "weighted" => Ok(WeightedRandom),
+            "top" => Ok(Top),
+            "avg" => Ok(Avg),
+            other => Err(format!("Unknown peer strategy: {}", other)),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct PeerSelector {
     details: Arc<Mutex<Vec<PeerDetail>>>,
     total_score: Arc<AtomicU64>,
+    strategy: PeerStrategy,
 }
 
 impl Debug for PeerSelector {
@@ -90,18 +138,16 @@ impl Debug for PeerSelector {
 }
 
 impl PeerSelector {
-    pub fn new(peers: Vec<PeerInfo>) -> Self {
-        let peer_detail_vec = peers
+    pub fn new(peers: Vec<PeerInfo>, strategy: PeerStrategy) -> Self {
+        let len = peers.len() as u64;
+        let peer_details = peers
             .into_iter()
             .map(|peer| -> PeerDetail { peer.into() })
             .collect();
-        Self::new_with_score(peer_detail_vec)
-    }
-
-    pub fn new_with_score(peers: Vec<PeerDetail>) -> Self {
         Self {
-            details: Arc::new(Mutex::new(peers)),
-            total_score: Arc::new(AtomicU64::new(0)),
+            details: Arc::new(Mutex::new(peer_details)),
+            total_score: Arc::new(AtomicU64::new(len)),
+            strategy,
         }
     }
 
@@ -197,11 +243,16 @@ impl PeerSelector {
         self.total_score.store(score, Ordering::SeqCst);
     }
 
-    pub fn random_peer_id(&self) -> Option<PeerId> {
-        self.weighted_random_peer_id()
+    pub fn select_peer(&self) -> Option<PeerId> {
+        match &self.strategy {
+            PeerStrategy::Random => self.random(),
+            PeerStrategy::WeightedRandom => self.weighted_random(),
+            PeerStrategy::Top => self.top_score(),
+            PeerStrategy::Avg => self.avg_score(),
+        }
     }
 
-    pub fn _common_peer_id(&self) -> Option<PeerId> {
+    pub fn random(&self) -> Option<PeerId> {
         self.details
             .lock()
             .iter()
@@ -209,7 +260,39 @@ impl PeerSelector {
             .map(|peer| peer.peer_info.peer_id())
     }
 
-    pub fn weighted_random_peer_id(&self) -> Option<PeerId> {
+    pub fn top_score(&self) -> Option<PeerId> {
+        if self.is_empty() {
+            return None;
+        }
+
+        let lock = self.details.lock();
+        let mut top_score_peer = lock.get(0).expect("Peer details is none.");
+        lock.iter().for_each(|peer| {
+            if peer.score() > top_score_peer.score() {
+                top_score_peer = peer;
+            }
+        });
+
+        Some(top_score_peer.peer_id())
+    }
+
+    pub fn avg_score(&self) -> Option<PeerId> {
+        if self.is_empty() {
+            return None;
+        }
+
+        let lock = self.details.lock();
+        let mut top_score_peer = lock.get(0).expect("Peer details is none.");
+        lock.iter().for_each(|peer| {
+            if peer.avg_score() > top_score_peer.avg_score() {
+                top_score_peer = peer;
+            }
+        });
+
+        Some(top_score_peer.peer_id())
+    }
+
+    pub fn weighted_random(&self) -> Option<PeerId> {
         if self.is_empty() {
             return None;
         }
@@ -235,7 +318,7 @@ impl PeerSelector {
         None
     }
 
-    pub fn random(&self) -> Option<PeerInfo> {
+    pub fn random_peer(&self) -> Option<PeerInfo> {
         self.details
             .lock()
             .iter()
@@ -243,7 +326,7 @@ impl PeerSelector {
             .and_then(|peer| Some(peer.peer_info.clone()))
     }
 
-    pub fn first(&self) -> Option<PeerInfo> {
+    pub fn first_peer(&self) -> Option<PeerInfo> {
         self.details
             .lock()
             .get(0)

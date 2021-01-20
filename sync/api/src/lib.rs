@@ -10,6 +10,7 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::sync_status::SyncStatus;
 
 mod service;
+use network_api::PeerStrategy;
 pub use service::{SyncAsyncService, SyncServiceHandler};
 use starcoin_crypto::HashValue;
 use starcoin_types::U256;
@@ -91,6 +92,7 @@ pub struct SyncStartRequest {
     pub force: bool,
     pub peers: Vec<PeerId>,
     pub skip_pow_verify: bool,
+    pub strategy: Option<PeerStrategy>,
 }
 
 impl ServiceRequest for SyncStartRequest {

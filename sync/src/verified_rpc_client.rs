@@ -153,7 +153,7 @@ impl VerifiedRpcClient {
 
     pub fn random_peer(&self) -> Result<PeerId> {
         self.peer_selector
-            .random_peer_id()
+            .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
     }
 
