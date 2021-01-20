@@ -8,7 +8,8 @@ use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -24,10 +25,32 @@ pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 pub use types::block::BlockHeaderExtra;
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
+#[derive(Debug)]
+pub struct NewMinerClientRequest;
+
+impl ServiceRequest for NewMinerClientRequest {
+    type Response = Result<Option<MintBlockEvent>>;
+}
+
 pub struct MinerService {
     config: Arc<NodeConfig>,
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
+}
+
+impl ServiceHandler<Self, NewMinerClientRequest> for MinerService {
+    fn handle(
+        &mut self,
+        _msg: NewMinerClientRequest,
+        _ctx: &mut ServiceContext<MinerService>,
+    ) -> Result<Option<MintBlockEvent>> {
+        Ok(self.current_task.as_ref().map(|task| MintBlockEvent {
+            strategy: task.block_template.strategy,
+            minting_blob: task.minting_blob.clone(),
+            difficulty: task.block_template.difficulty,
+            block_number: task.block_template.number,
+        }))
+    }
 }
 
 impl ServiceFactory<MinerService> for MinerService {

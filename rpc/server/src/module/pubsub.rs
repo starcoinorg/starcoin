@@ -4,6 +4,7 @@
 use anyhow::Result;
 use futures::channel::mpsc;
 use futures::compat::Sink01CompatExt;
+use futures::executor::block_on;
 use futures::future::AbortHandle;
 use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
@@ -11,6 +12,8 @@ use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
+use starcoin_miner::{MinerService, NewMinerClientRequest};
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{BlockView, TransactionEventView};
@@ -41,6 +44,7 @@ impl PubSubImpl {
         Self { service: s }
     }
 }
+
 fn map_send_err<T>(err: &TrySendError<T>) -> jsonrpc_core::Error {
     match err {
         TrySendError::Full(_) => jsonrpc_core::Error {
@@ -55,6 +59,7 @@ fn map_send_err<T>(err: &TrySendError<T>) -> jsonrpc_core::Error {
         },
     }
 }
+
 impl PubSubImpl {
     fn inner_subscribe(
         &self,
@@ -176,27 +181,38 @@ impl StarcoinPubSub for PubSubImpl {
 }
 
 pub struct PubSubServiceFactory;
+
 impl ServiceFactory<PubSubService> for PubSubServiceFactory {
     fn create(ctx: &mut ServiceContext<PubSubService>) -> Result<PubSubService> {
-        Ok(PubSubService::new(ctx.get_shared::<TxPoolService>()?))
+        let miner_service = ctx
+            .service_ref_opt::<MinerService>()?
+            .cloned()
+            .ok_or(anyhow::anyhow!("Failed to get miner service ref"))?;
+        Ok(PubSubService::new(
+            ctx.get_shared::<TxPoolService>()?,
+            miner_service,
+        ))
     }
 }
 
 pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,
     txpool: TxPoolService,
+    miner_service: ServiceRef<MinerService>,
 
     new_header_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewHeadNotification>>,
     new_event_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewEventNotification>>,
     mint_block_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<MintBlockEvent>>,
     new_pending_txn_tasks: Arc<RwLock<HashMap<SubscriptionId, AbortHandle>>>,
 }
+
 impl PubSubService {
-    fn new(txpool: TxPoolService) -> Self {
+    fn new(txpool: TxPoolService, miner_service: ServiceRef<MinerService>) -> Self {
         let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
         Self {
             subscriber_id,
             txpool,
+            miner_service,
             new_event_subscribers: Default::default(),
             new_header_subscribers: Default::default(),
             mint_block_subscribers: Default::default(),
@@ -208,6 +224,7 @@ impl PubSubService {
         SubscriptionId::Number(id)
     }
 }
+
 type NewHeadNotification = Notification<ThinBlock>;
 type NewEventNotification = Notification<Arc<[Event]>>;
 // type NewTxns = Arc<[HashValue]>;
@@ -218,6 +235,7 @@ impl ActorService for PubSubService {
         ctx.subscribe::<NewHeadNotification>();
         ctx.subscribe::<NewEventNotification>();
         ctx.subscribe::<MintBlockEvent>();
+
         Ok(())
     }
 }
@@ -227,6 +245,7 @@ impl ActorEventHandler<Self, NewHeadNotification> for PubSubService {
         send_to_all(&mut self.new_header_subscribers, msg);
     }
 }
+
 impl ActorEventHandler<Self, NewEventNotification> for PubSubService {
     fn handle_event(
         &mut self,
@@ -236,6 +255,7 @@ impl ActorEventHandler<Self, NewEventNotification> for PubSubService {
         send_to_all(&mut self.new_event_subscribers, msg);
     }
 }
+
 impl ActorEventHandler<Self, MintBlockEvent> for PubSubService {
     fn handle_event(&mut self, msg: MintBlockEvent, _ctx: &mut ServiceContext<PubSubService>) {
         send_to_all(&mut self.mint_block_subscribers, msg);
@@ -244,6 +264,7 @@ impl ActorEventHandler<Self, MintBlockEvent> for PubSubService {
 
 #[derive(Debug)]
 struct SubscribeNewHeads(Subscriber<pubsub::Result>);
+
 impl ServiceRequest for SubscribeNewHeads {
     type Response = ();
 }
@@ -263,8 +284,10 @@ impl ServiceHandler<Self, SubscribeNewHeads> for PubSubService {
         ));
     }
 }
+
 #[derive(Debug)]
 struct SubscribeMintBlock(Subscriber<pubsub::Result>);
+
 impl ServiceRequest for SubscribeMintBlock {
     type Response = ();
 }
@@ -275,20 +298,36 @@ impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
         let (sender, receiver) = mpsc::unbounded();
         let subscriber_id = self.next_id();
         self.mint_block_subscribers
-            .insert(subscriber_id.clone(), sender);
+            .insert(subscriber_id.clone(), sender.clone());
         ctx.spawn(run_subscription(
             receiver,
             subscriber_id,
             subscriber,
             NewMintBlockHandler,
         ));
+        match block_on(async { self.miner_service.send(NewMinerClientRequest).await? }) {
+            Ok(Some(event)) => {
+                if let Err(err) = sender.unbounded_send(event) {
+                    error!("Failed to send MintBlockEvent: {}", err);
+                }
+            }
+            Err(err) => {
+                error!(
+                    "Failed to send NewMinerClientRequest to miner service: {}",
+                    err
+                )
+            }
+            Ok(None) => {}
+        }
     }
 }
+
 #[derive(Debug)]
 struct SubscribeEvents {
     subscriber: Subscriber<pubsub::Result>,
     filter: Filter,
 }
+
 impl ServiceRequest for SubscribeEvents {
     type Response = ();
 }
@@ -313,6 +352,7 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
 struct SubscribeNewPendingTxns {
     subscriber: Subscriber<pubsub::Result>,
 }
+
 impl ServiceRequest for SubscribeNewPendingTxns {
     type Response = ();
 }
@@ -345,11 +385,14 @@ impl ServiceHandler<Self, SubscribeNewPendingTxns> for PubSubService {
             .insert(subscriber_id, abort_handle);
     }
 }
+
 #[derive(Debug)]
 struct Unsubscribe(SubscriptionId);
+
 impl ServiceRequest for Unsubscribe {
     type Response = ();
 }
+
 impl ServiceHandler<Self, Unsubscribe> for PubSubService {
     fn handle(&mut self, msg: Unsubscribe, _ctx: &mut ServiceContext<Self>) {
         self.new_header_subscribers.remove(&msg.0);
