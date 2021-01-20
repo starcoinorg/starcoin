@@ -268,18 +268,6 @@ module Account {
 
     }
 
-    spec schema AbortsIfDepositWithMetadata<TokenType> {
-        value_is_not_zero: bool;
-        receiver: address;
-        to_deposit: Token<TokenType>;
-
-        aborts_if value_is_not_zero && to_deposit.value == 0;
-        aborts_if value_is_not_zero && !exists<Account>(receiver);
-        aborts_if value_is_not_zero && !exists<Balance<TokenType>>(receiver);
-
-        aborts_if value_is_not_zero && global<Balance<TokenType>>(receiver).token.value + to_deposit.value > max_u128();
-    }
-
     /// Helper to deposit `amount` to the given account balance
     fun deposit_to_balance<TokenType>(balance: &mut Balance<TokenType>, token: Token::Token<TokenType>) {
         Token::deposit(&mut balance.token, token)
@@ -326,12 +314,10 @@ module Account {
     }
 
     spec fun withdraw_with_metadata {
-        pragma opaque = true;
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
-        ensures [abstract] result == spec_withdraw<TokenType>(account, amount);
     }
 
     spec define spec_withdraw<TokenType>(account: signer, amount: u128): Token<TokenType> {
@@ -443,18 +429,15 @@ module Account {
     }
 
     spec fun pay_from_capability {
-        pragma verify = false;
-        aborts_if amount == 0;
-        aborts_if !exists<Account>(cap.account_address);
+        // condition for withdraw_with_capability_and_metadata()
         aborts_if !exists<Balance<TokenType>>(cap.account_address);
+        aborts_if !exists<Account>(cap.account_address);
+        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
+        // condition for deposit_with_metadata()
+        aborts_if amount == 0;
         aborts_if !exists<Account>(payee);
         aborts_if !exists<Balance<TokenType>>(payee);
-        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
-        aborts_if global<Balance<TokenType>>(payee).token.value + amount > max_u128();
-        ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + amount;
-
-        //ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + amount;
-
+        aborts_if cap.account_address != payee && global<Balance<TokenType>>(payee).token.value + amount > MAX_U128;
     }
 
     // Withdraw `amount` Token<TokenType> from the transaction sender's
@@ -475,18 +458,17 @@ module Account {
     }
 
     spec fun pay_from_with_metadata {
-        pragma verify = false;
+        // condition for withdraw_with_metadata()
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
-
-        include DepositWithPayerAndMetadataAbortsIf<TokenType>{
-            payer: Signer::spec_address_of(account),
-            payee: payee,
-            to_deposit: spec_withdraw<TokenType>(account, amount)
-        };
-    }
+        // condition for deposit_with_metadata()
+        aborts_if amount == 0;
+        aborts_if !exists<Account>(payee);
+        aborts_if !exists<Balance<TokenType>>(payee);
+        aborts_if Signer::spec_address_of(account) != payee && global<Balance<TokenType>>(payee).token.value + amount > max_u128();
+}
     spec schema DepositWithPayerAndMetadataAbortsIf<TokenType> {
         payer: address;
         payee: address;
@@ -512,17 +494,16 @@ module Account {
     }
 
     spec fun pay_from {
-        pragma verify = false;
-
+        // condition for withdraw_with_metadata()
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
-
-        include DepositWithPayerAndMetadataAbortsIf<TokenType>{
-            payer: Signer::spec_address_of(account),
-            to_deposit: spec_withdraw<TokenType>(account, amount)
-        };
+        // condition for deposit_with_metadata()
+        aborts_if amount == 0;
+        aborts_if !exists<Account>(payee);
+        aborts_if !exists<Balance<TokenType>>(payee);
+        aborts_if Signer::spec_address_of(account) != payee && global<Balance<TokenType>>(payee).token.value + amount > max_u128();
     }
 
     // Rotate the authentication key for the account under cap.account_address
@@ -787,12 +768,16 @@ module Account {
         aborts_if !exists<Account>(txn_sender);
         aborts_if !exists<Balance<TokenType>>(txn_sender);
         aborts_if txn_max_gas_units < gas_units_remaining;
-        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u64();
-        aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * (txn_max_gas_units - gas_units_remaining);
+        let transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
+        aborts_if transaction_fee_amount > max_u128();
+        aborts_if global<Balance<TokenType>>(txn_sender).token.value < transaction_fee_amount;
         aborts_if txn_sequence_number + 1 > max_u64();
         aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > 0 &&
-                   !exists<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if global<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).fee.value + txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u128();
+                global<Balance<TokenType>>(txn_sender).token.value  < txn_gas_price * (txn_max_gas_units - gas_units_remaining);
+        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > 0 &&
+                !exists<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > 0 &&
+                global<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).fee.value + txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u128();
     }
 }
 

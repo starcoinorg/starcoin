@@ -14,7 +14,7 @@ module STC {
 
     spec module {
         pragma verify;
-        pragma aborts_if_is_strict;
+        pragma aborts_if_is_strict = true;
     }
 
     struct STC { }
@@ -58,8 +58,7 @@ module STC {
     }
 
     spec fun initialize {
-        // Todo: fix name_of()
-        pragma verify = false;
+        include Token::RegisterTokenAbortsIf<STC>{precision: PRECISION};
     }
 
     /// Returns true if `TokenType` is `STC::STC`
