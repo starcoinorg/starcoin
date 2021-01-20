@@ -53,7 +53,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
+        TransactionStatus::Discard(StatusCode::BLOCK_NUMBER_MISMATCH),
         *output1.status()
     );
 
@@ -70,7 +70,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     ));
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
+        TransactionStatus::Discard(StatusCode::INVALID_TIMESTAMP),
         *output2.status()
     );
 
