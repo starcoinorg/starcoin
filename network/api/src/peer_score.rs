@@ -18,12 +18,16 @@ impl ScoreCounter {
     pub fn score(&self) -> u64 {
         self.score.load(Ordering::SeqCst)
     }
+
+    pub fn avg(&self) -> u64 {
+        self.score() / self.count.load(Ordering::SeqCst)
+    }
 }
 
 impl Default for ScoreCounter {
     fn default() -> Self {
         Self {
-            score: Arc::new(AtomicU64::new(0)),
+            score: Arc::new(AtomicU64::new(1)),
             count: Arc::new(AtomicU64::new(0)),
         }
     }

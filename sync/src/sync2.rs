@@ -12,7 +12,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
-use network_api::{PeerProvider, PeerSelector};
+use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -81,6 +81,7 @@ impl SyncService2 {
         &mut self,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
+        peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         match std::mem::replace(&mut self.stage, SyncStage::Checking) {
@@ -147,7 +148,11 @@ impl SyncService2 {
                 return Ok(None);
             }
 
-            let peer_selector = PeerSelector::new(target.peers.clone());
+            let peer_select_strategy = match peer_strategy {
+                None => config.sync.peer_select_strategy(),
+                Some(strategy) => strategy,
+            };
+            let peer_selector = PeerSelector::new(target.peers.clone(), peer_select_strategy);
             let rpc_client = Arc::new(VerifiedRpcClient::new(
                 peer_selector.clone(),
                 network.clone(),
@@ -377,20 +382,24 @@ pub struct CheckSyncEvent {
     peers: Vec<PeerId>,
 
     skip_pow_verify: bool,
+
+    strategy: Option<PeerStrategy>,
 }
 
 impl CheckSyncEvent {
-    pub fn new(peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
+    pub fn new(peers: Vec<PeerId>, skip_pow_verify: bool, strategy: Option<PeerStrategy>) -> Self {
         Self {
             peers,
             skip_pow_verify,
+            strategy,
         }
     }
 }
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, ctx) {
+        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
+        {
             error!("[sync] Check sync error: {:?}", e);
         };
     }
@@ -525,7 +534,11 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
             info!("[sync] Try to cancel previous sync task, because receive force sync request.");
             self.cancel_task();
         }
-        ctx.notify(CheckSyncEvent::new(msg.peers, msg.skip_pow_verify));
+        ctx.notify(CheckSyncEvent::new(
+            msg.peers,
+            msg.skip_pow_verify,
+            msg.strategy,
+        ));
         Ok(())
     }
 }
