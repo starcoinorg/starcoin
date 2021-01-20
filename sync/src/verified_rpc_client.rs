@@ -151,7 +151,7 @@ impl VerifiedRpcClient {
         }
     }
 
-    pub fn random_peer(&self) -> Result<PeerId> {
+    pub fn select_a_peer(&self) -> Result<PeerId> {
         self.peer_selector
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
@@ -161,7 +161,7 @@ impl VerifiedRpcClient {
         &self,
         req: GetTxnsWithHash,
     ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         let data = self.client.get_txns(peer_id.clone(), req.clone()).await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
@@ -191,7 +191,7 @@ impl VerifiedRpcClient {
         &self,
         block_id: HashValue,
     ) -> Result<(PeerId, Option<Vec<TransactionInfo>>)> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         Ok((
             peer_id.clone(),
             self.client.get_txn_infos(peer_id, block_id).await?,
@@ -202,7 +202,7 @@ impl VerifiedRpcClient {
         &self,
         req: GetBlockHeadersByNumber,
     ) -> Result<Vec<BlockHeader>> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         let mut verify_condition: RpcEntryVerify<BlockNumber> = (&req).into();
         let data = self.client.get_headers_by_number(peer_id, req).await?;
         let verified_headers =
@@ -215,7 +215,7 @@ impl VerifiedRpcClient {
         req: GetBlockHeaders,
         number: BlockNumber,
     ) -> Result<(Vec<BlockHeader>, PeerId)> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         debug!("rpc select peer {:?}", peer_id);
         let mut verify_condition: RpcEntryVerify<BlockNumber> =
             (&req.clone().into_numbers(number)).into();
@@ -227,7 +227,7 @@ impl VerifiedRpcClient {
     }
 
     pub async fn get_headers_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data: Vec<BlockHeader> = self.client.get_headers_by_hash(peer_id, hashes).await?;
         let verified_headers = verify_condition.filter(data, |header| -> HashValue { header.id() });
@@ -238,7 +238,7 @@ impl VerifiedRpcClient {
         &self,
         hashes: Vec<HashValue>,
     ) -> Result<(Vec<BlockBody>, PeerId)> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         debug!("rpc select peer {}", &peer_id);
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data: Vec<BlockBody> = self
@@ -259,7 +259,7 @@ impl VerifiedRpcClient {
         hashes: Vec<HashValue>,
     ) -> Result<Vec<BlockInfo>> {
         let peer_id = match peer_id {
-            None => self.random_peer()?,
+            None => self.select_a_peer()?,
             Some(p) => p,
         };
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
@@ -327,7 +327,7 @@ impl VerifiedRpcClient {
         &self,
         node_key: HashValue,
     ) -> Result<(PeerId, Option<StateNode>)> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         Ok((
             peer_id.clone(),
             self.client
@@ -341,7 +341,7 @@ impl VerifiedRpcClient {
         node_key: HashValue,
         accumulator_type: AccumulatorStoreType,
     ) -> Result<(PeerId, AccumulatorNode)> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         if let Some(accumulator_node) = self
             .client
             .get_accumulator_node_by_node_hash(
@@ -393,7 +393,7 @@ impl VerifiedRpcClient {
             .with_label_values(&["time"])
             .start_timer();
         let peer_id = match peer_id {
-            None => self.random_peer()?,
+            None => self.select_a_peer()?,
             Some(p) => p,
         };
         let request = GetBlockIds {
@@ -408,7 +408,7 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
-        let peer_id = self.random_peer()?;
+        let peer_id = self.select_a_peer()?;
         let timer = SYNC_SCORE_METRICS
             .peer_sync_per_time
             .with_label_values(&[&format!("peer-{:?}", peer_id)])
