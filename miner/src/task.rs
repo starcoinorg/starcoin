@@ -8,7 +8,7 @@ use types::block::{Block, BlockTemplate};
 
 pub struct MintTask {
     pub(crate) minting_blob: Vec<u8>,
-    block_template: BlockTemplate,
+    pub(crate) block_template: BlockTemplate,
     metrics_timer: HistogramTimer,
 }
 
