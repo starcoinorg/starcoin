@@ -41,7 +41,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 1373
+// check: 1363
 
 //! new-transaction
 //! sender: alice
@@ -75,7 +75,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 61
+// check: 59
 
 //! new-transaction
 //! sender: alice
@@ -99,7 +99,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 209
+// check: 193
 
 //! block-prologue
 //! author: genesis
@@ -128,7 +128,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 161
+// check: 157
 
 //! block-prologue
 //! author: genesis
@@ -173,4 +173,4 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 109
+// check: 107
