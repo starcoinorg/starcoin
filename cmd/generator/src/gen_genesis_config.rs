@@ -36,14 +36,14 @@ impl CommandAction for GenGenesisConfigCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let global_opt = ctx.global_opt();
-        if global_opt.data_dir.is_none() {
+        if global_opt.base_data_dir.is_none() {
             warn!("data_dir option is none, use default data_dir.")
         }
         ensure!(
             global_opt.genesis_config.is_some(),
             "please set genesis-config option"
         );
-        let base = BaseConfig::default_with_opt(global_opt)?;
+        let base = BaseConfig::load_with_opt(global_opt)?;
         if !base.net().is_custom() {
             bail!("Only allow generate custom chain network config.");
         }

@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::genesis_parameter_resolve::RpcFutureBlockParameterResolver;
 use crate::node::NodeService;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::{NodeConfig, StarcoinOpt};
+use starcoin_config::{BaseConfig, NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -25,6 +26,7 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 
 pub mod crash_handler;
+mod genesis_parameter_resolve;
 mod metrics;
 pub mod network_service_factory;
 pub mod node;
@@ -195,8 +197,20 @@ impl NodeHandle {
 pub fn run_node_by_opt(
     opt: &StarcoinOpt,
 ) -> Result<(Option<NodeHandle>, Arc<NodeConfig>), NodeStartError> {
+    //check genesis config is ready
+    let mut base_config =
+        BaseConfig::load_with_opt(opt).map_err(NodeStartError::LoadConfigError)?;
+    if !base_config.net().is_ready() {
+        let future_block_resolve =
+            RpcFutureBlockParameterResolver::new(base_config.net().id().clone());
+        base_config
+            .resolve(&future_block_resolve)
+            .map_err(NodeStartError::LoadConfigError)?;
+    }
     let config = Arc::new(
-        starcoin_config::load_config_with_opt(opt).map_err(NodeStartError::LoadConfigError)?,
+        base_config
+            .into_node_config(opt)
+            .map_err(NodeStartError::LoadConfigError)?,
     );
     let ipc_file = config.rpc.get_ipc_file();
     let node_handle = if !ipc_file.exists() {

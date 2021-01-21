@@ -19,13 +19,16 @@ pub struct GenesisGeneratorOpt {
 fn main() {
     let _logger = starcoin_logger::init();
     let opts = GenesisGeneratorOpt::from_args();
-    let networks = match opts.net {
+    let networks: Vec<BuiltinNetworkID> = match opts.net {
         Some(network) => vec![network],
         None => BuiltinNetworkID::networks(),
     };
     for id in networks {
         // skip test && dev network generate.
         if id.is_test() || id.is_dev() {
+            continue;
+        }
+        if !id.genesis_config().is_ready() {
             continue;
         }
         let net = ChainNetwork::new_builtin(id);

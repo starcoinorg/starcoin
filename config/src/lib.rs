@@ -55,6 +55,7 @@ pub use rpc_config::{
     WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
+use starcoin_vm_types::genesis_config::FutureBlockParameterResolver;
 pub use starcoin_vm_types::genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, ConsensusStrategy, GenesisConfig,
     StdlibVersion, DEV_CONFIG, HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
@@ -169,9 +170,9 @@ pub struct StarcoinOpt {
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long, short = "d", parse(from_os_str))]
-    /// Path to data dir
-    pub data_dir: Option<PathBuf>,
+    #[structopt(long = "data-dir", short = "d", parse(from_os_str))]
+    /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
+    pub base_data_dir: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long, short = "n", help = OPT_NET_HELP)]
@@ -250,15 +251,15 @@ impl Default for DataDirPath {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BaseConfig {
-    net: ChainNetwork,
-    base_data_dir: DataDirPath,
-    data_dir: PathBuf,
+    pub net: ChainNetwork,
+    pub base_data_dir: DataDirPath,
+    pub data_dir: PathBuf,
 }
 
 impl BaseConfig {
-    pub fn default_with_opt(opt: &StarcoinOpt) -> Result<Self> {
+    pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
         let id = opt.net.clone().unwrap_or_default();
-        let base_data_dir = opt.data_dir.clone();
+        let base_data_dir = opt.base_data_dir.clone();
         let base_data_dir = match base_data_dir {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
             None => {
@@ -299,12 +300,15 @@ impl BaseConfig {
         };
         let genesis_config = match (config_in_file, id) {
             (Some(config_in_file), ChainNetworkID::Builtin(net)) => {
-                ensure!(
-                    &config_in_file == net.genesis_config(),
-                    "GenesisConfig in file:{:?} is not same with builtin config: {:?}",
-                    config_path.as_path(),
-                    net
-                );
+                // only check the genesis config is resolved.
+                if config_in_file.is_ready() && net.genesis_config().is_ready() {
+                    ensure!(
+                        &config_in_file == net.genesis_config(),
+                        "GenesisConfig in file:{:?} is not same with builtin config: {:?}",
+                        config_path.as_path(),
+                        net
+                    );
+                }
                 config_in_file
             }
             (Some(config_in_file), ChainNetworkID::Custom(_net)) => config_in_file,
@@ -331,6 +335,23 @@ impl BaseConfig {
         Ok(genesis_config)
     }
 
+    /// Resolve the future block parameter in genesis config
+    pub fn resolve(&mut self, resolver: &dyn FutureBlockParameterResolver) -> Result<()> {
+        self.net.resolve(resolver)?;
+        self.save_genesis_config()?;
+        Ok(())
+    }
+
+    fn save_genesis_config(&self) -> Result<()> {
+        let genesis_config_path = self.genesis_config_path();
+        self.net.genesis_config().save(genesis_config_path)?;
+        Ok(())
+    }
+
+    fn genesis_config_path(&self) -> PathBuf {
+        self.data_dir.join(GENESIS_CONFIG_FILE_NAME)
+    }
+
     pub fn net(&self) -> &ChainNetwork {
         &self.net
     }
@@ -339,6 +360,33 @@ impl BaseConfig {
     }
     pub fn base_data_dir(&self) -> DataDirPath {
         self.base_data_dir.clone()
+    }
+
+    pub fn into_node_config(self, opt: &StarcoinOpt) -> Result<NodeConfig> {
+        let base = Arc::new(self);
+        let data_dir = base.data_dir();
+        ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
+
+        let config_file_path = data_dir.join(CONFIG_FILE_PATH);
+        let config = if !config_file_path.exists() {
+            info!(
+                "Config file not exist, generate default config to: {:?}",
+                config_file_path
+            );
+            // generate default config and merge with opt, the init opt item will persistence to config
+            let mut config = NodeConfig::default();
+            config.merge_with_opt(opt, base.clone())?;
+            save_config(&config, &config_file_path)?;
+            config
+        } else {
+            // if config file exist, load the config, and overwrite the config with option in memory, do not persistence to config again.
+            info!("Load config from: {:?}", config_file_path);
+            let mut config: NodeConfig = load_config(&config_file_path)?;
+            config.merge_with_opt(opt, base.clone())?;
+            config
+        };
+        info!("Final config: {}", config);
+        Ok(config)
     }
 }
 
@@ -389,30 +437,8 @@ impl NodeConfig {
     }
 
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
-        let base = Arc::new(BaseConfig::default_with_opt(opt)?);
-        let data_dir = base.data_dir();
-        ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
-
-        let config_file_path = data_dir.join(CONFIG_FILE_PATH);
-        let config = if !config_file_path.exists() {
-            info!(
-                "Config file not exist, generate default config to: {:?}",
-                config_file_path
-            );
-            // generate default config and merge with opt, the init opt item will persistence to config
-            let mut config = NodeConfig::default();
-            config.merge_with_opt(opt, base.clone())?;
-            save_config(&config, &config_file_path)?;
-            config
-        } else {
-            // if config file exist, load the config, and overwrite the config with option in memory, do not persistence to config again.
-            info!("Load config from: {:?}", config_file_path);
-            let mut config: NodeConfig = load_config(&config_file_path)?;
-            config.merge_with_opt(opt, base.clone())?;
-            config
-        };
-        info!("Final config: {}", config);
-        Ok(config)
+        let base = BaseConfig::load_with_opt(opt)?;
+        base.into_node_config(opt)
     }
 
     pub fn data_dir(&self) -> &Path {

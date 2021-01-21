@@ -45,7 +45,7 @@ impl CommandAction for GenGenesisCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let global_opt = ctx.global_opt();
-        if global_opt.data_dir.is_none() {
+        if global_opt.base_data_dir.is_none() {
             warn!("data_dir option is none, use default data_dir.")
         }
         let (config, .., chain_info, account) =
