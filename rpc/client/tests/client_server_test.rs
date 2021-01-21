@@ -135,7 +135,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
 
     let events1 = futures03::executor::block_on(async move { handle1.await });
     let events2 = futures03::executor::block_on(async move { handle2.await });
-    assert_eq!(1, events1.len());
-    assert_eq!(1, events2.len());
+    assert_ne!(events1.len(), 0);
+    assert_ne!(events2.len(), 0);
     Ok(())
 }
