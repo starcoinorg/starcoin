@@ -225,7 +225,7 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
             None => Ok(None),
         }
     }

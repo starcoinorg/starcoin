@@ -22,11 +22,11 @@ log = "0.4.13"
 
 proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "4b27f9200ea6b7ac67eaf3d868049ce33db898ba" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "4b27f9200ea6b7ac67eaf3d868049ce33db898ba" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "4b27f9200ea6b7ac67eaf3d868049ce33db898ba" }
-vm = { git = "https://github.com/starcoinorg/diem", rev = "4b27f9200ea6b7ac67eaf3d868049ce33db898ba"}
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "4b27f9200ea6b7ac67eaf3d868049ce33db898ba" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+vm = { git = "https://github.com/starcoinorg/diem", rev = "a5ec0f157313ffa1dd00ad8f79f752188de4ba4b"}
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -39,7 +39,7 @@ forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 [dev-dependencies]
 proptest = "0.10.1"
 proptest-derive = "0.2.0"
-vm = { git = "https://github.com/starcoinorg/diem", rev = "4b27f9200ea6b7ac67eaf3d868049ce33db898ba", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/diem", rev = "a5ec0f157313ffa1dd00ad8f79f752188de4ba4b", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
