@@ -8,7 +8,8 @@ use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ServiceRequest,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -24,10 +25,45 @@ pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 pub use types::block::BlockHeaderExtra;
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
+#[derive(Debug)]
+pub enum MinerClientSubscribeRequest {
+    Add(u32),
+    Remove(u32),
+}
+
+impl ServiceRequest for MinerClientSubscribeRequest {
+    type Response = Result<Option<MintBlockEvent>>;
+}
+
 pub struct MinerService {
     config: Arc<NodeConfig>,
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
+    client_subscribers_num: u32,
+}
+
+impl ServiceHandler<Self, MinerClientSubscribeRequest> for MinerService {
+    fn handle(
+        &mut self,
+        msg: MinerClientSubscribeRequest,
+        _ctx: &mut ServiceContext<MinerService>,
+    ) -> Result<Option<MintBlockEvent>> {
+        match msg {
+            MinerClientSubscribeRequest::Add(num) => {
+                self.client_subscribers_num = num;
+                Ok(self.current_task.as_ref().map(|task| MintBlockEvent {
+                    strategy: task.block_template.strategy,
+                    minting_blob: task.minting_blob.clone(),
+                    difficulty: task.block_template.difficulty,
+                    block_number: task.block_template.number,
+                }))
+            }
+            MinerClientSubscribeRequest::Remove(num) => {
+                self.client_subscribers_num = num;
+                Ok(None)
+            }
+        }
+    }
 }
 
 impl ServiceFactory<MinerService> for MinerService {
@@ -39,6 +75,7 @@ impl ServiceFactory<MinerService> for MinerService {
             config,
             current_task: None,
             create_block_template_service,
+            client_subscribers_num: 0,
         })
     }
 }
@@ -147,6 +184,10 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
         debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.force && self.is_minting() {
             debug!("Miner has mint job so just ignore this event.");
+            return;
+        }
+        if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
+            debug!("No miner client connected, ignore GenerateBlockEvent.");
             return;
         }
         if let Err(err) = self.dispatch_task(ctx) {
