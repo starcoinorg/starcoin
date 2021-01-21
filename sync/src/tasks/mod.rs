@@ -337,7 +337,7 @@ pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
 use network::get_unix_ts_as_millis;
 use network_api::messages::PeerEvent;
-use network_api::NetworkService;
+use network_api::{NetworkService, PeerStrategy};
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use traits::ChainReader;
 
@@ -351,6 +351,7 @@ pub fn full_sync_task<H, A, F, N>(
     fetcher: Arc<F>,
     ancestor_event_handle: A,
     network: N,
+    strategy: PeerStrategy,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -462,7 +463,8 @@ where
             let total_num = latest_block_chain.current_header().number() - ancestor.number;
             let total_time = current_time - start_time;
             info!(
-                "sync blocks: {:?}, time : {:?}, avg: {:?}",
+                "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
+                strategy,
                 total_num,
                 total_time,
                 total_time / total_num as u128
