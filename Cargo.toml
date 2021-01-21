@@ -3,7 +3,7 @@
 members = [
     "benchmarks",
     "commons/stest",
-    "commons/scs",
+    "commons/bcs_ext",
     "commons/crypto",
     "commons/decrypt",
     "commons/logger",
@@ -93,7 +93,7 @@ members = [
 default-members = [
     "benchmarks",
     "commons/stest",
-    "commons/scs",
+    "commons/bcs_ext",
     "commons/crypto",
     "commons/decrypt",
     "commons/logger",

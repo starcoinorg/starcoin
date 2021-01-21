@@ -8,9 +8,9 @@ use crate::{
     TRANSACTION_BLOCK_PREFIX_NAME,
 };
 use anyhow::{bail, Result};
+use bcs_ext::BCSCodec;
 use crypto::HashValue;
 use logger::prelude::*;
-use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::peer_info::PeerId;

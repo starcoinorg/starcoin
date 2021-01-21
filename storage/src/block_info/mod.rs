@@ -5,8 +5,8 @@ use crate::define_storage;
 use crate::storage::ValueCodec;
 use crate::BLOCK_INFO_PREFIX_NAME;
 use anyhow::Result;
+use bcs_ext::BCSCodec;
 use crypto::HashValue;
-use scs::SCSCodec;
 use starcoin_types::block::BlockInfo;
 
 pub trait BlockInfoStore {

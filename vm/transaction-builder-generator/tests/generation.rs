@@ -133,7 +133,7 @@ edition = "2018"
 
 [dependencies]
 serde_bytes = "0.11"
-scs = {{ package="starcoin-canonical-serialization", git = "https://github.com/starcoinorg/starcoin"}}
+bcs_ext = {{ package="bcs-ext", git = "https://github.com/starcoinorg/starcoin"}}
 starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
 
 

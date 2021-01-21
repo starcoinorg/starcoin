@@ -144,7 +144,10 @@ where
                 .await?;
             let sender = raw_txn.sender();
             let signed_txn = me.account.sign_txn(raw_txn, sender).await?;
-            Ok(format!("0x{}", hex::encode(scs::to_bytes(&signed_txn)?)))
+            Ok(format!(
+                "0x{}",
+                hex::encode(bcs_ext::to_bytes(&signed_txn)?)
+            ))
         }
         .map_err(map_err);
         Box::new(fut.boxed().compat())

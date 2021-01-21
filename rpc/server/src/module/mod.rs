@@ -49,8 +49,8 @@ pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     // TODO: add more error downcasting here
     let rpc_error: RpcError = if err.is::<TransactionError>() {
         err.downcast::<TransactionError>().unwrap().into()
-    } else if err.is::<scs::Error>() {
-        err.downcast::<scs::Error>().unwrap().into()
+    } else if err.is::<bcs_ext::Error>() {
+        err.downcast::<bcs_ext::Error>().unwrap().into()
     } else if err.is::<AccountError>() {
         err.downcast::<AccountError>().unwrap().into()
     } else if err.is::<MailboxError>() {
@@ -163,8 +163,8 @@ impl From<hex::FromHexError> for RpcError {
         })
     }
 }
-impl From<scs::Error> for RpcError {
-    fn from(err: scs::Error) -> Self {
+impl From<bcs_ext::Error> for RpcError {
+    fn from(err: bcs_ext::Error) -> Self {
         RpcError(jsonrpc_core::Error {
             code: ErrorCode::InvalidParams,
             message: err.to_string(),

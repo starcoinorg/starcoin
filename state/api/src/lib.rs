@@ -34,7 +34,7 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
     {
         let access_path = AccessPath::new(address, R::resource_path());
         let r = self.get(access_path).await.and_then(|state| match state {
-            Some(state) => Ok(Some(scs::from_bytes::<R>(state.as_slice())?)),
+            Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
             None => Ok(None),
         })?;
         Ok(r)

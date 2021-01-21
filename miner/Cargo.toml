@@ -36,7 +36,7 @@ starcoin-account-api = { path = "../account/api" }
 starcoin-account-service = { path = "../account/service" }
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-miner-client = { path = "../cmd/miner_client" }
-scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-node-api = { path = "../node/api" }
 starcoin-open-block = { path = "../chain/open-block" }

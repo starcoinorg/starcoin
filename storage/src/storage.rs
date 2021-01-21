@@ -440,11 +440,11 @@ impl ValueCodec for HashValue {
 
 impl ValueCodec for Vec<HashValue> {
     fn encode_value(&self) -> Result<Vec<u8>> {
-        scs::to_bytes(self)
+        bcs_ext::to_bytes(self)
     }
 
     fn decode_value(data: &[u8]) -> Result<Self> {
-        scs::from_bytes(data)
+        bcs_ext::from_bytes(data)
     }
 }
 

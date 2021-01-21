@@ -37,7 +37,7 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<Token
         /// The generated server module.
         pub mod gen_server {
             use super::*;
-            use network_rpc_core::export::scs::{SCSCodec,from_bytes};
+            use network_rpc_core::export::bcs_ext::{BCSCodec,from_bytes};
             use network_rpc_core::export::log::*;
             use network_rpc_core::NetRpcError;
             #rpc_server_trait
@@ -73,7 +73,7 @@ pub fn generate_to_delegate(method: &TraitItemMethod) -> TokenStream {
                 let method = &(Self::#method_ident as #method_sig);
                 let params = from_bytes::<#param_type>(&params).map_err(|e|NetRpcError::client_err(e))?;
                 match method(&base, peer_id, params).await{
-                    Ok(r) => Ok(scs::to_bytes(&r)?),
+                    Ok(r) => Ok(bcs_ext::to_bytes(&r)?),
                     Err(e) => Err(e)
                 }
             })

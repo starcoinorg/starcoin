@@ -166,7 +166,7 @@ fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_canonical_serialization::SCSCodec;
+    use starcoin_canonical_serialization::BCSCodec;
     use starcoin_crypto::HashValue;
     use starcoin_types::block::BlockHeader;
 

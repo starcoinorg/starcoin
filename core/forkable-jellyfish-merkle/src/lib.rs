@@ -201,11 +201,11 @@ where
     T: Clone + Ord + Serialize + DeserializeOwned,
 {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        scs::to_bytes(self)
+        bcs_ext::to_bytes(self)
     }
 
     fn decode_key(bytes: &[u8]) -> Result<Self> {
-        scs::from_bytes(bytes)
+        bcs_ext::from_bytes(bytes)
     }
 }
 

@@ -29,7 +29,7 @@ starcoin-vm-types = { path = "../../vm/types"}
 starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
 stdlib = { path = "../../vm/stdlib"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-chain = { path = "../../chain"}
 
 [features]

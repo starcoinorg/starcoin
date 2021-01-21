@@ -9,7 +9,7 @@ use crate::{
     transaction::{Module, Script},
 };
 use anyhow::{ensure, Result};
-use scs::Sample;
+use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use vm::errors::Location;

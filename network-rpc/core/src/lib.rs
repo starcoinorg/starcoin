@@ -19,8 +19,8 @@ pub mod export {
         pub use log::{debug, error, info, warn};
     }
 
-    pub mod scs {
-        pub use scs::{from_bytes, SCSCodec};
+    pub mod bcs_ext {
+        pub use bcs_ext::{from_bytes, BCSCodec};
     }
 }
 
@@ -161,7 +161,9 @@ impl RawRpcClient for InmemoryRpcClient {
         Box::pin(
             self.server
                 .handle_raw_request(self.self_peer_id.clone(), rpc_path, message)
-                .then(|result| async move { anyhow::Result::Ok(scs::to_bytes(&result).unwrap()) }),
+                .then(
+                    |result| async move { anyhow::Result::Ok(bcs_ext::to_bytes(&result).unwrap()) },
+                ),
         )
     }
 }
@@ -173,9 +175,10 @@ mod tests {
     #[test]
     fn test_result_serialize() {
         let str_result: Result<String, NetRpcError> = Result::Ok("test".to_string());
-        let bytes = scs::to_bytes(&str_result).unwrap();
+        let bytes = bcs_ext::to_bytes(&str_result).unwrap();
         println!("bytes:{:?}", bytes);
-        let str_result2: Result<String, NetRpcError> = scs::from_bytes(bytes.as_slice()).unwrap();
+        let str_result2: Result<String, NetRpcError> =
+            bcs_ext::from_bytes(bytes.as_slice()).unwrap();
         println!("result:{:?}", str_result2);
         assert_eq!(str_result, str_result2);
     }

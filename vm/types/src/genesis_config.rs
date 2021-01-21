@@ -1055,7 +1055,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Version(8),
+        stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60_000,          // 1min
             voting_period: 60 * 60 * 1000, // 1h

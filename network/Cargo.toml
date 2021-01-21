@@ -26,7 +26,7 @@ network-p2p = {path = "../network-p2p"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 
 starcoin-crypto = {path = "../commons/crypto"}
-scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 
 fnv = "1.0.6"
 zeroize = "1.1.1"

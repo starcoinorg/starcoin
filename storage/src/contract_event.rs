@@ -5,8 +5,8 @@ use crate::define_storage;
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::{ContractEventStore, CONTRACT_EVENT_PREFIX_NAME};
 use anyhow::Result;
+use bcs_ext::BCSCodec;
 use crypto::HashValue;
-use scs::SCSCodec;
 use starcoin_types::contract_event::ContractEvent;
 
 define_storage!(

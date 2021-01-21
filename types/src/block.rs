@@ -7,7 +7,7 @@ use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use scs::Sample;
+use bcs_ext::Sample;
 use serde::__private::Formatter;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

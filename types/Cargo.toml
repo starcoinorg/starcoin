@@ -26,7 +26,7 @@ thiserror = "1.0.23"
 tiny-keccak = { version = "1.5.0", default-features = false }
 num_enum = "0.5.1"
 actix = "0.10.0"
-scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-uint = {path = "uint"}
 network-p2p-types = { path = "../network-p2p/types"}

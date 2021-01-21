@@ -1,14 +1,14 @@
-// Utility for converting a Move value to its binary representation in SCS (Diem Canonical
-// Serialization). SCS is the binary encoding for Move resources and other non-module values
+// Utility for converting a Move value to its binary representation in BCS (Diem Canonical
+// Serialization). BCS is the binary encoding for Move resources and other non-module values
 // published on-chain.
 
 address 0x1 {
-module SCS {
+module BCS {
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
     }
-    // Return the binary representation of `v` in SCS (Starcoin Canonical Serialization) format
+    // Return the binary representation of `v` in BCS (Starcoin Canonical Serialization) format
     native public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8>;
 
     // Return the address of key bytes

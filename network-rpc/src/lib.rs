@@ -115,7 +115,7 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
                 }
             };
 
-            let resp = scs::to_bytes(&result).expect("NetRpc Result must encode success.");
+            let resp = bcs_ext::to_bytes(&result).expect("NetRpc Result must encode success.");
 
             if let Err(e) = msg.request.pending_response.send(resp) {
                 //TODO change log level

@@ -409,8 +409,8 @@ mod tests {
         #[ignore]
         #[test]
         fn test_access_path(access_path in any::<AccessPath>()){
-           let bytes = scs::to_bytes(&access_path).expect("access_path serialize should ok.");
-           let access_path2 = scs::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
+           let bytes = bcs_ext::to_bytes(&access_path).expect("access_path serialize should ok.");
+           let access_path2 = bcs_ext::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
            prop_assert_eq!(&access_path, &access_path2);
            let access_path_str = access_path.to_string();
            let access_path3 = AccessPath::from_str(access_path_str.as_str()).expect("access_path from str should ok");

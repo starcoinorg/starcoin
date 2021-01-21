@@ -246,7 +246,7 @@ impl<'a> AccountStateReader<'a> {
             .reader
             .get(&access_path)
             .and_then(|state| match state {
-                Some(state) => Ok(Some(scs::from_bytes::<R>(state.as_slice())?)),
+                Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
                 None => Ok(None),
             })?;
         Ok(r)
@@ -282,7 +282,9 @@ impl<'a> AccountStateReader<'a> {
                 BalanceResource::access_path_for(type_tag),
             ))
             .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(scs::from_bytes::<BalanceResource>(bytes.as_slice())?)),
+                Some(bytes) => Ok(Some(bcs_ext::from_bytes::<BalanceResource>(
+                    bytes.as_slice(),
+                )?)),
                 None => Ok(None),
             })?
             .map(|resource| resource.token()))

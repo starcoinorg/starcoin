@@ -97,7 +97,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
         if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
             File::open(module_file)?.read_to_end(&mut bytes)?;
-            let upgrade_package: Package = scs::from_bytes(&bytes)?;
+            let upgrade_package: Package = bcs_ext::from_bytes(&bytes)?;
             info!(
                 "upgrade package address : {:?}",
                 upgrade_package.package_address()

@@ -65,7 +65,7 @@ fn assemble_multisig_txn(partial: Vec<PathBuf>) -> Result<SignedUserTransaction>
         let mut f = File::open(p)?;
         let mut data = vec![];
         f.read_to_end(&mut data)?;
-        let txn: MultisigTransaction = scs::from_bytes(data.as_slice())?;
+        let txn: MultisigTransaction = bcs_ext::from_bytes(data.as_slice())?;
         txns.push(txn);
     }
     let mut first_txn = txns.swap_remove(0);

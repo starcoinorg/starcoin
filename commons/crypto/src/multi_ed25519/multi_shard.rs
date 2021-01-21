@@ -277,7 +277,7 @@ impl MultiEd25519SignatureShard {
         public_key: &MultiEd25519PublicKey,
     ) -> Result<()> {
         let mut bytes = <T as CryptoHash>::Hasher::seed().to_vec();
-        scs::serialize_into(&mut bytes, &message)
+        bcs_ext::serialize_into(&mut bytes, &message)
             .map_err(|_| CryptoMaterialError::SerializationError)?;
         self.verify_arbitrary_msg(&bytes, public_key)
     }

@@ -32,7 +32,10 @@ fn test_crypto_hash() {
         str_field: "hello".to_string(),
     };
 
-    assert_eq!(scs::to_bytes(&o).unwrap(), scs::to_bytes(&o3).unwrap());
+    assert_eq!(
+        bcs_ext::to_bytes(&o).unwrap(),
+        bcs_ext::to_bytes(&o3).unwrap()
+    );
     let hash3 = o3.crypto_hash();
     assert_ne!(hash1, hash3);
 }

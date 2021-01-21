@@ -56,7 +56,7 @@ impl CommandAction for PartialSignTxnCommand {
             let mut f = File::open(&opt.input)?;
             let mut data = vec![];
             f.read_to_end(&mut data)?;
-            scs::from_bytes(data.as_slice())?
+            bcs_ext::from_bytes(data.as_slice())?
         };
         let wallet_account = ctx.state().get_account_or_default(opt.signer)?;
         let signer_address = wallet_account.address;
@@ -93,7 +93,7 @@ impl CommandAction for PartialSignTxnCommand {
             output_dir
         };
         let mut file = File::create(output_file_path.clone())?;
-        scs::serialize_into(&mut file, &txn)?;
+        bcs_ext::serialize_into(&mut file, &txn)?;
         Ok(output_file_path)
     }
 }

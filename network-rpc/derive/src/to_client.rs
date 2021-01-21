@@ -68,7 +68,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
     pub mod gen_client{
         use super::*;
         use std::time::Duration;
-        use network_rpc_core::export::scs::{SCSCodec,from_bytes};
+        use network_rpc_core::export::bcs_ext::{BCSCodec,from_bytes};
         use network_rpc_core::export::log::*;
         use futures::prelude::*;
         use network_rpc_core::{RawRpcClient, PeerId};

@@ -83,7 +83,7 @@ fn test_network_rpc() {
             .unwrap()
     });
     let state = state_with_proof.state.unwrap();
-    let epoch = scs::from_bytes::<Epoch>(state.as_slice()).unwrap();
+    let epoch = bcs_ext::from_bytes::<Epoch>(state.as_slice()).unwrap();
     state_with_proof
         .proof
         .verify(state_root, access_path, Some(&state))

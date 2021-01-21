@@ -1,11 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! # Starcoin Canonical Serialization (SCS)
-//!
-//! SCS defines a deterministic means for translating a message or data structure into bytes
-//! irrespective of platform, architecture, or programming language.
-
 // Just a wrap to BCS currently.
 use anyhow::Result;
 pub use bcs::MAX_SEQUENCE_LENGTH;
@@ -29,12 +24,12 @@ where
     bcs::from_bytes(bytes).map_err(|e| e.into())
 }
 
-pub trait SCSCodec<'a>: Sized {
+pub trait BCSCodec<'a>: Sized {
     fn encode(&self) -> Result<Vec<u8>>;
     fn decode(bytes: &'a [u8]) -> Result<Self>;
 }
 
-impl<'a, T> SCSCodec<'a> for T
+impl<'a, T> BCSCodec<'a> for T
 where
     T: Serialize + Deserialize<'a>,
 {

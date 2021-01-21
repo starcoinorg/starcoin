@@ -196,7 +196,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
         };
         let mut file = File::create(output_file.clone())?;
         // write txn to file
-        scs::serialize_into(&mut file, &txn)?;
+        bcs_ext::serialize_into(&mut file, &txn)?;
         Ok(output_file)
     }
 }

@@ -16,7 +16,7 @@ use crate::{
     write_set::WriteSet,
 };
 use anyhow::{format_err, Error, Result};
-use scs::Sample;
+use bcs_ext::Sample;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
@@ -204,7 +204,7 @@ impl RawUserTransaction {
     }
 
     pub fn txn_size(&self) -> usize {
-        scs::to_bytes(self)
+        bcs_ext::to_bytes(self)
             .expect("Unable to serialize RawUserTransaction")
             .len()
     }

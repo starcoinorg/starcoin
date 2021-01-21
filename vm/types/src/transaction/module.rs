@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use scs::Sample;
+use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;

@@ -84,7 +84,7 @@ impl CommandAction for UpgradeModuleExeCommand {
         if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
             File::open(module_file)?.read_to_end(&mut bytes)?;
-            let upgrade_package = scs::from_bytes(&bytes)?;
+            let upgrade_package = bcs_ext::from_bytes(&bytes)?;
 
             let signed_txn = sign_txn_with_account_by_rpc_client(
                 cli_state,

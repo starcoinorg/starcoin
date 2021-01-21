@@ -15,7 +15,7 @@ starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}
 merkle-tree = { package = "forkable-jellyfish-merkle", path = "../../core/forkable-jellyfish-merkle" }
 starcoin-state-tree = { path = "../state-tree" }
-scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 
 [dev-dependencies]

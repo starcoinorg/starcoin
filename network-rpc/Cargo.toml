@@ -28,7 +28,7 @@ starcoin-logger = {path = "../commons/logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 prometheus = "0.10"
 network-api = { path="../network/api" }
-scs = { path = "../commons/scs", package = "starcoin-canonical-serialization" }
+bcs-ext = { path = "../commons/bcs_ext", package = "bcs-ext" }
 starcoin-types = { path = "../types", package = "starcoin-types" }
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }

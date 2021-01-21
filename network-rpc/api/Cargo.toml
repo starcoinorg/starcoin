@@ -18,7 +18,7 @@ starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-state-api = { path = "../../state/api" }
 starcoin-state-tree = { path = "../../state/state-tree" }
 network-rpc-derive = { path = "../derive" }
-scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }
+bcs-ext = { path = "../../commons/bcs_ext", package = "bcs-ext" }
 starcoin-logger = {path = "../../commons/logger"}
 serde = { version = "1.0", features = ["derive"] }
 actix = "0.10.0"

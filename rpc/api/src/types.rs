@@ -6,8 +6,8 @@ pub mod pubsub;
 
 pub use node_api_types::*;
 
+use bcs_ext::BCSCodec;
 use jsonrpc_core_client::RpcChannel;
-use scs::SCSCodec;
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
@@ -257,7 +257,7 @@ pub struct RawUserTransactionView {
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: StrView<u64>,
 
-    // The transaction payload in scs bytes.
+    // The transaction payload in bcs_ext bytes.
     #[serde(
         serialize_with = "serialize_binary",
         deserialize_with = "deserialize_binary"

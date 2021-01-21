@@ -1,6 +1,6 @@
 use crate::block::{Block, BlockHeader};
 use crate::transaction::{SignedUserTransaction, Transaction};
-use scs::Sample;
+use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 

@@ -18,6 +18,6 @@ starcoin-state-api = {path = "../api"}
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-logger = {path = "../../commons/logger"}
 starcoin-state-tree = {path = "../state-tree"}
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0" }
 forkable-jellyfish-merkle = {path = "../../core/forkable-jellyfish-merkle"}

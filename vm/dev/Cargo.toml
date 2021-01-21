@@ -17,4 +17,4 @@ starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}
 starcoin-statedb = { path = "../../state/statedb"}
 starcoin-resource-viewer = {path = "../resource-viewer"}
-starcoin-canonical-serialization = {path  ="../../commons/scs"}
+bcs-ext = {path  = "../../commons/bcs_ext" }
