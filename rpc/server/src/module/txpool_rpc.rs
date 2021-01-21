@@ -5,6 +5,8 @@ use crate::module::{convert_to_rpc_error, map_err};
 use bcs_ext::BCSCodec;
 use futures::future::TryFutureExt;
 use starcoin_crypto::HashValue;
+/// Re-export the API
+pub use starcoin_rpc_api::txpool::*;
 use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
@@ -44,7 +46,7 @@ where
             .expect("txpool should return result")
             .map_err(convert_to_rpc_error);
 
-        Box::new(jsonrpc_core::futures::done(result.map(|_| txn_hash)))
+        Box::pin(futures::future::ready(result.map(|_| txn_hash)))
     }
 
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
@@ -61,12 +63,12 @@ where
                     .map(|_| txn_hash)
                     .map_err(convert_to_rpc_error)
             });
-        Box::new(jsonrpc_core::futures::done(result))
+        Box::pin(futures::future::ready(result))
     }
 
     fn gas_price(&self) -> FutureResult<StrView<u64>> {
         let gas_price = 1u64;
-        Box::new(jsonrpc_core::futures::finished(gas_price.into()))
+        Box::pin(futures::future::ok(gas_price.into()))
     }
 
     fn pending_txns(
@@ -80,7 +82,7 @@ where
             .into_iter()
             .map(TryInto::try_into)
             .collect();
-        Box::new(jsonrpc_core::futures::done(txns.map_err(map_err)))
+        Box::pin(futures::future::ready(txns.map_err(map_err)))
     }
 
     fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>> {
@@ -90,17 +92,17 @@ where
             .map(TryInto::try_into)
             .transpose()
             .map_err(map_err);
-        Box::new(jsonrpc_core::futures::done(txn))
+        Box::pin(futures::future::ready(txn))
     }
 
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
         let result = self.service.next_sequence_number(address);
-        Box::new(futures::future::ok(result).compat())
+        Box::pin(futures::future::ok(result))
     }
 
     fn state(&self) -> FutureResult<TxPoolStatus> {
         let state = self.service.status();
-        Box::new(futures::future::ok(state).compat())
+        Box::pin(futures::future::ok(state))
     }
 }
 

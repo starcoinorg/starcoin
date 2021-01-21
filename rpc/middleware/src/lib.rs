@@ -1,14 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use futures01::{future::Either, Future};
-use jsonrpc_core::{Call, Id, Metadata, Middleware, Output, Request, Response};
+use futures::{future::Either, Future, FutureExt};
+use jsonrpc_core::{Call, FutureResponse, Id, Metadata, Middleware, Output, Request, Response};
 use starcoin_logger::prelude::*;
 use starcoin_metrics::HistogramTimer;
 use std::fmt;
 
 mod metrics;
 
+use jsonrpc_core::middleware::NoopCallFuture;
 pub use metrics::*;
 
 #[derive(Clone, Debug)]
@@ -94,28 +95,25 @@ impl From<&Call> for RpcCallRecord {
     }
 }
 
-pub type BoxFuture = Box<dyn Future<Item = Option<Response>, Error = ()> + Send>;
-pub type BoxCallFuture = Box<dyn Future<Item = Option<Output>, Error = ()> + Send>;
-
 #[derive(Clone)]
 pub struct MetricMiddleware;
 
 impl<M: Metadata> Middleware<M> for MetricMiddleware {
-    type Future = BoxFuture;
-    type CallFuture = BoxCallFuture;
+    type Future = FutureResponse;
+    type CallFuture = NoopCallFuture;
 
     fn on_request<F, X>(&self, request: Request, meta: M, next: F) -> Either<Self::Future, X>
     where
         F: Fn(Request, M) -> X + Send + Sync,
-        X: Future<Item = Option<Response>, Error = ()> + Send + 'static,
+        X: Future<Output = Option<Response>> + Send + 'static,
     {
-        Either::B(next(request, meta))
+        Either::Right(next(request, meta))
     }
 
     fn on_call<F, X>(&self, call: Call, meta: M, next: F) -> Either<Self::CallFuture, X>
     where
         F: Fn(Call, M) -> X + Send + Sync,
-        X: Future<Item = Option<Output>, Error = ()> + Send + 'static,
+        X: Future<Output = Option<Output>> + Send + 'static,
     {
         let record: RpcCallRecord = (&call).into();
         let fut = next(call, meta).map(move |output| {
@@ -123,8 +121,8 @@ impl<M: Metadata> Middleware<M> for MetricMiddleware {
             output
         });
         // must declare type to convert type then wrap with Either.
-        let box_fut: Self::CallFuture = Box::new(fut);
-        Either::A(box_fut)
+        let box_fut: Self::CallFuture = Box::pin(fut);
+        Either::Left(box_fut)
     }
 }
 
@@ -141,6 +139,7 @@ fn output_to_code(output: Option<&Output>) -> i64 {
 mod tests {
     use super::*;
     use failure::_core::time::Duration;
+    use futures::executor::block_on;
     use jsonrpc_core::{MetaIoHandler, Params, Value};
     use rand::Rng;
     use starcoin_metrics::get_all_metrics;
@@ -148,7 +147,7 @@ mod tests {
     #[stest::test]
     fn test_middleware() {
         let mut io_handler = MetaIoHandler::with_middleware(MetricMiddleware);
-        io_handler.add_method("status", |_params: Params| {
+        io_handler.add_method("status", |_params: Params| async {
             let mut rng = rand::thread_rng();
             let sleep_time = rng.gen_range(1, 50);
             std::thread::sleep(Duration::from_millis(sleep_time));
@@ -165,7 +164,7 @@ mod tests {
             futs.push(fut);
         }
         for fut in futs {
-            assert!(fut.wait().unwrap().is_some());
+            assert!(block_on(fut).is_some());
         }
         info!("metrics: {:?}", get_all_metrics());
     }

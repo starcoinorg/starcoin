@@ -4,11 +4,9 @@
 use crate::api_registry::ApiRegistry;
 use crate::extractors::{RpcExtractor, WsExtractor};
 use anyhow::Result;
-use failure::format_err;
-use futures::compat::Future01CompatExt;
-use futures::FutureExt;
-use jsonrpc_core::futures::sync::mpsc;
-use jsonrpc_core::futures::Stream;
+use futures::stream::*;
+use futures::{FutureExt, StreamExt};
+use jsonrpc_core::futures::channel::mpsc;
 use jsonrpc_core::MetaIoHandler;
 use jsonrpc_core_client::{
     transports::{duplex, local::LocalRpc},
@@ -258,14 +256,13 @@ pub fn connect_local(
     handler: MetaIoHandler<Metadata>,
 ) -> (
     RpcChannel,
-    impl jsonrpc_core::futures::Future<Item = (), Error = RpcError>,
+    impl jsonrpc_core::futures::Future<Output = Result<(), RpcError>>,
 ) {
-    let (tx, rx) = mpsc::channel(0);
+    let (tx, rx) = mpsc::unbounded();
     let meta = Metadata::new(Arc::new(Session::new(tx)));
     let (sink, stream) = LocalRpc::with_metadata(IoHandlerWrap(handler), meta).split();
-    let stream = stream
-        .select(rx.map_err(|_| RpcError::Other(format_err!("Pubsub channel returned an error"))));
-    let (rpc_client, sender) = duplex(sink, stream);
+    let stream = select(stream, rx);
+    let (rpc_client, sender) = duplex(Box::pin(sink), Box::pin(stream));
     (sender, rpc_client)
 }
 
@@ -277,7 +274,7 @@ impl ServiceHandler<Self, ConnectLocal> for RpcService {
         let mut local_io_handler = MetaIoHandler::default();
         local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
         let (rpc_channel, fut) = connect_local(local_io_handler);
-        ctx.spawn(fut.compat().map(|rs| {
+        ctx.spawn(fut.map(|rs| {
             if let Err(e) = rs {
                 error!("Local connect rpc error: {:?}", e);
             }

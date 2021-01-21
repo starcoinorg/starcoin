@@ -105,29 +105,21 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     // Subscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"events"}, {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
-    let resp = io
-        .handle_request(request, metadata.clone())
-        .compat()
-        .await
-        .unwrap();
+    let resp = io.handle_request(request, metadata.clone()).await.unwrap();
     assert_eq!(resp, Some(response.to_owned()));
 
     // Subscribe error
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"events"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: events","data":"\"Expected a filter object.\""},"id":1}"#;
 
-    let resp = io
-        .handle_request(request, metadata.clone())
-        .compat()
-        .await
-        .unwrap();
+    let resp = io.handle_request(request, metadata.clone()).await.unwrap();
     assert_eq!(resp, Some(response.to_owned()));
 
     // send block
     let block_detail = Arc::new(executed_block);
     bus.broadcast(NewHeadBlock(block_detail))?;
 
-    let mut receiver = receiver.compat();
+    let mut receiver = receiver;
 
     let res = timeout(Duration::from_secs(5), receiver.next())
         .await?
@@ -169,13 +161,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // Fail if params are provided
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newPendingTransactions"}, {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: newPendingTransactions","data":"\"Expected no parameters.\""},"id":1}"#;
-    let resp = io.handle_request(request, metadata.clone()).compat().await;
+    let resp = io.handle_request(request, metadata.clone()).await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
 
     // Subscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newPendingTransactions"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
-    let resp = io.handle_request(request, metadata.clone()).compat().await;
+    let resp = io.handle_request(request, metadata.clone()).await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
 
     // Send new transactions
@@ -193,7 +185,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     };
     let txn_id = txn.id();
     txpool_service.add_txns(vec![txn]).pop().unwrap().unwrap();
-    let mut receiver = receiver.compat();
+    let mut receiver = receiver;
     let res = receiver.next().await.transpose().unwrap();
     let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
     let suffix = r#""],"subscription":0}}"#;
@@ -202,7 +194,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;
-    let resp = io.handle_request(request, metadata).compat().await;
+    let resp = io.handle_request(request, metadata).await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
 
     let res = timeout(Duration::from_secs(1), receiver.next())
@@ -233,7 +225,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     // Subscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newMintBlock"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
-    let resp = io.handle_request(request, metadata.clone()).compat().await;
+    let resp = io.handle_request(request, metadata.clone()).await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
     // Generate a event
     let diff = U256::from(1024);
@@ -241,7 +233,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let mint_block_event =
         MintBlockEvent::new(ConsensusStrategy::Dummy, header_hash.clone(), diff, 0);
     bus.broadcast(mint_block_event.clone()).unwrap();
-    let res = timeout(Duration::from_secs(1), receiver.compat().next())
+    let res = timeout(Duration::from_secs(1), receiver.next())
         .await?
         .transpose()
         .unwrap()
@@ -254,7 +246,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     // Unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;
-    let resp = io.handle_request(request, metadata).compat().await;
+    let resp = io.handle_request(request, metadata).await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
     Ok(())
 }

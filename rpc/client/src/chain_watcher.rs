@@ -5,7 +5,6 @@ use crate::pubsub_client::PubSubClient;
 use actix::prelude::*;
 use actix::AsyncContext;
 use futures03::channel::oneshot;
-use futures03::compat::Stream01CompatExt;
 use jsonrpc_core_client::RpcError;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -53,7 +52,7 @@ impl ChainWatcher {
             .then(|res, act, ctx| {
                 match res {
                     Ok(s) => {
-                        ctx.add_stream(s.compat());
+                        ctx.add_stream(s);
                     }
                     Err(e) => {
                         // TODO: figure out why this error cannot printed.

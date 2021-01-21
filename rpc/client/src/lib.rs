@@ -4,7 +4,7 @@
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 use actix::{Addr, System};
-use failure::Fail;
+use anyhow::anyhow;
 use futures03::channel::oneshot;
 use futures03::{TryStream, TryStreamExt};
 use jsonrpc_client_transports::RawClient;
@@ -48,12 +48,8 @@ use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use tokio01::reactor::Reactor;
-use tokio_compat::prelude::*;
-use tokio_compat::runtime::Runtime;
 
 pub mod chain_watcher;
 mod pubsub_client;
@@ -63,7 +59,7 @@ pub use jsonrpc_core::Params;
 
 #[derive(Clone)]
 enum ConnSource {
-    Ipc(PathBuf, Arc<Reactor>),
+    Ipc(PathBuf),
     WebSocket(String),
     Local(Box<RpcChannel>),
 }
@@ -71,7 +67,7 @@ enum ConnSource {
 impl std::fmt::Debug for ConnSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConnSource::Ipc(path, _) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
+            ConnSource::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
             ConnSource::WebSocket(url) => write!(f, "WebSocket({})", url),
             ConnSource::Local(_) => write!(f, "Local"),
         }
@@ -88,16 +84,11 @@ pub struct RpcClient {
 
 struct ConnectionProvider {
     conn_source: ConnSource,
-    //TODO remove runtime after jsonrpc upgrade.
-    runtime: Mutex<Runtime>,
 }
 
 impl ConnectionProvider {
-    fn new(conn_source: ConnSource, runtime: Runtime) -> Self {
-        Self {
-            conn_source,
-            runtime: Mutex::new(runtime),
-        }
+    fn new(conn_source: ConnSource) -> Self {
+        Self { conn_source }
     }
 
     fn block_on<F>(&self, future: F) -> F::Output
@@ -105,8 +96,7 @@ impl ConnectionProvider {
         F: futures03::Future + std::marker::Send,
         F::Output: std::marker::Send,
     {
-        let result = self.runtime.lock().block_on_std(future);
-        result
+        block_on(future)
     }
 
     fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
@@ -117,18 +107,8 @@ impl ConnectionProvider {
         &self,
     ) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
         match self.conn_source.clone() {
-            ConnSource::Ipc(sock_path, reactor) => {
-                let conn_fut = ipc::connect(sock_path, &reactor.handle()).map_err(|e| {
-                    jsonrpc_client_transports::RpcError::Other(failure::Error::from(e))
-                })?;
-                conn_fut.compat().await
-            }
-            ConnSource::WebSocket(url) => {
-                ws::try_connect(url.as_str())
-                    .map_err(jsonrpc_client_transports::RpcError::Other)?
-                    .compat()
-                    .await
-            }
+            ConnSource::Ipc(sock_path) => ipc::connect(sock_path).await,
+            ConnSource::WebSocket(url) => ws::try_connect(url.as_str())?.await,
             ConnSource::Local(channel) => Ok(*channel),
         }
     }
@@ -137,7 +117,7 @@ impl ConnectionProvider {
 impl RpcClient {
     pub(crate) fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
-        let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
+        let provider = ConnectionProvider::new(conn_source);
         let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into(); //Self::create_client_inner(conn_source.clone()).map_err(map_err)?;
         let pubsub_client = inner.pubsub_client.clone();
         let handle = std::thread::spawn(move || {
@@ -172,9 +152,8 @@ impl RpcClient {
     }
 
     pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
-        let reactor = Reactor::new().unwrap();
         let path = sock_path.as_ref().to_path_buf();
-        Self::new(ConnSource::Ipc(path, Arc::new(reactor)))
+        Self::new(ConnSource::Ipc(path))
     }
 
     pub fn watch_txn(
@@ -206,107 +185,75 @@ impl RpcClient {
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
-        self.call_rpc_blocking(|inner| async move { inner.node_client.status().compat().await })
+        self.call_rpc_blocking(|inner| inner.node_client.status())
             .map_err(map_err)
     }
 
     pub fn node_info(&self) -> anyhow::Result<NodeInfo> {
-        self.call_rpc_blocking(|inner| async move { inner.node_client.info().compat().await })
+        self.call_rpc_blocking(|inner| inner.node_client.info())
             .map_err(map_err)
     }
 
     pub async fn node_info_async(&self) -> anyhow::Result<NodeInfo> {
-        self.call_rpc_async(|inner| async move { inner.node_client.info().compat().await })
+        self.call_rpc_async(|inner| inner.node_client.info())
             .await
             .map_err(map_err)
     }
 
     pub fn node_metrics(&self) -> anyhow::Result<HashMap<String, String>> {
-        self.call_rpc_blocking(|inner| async move { inner.node_client.metrics().compat().await })
+        self.call_rpc_blocking(|inner| inner.node_client.metrics())
             .map_err(map_err)
     }
 
     pub fn node_peers(&self) -> anyhow::Result<Vec<PeerInfoView>> {
-        self.call_rpc_blocking(|inner| async move { inner.node_client.peers().compat().await })
+        self.call_rpc_blocking(|inner| inner.node_client.peers())
             .map_err(map_err)
     }
 
     pub fn node_list_service(&self) -> anyhow::Result<Vec<ServiceInfo>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.node_manager_client.list_service().compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.node_manager_client.list_service())
+            .map_err(map_err)
     }
 
     pub fn node_start_service(&self, service_name: String) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .node_manager_client
-                .start_service(service_name)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.node_manager_client.start_service(service_name))
+            .map_err(map_err)
     }
 
     pub fn node_check_service(&self, service_name: String) -> anyhow::Result<ServiceStatus> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .node_manager_client
-                .check_service(service_name)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.node_manager_client.check_service(service_name))
+            .map_err(map_err)
     }
 
     pub fn node_stop_service(&self, service_name: String) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .node_manager_client
-                .stop_service(service_name)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.node_manager_client.stop_service(service_name))
+            .map_err(map_err)
     }
 
     pub fn node_shutdown_system(&self) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.node_manager_client.shutdown_system().compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.node_manager_client.shutdown_system())
+            .map_err(map_err)
     }
 
     pub fn next_sequence_number_in_txpool(
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Option<u64>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .txpool_client
-                .next_sequence_number(address)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.txpool_client.next_sequence_number(address))
+            .map_err(map_err)
     }
 
     pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.txpool_client.submit_transaction(txn).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
+            .map_err(map_err)
     }
 
     pub fn get_pending_txn_by_hash(
         &self,
         txn_hash: HashValue,
     ) -> anyhow::Result<Option<SignedUserTransactionView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.txpool_client.pending_txn(txn_hash).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txn(txn_hash))
+            .map_err(map_err)
     }
 
     pub fn get_pending_txns_of_sender(
@@ -314,51 +261,35 @@ impl RpcClient {
         sender: AccountAddress,
         max_len: Option<u32>,
     ) -> anyhow::Result<Vec<SignedUserTransactionView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .txpool_client
-                .pending_txns(sender, max_len)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txns(sender, max_len))
+            .map_err(map_err)
     }
 
     //TODO should split client for different api ?
     // such as  RpcClient().account().default()
     pub fn account_default(&self) -> anyhow::Result<Option<AccountInfo>> {
-        self.call_rpc_blocking(|inner| async move { inner.account_client.default().compat().await })
+        self.call_rpc_blocking(|inner| inner.account_client.default())
             .map_err(map_err)
     }
 
     pub fn set_default_account(&self, addr: AccountAddress) -> anyhow::Result<Option<AccountInfo>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .account_client
-                .set_default_account(addr)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.set_default_account(addr))
+            .map_err(map_err)
     }
 
     pub fn account_create(&self, password: String) -> anyhow::Result<AccountInfo> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.account_client.create(password).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.create(password))
+            .map_err(map_err)
     }
 
     pub fn account_list(&self) -> anyhow::Result<Vec<AccountInfo>> {
-        self.call_rpc_blocking(|inner| async move { inner.account_client.list().compat().await })
+        self.call_rpc_blocking(|inner| inner.account_client.list())
             .map_err(map_err)
     }
 
     pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<AccountInfo>> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.account_client.get(address).compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.get(address))
+            .map_err(map_err)
     }
 
     /// partial sign a multisig account's txn
@@ -367,27 +298,18 @@ impl RpcClient {
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
     ) -> anyhow::Result<SignedUserTransaction> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .account_client
-                .sign_txn(raw_txn, signer_address)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.sign_txn(raw_txn, signer_address))
+            .map_err(map_err)
     }
 
     pub fn account_sign_txn_request(
         &self,
         txn_request: TransactionRequest,
     ) -> anyhow::Result<SignedUserTransaction> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
+        self.call_rpc_blocking(|inner| inner
                 .account_client
                 .sign_txn_request(txn_request)
-                .compat()
-                .await
-        })
+        )
         .map_err(map_err)
         .and_then(|d: String| {
             hex::decode(d.as_str().strip_prefix("0x").unwrap_or_else(|| d.as_str()))
@@ -401,14 +323,8 @@ impl RpcClient {
         raw_txn: RawUserTransaction,
     ) -> anyhow::Result<SignedUserTransaction> {
         let signer = raw_txn.sender();
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .account_client
-                .sign_txn(raw_txn, signer)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.sign_txn(raw_txn, signer))
+            .map_err(map_err)
     }
 
     pub fn account_change_password(
@@ -416,21 +332,17 @@ impl RpcClient {
         address: AccountAddress,
         new_password: String,
     ) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .account_client
                 .change_account_password(address, new_password)
-                .compat()
-                .await
         })
         .map_err(map_err)
     }
 
     pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<()> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.account_client.lock(address).compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.lock(address))
+            .map_err(map_err)
     }
     pub fn account_unlock(
         &self,
@@ -438,12 +350,10 @@ impl RpcClient {
         password: String,
         duration: std::time::Duration,
     ) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .account_client
                 .unlock(address, password, Some(duration.as_secs() as u32))
-                .compat()
-                .await
         })
         .map_err(map_err)
     }
@@ -452,14 +362,8 @@ impl RpcClient {
         address: AccountAddress,
         password: String,
     ) -> anyhow::Result<Vec<u8>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .account_client
-                .export(address, password)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.export(address, password))
+            .map_err(map_err)
     }
     pub fn account_import(
         &self,
@@ -467,35 +371,21 @@ impl RpcClient {
         private_key: Vec<u8>,
         password: String,
     ) -> anyhow::Result<AccountInfo> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .account_client
-                .import(address, private_key, password)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.import(address, private_key, password))
+            .map_err(map_err)
     }
 
     pub fn account_accepted_tokens(
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Vec<TokenCode>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.account_client.accepted_tokens(address).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.account_client.accepted_tokens(address))
+            .map_err(map_err)
     }
 
     pub fn get_code(&self, module_id: ModuleId) -> anyhow::Result<Option<String>> {
         let result: Option<StrView<Vec<u8>>> = self
-            .call_rpc_blocking(|inner| async move {
-                inner
-                    .contract_client
-                    .get_code(StrView(module_id))
-                    .compat()
-                    .await
-            })
+            .call_rpc_blocking(|inner| inner.contract_client.get_code(StrView(module_id)))
             .map_err(map_err)?;
         Ok(result.map(|s| s.to_string()))
     }
@@ -505,21 +395,17 @@ impl RpcClient {
         addr: AccountAddress,
         resource_type: StructTag,
     ) -> anyhow::Result<Option<AnnotatedMoveStructView>> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .contract_client
                 .get_resource(addr, StrView(resource_type))
-                .compat()
-                .await
         })
         .map_err(map_err)
     }
 
     pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.state_client.get(access_path).compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.state_client.get(access_path))
+            .map_err(map_err)
     }
 
     pub fn state_get_with_proof(
@@ -534,59 +420,50 @@ impl RpcClient {
                 .await
         })
         .map_err(map_err)
+    pub fn state_get_with_proof(&self, access_path: AccessPath) -> anyhow::Result<StateWithProof> {
+        self.call_rpc_blocking(|inner| inner.state_client.get_with_proof(access_path))
+            .map_err(map_err)
     }
 
     pub fn state_get_with_proof_by_root(
         &self,
         access_path: AccessPath,
         state_root: HashValue,
+    ) -> anyhow::Result<StateWithProof> {
+        self.call_rpc_blocking(|inner| {
     ) -> anyhow::Result<StateWithProofView> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .state_client
                 .get_with_proof_by_root(access_path, state_root)
-                .compat()
-                .await
         })
         .map_err(map_err)
     }
 
     pub fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.state_client.get_state_root().compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.state_client.get_state_root())
+            .map_err(map_err)
     }
 
     pub fn state_get_account_state(
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Option<AccountState>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.state_client.get_account_state(address).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.state_client.get_account_state(address))
+            .map_err(map_err)
     }
 
     pub fn get_account_state_set(
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Option<AccountStateSetView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .state_client
-                .get_account_state_set(address)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.state_client.get_account_state_set(address))
+            .map_err(map_err)
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValueView>> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.contract_client.call(call).compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.contract_client.call(call))
+            .map_err(map_err)
     }
 
     pub fn debug_set_log_level(
@@ -594,205 +471,145 @@ impl RpcClient {
         logger_name: Option<String>,
         level: Level,
     ) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .debug_client
                 .set_log_level(logger_name, level.to_string())
-                .compat()
-                .await
         })
         .map_err(map_err)
     }
 
     pub fn debug_set_log_pattern(&self, pattern: LogPattern) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.debug_client.set_log_pattern(pattern).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.debug_client.set_log_pattern(pattern))
+            .map_err(map_err)
     }
 
     pub fn debug_panic(&self) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move { inner.debug_client.panic().compat().await })
+        self.call_rpc_blocking(|inner| inner.debug_client.panic())
             .map_err(map_err)
     }
 
     pub fn debug_txfactory_status(&self, action: FactoryAction) -> anyhow::Result<bool> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.debug_client.txfactory_status(action).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.debug_client.txfactory_status(action))
+            .map_err(map_err)
     }
 
     pub fn sleep(&self, time: u64) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move { inner.debug_client.sleep(time).compat().await })
+        self.call_rpc_blocking(|inner| inner.debug_client.sleep(time))
             .map_err(map_err)
     }
 
     pub fn chain_id(&self) -> anyhow::Result<ChainId> {
-        self.call_rpc_blocking(|inner| async move { inner.chain_client.id().compat().await })
+        self.call_rpc_blocking(|inner| inner.chain_client.id())
             .map_err(map_err)
     }
 
     pub fn chain_info(&self) -> anyhow::Result<ChainInfoView> {
-        self.call_rpc_blocking(|inner| async move { inner.chain_client.info().compat().await })
+        self.call_rpc_blocking(|inner| inner.chain_client.info())
             .map_err(map_err)
     }
 
     pub fn epoch_info(&self) -> anyhow::Result<EpochInfo> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.chain_client.current_epoch().compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.current_epoch())
+            .map_err(map_err)
     }
 
     pub fn get_epoch_info_by_number(&self, number: BlockNumber) -> anyhow::Result<EpochInfo> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_epoch_info_by_number(number)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_epoch_info_by_number(number))
+            .map_err(map_err)
     }
 
     pub fn get_epoch_uncles_by_number(
         &self,
         number: BlockNumber,
     ) -> anyhow::Result<Vec<BlockSummaryView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_epoch_uncles_by_number(number)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_epoch_uncles_by_number(number))
+            .map_err(map_err)
     }
 
     pub fn epoch_uncle_summary_by_number(
         &self,
         number: BlockNumber,
     ) -> anyhow::Result<EpochUncleSummaryView> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .epoch_uncle_summary_by_number(number)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.epoch_uncle_summary_by_number(number))
+            .map_err(map_err)
     }
 
     pub fn get_headers(
         &self,
         block_hashes: Vec<HashValue>,
     ) -> anyhow::Result<Vec<BlockHeaderView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.get_headers(block_hashes).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_headers(block_hashes))
+            .map_err(map_err)
     }
 
     pub fn get_global_time_by_number(
         &self,
         number: BlockNumber,
     ) -> anyhow::Result<GlobalTimeOnChain> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_global_time_by_number(number)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_global_time_by_number(number))
+            .map_err(map_err)
     }
 
     pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Option<BlockView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.get_block_by_hash(hash).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_hash(hash))
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_block_by_uncle(
+        &self,
+        uncle_id: HashValue,
+    ) -> anyhow::Result<Option<BlockView>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_uncle(uncle_id))
+            .map_err(map_err)
     }
 
     pub fn chain_get_block_by_number(
         &self,
         number: BlockNumber,
     ) -> anyhow::Result<Option<BlockView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_block_by_number(number)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_number(number))
+            .map_err(map_err)
     }
     pub fn chain_get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         count: u64,
     ) -> anyhow::Result<Vec<BlockView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_blocks_by_number(number, count)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_blocks_by_number(number, count))
+            .map_err(map_err)
     }
 
     pub fn chain_get_transaction(
         &self,
         txn_id: HashValue,
     ) -> anyhow::Result<Option<TransactionView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.get_transaction(txn_id).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction(txn_id))
+            .map_err(map_err)
     }
 
     pub fn chain_get_transaction_info(
         &self,
         txn_hash: HashValue,
     ) -> anyhow::Result<Option<TransactionInfoView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_transaction_info(txn_hash)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction_info(txn_hash))
+            .map_err(map_err)
     }
 
     pub fn chain_get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
     ) -> anyhow::Result<Vec<TransactionEventView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_events_by_txn_hash(txn_hash)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash))
+            .map_err(map_err)
     }
 
     pub fn chain_get_block_txn_infos(
         &self,
         block_id: HashValue,
     ) -> anyhow::Result<Vec<TransactionInfoView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_block_txn_infos(block_id)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_txn_infos(block_id))
+            .map_err(map_err)
     }
 
     pub fn chain_get_txn_info_by_block_and_index(
@@ -800,21 +617,17 @@ impl RpcClient {
         block_id: HashValue,
         idx: u64,
     ) -> anyhow::Result<Option<TransactionInfoView>> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .chain_client
                 .get_txn_info_by_block_and_index(block_id, idx)
-                .compat()
-                .await
         })
         .map_err(map_err)
     }
 
     pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<TransactionOutputView> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.contract_client.dry_run(txn).compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.contract_client.dry_run(txn))
+            .map_err(map_err)
     }
     pub fn miner_submit(
         &self,
@@ -822,14 +635,8 @@ impl RpcClient {
         nonce: u32,
         extra: String,
     ) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .miner_client
-                .submit(minting_blob, nonce, extra)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
+            .map_err(map_err)
     }
     pub async fn miner_submit_async(
         &self,
@@ -837,19 +644,13 @@ impl RpcClient {
         nonce: u32,
         extra: String,
     ) -> anyhow::Result<()> {
-        self.call_rpc_async(|inner| async move {
-            inner
-                .miner_client
-                .submit(minting_blob, nonce, extra)
-                .compat()
-                .await
-        })
-        .await
-        .map_err(map_err)
+        self.call_rpc_async(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
+            .await
+            .map_err(map_err)
     }
 
     pub fn txpool_status(&self) -> anyhow::Result<TxPoolStatus> {
-        self.call_rpc_blocking(|inner| async move { inner.txpool_client.state().compat().await })
+        self.call_rpc_blocking(|inner| inner.txpool_client.state())
             .map_err(map_err)
     }
 
@@ -859,7 +660,7 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter).await;
-            res.map(|s| s.compat().map_err(map_err))
+            res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)
     }
@@ -868,7 +669,7 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = BlockView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_block().await;
-            res.map(|s| s.compat().map_err(map_err))
+            res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)
     }
@@ -877,7 +678,7 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = Vec<HashValue>, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_transactions().await;
-            res.map(|s| s.compat().map_err(map_err))
+            res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)
     }
@@ -887,7 +688,7 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = MintBlock, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
-            res.map(|s| s.compat().map_err(map_err))
+            res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)
     }
@@ -897,7 +698,7 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = MintBlock, Error = anyhow::Error>> {
         self.call_rpc_async(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
-            res.map(|s| s.compat().map_err(map_err))
+            res.map(|s| s.map_err(map_err))
         })
         .await
         .map_err(map_err)
@@ -953,12 +754,12 @@ impl RpcClient {
     }
 
     pub fn sync_status(&self) -> anyhow::Result<SyncStatus> {
-        self.call_rpc_blocking(|inner| async move { inner.sync_client.status().compat().await })
+        self.call_rpc_blocking(|inner| inner.sync_client.status())
             .map_err(map_err)
     }
 
     pub fn sync_progress(&self) -> anyhow::Result<Option<SyncProgressReport>> {
-        self.call_rpc_blocking(|inner| async move { inner.sync_client.progress().compat().await })
+        self.call_rpc_blocking(|inner| inner.sync_client.progress())
             .map_err(map_err)
     }
 
@@ -982,37 +783,33 @@ impl RpcClient {
                 .await
         })
         .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.sync_client.start(force, peers, skip_pow_verify))
+            .map_err(map_err)
     }
 
     pub fn sync_cancel(&self) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move { inner.sync_client.cancel().compat().await })
+        self.call_rpc_blocking(|inner| inner.sync_client.cancel())
             .map_err(map_err)
     }
 
     pub fn network_known_peers(&self) -> anyhow::Result<Vec<PeerId>> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.network_client.known_peers().compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.network_client.known_peers())
+            .map_err(map_err)
     }
 
     pub fn network_state(&self) -> anyhow::Result<NetworkState> {
-        self.call_rpc_blocking(|inner| async move { inner.network_client.state().compat().await })
+        self.call_rpc_blocking(|inner| inner.network_client.state())
             .map_err(map_err)
     }
 
     pub fn network_get_address(&self, peer_id: String) -> anyhow::Result<Vec<Multiaddr>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.network_client.get_address(peer_id).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.network_client.get_address(peer_id))
+            .map_err(map_err)
     }
 
     pub fn network_add_peer(&self, peer: String) -> anyhow::Result<()> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.network_client.add_peer(peer).compat().await },
-        )
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.network_client.add_peer(peer))
+            .map_err(map_err)
     }
 
     pub fn call_raw_api(&self, api: &str, params: Params) -> anyhow::Result<Value> {
@@ -1072,7 +869,7 @@ impl RpcClientInner {
 }
 
 fn map_err(rpc_err: jsonrpc_client_transports::RpcError) -> anyhow::Error {
-    rpc_err.compat().into()
+    anyhow!(format!("{}", rpc_err))
 }
 
 impl From<RpcChannel> for RpcClientInner {

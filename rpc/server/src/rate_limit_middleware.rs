@@ -1,14 +1,17 @@
 use jsonrpc_core::futures::future::Either;
 use jsonrpc_core::futures::Future;
-use jsonrpc_core::{Call, Error, ErrorCode, Failure, Id, Middleware, Output, Response};
+use jsonrpc_core::{Call, Error, ErrorCode, Failure, FutureResponse, Id, Middleware, Output};
+
 type MethodName = String;
 
 use api_limiter::ApiLimiters;
 pub use api_limiter::Quota;
+use jsonrpc_core::middleware::NoopCallFuture;
 use starcoin_config::{ApiQuotaConfig, ApiQuotaConfiguration, QuotaDuration};
 use starcoin_rpc_api::metadata::Metadata;
 
 struct QuotaWrapper(Quota);
+
 impl From<ApiQuotaConfig> for QuotaWrapper {
     fn from(c: ApiQuotaConfig) -> Self {
         let q = match c.duration {
@@ -46,14 +49,14 @@ impl JsonApiRateLimitMiddleware {
 }
 
 impl Middleware<Metadata> for JsonApiRateLimitMiddleware {
-    type Future = jsonrpc_core::futures::future::FutureResult<Option<Response>, ()>;
-    type CallFuture = jsonrpc_core::futures::future::FutureResult<Option<Output>, ()>;
+    type Future = FutureResponse;
+    type CallFuture = NoopCallFuture;
 
     /// Only override on_call, because we do rate limit on api level, not request level.
     fn on_call<F, X>(&self, call: Call, meta: Metadata, next: F) -> Either<Self::CallFuture, X>
     where
         F: Fn(Call, Metadata) -> X + Send + Sync,
-        X: Future<Item = Option<Output>, Error = ()> + Send + 'static,
+        X: Future<Output = Option<Output>> + Send + 'static,
     {
         let method = match &call {
             Call::MethodCall(m) => Some((m.method.clone(), m.jsonrpc, m.id.clone())),
@@ -62,7 +65,7 @@ impl Middleware<Metadata> for JsonApiRateLimitMiddleware {
         };
         if let Some((m, json_version, id)) = method {
             match self.limiters.check(&m, meta.user.as_ref()) {
-                Ok(_) => Either::B(next(call, meta)),
+                Ok(_) => Either::Right(next(call, meta)),
                 Err(e) => {
                     let output = Output::Failure(Failure {
                         jsonrpc: json_version,
@@ -73,11 +76,11 @@ impl Middleware<Metadata> for JsonApiRateLimitMiddleware {
                         },
                         id,
                     });
-                    Either::A(jsonrpc_core::futures::finished(Some(output)))
+                    Either::Left(Box::pin(futures::future::ready(Some(output))))
                 }
             }
         } else {
-            Either::B(next(call, meta))
+            Either::Right(next(call, meta))
         }
     }
 }

@@ -25,7 +25,7 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
     fn state(&self) -> FutureResult<NetworkState> {
         let service = self.service.clone();
         let fut = async move { service.network_state().await }.map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn known_peers(&self) -> FutureResult<Vec<PeerId>> {
@@ -35,7 +35,7 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn get_address(&self, peer_id: String) -> FutureResult<Vec<Multiaddr>> {
@@ -46,12 +46,12 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn add_peer(&self, peer: String) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move { service.add_peer(peer) }.map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 }

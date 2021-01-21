@@ -80,7 +80,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>> {
@@ -90,7 +90,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn create(&self, password: String) -> FutureResult<AccountInfo> {
@@ -100,7 +100,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn list(&self) -> FutureResult<Vec<AccountInfo>> {
@@ -110,7 +110,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountInfo>> {
@@ -120,7 +120,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
     fn sign(
         &self,
@@ -132,7 +132,7 @@ where
             let signature = account_service.sign_message(address, data.0).await?;
             Ok(signature.into())
         };
-        Box::new(f.map_err(map_err).boxed().compat())
+        Box::pin(f.map_err(map_err).boxed())
     }
 
     fn sign_txn_request(&self, txn_request: TransactionRequest) -> FutureResult<String> {
@@ -150,7 +150,7 @@ where
             ))
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn sign_txn(
@@ -164,7 +164,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn unlock(
@@ -184,13 +184,13 @@ where
                 .await
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn lock(&self, address: AccountAddress) -> FutureResult<()> {
         let service = self.account.clone();
         let fut = async move { service.lock_account(address).await }.map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     /// Import private key with address.
@@ -208,7 +208,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     /// Return the private key as bytes for `address`
@@ -219,7 +219,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn change_account_password(
@@ -233,7 +233,7 @@ where
                 .change_account_password(address, new_password)
                 .await?)
         };
-        Box::new(fut.map_err(map_err).boxed().compat())
+        Box::pin(fut.map_err(map_err).boxed())
     }
 
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>> {
@@ -243,6 +243,6 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 }
