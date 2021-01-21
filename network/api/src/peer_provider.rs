@@ -133,7 +133,13 @@ pub struct PeerSelector {
 
 impl Debug for PeerSelector {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "peer len : {:?}", self.details.lock().len(),)
+        write!(
+            f,
+            "peer len : {:?}, strategy : {:?}, total score : {:?}",
+            self.details.lock().len(),
+            self.strategy,
+            self.total_score.load(Ordering::SeqCst)
+        )
     }
 }
 
@@ -244,6 +250,10 @@ impl PeerSelector {
     }
 
     pub fn select_peer(&self) -> Option<PeerId> {
+        let avg_score = self.total_score.load(Ordering::SeqCst) / self.len() as u64;
+        if avg_score < 200 {
+            return self.random();
+        }
         match &self.strategy {
             PeerStrategy::Random => self.random(),
             PeerStrategy::WeightedRandom => self.weighted_random(),

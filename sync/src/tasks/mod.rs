@@ -350,6 +350,7 @@ pub fn full_sync_task<H, A, F, N>(
     fetcher: Arc<F>,
     ancestor_event_handle: A,
     network: N,
+    max_retry_times: u64,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -378,7 +379,6 @@ where
 
     let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
 
-    let max_retry_times = 15;
     let delay_milliseconds_on_error = 100;
     let sync_task = TaskGenerator::new(
         FindAncestorTask::new(

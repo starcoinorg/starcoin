@@ -168,6 +168,7 @@ impl SyncService2 {
                 rpc_client,
                 self_ref.clone(),
                 network.clone(),
+                config.sync.max_retry_times(),
             )?;
 
             self_ref.notify(SyncBeginEvent {
