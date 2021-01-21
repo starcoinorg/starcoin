@@ -152,7 +152,7 @@ impl SyncService2 {
             }
 
             let peer_select_strategy = match peer_strategy {
-                None => config.sync.peer_select_strategy(),
+                None => PeerStrategy::default(),
                 Some(strategy) => strategy,
             };
             let peer_selector = PeerSelector::new(target.peers.clone(), peer_select_strategy);

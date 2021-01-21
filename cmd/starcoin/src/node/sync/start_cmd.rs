@@ -25,6 +25,7 @@ pub struct StartOpt {
     #[structopt(short = "p", long = "peer")]
     peers: Option<Vec<PeerId>>,
 
+    /// peer select strategy.
     #[structopt(name = "strategy", short = "s", long, help = "peer select strategy.")]
     strategy: Option<PeerStrategy>,
 }

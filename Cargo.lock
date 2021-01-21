@@ -7197,6 +7197,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.8",
  "hex",
+ "network-api",
  "network-p2p-types",
  "rand 0.7.3",
  "scmd",
