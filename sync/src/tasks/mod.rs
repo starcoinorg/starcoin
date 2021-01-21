@@ -335,6 +335,7 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
+use network::get_unix_ts_as_millis;
 use network_api::messages::PeerEvent;
 use network_api::NetworkService;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
@@ -415,6 +416,7 @@ where
         }
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
+        let start_time = get_unix_ts_as_millis();
 
         loop {
             while let Ok(Some(peer_event)) = peer_receiver.try_next() {
@@ -456,6 +458,15 @@ where
                 )
                 .await?;
             latest_block_chain = block_chain;
+            let current_time = get_unix_ts_as_millis();
+            let total_num = latest_block_chain.current_header().number() - ancestor.number;
+            let total_time = current_time - start_time;
+            info!(
+                "sync blocks: {:?}, time : {:?}, avg: {:?}",
+                total_num,
+                total_time,
+                total_time / total_num
+            );
             if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
                 break;
             }
