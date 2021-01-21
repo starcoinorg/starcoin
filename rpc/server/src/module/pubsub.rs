@@ -4,7 +4,6 @@
 use anyhow::Result;
 use futures::channel::mpsc;
 use futures::compat::Sink01CompatExt;
-use futures::executor::block_on;
 use futures::future::AbortHandle;
 use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
@@ -184,10 +183,7 @@ pub struct PubSubServiceFactory;
 
 impl ServiceFactory<PubSubService> for PubSubServiceFactory {
     fn create(ctx: &mut ServiceContext<PubSubService>) -> Result<PubSubService> {
-        let miner_service = ctx
-            .service_ref_opt::<MinerService>()?
-            .cloned()
-            .ok_or(anyhow::anyhow!("Failed to get miner service ref"))?;
+        let miner_service = ctx.service_ref::<MinerService>()?.clone();
         Ok(PubSubService::new(
             ctx.get_shared::<TxPoolService>()?,
             miner_service,
@@ -299,31 +295,28 @@ impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
         let subscriber_id = self.next_id();
         self.mint_block_subscribers
             .insert(subscriber_id.clone(), sender.clone());
+        let miner_service = self.miner_service.clone();
+        let subscribers_num = self.mint_block_subscribers.len() as u32;
         ctx.spawn(run_subscription(
             receiver,
             subscriber_id,
             subscriber,
             NewMintBlockHandler,
         ));
-        let subscribers_num = self.mint_block_subscribers.len() as u32;
-        match block_on(async {
-            self.miner_service
+        ctx.spawn(async move {
+            match miner_service
                 .send(MinerClientSubscribeRequest::Add(subscribers_num))
-                .await?
-        }) {
-            Ok(Some(event)) => {
-                if let Err(err) = sender.unbounded_send(event) {
-                    error!("Failed to send MintBlockEvent: {}", err);
+                .await
+            {
+                Ok(Ok(Some(event))) => {
+                    if let Err(err) = sender.unbounded_send(event) {
+                        error!("[pubsub] Failed to send MintBlockEvent: {}", err);
+                    }
                 }
-            }
-            Err(err) => {
-                error!(
-                    "Failed to send NewMinerClientRequest to miner service: {}",
-                    err
-                )
-            }
-            Ok(None) => {}
-        }
+                Ok(Ok(None)) => {}
+                _ => error!("[pubsub] Failed to send NewMinerClientRequest to miner service"),
+            };
+        });
     }
 }
 
