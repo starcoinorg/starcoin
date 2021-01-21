@@ -244,6 +244,10 @@ impl PeerSelector {
     }
 
     pub fn select_peer(&self) -> Option<PeerId> {
+        let avg_score = self.total_score.load(Ordering::SeqCst) / self.len() as u64;
+        if avg_score < 200 {
+            return self.random();
+        }
         match &self.strategy {
             PeerStrategy::Random => self.random(),
             PeerStrategy::WeightedRandom => self.weighted_random(),
