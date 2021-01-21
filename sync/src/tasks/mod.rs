@@ -465,7 +465,7 @@ where
                 "sync blocks: {:?}, time : {:?}, avg: {:?}",
                 total_num,
                 total_time,
-                total_time / total_num
+                total_time / total_num as u128
             );
             if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
                 break;
