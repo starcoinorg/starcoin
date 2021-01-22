@@ -109,9 +109,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::executor::block_on;
     use jsonrpc_core::IoHandler;
     use starcoin_txpool_mock_service::MockTxPoolService;
-    use tokio01::prelude::Future;
 
     #[test]
     fn test_submit_transaction() {
@@ -135,9 +135,10 @@ mod tests {
         );
         let response = r#"{"jsonrpc":"2.0","result":"$txn_hash","id":0}"#;
         let response = response.replace("$txn_hash", &txn_hash.to_string());
+
         assert_eq!(
-            io.handle_request(request.as_str()).wait().unwrap(),
-            Some(response)
+            block_on(io.handle_request(request.as_str())).unwrap(),
+            response
         );
     }
 }
