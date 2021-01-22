@@ -155,12 +155,14 @@ pub enum BuiltinNetworkID {
     /// Starcoin test network,
     /// The data on the chain will be cleaned up periodically。
     /// Comet Halley, officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
-    Halley = 3,
+    Halley = 253,
     /// Starcoin long-running test network,
-    /// Use network upgrade strategy to upgrade chain protocol.
     /// Proxima Centauri is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus.
     /// Its Latin name means the "nearest [star] of Centaurus".
-    Proxima = 2,
+    Proxima = 252,
+    /// Starcoin permanent test network,
+    /// Barnard's Star is a red dwarf about six light-years away from Earth in the constellation of Ophiuchus.
+    Barnard = 251,
     /// Starcoin main net.
     Main = 1,
 }
@@ -172,6 +174,7 @@ impl Display for BuiltinNetworkID {
             BuiltinNetworkID::Dev => write!(f, "dev"),
             BuiltinNetworkID::Halley => write!(f, "halley"),
             BuiltinNetworkID::Proxima => write!(f, "proxima"),
+            BuiltinNetworkID::Barnard => write!(f, "barnard"),
             BuiltinNetworkID::Main => write!(f, "main"),
         }
     }
@@ -186,6 +189,7 @@ impl FromStr for BuiltinNetworkID {
             "dev" => Ok(BuiltinNetworkID::Dev),
             "halley" => Ok(BuiltinNetworkID::Halley),
             "proxima" => Ok(BuiltinNetworkID::Proxima),
+            "barnard" => Ok(BuiltinNetworkID::Barnard),
             "main" => Ok(BuiltinNetworkID::Main),
             s => Err(format_err!("Unknown network: {}", s)),
         }
@@ -234,6 +238,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Dev,
             BuiltinNetworkID::Halley,
             BuiltinNetworkID::Proxima,
+            BuiltinNetworkID::Barnard,
             BuiltinNetworkID::Main,
         ]
     }
@@ -244,6 +249,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Dev => &DEV_CONFIG,
             BuiltinNetworkID::Halley => &HALLEY_CONFIG,
             BuiltinNetworkID::Proxima => &PROXIMA_CONFIG,
+            BuiltinNetworkID::Barnard => &BARNARD_CONFIG,
             BuiltinNetworkID::Main => &MAIN_CONFIG,
         }
     }
@@ -254,6 +260,7 @@ impl BuiltinNetworkID {
             BuiltinNetworkID::Dev => EMPTY_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Halley => HALLEY_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Proxima => PROXIMA_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Barnard => BARNARD_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Main => MAIN_BOOT_NODES.as_slice(),
         }
     }
@@ -262,6 +269,7 @@ impl BuiltinNetworkID {
         match self {
             BuiltinNetworkID::Test | BuiltinNetworkID::Dev => "localhost".to_string(),
             BuiltinNetworkID::Halley => "halley1.seed.starcoin.org".to_string(),
+            BuiltinNetworkID::Proxima => "proxima1.seed.starcoin.org".to_string(),
             _ => format!("{}.seed.starcoin.org", self),
         }
     }
@@ -382,6 +390,7 @@ impl ChainNetworkID {
     pub const DEV: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Dev);
     pub const HALLEY: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Halley);
     pub const PROXIMA: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Proxima);
+    pub const BARNARD: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Barnard);
     pub const MAIN: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Main);
 
     pub fn new_builtin(network: BuiltinNetworkID) -> Self {
@@ -1066,6 +1075,53 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
+pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
+
+pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    //TODO set public key
+    let (_association_private_key, association_public_key) = genesis_multi_key_pair();
+    //TODO conform launch time
+    GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
+            network: BuiltinNetworkID::Proxima,
+            block_number: 504882,
+        }),
+        version: Version { major: 1 },
+        reward_delay: 7,
+        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
+        vm_config: VMConfig {
+            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        },
+        publishing_option: VMPublishingOption::Open,
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: UNCLE_RATE_TARGET,
+            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            strategy: ConsensusStrategy::CryptoNight.value(),
+        },
+        association_key_pair: (None, association_public_key),
+        genesis_key_pair: None,
+        time_service_type: TimeServiceType::RealTimeService,
+        stdlib_version: StdlibVersion::Latest,
+        dao_config: DaoConfig {
+            voting_delay: 60 * 60 * 1000,           // 1h
+            voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60 * 24 * 1000, // 1d
+        },
+        transaction_timeout: ONE_DAY,
+    }
+});
+
 pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
@@ -1075,8 +1131,8 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
             //TODO conform init parameter.
             FutureBlockParameter {
-                network: BuiltinNetworkID::Halley,
-                block_number: 23250,
+                network: BuiltinNetworkID::Barnard,
+                block_number: 100000,
             },
         ),
         version: Version { major: 1 },
