@@ -18,8 +18,12 @@ pub fn steps() -> Steps<MyWorld> {
             .unwrap();
         let state_root = client.clone().state_get_state_root().unwrap();
         proof
-            .proof
-            .verify(state_root, access_path, proof.state.as_deref())
+            .state_proof()
+            .verify(
+                state_root,
+                access_path,
+                proof.state.as_ref().map(|v| v.0.as_slice()),
+            )
             .unwrap();
     });
     builder.build()

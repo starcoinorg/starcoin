@@ -831,6 +831,16 @@ pub struct StateWithProofView {
     pub account_proof: SparseMerkleProof,
     pub account_state_proof: SparseMerkleProof,
 }
+impl StateWithProofView {
+    pub fn state_proof(&self) -> StateProof {
+        StateProof::new(
+            self.account_state.clone().map(|v| v.0),
+            self.account_proof.clone(),
+            self.account_state_proof.clone(),
+        )
+    }
+}
+
 impl From<StateWithProof> for StateWithProofView {
     fn from(state_proof: StateWithProof) -> Self {
         let state = state_proof.state.map(StrView);
