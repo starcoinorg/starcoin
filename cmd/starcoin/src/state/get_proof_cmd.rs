@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::StateWithProofView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_rpc_api::types::StateWithProofView;
 use starcoin_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
@@ -39,6 +39,6 @@ impl CommandAction for GetProofCommand {
             AccountResource::resource_path(),
         ))?;
 
-        Ok(proof.into())
+        Ok(proof)
     }
 }

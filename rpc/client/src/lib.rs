@@ -22,8 +22,9 @@ use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
     BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunTransactionRequest,
-    EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView, StrView,
-    TransactionInfoView, TransactionOutputView, TransactionRequest, TransactionView,
+    EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView,
+    StateWithProofView, StrView, TransactionInfoView, TransactionOutputView, TransactionRequest,
+    TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -32,7 +33,6 @@ use starcoin_rpc_api::{
     txpool::TxPoolClient, types::TransactionEventView,
 };
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
-use starcoin_state_api::StateWithProof;
 use starcoin_sync_api::SyncProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::access_path::AccessPath;
@@ -523,7 +523,10 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn state_get_with_proof(&self, access_path: AccessPath) -> anyhow::Result<StateWithProof> {
+    pub fn state_get_with_proof(
+        &self,
+        access_path: AccessPath,
+    ) -> anyhow::Result<StateWithProofView> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .state_client
@@ -538,7 +541,7 @@ impl RpcClient {
         &self,
         access_path: AccessPath,
         state_root: HashValue,
-    ) -> anyhow::Result<StateWithProof> {
+    ) -> anyhow::Result<StateWithProofView> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .state_client

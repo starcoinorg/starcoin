@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_rpc_api::types::SignedUserTransactionView;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_config;
+use std::convert::TryInto;
 use structopt::StructOpt;
 use tokio::time::Duration;
 
@@ -35,7 +36,7 @@ impl CommandAction for GetCoinCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetCoinOpt;
-    type ReturnItem = TransactionView;
+    type ReturnItem = SignedUserTransactionView;
 
     fn run(
         &self,
@@ -97,6 +98,6 @@ impl CommandAction for GetCoinCommand {
         if !opt.no_blocking {
             ctx.state().watch_txn(id)?;
         }
-        Ok(txn.into())
+        Ok(txn.try_into()?)
     }
 }
