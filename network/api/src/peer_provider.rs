@@ -86,13 +86,13 @@ impl From<PeerInfo> for PeerDetail {
 pub enum PeerStrategy {
     Random,
     WeightedRandom,
-    Top,
+    Best,
     Avg,
 }
 
 impl Default for PeerStrategy {
     fn default() -> Self {
-        PeerStrategy::Random
+        PeerStrategy::WeightedRandom
     }
 }
 
@@ -101,7 +101,7 @@ impl std::fmt::Display for PeerStrategy {
         let display = match self {
             Self::Random => "random",
             Self::WeightedRandom => "weighted",
-            Self::Top => "top",
+            Self::Best => "top",
             Self::Avg => "avg",
         };
         write!(f, "{}", display)
@@ -117,7 +117,7 @@ impl std::str::FromStr for PeerStrategy {
         match s {
             "random" => Ok(Random),
             "weighted" => Ok(WeightedRandom),
-            "top" => Ok(Top),
+            "top" => Ok(Best),
             "avg" => Ok(Avg),
             other => Err(format!("Unknown peer strategy: {}", other)),
         }
@@ -162,7 +162,7 @@ impl PeerSelector {
             .lock()
             .iter()
             .find(|peer| &peer.peer_id() == peer_id)
-            .and_then(|peer| Some(peer.peer_info.clone()))
+            .map(|peer| peer.peer_info.clone())
     }
 
     /// Get top N peers sorted by total_difficulty
@@ -237,7 +237,7 @@ impl PeerSelector {
             .collect()
     }
 
-    pub fn retain(&self, peers: &Vec<PeerId>) {
+    pub fn retain(&self, peers: &[PeerId]) {
         let mut score: u64 = 0;
         self.details.lock().retain(|peer| -> bool {
             let flag = peers.contains(&peer.peer_id());
@@ -257,7 +257,7 @@ impl PeerSelector {
         match &self.strategy {
             PeerStrategy::Random => self.random(),
             PeerStrategy::WeightedRandom => self.weighted_random(),
-            PeerStrategy::Top => self.top_score(),
+            PeerStrategy::Best => self.top_score(),
             PeerStrategy::Avg => self.avg_score(),
         }
     }
@@ -308,11 +308,7 @@ impl PeerSelector {
         }
 
         if self.len() == 1 {
-            return self
-                .details
-                .lock()
-                .get(0)
-                .and_then(|peer| Some(peer.peer_id()));
+            return self.details.lock().get(0).map(|peer| peer.peer_id());
         }
 
         let mut random = rand::thread_rng();
@@ -333,14 +329,14 @@ impl PeerSelector {
             .lock()
             .iter()
             .choose(&mut rand::thread_rng())
-            .and_then(|peer| Some(peer.peer_info.clone()))
+            .map(|peer| peer.peer_info.clone())
     }
 
     pub fn first_peer(&self) -> Option<PeerInfo> {
         self.details
             .lock()
             .get(0)
-            .and_then(|peer| Some(peer.peer_info.clone()))
+            .map(|peer| peer.peer_info.clone())
     }
 
     pub fn is_empty(&self) -> bool {
@@ -367,7 +363,7 @@ impl PeerSelector {
 
 #[cfg(test)]
 mod tests {
-    use crate::peer_provider::PeerSelector;
+    use crate::peer_provider::{PeerSelector, PeerStrategy};
     use starcoin_crypto::HashValue;
     use starcoin_types::peer_info::{PeerId, PeerInfo};
     use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -399,8 +395,8 @@ mod tests {
             ),
         ];
 
-        let peer_selector = PeerSelector::new(peers);
-        let beat_selector = peer_selector.bests();
+        let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+        let beat_selector = peer_selector.bests().unwrap();
         assert_eq!(2, beat_selector.len());
 
         let top_selector = peer_selector.top(3);

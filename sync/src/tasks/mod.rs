@@ -22,7 +22,7 @@ use stream_task::{
 };
 
 pub trait PeerOperator: Send + Sync {
-    fn filter(&self, peers: &Vec<PeerId>);
+    fn filter(&self, peers: &[PeerId]);
 
     fn new_peer(&self, beer_info: PeerInfo);
 
@@ -55,7 +55,7 @@ pub trait BlockIdFetcher: Send + Sync {
 }
 
 impl PeerOperator for VerifiedRpcClient {
-    fn filter(&self, peers: &Vec<PeerId>) {
+    fn filter(&self, peers: &[PeerId]) {
         self.selector().retain(peers)
     }
 
@@ -110,7 +110,7 @@ impl<T> PeerOperator for Arc<T>
 where
     T: PeerOperator,
 {
-    fn filter(&self, peers: &Vec<PeerId>) {
+    fn filter(&self, peers: &[PeerId]) {
         PeerOperator::filter(self.as_ref(), peers)
     }
 
@@ -335,8 +335,9 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
+use network::get_unix_ts_as_millis;
 use network_api::messages::PeerEvent;
-use network_api::NetworkService;
+use network_api::{NetworkService, PeerStrategy};
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use traits::ChainReader;
 
@@ -351,6 +352,7 @@ pub fn full_sync_task<H, A, F, N>(
     ancestor_event_handle: A,
     network: N,
     max_retry_times: u64,
+    strategy: PeerStrategy,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -415,6 +417,7 @@ where
         }
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
+        let start_time = get_unix_ts_as_millis();
 
         loop {
             while let Ok(Some(peer_event)) = peer_receiver.try_next() {
@@ -456,6 +459,15 @@ where
                 )
                 .await?;
             latest_block_chain = block_chain;
+            let total_num = latest_block_chain.current_header().number() - ancestor.number;
+            let total_time = get_unix_ts_as_millis() - start_time;
+            info!(
+                "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
+                strategy,
+                total_num,
+                total_time,
+                total_time / total_num as u128
+            );
             if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
                 break;
             }

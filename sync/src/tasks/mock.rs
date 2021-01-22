@@ -8,7 +8,6 @@ use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
-use network_api::NetworkService;
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ChainReader;
@@ -19,7 +18,6 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
-use test_helper::DummyNetworkService;
 
 #[derive(Clone)]
 pub struct MockBlockIdFetcher {
@@ -48,11 +46,11 @@ impl MockBlockIdFetcher {
 }
 
 impl PeerOperator for MockBlockIdFetcher {
-    fn filter(&self, peers: &Vec<PeerId>) {
+    fn filter(&self, _peers: &[PeerId]) {
         unimplemented!()
     }
 
-    fn new_peer(&self, peer_info: PeerInfo) {
+    fn new_peer(&self, _peer_info: PeerInfo) {
         unimplemented!()
     }
 
@@ -92,17 +90,6 @@ impl BlockIdFetcher for MockBlockIdFetcher {
 
     fn find_best_peer(&self) -> Option<PeerInfo> {
         Some(PeerInfo::random())
-    }
-}
-
-pub struct SyncNodeMockerFactory {
-    network: DummyNetworkService,
-    fetch: Arc<SyncNodeMocker>,
-}
-
-impl SyncNodeMockerFactory {
-    pub fn new(network: DummyNetworkService, fetch: Arc<SyncNodeMocker>) -> Self {
-        Self { network, fetch }
     }
 }
 
@@ -169,11 +156,11 @@ impl SyncNodeMocker {
 }
 
 impl PeerOperator for SyncNodeMocker {
-    fn filter(&self, peers: &Vec<PeerId>) {
+    fn filter(&self, _peers: &[PeerId]) {
         unimplemented!()
     }
 
-    fn new_peer(&self, peer_info: PeerInfo) {
+    fn new_peer(&self, _peer_info: PeerInfo) {
         unimplemented!()
     }
 

@@ -148,11 +148,9 @@ impl SyncService2 {
                 return Ok(None);
             }
 
-            let peer_select_strategy = match peer_strategy {
-                None => config.sync.peer_select_strategy(),
-                Some(strategy) => strategy,
-            };
-            let peer_selector = PeerSelector::new(target.peers.clone(), peer_select_strategy);
+            let peer_select_strategy = peer_strategy.unwrap_or_default();
+            let peer_selector =
+                PeerSelector::new(target.peers.clone(), peer_select_strategy.clone());
             let rpc_client = Arc::new(VerifiedRpcClient::new(
                 peer_selector.clone(),
                 network.clone(),
@@ -169,6 +167,7 @@ impl SyncService2 {
                 self_ref.clone(),
                 network.clone(),
                 config.sync.max_retry_times(),
+                peer_select_strategy,
             )?;
 
             self_ref.notify(SyncBeginEvent {
