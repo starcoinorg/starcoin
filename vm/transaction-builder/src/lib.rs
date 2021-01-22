@@ -339,7 +339,8 @@ pub fn build_stdlib_package(
     if with_init_script {
         let genesis_config = net.genesis_config();
         let chain_id = net.chain_id().id();
-        let genesis_timestamp = net.genesis_config().timestamp;
+        let genesis_timestamp = net.genesis_block_parameter().timestamp;
+        let genesis_parent_hash = net.genesis_block_parameter().parent_hash;
 
         let genesis_auth_key = genesis_config
             .genesis_key_pair
@@ -379,7 +380,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U128(genesis_config.pre_mine_amount),
                 TransactionArgument::U128(genesis_config.time_mint_amount),
                 TransactionArgument::U64(genesis_config.time_mint_period),
-                TransactionArgument::U8Vector(genesis_config.parent_hash.to_vec()),
+                TransactionArgument::U8Vector(genesis_parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
                 TransactionArgument::U8(chain_id),

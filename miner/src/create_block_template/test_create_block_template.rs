@@ -33,7 +33,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
     let mut opt = StarcoinOpt::default();
     let temp_path = temp_path();
     opt.net = Some(net);
-    opt.data_dir = Some(temp_path.path().to_path_buf());
+    opt.base_data_dir = Some(temp_path.path().to_path_buf());
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&opt).unwrap());
     let (storage, chain_info, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())

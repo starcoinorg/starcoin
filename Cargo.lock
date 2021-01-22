@@ -7697,6 +7697,7 @@ name = "starcoin-genesis"
 version = "0.10.1"
 dependencies = [
  "anyhow",
+ "include_dir",
  "once_cell",
  "serde",
  "starcoin-accumulator",
@@ -8042,6 +8043,7 @@ dependencies = [
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node-api",
+ "starcoin-rpc-client",
  "starcoin-rpc-server",
  "starcoin-service-registry",
  "starcoin-state-api",

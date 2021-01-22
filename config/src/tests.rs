@@ -10,7 +10,7 @@ fn test_generate_and_load() -> Result<()> {
         let mut opt = StarcoinOpt::default();
         let temp_path = temp_path();
         opt.net = Some(net.into());
-        opt.data_dir = Some(temp_path.path().to_path_buf());
+        opt.base_data_dir = Some(temp_path.path().to_path_buf());
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(
@@ -29,7 +29,7 @@ fn test_custom_chain_genesis() -> Result<()> {
     let temp_path = temp_path();
     let opt = StarcoinOpt {
         net: Some(net),
-        data_dir: Some(temp_path.path().to_path_buf()),
+        base_data_dir: Some(temp_path.path().to_path_buf()),
         genesis_config: Some(BuiltinNetworkID::Test.to_string()),
         ..StarcoinOpt::default()
     };
@@ -46,7 +46,7 @@ fn test_custom_chain_genesis() -> Result<()> {
 #[test]
 fn test_genesis_config_save_and_load() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    genesis_config.timestamp = 1000;
+    genesis_config.consensus_config.base_block_time_target = 10000000;
     let temp_path = temp_path();
     let file_path = temp_path.path().join(GENESIS_CONFIG_FILE_NAME);
     genesis_config.save(file_path.as_path())?;
@@ -60,6 +60,9 @@ fn test_example_config_compact() -> Result<()> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let example_dir = path.join("example");
     for net in BuiltinNetworkID::networks() {
+        if !net.genesis_config().is_ready() {
+            continue;
+        }
         let net_str = net.to_string();
         let args = vec![
             "starcoin",

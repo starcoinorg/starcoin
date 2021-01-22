@@ -30,7 +30,6 @@ use starcoin_crypto::{
     HashValue, ValidCryptoMaterialStringExt,
 };
 use starcoin_uint::U256;
-
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
@@ -252,10 +251,18 @@ impl BuiltinNetworkID {
     pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
         match self {
             BuiltinNetworkID::Test => EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Dev => &EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Halley => &HALLEY_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Proxima => &PROXIMA_BOOT_NODES.as_slice(),
-            BuiltinNetworkID::Main => &MAIN_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Dev => EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Halley => HALLEY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Proxima => PROXIMA_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Main => MAIN_BOOT_NODES.as_slice(),
+        }
+    }
+
+    pub fn boot_nodes_domain(self) -> String {
+        match self {
+            BuiltinNetworkID::Test | BuiltinNetworkID::Dev => "localhost".to_string(),
+            BuiltinNetworkID::Halley => "halley1.seed.starcoin.org".to_string(),
+            _ => format!("{}.seed.starcoin.org", self),
         }
     }
 }
@@ -494,17 +501,6 @@ impl ChainNetwork {
             time_service,
         }
     }
-    pub fn new_with_time_service(
-        id: ChainNetworkID,
-        genesis_config: GenesisConfig,
-        time_service: Arc<dyn TimeService>,
-    ) -> Self {
-        Self {
-            id,
-            genesis_config,
-            time_service,
-        }
-    }
 
     pub fn new_builtin(builtin_id: BuiltinNetworkID) -> Self {
         Self::new(builtin_id.into(), builtin_id.genesis_config().clone())
@@ -567,6 +563,56 @@ impl ChainNetwork {
 
     pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
         self.id.boot_nodes()
+    }
+
+    /// Please ensure network is_ready() before genesis_block_parameter
+    pub fn genesis_block_parameter(&self) -> &GenesisBlockParameter {
+        &self
+            .genesis_config
+            .genesis_block_parameter()
+            .expect("Genesis block parameter is not ready")
+    }
+
+    /// This network is ready to launch
+    pub fn is_ready(&self) -> bool {
+        self.genesis_config.is_ready()
+    }
+
+    /// resolve the FutureBlockParameter to static GenesisBlockParameter.
+    pub fn resolve(&mut self, resolver: &dyn FutureBlockParameterResolver) -> Result<()> {
+        match &self.genesis_config.genesis_block_parameter {
+            GenesisBlockParameterConfig::Static(_) => {}
+            GenesisBlockParameterConfig::FutureBlock(future_block_parameter) => {
+                let parameter = resolver.resolve(future_block_parameter)?;
+                self.genesis_config.genesis_block_parameter =
+                    GenesisBlockParameterConfig::Static(parameter);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn genesis_epoch(&self) -> Epoch {
+        Epoch::new(
+            0,
+            self.genesis_block_parameter().timestamp,
+            0,
+            self.genesis_config.consensus_config.epoch_block_count,
+            self.genesis_config.consensus_config.base_block_time_target,
+            self.genesis_config.consensus_config.base_reward_per_block,
+            self.genesis_config
+                .consensus_config
+                .base_reward_per_uncle_percent,
+            self.genesis_config
+                .consensus_config
+                .base_block_difficulty_window,
+            self.genesis_config
+                .consensus_config
+                .base_max_uncles_per_block,
+            self.genesis_config.consensus_config.base_block_gas_limit,
+            self.genesis_config.consensus_config.strategy,
+            //TODO conform new Epoch events salt value.
+            EventHandle::new_from_address(&genesis_address(), 0),
+        )
     }
 }
 
@@ -631,23 +677,41 @@ impl MoveResource for ChainId {
     const STRUCT_NAME: &'static str = "ChainId";
 }
 
-/// GenesisConfig is a config for initialize a chain genesis.
+pub trait FutureBlockParameterResolver {
+    fn resolve(&self, parameter: &FutureBlockParameter) -> Result<GenesisBlockParameter>;
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct GenesisConfig {
-    /// Starcoin system major version for genesis.
-    pub version: Version,
+pub struct GenesisBlockParameter {
     /// Genesis block parent hash
     pub parent_hash: HashValue,
     /// Genesis timestamp
     pub timestamp: u64,
+    /// Genesis difficulty
+    pub difficulty: U256,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct FutureBlockParameter {
+    pub network: BuiltinNetworkID,
+    pub block_number: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub enum GenesisBlockParameterConfig {
+    Static(GenesisBlockParameter),
+    FutureBlock(FutureBlockParameter),
+}
+
+/// GenesisConfig is a config for initialize a chain genesis.
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct GenesisConfig {
+    /// Parameter for init genesis block
+    pub genesis_block_parameter: GenesisBlockParameterConfig,
+    /// Starcoin system major version for genesis.
+    pub version: Version,
     /// How many block to delay before rewarding miners.
     pub reward_delay: u64,
-    /// Genesis difficulty, should match consensus in different ChainNetwork.
-    pub difficulty: U256,
-    /// Genesis consensus nonce.
-    pub nonce: u32,
-    /// Gensis block header extra
-    pub extra: [u8; 4],
     /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
     /// If time_mint_amount >0, Issue a LinearTimeMintKey to Association account
@@ -675,6 +739,19 @@ pub struct GenesisConfig {
 }
 
 impl GenesisConfig {
+    /// Get the genesis block parent_hash, timestamp and difficulty
+    pub fn genesis_block_parameter(&self) -> Option<&GenesisBlockParameter> {
+        if let GenesisBlockParameterConfig::Static(parameter) = &self.genesis_block_parameter {
+            Some(parameter)
+        } else {
+            None
+        }
+    }
+
+    pub fn is_ready(&self) -> bool {
+        self.genesis_block_parameter().is_some()
+    }
+
     pub fn sign_with_association(&self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         if let (Some(private_key), public_key) = &self.association_key_pair {
             let signature = private_key.sign(&txn);
@@ -723,24 +800,6 @@ impl GenesisConfig {
     pub fn consensus(&self) -> ConsensusStrategy {
         ConsensusStrategy::try_from(self.consensus_config.strategy)
             .expect("consensus strategy config error.")
-    }
-
-    pub fn genesis_epoch(&self) -> Epoch {
-        Epoch::new(
-            0,
-            self.timestamp,
-            0,
-            self.consensus_config.epoch_block_count,
-            self.consensus_config.base_block_time_target,
-            self.consensus_config.base_reward_per_block,
-            self.consensus_config.base_reward_per_uncle_percent,
-            self.consensus_config.base_block_difficulty_window,
-            self.consensus_config.base_max_uncles_per_block,
-            self.consensus_config.base_block_gas_limit,
-            self.consensus_config.strategy,
-            //TODO conform new Epoch events salt value.
-            EventHandle::new_from_address(&genesis_address(), 0),
-        )
     }
 }
 
@@ -802,14 +861,14 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
     GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
+            parent_hash: HashValue::sha3_256_of(b"starcoin_test"),
+            //Test timestamp set to 0 for mock time.
+            timestamp: 0,
+            difficulty: 1.into(),
+        }),
         version: Version { major: 1 },
-        parent_hash: HashValue::sha3_256_of(b"starcoin_test"),
-        //Test timestamp set to 0 for mock time.
-        timestamp: 0,
         reward_delay: 1,
-        difficulty: 1.into(),
-        nonce: 0,
-        extra: [0u8; 4],
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600,
@@ -852,14 +911,13 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
     GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
+            parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
+            timestamp: 0,
+            difficulty: 1.into(),
+        }),
         version: Version { major: 1 },
-        //use latest git commit version's hash
-        parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
-        timestamp: 0,
         reward_delay: 1,
-        difficulty: 1.into(),
-        nonce: 0,
-        extra: [0u8; 4],
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
@@ -905,13 +963,15 @@ pub static HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 
 pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(
+            GenesisBlockParameter{
+                parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
+                timestamp: 1610535385000,
+                difficulty: 10.into(),
+            }
+        ),
         version: Version { major: 1 },
-        parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
-        timestamp: 1610535385000,
         reward_delay: 3,
-        difficulty: 10.into(),
-        nonce: 0,
-        extra: [0u8; 4],
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24 * 31,
@@ -959,13 +1019,15 @@ pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 
 pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(
+            GenesisBlockParameter{
+                parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
+                timestamp: 1606984483000,
+                difficulty: 100.into(),
+            }
+        ),
         version: Version { major: 1 },
-        parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-        timestamp: 1606984483000,
         reward_delay: 7,
-        difficulty: 100.into(),
-        nonce: 0,
-        extra: [0u8; 4],
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
@@ -1010,14 +1072,15 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
     GenesisConfig {
+        genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
+            //TODO conform init parameter.
+            FutureBlockParameter {
+                network: BuiltinNetworkID::Halley,
+                block_number: 23250,
+            },
+        ),
         version: Version { major: 1 },
-        //TODO set parent_hash and timestamp
-        parent_hash: HashValue::zero(),
-        timestamp: 0,
         reward_delay: 7,
-        difficulty: 10.into(),
-        nonce: 0,
-        extra: [0u8; 4],
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,

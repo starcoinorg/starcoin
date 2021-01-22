@@ -24,7 +24,7 @@ use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 pub type BlockNumber = u64;
 
 /// Type for block header extra
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct BlockHeaderExtra([u8; 4]);
 
 impl BlockHeaderExtra {
@@ -268,10 +268,8 @@ impl BlockHeader {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
-        extra: BlockHeaderExtra,
     ) -> Self {
         Self::new(
             parent_hash,
@@ -284,10 +282,10 @@ impl BlockHeader {
             state_root,
             0,
             difficulty,
-            nonce,
+            0,
             body_hash,
             chain_id,
-            extra,
+            BlockHeaderExtra::default(),
         )
     }
 
@@ -651,8 +649,6 @@ impl Block {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        nonce: u32,
-        extra: BlockHeaderExtra,
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
@@ -663,10 +659,8 @@ impl Block {
             accumulator_root,
             state_root,
             difficulty,
-            nonce,
             block_body.hash(),
             chain_id,
-            extra,
         );
         Self {
             header,
