@@ -1,13 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{bail, format_err, Result};
 use starcoin_config::ChainNetworkID;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::RpcClient;
+use starcoin_rpc_client::{Params, RpcClient};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::genesis_config::{
-    FutureBlockParameter, FutureBlockParameterResolver, GenesisBlockParameter,
+    BuiltinNetworkID, FutureBlockParameter, FutureBlockParameterResolver, GenesisBlockParameter,
 };
+use starcoin_types::U256;
+use std::fmt::Write;
 use std::time::Duration;
 
 const WAIT_CONFORM_BLOCK: u64 = 6;
@@ -20,6 +24,118 @@ impl RpcFutureBlockParameterResolver {
     pub fn new(network: ChainNetworkID) -> Self {
         Self { network }
     }
+
+    pub fn get_latest_block_number(
+        client: &RpcClient,
+        target_network: BuiltinNetworkID,
+    ) -> Result<BlockNumber> {
+        match target_network {
+            // because current proxima is at v0.9.x, api not compat with current code, so request raw api
+            BuiltinNetworkID::Proxima => {
+                let response = client.call_raw_api("chain.info", Params::None)?;
+                debug!("chain.info api response: {:?}", response);
+                let response = response
+                    .as_object()
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
+                let head = response
+                    .get("head")
+                    .and_then(|head| head.as_object())
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
+                let number = head
+                    .get("number")
+                    .and_then(|number| number.as_str())
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
+                Ok(number.parse()?)
+            }
+            _ => Ok(client.chain_info()?.head.number.0),
+        }
+    }
+
+    pub fn get_genesis_parameter(
+        client: &RpcClient,
+        target_network: BuiltinNetworkID,
+        block_number: BlockNumber,
+    ) -> Result<GenesisBlockParameter> {
+        match target_network {
+            BuiltinNetworkID::Proxima => {
+                //let params = json!({ "number": block_number });
+                let mut map = serde_json::Map::new();
+                map.insert(
+                    "number".to_string(),
+                    serde_json::Value::Number(block_number.into()),
+                );
+                let response = client.call_raw_api(
+                    "chain.get_block_by_number",
+                    Params::Array(vec![serde_json::Value::Number(block_number.into())]),
+                )?;
+                debug!("chain.get_block_by_number api response: {:?}", response);
+                let response = response
+                    .as_object()
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
+                let header = response
+                    .get("header")
+                    .and_then(|header| header.as_object())
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
+                let parent_hash = HashValue::from_hex_literal(
+                    header
+                        .get("block_hash")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| format_err!("api response error:{:?}", response))?,
+                )?;
+                let timestamp: u64 = header
+                    .get("timestamp")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?
+                    .parse()?;
+                let difficulty: U256 = header
+                    .get("difficulty")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| format_err!("api response error:{:?}", response))?
+                    .parse()?;
+
+                Ok(GenesisBlockParameter {
+                    parent_hash,
+                    timestamp,
+                    difficulty,
+                })
+            }
+            _ => match client.chain_get_block_by_number(block_number)? {
+                Some(block) => Ok(GenesisBlockParameter {
+                    parent_hash: block.header.block_hash,
+                    timestamp: block.header.timestamp.0,
+                    difficulty: block.header.difficulty,
+                }),
+                None => {
+                    bail!("Can not get block by number:{}, retry.", block_number)
+                }
+            },
+        }
+    }
+    const HOUR: u64 = 3600;
+    const DAY: u64 = 24 * Self::HOUR;
+    const MINUTES: u64 = 60;
+
+    fn fmt_duration(duration: Duration) -> Result<String> {
+        let mut result = String::new();
+        let days = duration.as_secs() / Self::DAY;
+        let hours = (duration.as_secs() - (days * Self::DAY)) / Self::HOUR;
+        let minutes = (duration.as_secs() - (days * Self::DAY) - (hours * Self::HOUR)) / 60;
+        let seconds = duration.as_secs()
+            - (days * Self::DAY)
+            - (hours * Self::HOUR)
+            - (minutes * Self::MINUTES);
+        if days > 0 {
+            write!(&mut result, " {} days", days)?;
+        }
+        if days > 0 || hours > 0 {
+            write!(&mut result, " {} hours", hours)?;
+        }
+        if days > 0 || hours > 0 || minutes > 0 {
+            write!(&mut result, " {} minutes", minutes)?;
+        }
+        write!(&mut result, " {} seconds", seconds)?;
+        Ok(result)
+    }
 }
 
 impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
@@ -28,11 +144,10 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
         info!("Connect to {} for get genesis block parameter.", ws_rpc_url);
         let rpc_client: RpcClient = RpcClient::connect_websocket(ws_rpc_url.as_str())?;
         loop {
-            match rpc_client.chain_info() {
-                Ok(chain_info) => {
-                    let block_number = chain_info.head.number.0;
+            match Self::get_latest_block_number(&rpc_client, parameter.network) {
+                Ok(block_number) => {
                     info!(
-                        "{}'s latest block number: {}",
+                        "{}'s latest block number is {}",
                         parameter.network, block_number
                     );
                     if block_number >= parameter.block_number {
@@ -42,32 +157,25 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
                         );
                         if block_number < parameter.block_number + WAIT_CONFORM_BLOCK {
                             info!(
-                                "Waiting {} blocks conform.",
+                                "Waiting {} blocks to conform.",
                                 (parameter.block_number + WAIT_CONFORM_BLOCK) - block_number
                             );
                         } else {
-                            match rpc_client.chain_get_block_by_number(parameter.block_number) {
-                                Ok(Some(block)) => {
-                                    let genesis_parameter = GenesisBlockParameter {
-                                        parent_hash: block.header.block_hash,
-                                        timestamp: block.header.timestamp.0,
-                                        difficulty: block.header.difficulty,
-                                    };
+                            match Self::get_genesis_parameter(
+                                &rpc_client,
+                                parameter.network,
+                                parameter.block_number,
+                            ) {
+                                Ok(genesis_parameter) => {
                                     info!(
                                         "{} network ready to launch with parameter: {:?}",
                                         self.network, genesis_parameter
                                     );
                                     return Ok(genesis_parameter);
                                 }
-                                Ok(None) => {
-                                    warn!(
-                                        "Can not get block by number:{}, retry.",
-                                        parameter.block_number
-                                    )
-                                }
                                 Err(e) => {
                                     warn!(
-                                        "Get block by number:{}, return error:{:?}, retry.",
+                                        "Get genesis block parameter by number:{}, return error:{:?}, retry.",
                                         parameter.block_number, e
                                     )
                                 }
@@ -81,18 +189,43 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
                                 .genesis_config()
                                 .consensus_config
                                 .base_block_time_target;
-                        let duration = Duration::from_millis(wait_milli_seconds);
+                        let duration = chrono::Duration::milliseconds(wait_milli_seconds as i64);
+                        let utc_launch_time = chrono::Utc::now()
+                            + chrono::Duration::milliseconds(wait_milli_seconds as i64);
+                        let local_launch_time = chrono::Local::now()
+                            + chrono::Duration::milliseconds(wait_milli_seconds as i64);
                         info!(
-                            "Waiting to {}'s block {}, about: {:?}",
-                            parameter.network, parameter.block_number, duration
+                            "Waiting to {}'s block {}, {} network will launch at {}, local time: {}, remaining {}",
+                            parameter.network, parameter.block_number, self.network, utc_launch_time, local_launch_time, Self::fmt_duration(duration.to_std()?)?
                         )
                     }
                 }
                 Err(e) => {
-                    error!("Get {}'s chain_info error: {:?}", parameter.network, e);
+                    error!(
+                        "Get {}'s latest block number error: {:?}",
+                        parameter.network, e
+                    );
                 }
             }
-            std::thread::sleep(Duration::from_secs(5))
+            std::thread::sleep(std::time::Duration::from_secs(5))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use starcoin_types::genesis_config::BuiltinNetworkID;
+
+    #[ignore]
+    #[stest::test]
+    fn test_genesis_parameter_resolver() {
+        let resolver = RpcFutureBlockParameterResolver::new(BuiltinNetworkID::Main.into());
+        let parameter = FutureBlockParameter {
+            network: BuiltinNetworkID::Proxima,
+            block_number: 1000000,
+        };
+        let genesis_parameter = resolver.resolve(&parameter).unwrap();
+        debug!("{:?}", genesis_parameter);
     }
 }
