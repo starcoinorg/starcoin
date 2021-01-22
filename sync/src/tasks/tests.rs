@@ -330,11 +330,11 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.block_id);
-    // assert_eq!(target.block_id, current_block_header.id());
-    // assert_eq!(
-    //     arc_node1.chain().current_header().id(),
-    //     current_block_header.id()
-    // );
+    assert_eq!(target.block_id, current_block_header.id());
+    assert_eq!(
+        arc_node1.chain().current_header().id(),
+        current_block_header.id()
+    );
     let reports = task_event_counter.get_reports();
     reports
         .iter()
