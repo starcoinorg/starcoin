@@ -122,15 +122,15 @@ mod tests {
         }
 
         {
-            let se = scs::to_bytes(&data).unwrap();
+            let se = bcs_ext::to_bytes(&data).unwrap();
             println!("{:?}", se);
-            let de = scs::from_bytes::<TestStruct>(&se).unwrap();
+            let de = bcs_ext::from_bytes::<TestStruct>(&se).unwrap();
             assert_eq!(de, data);
 
             let origin = TestStructOrigin {
                 bytes: vec![1, 2, 3],
             };
-            let origin_se = scs::to_bytes(&origin).unwrap();
+            let origin_se = bcs_ext::to_bytes(&origin).unwrap();
             assert_eq!(se, origin_se);
         }
     }

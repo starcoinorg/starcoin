@@ -7,6 +7,7 @@ use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, Notification
 use crate::protocol::message::generic::{FallbackMessage, Status};
 use crate::utils::interval;
 use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
+use bcs_ext::BCSCodec;
 use bytes::{Bytes, BytesMut};
 use futures::prelude::*;
 use libp2p::core::{
@@ -17,7 +18,6 @@ use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
-use scs::SCSCodec;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};

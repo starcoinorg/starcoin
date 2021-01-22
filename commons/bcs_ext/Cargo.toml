@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-canonical-serialization"
+name = "bcs-ext"
 version = "0.10.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::{convert_to_rpc_error, map_err};
+use bcs_ext::BCSCodec;
 use futures::future::TryFutureExt;
-use scs::SCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};

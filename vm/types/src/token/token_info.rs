@@ -50,6 +50,6 @@ impl TokenInfoResource {
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        scs::from_bytes(bytes).map_err(Into::into)
+        bcs_ext::from_bytes(bytes).map_err(Into::into)
     }
 }

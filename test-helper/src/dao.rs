@@ -353,10 +353,10 @@ pub fn vote_vm_config_script(net: &ChainNetwork, vm_config: VMConfig) -> Script 
         vec![],
         vec![
             TransactionArgument::U8Vector(
-                scs::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
+                bcs_ext::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
             ),
             TransactionArgument::U8Vector(
-                scs::to_bytes(&vm_config.gas_schedule.native_table).unwrap(),
+                bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap(),
             ),
             TransactionArgument::U64(gas_constants.global_memory_per_byte_cost.get()),
             TransactionArgument::U64(gas_constants.global_memory_per_byte_write_cost.get()),

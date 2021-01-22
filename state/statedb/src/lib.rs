@@ -3,11 +3,11 @@
 
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, Result};
+use bcs_ext::BCSCodec;
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
 use parking_lot::{Mutex, RwLock};
-use scs::SCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 pub use starcoin_state_api::{

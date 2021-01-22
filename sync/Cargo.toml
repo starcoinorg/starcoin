@@ -37,7 +37,7 @@ forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 async-trait = "0.1"
-starcoin-canonical-serialization = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
+bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 starcoin-accumulator = { package = "starcoin-accumulator", path = "../core/accumulator" }
 starcoin-metrics = { path = "../commons/metrics" }
 once_cell = "1.5.2"

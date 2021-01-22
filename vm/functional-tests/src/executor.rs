@@ -114,7 +114,7 @@ impl FakeExecutor {
             .get(&ap)
             .expect("account must exist in data store")
             .expect("data must exist in data store");
-        let time: GlobalTimeOnChain = scs::from_bytes(data_blob.as_slice()).unwrap();
+        let time: GlobalTimeOnChain = bcs_ext::from_bytes(data_blob.as_slice()).unwrap();
         time.seconds()
     }
 
@@ -126,7 +126,7 @@ impl FakeExecutor {
             .get(&ap)
             .expect("account must exist in data store")
             .expect("data must exist in data store");
-        scs::from_bytes(data_blob.as_slice()).ok()
+        bcs_ext::from_bytes(data_blob.as_slice()).ok()
     }
 
     /// Reads the balance resource value for an account from this executor's data store.
@@ -147,7 +147,7 @@ impl FakeExecutor {
             .get(&ap)
             .expect("account must exist in data store")
             .expect("data must exist in data store");
-        scs::from_bytes(data_blob.as_slice()).ok()
+        bcs_ext::from_bytes(data_blob.as_slice()).ok()
     }
 
     /// Reads the AccountResource and BalanceResource for this account. These are coupled together.
@@ -232,7 +232,7 @@ impl FakeExecutor {
         //let event = output.events()[0].clone();
         //TODO block event.
         //assert!(event.key() == &new_block_event_key());
-        //assert!(scs::from_bytes::<NewBlockEvent>(event.event_data()).is_ok());
+        //assert!(bcs_ext::from_bytes::<NewBlockEvent>(event.event_data()).is_ok());
         self.apply_write_set(output.write_set());
     }
 }

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::transaction::transaction_argument::TransactionArgument;
+use bcs_ext::Sample;
 use move_core_types::language_storage::TypeTag;
-use scs::Sample;
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;

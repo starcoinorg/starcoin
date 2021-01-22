@@ -3,7 +3,7 @@
 
 use crate::ReputationChange;
 use anyhow::*;
-use scs::{SCSCodec, Sample};
+use bcs_ext::{BCSCodec, Sample};
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;

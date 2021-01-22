@@ -3,7 +3,7 @@
 
 use crate::block::{BlockHeader, BlockInfo};
 use anyhow::Result;
-use scs::{SCSCodec, Sample};
+use bcs_ext::{BCSCodec, Sample};
 use serde::__private::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;

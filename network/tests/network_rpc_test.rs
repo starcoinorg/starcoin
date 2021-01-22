@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use bcs_ext::BCSCodec;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network_rpc_core::RawRpcClient;
-use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::RegistryAsyncService;

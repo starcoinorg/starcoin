@@ -487,12 +487,12 @@ where
     }
 
     pub fn serialize(&self, binary: &mut Vec<u8>) -> Result<()> {
-        binary.extend(scs::to_bytes(self)?);
+        binary.extend(bcs_ext::to_bytes(self)?);
         Ok(())
     }
 
     pub fn deserialize(data: &[u8]) -> Result<Self> {
-        scs::from_bytes(data)
+        bcs_ext::from_bytes(data)
     }
 }
 

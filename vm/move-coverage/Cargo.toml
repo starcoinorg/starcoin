@@ -15,11 +15,11 @@ serde = { version = "1.0.120", default-features = false }
 anyhow = "1.0.38"
 codespan = { version = "0.8.0", features = ["serialization"] }
 colored = "2.0.0"
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types"}
-bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="2512004a968d92d54097cb71e206c0b90bd6ba10" }
-bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="2512004a968d92d54097cb71e206c0b90bd6ba10" }
+bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
 
 [features]
 default = []

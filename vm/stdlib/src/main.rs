@@ -132,7 +132,7 @@ fn incremental_update_with_version(
             let mut package_path = base_path.clone();
             package_path.push("stdlib");
             package_path.set_extension("blob");
-            let blob = scs::to_bytes(&package).unwrap();
+            let blob = bcs_ext::to_bytes(&package).unwrap();
             save_binary(package_path.as_path(), &blob);
             println!("new package hash : {:?}", package_hash);
         }

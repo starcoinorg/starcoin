@@ -366,10 +366,11 @@ pub fn build_stdlib_package(
         }
 
         let instruction_schedule =
-            scs::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
+            bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
                 .expect("Cannot serialize gas schedule");
-        let native_schedule = scs::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
-            .expect("Cannot serialize gas schedule");
+        let native_schedule =
+            bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
+                .expect("Cannot serialize gas schedule");
 
         package.set_init_script(Script::new(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),

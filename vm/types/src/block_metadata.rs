@@ -8,7 +8,7 @@ use crate::account_address::AccountAddress;
 use crate::account_config::genesis_address;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::AuthenticationKey;
-use scs::Sample;
+use bcs_ext::Sample;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{

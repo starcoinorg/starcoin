@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, Result};
+use bcs_ext::Sample;
 use network_api::messages::{CompactBlockMessage, TransactionsMessage};
-use scs::Sample;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -78,7 +78,7 @@ fn read_and_check_data<T: Serialize + DeserializeOwned + PartialEq>() -> Result<
     if data_path.exists() && json_path.exists() {
         debug!("Read data from {:?}", data_path);
         let data = hex::decode(std::fs::read_to_string(data_path)?.as_str())?;
-        let data_t = scs::from_bytes::<T>(data.as_slice())?;
+        let data_t = bcs_ext::from_bytes::<T>(data.as_slice())?;
         let json_t = serde_json::from_str::<T>(std::fs::read_to_string(json_path)?.as_str())?;
         ensure!(
             data_t == json_t,
@@ -86,7 +86,7 @@ fn read_and_check_data<T: Serialize + DeserializeOwned + PartialEq>() -> Result<
             type_name::<T>()
         );
 
-        let new_data = scs::to_bytes(&data_t)?;
+        let new_data = bcs_ext::to_bytes(&data_t)?;
         ensure!(
             data == new_data,
             "Check type {}'s serialize/deserialize fail, expect:{}, got: {}",
@@ -108,7 +108,7 @@ fn write_data<T: Serialize>(t: &T) -> Result<()> {
     if !dir.exists() {
         std::fs::create_dir_all(dir)?;
     }
-    std::fs::write(data_path, hex::encode(scs::to_bytes(t)?))?;
+    std::fs::write(data_path, hex::encode(bcs_ext::to_bytes(t)?))?;
     std::fs::write(json_path, serde_json::to_string_pretty(t)?)?;
     Ok(())
 }

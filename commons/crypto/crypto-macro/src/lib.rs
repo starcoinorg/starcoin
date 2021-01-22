@@ -29,7 +29,7 @@ pub fn crypto_hash(input: TokenStream) -> TokenStream {
             type Hasher = #hasher_name;
             fn hash(&self) -> starcoin_crypto::HashValue {
                 let mut state = Self::Hasher::default();
-                scs::serialize_into(&mut state, &self).expect(#error_msg);
+                bcs_ext::serialize_into(&mut state, &self).expect(#error_msg);
                 state.finish()
             }
         }

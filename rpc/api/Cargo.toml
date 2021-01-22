@@ -21,7 +21,7 @@ jsonrpc-server-utils = "15.1.0"
 jsonrpc-pubsub = "15.1.0"
 jsonrpc-core-client = { version = "15.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 futures = { version = "0.3", features = ["compat"] }
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-rpc-middleware = { path = "../middleware" }
 starcoin-types = { path = "../../types"}
 starcoin-account-api = { path = "../../account/api"}

@@ -293,7 +293,7 @@ impl StarcoinVM {
     ) -> Result<bool> {
         let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
         if let Some(data) = remote_cache.get(&strategy_access_path)? {
-            Ok(scs::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
+            Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
         } else {
             Ok(false)
         }

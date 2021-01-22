@@ -12,7 +12,7 @@ thiserror = "1.0"
 serde = { version = "1.0" }
 starcoin-types = {path = "../types"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 chrono = "0.4"
 byteorder = "1.4.2"
 lru = "0.6.2"

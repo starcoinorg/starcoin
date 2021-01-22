@@ -34,7 +34,7 @@ pub trait AccountApi {
         data: StrView<Vec<u8>>,
     ) -> FutureResult<StrView<Vec<u8>>>;
 
-    /// sign a txn request, return hex encoded scs bytes of signed user txn.
+    /// sign a txn request, return hex encoded bcs_ext bytes of signed user txn.
     #[rpc(name = "account.sign_txn_request")]
     fn sign_txn_request(&self, txn_request: TransactionRequest) -> FutureResult<String>;
 

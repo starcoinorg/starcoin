@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use scs;
+use bcs_ext;
 use starcoin_stdlib::encode_peer_to_peer_with_metadata_script;
 use starcoin_types::{AccountAddress, Identifier, StructTag, TypeTag};
 
@@ -30,7 +30,7 @@ fn main() {
         Vec::new(),
     );
 
-    let output = scs::to_bytes(&script).unwrap();
+    let output = bcs_ext::to_bytes(&script).unwrap();
     for o in output {
         print!("{} ", o);
     }

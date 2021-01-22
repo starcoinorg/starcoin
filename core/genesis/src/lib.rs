@@ -212,7 +212,7 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = scs::from_bytes(&content)?;
+        let genesis = bcs_ext::from_bytes(&content)?;
         Ok(Some(genesis))
     }
 
@@ -225,7 +225,7 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(scs::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
             None => Ok(None),
         }
     }
@@ -259,7 +259,7 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = scs::to_bytes(self)?;
+        let contents = bcs_ext::to_bytes(self)?;
         file.write_all(&contents)?;
         Ok(())
     }

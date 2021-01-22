@@ -6,11 +6,11 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `cmp_scs_bytes`](#0x1_Compare_cmp_scs_bytes)
+-  [Function `cmp_bcs_bytes`](#0x1_Compare_cmp_bcs_bytes)
 -  [Function `cmp_u8`](#0x1_Compare_cmp_u8)
 -  [Function `cmp_u64`](#0x1_Compare_cmp_u64)
 -  [Specification](#@Specification_1)
-    -  [Function `cmp_scs_bytes`](#@Specification_1_cmp_scs_bytes)
+    -  [Function `cmp_bcs_bytes`](#@Specification_1_cmp_bcs_bytes)
     -  [Function `cmp_u8`](#@Specification_1_cmp_u8)
     -  [Function `cmp_u64`](#@Specification_1_cmp_u64)
 
@@ -52,13 +52,13 @@
 
 
 
-<a name="0x1_Compare_cmp_scs_bytes"></a>
+<a name="0x1_Compare_cmp_bcs_bytes"></a>
 
-## Function `cmp_scs_bytes`
+## Function `cmp_bcs_bytes`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_scs_bytes">cmp_scs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
+<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
 </code></pre>
 
 
@@ -67,12 +67,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_scs_bytes">cmp_scs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8 {
+<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8 {
     <b>let</b> i1 = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(v1);
     <b>let</b> i2 = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(v2);
     <b>let</b> len_cmp = <a href="Compare.md#0x1_Compare_cmp_u64">cmp_u64</a>(i1, i2);
 
-    // <a href="SCS.md#0x1_SCS">SCS</a> uses little endian encoding for all integer types, so we choose <b>to</b> compare from left
+    // <a href="BCS.md#0x1_BCS">BCS</a> uses little endian encoding for all integer types, so we choose <b>to</b> compare from left
     // <b>to</b> right. Going right <b>to</b> left would make the behavior of <a href="Compare.md#0x1_Compare">Compare</a>.cmp diverge from the
     // bytecode operators &lt; and &gt; on integer values (which would be confusing).
     <b>while</b> (i1 &gt; 0 && i2 &gt; 0) {
@@ -155,12 +155,12 @@
 
 
 
-<a name="@Specification_1_cmp_scs_bytes"></a>
+<a name="@Specification_1_cmp_bcs_bytes"></a>
 
-### Function `cmp_scs_bytes`
+### Function `cmp_bcs_bytes`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_scs_bytes">cmp_scs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
+<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
 </code></pre>
 
 

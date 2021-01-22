@@ -31,7 +31,7 @@ jsonrpc-client-transports = { version = "15.1.0", features = ["http", "ipc", "ws
 futures03 = { package="futures",version = "0.3", features = ["compat"] }
 futures = "0.1.29"
 parity-tokio-ipc = { version = "0.2"}
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}
 starcoin-crypto = { path = "../../commons/crypto"}

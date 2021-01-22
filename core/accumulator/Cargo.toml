@@ -15,7 +15,7 @@ byteorder = "1.4.2"
 itertools = { version = "0.10.0", default-features = false }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0" }
 lru = "0.6.2"
 parking_lot = "0.11.1"

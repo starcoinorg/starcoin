@@ -3,7 +3,7 @@
 
 use crate::access_path::DataType;
 use anyhow::Result;
-use scs::SCSCodec;
+use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},

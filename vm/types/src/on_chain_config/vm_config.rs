@@ -76,8 +76,8 @@ struct VMConfigInner {
 
 impl CostTableInner {
     pub fn as_cost_table(&self) -> Result<CostTable> {
-        let instruction_table = scs::from_bytes(&self.instruction_table)?;
-        let native_table = scs::from_bytes(&self.native_table)?;
+        let instruction_table = bcs_ext::from_bytes(&self.instruction_table)?;
+        let native_table = bcs_ext::from_bytes(&self.native_table)?;
         Ok(CostTable {
             instruction_table,
             native_table,
@@ -91,7 +91,7 @@ impl OnChainConfig for VMConfig {
     const CONF_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
-        let raw_vm_config = scs::from_bytes::<VMConfigInner>(&bytes).map_err(|e| {
+        let raw_vm_config = bcs_ext::from_bytes::<VMConfigInner>(&bytes).map_err(|e| {
             format_err!(
                 "Failed first round of deserialization for VMConfigInner: {}",
                 e

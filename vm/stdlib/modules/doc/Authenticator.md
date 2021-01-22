@@ -22,9 +22,9 @@
     -  [Function `threshold`](#@Specification_1_threshold)
 
 
-<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<pre><code><b>use</b> <a href="BCS.md#0x1_BCS">0x1::BCS</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Hash.md#0x1_Hash">0x1::Hash</a>;
-<b>use</b> <a href="SCS.md#0x1_SCS">0x1::SCS</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
@@ -241,7 +241,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
         i = i + 1;
     };
 
-    <a href="SCS.md#0x1_SCS_to_address">SCS::to_address</a>(address_bytes)
+    <a href="BCS.md#0x1_BCS_to_address">BCS::to_address</a>(address_bytes)
 }
 </code></pre>
 
@@ -277,7 +277,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
         );
         i = i + 1;
     };
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> authentication_key_preimage, <a href="SCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&k.threshold));
+    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> authentication_key_preimage, <a href="BCS.md#0x1_BCS_to_bytes">BCS::to_bytes</a>(&k.threshold));
     // TODO: add constant <a href="Authenticator.md#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a> = 1u8
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> authentication_key_preimage, 1u8);
     <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(authentication_key_preimage)

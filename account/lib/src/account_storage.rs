@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use scs::SCSCodec;
+use bcs_ext::BCSCodec;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
@@ -169,11 +169,11 @@ impl From<AccountPublicKey> for PublicKeyWrapper {
 
 impl ValueCodec for PublicKeyWrapper {
     fn encode_value(&self) -> Result<Vec<u8>, Error> {
-        scs::to_bytes(&self.0)
+        bcs_ext::to_bytes(&self.0)
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, Error> {
-        Ok(Self(scs::from_bytes::<AccountPublicKey>(data)?))
+        Ok(Self(bcs_ext::from_bytes::<AccountPublicKey>(data)?))
     }
 }
 

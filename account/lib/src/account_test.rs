@@ -113,8 +113,8 @@ pub fn test_wallet_unlock() -> Result<()> {
 
 #[test]
 pub fn test_wallet_account() -> Result<()> {
+    use bcs_ext::BCSCodec;
     use core::convert::{From, TryFrom};
-    use scs::SCSCodec;
     use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature};
     use starcoin_crypto::{hash::CryptoHash, HashValue};
     use starcoin_types::transaction::authenticator::AuthenticationKey;

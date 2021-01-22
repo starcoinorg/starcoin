@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::transaction::{Package, RawUserTransaction, SignedUserTransaction, TransactionPayload};
+use bcs_ext::test_helpers::assert_canonical_encode_decode;
 use proptest::prelude::*;
-use scs::test_helpers::assert_canonical_encode_decode;
 use starcoin_crypto::ed25519::{self};
 
 proptest! {
@@ -18,22 +18,22 @@ proptest! {
     }
 
     #[test]
-    fn transaction_payload_scs_roundtrip(txn_payload in any::<TransactionPayload>()) {
+    fn transaction_payload_bcs_roundtrip(txn_payload in any::<TransactionPayload>()) {
         assert_canonical_encode_decode(txn_payload);
     }
 
     #[test]
-    fn transaction_package_scs_roundtrip(txn_package in any::<Package>()) {
+    fn transaction_package_bcs_roundtrip(txn_package in any::<Package>()) {
         assert_canonical_encode_decode(txn_package);
     }
 
     #[test]
-    fn raw_transaction_scs_roundtrip(raw_txn in any::<RawUserTransaction>()) {
+    fn raw_transaction_bcs_roundtrip(raw_txn in any::<RawUserTransaction>()) {
         assert_canonical_encode_decode(raw_txn);
     }
 
     #[test]
-    fn signed_transaction_scs_roundtrip(signed_txn in any::<SignedUserTransaction>()) {
+    fn signed_transaction_bcs_roundtrip(signed_txn in any::<SignedUserTransaction>()) {
         assert_canonical_encode_decode(signed_txn);
     }
 

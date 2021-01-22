@@ -9,8 +9,8 @@
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="../../modules/doc/BCS.md#0x1_BCS">0x1::BCS</a>;
 <b>use</b> <a href="../../modules/doc/Errors.md#0x1_Errors">0x1::Errors</a>;
-<b>use</b> <a href="../../modules/doc/SCS.md#0x1_SCS">0x1::SCS</a>;
 <b>use</b> <a href="../../modules/doc/Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
@@ -47,7 +47,7 @@
     <b>let</b> i = 0;
     <b>while</b> (i &lt; len){
         <b>let</b> payee_bytes  = *<a href="../../modules/doc/Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;vector&lt;u8&gt;&gt;(&payee_bytes_vec, i);
-        <b>let</b> payee = <a href="../../modules/doc/SCS.md#0x1_SCS_to_address">SCS::to_address</a>(payee_bytes);
+        <b>let</b> payee = <a href="../../modules/doc/BCS.md#0x1_BCS_to_address">BCS::to_address</a>(payee_bytes);
         <b>let</b> payee_auth_key = *<a href="../../modules/doc/Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;vector&lt;u8&gt;&gt;(&auth_key_bytes_vec, i);
         <b>if</b> (!<a href="../../modules/doc/Account.md#0x1_Account_exists_at">Account::exists_at</a>(payee)) {
         <b>let</b> created_address = <a href="../../modules/doc/Account.md#0x1_Account_create_account">Account::create_account</a>&lt;TokenType&gt;(payee_auth_key);

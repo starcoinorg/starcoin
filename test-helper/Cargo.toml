@@ -60,7 +60,7 @@ network-api = { path = "../network/api" }
 async-trait = "0.1.42"
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
-scs = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
+bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 
 
 [dev-dependencies]

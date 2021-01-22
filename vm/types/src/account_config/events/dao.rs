@@ -10,7 +10,7 @@ pub struct ProposalCreatedEvent {
 }
 impl ProposalCreatedEvent {
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        scs::from_bytes(bytes).map_err(Into::into)
+        bcs_ext::from_bytes(bytes).map_err(Into::into)
     }
 }
 impl MoveResource for ProposalCreatedEvent {
@@ -36,6 +36,6 @@ impl MoveResource for VoteChangedEvent {
 
 impl VoteChangedEvent {
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        scs::from_bytes(bytes).map_err(Into::into)
+        bcs_ext::from_bytes(bytes).map_err(Into::into)
     }
 }

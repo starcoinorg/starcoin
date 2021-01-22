@@ -17,7 +17,7 @@ rand_distr = "0.4.0"
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-types = { path = "../../types" }
 starcoin-crypto = { path = "../../commons/crypto" }
-scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
+bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-rpc-core = { path = "../../network-rpc/core" }
 network-p2p-types = {path = "../../network-p2p/types"}
