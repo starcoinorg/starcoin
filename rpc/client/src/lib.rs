@@ -7,9 +7,11 @@ use actix::{Addr, System};
 use failure::Fail;
 use futures03::channel::oneshot;
 use futures03::{TryStream, TryStreamExt};
+use jsonrpc_client_transports::RawClient;
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_p2p_types::network_state::NetworkState;
 use parking_lot::Mutex;
+use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
@@ -42,6 +44,7 @@ use starcoin_types::stress_test::TPS;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SystemStop;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
@@ -56,9 +59,8 @@ use tokio_compat::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
-
 pub use crate::remote_state_reader::RemoteStateReader;
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+pub use jsonrpc_core::Params;
 
 #[derive(Clone)]
 enum ConnSource {
@@ -1039,6 +1041,13 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn call_raw_api(&self, api: &str, params: Params) -> anyhow::Result<Value> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.raw_client.call_method(api, params).compat().await
+        })
+        .map_err(map_err)
+    }
+
     pub fn close(self) {
         if let Err(e) = self.chain_watcher.try_send(SystemStop) {
             error!("Try to stop chain watcher error: {:?}", e);
@@ -1051,6 +1060,7 @@ impl RpcClient {
 
 #[derive(Clone)]
 pub(crate) struct RpcClientInner {
+    raw_client: RawClient,
     node_client: NodeClient,
     node_manager_client: NodeManagerClient,
     txpool_client: TxPoolClient,
@@ -1069,6 +1079,7 @@ pub(crate) struct RpcClientInner {
 impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
+            raw_client: channel.clone().into(),
             node_client: channel.clone().into(),
             node_manager_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
