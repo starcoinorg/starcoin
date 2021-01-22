@@ -4,7 +4,6 @@
 use jsonrpc_core::{BoxFuture, Error};
 
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
-//pub type FutureResult<T> = Pin<Box<dyn futures::Future<Output = Result<T, Error>> + Send>>;
 
 pub mod account;
 pub mod chain;

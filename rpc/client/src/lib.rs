@@ -43,7 +43,6 @@ use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
@@ -54,8 +53,11 @@ use std::time::Duration;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
+
 pub use crate::remote_state_reader::RemoteStateReader;
 pub use jsonrpc_core::Params;
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use tokio::runtime::Runtime;
 
 #[derive(Clone)]
 enum ConnSource {
@@ -84,11 +86,15 @@ pub struct RpcClient {
 
 struct ConnectionProvider {
     conn_source: ConnSource,
+    runtime: Mutex<Runtime>,
 }
 
 impl ConnectionProvider {
-    fn new(conn_source: ConnSource) -> Self {
-        Self { conn_source }
+    fn new(conn_source: ConnSource, runtime: Runtime) -> Self {
+        Self {
+            conn_source,
+            runtime: Mutex::new(runtime),
+        }
     }
 
     fn block_on<F>(&self, future: F) -> F::Output
@@ -96,7 +102,7 @@ impl ConnectionProvider {
         F: futures03::Future + std::marker::Send,
         F::Output: std::marker::Send,
     {
-        block_on(future)
+        self.runtime.lock().block_on(future)
     }
 
     fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
@@ -117,7 +123,7 @@ impl ConnectionProvider {
 impl RpcClient {
     pub(crate) fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
-        let provider = ConnectionProvider::new(conn_source);
+        let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
         let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into(); //Self::create_client_inner(conn_source.clone()).map_err(map_err)?;
         let pubsub_client = inner.pubsub_client.clone();
         let handle = std::thread::spawn(move || {
@@ -306,16 +312,13 @@ impl RpcClient {
         &self,
         txn_request: TransactionRequest,
     ) -> anyhow::Result<SignedUserTransaction> {
-        self.call_rpc_blocking(|inner| inner
-                .account_client
-                .sign_txn_request(txn_request)
-        )
-        .map_err(map_err)
-        .and_then(|d: String| {
-            hex::decode(d.as_str().strip_prefix("0x").unwrap_or_else(|| d.as_str()))
-                .map_err(anyhow::Error::new)
-                .and_then(|d| bcs_ext::from_bytes::<SignedUserTransaction>(d.as_slice()))
-        })
+        self.call_rpc_blocking(|inner| inner.account_client.sign_txn_request(txn_request))
+            .map_err(map_err)
+            .and_then(|d: String| {
+                hex::decode(d.as_str().strip_prefix("0x").unwrap_or_else(|| d.as_str()))
+                    .map_err(anyhow::Error::new)
+                    .and_then(|d| bcs_ext::from_bytes::<SignedUserTransaction>(d.as_slice()))
+            })
     }
 
     pub fn account_sign_txn(
@@ -412,15 +415,6 @@ impl RpcClient {
         &self,
         access_path: AccessPath,
     ) -> anyhow::Result<StateWithProofView> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .state_client
-                .get_with_proof(access_path)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
-    pub fn state_get_with_proof(&self, access_path: AccessPath) -> anyhow::Result<StateWithProof> {
         self.call_rpc_blocking(|inner| inner.state_client.get_with_proof(access_path))
             .map_err(map_err)
     }
@@ -429,10 +423,8 @@ impl RpcClient {
         &self,
         access_path: AccessPath,
         state_root: HashValue,
-    ) -> anyhow::Result<StateWithProof> {
-        self.call_rpc_blocking(|inner| {
     ) -> anyhow::Result<StateWithProofView> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .state_client
                 .get_with_proof_by_root(access_path, state_root)
@@ -553,14 +545,6 @@ impl RpcClient {
 
     pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Option<BlockView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_hash(hash))
-            .map_err(map_err)
-    }
-
-    pub fn chain_get_block_by_uncle(
-        &self,
-        uncle_id: HashValue,
-    ) -> anyhow::Result<Option<BlockView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_uncle(uncle_id))
             .map_err(map_err)
     }
 
@@ -764,7 +748,7 @@ impl RpcClient {
     }
 
     pub fn sync_peer_score(&self) -> anyhow::Result<PeerScoreResponse> {
-        self.call_rpc_blocking(|inner| async move { inner.sync_client.peer_score().compat().await })
+        self.call_rpc_blocking(|inner| inner.sync_client.peer_score())
             .map_err(map_err)
     }
 
@@ -775,16 +759,12 @@ impl RpcClient {
         skip_pow_verify: bool,
         strategy: Option<PeerStrategy>,
     ) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move {
+        self.call_rpc_blocking(|inner| {
             inner
                 .sync_client
                 .start(force, peers, skip_pow_verify, strategy)
-                .compat()
-                .await
         })
         .map_err(map_err)
-        self.call_rpc_blocking(|inner| inner.sync_client.start(force, peers, skip_pow_verify))
-            .map_err(map_err)
     }
 
     pub fn sync_cancel(&self) -> anyhow::Result<()> {
@@ -813,10 +793,8 @@ impl RpcClient {
     }
 
     pub fn call_raw_api(&self, api: &str, params: Params) -> anyhow::Result<Value> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.raw_client.call_method(api, params).compat().await
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.raw_client.call_method(api, params))
+            .map_err(map_err)
     }
 
     pub fn close(self) {

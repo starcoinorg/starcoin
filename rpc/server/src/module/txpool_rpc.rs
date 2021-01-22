@@ -3,7 +3,6 @@
 
 use crate::module::{convert_to_rpc_error, map_err};
 use bcs_ext::BCSCodec;
-use futures::future::TryFutureExt;
 use starcoin_crypto::HashValue;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;

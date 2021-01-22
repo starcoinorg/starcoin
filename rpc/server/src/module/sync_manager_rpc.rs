@@ -86,6 +86,6 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 }
