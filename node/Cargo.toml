@@ -12,7 +12,7 @@ thiserror = "1.0"
 backtrace = "0.3.55"
 actix = "0.10.0"
 actix-rt = "1.1"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.1", features = ["full"] }
 futures = "0.3"
 futures-timer = "3.0"
 async-trait = "0.1"
