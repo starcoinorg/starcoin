@@ -30,7 +30,7 @@ pub struct SyncConfig {
 
 impl SyncConfig {
     pub fn peer_select_strategy(&self) -> PeerStrategy {
-        self.peer_select_strategy.unwrap_or_default()
+        self.peer_select_strategy.clone().unwrap_or_default()
     }
 
     pub fn max_retry_times(&self) -> u64 {
