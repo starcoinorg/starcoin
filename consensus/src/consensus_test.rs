@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(clippy::integer_arithmetic)]
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
 use crate::{difficult_to_target, target_to_difficulty, CRYPTONIGHT};
@@ -47,18 +48,18 @@ fn verify_header_test() {
 
 #[stest::test]
 fn test_get_next_target() {
-    let time_used = simulate_blocks(15, 10000.into());
-    assert!((time_used as i64 - 15).abs() <= 1);
-    let time_used = simulate_blocks(20, 20000.into());
-    assert!((time_used as i64 - 20).abs() <= 1);
-    let time_used = simulate_blocks(5, 1000.into());
-    assert!((time_used as i64 - 5).abs() <= 1);
+    let time_used = simulate_blocks(15_000, 10000.into());
+    assert!((time_used as i64 - 15_000).abs() <= 1000);
+    let time_used = simulate_blocks(20_000, 20000.into());
+    assert!((time_used as i64 - 20_000).abs() <= 1000);
+    let time_used = simulate_blocks(5_000, 1000.into());
+    assert!((time_used as i64 - 5_000).abs() <= 1000);
 }
 
 fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
     fn liner_hash_pow(difficulty: U256, current: u64) -> u64 {
         let ts = MockTimeService::new_with_value(current);
-        let used_time = difficulty.as_u64() / 10;
+        let used_time = difficulty.as_u64();
         ts.sleep(used_time);
         ts.now_millis()
     }
@@ -75,4 +76,176 @@ fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
         diff = target_to_difficulty(get_next_target_helper(blocks, time_plan).unwrap());
     }
     blocks[0].timestamp - blocks[1].timestamp
+}
+
+#[stest::test]
+fn test_next_target_zero_one() {
+    assert!(
+        get_next_target_helper(vec![], 10_000).is_err(),
+        "expect get_next_target_helper error"
+    );
+    let target0: U256 = 10000.into();
+    let next_target = get_next_target_helper(
+        vec![BlockDiffInfo {
+            timestamp: 0,
+            target: target0,
+        }],
+        10_000,
+    )
+    .unwrap();
+
+    assert_eq!(next_target, target0);
+}
+
+#[stest::test]
+fn test_next_target_two_no_change() {
+    //time used match the plan
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let target1: U256 = 10000.into();
+    let next_target = get_next_target_helper(
+        vec![
+            BlockDiffInfo {
+                timestamp: time_plan,
+                target: target1,
+            },
+            BlockDiffInfo {
+                timestamp: 0,
+                target: target0,
+            },
+        ],
+        time_plan,
+    )
+    .unwrap();
+    assert_eq!(next_target, target0);
+}
+
+#[stest::test]
+fn test_next_target_two_increment_difficulty() {
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let target1: U256 = 10000.into();
+    let next_target = get_next_target_helper(
+        vec![
+            BlockDiffInfo {
+                timestamp: time_plan / 2,
+                target: target1,
+            },
+            BlockDiffInfo {
+                timestamp: 0,
+                target: target0,
+            },
+        ],
+        time_plan,
+    )
+    .unwrap();
+    assert!(next_target < target0);
+}
+
+#[stest::test]
+fn test_next_target_two_reduce_difficulty() {
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let target1: U256 = 10000.into();
+    let next_target = get_next_target_helper(
+        vec![
+            BlockDiffInfo {
+                timestamp: time_plan * 2,
+                target: target1,
+            },
+            BlockDiffInfo {
+                timestamp: 0,
+                target: target0,
+            },
+        ],
+        time_plan,
+    )
+    .unwrap();
+    assert!(next_target > target0);
+}
+
+#[stest::test]
+fn test_next_target_many_no_change() {
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let blocks = (0..24)
+        .rev()
+        .map(|i| BlockDiffInfo {
+            timestamp: time_plan * i,
+            target: target0,
+        })
+        .collect::<Vec<_>>();
+    let next_target = get_next_target_helper(blocks, time_plan).unwrap();
+    assert_eq!(next_target, target0);
+}
+
+#[stest::test]
+fn test_next_target_many_increment_difficulty() {
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let blocks = (0..24)
+        .rev()
+        .map(|i| BlockDiffInfo {
+            timestamp: (time_plan / 2) * i,
+            target: target0,
+        })
+        .collect::<Vec<_>>();
+    let next_target = get_next_target_helper(blocks, time_plan).unwrap();
+    assert!(next_target < target0);
+}
+
+#[stest::test]
+fn test_next_target_many_reduce_difficulty() {
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let blocks = (0..24)
+        .rev()
+        .map(|i| BlockDiffInfo {
+            timestamp: (time_plan * 2) * i,
+            target: target0,
+        })
+        .collect::<Vec<_>>();
+    let next_target = get_next_target_helper(blocks, time_plan).unwrap();
+    assert!(next_target > target0);
+}
+
+#[stest::test]
+fn test_next_target_increment_difficulty_compare() {
+    let time_plan = 10_000;
+    let target0: U256 = 10000.into();
+    let blocks_1 = vec![
+        BlockDiffInfo {
+            timestamp: time_plan * 2,
+            target: target0,
+        },
+        BlockDiffInfo {
+            timestamp: time_plan + 5000,
+            target: target0,
+        },
+        BlockDiffInfo {
+            timestamp: 0,
+            target: target0,
+        },
+    ];
+
+    let blocks_2 = vec![
+        BlockDiffInfo {
+            timestamp: time_plan * 2,
+            target: target0,
+        },
+        BlockDiffInfo {
+            timestamp: time_plan - 5000,
+            target: target0,
+        },
+        BlockDiffInfo {
+            timestamp: 0,
+            target: target0,
+        },
+    ];
+
+    let next_target_1 = get_next_target_helper(blocks_1, time_plan).unwrap();
+    let next_target_2 = get_next_target_helper(blocks_2, time_plan).unwrap();
+    assert!(next_target_1 < next_target_2);
+    assert!(next_target_1 < target0);
+    assert!(next_target_2 > target0);
 }
