@@ -79,7 +79,7 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn sync_peer_score(&self) -> FutureResult<PeerScoreResponse> {
+    fn peer_score(&self) -> FutureResult<PeerScoreResponse> {
         let service = self.service.clone();
         let fut = async move {
             let result = service.sync_peer_score().await?;

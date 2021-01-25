@@ -32,5 +32,5 @@ pub trait SyncManagerApi {
     fn progress(&self) -> FutureResult<Option<SyncProgressReport>>;
 
     #[rpc(name = "sync.score")]
-    fn sync_peer_score(&self) -> FutureResult<PeerScoreResponse>;
+    fn peer_score(&self) -> FutureResult<PeerScoreResponse>;
 }
