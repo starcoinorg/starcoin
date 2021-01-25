@@ -21,14 +21,14 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::genesis_config::DEFAULT_GAS_CONSTANTS;
 use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::genesis_config::DEFAULT_GAS_CONSTANTS;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
     errors::{Location, VMError},
     file_format::{CompiledModule, CompiledScript},
-    gas_schedule::{GasAlgebra},
+    gas_schedule::GasAlgebra,
     language_storage::ModuleId,
     state_view::StateView,
     views::ModuleView,
