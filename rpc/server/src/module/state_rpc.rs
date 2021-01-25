@@ -9,10 +9,10 @@ use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::state::StateApi;
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, StrView, StructTagView,
+    AccountStateSetView, AnnotatedMoveStructView, StateWithProofView, StrView, StructTagView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_state_api::{ChainStateAsyncService, StateWithProof};
+use starcoin_state_api::ChainStateAsyncService;
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::{
@@ -52,11 +52,12 @@ where
         Box::new(fut.compat())
     }
 
-    fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProof> {
+    fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView> {
         let fut = self
             .service
             .clone()
             .get_with_proof(access_path)
+            .map_ok(|p| p.into())
             .map_err(map_err);
         Box::new(fut.compat())
     }
@@ -131,11 +132,12 @@ where
         &self,
         access_path: AccessPath,
         state_root: HashValue,
-    ) -> FutureResult<StateWithProof> {
+    ) -> FutureResult<StateWithProofView> {
         let fut = self
             .service
             .clone()
             .get_with_proof_by_root(access_path, state_root)
+            .map_ok(|p| p.into())
             .map_err(map_err);
         Box::new(fut.compat())
     }

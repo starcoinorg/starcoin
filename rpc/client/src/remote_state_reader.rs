@@ -29,7 +29,9 @@ impl<'a> RemoteStateReader<'a> {
 
 impl<'a> ChainStateReader for RemoteStateReader<'a> {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        self.client.state_get_with_proof(access_path.clone())
+        self.client
+            .state_get_with_proof(access_path.clone())
+            .map(Into::into)
     }
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
@@ -54,8 +56,8 @@ impl<'a> StateView for RemoteStateReader<'a> {
         Ok(self
             .client
             .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
-            .get_state()
-            .clone())
+            .state
+            .map(|v| v.0))
     }
 
     fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {

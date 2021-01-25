@@ -79,7 +79,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root"
     Then cmd: "dev get_coin"
-    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0x0000000000000000000000000a550c18"
+    Then assert: "$.raw_txn.gas_unit_price 1 $.raw_txn.sequence_number 0 $.raw_txn.sender 0x0000000000000000000000000a550c18"
     Then cmd: "account show"
     Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"

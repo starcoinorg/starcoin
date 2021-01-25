@@ -30,7 +30,7 @@ use std::sync::Arc;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateProof {
-    account_state: Option<Blob>,
+    pub account_state: Option<Blob>,
     pub account_proof: SparseMerkleProof,
     pub account_state_proof: SparseMerkleProof,
 }

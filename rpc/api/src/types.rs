@@ -15,6 +15,7 @@ use serde_helpers::{deserialize_binary, serialize_binary};
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
+use starcoin_state_api::{StateProof, StateWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
     Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, BlockSummary,
@@ -25,6 +26,7 @@ use starcoin_types::event::EventKey;
 use starcoin_types::genesis_config;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
+use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{RawUserTransaction, TransactionArgument};
@@ -819,6 +821,47 @@ impl From<PeerInfo> for PeerInfoView {
             peer_id,
             chain_info: chain_info.into(),
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StateWithProofView {
+    pub state: Option<StrView<Vec<u8>>>,
+    pub account_state: Option<StrView<Vec<u8>>>,
+    pub account_proof: SparseMerkleProof,
+    pub account_state_proof: SparseMerkleProof,
+}
+impl StateWithProofView {
+    pub fn state_proof(&self) -> StateProof {
+        StateProof::new(
+            self.account_state.clone().map(|v| v.0),
+            self.account_proof.clone(),
+            self.account_state_proof.clone(),
+        )
+    }
+}
+
+impl From<StateWithProof> for StateWithProofView {
+    fn from(state_proof: StateWithProof) -> Self {
+        let state = state_proof.state.map(StrView);
+        Self {
+            state,
+            account_state: state_proof.proof.account_state.map(|b| StrView(b.into())),
+            account_proof: state_proof.proof.account_proof,
+            account_state_proof: state_proof.proof.account_state_proof,
+        }
+    }
+}
+
+impl From<StateWithProofView> for StateWithProof {
+    fn from(view: StateWithProofView) -> Self {
+        let state = view.state.map(|v| v.0);
+        let proof = StateProof::new(
+            view.account_state.map(|v| v.0),
+            view.account_proof,
+            view.account_state_proof,
+        );
+        StateWithProof::new(state, proof)
     }
 }
 
