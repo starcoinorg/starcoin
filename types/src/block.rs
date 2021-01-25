@@ -8,7 +8,6 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
-use serde::__private::Formatter;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
@@ -19,6 +18,7 @@ use starcoin_crypto::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use std::fmt::Formatter;
 
 /// Type for block number.
 pub type BlockNumber = u64;

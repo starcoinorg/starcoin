@@ -11,7 +11,7 @@ edition = "2018"
 anyhow = "1.0.38"
 starcoin-types = {path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
-serde = { version = "1.0" }
+serde = { version = "1.0.122" }
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state-store-api"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }

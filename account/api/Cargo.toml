@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.38"
 thiserror = "1.0"
 async-trait = "0.1"
-serde = { version = "1.0", default-features = false }
+serde = { version = "1.0.122", default-features = false }
 serde_bytes = "0.11.5"
 hex= "0.4.2"
 starcoin-types = { path = "../../types"}

@@ -21,7 +21,7 @@ crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
 jsonrpc-core = { version = "15.1.0", features = ["arbitrary_precision"] }
 jsonrpc-tcp-server = "15.1.0"
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.122", features = ["derive"] }
 rust-argon2 = "0.8"
 rand = "0.7.3"
 rand_core = { version = "0.6.0", default-features = false }

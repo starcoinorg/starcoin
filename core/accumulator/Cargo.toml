@@ -16,7 +16,7 @@ itertools = { version = "0.10.0", default-features = false }
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-serde = { version = "1.0" }
+serde = { version = "1.0.122" }
 lru = "0.6.2"
 parking_lot = "0.11.1"
 

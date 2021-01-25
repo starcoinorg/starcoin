@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use crate::JobClient;
 use anyhow::Result;
 use futures::stream::BoxStream;
@@ -5,7 +8,6 @@ use futures::{stream::StreamExt, Future, TryStreamExt};
 use futures_channel::mpsc::{unbounded, UnboundedSender};
 use futures_timer::Delay;
 use logger::prelude::*;
-use serde::__private::Option::Some;
 use starcoin_config::{RealTimeService, TimeService};
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::block::BlockHeaderExtra;
