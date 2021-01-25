@@ -834,7 +834,7 @@ static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(1));
 
-pub static BASE_BLOCK_GAS_LIMIT: u64 = 100_000;
+pub static BASE_BLOCK_GAS_LIMIT: u64 = 100_000_000;
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 
@@ -853,11 +853,11 @@ pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         min_transaction_gas_units: GasUnits::new(600),
         large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: GasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(4_000_000),
+        maximum_number_of_gas_units: GasUnits::new(4_000_000_000),
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
-        gas_unit_scaling_factor: 1000,
+        gas_unit_scaling_factor: 1,
         default_account_size: *DEFAULT_ACCOUNT_SIZE,
     }
 });

@@ -19,7 +19,7 @@ module Swapper {
 }
 
 //! new-transaction
-//! max-gas: 620
+//! max-gas: 620000
 script {
 use {{default}}::Swapper;
 fun main() {
@@ -27,5 +27,5 @@ fun main() {
 }
 }
 // check: "EXECUTION_FAILURE { status_code: OUT_OF_GAS, location: 0xa4a46d1b1421502568a4a6ac326d7250::Swapper,"
-// check: "gas_used: 620,"
+// check: "gas_used: 620000,"
 // check: "Keep(OUT_OF_GAS)"

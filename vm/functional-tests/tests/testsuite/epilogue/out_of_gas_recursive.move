@@ -4,7 +4,7 @@ module OddOrEven {
 }
 
 //! new-transaction
-//! max-gas: 600
+//! max-gas: 600000
 script {
 use {{default}}::OddOrEven;
 fun main() {
@@ -12,5 +12,5 @@ fun main() {
 }
 }
 // check: "EXECUTION_FAILURE { status_code: OUT_OF_GAS, location: 0xa4a46d1b1421502568a4a6ac326d7250::OddOrEven,"
-// check: "gas_used: 600,"
+// check: "gas_used: 600000,"
 // check: "Keep(OUT_OF_GAS)"

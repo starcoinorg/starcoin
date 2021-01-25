@@ -12,7 +12,7 @@
 //! args: 86400000, 0, 50u8, 0, 0
 stdlib_script::propose_modify_dao_config
 // check: gas_used
-// check: 201
+// check: 186513
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -26,7 +26,7 @@ stdlib_script::propose_modify_dao_config
 //! args: {{alice}}, 0, true, 3981420001000000u128
 stdlib_script::cast_vote
 // check: gas_used
-// check: 175
+// check: 170700
 // check: "Keep(EXECUTED)"
 
 
@@ -41,7 +41,7 @@ stdlib_script::cast_vote
 //! args: {{alice}}, 0
 stdlib_script::queue_proposal_action
 // check: gas_used
-// check: 55
+// check: 54457
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -50,7 +50,7 @@ stdlib_script::queue_proposal_action
 //! args: {{alice}}, 0
 stdlib_script::unstake_vote
 // check: gas_used
-// check: 117
+// check: 114622
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -64,5 +64,5 @@ stdlib_script::unstake_vote
 //! args: {{alice}}, 0
 stdlib_script::execute_modify_dao_config_proposal
 // check: gas_used
-// check: 156
+// check: 149562
 // check: "Keep(EXECUTED)"

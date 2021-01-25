@@ -27,7 +27,7 @@ pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
-pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000;
+pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000000;
 
 pub fn build_transfer_from_association(
     addr: AccountAddress,
