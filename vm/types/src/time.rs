@@ -4,10 +4,10 @@
 #![forbid(unsafe_code)]
 use crate::on_chain_config::GlobalTimeOnChain;
 use log::{info, warn};
-use serde::__private::Formatter;
 use serde::{Deserialize, Serialize};
 use std::any::Any;
 use std::fmt::Debug;
+use std::fmt::Formatter;
 use std::{
     sync::{
         atomic::{AtomicU64, Ordering},

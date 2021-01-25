@@ -4,7 +4,6 @@
 use crate::block::{BlockHeader, BlockInfo};
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
-use serde::__private::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::HashValue;
@@ -12,6 +11,7 @@ use starcoin_uint::U256;
 use starcoin_vm_types::genesis_config::ChainId;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
+use std::fmt::Formatter;
 
 /// The info of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]

@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 async-trait = "0.1"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.122", features = ["derive"] }
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}
