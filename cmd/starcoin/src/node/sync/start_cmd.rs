@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use network_api::PeerStrategy;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::peer_info::PeerId;
 use structopt::StructOpt;
@@ -23,6 +24,10 @@ pub struct StartOpt {
     /// if peers is not empty, will try sync with the special peers.
     #[structopt(short = "p", long = "peer")]
     peers: Option<Vec<PeerId>>,
+
+    /// peer select strategy.
+    #[structopt(name = "strategy", short = "s", long, help = "peer select strategy.")]
+    strategy: Option<PeerStrategy>,
 }
 
 pub struct StartCommand;
@@ -42,6 +47,7 @@ impl CommandAction for StartCommand {
             ctx.opt().force,
             ctx.opt().peers.as_ref().cloned().unwrap_or_default(),
             ctx.opt().skip_pow_verify,
+            ctx.opt().strategy.clone(),
         )
     }
 }

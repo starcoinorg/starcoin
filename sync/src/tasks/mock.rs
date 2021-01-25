@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{BlockConnectedEvent, BlockFetcher, BlockIdFetcher, FetcherFactory};
+use crate::tasks::{BlockConnectedEvent, BlockFetcher, BlockIdFetcher, PeerOperator};
 use anyhow::{format_err, Result};
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
@@ -18,7 +18,6 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
-use test_helper::DummyNetworkService;
 
 #[derive(Clone)]
 pub struct MockBlockIdFetcher {
@@ -43,6 +42,18 @@ impl MockBlockIdFetcher {
     ) -> Result<Vec<HashValue>> {
         Delay::new(Duration::from_millis(100)).await;
         self.accumulator.get_leaves(start_number, reverse, max_size)
+    }
+}
+
+impl PeerOperator for MockBlockIdFetcher {
+    fn filter(&self, _peers: &[PeerId]) {}
+
+    fn new_peer(&self, _peer_info: PeerInfo) {}
+
+    fn peers(&self) -> Vec<PeerId> {
+        let mut peers = Vec::new();
+        peers.push(PeerId::random());
+        peers
     }
 }
 
@@ -77,27 +88,6 @@ impl BlockIdFetcher for MockBlockIdFetcher {
 
     fn find_best_peer(&self) -> Option<PeerInfo> {
         Some(PeerInfo::random())
-    }
-}
-
-pub struct SyncNodeMockerFactory {
-    network: DummyNetworkService,
-    fetch: Arc<SyncNodeMocker>,
-}
-
-impl SyncNodeMockerFactory {
-    pub fn new(network: DummyNetworkService, fetch: Arc<SyncNodeMocker>) -> Self {
-        Self { network, fetch }
-    }
-}
-
-impl FetcherFactory<Arc<SyncNodeMocker>, DummyNetworkService> for SyncNodeMockerFactory {
-    fn create(&self, _peers: Vec<PeerInfo>) -> Arc<SyncNodeMocker> {
-        self.fetch.clone()
-    }
-
-    fn network(&self) -> DummyNetworkService {
-        self.network.clone()
     }
 }
 
@@ -160,6 +150,18 @@ impl SyncNodeMocker {
                 .await
         };
         async_std::task::spawn(fut)
+    }
+}
+
+impl PeerOperator for SyncNodeMocker {
+    fn filter(&self, _peers: &[PeerId]) {}
+
+    fn new_peer(&self, _peer_info: PeerInfo) {}
+
+    fn peers(&self) -> Vec<PeerId> {
+        let mut peers = Vec::new();
+        peers.push(PeerId::random());
+        peers
     }
 }
 

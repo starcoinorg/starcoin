@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncStartRequest, SyncStatusRequest,
+    PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
+    SyncProgressRequest, SyncStartRequest, SyncStatusRequest,
 };
 use anyhow::Result;
+use network_api::PeerStrategy;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
@@ -16,7 +18,15 @@ pub trait SyncAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn cancel(&self) -> Result<()>;
     /// if `force` is true, will cancel current task and start a new task.
     /// if peers is not empty, will try sync with the special peers.
-    async fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Result<()>;
+    async fn start(
+        &self,
+        force: bool,
+        peers: Vec<PeerId>,
+        skip_pow_verify: bool,
+        strategy: Option<PeerStrategy>,
+    ) -> Result<()>;
+
+    async fn sync_peer_score(&self) -> Result<PeerScoreResponse>;
 }
 
 pub trait SyncServiceHandler:
@@ -25,6 +35,7 @@ pub trait SyncServiceHandler:
     + ServiceHandler<Self, SyncProgressRequest>
     + ServiceHandler<Self, SyncCancelRequest>
     + ServiceHandler<Self, SyncStartRequest>
+    + ServiceHandler<Self, PeerScoreRequest>
 {
 }
 
@@ -45,12 +56,23 @@ where
         self.send(SyncCancelRequest).await
     }
 
-    async fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Result<()> {
+    async fn start(
+        &self,
+        force: bool,
+        peers: Vec<PeerId>,
+        skip_pow_verify: bool,
+        strategy: Option<PeerStrategy>,
+    ) -> Result<()> {
         self.send(SyncStartRequest {
             force,
             peers,
             skip_pow_verify,
+            strategy,
         })
         .await?
+    }
+
+    async fn sync_peer_score(&self) -> Result<PeerScoreResponse> {
+        self.send(PeerScoreRequest {}).await
     }
 }
