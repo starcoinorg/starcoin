@@ -120,7 +120,7 @@ impl TxPoolActorService {
                 Err(e) => {
                     log::error!("txpool: fail to get txn to propagate, err: {}", &e)
                 }
-                Ok(txs) => {
+                Ok(txs) if !txs.is_empty() => {
                     if self
                         .next_propagation_ready
                         .compare_and_swap(true, false, Ordering::AcqRel)
@@ -130,6 +130,7 @@ impl TxPoolActorService {
                         ctx.broadcast(request);
                     }
                 }
+                Ok(_) => {}
             }
         }
     }
