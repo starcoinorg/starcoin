@@ -1,11 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate prometheus;
-
 mod broadcast_score_metrics;
 pub mod helper;
 mod network_metrics;
