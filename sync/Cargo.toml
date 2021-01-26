@@ -7,7 +7,6 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 thiserror = "1.0"
-actix = "0.10.0"
 rand = "0.7.3"
 pin-utils = "0.1.0"
 async-std = "1.9"
@@ -52,7 +51,6 @@ starcoin-chain-api = { path = "../chain/api" }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
-actix-rt = "1.1"
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
 starcoin-account-api = { path = "../account/api"}

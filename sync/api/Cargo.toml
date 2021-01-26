@@ -6,8 +6,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-actix = "0.10.0"
-actix-rt = "1.1"
 starcoin-types = {path = "../../types", package="starcoin-types"}
 starcoin-config = {path = "../../config", package="starcoin-config"}
 starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}

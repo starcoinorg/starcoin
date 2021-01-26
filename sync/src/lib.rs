@@ -10,5 +10,4 @@ pub mod tasks;
 pub mod txn_sync;
 
 mod peer_event_handle;
-mod sync_event_handle;
 pub mod verified_rpc_client;

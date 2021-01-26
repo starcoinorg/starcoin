@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-actix = "0.10.0"
 futures = "0.3"
 config = {path = "../config", package="starcoin-config"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
@@ -30,6 +29,5 @@ once_cell = "1.5.2"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
-actix-rt = "1.1"
 hex = "0.4.2"
 stest = { path = "../commons/stest"}

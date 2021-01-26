@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-actix = "0.10.0"
 starcoin-types = {path = "../../types" }
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-logger = {path = "../../commons/logger"}

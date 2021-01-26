@@ -12,23 +12,22 @@ extern crate transaction_pool as tx_pool;
 
 use anyhow::{format_err, Result};
 use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
+use network_api::messages::PeerTransactionsMessage;
+pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_state_api::AccountStateReader;
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
+pub use tx_pool_service_impl::TxPoolService;
 use types::{
     sync_status::SyncStatus, system_events::SyncStatusChangeEvent,
     transaction::SignedUserTransaction,
 };
-
-use actix::clock::Duration;
-use network_api::messages::PeerTransactionsMessage;
-pub use pool::TxStatus;
-use starcoin_state_api::AccountStateReader;
-use std::sync::atomic::{AtomicBool, Ordering};
-pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
 mod pool;

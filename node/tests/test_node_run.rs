@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::clock::Duration;
 use futures::executor::block_on;
 use starcoin_config::NodeConfig;
 use starcoin_node::run_node;
@@ -9,6 +8,7 @@ use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_traits::ChainAsyncService;
 use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
 
 #[stest::test]
 fn test_run_node() {

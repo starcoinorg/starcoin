@@ -7190,8 +7190,6 @@ dependencies = [
 name = "starcoin-block-relayer"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bcs-ext",
@@ -7281,8 +7279,6 @@ dependencies = [
 name = "starcoin-chain-mock"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bcs-ext",
@@ -7324,7 +7320,6 @@ dependencies = [
 name = "starcoin-chain-notify"
 version = "0.10.1"
 dependencies = [
- "actix",
  "anyhow",
  "starcoin-crypto",
  "starcoin-logger",
@@ -7751,8 +7746,6 @@ dependencies = [
 name = "starcoin-miner"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "bcs-ext",
  "futures 0.3.11",
@@ -7916,8 +7909,6 @@ dependencies = [
 name = "starcoin-network-rpc"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "api-limiter",
  "bcs-ext",
@@ -7966,7 +7957,6 @@ dependencies = [
 name = "starcoin-network-rpc-api"
 version = "0.10.1"
 dependencies = [
- "actix",
  "anyhow",
  "bcs-ext",
  "futures 0.3.11",
@@ -8123,8 +8113,6 @@ dependencies = [
 name = "starcoin-rpc-api"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bcs-ext",
@@ -8374,7 +8362,6 @@ dependencies = [
 name = "starcoin-statedb"
 version = "0.10.1"
 dependencies = [
- "actix-rt",
  "anyhow",
  "bcs-ext",
  "forkable-jellyfish-merkle",
@@ -8423,8 +8410,6 @@ dependencies = [
 name = "starcoin-sync"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-std",
  "async-trait",
@@ -8484,8 +8469,6 @@ dependencies = [
 name = "starcoin-sync-api"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "network-api",
@@ -8562,8 +8545,6 @@ dependencies = [
 name = "starcoin-txpool"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "forkable-jellyfish-merkle",
@@ -8619,7 +8600,6 @@ dependencies = [
 name = "starcoin-txpool-mock-service"
 version = "0.10.1"
 dependencies = [
- "actix-rt",
  "anyhow",
  "async-trait",
  "futures-channel",
@@ -8633,7 +8613,6 @@ dependencies = [
 name = "starcoin-types"
 version = "0.10.1"
 dependencies = [
- "actix",
  "anyhow",
  "bcs-ext",
  "byteorder",
@@ -9080,8 +9059,6 @@ dependencies = [
 name = "test-helper"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "backtrace",
@@ -9141,8 +9118,6 @@ dependencies = [
 name = "testsuite"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "clap 2.33.3",
  "cucumber_rust",
