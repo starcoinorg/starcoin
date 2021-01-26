@@ -3,10 +3,10 @@
 
 use bcs_ext::BCSCodec;
 use futures_timer::Delay;
-use logger::prelude::*;
 use network_rpc_core::RawRpcClient;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_types::peer_info::RpcInfo;
 use test_helper::build_network;

@@ -5,6 +5,7 @@ use anyhow::*;
 use bitflags::_core::time::Duration;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
+use log::error;
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,

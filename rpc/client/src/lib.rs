@@ -43,7 +43,6 @@ use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use starcoin_types::stress_test::TPS;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::SystemStop;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -1059,7 +1058,7 @@ impl RpcClient {
     }
 
     pub fn close(self) {
-        if let Err(e) = self.chain_watcher.try_send(SystemStop) {
+        if let Err(e) = self.chain_watcher.try_send(chain_watcher::StopWatcher) {
             error!("Try to stop chain watcher error: {:?}", e);
         }
         if let Err(e) = self.watcher_handle.join() {

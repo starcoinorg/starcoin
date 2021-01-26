@@ -8,6 +8,7 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::FutureExt;
+use log::{debug, error, info};
 use lru::LruCache;
 use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
@@ -17,7 +18,6 @@ use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Sco
 use network_api::{NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
 use rand::RngCore;
-use smallvec::alloc::borrow::Cow;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc::NetworkRpcService;
@@ -29,6 +29,7 @@ use starcoin_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::sync::Arc;

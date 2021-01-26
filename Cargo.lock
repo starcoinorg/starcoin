@@ -2067,15 +2067,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dirs"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "142995ed02755914747cc6ca76fc7e4583cd18578746716d0508ea6ed558b9ff"
-dependencies = [
- "dirs-sys",
-]
-
-[[package]]
 name = "dirs-next"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2083,17 +2074,6 @@ checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
 dependencies = [
  "cfg-if 1.0.0",
  "dirs-sys-next",
-]
-
-[[package]]
-name = "dirs-sys"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e93d7f5705de3e49895a2b5e0b8855a1c27f080192ae9c32a6432d50741a57a"
-dependencies = [
- "libc",
- "redox_users 0.3.5",
- "winapi 0.3.9",
 ]
 
 [[package]]
@@ -4730,7 +4710,6 @@ dependencies = [
  "bytes 0.5.6",
  "derive_more",
  "either",
- "erased-serde",
  "fnv",
  "futures 0.3.11",
  "futures-timer",
@@ -4743,23 +4722,17 @@ dependencies = [
  "log 0.4.13",
  "lru",
  "network-p2p-types",
- "nohash-hasher",
  "once_cell",
  "parity-scale-codec",
  "parking_lot 0.11.1",
  "pin-project 0.4.27",
  "prometheus 0.10.0",
- "prost 0.7.0",
  "rand 0.7.3",
- "rustc-hex",
  "sc-peerset",
  "serde",
  "serde_json",
- "slog",
- "slog_derive",
  "smallvec 1.6.1",
  "starcoin-crypto",
- "starcoin-logger",
  "starcoin-metrics",
  "starcoin-types",
  "stest",
@@ -7217,8 +7190,6 @@ dependencies = [
 name = "starcoin-block-relayer"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bcs-ext",
@@ -7308,8 +7279,6 @@ dependencies = [
 name = "starcoin-chain-mock"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bcs-ext",
@@ -7351,7 +7320,6 @@ dependencies = [
 name = "starcoin-chain-notify"
 version = "0.10.1"
 dependencies = [
- "actix",
  "anyhow",
  "starcoin-crypto",
  "starcoin-logger",
@@ -7440,7 +7408,7 @@ dependencies = [
  "anyhow",
  "clap 2.33.3",
  "diem-temppath",
- "dirs 3.0.1",
+ "dirs-next",
  "git-version",
  "hex",
  "names",
@@ -7778,8 +7746,6 @@ dependencies = [
 name = "starcoin-miner"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "bcs-ext",
  "futures 0.3.11",
@@ -7895,8 +7861,6 @@ dependencies = [
 name = "starcoin-network"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-std",
  "async-trait",
@@ -7922,7 +7886,6 @@ dependencies = [
  "serde_json",
  "slog",
  "slog_derive",
- "smallvec 1.6.1",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
@@ -7946,8 +7909,6 @@ dependencies = [
 name = "starcoin-network-rpc"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "api-limiter",
  "bcs-ext",
@@ -7996,7 +7957,6 @@ dependencies = [
 name = "starcoin-network-rpc-api"
 version = "0.10.1"
 dependencies = [
- "actix",
  "anyhow",
  "bcs-ext",
  "futures 0.3.11",
@@ -8153,8 +8113,6 @@ dependencies = [
 name = "starcoin-rpc-api"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bcs-ext",
@@ -8404,7 +8362,6 @@ dependencies = [
 name = "starcoin-statedb"
 version = "0.10.1"
 dependencies = [
- "actix-rt",
  "anyhow",
  "bcs-ext",
  "forkable-jellyfish-merkle",
@@ -8453,8 +8410,6 @@ dependencies = [
 name = "starcoin-sync"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-std",
  "async-trait",
@@ -8514,8 +8469,6 @@ dependencies = [
 name = "starcoin-sync-api"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "network-api",
@@ -8592,8 +8545,6 @@ dependencies = [
 name = "starcoin-txpool"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "forkable-jellyfish-merkle",
@@ -8649,7 +8600,6 @@ dependencies = [
 name = "starcoin-txpool-mock-service"
 version = "0.10.1"
 dependencies = [
- "actix-rt",
  "anyhow",
  "async-trait",
  "futures-channel",
@@ -8663,7 +8613,6 @@ dependencies = [
 name = "starcoin-types"
 version = "0.10.1"
 dependencies = [
- "actix",
  "anyhow",
  "bcs-ext",
  "byteorder",
@@ -9073,7 +9022,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd106a334b7657c10b7c540a0106114feadeb4dc314513e97df481d5d966f42"
 dependencies = [
  "byteorder",
- "dirs 1.0.5",
+ "dirs",
  "winapi 0.3.9",
 ]
 
@@ -9110,8 +9059,6 @@ dependencies = [
 name = "test-helper"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "backtrace",
@@ -9171,8 +9118,6 @@ dependencies = [
 name = "testsuite"
 version = "0.10.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "clap 2.33.3",
  "cucumber_rust",

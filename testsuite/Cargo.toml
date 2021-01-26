@@ -8,8 +8,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-actix = "0.10.0"
-actix-rt = "1.1"
 lazy_static = "1.4.0"
 static_assertions = "1.1.0"
 sha2 = "0.9.1"

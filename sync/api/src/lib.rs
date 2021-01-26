@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
@@ -16,12 +15,10 @@ use starcoin_crypto::HashValue;
 use starcoin_types::U256;
 pub use stream_task::TaskProgressReport;
 
-#[derive(Message, Clone, Debug)]
-#[rtype(result = "()")]
+#[derive(Clone, Debug)]
 pub struct StartSyncTxnEvent;
 
-#[derive(Message, Clone, Debug)]
-#[rtype(result = "()")]
+#[derive(Clone, Debug)]
 pub struct PeerNewBlock {
     peer_id: PeerId,
     new_block: Block,
@@ -41,8 +38,7 @@ impl PeerNewBlock {
     }
 }
 
-#[derive(Debug, Message, Clone, Serialize, Deserialize)]
-#[rtype(result = "()")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SyncNotify {
     ClosePeerMsg(PeerId),
     NewHeadBlock(PeerId, Box<Block>),
