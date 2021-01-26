@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33.3"
-dirs = "3"
+dirs-next = "2.0.0"
 anyhow = "1.0.38"
 thiserror = "1.0"
 serde = { version = "1.0.122", features = ["derive"] }

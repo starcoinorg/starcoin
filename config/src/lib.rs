@@ -84,7 +84,7 @@ pub static APP_NAME_WITH_VERSION: Lazy<String> =
 
 /// Default data dir
 pub static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
-    dirs::home_dir()
+    dirs_next::home_dir()
         .expect("read home dir should ok")
         .join(".starcoin")
 });
