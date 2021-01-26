@@ -49,6 +49,9 @@ impl std::fmt::Debug for TxPoolActorService {
     }
 }
 
+const MIN_TXN_TO_PROPAGATE: usize = 256;
+const PROPAGATE_FOR_BLOCKS: u64 = 4;
+
 impl TxPoolActorService {
     fn new(inner: Inner) -> Self {
         Self {
@@ -66,9 +69,6 @@ impl TxPoolActorService {
     }
 
     fn transactions_to_propagate(&self) -> Result<Vec<SignedUserTransaction>> {
-        let propagate_for_blocks: u64 = self.inner.node_config.tx_pool.propagate_for_blocks();
-        let min_txn_to_propagate: usize = self.inner.node_config.tx_pool.min_tx_to_propagate();
-
         let statedb = self.inner.get_chain_reader();
         let reader = AccountStateReader::new(&statedb);
         let block_gas_limit = reader.get_epoch()?.block_gas_limit();
@@ -76,8 +76,8 @@ impl TxPoolActorService {
         let min_tx_gas = 200;
 
         let max_len = std::cmp::max(
-            min_txn_to_propagate,
-            (block_gas_limit / min_tx_gas * propagate_for_blocks) as usize,
+            MIN_TXN_TO_PROPAGATE,
+            (block_gas_limit / min_tx_gas * PROPAGATE_FOR_BLOCKS) as usize,
         );
         let current_timestamp = reader.get_timestamp()?.seconds();
         Ok(self
