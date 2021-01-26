@@ -8,7 +8,7 @@ edition = "2018"
 hex= "0.4.2"
 anyhow = "1.0.38"
 futures = "0.3"
-serde = { version = "1.0.122", default-features = false }
+serde = { version = "1.0.123", default-features = false }
 rand = "0.7.3"
 itertools = "0.10.0"
 async-trait = "0.1.42"

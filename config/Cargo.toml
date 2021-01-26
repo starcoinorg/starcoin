@@ -11,7 +11,7 @@ clap = "2.33.3"
 dirs-next = "2.0.0"
 anyhow = "1.0.38"
 thiserror = "1.0"
-serde = { version = "1.0.122", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 toml = { version = "0.5.8", default-features = false }
 structopt = "0.3.21"

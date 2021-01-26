@@ -13,7 +13,7 @@ bytes = "0.5.0"
 derive_more = "0.99.11"
 rand = "0.7.3"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-serde = { version = "1.0.122", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 libp2p = { version = "0.33.0", default-features = false, features = ["request-response"] }
 sc-peerset = { path = "../peerset"}

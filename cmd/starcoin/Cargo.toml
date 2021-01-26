@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 rand = "0.7.3"
-serde = { version = "1.0.122" }
+serde = { version = "1.0.123" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.5.0"
 tokio = { version = "0.2", features = ["full"] }

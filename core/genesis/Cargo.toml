@@ -15,7 +15,7 @@ once_cell = "1.5.2"
 include_dir = "0.6.0"
 starcoin-types = {path = "../../types", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto"}
-serde = { version = "1.0.122" }
+serde = { version = "1.0.123" }
 starcoin-config = { path = "../../config"}
 starcoin-executor = { path = "../../executor"}
 starcoin-storage = { path = "../../storage"}

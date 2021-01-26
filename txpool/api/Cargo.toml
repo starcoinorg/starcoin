@@ -12,4 +12,4 @@ async-trait = "0.1"
 futures-channel = "0.3"
 starcoin-types = {path = "../../types", package="starcoin-types"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-serde = { version = "1.0.122", default-features = false }
+serde = { version = "1.0.123", default-features = false }
