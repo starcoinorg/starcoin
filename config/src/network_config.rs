@@ -154,6 +154,14 @@ pub struct NetworkConfig {
     #[structopt(flatten)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 
+    #[structopt(long)]
+    /// min peers to propagate new block and new transactions. Default to 8.
+    min_peers_to_propagate: Option<u32>,
+
+    #[structopt(long)]
+    ///max peers to propagate new block and new transactions. Default to 128.
+    max_peers_to_propagate: Option<u32>,
+
     #[serde(skip)]
     #[structopt(skip)]
     listen: Option<Multiaddr>,
@@ -227,6 +235,14 @@ impl NetworkConfig {
 
     pub fn self_peer_id(&self) -> PeerId {
         PeerId::from_ed25519_public_key(self.network_keypair().1.clone())
+    }
+
+    pub fn max_peers_to_propagate(&self) -> u32 {
+        self.max_peers_to_propagate.clone().unwrap_or(128)
+    }
+
+    pub fn min_peers_to_propagate(&self) -> u32 {
+        self.min_peers_to_propagate.clone().unwrap_or(8)
     }
 
     pub fn node_name(&self) -> String {
@@ -326,6 +342,12 @@ impl ConfigModule for NetworkConfig {
 
         if opt.network.listen.is_some() {
             self.listen = opt.network.listen.clone();
+        }
+        if let Some(m) = opt.network.max_peers_to_propagate {
+            self.max_peers_to_propagate = Some(m);
+        }
+        if let Some(m) = opt.network.min_peers_to_propagate {
+            self.min_peers_to_propagate = Some(m);
         }
 
         self.load_or_generate_keypair()?;
