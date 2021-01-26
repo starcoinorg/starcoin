@@ -1,14 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
-use starcoin_types::{U256, U512};
-
 use crate::difficult_to_target;
 use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use std::convert::TryInto;
+use starcoin_types::{U256, U512};
+use std::cmp::Ordering;
+use std::convert::TryFrom;
 
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
@@ -18,11 +17,19 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         return Ok(difficult_to_target(current_header.difficulty()));
     }
     let start_window_num = if current_header.number() < epoch.block_difficulty_window() {
-        1
+        0
     } else {
-        current_header.number() - epoch.block_difficulty_window() + 1
+        current_header
+            .number()
+            .saturating_sub(epoch.block_difficulty_window())
+            .checked_add(1)
+            .ok_or_else(|| format_err!("block number overflow"))?
     };
-    let blocks: Result<Vec<BlockDiffInfo>> = (start_window_num..current_header.number() + 1)
+    let blocks = (start_window_num
+        ..current_header
+            .number()
+            .checked_add(1)
+            .ok_or_else(|| format_err!("block number overflow"))?)
         .rev()
         .map(|n| {
             chain
@@ -30,8 +37,14 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                 .ok_or_else(|| format_err!("Can not find header by number {}", n))
                 .map(|header| header.into())
         })
-        .collect();
-    let target = get_next_target_helper(blocks?, epoch.block_time_target())?;
+        .collect::<Result<Vec<BlockDiffInfo>>>()?;
+    if start_window_num != 0 {
+        debug_assert!(
+            blocks.len() == epoch.block_difficulty_window() as usize,
+            "block difficulty count should eq block_difficulty_window"
+        );
+    }
+    let target = get_next_target_helper(blocks, epoch.block_time_target())?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number(),
@@ -48,26 +61,42 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
     if blocks.len() == 1 {
         return Ok(blocks[0].target);
     }
-    let mut avg_time: u64 = 0;
-    let mut avg_target = U512::zero();
-    let block_n = blocks.len() - 1;
-    for diff_info in blocks.iter().take(block_n) {
-        avg_time += diff_info.timestamp;
-        avg_target += (&diff_info.target).into();
+    let block_n = blocks.len();
+
+    let mut total_target = U512::zero();
+    for diff_info in blocks.iter() {
+        total_target = total_target
+            .checked_add(U512::from(&diff_info.target))
+            .ok_or_else(|| format_err!("calculate total target overflow"))?;
     }
-    avg_time = if block_n <= 1 {
-        blocks[0].timestamp - blocks[1].timestamp
-    } else {
-        (block_n + 1) as u64 * blocks[0].timestamp - avg_time - blocks[block_n].timestamp
+    let avg_target: U256 = total_target
+        .checked_div(U512::from(block_n))
+        .and_then(|avg_target| U256::try_from(&avg_target).ok())
+        .ok_or_else(|| format_err!("calculate avg target overflow"))?;
+
+    let mut avg_time = match block_n.cmp(&2) {
+        Ordering::Less => {
+            unreachable!()
+        }
+        Ordering::Equal => blocks[0].timestamp.saturating_sub(blocks[1].timestamp),
+        Ordering::Greater => {
+            let latest_timestamp = blocks[0].timestamp;
+            let mut total_v_block_time: u64 = 0;
+            let mut v_blocks: usize = 0;
+            for (idx, diff_info) in blocks.iter().enumerate() {
+                if idx == 0 {
+                    continue;
+                }
+                total_v_block_time = total_v_block_time
+                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
+                v_blocks = v_blocks.saturating_add(idx);
+            }
+            total_v_block_time
+                .checked_div(v_blocks as u64)
+                .ok_or_else(|| format_err!("calculate avg time overflow"))?
+        }
     };
 
-    avg_target /= block_n;
-    let avg_target: U256 = match (&avg_target).try_into() {
-        Ok(avg_target) => avg_target,
-        Err(e) => bail!("avg target max than u256: {:?}", e),
-    };
-
-    avg_time /= (block_n as u64) * ((block_n + 1) as u64) / 2;
     if avg_time == 0 {
         avg_time = 1
     }
@@ -85,11 +114,11 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
             new_target
         }
     } else {
-        debug!("target large than max value, set to 1_difficulty");
+        warn!("target large than max value, set to 1_difficulty");
         U256::max_value()
     };
     debug!(
-        "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",
+        "avg_time:{:?} mills, time_plan:{:?} mills, target: {:?}",
         avg_time, time_plan, new_target
     );
     Ok(new_target)
