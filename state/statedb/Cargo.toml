@@ -18,5 +18,5 @@ starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-logger = {path = "../../commons/logger"}
 starcoin-state-tree = {path = "../state-tree"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-serde = { version = "1.0.122" }
+serde = { version = "1.0.123" }
 forkable-jellyfish-merkle = {path = "../../core/forkable-jellyfish-merkle"}

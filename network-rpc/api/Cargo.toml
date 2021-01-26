@@ -20,6 +20,6 @@ starcoin-state-tree = { path = "../../state/state-tree" }
 network-rpc-derive = { path = "../derive" }
 bcs-ext = { path = "../../commons/bcs_ext", package = "bcs-ext" }
 starcoin-logger = {path = "../../commons/logger"}
-serde = { version = "1.0.122", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 anyhow = "1.0.38"
 futures = "0.3"

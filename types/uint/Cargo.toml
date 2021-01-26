@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 starcoin-crypto = { path = "../../commons/crypto"}
-serde = { version = "1.0.122", default-features = false }
+serde = { version = "1.0.123", default-features = false }
 uint = "0.9.0"
 hex = { version = "0.4.2", default-features = false }
 [dev-dependencies]

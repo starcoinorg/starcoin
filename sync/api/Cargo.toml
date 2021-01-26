@@ -11,7 +11,7 @@ starcoin-config = {path = "../../config", package="starcoin-config"}
 starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}
 async-trait = "0.1"
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-serde = { version = "1.0.122", default-features = false }
+serde = { version = "1.0.123", default-features = false }
 starcoin-state-tree={path = "../../state/state-tree"}
 starcoin-accumulator = {path = "../../core/accumulator"}
 starcoin-network-rpc-api = { path= "../../network-rpc/api" }
