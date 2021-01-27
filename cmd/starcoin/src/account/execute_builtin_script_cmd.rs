@@ -53,7 +53,7 @@ pub struct ExecuteBuiltInScriptOpt {
     #[structopt(
         short = "g",
         name = "max-gas-amount",
-        default_value = "1000000",
+        default_value = "10000000",
         help = "max gas used to deploy the module"
     )]
     max_gas_amount: u64,
