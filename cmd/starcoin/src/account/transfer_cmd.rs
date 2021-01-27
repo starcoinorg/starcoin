@@ -33,7 +33,7 @@ pub struct TransferOpt {
         short = "g",
         long = "max-gas",
         name = "max-gas-amount",
-        default_value = "1000000",
+        default_value = "10000000",
         help = "max gas to use"
     )]
     max_gas_amount: u64,
