@@ -21,7 +21,7 @@ fn test_reconnected_peers() -> anyhow::Result<()> {
     assert_eq!(peers.len(), 0);
 
     let mut node_config2 = NodeConfig::random_for_test();
-    node_config2.network.seeds = Some(vec![node_config1.network.self_address()]);
+    node_config2.network.seeds = vec![node_config1.network.self_address()].into();
     let node_config2 = Arc::new(node_config2);
     let node2 = test_helper::run_node_by_config(node_config2.clone())?;
 

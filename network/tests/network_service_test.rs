@@ -49,7 +49,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         }
         let mut node_config = NodeConfig::random_for_test();
 
-        node_config.network.seeds = Some(boot_nodes);
+        node_config.network.seeds = boot_nodes.into();
 
         info!(
             "listen:{:?},boots {:?}",
