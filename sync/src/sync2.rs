@@ -9,6 +9,7 @@ use anyhow::{format_err, Result};
 use chain::BlockChain;
 use config::NodeConfig;
 use futures::FutureExt;
+use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
@@ -29,6 +30,7 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::sync::Arc;
+use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
 //TODO combine task_handle and task_event_handle in stream_task
@@ -117,13 +119,23 @@ impl SyncService2 {
         let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
         let fut = async move {
-            let peer_selector = network.peer_selector().await?;
-            if peer_selector.is_empty() {
-                //TODO wait peers.
-                //info!("[sync] No peers to sync.");
-                //return Ok(());
-                return Err(format_err!("[sync] No peers to sync."));
+            let mut peer_selector = network.peer_selector().await?;
+            loop {
+                if peer_selector.is_empty()
+                    || peer_selector.len() < (config.net().min_peers() as usize)
+                {
+                    info!(
+                        "[sync]Wait enough peers {:?} : {:?}",
+                        peer_selector.len(),
+                        config.net().min_peers()
+                    );
+                    Delay::new(Duration::from_secs(1)).await;
+                    peer_selector = network.peer_selector().await?;
+                } else {
+                    break;
+                }
             }
+
             if !peers.is_empty() {
                 peer_selector.retain(peers.as_ref())
             }
