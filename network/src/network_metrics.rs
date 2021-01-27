@@ -1,4 +1,8 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use prometheus::Error as PrometheusError;
+use starcoin_metrics::register_histogram_vec;
 use starcoin_metrics::HistogramVec;
 
 #[derive(Clone)]

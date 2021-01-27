@@ -47,7 +47,7 @@ pub trait Consensus {
                 .into();
             let target = difficult_to_target(difficulty);
             if pow_hash > target {
-                nonce += 1;
+                nonce = nonce.saturating_add(1);
                 continue;
             }
             break;

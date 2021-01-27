@@ -4,7 +4,6 @@
 use async_std::task;
 use futures::stream::StreamExt;
 use futures_timer::Delay;
-use logger::prelude::*;
 use network_api::messages::{
     CompactBlockMessage, NotificationMessage, PeerMessage, TransactionsMessage,
 };
@@ -12,6 +11,7 @@ use network_api::{Multiaddr, NetworkService};
 use network_p2p_types::MultiaddrWithPeerId;
 use starcoin_config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
 use starcoin_crypto::hash::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_network::build_network_worker;
 use starcoin_types::block::{AccumulatorInfo, Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::cmpact_block::CompactBlock;
@@ -74,10 +74,9 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
 }
 
 const TEST_NOTIF_PROTOCOL_NAME: &str = "/test_notif";
-#[test]
+
+#[stest::test]
 fn test_send_receive() {
-    ::logger::init_for_test();
-    //let mut rt = Builder::new().core_threads(1).build().unwrap();
     let ((service1, _), (service2, _)) = build_test_network_pair();
     let msg_peer_id_1 = *service1.peer_id();
     let msg_peer_id_2 = *service2.peer_id();
@@ -120,10 +119,8 @@ fn test_send_receive() {
     task::block_on(async_std::future::timeout(Duration::from_secs(10), task)).unwrap();
 }
 
-#[test]
+#[stest::test]
 fn test_connected_nodes() {
-    ::logger::init_for_test();
-
     let (service1, service2) = build_test_network_pair();
     thread::sleep(Duration::from_secs(2));
     let fut = async move {

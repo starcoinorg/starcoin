@@ -12,23 +12,22 @@ extern crate transaction_pool as tx_pool;
 
 use anyhow::{format_err, Result};
 use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
+use network_api::messages::PeerTransactionsMessage;
+pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_state_api::AccountStateReader;
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
+pub use tx_pool_service_impl::TxPoolService;
 use types::{
     sync_status::SyncStatus, system_events::SyncStatusChangeEvent,
     transaction::SignedUserTransaction,
 };
-
-use actix::clock::Duration;
-use network_api::messages::PeerTransactionsMessage;
-pub use pool::TxStatus;
-use starcoin_state_api::AccountStateReader;
-use std::sync::atomic::{AtomicBool, Ordering};
-pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
 mod pool;
@@ -50,6 +49,9 @@ impl std::fmt::Debug for TxPoolActorService {
     }
 }
 
+const MIN_TXN_TO_PROPAGATE: usize = 256;
+const PROPAGATE_FOR_BLOCKS: u64 = 4;
+
 impl TxPoolActorService {
     fn new(inner: Inner) -> Self {
         Self {
@@ -67,9 +69,6 @@ impl TxPoolActorService {
     }
 
     fn transactions_to_propagate(&self) -> Result<Vec<SignedUserTransaction>> {
-        let propagate_for_blocks: u64 = self.inner.node_config.tx_pool.propagate_for_blocks();
-        let min_txn_to_propagate: usize = self.inner.node_config.tx_pool.min_tx_to_propagate();
-
         let statedb = self.inner.get_chain_reader();
         let reader = AccountStateReader::new(&statedb);
         let block_gas_limit = reader.get_epoch()?.block_gas_limit();
@@ -77,8 +76,8 @@ impl TxPoolActorService {
         let min_tx_gas = 200;
 
         let max_len = std::cmp::max(
-            min_txn_to_propagate,
-            (block_gas_limit / min_tx_gas * propagate_for_blocks) as usize,
+            MIN_TXN_TO_PROPAGATE,
+            (block_gas_limit / min_tx_gas * PROPAGATE_FOR_BLOCKS) as usize,
         );
         let current_timestamp = reader.get_timestamp()?.seconds();
         Ok(self
@@ -120,7 +119,7 @@ impl TxPoolActorService {
                 Err(e) => {
                     log::error!("txpool: fail to get txn to propagate, err: {}", &e)
                 }
-                Ok(txs) => {
+                Ok(txs) if !txs.is_empty() => {
                     if self
                         .next_propagation_ready
                         .compare_and_swap(true, false, Ordering::AcqRel)
@@ -130,6 +129,7 @@ impl TxPoolActorService {
                         ctx.broadcast(request);
                     }
                 }
+                Ok(_) => {}
             }
         }
     }

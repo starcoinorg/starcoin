@@ -17,9 +17,10 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
 use starcoin_vm_types::genesis_config::{
-    BuiltinNetworkID, ChainNetwork, ConsensusStrategy, TEST_CONFIG,
+    BuiltinNetworkID, ChainId, ChainNetwork, ConsensusStrategy, GenesisBlockParameter,
+    GenesisBlockParameterConfig, TEST_CONFIG,
 };
-use starcoin_vm_types::time::duration_since_epoch;
+use starcoin_vm_types::time::{duration_since_epoch, TimeServiceType};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -450,7 +451,17 @@ async fn test_verify_illegal_uncle_future_timestamp_failed() {
 }
 
 async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
-    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    genesis_config.genesis_block_parameter =
+        GenesisBlockParameterConfig::Static(GenesisBlockParameter {
+            parent_hash: Default::default(),
+            timestamp: duration_since_epoch().as_millis() as u64,
+            difficulty: 10.into(),
+        });
+    genesis_config.time_service_type = TimeServiceType::RealTimeService;
+    genesis_config.consensus_config.strategy = ConsensusStrategy::CryptoNight.value();
+    let net =
+        ChainNetwork::new_custom("block_test".to_string(), ChainId::new(100), genesis_config)?;
     let mut mock_chain = MockChain::new(net.clone()).unwrap();
     let mut times = 3;
     mock_chain.produce_and_apply_times(times).unwrap();

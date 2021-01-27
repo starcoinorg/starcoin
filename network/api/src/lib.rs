@@ -20,7 +20,8 @@ pub use network_p2p_types::Multiaddr;
 pub use network_p2p_types::MultiaddrWithPeerId;
 pub use network_p2p_types::ReputationChange;
 pub use peer_message_handler::PeerMessageHandler;
-pub use peer_provider::{PeerProvider, PeerSelector};
+pub use peer_provider::PeerDetail;
+pub use peer_provider::{PeerProvider, PeerSelector, PeerStrategy};
 
 pub use starcoin_types::peer_info::{PeerId, PeerInfo};
 

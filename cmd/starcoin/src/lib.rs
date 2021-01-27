@@ -68,6 +68,7 @@ pub fn add_command(
                         .subcommand(node::sync::StatusCommand)
                         .subcommand(node::sync::ProgressCommand)
                         .subcommand(node::sync::CancelCommand)
+                        .subcommand(node::sync::PeerScoreCommand)
                 )
                 .subcommand(
                 Command::with_name("network")

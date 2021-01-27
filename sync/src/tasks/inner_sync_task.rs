@@ -1,6 +1,6 @@
 use crate::tasks::{
     AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
-    BlockFetcher, BlockIdFetcher, BlockSyncTask,
+    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
 };
 use anyhow::format_err;
 use chain::BlockChain;
@@ -13,27 +13,24 @@ use starcoin_accumulator::Accumulator;
 use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{block::BlockNumber, time::TimeService};
 use std::sync::Arc;
 use stream_task::{Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle};
 
 pub struct FindSubTargetTask<F>
 where
-    F: BlockIdFetcher + BlockFetcher + 'static,
+    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
 {
-    peers: Vec<PeerInfo>,
     fetcher: F,
     target_number: BlockNumber,
 }
 
 impl<F> FindSubTargetTask<F>
 where
-    F: BlockIdFetcher + BlockFetcher + 'static,
+    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
 {
-    pub fn new(peers: Vec<PeerInfo>, fetcher: F, target_number: BlockNumber) -> Self {
+    pub fn new(fetcher: F, target_number: BlockNumber) -> Self {
         Self {
-            peers,
             fetcher,
             target_number,
         }
@@ -52,14 +49,14 @@ where
 
     pub async fn sub_target(
         self,
-    ) -> anyhow::Result<(Vec<PeerInfo>, Option<(BlockIdAndNumber, AccumulatorInfo)>)> {
+    ) -> anyhow::Result<(Vec<PeerId>, Option<(BlockIdAndNumber, AccumulatorInfo)>)> {
         //1. best peer get block id
         let best_peer = self
             .fetcher
             .find_best_peer()
             .ok_or_else(|| format_err!("Best peer is none when create sub target"))?;
-        let mut target_peers: Vec<PeerInfo> = Vec::new();
-        target_peers.push(best_peer.clone());
+        let mut target_peers: Vec<PeerId> = Vec::new();
+        target_peers.push(best_peer.peer_id());
         if let Some(target_id) = self.block_id_from_peer(best_peer.peer_id()).await {
             info!(
                 "Best peer target id : {}: {:?}",
@@ -68,14 +65,12 @@ where
             let mut hashs = Vec::new();
             hashs.push(target_id);
             //2. filter other peers
-            for peer in self
-                .peers
-                .iter()
-                .filter(|p| best_peer.peer_id() != p.peer_id())
-            {
-                if let Some(id) = self.block_id_from_peer(peer.peer_id()).await {
-                    if id == target_id {
-                        target_peers.push(peer.clone());
+            for peer_id in self.fetcher.peers() {
+                if best_peer.peer_id() != peer_id {
+                    if let Some(id) = self.block_id_from_peer(peer_id.clone()).await {
+                        if id == target_id {
+                            target_peers.push(peer_id);
+                        }
                     }
                 }
             }
@@ -84,7 +79,7 @@ where
             let peer_id = target_peers
                 .iter()
                 .choose(&mut rand::thread_rng())
-                .map(|info| info.peer_id())
+                .cloned()
                 .ok_or_else(|| format_err!("Random peer is none when create sub target"))?;
             let info = self
                 .fetcher
@@ -108,7 +103,7 @@ where
 pub struct InnerSyncTask<H, F, N>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
-    F: BlockIdFetcher + BlockFetcher + 'static,
+    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
     N: NetworkService + 'static,
 {
     ancestor: BlockIdAndNumber,
@@ -124,7 +119,7 @@ where
 impl<H, F, N> InnerSyncTask<H, F, N>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
-    F: BlockIdFetcher + BlockFetcher + 'static,
+    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
     N: NetworkService + 'static,
 {
     pub fn new(

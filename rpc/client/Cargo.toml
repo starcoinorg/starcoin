@@ -14,7 +14,7 @@ failure = "0.1"
 # for ipc connect
 tokio01 = { version="0.1", package="tokio"}
 tokio-compat = "0.1.5"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 hex = "~0.4"
 actix = "0.10.0"
@@ -44,6 +44,7 @@ starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-p2p-types = { path = "../../network-p2p/types"}
+network-api = {path = "../../network/api", package="network-api"}
 
 [dev-dependencies]
 starcoin-rpc-server = { path = "../server" }

@@ -8,16 +8,16 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::FutureExt;
+use log::{debug, error, info};
 use lru::LruCache;
 use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
     ReportReputation, TransactionsMessage,
 };
-use network_api::peer_score::LinearScore;
+use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
 use rand::RngCore;
-use smallvec::alloc::borrow::Cow;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc::NetworkRpcService;
@@ -29,7 +29,9 @@ use starcoin_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
+use std::borrow::Cow;
 use std::collections::HashMap;
+use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 pub struct NetworkActorService {
@@ -59,7 +61,7 @@ impl NetworkActorService {
         )?;
         let service = worker.service().clone();
         let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
-        let inner = Inner::new(self_info, service, peer_message_handler)?;
+        let inner = Inner::new(config, self_info, service, peer_message_handler)?;
         Ok(Self {
             worker: Some(worker),
             inner,
@@ -259,17 +261,19 @@ impl Peer {
 }
 
 pub(crate) struct Inner {
+    config: Arc<NodeConfig>,
     network_service: Arc<network_p2p::NetworkService>,
     self_peer: Peer,
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     sync_status: Option<SyncStatus>,
     metrics: Option<NetworkMetrics>,
-    score_handler: LinearScore,
+    score_handler: Arc<dyn Score<BlockBroadcastEntry> + 'static>,
 }
 
 impl Inner {
     pub fn new<H>(
+        config: Arc<NodeConfig>,
         self_info: PeerInfo,
         network_service: Arc<network_p2p::NetworkService>,
         peer_message_handler: H,
@@ -280,13 +284,14 @@ impl Inner {
         let metrics = NetworkMetrics::register().ok();
 
         Ok(Inner {
+            config,
             network_service,
             self_peer: Peer::new(self_info),
             peers: HashMap::new(),
             peer_message_handler: Arc::new(peer_message_handler),
             sync_status: None,
             metrics,
-            score_handler: LinearScore::new(10),
+            score_handler: Arc::new(LinearScore::new(10)),
         })
     }
 
@@ -379,13 +384,21 @@ impl Inner {
                 } else {
                     debug!("Ignore notification message from peer: {}, protocol: {} , because node is not synchronized.", peer_id, protocol);
                 }
-                BROADCAST_SCORE_METRICS.report_new(peer_id, self.score_handler.linear());
+                BROADCAST_SCORE_METRICS.report_new(
+                    peer_id,
+                    self.score_handler
+                        .execute(BlockBroadcastEntry::new(true, HandleState::Succ)),
+                );
             } else {
                 debug!(
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
-                BROADCAST_SCORE_METRICS.report_old(peer_id, self.score_handler.percentage(10));
+                BROADCAST_SCORE_METRICS.report_old(
+                    peer_id,
+                    self.score_handler
+                        .execute(BlockBroadcastEntry::new(false, HandleState::Succ)),
+                );
             };
         } else {
             error!(
@@ -447,7 +460,11 @@ impl Inner {
                 let (protocol_name, message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
-                let selected_peers = select_random_peers(&self.peers, |_| true);
+                let selected_peers = select_random_peers(
+                    self.config.network.min_peers_to_propagate()
+                        ..=self.config.network.max_peers_to_propagate(),
+                    &self.peers,
+                );
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
                     if peer.known_blocks.contains(&id)
@@ -480,7 +497,11 @@ impl Inner {
                 });
                 let origin_txn_len = msg.txns.len();
                 let mut send_peer_count: usize = 0;
-                let selected_peers = select_random_peers(&self.peers, |_| true);
+                let selected_peers = select_random_peers(
+                    self.config.network.min_peers_to_propagate()
+                        ..=self.config.network.max_peers_to_propagate(),
+                    &self.peers,
+                );
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
                     let txns_unhandled = msg
@@ -536,25 +557,21 @@ impl Inner {
     }
 }
 
-// TODO: should change into config.
-const MIN_PEERS_PROPAGATION: usize = 4;
-const MAX_PEERS_PROPAGATION: usize = 128;
-
-fn select_random_peers<F>(peers: &HashMap<PeerId, Peer>, filter: F) -> Vec<PeerId>
-where
-    F: Fn(&PeerId) -> bool,
-{
+fn select_random_peers(
+    peer_num_range: RangeInclusive<u32>,
+    peers: &HashMap<PeerId, Peer>,
+) -> Vec<PeerId> {
+    let (min_peers, max_peers) = peer_num_range.into_inner();
     let peers_len = peers.len();
     // sqrt(x)/x scaled to max u32
     let fraction = ((peers_len as f64).powf(-0.5) * (u32::max_value() as f64).round()) as u32;
-    let small = peers_len < MIN_PEERS_PROPAGATION;
+    let small = peers_len < (min_peers as usize);
 
     let mut random = rand::thread_rng();
     peers
         .keys()
         .cloned()
-        .filter(filter)
         .filter(|_| small || random.next_u32() < fraction)
-        .take(MAX_PEERS_PROPAGATION)
+        .take(max_peers as usize)
         .collect()
 }

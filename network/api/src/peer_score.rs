@@ -1,4 +1,39 @@
-pub trait Score<Entry> {
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
+
+#[derive(Clone)]
+pub struct ScoreCounter {
+    score: Arc<AtomicU64>,
+    count: Arc<AtomicU64>,
+}
+
+impl ScoreCounter {
+    pub fn inc_by(&self, score: i64) {
+        self.score.fetch_add(score as u64, Ordering::SeqCst);
+        self.count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    pub fn score(&self) -> u64 {
+        self.score.load(Ordering::SeqCst)
+    }
+
+    pub fn avg(&self) -> u64 {
+        self.score() / self.count.load(Ordering::SeqCst)
+    }
+}
+
+impl Default for ScoreCounter {
+    fn default() -> Self {
+        Self {
+            score: Arc::new(AtomicU64::new(1)),
+            count: Arc::new(AtomicU64::new(0)),
+        }
+    }
+}
+
+pub trait Score<Entry>: Sync + Send {
     fn execute(&self, entry: Entry) -> i64;
 }
 
@@ -30,6 +65,12 @@ pub enum HandleState {
 pub struct BlockBroadcastEntry {
     new: bool,
     state: HandleState,
+}
+
+impl BlockBroadcastEntry {
+    pub fn new(new: bool, state: HandleState) -> Self {
+        Self { new, state }
+    }
 }
 
 #[derive(Clone)]

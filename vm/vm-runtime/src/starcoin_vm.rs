@@ -138,11 +138,17 @@ impl StarcoinVM {
         // The submitted max gas units that the transaction can consume is greater than the
         // maximum number of gas units bound that we have set for any
         // transaction.
-        if txn_data.max_gas_amount().get() > gas_constants.maximum_number_of_gas_units.get() {
+        if txn_data
+            .max_gas_amount()
+            .map(|gas| gas * gas_constants.gas_unit_scaling_factor)
+            .get()
+            > gas_constants.maximum_number_of_gas_units.get()
+        {
             warn!(
-                "[VM] Gas unit error; max {}, submitted {}",
+                "[VM] Gas unit error; max {}, submitted {}, with scaling_factor {}",
                 gas_constants.maximum_number_of_gas_units.get(),
-                txn_data.max_gas_amount().get()
+                txn_data.max_gas_amount().get(),
+                gas_constants.gas_unit_scaling_factor
             );
             return Err(VMStatus::Error(
                 StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND,
@@ -153,11 +159,17 @@ impl StarcoinVM {
         // intrinsic cost of the transaction as calculated against the size of the
         // underlying `RawTransaction`
         let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len, gas_constants);
-        if txn_data.max_gas_amount().get() < min_txn_fee.get() {
+        if txn_data
+            .max_gas_amount()
+            .map(|gas| gas * gas_constants.gas_unit_scaling_factor)
+            .get()
+            < min_txn_fee.get()
+        {
             warn!(
-                "[VM] Gas unit error; min {}, submitted {}",
+                "[VM] Gas unit error; min {}, submitted {}, with scaling_factor {}",
                 min_txn_fee.get(),
-                txn_data.max_gas_amount().get()
+                txn_data.max_gas_amount().get(),
+                gas_constants.gas_unit_scaling_factor
             );
             return Err(VMStatus::Error(
                 StatusCode::MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS,

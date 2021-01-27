@@ -15,10 +15,11 @@ use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use log::info;
-use serde::__private::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fmt::Formatter;
+use std::marker::PhantomData;
 
 trait ServiceRefProxy: Send + Sync {
     fn service_name(&self) -> &'static str;

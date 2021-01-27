@@ -10,8 +10,6 @@ edition = "2018"
 anyhow = "1.0.38"
 futures = "0.3"
 
-actix = "0.10.0"
-actix-rt = "1.1"
 yamux = "0.8.0"
 futures-timer = "3.0"
 log = "0.4.13"
@@ -23,7 +21,7 @@ starcoin-types = {path = "../types"}
 starcoin-txpool-api = {path = "../txpool/api"}
 network-p2p-types = {path = "../network-p2p/types"}
 network-p2p = {path = "../network-p2p"}
-logger = {path = "../commons/logger",package="starcoin-logger"}
+starcoin-logger = {path = "../commons/logger"}
 
 starcoin-crypto = {path = "../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
@@ -31,14 +29,13 @@ bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 fnv = "1.0.6"
 zeroize = "1.1.1"
 bitflags = "1.2.0"
-smallvec = "1.6.0"
 
 tempfile = "3.1.0"
 rand = "0.7.3"
 parking_lot = "0.11.1"
 lru = "0.6.2"
 
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 slog = { version = "2.5.2", features = ["nested-values"] }
 slog_derive = "0.2.0"

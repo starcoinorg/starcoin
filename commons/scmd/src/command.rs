@@ -4,9 +4,9 @@
 use crate::{CommandAction, EmptyOpt, FnCommandAction, NoneAction};
 use anyhow::Result;
 use clap::{App, ArgMatches};
-use serde::__private::PhantomData;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use structopt::StructOpt;
 

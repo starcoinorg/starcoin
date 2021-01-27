@@ -18,7 +18,7 @@ pub fn test_open_block() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = chain.current_header();
-    let block_gas_limit = 10000;
+    let block_gas_limit = 10000000;
 
     let mut opened_block = {
         let miner_account = AccountInfo::random();

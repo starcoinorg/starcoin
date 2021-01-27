@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
@@ -10,17 +9,16 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::sync_status::SyncStatus;
 
 mod service;
+use network_api::PeerStrategy;
 pub use service::{SyncAsyncService, SyncServiceHandler};
 use starcoin_crypto::HashValue;
 use starcoin_types::U256;
 pub use stream_task::TaskProgressReport;
 
-#[derive(Message, Clone, Debug)]
-#[rtype(result = "()")]
+#[derive(Clone, Debug)]
 pub struct StartSyncTxnEvent;
 
-#[derive(Message, Clone, Debug)]
-#[rtype(result = "()")]
+#[derive(Clone, Debug)]
 pub struct PeerNewBlock {
     peer_id: PeerId,
     new_block: Block,
@@ -40,8 +38,7 @@ impl PeerNewBlock {
     }
 }
 
-#[derive(Debug, Message, Clone, Serialize, Deserialize)]
-#[rtype(result = "()")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SyncNotify {
     ClosePeerMsg(PeerId),
     NewHeadBlock(PeerId, Box<Block>),
@@ -91,8 +88,27 @@ pub struct SyncStartRequest {
     pub force: bool,
     pub peers: Vec<PeerId>,
     pub skip_pow_verify: bool,
+    pub strategy: Option<PeerStrategy>,
 }
 
 impl ServiceRequest for SyncStartRequest {
     type Response = Result<()>;
+}
+
+#[derive(Debug, Clone)]
+pub struct PeerScoreRequest;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeerScoreResponse {
+    peers: Option<Vec<(PeerId, u64)>>,
+}
+
+impl ServiceRequest for PeerScoreRequest {
+    type Response = PeerScoreResponse;
+}
+
+impl From<Option<Vec<(PeerId, u64)>>> for PeerScoreResponse {
+    fn from(peers: Option<Vec<(PeerId, u64)>>) -> Self {
+        Self { peers }
+    }
 }

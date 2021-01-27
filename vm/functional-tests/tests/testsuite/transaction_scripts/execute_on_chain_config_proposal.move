@@ -11,7 +11,7 @@
 //! args: x"", false, 0
 stdlib_script::propose_update_txn_publish_option
 // check: gas_used
-// check: 196
+// check: 181217
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -25,7 +25,7 @@ stdlib_script::propose_update_txn_publish_option
 //! args: {{alice}}, 0, true, 3981420001000000u128
 stdlib_script::cast_vote
 // check: gas_used
-// check: 175
+// check: 170700
 // check: "Keep(EXECUTED)"
 
 
@@ -40,7 +40,7 @@ stdlib_script::cast_vote
 //! args: {{alice}}, 0
 stdlib_script::queue_proposal_action
 // check: gas_used
-// check: 55
+// check: 54457
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -49,7 +49,7 @@ stdlib_script::queue_proposal_action
 //! args: {{alice}}, 0
 stdlib_script::unstake_vote
 // check: gas_used
-// check: 117
+// check: 114622
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -63,5 +63,5 @@ stdlib_script::unstake_vote
 //! args: 0
 stdlib_script::execute_on_chain_config_proposal
 // check: gas_used
-// check: 100
+// check: 97770
 // check: "Keep(EXECUTED)"

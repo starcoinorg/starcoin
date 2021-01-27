@@ -16,7 +16,7 @@ script {
     }
 }
 // check: gas_used
-// check: 64
+// check: 63157
 
 //! new-transaction
 //! sender: bob
@@ -32,7 +32,7 @@ script {
     }
 }
 // check: gas_used
-// check: 74
+// check: 73767
 
 //! block-prologue
 //! author: alice
@@ -49,6 +49,6 @@ script {
 //! type-args: 0x1::STC::STC
 stdlib_script::mint_token_by_fixed_key
 // check: gas_used
-// check: 142
+// check: 137473
 // check: "Keep(EXECUTED)"
 

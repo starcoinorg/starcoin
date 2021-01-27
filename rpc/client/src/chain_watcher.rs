@@ -12,7 +12,6 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::{BlockHeaderView, BlockView};
 use starcoin_types::block::BlockNumber;
-use starcoin_types::system_events::{ActorStop, SystemStop};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -172,20 +171,17 @@ impl actix::StreamHandler<BlockEvent> for ChainWatcher {
     }
 }
 
-impl Handler<ActorStop> for ChainWatcher {
+/// Try to stop a actor
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "()")]
+pub struct StopWatcher;
+
+impl Handler<StopWatcher> for ChainWatcher {
     type Result = ();
 
-    fn handle(&mut self, _msg: ActorStop, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, _msg: StopWatcher, ctx: &mut Context<Self>) -> Self::Result {
         info!("Receive event to stop ChainWatcher.");
-        ctx.stop()
-    }
-}
-
-impl Handler<SystemStop> for ChainWatcher {
-    type Result = ();
-
-    fn handle(&mut self, _msg: SystemStop, _ctx: &mut Context<Self>) -> Self::Result {
-        info!("Receive event to stop ChainWatcher.");
+        ctx.stop();
         System::current().stop();
     }
 }

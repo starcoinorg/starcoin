@@ -32,16 +32,6 @@ pub struct TxPoolConfig {
     #[structopt(name = "txpool-tx-propagate-interval", long)]
     /// interval(s) of tx propagation timer. default to 2.
     tx_propagate_interval: Option<u64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-min-tx-propagate", long)]
-    /// interval(s) of tx propagation timer, default to 256.
-    min_tx_to_propagate: Option<usize>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-propagate-for-blocks", long)]
-    /// max blocks to propagate txns for.
-    propagate_for_blocks: Option<u64>,
 }
 
 impl TxPoolConfig {
@@ -71,12 +61,6 @@ impl TxPoolConfig {
     pub fn tx_propagate_interval(&self) -> u64 {
         self.tx_propagate_interval.unwrap_or(2)
     }
-    pub fn min_tx_to_propagate(&self) -> usize {
-        self.min_tx_to_propagate.unwrap_or(256)
-    }
-    pub fn propagate_for_blocks(&self) -> u64 {
-        self.propagate_for_blocks.unwrap_or(4)
-    }
 }
 
 impl ConfigModule for TxPoolConfig {
@@ -93,12 +77,6 @@ impl ConfigModule for TxPoolConfig {
         }
         if let Some(m) = txpool_opt.tx_propagate_interval.as_ref() {
             self.tx_propagate_interval = Some(*m);
-        }
-        if let Some(m) = txpool_opt.min_tx_to_propagate.as_ref() {
-            self.min_tx_to_propagate = Some(*m);
-        }
-        if let Some(m) = txpool_opt.propagate_for_blocks.as_ref() {
-            self.propagate_for_blocks = Some(*m);
         }
         Ok(())
     }

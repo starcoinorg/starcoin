@@ -6,8 +6,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-actix = "0.10.0"
-actix-rt = "1.1"
 futures = { version = "0.3" }
 futures-timer = "3.0"
 hex = { version = "0.4.2", default-features = false }

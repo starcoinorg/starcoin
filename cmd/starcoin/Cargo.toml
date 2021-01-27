@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 rand = "0.7.3"
-serde = { version = "1.0" }
+serde = { version = "1.0.123" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.5.0"
 tokio = { version = "0.2", features = ["full"] }
@@ -45,6 +45,7 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 errmapgen = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+network-api = {path = "../../network/api", package="network-api"}
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}

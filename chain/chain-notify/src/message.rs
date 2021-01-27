@@ -9,10 +9,6 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct Notification<T>(pub T);
 
-impl<T> actix::Message for Notification<T> {
-    type Result = ();
-}
-
 pub type ContractEventNotification = Notification<Arc<[Event]>>;
 pub type NewHeadEventNotification = Notification<ThinBlock>;
 

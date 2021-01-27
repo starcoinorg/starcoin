@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::clock::Duration;
 use anyhow::{format_err, Result};
 use futures_timer::Delay;
 use network_api::messages::PeerMessage;
@@ -23,6 +22,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::any::Any;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 pub use starcoin_network::NetworkServiceRef;

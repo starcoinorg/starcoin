@@ -3,16 +3,17 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::peer_event_handle::PeerEventHandle;
-use crate::tasks::{full_sync_task, AncestorEvent, VerifiedRpcClientFactory};
+use crate::tasks::{full_sync_task, AncestorEvent};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use chain::BlockChain;
 use config::NodeConfig;
 use futures::FutureExt;
+use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
-use network_api::PeerProvider;
+use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -20,8 +21,8 @@ use starcoin_service_registry::{
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncServiceHandler,
-    SyncStartRequest, SyncStatusRequest, SyncTarget,
+    PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
+    SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::peer_info::PeerId;
@@ -29,6 +30,7 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::sync::Arc;
+use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
 //TODO combine task_handle and task_event_handle in stream_task
@@ -38,6 +40,7 @@ pub struct SyncTaskHandle {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_event_handle: PeerEventHandle,
+    peer_selector: PeerSelector,
 }
 
 pub enum SyncStage {
@@ -80,6 +83,7 @@ impl SyncService2 {
         &mut self,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
+        peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         match std::mem::replace(&mut self.stage, SyncStage::Checking) {
@@ -115,21 +119,26 @@ impl SyncService2 {
         let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
         let fut = async move {
-            let peer_selector = network.peer_selector().await?;
-            if peer_selector.is_empty() {
-                //TODO wait peers.
-                //info!("[sync] No peers to sync.");
-                //return Ok(());
-                return Err(format_err!("[sync] No peers to sync."));
+            let mut peer_selector = network.peer_selector().await?;
+            loop {
+                if peer_selector.is_empty()
+                    || peer_selector.len() < (config.net().min_peers() as usize)
+                {
+                    info!(
+                        "[sync]Wait enough peers {:?} : {:?}",
+                        peer_selector.len(),
+                        config.net().min_peers()
+                    );
+                    Delay::new(Duration::from_secs(1)).await;
+                    peer_selector = network.peer_selector().await?;
+                } else {
+                    break;
+                }
             }
-            let peer_selector = if !peers.is_empty() {
-                peer_selector
-                    .selector()
-                    .filter(move |peer_info| peers.contains(&peer_info.peer_id()))
-                    .into_selector()
-            } else {
-                peer_selector
-            };
+
+            if !peers.is_empty() {
+                peer_selector.retain(peers.as_ref())
+            }
             if peer_selector.is_empty() {
                 //info!("[sync] No peers to sync.");
                 return Err(format_err!("[sync] No peers to sync."));
@@ -151,7 +160,13 @@ impl SyncService2 {
                 return Ok(None);
             }
 
-            let fetcher_factory = Arc::new(VerifiedRpcClientFactory::new(network));
+            let peer_select_strategy = peer_strategy.unwrap_or_default();
+            let peer_selector =
+                PeerSelector::new(target.peers.clone(), peer_select_strategy.clone());
+            let rpc_client = Arc::new(VerifiedRpcClient::new(
+                peer_selector.clone(),
+                network.clone(),
+            ));
 
             let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
                 current_block_id,
@@ -160,9 +175,11 @@ impl SyncService2 {
                 config.net().time_service(),
                 storage.clone(),
                 connector_service.clone(),
-                target.peers.clone(),
+                rpc_client,
                 self_ref.clone(),
-                fetcher_factory,
+                network.clone(),
+                config.sync.max_retry_times(),
+                peer_select_strategy,
             )?;
 
             self_ref.notify(SyncBeginEvent {
@@ -170,6 +187,7 @@ impl SyncService2 {
                 task_handle,
                 task_event_handle,
                 peer_event_handle,
+                peer_selector,
             })?;
             Ok(Some(fut.await?))
             //Ok(())
@@ -303,15 +321,17 @@ pub struct SyncBeginEvent {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_event_handle: PeerEventHandle,
+    peer_selector: PeerSelector,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
     fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
-        let (target, task_handle, task_event_handle, peer_event_handle) = (
+        let (target, task_handle, task_event_handle, peer_event_handle, peer_selector) = (
             msg.target,
             msg.task_handle,
             msg.task_event_handle,
             msg.peer_event_handle,
+            msg.peer_selector,
         );
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
@@ -319,6 +339,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
             task_handle: task_handle.clone(),
             task_event_handle,
             peer_event_handle,
+            peer_selector,
         };
         match std::mem::replace(
             &mut self.stage,
@@ -373,20 +394,24 @@ pub struct CheckSyncEvent {
     peers: Vec<PeerId>,
 
     skip_pow_verify: bool,
+
+    strategy: Option<PeerStrategy>,
 }
 
 impl CheckSyncEvent {
-    pub fn new(peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
+    pub fn new(peers: Vec<PeerId>, skip_pow_verify: bool, strategy: Option<PeerStrategy>) -> Self {
         Self {
             peers,
             skip_pow_verify,
+            strategy,
         }
     }
 }
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, ctx) {
+        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
+        {
             error!("[sync] Check sync error: {:?}", e);
         };
     }
@@ -458,6 +483,20 @@ impl ServiceHandler<Self, SyncStatusRequest> for SyncService2 {
     }
 }
 
+impl ServiceHandler<Self, PeerScoreRequest> for SyncService2 {
+    fn handle(
+        &mut self,
+        _msg: PeerScoreRequest,
+        _ctx: &mut ServiceContext<SyncService2>,
+    ) -> PeerScoreResponse {
+        let resp = match &mut self.stage {
+            SyncStage::Synchronizing(handle) => Some(handle.peer_selector.scores()),
+            _ => None,
+        };
+        resp.into()
+    }
+}
+
 impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
     fn handle(
         &mut self,
@@ -507,7 +546,11 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
             info!("[sync] Try to cancel previous sync task, because receive force sync request.");
             self.cancel_task();
         }
-        ctx.notify(CheckSyncEvent::new(msg.peers, msg.skip_pow_verify));
+        ctx.notify(CheckSyncEvent::new(
+            msg.peers,
+            msg.skip_pow_verify,
+            msg.strategy,
+        ));
         Ok(())
     }
 }
