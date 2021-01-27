@@ -65,6 +65,17 @@ pub enum ConnectBlockError {
 
 impl Into<ReputationChange> for &ConnectBlockError {
     fn into(self) -> ReputationChange {
-        ReputationChange::new(i32::min_value() / 2, stringify!(self))
+        match self {
+            ConnectBlockError::FutureBlock(_) => {
+                // future block do not change the reputation
+                ReputationChange::new(0, "FutureBlock")
+            }
+            ConnectBlockError::ParentNotExist(_) => {
+                ReputationChange::new(i32::min_value() / 2, "ParentNotExist")
+            }
+            ConnectBlockError::VerifyBlockFailed(_, _) => {
+                ReputationChange::new(i32::min_value() / 2, "VerifyBlockFailed")
+            }
+        }
     }
 }

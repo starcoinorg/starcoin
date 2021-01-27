@@ -216,6 +216,10 @@ where
         } else {
             self.chain.apply(block.clone())
         } {
+            error!(
+                "[sync] collect block error: {:?}, peer_id:{:?} ",
+                err, peer_id
+            );
             match err.downcast::<ConnectBlockError>() {
                 Ok(connect_error) => match connect_error {
                     ConnectBlockError::FutureBlock(block) => {
