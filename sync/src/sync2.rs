@@ -118,6 +118,15 @@ impl SyncService2 {
         let config = self.config.clone();
         let fut = async move {
             let peer_selector = network.peer_selector().await?;
+
+            if peer_selector.len() < (config.net().min_peers() as usize) {
+                warn!(
+                    "[sync]Min sync peers limit {:?} : {:?}",
+                    peer_selector.len(),
+                    config.net().min_peers()
+                );
+                return Err(format_err!("[sync]Min sync peers limit."));
+            }
             if peer_selector.is_empty() {
                 //TODO wait peers.
                 //info!("[sync] No peers to sync.");
