@@ -28,7 +28,7 @@ fn test_network_rpc() {
     let network_1 = handle1.network();
     let (handle2, peer_id_2) = {
         let mut config_2 = NodeConfig::random_for_test();
-        config_2.network.seeds = Some(vec![net_addr_1]);
+        config_2.network.seeds = vec![net_addr_1].into();
         let peer_id_2 = config_2.network.self_peer_id();
         (gen_chain_env(config_2).unwrap(), peer_id_2)
     };

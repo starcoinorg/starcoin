@@ -30,7 +30,7 @@ fn test_txn_sync_actor() {
     assert!(import_result.unwrap().is_ok());
 
     let mut second_config = NodeConfig::random_for_test();
-    second_config.network.seeds = Some(vec![first_network_address]);
+    second_config.network.seeds = vec![first_network_address].into();
     second_config.miner.disable_miner_client = Some(false);
     let second_config = Arc::new(second_config);
 

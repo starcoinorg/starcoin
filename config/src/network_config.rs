@@ -23,6 +23,7 @@ use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::num::NonZeroU32;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use structopt::StructOpt;
 
@@ -114,7 +115,49 @@ impl NetworkRpcQuotaConfiguration {
         Ok(())
     }
 }
+//for avoid conflict between seed vec and subcommand, so define a custom type to parse seeds.
+//https://github.com/TeXitoi/structopt/issues/367
+#[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct Seeds(pub Vec<MultiaddrWithPeerId>);
+impl Seeds {
+    pub fn into_vec(self) -> Vec<MultiaddrWithPeerId> {
+        self.into()
+    }
+    pub fn merge(&mut self, other: &Seeds) {
+        let mut seeds = HashSet::new();
+        seeds.extend(self.0.clone().into_iter());
+        seeds.extend(other.0.clone().into_iter());
+        let mut seeds: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
+        //keep order in config
+        seeds.sort();
+        self.0 = seeds;
+    }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+impl FromStr for Seeds {
+    type Err = anyhow::Error;
 
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let seeds = s
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(|s| MultiaddrWithPeerId::from_str(s))
+            .collect::<Result<Vec<MultiaddrWithPeerId>, network_p2p_types::ParseErr>>()?;
+        Ok(Seeds(seeds))
+    }
+}
+impl Into<Vec<MultiaddrWithPeerId>> for Seeds {
+    fn into(self) -> Vec<MultiaddrWithPeerId> {
+        self.0
+    }
+}
+impl From<Vec<MultiaddrWithPeerId>> for Seeds {
+    fn from(seeds: Vec<MultiaddrWithPeerId>) -> Self {
+        Seeds(seeds)
+    }
+}
 #[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
@@ -134,10 +177,11 @@ pub struct NetworkConfig {
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "seed")]
-    /// P2P network seed
-    pub seeds: Option<Vec<MultiaddrWithPeerId>>,
+    #[serde(skip_serializing_if = "Seeds::is_empty")]
+    #[serde(default)]
+    #[structopt(long = "seed", default_value = "")]
+    /// P2P network seed, multi seed should use ',' as delimiter.
+    pub seeds: Seeds,
 
     #[serde(skip)]
     #[structopt(long = "disable-mdns")]
@@ -154,16 +198,19 @@ pub struct NetworkConfig {
     #[structopt(flatten)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long)]
     /// min peers to propagate new block and new transactions. Default to 8.
     min_peers_to_propagate: Option<u32>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long)]
     ///max peers to propagate new block and new transactions. Default to 128.
     max_peers_to_propagate: Option<u32>,
 
-    #[serde(skip)]
-    #[structopt(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long)]
+    /// p2p network listen address, Default is /ip4/0.0.0.0/tcp/9840
     listen: Option<Multiaddr>,
 
     #[serde(skip)]
@@ -173,6 +220,10 @@ pub struct NetworkConfig {
     #[serde(skip)]
     #[structopt(skip)]
     network_keypair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    generate_listen: Option<Multiaddr>,
 }
 
 impl NetworkConfig {
@@ -181,7 +232,7 @@ impl NetworkConfig {
     }
 
     pub fn listen(&self) -> Multiaddr {
-        self.listen.clone().expect("Config should init.")
+        self.generate_listen.clone().expect("Config should init.")
     }
 
     pub fn seeds(&self) -> Vec<MultiaddrWithPeerId> {
@@ -189,7 +240,7 @@ impl NetworkConfig {
             return vec![];
         }
         let mut seeds: HashSet<MultiaddrWithPeerId> =
-            self.seeds.clone().unwrap_or_default().into_iter().collect();
+            self.seeds.clone().into_vec().into_iter().collect();
         seeds.extend(self.base().net().boot_nodes().iter().cloned());
 
         let self_peer_id = self.self_peer_id();
@@ -281,24 +332,28 @@ impl NetworkConfig {
     }
 
     fn generate_listen_address(&mut self) -> Result<()> {
-        let base = self.base();
-        let port = if base.net().is_test() {
-            get_random_available_port()
-        } else if base.net().is_dev() {
-            get_available_port_from(DEFAULT_NETWORK_PORT)
+        if self.listen.is_some() {
+            self.generate_listen = self.listen.clone();
         } else {
-            DEFAULT_NETWORK_PORT
-        };
+            let base = self.base();
+            let port = if base.net().is_test() {
+                get_random_available_port()
+            } else if base.net().is_dev() {
+                get_available_port_from(DEFAULT_NETWORK_PORT)
+            } else {
+                DEFAULT_NETWORK_PORT
+            };
 
-        //test env use in memory transport.
-        let listen = if base.net().is_test() {
-            memory_addr(port as u64)
-        } else {
-            format!("/ip4/0.0.0.0/tcp/{}", DEFAULT_NETWORK_PORT)
-                .parse()
-                .expect("Parse multi address fail.")
-        };
-        self.listen = Some(listen);
+            //test env use in memory transport.
+            let listen = if base.net().is_test() {
+                memory_addr(port as u64)
+            } else {
+                format!("/ip4/0.0.0.0/tcp/{}", port)
+                    .parse()
+                    .expect("Parse multi address fail.")
+            };
+            self.generate_listen = Some(listen);
+        }
         Ok(())
     }
 }
@@ -307,13 +362,7 @@ impl ConfigModule for NetworkConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
 
-        let mut seeds = HashSet::new();
-        seeds.extend(self.seeds.clone().unwrap_or_default());
-        seeds.extend(opt.network.seeds.clone().unwrap_or_default());
-        let mut seed: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
-        //keep order in config
-        seed.sort();
-        self.seeds = Some(seed);
+        self.seeds.merge(&opt.network.seeds);
 
         if opt.network.disable_seed {
             self.disable_seed = opt.network.disable_seed;
@@ -321,8 +370,7 @@ impl ConfigModule for NetworkConfig {
 
         info!(
             "Final bootstrap seeds: {:?}, disable_seed: {}",
-            self.seeds.as_ref().unwrap(),
-            self.disable_seed
+            self.seeds, self.disable_seed
         );
 
         self.network_rpc_quotas
@@ -348,6 +396,9 @@ impl ConfigModule for NetworkConfig {
         }
         if let Some(m) = opt.network.min_peers_to_propagate {
             self.min_peers_to_propagate = Some(m);
+        }
+        if opt.network.disable_mdns.is_some() {
+            self.disable_mdns = opt.network.disable_mdns;
         }
 
         self.load_or_generate_keypair()?;

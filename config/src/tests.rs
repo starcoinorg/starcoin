@@ -72,9 +72,7 @@ fn test_example_config_compact() -> Result<()> {
             example_dir.to_str().unwrap(),
             //Network
             "--seed",
-            "/ip4/1.2.3.3/tcp/9840/p2p/QmRZ6ZwVzhJ6xpVV1CEve2RKiUzK4y2pSx3eg2cvQMsT4f",
-            "--seed",
-            "/ip4/1.2.3.4/tcp/9840/p2p/12D3KooWCfUex27aoqaKScponiLB4N4FWbgmbHYjVoRebGrQaRYk",
+            "/ip4/1.2.3.3/tcp/9840/p2p/QmRZ6ZwVzhJ6xpVV1CEve2RKiUzK4y2pSx3eg2cvQMsT4f,/ip4/1.2.3.4/tcp/9840/p2p/12D3KooWCfUex27aoqaKScponiLB4N4FWbgmbHYjVoRebGrQaRYk",
             "--node-name",
             "alice-node1",
             //P2P
@@ -87,6 +85,8 @@ fn test_example_config_compact() -> Result<()> {
             "2000/s",
             "--jsonrpc-custom-user-api-quota",
             "chain.info=100/s",
+            "--jsonrpc-custom-user-api-quota",
+            "chain.get_block_by_hash=100/s",
             //TCP
             "--tcp-apis",
             "safe",

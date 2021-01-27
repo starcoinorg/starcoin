@@ -136,7 +136,7 @@ pub async fn build_network(
 
     let mut config = NodeConfig::random_for_test();
     if let Some(seed) = seed {
-        config.network.seeds = Some(vec![seed]);
+        config.network.seeds = vec![seed].into();
     }
     let node_config = Arc::new(config);
     let (storage, _chain_info, genesis) = Genesis::init_storage_for_test(node_config.net())?;
