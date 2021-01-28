@@ -7,6 +7,7 @@ error: function does not abort under this condition
     │         ^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/aborts_if.move:32:5: abort2_incorrect
+    =     at tests/sources/functional/aborts_if.move:33:5: abort2_incorrect
 
 error: function does not abort under this condition
 
@@ -48,7 +49,7 @@ error: function does not abort under this condition
      │         ^^^^^^^^^^^^^^^^^
      │
      =     at tests/sources/functional/aborts_if.move:145:5: abort_at_2_or_3_spec_incorrect
-     =     at tests/sources/functional/aborts_if.move:146:13: abort_at_2_or_3_spec_incorrect
+     =     at tests/sources/functional/aborts_if.move:146:18: abort_at_2_or_3_spec_incorrect
 
 error: abort not covered by any of the `aborts_if` clauses
 
@@ -60,7 +61,7 @@ error: abort not covered by any of the `aborts_if` clauses
      │ ╰─────^
      │
      =     at tests/sources/functional/aborts_if.move:154:5: abort_at_2_or_3_strict_incorrect
-     =     at tests/sources/functional/aborts_if.move:155:13: abort_at_2_or_3_strict_incorrect
+     =     at tests/sources/functional/aborts_if.move:155:18: abort_at_2_or_3_strict_incorrect
 
 error: abort not covered by any of the `aborts_if` clauses
 
@@ -72,7 +73,7 @@ error: abort not covered by any of the `aborts_if` clauses
      │ ╰─────^
      │
      =     at tests/sources/functional/aborts_if.move:136:5: abort_at_2_or_3_total_incorrect
-     =     at tests/sources/functional/aborts_if.move:137:13: abort_at_2_or_3_total_incorrect
+     =     at tests/sources/functional/aborts_if.move:137:18: abort_at_2_or_3_total_incorrect
 
 error: function does not abort under this condition
 
@@ -95,6 +96,7 @@ error: abort not covered by any of the `aborts_if` clauses
     │
     =     at tests/sources/functional/aborts_if.move:95:5: multi_abort3_incorrect
     =     at tests/sources/functional/aborts_if.move:96:15: multi_abort3_incorrect
+    =     at tests/sources/functional/aborts_if.move:97:5: multi_abort3_incorrect
 
 error: function does not abort under this condition
 
@@ -104,14 +106,4 @@ error: function does not abort under this condition
      │         ^^^^^^^^^^^^^^^
      │
      =     at tests/sources/functional/aborts_if.move:113:5: multi_abort5_incorrect
-     =     at tests/sources/functional/aborts_if.move:114:9: multi_abort5_incorrect
-
-error: function does not succeed under this condition
-
-     ┌── tests/sources/functional/aborts_if.move:177:9 ───
-     │
- 177 │         succeeds_if x == 2;
-     │         ^^^^^^^^^^^^^^^^^^^
-     │
-     =     at tests/sources/functional/aborts_if.move:173:5: succeed_incorrect
-     =     at tests/sources/functional/aborts_if.move:174:13: succeed_incorrect
+     =     at tests/sources/functional/aborts_if.move:114:18: multi_abort5_incorrect

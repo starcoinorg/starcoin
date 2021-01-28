@@ -3,7 +3,11 @@
 
 //! This module translates specification conditions to Boogie code.
 
-use std::{cell::RefCell, collections::BTreeSet, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{BTreeSet, HashMap},
+    rc::Rc,
+};
 
 use itertools::Itertools;
 #[allow(unused_imports)]
@@ -14,7 +18,7 @@ use bytecode::{
     stackless_bytecode::SpecBlockId, usage_analysis,
 };
 use move_model::{
-    ast::{Condition, ConditionKind, Exp, LocalVarDecl, Operation, Value},
+    ast::{Condition, ConditionKind, Exp, LocalVarDecl, Operation, QuantKind, Value},
     code_writer::CodeWriter,
     emit, emitln,
     model::{
@@ -44,6 +48,7 @@ use crate::{
 };
 
 const REQUIRES_FAILS_MESSAGE: &str = "precondition does not hold at this call";
+const EMITS_FAILS_MESSAGE: &str = "function does not emit the expected event";
 const ENSURES_FAILS_MESSAGE: &str = "post-condition does not hold";
 const ABORTS_IF_FAILS_MESSAGE: &str = "function does not abort under this condition";
 const ABORTS_NOT_COVERED: &str = "abort not covered by any of the `aborts_if` clauses";
@@ -510,7 +515,7 @@ impl<'a> ConditionDistribution<'a> {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires => self.requires.push(cond),
-                    Ensures => self.ensures.push(cond),
+                    Emits | Ensures => self.ensures.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if asserted => self.requires.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if !assumed => self.ensures.push(cond),
                     _ => {}
@@ -520,7 +525,7 @@ impl<'a> ConditionDistribution<'a> {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires => self.requires.push(cond),
-                    Ensures if export_ensures => self.ensures.push(cond),
+                    Emits | Ensures if export_ensures => self.ensures.push(cond),
                     AbortsIf | SucceedsIf if asserted => self.requires.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if assumed => self.entry_assumes.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if export_ensures => self.ensures.push(cond),
@@ -531,7 +536,7 @@ impl<'a> ConditionDistribution<'a> {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires | RequiresModule => self.requires.push(cond),
-                    Ensures => self.ensures.push(cond),
+                    Emits | Ensures => self.ensures.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if asserted => self.requires.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if !assumed => self.ensures.push(cond),
                     _ => {}
@@ -541,7 +546,7 @@ impl<'a> ConditionDistribution<'a> {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires | RequiresModule => self.requires.push(cond),
-                    Ensures if export_ensures => self.ensures.push(cond),
+                    Emits | Ensures if export_ensures => self.ensures.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if asserted => self.requires.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if assumed => self.entry_assumes.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if export_ensures => self.ensures.push(cond),
@@ -551,7 +556,7 @@ impl<'a> ConditionDistribution<'a> {
             Indirect if propagated_to_inter_caller && opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
-                    Ensures if propagated_to_inter_caller || export_ensures => {
+                    Emits | Ensures if propagated_to_inter_caller || export_ensures => {
                         self.ensures.push(cond)
                     }
                     AbortsIf | AbortsWith | SucceedsIf
@@ -567,7 +572,7 @@ impl<'a> ConditionDistribution<'a> {
             Indirect if propagated_to_inter_caller && !opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
-                    Ensures if export_ensures => self.ensures.push(cond),
+                    Emits | Ensures if export_ensures => self.ensures.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf if assumed || asserted => {
                         self.entry_assumes.push(cond)
                     }
@@ -580,7 +585,7 @@ impl<'a> ConditionDistribution<'a> {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires | RequiresModule => self.entry_assumes.push(cond),
-                    Ensures => self.ensures.push(cond),
+                    Emits | Ensures => self.ensures.push(cond),
                     AbortsIf | AbortsWith | SucceedsIf => self.ensures.push(cond),
                     _ => {}
                 }
@@ -883,6 +888,41 @@ impl<'env> SpecTranslator<'env> {
                 self.writer.set_location(&cond.loc);
                 self.set_condition_info(&cond.loc, ConditionTag::Ensures, ENSURES_FAILS_MESSAGE);
                 emit!(self.writer, "ensures !$abort_flag ==> (b#$Boolean(");
+                self.translate_exp(&cond.exp);
+                emit!(self.writer, "));")
+            });
+            *self.in_ensures.borrow_mut() = false;
+            emitln!(self.writer);
+        }
+
+        // Generate emits
+        let emits = distribution
+            .ensures
+            .iter()
+            .filter(kind_filter(ConditionKind::Emits))
+            .copied()
+            .collect_vec();
+
+        if !emits.is_empty() {
+            *self.in_ensures.borrow_mut() = true;
+            self.translate_seq(emits.iter(), "\n", |cond| {
+                self.writer.set_location(&cond.loc);
+                self.set_condition_info(&cond.loc, ConditionTag::Ensures, EMITS_FAILS_MESSAGE);
+                emit!(self.writer, "ensures !$abort_flag ==> (b#$Boolean(");
+
+                if cond.additional_exps.len() > 1 {
+                    self.translate_exp(&cond.additional_exps[1]);
+                } else {
+                    emit!(self.writer, "$Boolean(true)");
+                }
+                emit!(self.writer, ")) ==> (");
+                emit!(
+                    self.writer,
+                    "$ContainValueArray(streams#$EventStore($es)[$SelectField("
+                );
+                self.translate_exp(&cond.additional_exps[0]);
+                emit!(self.writer, ", $Event_EventHandle_guid)");
+                emit!(self.writer, "],");
                 self.translate_exp(&cond.exp);
                 emit!(self.writer, "));")
             });
@@ -1585,9 +1625,6 @@ impl<'env> SpecTranslator<'env> {
                         .global_env()
                         .get_module(inv.declaring_module)
                         .is_dependency()
-                        || inv.mem_usage.iter().any(|used| {
-                            !self.global_env().get_module(used.module_id).is_dependency()
-                        })
                 })
                 .unwrap_or(true)
         };
@@ -1759,6 +1796,10 @@ impl<'env> SpecTranslator<'env> {
                 &self.module_env().env.get_node_loc(*node_id),
                 "`|x|e` (lambda) currently only supported as argument for `all` or `any`",
             ),
+            Exp::Quant(node_id, kind, ranges, condition, exp) => {
+                self.set_writer_location(*node_id);
+                self.translate_quant(*node_id, *kind, ranges, condition, exp)
+            }
             Exp::Block(node_id, vars, scope) => {
                 self.set_writer_location(*node_id);
                 self.translate_block(*node_id, vars, scope)
@@ -1840,9 +1881,9 @@ impl<'env> SpecTranslator<'env> {
                     if let Some(local_index) = func_target.get_local_index(name) {
                         if *self.in_assert_or_assume.borrow() {
                             let proxy = if ty.is_reference() {
-                                func_target.get_ref_proxy_index(*local_index)
+                                func_target.get_ref_proxy_index(local_index)
                             } else {
-                                func_target.get_proxy_index(*local_index)
+                                func_target.get_proxy_index(local_index)
                             };
                             if let Some(proxy_index) = proxy {
                                 var_name = func_target
@@ -1850,17 +1891,17 @@ impl<'env> SpecTranslator<'env> {
                                     .string(func_target.get_local_name(*proxy_index));
                                 ty = func_target.get_local_type(*proxy_index);
                             } else {
-                                ty = func_target.get_local_type(*local_index);
+                                ty = func_target.get_local_type(local_index);
                             }
                         } else if *self.in_ensures.borrow() && !*self.in_old.borrow() {
-                            if let Some(return_index) = func_target.get_return_index(*local_index) {
+                            if let Some(return_index) = func_target.get_return_index(local_index) {
                                 var_name = Rc::new(format!("$ret{}", return_index));
                                 ty = func_target.get_return_type(*return_index);
                             } else {
-                                ty = func_target.get_local_type(*local_index);
+                                ty = func_target.get_local_type(local_index);
                             }
                         } else {
-                            ty = func_target.get_local_type(*local_index);
+                            ty = func_target.get_local_type(local_index);
                         }
                     }
                 };
@@ -1890,15 +1931,15 @@ impl<'env> SpecTranslator<'env> {
             return self.translate_exp(exp);
         }
         let loc = self.module_env().env.get_node_loc(node_id);
-        if let Some((name, binding)) = self.get_decl_var(&loc, vars) {
-            let name_str = self.module_env().symbol_pool().string(name);
+        if let [var] = vars {
+            let name_str = self.module_env().symbol_pool().string(var.name);
             emit!(self.writer, "(var {} := ", name_str);
-            self.translate_exp(binding.as_ref().expect("binding"));
+            self.translate_exp(var.binding.as_ref().expect("binding"));
             emit!(self.writer, "; ");
             self.translate_exp(exp);
             emit!(self.writer, ")");
         } else {
-            // Error reported.
+            self.error(&loc, "currently only single variable binding supported");
         }
     }
 
@@ -1961,8 +2002,6 @@ impl<'env> SpecTranslator<'env> {
             Operation::Exists(None) => self.translate_resource_exists(node_id, args),
             Operation::Exists(_) => unimplemented!(),
             Operation::Len => self.translate_primitive_call("$vlen_value", args),
-            Operation::All => self.translate_all_or_exists(&loc, true, args),
-            Operation::Any => self.translate_all_or_exists(&loc, false, args),
             Operation::TypeValue => self.translate_type_value(node_id),
             Operation::TypeDomain => self.error(
                 &loc,
@@ -2134,41 +2173,62 @@ impl<'env> SpecTranslator<'env> {
         });
     }
 
-    fn translate_all_or_exists(&self, loc: &Loc, is_all: bool, args: &[Exp]) {
-        // all(v, |x| x > 0) -->
-        //      (var $r := v; forall $i: int :: $InVectorRange($v, $i) ==> (var x:=$r[$i]; x > 0))
-        // all(r, |x| x > 0) -->
-        //      (var $r := r; forall $i: int :: $InRange($r, $i) ==> (var x:=$i; x > 0))
-        // any(v, |x| x > 0) -->
-        //      (var $r := v; exists $i: int :: $InVectorRange($v, $i) && (var x:=$r[$i]; x > 0))
-        // any(r, |x| x > 0) -->
-        //      (var $r := r; exists $i: int :: $InRange($r, $i) && (var x:=$i; x > 0))
-        // all(domain<T>(), |a| P(a)) -->
-        //      (forall $a: Value :: is#T($a) ==> P($a))
-        // any(domain<T>(), |a| P(a)) -->
-        //      (exists $a: Value :: is#T($a) && P($a))
-        let quant_ty = self.module_env().env.get_node_type(args[0].node_id());
-        let connective = if is_all { "==>" } else { "&&" };
-        if let Exp::Lambda(_, vars, exp) = &args[1] {
-            if let Some((var, _)) = self.get_decl_var(loc, vars) {
-                let var_name = self.module_env().symbol_pool().string(var);
-                let quant_var = self.fresh_var_name("i");
-                let mut is_vector = false;
-                let mut is_domain: Option<Type> = None;
-                match quant_ty {
-                    Type::Vector(..) => is_vector = true,
-                    Type::TypeDomain(t) => is_domain = Some(t.as_ref().clone()),
-                    Type::Primitive(PrimitiveType::Range) => (),
-                    Type::Reference(_, b) => {
-                        if let Type::Vector(..) = *b {
-                            is_vector = true
-                        } else {
-                            panic!("unexpected type")
-                        }
-                    }
-                    _ => panic!("unexpected type"),
-                };
-                if let Some(domain_ty) = is_domain {
+    fn translate_quant(
+        &self,
+        node_id: NodeId,
+        kind: QuantKind,
+        ranges: &[(LocalVarDecl, Exp)],
+        condition: &Option<Box<Exp>>,
+        body: &Exp,
+    ) {
+        let loc = self.module_env().env.get_node_loc(node_id);
+        // Translate range expressions.
+        let mut range_tmps = HashMap::new();
+        for (var, range) in ranges {
+            let quant_ty = self.module_env().env.get_node_type(range.node_id());
+            if matches!(
+                quant_ty.skip_reference(),
+                Type::Vector(..) | Type::Primitive(PrimitiveType::Range)
+            ) {
+                let var_name = self.module_env().symbol_pool().string(var.name);
+                let range_tmp = self.fresh_var_name("range");
+                emit!(self.writer, "(var {} := ", range_tmp);
+                self.translate_exp(&range);
+                emit!(self.writer, "; ");
+                range_tmps.insert(var_name, range_tmp);
+            }
+        }
+        // Translate quantified variables.
+        emit!(self.writer, "$Boolean(({} ", kind);
+        let mut quant_vars = HashMap::new();
+        let mut comma = "";
+        for (var, range) in ranges {
+            let var_name = self.module_env().symbol_pool().string(var.name);
+            let quant_ty = self.module_env().env.get_node_type(range.node_id());
+            match quant_ty.skip_reference() {
+                Type::TypeDomain(_) => {
+                    emit!(self.writer, "{}{}: $Value", comma, var_name);
+                }
+                _ => {
+                    let quant_var = self.fresh_var_name("i");
+                    emit!(self.writer, "{}{}: int", comma, quant_var);
+                    quant_vars.insert(var_name, quant_var);
+                }
+            }
+            comma = ", ";
+        }
+        emit!(self.writer, " :: ");
+        // Translate range constraints.
+        let connective = match kind {
+            QuantKind::Forall => " ==> ",
+            QuantKind::Exists => " && ",
+        };
+        let mut separator = "";
+        for (var, range) in ranges {
+            let var_name = self.module_env().symbol_pool().string(var.name);
+            let quant_ty = self.module_env().env.get_node_type(range.node_id());
+            match quant_ty.skip_reference() {
+                Type::TypeDomain(domain_ty) => {
                     let type_check = boogie_well_formed_expr(
                         self.global_env(),
                         &var_name,
@@ -2181,79 +2241,85 @@ impl<'env> SpecTranslator<'env> {
                             type_param_names: None,
                         };
                         self.error(
-                            loc,
+                            &loc,
                             &format!(
                                 "cannot quantify over `{}` because the type is not concrete",
-                                Type::TypeDomain(Box::new(domain_ty)).display(&tctx)
+                                Type::TypeDomain(domain_ty.clone()).display(&tctx)
                             ),
                         );
                     } else {
-                        emit!(
-                            self.writer,
-                            "$Boolean(({} {}: $Value :: {} {} ",
-                            if is_all { "forall" } else { "exists" },
-                            var_name,
-                            type_check,
-                            connective
-                        );
-                        emit!(self.writer, "b#$Boolean(");
-                        self.translate_exp(exp.as_ref());
-                        emit!(self.writer, ")))");
+                        emit!(self.writer, "{}{}", separator, type_check);
                     }
-                } else {
-                    let range_tmp = self.fresh_var_name("range");
-                    emit!(self.writer, "$Boolean((var {} := ", range_tmp);
-                    self.translate_exp(&args[0]);
-                    if is_all {
-                        emit!(self.writer, "; (forall {}: int :: ", quant_var);
-                    } else {
-                        emit!(self.writer, "; (exists {}: int :: ", quant_var);
-                    }
-                    if is_vector {
-                        emit!(
-                            self.writer,
-                            "$InVectorRange({}, {}) {} (var {} := $select_vector({}, {}); ",
-                            range_tmp,
-                            quant_var,
-                            connective,
-                            var_name,
-                            range_tmp,
-                            quant_var,
-                        );
-                    } else {
-                        emit!(
-                            self.writer,
-                            "$InRange({}, {}) {} (var {} := $Integer({}); ",
-                            range_tmp,
-                            quant_var,
-                            connective,
-                            var_name,
-                            quant_var,
-                        );
-                    }
-                    emit!(self.writer, "b#$Boolean(");
-                    self.translate_exp(exp.as_ref());
-                    emit!(self.writer, ")))))");
                 }
-            } else {
-                // error reported
+                Type::Vector(..) => {
+                    let range_tmp = range_tmps.get(&var_name).unwrap();
+                    let quant_var = quant_vars.get(&var_name).unwrap();
+                    emit!(
+                        self.writer,
+                        "{}$InVectorRange({}, {})",
+                        separator,
+                        range_tmp,
+                        quant_var,
+                    );
+                }
+                Type::Primitive(PrimitiveType::Range) => {
+                    let range_tmp = range_tmps.get(&var_name).unwrap();
+                    let quant_var = quant_vars.get(&var_name).unwrap();
+                    emit!(
+                        self.writer,
+                        "{}$InRange({}, {})",
+                        separator,
+                        range_tmp,
+                        quant_var,
+                    );
+                }
+                _ => panic!("unexpected type"),
             }
-        } else {
-            self.error(loc, "currently 2nd argument must be a lambda");
+            separator = connective;
         }
-    }
-
-    fn get_decl_var<'a>(
-        &self,
-        loc: &Loc,
-        vars: &'a [LocalVarDecl],
-    ) -> Option<(Symbol, &'a Option<Exp>)> {
-        if let [var] = vars {
-            Some((var.name, &var.binding))
-        } else {
-            self.error(loc, "currently only single variable binding supported");
-            None
+        emit!(self.writer, "{}", connective);
+        // Translate range selectors.
+        for (var, range) in ranges {
+            let var_name = self.module_env().symbol_pool().string(var.name);
+            let quant_ty = self.module_env().env.get_node_type(range.node_id());
+            match quant_ty.skip_reference() {
+                Type::Vector(..) => {
+                    let range_tmp = range_tmps.get(&var_name).unwrap();
+                    let quant_var = quant_vars.get(&var_name).unwrap();
+                    emit!(
+                        self.writer,
+                        "(var {} := $select_vector({}, {}); ",
+                        var_name,
+                        range_tmp,
+                        quant_var,
+                    );
+                }
+                Type::Primitive(PrimitiveType::Range) => {
+                    let quant_var = quant_vars.get(&var_name).unwrap();
+                    emit!(
+                        self.writer,
+                        "(var {} := $Integer({}); ",
+                        var_name,
+                        quant_var
+                    );
+                }
+                _ => (),
+            }
         }
+        // Translate body and "where" condition.
+        if let Some(cond) = condition {
+            emit!(self.writer, "b#$Boolean(");
+            self.translate_exp(cond);
+            emit!(self.writer, ") {}", connective);
+        }
+        emit!(self.writer, "b#$Boolean(");
+        self.translate_exp(body);
+        emit!(
+            self.writer,
+            &std::iter::repeat(")")
+                .take(3 + 2 * range_tmps.len())
+                .collect::<String>()
+        );
     }
 
     fn translate_old(&self, args: &[Exp]) {
