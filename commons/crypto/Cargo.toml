@@ -11,8 +11,8 @@ serde = { version = "1.0.123" }
 serde_bytes = "0.11.5"
 hex = "0.4.2"
 anyhow = "1.0"
-diem-crypto = { package="diem-crypto",  git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b", features = ["fuzzing"] }
-diem-crypto-derive = { package="diem-crypto-derive",  git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+diem-crypto = { package="diem-crypto",  git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba", features = ["fuzzing"] }
+diem-crypto-derive = { package="diem-crypto-derive",  git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
 bcs-ext = { package="bcs-ext", path = "../bcs_ext" }
 crypto-macro = { package="starcoin-crypto-macro", path = "./crypto-macro"}
 rand = "0.7.3"

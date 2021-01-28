@@ -8,17 +8,18 @@ license = "Apache-2.0"
 
 [dependencies]
 # diem dependencies
-move-lang = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-move-model = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-docgen = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-bytecode = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-vm = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-bytecode-source-map = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-abigen = { git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+boogie-backend = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+move-lang = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+move-model = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+docgen = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+bytecode = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+vm = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+bytecode-source-map = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+abigen = { git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
 
 # external dependencies
 async-trait = "0.1.42"
@@ -43,8 +44,8 @@ tokio = { version = "0.2", features = ["full"] }
 toml = "0.5.8"
 
 [dev-dependencies]
-datatest-stable = {git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
-move-prover-test-utils = {git = "https://github.com/starcoinorg/diem", rev="a5ec0f157313ffa1dd00ad8f79f752188de4ba4b" }
+datatest-stable = {git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
+move-prover-test-utils = {git = "https://github.com/starcoinorg/diem", rev="206386633cc7ef87a9efc7f35a33419a2174bfba" }
 shell-words = "1.0.0"
 
 [[test]]
