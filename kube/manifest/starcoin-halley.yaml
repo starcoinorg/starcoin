@@ -50,7 +50,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n halley -d /sc-data --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+            /starcoin/starcoin -n halley -d /sc-data --discover-local=true $node_key_flag;
             ret=$?;
             if [ $ret -ne 0 ]; then
               echo "Node start fail, try to remove config.";

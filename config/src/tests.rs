@@ -75,6 +75,8 @@ fn test_example_config_compact() -> Result<()> {
             "/ip4/1.2.3.3/tcp/9840/p2p/QmRZ6ZwVzhJ6xpVV1CEve2RKiUzK4y2pSx3eg2cvQMsT4f,/ip4/1.2.3.4/tcp/9840/p2p/12D3KooWCfUex27aoqaKScponiLB4N4FWbgmbHYjVoRebGrQaRYk",
             "--node-name",
             "alice-node1",
+            "--discover-local",
+            "true",
             //P2P
             "--p2prpc-default-global-api-quota",
             "2000/s",

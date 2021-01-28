@@ -22,6 +22,7 @@ const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
 const DEFAULT_HTTP_PORT: u16 = 9850;
 const DEFAULT_TCP_PORT: u16 = 9860;
 const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
+// UNSPECIFIED is 0.0.0.0
 const DEFAULT_RPC_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 128;
 
@@ -340,7 +341,7 @@ pub struct RpcConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "rpc-address")]
-    /// Rpc address, default is 127.0.0.1
+    /// Rpc address, default is 0.0.0.0
     pub rpc_address: Option<IpAddr>,
 
     #[serde(skip_serializing_if = "Option::is_none")]

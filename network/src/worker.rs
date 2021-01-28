@@ -31,11 +31,12 @@ pub fn build_network_worker(
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
 ) -> Result<NetworkWorker> {
     let node_name = node_config.node_name();
+    let discover_local = node_config.network.discover_local();
     let transport_config = if is_memory_addr(&node_config.network.listen()) {
         TransportConfig::MemoryOnly
     } else {
         TransportConfig::Normal {
-            enable_mdns: !node_config.network.disable_mdns(),
+            enable_mdns: discover_local,
             allow_private_ipv4: true,
             wasm_external_transport: None,
         }
@@ -71,6 +72,7 @@ pub fn build_network_worker(
             .collect::<Vec<_>>(),
         None => vec![],
     };
+    let allow_non_globals_in_dht = discover_local;
     let boot_nodes = node_config.network.seeds();
     let config = NetworkConfiguration {
         listen_addresses: vec![node_config.network.listen()],
@@ -87,6 +89,7 @@ pub fn build_network_worker(
         transport: transport_config,
         node_name,
         client_version: starcoin_config::APP_NAME_WITH_VERSION.clone(),
+        allow_non_globals_in_dht,
         ..NetworkConfiguration::default()
     };
     // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix
