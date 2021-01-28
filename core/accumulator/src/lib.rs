@@ -124,8 +124,11 @@ impl Accumulator for MerkleAccumulator {
     fn get_leaves(&self, start_index: u64, reverse: bool, max_size: u64) -> Result<Vec<HashValue>> {
         let mut tree = self.tree.lock();
         if reverse {
-            let end = start_index + 1;
-            let begin = if end > max_size { end - max_size } else { 0 };
+            let mut end = start_index.saturating_add(1);
+            if end > tree.num_leaves {
+                end = tree.num_leaves;
+            }
+            let begin = end.saturating_sub(max_size);
             (begin..end)
                 .rev()
                 .map(|idx| {
@@ -140,7 +143,7 @@ impl Accumulator for MerkleAccumulator {
                 })
                 .collect()
         } else {
-            let mut end = start_index + max_size;
+            let mut end = start_index.saturating_add(max_size);
             if end > tree.num_leaves {
                 end = tree.num_leaves;
             }
