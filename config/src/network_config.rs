@@ -183,11 +183,11 @@ pub struct NetworkConfig {
     /// P2P network seed, multi seed should use ',' as delimiter.
     pub seeds: Seeds,
 
+    /// Enable peer discovery on local networks.
+    /// By default this option is `true` for `dev` network and false otherwise, only support by cli.
     #[serde(skip)]
-    #[structopt(long = "disable-mdns")]
-    /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
-    /// disable_mdns is true in default.
-    pub disable_mdns: Option<bool>,
+    #[structopt(long = "discover-local")]
+    pub discover_local: Option<bool>,
 
     #[serde(skip)]
     #[structopt(long = "disable-seed")]
@@ -276,10 +276,11 @@ impl NetworkConfig {
         MultiaddrWithPeerId::new(host, self.self_peer_id().into())
     }
 
-    pub fn disable_mdns(&self) -> bool {
-        // mdns is disable by default.
-        self.disable_mdns.unwrap_or(true)
+    pub fn discover_local(&self) -> bool {
+        self.discover_local
+            .unwrap_or_else(|| self.base().net().is_dev())
     }
+
     pub fn disable_seed(&self) -> bool {
         self.disable_seed
     }
@@ -397,8 +398,8 @@ impl ConfigModule for NetworkConfig {
         if let Some(m) = opt.network.min_peers_to_propagate {
             self.min_peers_to_propagate = Some(m);
         }
-        if opt.network.disable_mdns.is_some() {
-            self.disable_mdns = opt.network.disable_mdns;
+        if opt.network.discover_local.is_some() {
+            self.discover_local = opt.network.discover_local;
         }
 
         self.load_or_generate_keypair()?;
