@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         doks.digitalocean.com/node-pool: ci-pool2
-      image: starcoin/starcoin-runner:v2.275.1.20210111
+      image: starcoin/starcoin-runner:v2.276.0.5
       repository: starcoinorg/starcoin
       serviceAccountName: github-runner
       resources:
@@ -35,7 +35,7 @@ spec:
     name: starcoin-runner-deployment
   minReplicas: 1
   maxReplicas: 6
-#  scaleDownDelaySecondsAfterScaleOut: 120
+  scaleDownDelaySecondsAfterScaleOut: 120
   metrics:
     - type: TotalNumberOfQueuedAndInProgressWorkflowRuns
       repositoryNames:
