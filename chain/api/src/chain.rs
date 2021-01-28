@@ -6,7 +6,6 @@ use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::stress_test::TPS;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     transaction::{Transaction, TransactionInfo},
@@ -38,7 +37,6 @@ pub trait ChainReader {
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// Get transaction info by transaction's hash
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>>;
 
     /// get txn info at version in main chain.
     fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>>;
@@ -60,8 +58,6 @@ pub trait ChainReader {
     ) -> Result<Vec<HashValue>>;
     fn get_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
 
-    /// Get tps for an epoch. The epoch includes the block given by `number`. If `number` is absent, return tps for the latest epoch
-    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
     fn time_service(&self) -> &dyn TimeService;
     fn fork(&self, block_id: HashValue) -> Result<Self>
     where

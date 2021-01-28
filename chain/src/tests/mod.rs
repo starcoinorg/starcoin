@@ -1,5 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+#![allow(clippy::integer_arithmetic)]
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod block_test_utils;
 #[cfg(test)]

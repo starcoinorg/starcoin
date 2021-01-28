@@ -9,7 +9,6 @@ use starcoin_types::block::{BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
-use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -41,7 +40,6 @@ pub trait ReadableChainService {
     fn main_head_header(&self) -> BlockHeader;
     fn main_head_block(&self) -> Block;
     fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
-    fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
     fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
     fn main_startup_info(&self) -> StartupInfo;
     fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>>;
@@ -55,7 +53,6 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
-    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
     fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>>;
     fn uncle_path(&self, block_id: HashValue, uncle_id: HashValue) -> Result<Vec<BlockHeader>>;
     fn epoch_uncle_summary_by_number(
@@ -97,7 +94,6 @@ pub trait ChainAsyncService:
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
     async fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
-    async fn main_block_by_uncle(&self, uncle_hash: HashValue) -> Result<Option<Block>>;
     async fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -116,7 +112,6 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
-    async fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
     async fn get_epoch_uncles_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -283,19 +278,6 @@ where
         }
     }
 
-    async fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
-        if let ChainResponse::BlockOption(block) =
-            self.send(ChainRequest::GetBlockByUncle(uncle_id)).await??
-        {
-            match block {
-                Some(b) => Ok(Some(*b)),
-                None => Ok(None),
-            }
-        } else {
-            bail!("get block by hash error.")
-        }
-    }
-
     async fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -397,15 +379,6 @@ where
             Ok(ids)
         } else {
             bail!("get_block_ids invalid response")
-        }
-    }
-
-    async fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
-        let response = self.send(ChainRequest::TPS(number)).await??;
-        if let ChainResponse::TPS(tps) = response {
-            Ok(tps)
-        } else {
-            bail!("get tps error.")
         }
     }
 

@@ -16,7 +16,6 @@ use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::stress_test::TPS;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -277,24 +276,6 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
-    fn get_block_by_uncle(&self, uncle_hash: HashValue) -> FutureResult<Option<BlockView>> {
-        let service = self.service.clone();
-        let fut = async move {
-            let block = service.main_block_by_uncle(uncle_hash).await?;
-            Ok(block.map(TryInto::try_into).transpose()?)
-        }
-        .map_err(map_err);
-
-        Box::new(fut.boxed().compat())
-    }
-
-    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<TPS> {
-        let service = self.service.clone();
-        let fut = async move { service.tps(number).await };
-
-        Box::new(fut.boxed().map_err(map_err).compat())
-    }
-
     fn get_epoch_uncles_by_number(
         &self,
         number: BlockNumber,
@@ -314,25 +295,6 @@ where
         let fut = async move {
             let headers = service.get_headers(block_hashes).await?;
             Ok(headers.into_iter().map(Into::into).collect())
-        }
-        .map_err(map_err);
-
-        Box::new(fut.boxed().compat())
-    }
-
-    fn uncle_path(
-        &self,
-        block_id: HashValue,
-        uncle_id: HashValue,
-    ) -> FutureResult<Vec<BlockHeaderView>> {
-        let service = self.service.clone();
-        let fut = async move {
-            Ok(service
-                .uncle_path(block_id, uncle_id)
-                .await?
-                .into_iter()
-                .map(Into::into)
-                .collect())
         }
         .map_err(map_err);
 

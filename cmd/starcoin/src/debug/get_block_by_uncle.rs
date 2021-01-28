@@ -28,15 +28,9 @@ impl CommandAction for GetBlockByUncleCommand {
 
     fn run(
         &self,
-        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+        _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
-        let opt = ctx.opt();
-        let block = client.chain_get_block_by_uncle(opt.uncle)?;
-
-        match block {
-            Some(b) => Ok(Some(b.header)),
-            None => Ok(None),
-        }
+        //TODO filter block at here
+        unimplemented!()
     }
 }

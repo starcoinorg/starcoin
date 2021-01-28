@@ -41,7 +41,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
-use starcoin_types::stress_test::TPS;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
@@ -657,11 +656,6 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<TPS> {
-        self.call_rpc_blocking(|inner| async move { inner.chain_client.tps(number).compat().await })
-            .map_err(map_err)
-    }
-
     pub fn get_epoch_uncles_by_number(
         &self,
         number: BlockNumber,
@@ -700,21 +694,6 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn uncle_path(
-        &self,
-        block_id: HashValue,
-        uncle_id: HashValue,
-    ) -> anyhow::Result<Vec<BlockHeaderView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .uncle_path(block_id, uncle_id)
-                .compat()
-                .await
-        })
-        .map_err(map_err)
-    }
-
     pub fn get_global_time_by_number(
         &self,
         number: BlockNumber,
@@ -732,20 +711,6 @@ impl RpcClient {
     pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Option<BlockView>> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_block_by_hash(hash).compat().await
-        })
-        .map_err(map_err)
-    }
-
-    pub fn chain_get_block_by_uncle(
-        &self,
-        uncle_id: HashValue,
-    ) -> anyhow::Result<Option<BlockView>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner
-                .chain_client
-                .get_block_by_uncle(uncle_id)
-                .compat()
-                .await
         })
         .map_err(map_err)
     }

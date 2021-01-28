@@ -143,7 +143,7 @@ impl BlockVerifier for BasicVerifier {
         let chain_status = current_chain.status();
         let current = chain_status.head();
         let current_id = current.id();
-        let expect_number = current.number() + 1;
+        let expect_number = current.number().saturating_add(1);
 
         verify_block!(
             VerifyBlockField::Header,
@@ -183,7 +183,7 @@ impl BlockVerifier for BasicVerifier {
         let now = current_chain.time_service().now_millis();
         verify_block!(
             VerifyBlockField::Header,
-            new_block_header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
+            new_block_header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME.saturating_add(now),
             "Invalid block: block timestamp too new, now:{}, block time:{}",
             now,
             new_block_header.timestamp()
