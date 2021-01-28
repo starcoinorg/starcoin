@@ -10,7 +10,7 @@ edition = "2018"
 stest-macro = {path = "./stest-macro"}
 starcoin-logger = {path = "../logger"}
 timeout-join-handler = {path = "../timeout-join-handler"}
-log = "0.4.13"
+log = "0.4.14"
 actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3"
