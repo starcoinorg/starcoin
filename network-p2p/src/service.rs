@@ -240,7 +240,7 @@ impl NetworkWorker {
                 config.with_user_defined(known_addresses);
                 config.discovery_limit(u64::from(params.network_config.out_peers) + 15);
                 config.add_protocol(params.protocol_id.clone());
-                config.allow_non_globals_in_dht(false);
+                config.allow_non_globals_in_dht(params.network_config.allow_non_globals_in_dht);
 
                 match params.network_config.transport {
                     TransportConfig::MemoryOnly => {
