@@ -632,11 +632,18 @@ impl Block {
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.body.transactions.as_slice()
     }
+
     pub fn uncles(&self) -> Option<&[BlockHeader]> {
         match &self.body.uncles {
             Some(uncles) => Some(uncles.as_slice()),
             None => None,
         }
+    }
+
+    pub fn uncle_ids(&self) -> Vec<HashValue> {
+        self.uncles()
+            .map(|uncles| uncles.iter().map(|header| header.id()).collect())
+            .unwrap_or_default()
     }
 
     pub fn into_inner(self) -> (BlockHeader, BlockBody) {
@@ -1012,11 +1019,10 @@ pub struct UncleSummary {
 
 impl UncleSummary {
     pub fn new(uncles: u64, sum: u64, time_sum: u64) -> Self {
-        let (avg, time_avg) = if uncles > 0 {
-            (sum / uncles, time_sum / uncles)
-        } else {
-            (0, 0)
-        };
+        let (avg, time_avg) = (
+            sum.checked_div(uncles).unwrap_or_default(),
+            time_sum.checked_div(uncles).unwrap_or_default(),
+        );
         Self {
             uncles,
             sum,

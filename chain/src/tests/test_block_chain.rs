@@ -369,7 +369,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .create_block(template_b1, config.net().time_service().as_ref())?;
     block_chain.apply(block_b1.clone())?;
 
-    let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
+    let mut block_chain2 = block_chain.fork(block_b1.id()).unwrap();
 
     // create transaction
     let pri_key = Ed25519PrivateKey::genesis();
