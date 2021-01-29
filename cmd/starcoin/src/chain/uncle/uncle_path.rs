@@ -26,10 +26,10 @@ impl CommandAction for UnclePathCommand {
 
     fn run(
         &self,
-        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+        _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
-        let block_headers = client.uncle_path(ctx.opt().block_id, ctx.opt().uncle_id)?;
-        Ok(block_headers)
+        //TODO
+        // get block and calculate uncle at here
+        unimplemented!()
     }
 }

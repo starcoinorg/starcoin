@@ -7345,7 +7345,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
- "test-helper",
  "thiserror",
 ]
 

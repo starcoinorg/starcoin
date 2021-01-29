@@ -12,7 +12,6 @@ use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::stress_test::TPS;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[rpc]
@@ -80,14 +79,6 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_global_time_by_number")]
     fn get_global_time_by_number(&self, number: BlockNumber) -> FutureResult<GlobalTimeOnChain>;
 
-    /// Get chain blocks by number
-    #[rpc(name = "chain.get_block_by_uncle")]
-    fn get_block_by_uncle(&self, uncle_hash: HashValue) -> FutureResult<Option<BlockView>>;
-
-    /// Get tps by block number.
-    #[rpc(name = "chain.tps")]
-    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<TPS>;
-
     /// Get uncles by number.
     #[rpc(name = "chain.get_epoch_uncles_by_number")]
     fn get_epoch_uncles_by_number(
@@ -98,14 +89,6 @@ pub trait ChainApi {
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]
     fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
-
-    /// Uncle path.
-    #[rpc(name = "chain.uncle_path")]
-    fn uncle_path(
-        &self,
-        block_id: HashValue,
-        uncle_id: HashValue,
-    ) -> FutureResult<Vec<BlockHeaderView>>;
 
     /// Epoch uncle summary by number.
     #[rpc(name = "chain.epoch_uncle_summary_by_number")]

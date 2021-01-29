@@ -4,12 +4,12 @@
 use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use anyhow::{format_err, Result};
-use chain::{verifier::BasicVerifier, BlockChain};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
 use network_api::NetworkService;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;

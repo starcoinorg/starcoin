@@ -38,15 +38,16 @@ impl CommandAction for StatTPSCommand {
         let epoch_count = end_number / epoch_block_count + 1;
         // get tps
         let mut epoch = 1;
-        let mut vec_tps = vec![];
+        let vec_tps = vec![];
         while epoch < epoch_count {
-            let mut block_number = epoch * epoch_block_count - 1;
-            if block_number >= end_number {
-                block_number = end_number;
-            }
-            let tps = client.tps(Some(block_number)).unwrap();
-            println!("tps: {:?}", tps);
-            vec_tps.push(tps);
+            // let mut block_number = epoch * epoch_block_count - 1;
+            // if block_number >= end_number {
+            //     block_number = end_number;
+            // }
+            //TODO calculate tps at client
+            //let tps = client.tps(Some(block_number)).unwrap();
+            //            println!("tps: {:?}", tps);
+            //          vec_tps.push(tps);
             epoch += 1;
         }
         Ok(vec_tps)

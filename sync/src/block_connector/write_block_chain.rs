@@ -3,9 +3,9 @@
 
 use super::metrics::WRITE_BLOCK_CHAIN_METRICS;
 use anyhow::{format_err, Result};
-use chain::BlockChain;
 use config::NodeConfig;
 use logger::prelude::*;
+use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;

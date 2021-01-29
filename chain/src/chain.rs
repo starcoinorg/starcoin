@@ -26,7 +26,6 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     contract_event::ContractEvent,
     error::BlockExecutorError,
-    stress_test::TPS,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
@@ -141,16 +140,6 @@ impl BlockChain {
         Self::new(time_service, executed_block.block.id(), storage)
     }
 
-    pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        let mut chain = Self::new(
-            self.time_service.clone(),
-            head_block_hash,
-            self.storage.clone(),
-        )?;
-        chain.update_uncle_cache()?;
-        Ok(chain)
-    }
-
     pub fn current_epoch_uncles_size(&self) -> u64 {
         self.uncles.len() as u64
     }
@@ -167,7 +156,7 @@ impl BlockChain {
     }
 
     //TODO lazy init uncles cache.
-    pub fn update_uncle_cache(&mut self) -> Result<()> {
+    fn update_uncle_cache(&mut self) -> Result<()> {
         self.uncles = self.epoch_uncles()?;
         Ok(())
     }
@@ -175,28 +164,36 @@ impl BlockChain {
     fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
         let epoch = &self.epoch;
         let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        let mut block = self.head_block();
-        let mut number = block.header().number();
-        loop {
-            if let Some(block_uncles) = block.uncles() {
-                block_uncles.iter().for_each(|uncle_header| {
-                    uncles.insert(uncle_header.id(), block.header().number());
-                });
-            }
-            if number == 0 {
+        let head_block = self.head_block();
+        let head_number = head_block.header().number();
+        debug_assert!(
+            head_number >= epoch.start_block_number() && head_number < epoch.end_block_number(),
+            "head block {} should in current epoch: {:?}.",
+            head_number,
+            epoch
+        );
+        for block_number in epoch.start_block_number()..epoch.end_block_number() {
+            let block_uncles = if block_number == head_number {
+                head_block.uncle_ids()
+            } else {
+                self.get_block_by_number(block_number)?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Can not find block by number {}, head block number: {}",
+                            block_number,
+                            head_number
+                        )
+                    })?
+                    .uncle_ids()
+            };
+            block_uncles.into_iter().for_each(|uncle_id| {
+                uncles.insert(uncle_id, block_number);
+            });
+            if block_number == head_number {
                 break;
             }
-
-            number -= 1;
-
-            if epoch.start_block_number() > number || epoch.end_block_number() <= number {
-                break;
-            }
-
-            block = self
-                .get_block_by_number(number)?
-                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
         }
+
         Ok(uncles)
     }
 
@@ -314,25 +311,6 @@ impl BlockChain {
         self.storage.clone()
     }
 
-    fn total_txns_in_blocks(
-        &self,
-        start_number: BlockNumber,
-        end_number: BlockNumber,
-    ) -> Result<u64> {
-        let txn_num_in_start_block = self
-            .get_block_info_by_number(start_number)?
-            .ok_or_else(|| format_err!("Can not find block info by number {}", start_number))?
-            .get_txn_accumulator_info()
-            .num_leaves;
-        let txn_num_in_end_block = self
-            .get_block_info_by_number(end_number)?
-            .ok_or_else(|| format_err!("Can not find block info by number {}", end_number))?
-            .get_txn_accumulator_info()
-            .num_leaves;
-
-        Ok(txn_num_in_end_block - txn_num_in_start_block)
-    }
-
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
         FullVerifier::can_be_uncle(self, block_header)
     }
@@ -411,7 +389,7 @@ impl BlockChain {
         );
         let block_gas_used = vec_transaction_info
             .iter()
-            .fold(0u64, |acc, i| acc + i.gas_used());
+            .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
         verify_block!(
             VerifyBlockField::State,
             block_gas_used == header.gas_used(),
@@ -558,24 +536,18 @@ impl ChainReader for BlockChain {
     }
 
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
-        let mut block_vec = vec![];
-        let mut current_num = match number {
+        let end_num = match number {
             None => self.current_header().number(),
             Some(number) => number,
         };
-        let mut tmp_count = count;
-        loop {
-            let block = self
-                .get_block_by_number(current_num)?
-                .ok_or_else(|| format_err!("Can not find block by number {}", current_num))?;
-            block_vec.push(block);
-            if current_num == 0 || tmp_count == 1 {
-                break;
-            }
-            current_num -= 1;
-            tmp_count -= 1;
-        }
-        Ok(block_vec)
+        let end_num_exclusive = end_num.saturating_add(1);
+        (end_num_exclusive.saturating_sub(count)..end_num_exclusive)
+            .rev()
+            .map(|idx| {
+                self.get_block_by_number(idx)?
+                    .ok_or_else(|| format_err!("Can not find block by number {}", idx))
+            })
+            .collect()
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -600,30 +572,6 @@ impl ChainReader for BlockChain {
                 return self.storage.get_transaction_info(txn_info_id);
             }
         }
-        Ok(None)
-    }
-
-    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>> {
-        let mut number = self.current_header().number();
-        let latest_number = number;
-        loop {
-            if number == 0 || (number + times) <= latest_number {
-                break;
-            }
-
-            let block = self
-                .get_block_by_number(number)?
-                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
-
-            for uncle in block.uncles().unwrap_or_default() {
-                if uncle.id() == uncle_id {
-                    return Ok(Some(block));
-                }
-            }
-
-            number -= 1;
-        }
-
         Ok(None)
     }
 
@@ -720,37 +668,6 @@ impl ChainReader for BlockChain {
         self.get_block_info(Some(block.id()))
     }
 
-    /// Get tps for an epoch, the epoch includes the block given by `number`.
-    /// If `number` is absent, return tps for the latest epoch
-    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
-        let epoch_info = self.get_epoch_info_by_number(number)?;
-        let start_block_number = epoch_info.start_block_number();
-        let end_block_number = epoch_info.end_block_number();
-        let current_block_number = self.current_header().number();
-        let start_block_time = self
-            .get_header_by_number(start_block_number)?
-            .ok_or_else(|| {
-                format_err!("Can not find block header by number {}", start_block_number)
-            })?
-            .timestamp();
-        let result = if end_block_number < current_block_number {
-            let end_block_time = self
-                .get_header_by_number(end_block_number)?
-                .ok_or_else(|| {
-                    format_err!("Can not find block header by number {}", end_block_number)
-                })?
-                .timestamp();
-            let duration = (end_block_time - start_block_time) / 1000;
-            let total_txns = self.total_txns_in_blocks(start_block_number, end_block_number)?;
-            TPS::new(total_txns, duration, total_txns / duration)
-        } else {
-            let duration = (self.current_header().timestamp() - start_block_time) / 1000;
-            let total_txns = self.total_txns_in_blocks(start_block_number, current_block_number)?;
-            TPS::new(total_txns, duration, total_txns / duration)
-        };
-        Ok(result)
-    }
-
     fn time_service(&self) -> &dyn TimeService {
         self.time_service.as_ref()
     }
@@ -765,25 +682,22 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
-        ensure!(
-            head.header().number() + 1 >= self.epoch.start_block_number(),
-            "Can only fork branch in same epoch {:}:{:}:{:?}.",
-            block_id,
-            head.header().number(),
-            self.epoch
-        );
-        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        self.uncles
-            .iter()
-            .for_each(|(uncle_id, minted_uncle_number)| {
-                if *minted_uncle_number < head.header().number() {
-                    uncles.insert(*uncle_id, *minted_uncle_number);
-                }
-            });
+        // if fork block_id is at same epoch, try to reuse uncles cache.
+        let uncles = if head.header().number() >= self.epoch.start_block_number() {
+            Some(
+                self.uncles
+                    .iter()
+                    .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
+                    .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
+                    .collect::<HashMap<HashValue, MintedUncleNumber>>(),
+            )
+        } else {
+            None
+        };
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
-            Some(uncles),
+            uncles,
             self.storage.clone(),
         )
     }
@@ -922,9 +836,9 @@ impl BlockChain {
             }
 
             if reverse {
-                cur_block_number -= 1;
+                cur_block_number = cur_block_number.saturating_sub(1);
             } else {
-                cur_block_number += 1;
+                cur_block_number = cur_block_number.saturating_add(1);
             }
         }
 
@@ -960,7 +874,10 @@ impl ChainWriter for BlockChain {
         );
 
         self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-
+        self.status = ChainStatusWithBlock {
+            status: ChainStatus::new(block.header().clone(), block_info.clone()),
+            head: block.clone(),
+        };
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
             self.update_uncle_cache()?;
@@ -970,10 +887,6 @@ impl ChainWriter for BlockChain {
                     .insert(uncle_header.id(), block.header().number());
             });
         }
-        self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone()),
-            head: block.clone(),
-        };
         Ok(executed_block)
     }
 

@@ -4,4 +4,3 @@
 mod mock_chain;
 
 pub use mock_chain::MockChain;
-pub use starcoin_chain::BlockChain;

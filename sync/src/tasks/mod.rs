@@ -3,13 +3,13 @@
 
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
-use chain::BlockChain;
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
+use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;

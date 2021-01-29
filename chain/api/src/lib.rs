@@ -1,5 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
+#![deny(clippy::integer_arithmetic)]
 
 use starcoin_vm_types::transaction::SignedUserTransaction;
 

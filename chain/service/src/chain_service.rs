@@ -15,7 +15,6 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::{BlockSummary, EpochUncleSummary, ExecutedBlock, UncleSummary};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::stress_test::TPS;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -116,9 +115,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 } else {
                     None
                 },
-            )),
-            ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::BlockOption(
-                self.inner.main_block_by_uncle(uncle_id)?.map(Box::new),
             )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,
@@ -225,7 +221,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetHeaders(ids) => {
                 Ok(ChainResponse::BlockHeaderVec(self.inner.get_headers(ids)?))
             }
-            ChainRequest::TPS(number) => Ok(ChainResponse::TPS(self.inner.tps(number)?)),
             ChainRequest::GetEpochUnclesByNumber(number) => Ok(ChainResponse::BlockSummaries(
                 self.inner.get_epoch_uncles_by_number(number)?,
             )),
@@ -368,8 +363,60 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.main.get_block_by_number(number)
     }
 
-    fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
-        self.main.get_latest_block_by_uncle(uncle_id, 500)
+    fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
+        self.main.get_header_by_number(number)
+    }
+
+    fn main_startup_info(&self) -> StartupInfo {
+        self.startup_info.clone()
+    }
+    fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
+        self.main.get_blocks_by_number(number, count)
+    }
+
+    fn epoch_info(&self) -> Result<EpochInfo> {
+        self.main.epoch_info()
+    }
+
+    fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
+        self.main.get_epoch_info_by_number(Some(number))
+    }
+
+    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
+        self.main.get_global_time_by_number(number)
+    }
+
+    fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        self.main.filter_events(filter)
+    }
+
+    fn get_block_ids(
+        &self,
+        start_number: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> Result<Vec<HashValue>> {
+        self.main.get_block_ids(start_number, reverse, max_size)
+    }
+
+    fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>> {
+        let epoch_info = self.main.get_epoch_info_by_number(number)?;
+        let start_number = epoch_info.start_block_number();
+        let mut end_number = epoch_info.end_block_number();
+        if end_number > self.main.current_header().number() {
+            end_number = self.main.current_header().number();
+        }
+
+        let mut block_summaries: Vec<BlockSummary> = Vec::new();
+        for number in start_number..(end_number + 1) {
+            if let Some(block) = self.main.get_block_by_number(number)? {
+                if block.uncles().is_some() {
+                    block_summaries.push(block.into());
+                }
+            }
+        }
+
+        Ok(block_summaries)
     }
 
     fn uncle_path(&self, block_id: HashValue, uncle_id: HashValue) -> Result<Vec<BlockHeader>> {
@@ -405,66 +452,6 @@ impl ReadableChainService for ChainReaderServiceInner {
             }
         }
         Ok(headers)
-    }
-
-    fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
-        self.main.get_header_by_number(number)
-    }
-    fn main_startup_info(&self) -> StartupInfo {
-        self.startup_info.clone()
-    }
-
-    fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
-        self.main.get_blocks_by_number(number, count)
-    }
-
-    fn epoch_info(&self) -> Result<EpochInfo> {
-        self.main.epoch_info()
-    }
-
-    fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
-        self.main.get_epoch_info_by_number(Some(number))
-    }
-
-    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        self.main.get_global_time_by_number(number)
-    }
-
-    fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
-        self.main.filter_events(filter)
-    }
-
-    fn get_block_ids(
-        &self,
-        start_number: u64,
-        reverse: bool,
-        max_size: u64,
-    ) -> Result<Vec<HashValue>> {
-        self.main.get_block_ids(start_number, reverse, max_size)
-    }
-
-    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
-        self.main.tps(number)
-    }
-
-    fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>> {
-        let epoch_info = self.main.get_epoch_info_by_number(number)?;
-        let start_number = epoch_info.start_block_number();
-        let mut end_number = epoch_info.end_block_number();
-        if end_number > self.main.current_header().number() {
-            end_number = self.main.current_header().number();
-        }
-
-        let mut block_summaries: Vec<BlockSummary> = Vec::new();
-        for number in start_number..(end_number + 1) {
-            if let Some(block) = self.main.get_block_by_number(number)? {
-                if block.uncles().is_some() {
-                    block_summaries.push(block.into());
-                }
-            }
-        }
-
-        Ok(block_summaries)
     }
 
     fn epoch_uncle_summary_by_number(

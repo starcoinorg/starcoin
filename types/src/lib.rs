@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-// #![feature(vec_remove_item)]
 #![forbid(unsafe_code)]
+#![deny(clippy::integer_arithmetic)]
 
 mod event_info;
 

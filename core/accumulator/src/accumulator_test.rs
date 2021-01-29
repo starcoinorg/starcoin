@@ -294,6 +294,30 @@ fn test_get_leaves_batch() {
     assert_eq!(&leaves[5..], leaves3.as_slice());
 }
 
+#[test]
+fn test_get_leaves_overflow() {
+    let mock_store = MockAccumulatorStore::new();
+    let accumulator = MerkleAccumulator::new(
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        Arc::new(mock_store),
+    );
+    let leaves: Vec<HashValue> = (0..100).map(|_| HashValue::random()).collect();
+    let _root_hash = accumulator.append(leaves.as_slice()).unwrap();
+    accumulator.flush().unwrap();
+
+    let leaves0 = accumulator.get_leaves(0, false, u64::max_value()).unwrap();
+    assert_eq!(leaves0.len(), 100);
+    assert_eq!(leaves.as_slice(), leaves0.as_slice());
+
+    let leaves1 = accumulator
+        .get_leaves(u64::max_value(), true, u64::max_value())
+        .unwrap();
+    assert_eq!(leaves1.len(), 100);
+}
+
 fn proof_verify(
     accumulator: &MerkleAccumulator,
     root_hash: HashValue,

@@ -105,7 +105,7 @@ impl ChainStatus {
             AccumulatorInfo::new(
                 head.parent_block_accumulator_root(),
                 vec![],
-                head.number() - 1,
+                head.number().saturating_sub(1),
                 rand::random::<u64>(),
             ),
         );

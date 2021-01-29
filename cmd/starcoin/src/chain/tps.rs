@@ -32,9 +32,9 @@ impl CommandAction for TPSCommand {
 
     fn run(
         &self,
-        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+        _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
-        client.tps(ctx.opt().number)
+        //TODO calculate tps at here.
+        unimplemented!()
     }
 }
