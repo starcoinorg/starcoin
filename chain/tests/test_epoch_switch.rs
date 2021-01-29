@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use consensus::Consensus;
-use starcoin_chain_mock::BlockChain;
+use starcoin_chain::BlockChain;
 use starcoin_config::NodeConfig;
 use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::AccountStateReader;

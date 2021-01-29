@@ -5,7 +5,8 @@ use anyhow::Result;
 use consensus::Consensus;
 use crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
-use starcoin_chain_mock::{BlockChain, MockChain};
+use starcoin_chain::BlockChain;
+use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_traits::{ChainReader, ChainWriter};
@@ -423,5 +424,22 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let txn_info = block_chain.get_transaction_info(tnx_hash)?;
     assert!(txn_info.is_some());
     assert_eq!(txn_info.unwrap().transaction_hash(), tnx_hash);
+    Ok(())
+}
+
+#[stest::test]
+fn test_get_blocks_by_number() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
+    let blocks = mock_chain
+        .head()
+        .get_blocks_by_number(None, u64::max_value())?;
+    assert_eq!(blocks.len(), 1, "at least genesis block should contains.");
+    let times = 10;
+    mock_chain.produce_and_apply_times(times).unwrap();
+
+    let blocks = mock_chain
+        .head()
+        .get_blocks_by_number(None, u64::max_value())?;
+    assert_eq!(blocks.len(), 11);
     Ok(())
 }
