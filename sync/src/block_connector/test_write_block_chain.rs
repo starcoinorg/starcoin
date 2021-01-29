@@ -3,10 +3,10 @@
 
 use crate::block_connector::WriteBlockChainService;
 
-use chain::BlockChain;
 use config::NodeConfig;
 use consensus::Consensus;
 use starcoin_account_api::AccountInfo;
+use starcoin_chain::BlockChain;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};

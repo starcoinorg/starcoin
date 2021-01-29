@@ -5,11 +5,11 @@ use crate::block_connector::{
     create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
 };
 use anyhow::Result;
-use chain::BlockChain;
 use config::NodeConfig;
 use consensus::Consensus;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
+use starcoin_chain::BlockChain;
 use starcoin_chain_mock::MockChain;
 use starcoin_crypto::HashValue;
 use starcoin_storage::Store;

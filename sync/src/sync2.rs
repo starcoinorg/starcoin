@@ -6,7 +6,6 @@ use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::{full_sync_task, AncestorEvent};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
-use chain::BlockChain;
 use config::NodeConfig;
 use futures::FutureExt;
 use futures_timer::Delay;
@@ -14,6 +13,7 @@ use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy};
+use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,

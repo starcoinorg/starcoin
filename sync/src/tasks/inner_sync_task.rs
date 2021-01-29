@@ -3,13 +3,13 @@ use crate::tasks::{
     BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
 };
 use anyhow::format_err;
-use chain::BlockChain;
 use logger::prelude::*;
 use network_api::{NetworkService, PeerId};
 use rand::seq::IteratorRandom;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::Accumulator;
+use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
