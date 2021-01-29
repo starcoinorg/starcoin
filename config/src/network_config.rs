@@ -184,8 +184,7 @@ pub struct NetworkConfig {
     pub seeds: Seeds,
 
     /// Enable peer discovery on local networks.
-    /// By default this option is `true` for `dev` network and false otherwise, only support by cli.
-    #[serde(skip)]
+    /// By default this option is `false`.
     #[structopt(long = "discover-local")]
     pub discover_local: Option<bool>,
 
@@ -277,8 +276,7 @@ impl NetworkConfig {
     }
 
     pub fn discover_local(&self) -> bool {
-        self.discover_local
-            .unwrap_or_else(|| self.base().net().is_dev())
+        self.discover_local.unwrap_or(false)
     }
 
     pub fn disable_seed(&self) -> bool {
