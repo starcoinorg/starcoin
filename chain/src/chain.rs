@@ -540,7 +540,8 @@ impl ChainReader for BlockChain {
             None => self.current_header().number(),
             Some(number) => number,
         };
-        (end_num.saturating_sub(count)..end_num)
+        let end_num_exclusive = end_num.saturating_add(1);
+        (end_num_exclusive.saturating_sub(count)..end_num_exclusive)
             .rev()
             .map(|idx| {
                 self.get_block_by_number(idx)?
