@@ -266,9 +266,6 @@ name = "ahash"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8fd72866655d1904d6b0997d0b07ba561047d070fbe29de039031c641b61217"
-dependencies = [
- "const-random",
-]
 
 [[package]]
 name = "ahash"
@@ -311,7 +308,7 @@ name = "api-limiter"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "dashmap 4.0.2",
+ "dashmap",
  "governor",
 ]
 
@@ -1290,28 +1287,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const-random"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f590d95d011aa80b063ffe3253422ed5aa462af4e9867d43ce8337562bac77c4"
-dependencies = [
- "const-random-macro",
- "proc-macro-hack",
-]
-
-[[package]]
-name = "const-random-macro"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "615f6e27d000a2bffbc7f2f6a8669179378fa27ee4d0a509e985dfc0a7defb40"
-dependencies = [
- "getrandom 0.2.1",
- "lazy_static",
- "proc-macro-hack",
- "tiny-keccak 2.0.2",
-]
-
-[[package]]
 name = "const_fn"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1771,17 +1746,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57cebb5bde66eecdd30ddc4b9cd208238b15db4982ccc72db59d699ea10867c1"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "dashmap"
-version = "3.11.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f260e2fc850179ef410018660006951c1b55b79e8087e87111a2c388994b9b5"
-dependencies = [
- "ahash 0.3.8",
- "cfg-if 0.1.10",
- "num_cpus",
 ]
 
 [[package]]
@@ -2863,18 +2827,19 @@ dependencies = [
 
 [[package]]
 name = "governor"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36f302dc68f4035178051bff107a8181379b8baa3354654672c2f1e7134af983"
+checksum = "06c5d2f987ee8f6dff3fa1a352058dc59b990e447e4c7846aa7d804971314f7b"
 dependencies = [
- "dashmap 3.11.10",
+ "dashmap",
  "futures 0.3.11",
  "futures-timer",
  "no-std-compat",
  "nonzero_ext",
  "parking_lot 0.11.1",
  "quanta",
- "rand 0.7.3",
+ "rand 0.8.2",
+ "smallvec 1.6.1",
 ]
 
 [[package]]
@@ -7142,7 +7107,7 @@ version = "0.10.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap 4.0.2",
+ "dashmap",
  "futures 0.3.11",
  "hex",
  "rand 0.7.3",
@@ -7162,7 +7127,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "dashmap 4.0.2",
+ "dashmap",
  "futures 0.3.11",
  "hex",
  "parking_lot 0.11.1",
@@ -7299,7 +7264,7 @@ version = "0.10.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap 4.0.2",
+ "dashmap",
  "futures 0.3.11",
  "network-api",
  "rand 0.7.3",
@@ -7371,7 +7336,7 @@ version = "0.10.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap 4.0.2",
+ "dashmap",
  "futures 0.3.11",
  "rand 0.7.3",
  "rand_core 0.6.1",
@@ -8254,7 +8219,7 @@ dependencies = [
  "anyhow",
  "api-limiter",
  "bcs-ext",
- "dashmap 4.0.2",
+ "dashmap",
  "failure",
  "futures 0.3.11",
  "futures-channel",
