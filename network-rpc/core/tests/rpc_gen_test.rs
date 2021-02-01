@@ -1,15 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gen_client::NetworkRpcClient;
-use crate::gen_server::KVRpc;
 use anyhow::Result;
 use futures::executor::block_on;
 use futures::future::BoxFuture;
 use futures::FutureExt;
+use serde::{Deserialize, Serialize};
+
 use network_rpc_core::server::NetworkRpcServer;
 use network_rpc_core::{prelude::*, InmemoryRpcClient};
-use serde::{Deserialize, Serialize};
+
+use crate::gen_client::NetworkRpcClient;
+use crate::gen_server::KVRpc;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct EchoStruct {
@@ -85,4 +87,16 @@ fn test_rpc_err() {
         }
         Ok(_) => panic!("expect error, but get ok"),
     }
+}
+
+#[test]
+fn test_result_serialize() {
+    let str_result: network_rpc_core::Result<String, NetRpcError> =
+        network_rpc_core::Result::Ok("test".to_string());
+    let bytes = bcs_ext::to_bytes(&str_result).unwrap();
+    println!("bytes:{:?}", bytes);
+    let str_result2: network_rpc_core::Result<String, NetRpcError> =
+        bcs_ext::from_bytes(bytes.as_slice()).unwrap();
+    println!("result:{:?}", str_result2);
+    assert_eq!(str_result, str_result2);
 }

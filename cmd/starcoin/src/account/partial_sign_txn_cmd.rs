@@ -62,7 +62,12 @@ impl CommandAction for PartialSignTxnCommand {
         let signer_address = wallet_account.address;
         //TODO refactor this
         ensure!(
-            txn.can_signed_by(&wallet_account.public_key.as_single().unwrap()),
+            txn.can_signed_by(
+                &wallet_account
+                    .public_key
+                    .as_single()
+                    .ok_or_else(|| format_err!("Current only support signle public key."))?
+            ),
             "account {} cannot sign the txn",
             signer_address
         );

@@ -401,3 +401,35 @@ pub async fn test_full_sync_cancel() -> Result<()> {
 pub async fn test_full_sync_by_total_difficulty() {
     //TODO add a test to verify low block number but high total difficulty.
 }
+
+#[stest::test]
+async fn test_accumulator_sync_by_stream_task() -> Result<()> {
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = MerkleAccumulator::new_empty(store.clone());
+    for _i in 0..100 {
+        accumulator.append(&[HashValue::random()])?;
+    }
+    accumulator.flush().unwrap();
+    let info0 = accumulator.get_info();
+    assert_eq!(info0.num_leaves, 100);
+    for _i in 0..100 {
+        accumulator.append(&[HashValue::random()])?;
+    }
+    accumulator.flush().unwrap();
+    let info1 = accumulator.get_info();
+    assert_eq!(info1.num_leaves, 200);
+    let fetcher = MockBlockIdFetcher::new(Arc::new(accumulator));
+    let store2 = MockAccumulatorStore::copy_from(store.as_ref());
+
+    let task_state = BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7);
+    let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
+    let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let sync_task =
+        TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let info2 = sync_task.await?.1.get_info();
+    assert_eq!(info1, info2);
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
+    Ok(())
+}

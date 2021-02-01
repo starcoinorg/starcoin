@@ -95,15 +95,9 @@ impl CommandAction for ExecuteBuildInCommand {
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender.address)?;
-
-        if account_resource.is_none() {
-            bail!(
-                "account of module address {} not exists on chain",
-                sender.address
-            );
-        }
-
-        let account_resource = account_resource.unwrap();
+        let account_resource = account_resource.ok_or_else(|| {
+            format_err!("account of address {} not exists on chain", sender.address)
+        })?;
         let expiration_time = opt.expiration_time + node_info.now_seconds;
 
         let bytecode =

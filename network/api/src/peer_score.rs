@@ -115,23 +115,3 @@ impl Score<BlockBroadcastEntry> for LinearScore {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::peer_score::{InverseScore, Score};
-    use starcoin_logger::prelude::*;
-
-    #[test]
-    fn test_inverse_score() {
-        let inverse_score = InverseScore::new(100, 90);
-        let mut score = inverse_score.execute(50);
-        info!("{:?}", score);
-        assert!(score > 90);
-        score = inverse_score.execute(100);
-        info!("{:?}", score);
-        assert_eq!(score, 90);
-        score = inverse_score.execute(200);
-        info!("{:?}", score);
-        assert!(score < 90);
-    }
-}

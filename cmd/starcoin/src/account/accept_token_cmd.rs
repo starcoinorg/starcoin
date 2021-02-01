@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
@@ -70,15 +70,9 @@ impl CommandAction for AcceptTokenCommand {
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender.address)?;
-
-        if account_resource.is_none() {
-            bail!(
-                "account of module address {} not exists on chain",
-                sender.address
-            );
-        }
-
-        let account_resource = account_resource.unwrap();
+        let account_resource = account_resource.ok_or_else(|| {
+            format_err!("account of address {} not exists on chain", sender.address)
+        })?;
 
         let accept_token_txn = starcoin_executor::build_accept_token_txn(
             sender.address,
