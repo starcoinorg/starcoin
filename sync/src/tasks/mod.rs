@@ -22,7 +22,7 @@ use stream_task::{
 };
 
 pub trait PeerOperator: Send + Sync {
-    fn filter(&self, peers: &Vec<PeerId>);
+    fn filter(&self, peers: &[PeerId]);
 
     fn new_peer(&self, beer_info: PeerInfo);
 
@@ -55,7 +55,7 @@ pub trait BlockIdFetcher: Send + Sync {
 }
 
 impl PeerOperator for VerifiedRpcClient {
-    fn filter(&self, peers: &Vec<PeerId>) {
+    fn filter(&self, peers: &[PeerId]) {
         self.selector().retain(peers)
     }
 
@@ -110,7 +110,7 @@ impl<T> PeerOperator for Arc<T>
 where
     T: PeerOperator,
 {
-    fn filter(&self, peers: &Vec<PeerId>) {
+    fn filter(&self, peers: &[PeerId]) {
         PeerOperator::filter(self.as_ref(), peers)
     }
 

@@ -143,9 +143,7 @@ impl VerifiedRpcClient {
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
         if let Some(peers) = self.peer_selector.bests() {
-            peers
-                .choose(&mut rand::thread_rng())
-                .and_then(|peer| Some(peer.clone()))
+            peers.choose(&mut rand::thread_rng()).cloned()
         } else {
             None
         }

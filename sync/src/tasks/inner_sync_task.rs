@@ -79,7 +79,7 @@ where
             let peer_id = target_peers
                 .iter()
                 .choose(&mut rand::thread_rng())
-                .map(|peer| peer.clone())
+                .cloned()
                 .ok_or_else(|| format_err!("Random peer is none when create sub target"))?;
             let info = self
                 .fetcher
