@@ -3514,9 +3514,9 @@ dependencies = [
  "futures 0.1.30",
  "hyper 0.12.35",
  "hyper-tls 0.3.2",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "jsonrpc-pubsub",
- "jsonrpc-server-utils",
+ "jsonrpc-server-utils 15.1.0",
  "log 0.4.14",
  "parity-tokio-ipc 0.2.0",
  "serde",
@@ -3533,6 +3533,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0745a6379e3edc893c84ec203589790774e4247420033e71a76d3ab4687991fa"
 dependencies = [
  "futures 0.1.30",
+ "log 0.4.14",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
+name = "jsonrpc-core"
+version = "17.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07569945133257ff557eb37b015497104cea61a2c9edaf126c1cbd6e8332397f"
+dependencies = [
+ "futures 0.3.11",
  "log 0.4.14",
  "serde",
  "serde_derive",
@@ -3567,8 +3580,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fb5c4513b7b542f42da107942b7b759f27120b5cc894729f88254b28dff44b7"
 dependencies = [
  "hyper 0.12.35",
- "jsonrpc-core",
- "jsonrpc-server-utils",
+ "jsonrpc-core 15.1.0",
+ "jsonrpc-server-utils 15.1.0",
  "log 0.4.14",
  "net2",
  "parking_lot 0.10.2",
@@ -3577,16 +3590,17 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-ipc-server"
-version = "15.1.0"
+version = "17.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf50e53e4eea8f421a7316c5f63e395f7bc7c4e786a6dc54d76fab6ff7aa7ce7"
+checksum = "14c4cd89e5ea7e7f0884e828fc35bb83591a371b92439675eae28efa66c24a97"
 dependencies = [
- "jsonrpc-core",
- "jsonrpc-server-utils",
+ "futures 0.3.11",
+ "jsonrpc-core 17.0.0",
+ "jsonrpc-server-utils 17.0.0",
  "log 0.4.14",
- "parity-tokio-ipc 0.4.0",
- "parking_lot 0.10.2",
- "tokio-service",
+ "parity-tokio-ipc 0.8.0",
+ "parking_lot 0.11.1",
+ "tower-service",
 ]
 
 [[package]]
@@ -3595,7 +3609,7 @@ version = "15.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "639558e0604013be9787ae52f798506ae42bf4220fe587bdc5625871cc8b9c77"
 dependencies = [
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "log 0.4.14",
  "parking_lot 0.10.2",
  "rand 0.7.3",
@@ -3610,11 +3624,28 @@ checksum = "72f1f3990650c033bd8f6bd46deac76d990f9bbfb5f8dc8c4767bf0a00392176"
 dependencies = [
  "bytes 0.4.12",
  "globset",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "lazy_static",
  "log 0.4.14",
  "tokio 0.1.22",
  "tokio-codec",
+ "unicase 2.6.0",
+]
+
+[[package]]
+name = "jsonrpc-server-utils"
+version = "17.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4207cce738bf713a82525065b750a008f28351324f438f56b33d698ada95bb4"
+dependencies = [
+ "bytes 0.5.6",
+ "futures 0.3.11",
+ "globset",
+ "jsonrpc-core 17.0.0",
+ "lazy_static",
+ "log 0.4.14",
+ "tokio 0.2.24",
+ "tokio-util",
  "unicase 2.6.0",
 ]
 
@@ -3624,8 +3655,8 @@ version = "15.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c2645fad19361780217525afe54984046bab2400346395244e6d74f33aa9a0a"
 dependencies = [
- "jsonrpc-core",
- "jsonrpc-server-utils",
+ "jsonrpc-core 15.1.0",
+ "jsonrpc-server-utils 15.1.0",
  "log 0.4.14",
  "parking_lot 0.10.2",
  "tokio-service",
@@ -3637,8 +3668,8 @@ version = "15.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6596fe75209b73a2a75ebe1dce4e60e03b88a2b25e8807b667597f6315150d22"
 dependencies = [
- "jsonrpc-core",
- "jsonrpc-server-utils",
+ "jsonrpc-core 15.1.0",
+ "jsonrpc-server-utils 15.1.0",
  "log 0.4.14",
  "parity-ws",
  "parking_lot 0.10.2",
@@ -5204,20 +5235,17 @@ dependencies = [
 
 [[package]]
 name = "parity-tokio-ipc"
-version = "0.4.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e57fea504fea33f9fbb5f49f378359030e7e026a6ab849bb9e8f0787376f1bf"
+checksum = "fd7f6c69d7687501b2205fe51ade1d7b8797bb3aa141fe5bf13dd78c0483bc89"
 dependencies = [
- "bytes 0.4.12",
- "futures 0.1.30",
+ "futures 0.3.11",
  "libc",
  "log 0.4.14",
  "mio-named-pipes",
  "miow 0.3.6",
  "rand 0.7.3",
- "tokio 0.1.22",
- "tokio-named-pipes",
- "tokio-uds",
+ "tokio 0.2.24",
  "winapi 0.3.9",
 ]
 
@@ -7777,7 +7805,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "indicatif",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "jsonrpc-tcp-server",
  "libloading 0.6.7",
  "rand 0.7.3",
@@ -8090,11 +8118,11 @@ dependencies = [
  "bcs-ext",
  "futures 0.3.11",
  "hex",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-pubsub",
- "jsonrpc-server-utils",
+ "jsonrpc-server-utils 15.1.0",
  "network-api",
  "network-p2p-types",
  "serde",
@@ -8130,11 +8158,11 @@ dependencies = [
  "futures 0.3.11",
  "hex",
  "jsonrpc-client-transports",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-pubsub",
- "jsonrpc-server-utils",
+ "jsonrpc-server-utils 15.1.0",
  "log 0.4.14",
  "network-api",
  "network-p2p-types",
@@ -8171,7 +8199,7 @@ dependencies = [
  "failure",
  "futures 0.3.11",
  "futures01",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "once_cell",
  "rand 0.7.3",
  "starcoin-logger",
@@ -8195,13 +8223,13 @@ dependencies = [
  "futures-channel",
  "governor",
  "hex",
- "jsonrpc-core",
+ "jsonrpc-core 15.1.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
  "jsonrpc-pubsub",
- "jsonrpc-server-utils",
+ "jsonrpc-server-utils 15.1.0",
  "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
  "log 0.4.14",
