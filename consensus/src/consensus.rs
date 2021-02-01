@@ -3,8 +3,8 @@
 
 use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::Result;
-use logger::prelude::*;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},

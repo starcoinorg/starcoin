@@ -12,8 +12,8 @@ spec:
       serviceAccountName: github-runner
       resources:
         requests:
-          cpu: "24.0"
-          memory: "56Gi"
+          cpu: "32.0"
+          memory: "60Gi"
         # If set to false, there are no privileged container and you cannot use docker.
         dockerEnabled: true
         # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
@@ -22,8 +22,8 @@ spec:
         # Valid if dockerdWithinRunnerContainer is not true
         dockerdContainerResources:
           requests:
-            cpu: "24.0"
-            memory: "56Gi"
+            cpu: "32.0"
+            memory: "60Gi"
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
