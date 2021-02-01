@@ -106,11 +106,11 @@ fn get_account_or_default(
                 info!("account balance is null.");
             }
             // account has enough STC
-            let start_blance = INITIAL_BALANCE * account_num as u128;
-            while balance.unwrap() < start_blance {
+            let start_balance = INITIAL_BALANCE * account_num as u128;
+            while balance.unwrap() < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = account_state_reader.get_balance(&addr)?;
-                info!("account balance is {:?}, min is: {}", balance, start_blance);
+                info!("account balance is {:?}, min is: {}", balance, start_balance);
             }
 
             default_account.unwrap()
