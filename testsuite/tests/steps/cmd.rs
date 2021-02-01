@@ -12,8 +12,8 @@ use starcoin_cmd::add_command;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::{APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
-use static_assertions::_core::time::Duration;
 use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 lazy_static! {
     static ref SELECTOR_REGEX: Regex = Regex::new(r"@(?P<value>[^@\s]+)@").unwrap();

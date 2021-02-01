@@ -3,9 +3,9 @@
 
 use crate::consensus::Consensus;
 use anyhow::Result;
-use logger::prelude::*;
 use rand::Rng;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
