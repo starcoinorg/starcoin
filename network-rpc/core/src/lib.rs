@@ -1,17 +1,26 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod delegates;
-pub mod server;
+use std::convert::TryFrom;
 
 use futures::future::BoxFuture;
+use futures::FutureExt;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 
+pub use starcoin_types::peer_info::PeerId;
+
+//TODO find a suitable place for this type.
+use crate::server::NetworkRpcServer;
+
+pub mod delegates;
+pub mod server;
+
 pub mod prelude {
+    pub use network_rpc_derive::net_rpc;
+
     pub use crate::NetRpcError;
     pub use crate::PeerId;
-    pub use network_rpc_derive::net_rpc;
 }
 
 pub mod export {
@@ -23,12 +32,6 @@ pub mod export {
         pub use bcs_ext::{from_bytes, BCSCodec};
     }
 }
-
-//TODO find a suitable place for this type.
-use crate::server::NetworkRpcServer;
-use futures::FutureExt;
-pub use starcoin_types::peer_info::PeerId;
-use std::convert::TryFrom;
 
 #[repr(u32)]
 #[allow(non_camel_case_types)]
@@ -161,25 +164,7 @@ impl RawRpcClient for InmemoryRpcClient {
         Box::pin(
             self.server
                 .handle_raw_request(self.self_peer_id.clone(), rpc_path, message)
-                .then(
-                    |result| async move { anyhow::Result::Ok(bcs_ext::to_bytes(&result).unwrap()) },
-                ),
+                .then(|result| async move { anyhow::Result::Ok(bcs_ext::to_bytes(&result)?) }),
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_result_serialize() {
-        let str_result: Result<String, NetRpcError> = Result::Ok("test".to_string());
-        let bytes = bcs_ext::to_bytes(&str_result).unwrap();
-        println!("bytes:{:?}", bytes);
-        let str_result2: Result<String, NetRpcError> =
-            bcs_ext::from_bytes(bytes.as_slice()).unwrap();
-        println!("result:{:?}", str_result2);
-        assert_eq!(str_result, str_result2);
     }
 }

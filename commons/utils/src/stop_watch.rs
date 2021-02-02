@@ -11,12 +11,11 @@ static WATCH_STATUS: AtomicBool = AtomicBool::new(false);
 
 pub type WatchName = &'static str;
 
-pub const DEFAULT_WATCH_NAME: WatchName = "default";
 pub const CHAIN_WATCH_NAME: WatchName = "chain";
 
+static DEFAULT_WATCH: Lazy<Mutex<Stopwatch>> = Lazy::new(|| Mutex::new(Stopwatch::start_new()));
 static WATCH_MAP: Lazy<HashMap<WatchName, Mutex<Stopwatch>>> = Lazy::new(|| {
     let mut watch_map = HashMap::new();
-    watch_map.insert(DEFAULT_WATCH_NAME, Mutex::new(Stopwatch::start_new()));
     watch_map.insert(CHAIN_WATCH_NAME, Mutex::new(Stopwatch::start_new()));
     watch_map
 });
@@ -26,7 +25,7 @@ pub fn watch(watch_name: &str, label: &str) {
     if WATCH_STATUS.load(Ordering::SeqCst) {
         let stop_watch = match WATCH_MAP.get(watch_name) {
             Some(stop_watch) => stop_watch,
-            None => WATCH_MAP.get(DEFAULT_WATCH_NAME).unwrap(),
+            None => &DEFAULT_WATCH,
         };
         let mut watch = stop_watch.lock();
         watch.restart();

@@ -10,7 +10,6 @@ use prometheus::core::{
 };
 use prometheus::{
     core::{Collector, Metric},
-    proto,
     proto::MetricType,
     Encoder, TextEncoder,
 };
@@ -34,6 +33,7 @@ pub mod macros;
 
 pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
+use prometheus::proto::LabelPair;
 pub use prometheus::{
     default_registry, histogram_opts, labels, opts, register_counter, register_counter_vec,
     register_gauge, register_gauge_vec, register_histogram, register_histogram_vec,
@@ -132,16 +132,41 @@ pub fn get_all_metrics() -> HashMap<String, String> {
     all_metrics
 }
 
-fn flatten_metric_with_labels(name: &str, metric: &proto::Metric) -> String {
+/**
+This method takes Prometheus metrics with dimensions (represented as label:value tags)
+and converts it into a dot-separated string.
+
+Example:
+Prometheus metric: error_count{method: "get_account", error="connection_error"}
+Result: error_count.get_account.connection_error
+
+If the set of labels is empty, only the name is returned
+Example:
+Prometheus metric: errors
+Result: errors
+
+This is useful when exporting metric data to flat time series.
+*/
+fn flatten_metric_with_labels(name: &str, metric: &prometheus::proto::Metric) -> String {
+    let res = String::from(name);
+
     if metric.get_label().is_empty() {
-        return name.to_string();
+        res
+    } else {
+        // string-list.join(".")
+        let values: Vec<&str> = metric
+            .get_label()
+            .iter()
+            .map(LabelPair::get_value)
+            .filter(|&x| !x.is_empty())
+            .collect();
+        let values = values.join(".");
+        if !values.is_empty() {
+            format!("{}.{}", res, values)
+        } else {
+            res
+        }
     }
-    let label_strings = metric
-        .get_label()
-        .iter()
-        .map(|l| format!("{}={}", l.get_name(), l.get_value()))
-        .collect::<Vec<_>>();
-    format!("{}{{{}}}", name, label_strings.join(","))
 }
 
 // Launches a background thread which will periodically collect metrics
@@ -180,3 +205,6 @@ where
 {
     metric.collect()[0].get_name().to_string()
 }
+
+#[cfg(test)]
+mod tests;

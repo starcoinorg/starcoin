@@ -4,8 +4,7 @@
 use crate::cli_state::CliState;
 use crate::mutlisig_transaction::MultisigTransaction;
 use crate::StarcoinOpt;
-use anyhow::ensure;
-use anyhow::Result;
+use anyhow::{ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::transaction;
@@ -62,7 +61,12 @@ impl CommandAction for PartialSignTxnCommand {
         let signer_address = wallet_account.address;
         //TODO refactor this
         ensure!(
-            txn.can_signed_by(&wallet_account.public_key.as_single().unwrap()),
+            txn.can_signed_by(
+                &wallet_account
+                    .public_key
+                    .as_single()
+                    .ok_or_else(|| format_err!("Current only support signle public key."))?
+            ),
             "account {} cannot sign the txn",
             signer_address
         );

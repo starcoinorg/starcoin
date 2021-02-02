@@ -18,3 +18,6 @@ pub fn genesis_multi_key_pair() -> (MultiEd25519KeyShard, MultiEd25519PublicKey)
     let public_key = shard.public_key();
     (shard, public_key)
 }
+
+#[cfg(test)]
+mod tests;

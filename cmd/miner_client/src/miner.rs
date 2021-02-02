@@ -9,13 +9,13 @@ use futures::executor::block_on;
 use futures::stream::StreamExt;
 use futures::SinkExt;
 use logger::prelude::*;
+use parking_lot::Mutex;
 use starcoin_config::MinerClientConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
-use std::sync::Mutex;
 use std::thread;
 
 pub struct MinerClient<C: JobClient> {
@@ -45,10 +45,10 @@ impl<C: JobClient> MinerClient<C> {
             return;
         }
         {
-            *self.num_seals_found.lock().unwrap() += 1;
+            *self.num_seals_found.lock() += 1;
             let msg = format!(
                 "Miner client Total seals found: {:>3}",
-                *self.num_seals_found.lock().unwrap()
+                *self.num_seals_found.lock()
             );
             info!("{}", msg)
         }

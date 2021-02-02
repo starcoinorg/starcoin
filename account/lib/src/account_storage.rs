@@ -294,16 +294,14 @@ impl AccountStorage {
         address: AccountAddress,
         password: impl AsRef<str>,
     ) -> Result<Option<AccountPrivateKey>> {
-        let encrypted_key = self.private_key_store.get(address.into())?;
-        if encrypted_key.is_none() {
-            return Ok(None);
+        match self.private_key_store.get(address.into())? {
+            None => Ok(None),
+            Some(encrypted_key) => {
+                let plain_key_data = decrypt(password.as_ref().as_bytes(), &encrypted_key.0)?;
+                let private_key = AccountPrivateKey::try_from(plain_key_data.as_slice())?;
+                Ok(Some(private_key))
+            }
         }
-        let encrypted_key = encrypted_key.unwrap();
-
-        let plain_key_data = decrypt(password.as_ref().as_bytes(), &encrypted_key.0)?;
-
-        let private_key = AccountPrivateKey::try_from(plain_key_data.as_slice())?;
-        Ok(Some(private_key))
     }
 
     pub fn update_key(
