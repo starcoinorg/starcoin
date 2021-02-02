@@ -56,6 +56,14 @@ fn test_genesis_config_save_and_load() -> Result<()> {
 }
 
 #[test]
+fn test_api_quota_config() {
+    let config = "1000/s".parse::<ApiQuotaConfig>().unwrap();
+    assert_eq!(config.max_burst.get(), 1000u32);
+    assert_eq!(config.duration, QuotaDuration::Second);
+    assert_eq!("1000/s", config.to_string().as_str());
+}
+
+#[test]
 fn test_example_config_compact() -> Result<()> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let example_dir = path.join("example");

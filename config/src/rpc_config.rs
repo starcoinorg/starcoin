@@ -276,7 +276,7 @@ impl ApiQuotaConfiguration {
         self.default_global_api_quota
             .clone()
             .unwrap_or(ApiQuotaConfig {
-                max_burst: NonZeroU32::new(1000).unwrap(),
+                max_burst: NonZeroU32::new(1000).expect("New NonZeroU32 should success."),
                 duration: QuotaDuration::Second,
             })
     }
@@ -289,7 +289,7 @@ impl ApiQuotaConfiguration {
         self.default_user_api_quota
             .clone()
             .unwrap_or(ApiQuotaConfig {
-                max_burst: NonZeroU32::new(50).unwrap(),
+                max_burst: NonZeroU32::new(50).expect("New NonZeroU32 should success."),
                 duration: QuotaDuration::Second,
             })
     }
@@ -514,18 +514,5 @@ impl ConfigModule for RpcConfig {
         info!("Ipc file path: {:?}", self.get_ipc_file());
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::rpc_config::{ApiQuotaConfig, QuotaDuration};
-
-    #[test]
-    fn test_api_quota_config() {
-        let config = "1000/s".parse::<ApiQuotaConfig>().unwrap();
-        assert_eq!(config.max_burst.get(), 1000u32);
-        assert_eq!(config.duration, QuotaDuration::Second);
-        assert_eq!("1000/s", config.to_string().as_str());
     }
 }

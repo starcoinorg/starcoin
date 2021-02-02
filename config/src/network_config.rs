@@ -76,7 +76,7 @@ impl NetworkRpcQuotaConfiguration {
         self.default_global_api_quota
             .clone()
             .unwrap_or(ApiQuotaConfig {
-                max_burst: NonZeroU32::new(1000).unwrap(),
+                max_burst: NonZeroU32::new(1000).expect("New NonZeroU32 should success."),
                 duration: QuotaDuration::Second,
             })
     }
@@ -89,7 +89,7 @@ impl NetworkRpcQuotaConfiguration {
         self.default_user_api_quota
             .clone()
             .unwrap_or(ApiQuotaConfig {
-                max_burst: NonZeroU32::new(50).unwrap(),
+                max_burst: NonZeroU32::new(50).expect("New NonZeroU32 should success."),
                 duration: QuotaDuration::Second,
             })
     }

@@ -7256,6 +7256,7 @@ dependencies = [
  "num_cpus",
  "num_enum",
  "once_cell",
+ "parking_lot 0.11.1",
  "rand 0.7.3",
  "rand_core 0.6.1",
  "serde",
