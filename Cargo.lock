@@ -8194,6 +8194,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "forkable-jellyfish-merkle",
+ "parking_lot 0.11.1",
  "serde",
  "starcoin-crypto",
  "starcoin-state-store-api",
