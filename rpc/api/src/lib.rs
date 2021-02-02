@@ -20,5 +20,7 @@ pub mod pubsub;
 pub mod service;
 pub mod state;
 pub mod sync_manager;
+#[cfg(test)]
+mod tests;
 pub mod txpool;
 pub mod types;
