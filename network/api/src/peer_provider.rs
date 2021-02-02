@@ -270,36 +270,32 @@ impl PeerSelector {
             .map(|peer| peer.peer_info.peer_id())
     }
 
-    pub fn top_score(&self) -> Option<PeerId> {
-        if self.is_empty() {
-            return None;
-        }
-
+    fn top_one<F>(&self, cmp: F) -> Option<PeerId>
+    where
+        F: Fn(&PeerDetail, &PeerDetail) -> bool,
+    {
         let lock = self.details.lock();
-        let mut top_score_peer = lock.get(0).expect("Peer details is none.");
-        lock.iter().for_each(|peer| {
-            if peer.score() > top_score_peer.score() {
-                top_score_peer = peer;
-            }
-        });
+        let mut iter = lock.iter();
+        let first = iter.next()?;
+        let top = iter.fold(
+            first,
+            |top, current| {
+                if cmp(top, current) {
+                    top
+                } else {
+                    current
+                }
+            },
+        );
+        Some(top.peer_id())
+    }
 
-        Some(top_score_peer.peer_id())
+    pub fn top_score(&self) -> Option<PeerId> {
+        self.top_one(|top, current| top.score() >= current.score())
     }
 
     pub fn avg_score(&self) -> Option<PeerId> {
-        if self.is_empty() {
-            return None;
-        }
-
-        let lock = self.details.lock();
-        let mut top_score_peer = lock.get(0).expect("Peer details is none.");
-        lock.iter().for_each(|peer| {
-            if peer.avg_score() > top_score_peer.avg_score() {
-                top_score_peer = peer;
-            }
-        });
-
-        Some(top_score_peer.peer_id())
+        self.top_one(|top, current| top.avg_score() >= current.avg_score())
     }
 
     pub fn weighted_random(&self) -> Option<PeerId> {
@@ -358,48 +354,5 @@ impl PeerSelector {
             .iter()
             .map(|peer| (peer.peer_id(), peer.score_counter.score()))
             .collect()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::peer_provider::{PeerSelector, PeerStrategy};
-    use starcoin_crypto::HashValue;
-    use starcoin_types::peer_info::{PeerId, PeerInfo};
-    use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-    use starcoin_types::U256;
-
-    fn mock_chain_status(total_difficulty: U256) -> ChainStatus {
-        let mut status = ChainStatus::random();
-        status.info.total_difficulty = total_difficulty;
-        status
-    }
-    #[test]
-    fn test_peer_selector() {
-        let peers = vec![
-            PeerInfo::new(
-                PeerId::random(),
-                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
-            ),
-            PeerInfo::new(
-                PeerId::random(),
-                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(99.into())),
-            ),
-            PeerInfo::new(
-                PeerId::random(),
-                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
-            ),
-            PeerInfo::new(
-                PeerId::random(),
-                ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(1.into())),
-            ),
-        ];
-
-        let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-        let beat_selector = peer_selector.bests().unwrap();
-        assert_eq!(2, beat_selector.len());
-
-        let top_selector = peer_selector.top(3);
-        assert_eq!(3, top_selector.len());
     }
 }

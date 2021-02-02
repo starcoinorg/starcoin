@@ -28,20 +28,17 @@ impl ProcessCollector {
                 "Virtual memory size in bytes.",
             )
             .namespace(namespace.clone()),
-        )
-        .unwrap();
+        )?;
         let rss = Gauge::with_opts(
             Opts::new(
                 "process_resident_memory_bytes",
                 "Resident memory size in bytes.",
             )
             .namespace(namespace.clone()),
-        )
-        .unwrap();
+        )?;
         let cpu_usage = Gauge::with_opts(
             Opts::new("process_cpu_usage", "Total user and system CPU usage").namespace(namespace),
-        )
-        .unwrap();
+        )?;
         let mut descs = vec![];
         descs.extend(vsize.desc().into_iter().cloned());
         descs.extend(rss.desc().into_iter().cloned());
@@ -71,7 +68,7 @@ impl Collector for ProcessCollector {
     }
 
     fn collect(&self) -> Vec<proto::MetricFamily> {
-        let mut process = self.process.lock().unwrap();
+        let mut process = self.process.lock().expect("lock failed.");
 
         let mut mfs = Vec::with_capacity(3);
 

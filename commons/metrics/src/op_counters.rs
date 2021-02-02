@@ -7,13 +7,13 @@
 //! `OpCounters` is a collection of convenience methods to add arbitrary counters to modules.
 //! For now, it supports Int-Counters, Int-Gauges, and Histogram.
 
+use anyhow::Result;
 use prometheus::{
     core::{Collector, Desc},
     proto::MetricFamily,
     Histogram, HistogramOpts, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge,
     IntGaugeVec, Opts,
 };
-
 use std::time::Duration;
 
 /// A small wrapper around Histogram to handle the special case
@@ -45,39 +45,36 @@ pub struct OpMetrics {
 }
 
 impl OpMetrics {
-    pub fn new<S: Into<String>>(name: S) -> OpMetrics {
+    pub fn new<S: Into<String>>(name: S) -> Result<OpMetrics> {
         let name_str = name.into();
-        OpMetrics {
+        Ok(OpMetrics {
             module: name_str.clone(),
             counters: IntCounterVec::new(
                 Opts::new(name_str.clone(), format!("Counters for {}", name_str)),
                 &["op"],
-            )
-            .unwrap(),
+            )?,
             gauges: IntGaugeVec::new(
                 Opts::new(
                     format!("{}_gauge", name_str),
                     format!("Gauges for {}", name_str),
                 ),
                 &["op"],
-            )
-            .unwrap(),
+            )?,
             duration_histograms: HistogramVec::new(
                 HistogramOpts::new(
                     format!("{}_duration", name_str),
                     format!("Histogram values for {}", name_str),
                 ),
                 &["op"],
-            )
-            .unwrap(),
-        }
+            )?,
+        })
     }
 
-    pub fn new_and_registered<S: Into<String>>(name: S) -> OpMetrics {
-        let op_metrics = OpMetrics::new(name);
+    pub fn new_and_registered<S: Into<String>>(name: S) -> Result<OpMetrics> {
+        let op_metrics = OpMetrics::new(name)?;
         prometheus::register(Box::new(op_metrics.clone()))
             .expect("OpMetrics registration on Prometheus failed.");
-        op_metrics
+        Ok(op_metrics)
     }
 
     #[inline]

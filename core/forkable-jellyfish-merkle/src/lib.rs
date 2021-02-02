@@ -82,7 +82,6 @@ pub mod nibble;
 pub mod nibble_path;
 pub mod node_type;
 pub mod proof;
-pub mod restore;
 pub mod test_helper;
 pub mod tree_cache;
 
@@ -100,13 +99,6 @@ use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use tree_cache::TreeCache;
-
-fn create_literal_hash(word: &str) -> HashValue {
-    let mut s = word.as_bytes().to_vec();
-    assert!(s.len() <= HashValue::LENGTH);
-    s.resize(HashValue::LENGTH, 0);
-    HashValue::from_slice(&s).expect("Cannot fail")
-}
 
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.
 pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
@@ -269,7 +261,7 @@ where
 
     #[cfg(test)]
     pub fn print_tree(&self, state_root_hash: HashValue, start_key: HashValue) -> Result<()> {
-        let iter = JellyfishMerkleIterator::new(self.reader, state_root_hash, start_key).unwrap();
+        let iter = JellyfishMerkleIterator::new(self.reader, state_root_hash, start_key)?;
         iter.print()
     }
 
@@ -414,15 +406,13 @@ where
             Node::Leaf(leaf_node) => {
                 Self::insert_at_leaf_node(node_key, leaf_node, nibble_iter, key, blob, tree_cache)
             }
-            Node::Null => {
-                if blob.is_none() {
-                    return Ok((node_key, node));
+            Node::Null => match blob {
+                None => Ok((node_key, node)),
+                Some(blob) => {
+                    tree_cache.delete_node(&node_key, false);
+                    Self::create_leaf_node(key, blob, tree_cache)
                 }
-
-                let blob = blob.unwrap();
-                tree_cache.delete_node(&node_key, false);
-                Self::create_leaf_node(key, blob, tree_cache)
-            }
+            },
         }
     }
 
@@ -449,7 +439,7 @@ where
                 Self::insert_at(child_node_key, nibble_iter, key, blob, tree_cache)?
             }
             None if blob.is_some() => {
-                let blob = blob.unwrap();
+                let blob = blob.expect("blob must be some at here");
                 // let new_child_node_key = node_key.gen_child_node_key(version, child_index);
                 Self::create_leaf_node(key, blob, tree_cache)?
             }
@@ -487,8 +477,14 @@ where
         if children.is_empty() {
             let empty_node = Node::new_null();
             Ok((empty_node.hash(), empty_node))
-        } else if children.len() == 1 && children.values().next().unwrap().is_leaf {
-            let (_, leaf) = children.into_iter().next().unwrap();
+        } else if children.len() == 1
+            && children
+                .values()
+                .next()
+                .expect("must exist one child")
+                .is_leaf
+        {
+            let (_, leaf) = children.into_iter().next().expect("must exist one child");
             let leaf_node = tree_cache.get_node(&leaf.hash)?;
             Ok((leaf.hash, leaf_node))
         } else {
@@ -547,7 +543,7 @@ where
                 let empty_node = Node::new_null();
                 return Ok((empty_node.hash(), empty_node));
             }
-            let blob = blob.unwrap();
+            let blob = blob.expect("blob must some at here");
             // The new leaf node will have the same nibble_path with a new version as node_key.
             // if the blob are same, return directly
             if blob.crypto_hash() == existing_leaf_node.blob_hash() {
@@ -576,7 +572,7 @@ where
         if blob.is_none() {
             return Ok((node_key, Node::from(existing_leaf_node)));
         }
-        let blob = blob.unwrap();
+        let blob = blob.expect("blob must some at here");
 
         let mut children = Children::new();
         children.insert(

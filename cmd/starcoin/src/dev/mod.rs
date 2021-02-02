@@ -8,9 +8,11 @@ mod derive_account_address_cmd;
 mod execute_cmd;
 mod generate_multisig_txn_cmd;
 mod get_coin_cmd;
-mod sign_txn_helper;
+pub(crate) mod sign_txn_helper;
 mod submit_multisig_txn_cmd;
 mod subscribe_cmd;
+#[cfg(test)]
+mod tests;
 mod upgrade_module_exe_cmd;
 mod upgrade_module_plan_cmd;
 mod upgrade_module_proposal_cmd;

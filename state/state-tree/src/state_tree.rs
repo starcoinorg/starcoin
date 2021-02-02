@@ -6,13 +6,14 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
+use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::*;
 use starcoin_state_store_api::*;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::ops::DerefMut;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::Arc;
 
 pub struct StateCache<K: RawKey> {
     root_hash: HashValue,
@@ -81,10 +82,7 @@ where
     K: RawKey,
 {
     fn clone(&self) -> Self {
-        StateTree::new(
-            self.storage.clone(),
-            Some(*self.storage_root_hash.read().unwrap()),
-        )
+        StateTree::new(self.storage.clone(), Some(*self.storage_root_hash.read()))
     }
 }
 
@@ -107,7 +105,7 @@ where
     /// if any modification is not committed into state tree, the root hash is not changed.
     /// You can use `commit` to make current modification committed into local state tree.
     pub fn root_hash(&self) -> HashValue {
-        self.cache.lock().unwrap().root_hash
+        self.cache.lock().root_hash
     }
 
     /// put a kv pair into tree.
@@ -116,23 +114,20 @@ where
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
     pub fn put(&self, key: K, value: Vec<u8>) {
-        self.updates
-            .write()
-            .unwrap()
-            .insert(key, Some(value.into()));
+        self.updates.write().insert(key, Some(value.into()));
     }
 
     /// Remove key_hash's data.
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
     pub fn remove(&self, key: &K) {
-        self.updates.write().unwrap().insert(key.clone(), None);
+        self.updates.write().insert(key.clone(), None);
     }
 
     /// use a key's hash `key_hash` to read a value.
     /// This will also read un-committed modification.
     pub fn get(&self, key: &K) -> Result<Option<Vec<u8>>> {
-        let updates_guard = self.updates.read().unwrap();
+        let updates_guard = self.updates.read();
         if let Some(uncomputed) = updates_guard.get(key).cloned() {
             return Ok(uncomputed.map(|b| b.into()));
         }
@@ -147,7 +142,7 @@ where
     /// NOTICE: this will only read from state tree.
     /// Any un-committed modification will not visible to the method.
     pub fn get_with_proof(&self, key: &K) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache_guard = self.cache.lock();
         let cache = cache_guard.deref_mut();
         let cur_root_hash = cache.root_hash;
         let reader = CachedTreeReader {
@@ -167,7 +162,7 @@ where
     /// NOTICE: this method will not flush the changes into disk.
     /// It'just commit the changes into local state-tree, and cache it there.
     pub fn commit(&self) -> Result<HashValue> {
-        let mut guard = self.updates.write().unwrap();
+        let mut guard = self.updates.write();
         let updates = guard
             .iter()
             .map(|(k, v)| (k.clone(), v.clone()))
@@ -179,7 +174,7 @@ where
 
     /// check if there is data that has not been commit.
     pub fn is_dirty(&self) -> bool {
-        self.updates.read().unwrap().len() > 0
+        self.updates.read().len() > 0
     }
 
     /// Write state_set to state tree.
@@ -203,15 +198,15 @@ where
         }
         self.storage.write_nodes(node_map)?;
         // and then advance the storage root hash
-        *self.storage_root_hash.write().unwrap() = root_hash;
-        self.cache.lock().unwrap().reset(root_hash);
+        *self.storage_root_hash.write() = root_hash;
+        self.cache.lock().reset(root_hash);
         Ok(())
     }
 
     /// Dump tree to state set.
     pub fn dump(&self) -> Result<StateSet> {
         let cur_root_hash = self.root_hash();
-        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache_guard = self.cache.lock();
         let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
@@ -233,7 +228,7 @@ where
         if updates.is_empty() {
             return Ok(cur_root_hash);
         }
-        let mut cache_guard = self.cache.lock().unwrap();
+        let mut cache_guard = self.cache.lock();
         let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
@@ -251,7 +246,7 @@ where
     //
     // /// rollback last write
     // pub fn rollback(&self) {
-    //     let mut cache_guard = self.cache.lock().unwrap();
+    //     let mut cache_guard = self.cache.lock();
     //     if let Some(root_hash) = cache_guard.root_hashes.pop() {
     //         let _ = cache_guard.change_sets.pop();
     //     }
@@ -259,7 +254,7 @@ where
     //
     // /// rollback current state to a history state with the provided `root_hash`
     // pub fn rollback_to(&self, root_hash: HashValue) -> Result<()> {
-    //     let mut cache_guard = self.cache.lock().unwrap();
+    //     let mut cache_guard = self.cache.lock();
     //     let mut state_index = None;
     //     for (i, root) in cache_guard.root_hashes.iter().enumerate() {
     //         if root == &root_hash {
@@ -269,7 +264,7 @@ where
     //
     //     if let Some(i) = state_index {
     //         cache_guard.truncate(i + 1);
-    //     } else if self.storage_root_hash.read().unwrap().deref() == &root_hash {
+    //     } else if self.storage_root_hash.read().deref() == &root_hash {
     //         cache_guard.clear();
     //     } else {
     //         bail!("the root_hash is not found in write history");
@@ -279,7 +274,7 @@ where
 
     /// get all changes so far based on initial root_hash.
     pub fn change_sets(&self) -> (HashValue, TreeUpdateBatch<K>) {
-        let cache_guard = self.cache.lock().unwrap();
+        let cache_guard = self.cache.lock();
         (cache_guard.root_hash, cache_guard.change_set.clone())
     }
     // TODO: to keep atomic with other commit.

@@ -7,3 +7,6 @@ pub mod token_info;
 pub mod token_value;
 
 pub const TOKEN_MODULE_NAME: &str = "Token";
+
+#[cfg(test)]
+mod tests;

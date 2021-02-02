@@ -13,7 +13,7 @@ macro_rules! register_uint_gauge_vec {
 #[doc(hidden)]
 macro_rules! register_uint_gauge {
     ($OPTS:expr) => {{
-        let gauge = $crate::UIntGauge::with_opts($OPTS).unwrap();
+        let gauge = $crate::UIntGauge::with_opts($OPTS).expect("register_uint_gauge failed");
         $crate::prometheus_export::register(Box::new(gauge.clone())).map(|_| gauge)
     }};
     ($NAME:expr, $HELP:expr) => {{
@@ -25,7 +25,8 @@ macro_rules! register_uint_gauge {
 #[doc(hidden)]
 macro_rules! __register_gauge_vec {
     ($TYPE:ident, $OPTS:expr, $LABELS_NAMES:expr) => {{
-        let gauge_vec = $crate::$TYPE::new($OPTS, $LABELS_NAMES).unwrap();
+        let gauge_vec =
+            $crate::$TYPE::new($OPTS, $LABELS_NAMES).expect("__register_gauge_vec failed");
         $crate::prometheus_export::register(Box::new(gauge_vec.clone())).map(|_| gauge_vec)
     }};
 }

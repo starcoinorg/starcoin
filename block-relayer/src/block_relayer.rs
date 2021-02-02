@@ -112,10 +112,7 @@ impl BlockRelayer {
                     }
                 }
             }
-            txns.iter()
-                .filter(|&txn| txn.is_some())
-                .map(|txn| txn.clone().unwrap())
-                .collect()
+            txns.into_iter().filter_map(|txn| txn).collect()
         };
         let body = BlockBody::new(txns, compact_block.uncles);
         let block = Block::new(compact_block.header, body);

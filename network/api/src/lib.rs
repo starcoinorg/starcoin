@@ -5,6 +5,8 @@ use crate::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerMessage, ReportReputation,
 };
 use anyhow::*;
+use futures::future::BoxFuture;
+use futures::FutureExt;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceHandler, ServiceRef};
 use std::sync::mpsc::TrySendError;
@@ -13,9 +15,9 @@ pub mod messages;
 mod peer_message_handler;
 mod peer_provider;
 pub mod peer_score;
+#[cfg(test)]
+mod tests;
 
-use futures::future::BoxFuture;
-use futures::FutureExt;
 pub use network_p2p_types::Multiaddr;
 pub use network_p2p_types::MultiaddrWithPeerId;
 pub use network_p2p_types::ReputationChange;

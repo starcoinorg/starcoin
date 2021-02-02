@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use clap::arg_enum;
 use consensus::{Consensus, ConsensusVerifyError};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -211,7 +211,7 @@ impl BlockVerifier for BasicVerifier {
 
         let current_block_info = current_chain
             .get_block_info(Some(current_id))?
-            .expect("head block's block info should exist.");
+            .ok_or_else(|| format_err!("Can not find block info by head id: {}", current_id))?;
         verify_block!(
             VerifyBlockField::Header,
             current_block_info

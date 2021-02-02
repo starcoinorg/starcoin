@@ -5,11 +5,13 @@ use crate::genesis_config::ChainId;
 use crate::token::token_code::TokenCode;
 use crate::transaction::authenticator::AuthenticationKeyPreimage;
 use crate::transaction::RawUserTransaction;
+use crate::vm_status::{StatusCode, VMStatus};
 use crate::{
     account_address::AccountAddress,
     transaction::SignedUserTransaction,
     transaction::{TransactionPayload, TransactionPayloadType},
 };
+use anyhow::Result;
 use move_core_types::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasPrice, GasUnits,
 };
@@ -45,7 +47,7 @@ pub struct TransactionMetadata {
 }
 
 impl TransactionMetadata {
-    pub fn new(txn: &SignedUserTransaction) -> Self {
+    pub fn new(txn: &SignedUserTransaction) -> Result<Self, VMStatus> {
         Self::from_raw_txn_and_preimage(
             txn.raw_txn(),
             txn.authenticator().authentication_key_preimage(),
@@ -55,15 +57,15 @@ impl TransactionMetadata {
     pub fn from_raw_txn_and_preimage(
         txn: &RawUserTransaction,
         auth_preimage: AuthenticationKeyPreimage,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, VMStatus> {
+        Ok(Self {
             sender: txn.sender(),
             authentication_key_preimage: auth_preimage.into_vec(),
             sequence_number: txn.sequence_number(),
             max_gas_amount: GasUnits::new(txn.max_gas_amount()),
             gas_unit_price: GasPrice::new(txn.gas_unit_price()),
             gas_token_code: TokenCode::from_str(txn.gas_token_code().as_str())
-                .expect("Transaction's gas_token_code must been verified at TransactionBuilder."),
+                .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
             transaction_size: AbstractMemorySize::new(txn.txn_size() as u64),
             expiration_timestamp_secs: txn.expiration_timestamp_secs(),
             chain_id: txn.chain_id(),
@@ -76,7 +78,7 @@ impl TransactionMetadata {
                     package.package_address(),
                 ),
             },
-        }
+        })
     }
     pub fn max_gas_amount(&self) -> GasUnits<GasCarrier> {
         self.max_gas_amount

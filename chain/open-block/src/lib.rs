@@ -142,10 +142,13 @@ impl OpenedBlock {
             .collect();
 
         let txn_outputs = {
-            let gas_left = self
-                .gas_limit
-                .checked_sub(self.gas_used)
-                .expect("block gas_used exceed block gas_limit");
+            let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
+                format_err!(
+                    "block gas_used {} exceed block gas_limit:{}",
+                    self.gas_used,
+                    self.gas_limit
+                )
+            })?;
             execute_block_transactions(&self.state, txns.clone(), gas_left)?
         };
 

@@ -73,11 +73,18 @@ impl CachedSeqNumberClient {
 
     fn latest_sequence_number(&self, address: &AccountAddress) -> u64 {
         let account_state_reader = AccountStateReader::new(self.statedb.as_ref());
-        account_state_reader
-            .get_account_resource(address)
-            .expect("read account state should ok")
-            .map(|res| res.sequence_number())
-            .unwrap_or_default()
+        match account_state_reader.get_account_resource(address) {
+            Err(e) => {
+                error!(
+                    "Get account {} resource from statedb error: {:?}, return 0 as sequence_number",
+                    address, e
+                );
+                0
+            }
+            Ok(account_resource) => account_resource
+                .map(|res| res.sequence_number())
+                .unwrap_or_default(),
+        }
     }
 }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use parking_lot::Mutex;
 
 static USED_PORTS: Lazy<Mutex<Vec<u16>>> = Lazy::new(|| Mutex::new(vec![]));
 
@@ -19,7 +19,7 @@ pub fn get_available_port_from(start_port: u16) -> u16 {
 
 /// check if `port` is available.
 fn check_port_in_use(port: u16) -> bool {
-    if USED_PORTS.lock().unwrap().contains(&port) {
+    if USED_PORTS.lock().contains(&port) {
         return true;
     }
     use std::net::TcpStream;
@@ -28,7 +28,7 @@ fn check_port_in_use(port: u16) -> bool {
         Err(_e) => false,
     };
     if !in_use {
-        USED_PORTS.lock().unwrap().push(port);
+        USED_PORTS.lock().push(port);
     };
     in_use
 }

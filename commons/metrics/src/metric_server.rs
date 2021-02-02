@@ -15,7 +15,10 @@ use tokio::runtime;
 fn encode_metrics(encoder: impl Encoder) -> Vec<u8> {
     let metric_families = prometheus::gather();
     let mut buffer = vec![];
-    encoder.encode(&metric_families, &mut buffer).unwrap();
+    //if encode error, just return empty body.
+    if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
+        error!("Encode metrics error: {:?}", e);
+    }
     buffer
 }
 
@@ -69,7 +72,7 @@ pub fn start_server(addr: SocketAddr) {
             .basic_scheduler()
             .enable_io()
             .build()
-            .unwrap();
+            .expect("build tokio runtime failed");
         if let Err(e) = rt.block_on(async {
             let server = Server::bind(&addr).serve(make_service);
             server.await
