@@ -208,7 +208,7 @@ impl StarcoinVM {
         transaction: &SignatureCheckedTransaction,
         remote_cache: &StateViewCache,
     ) -> Result<(), VMStatus> {
-        let txn_data = TransactionMetadata::new(transaction);
+        let txn_data = TransactionMetadata::new(transaction)?;
         let mut session = self.move_vm.new_session(remote_cache);
         let mut cost_strategy = CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
         self.check_gas(&txn_data)?;
@@ -616,7 +616,12 @@ impl StarcoinVM {
             }
         };
         let txn_id = txn.id();
-        let txn_data = TransactionMetadata::new(&txn);
+        let txn_data = match TransactionMetadata::new(&txn) {
+            Ok(txn_data) => txn_data,
+            Err(e) => {
+                return discard_error_vm_status(e);
+            }
+        };
         let mut cost_strategy = CostStrategy::system(gas_schedule, txn_data.max_gas_amount());
         // check signature
         let signature_checked_txn = match txn.check_signature() {
@@ -693,10 +698,13 @@ impl StarcoinVM {
                 }
             }
         };
-        let txn_data = TransactionMetadata::from_raw_txn_and_preimage(
+        let txn_data = match TransactionMetadata::from_raw_txn_and_preimage(
             &txn.raw_txn,
             txn.public_key.authentication_key_preimage(),
-        );
+        ) {
+            Ok(txn_data) => txn_data,
+            Err(e) => return Ok(discard_error_vm_status(e)),
+        };
         let mut cost_strategy = CostStrategy::system(gas_schedule, txn_data.max_gas_amount());
         let result = match txn.raw_txn.payload() {
             TransactionPayload::Script(s) => self.execute_script(
@@ -830,11 +838,8 @@ impl StarcoinVM {
             .execute_readonly_function(module, function_name, type_params, args, &mut cost_strategy)
             .map_err(|e| e.into_vm_status())?;
 
-        let effects = session
-            .finish()
-            .expect("Failed to generate session effects");
-        let (writeset, _events) =
-            txn_effects_to_writeset_and_events(effects).expect("Failed to generate writeset");
+        let effects = session.finish().map_err(|e| e.into_vm_status())?;
+        let (writeset, _events) = txn_effects_to_writeset_and_events(effects)?;
         if !writeset.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
