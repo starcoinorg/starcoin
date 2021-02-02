@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crypto::keygen::KeyGen;
 use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
@@ -36,10 +37,8 @@ impl AccountData {
         &self.public_key
     }
     pub fn random() -> Self {
-        let seed = [1u8; 32];
-        let mut rng = StdRng::from_seed(seed);
-        let private_key = Ed25519PrivateKey::generate(&mut rng);
-        let public_key = private_key.public_key();
+        let mut key_gen = KeyGen::from_os_rng();
+        let (_private_key, public_key) = key_gen.generate_keypair();
         let address = account_address::from_public_key(&public_key);
         AccountData {
             public_key,
@@ -168,9 +167,9 @@ impl TransactionGenerator {
             transactions.push(Transaction::BlockMetadata(block_meta));
 
             for j in 0..block_size {
-                let indices = rand::seq::index::sample(&mut self.rng, self.accounts.len(), 2);
+                let indices = rand::seq::index::sample(&mut self.rng, self.accounts.len(), 1);
                 //                let sender_idx = indices.index(0);
-                let receiver_idx = indices.index(1);
+                let receiver_idx = indices.index(0);
 
                 //                let sender = &self.accounts[sender_idx];
                 let receiver = &self.accounts[receiver_idx];
@@ -298,7 +297,7 @@ fn create_transaction(
     let signed_txn = executor::create_signed_txn_with_association_account(
         TransactionPayload::Script(program),
         sequence_number,
-        400_000,
+        400_000_000,
         1,
         expiration_timestamp_secs,
         net,
