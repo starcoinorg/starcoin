@@ -16,11 +16,11 @@ use log4rs::{
     Handle,
 };
 use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Mutex;
 use std::sync::{Arc, Once};
 
 /// Logger prelude which includes all logging macros.
@@ -169,19 +169,19 @@ impl LoggerHandle {
     }
 
     pub fn enable_stderr(&self) {
-        let mut arg = self.arg.lock().unwrap().clone();
+        let mut arg = self.arg.lock().clone();
         arg.enable_stderr = true;
         self.update_logger(arg);
     }
 
     pub fn disable_stderr(&self) {
-        let mut arg = self.arg.lock().unwrap().clone();
+        let mut arg = self.arg.lock().clone();
         arg.enable_stderr = false;
         self.update_logger(arg);
     }
 
     pub fn enable_file(&self, log_path: PathBuf, max_file_size: u64, max_backup: u32) {
-        let mut arg = self.arg.lock().unwrap().clone();
+        let mut arg = self.arg.lock().clone();
         arg.log_path = Some(log_path);
         arg.max_file_size = max_file_size;
         arg.max_backup = max_backup;
@@ -189,26 +189,26 @@ impl LoggerHandle {
     }
 
     pub fn update_level(&self, level: LevelFilter) {
-        let mut arg = self.arg.lock().unwrap().clone();
+        let mut arg = self.arg.lock().clone();
         arg.level = level;
         arg.pattern = LogPattern::by_level(level);
         self.update_logger(arg);
     }
 
     pub fn set_log_level(&self, logger_name: String, level: LevelFilter) {
-        let mut arg = self.arg.lock().unwrap().clone();
+        let mut arg = self.arg.lock().clone();
         arg.module_levels.insert(logger_name, level);
         self.update_logger(arg);
     }
 
     pub fn set_log_pattern(&self, pattern: LogPattern) {
-        let mut arg = self.arg.lock().unwrap().clone();
+        let mut arg = self.arg.lock().clone();
         arg.pattern = pattern;
         self.update_logger(arg);
     }
 
     fn update_logger(&self, arg: LoggerConfigArg) {
-        let mut origin_arg = self.arg.lock().unwrap();
+        let mut origin_arg = self.arg.lock();
         if *origin_arg != arg {
             let config = build_config(arg.clone()).expect("rebuild log config should success.");
             *origin_arg = arg;
@@ -218,16 +218,16 @@ impl LoggerHandle {
 
     /// Get log path
     pub fn log_path(&self) -> Option<PathBuf> {
-        self.arg.lock().unwrap().log_path.as_ref().cloned()
+        self.arg.lock().log_path.as_ref().cloned()
     }
 
     /// Check is stderr enabled
     pub fn stderr(&self) -> bool {
-        self.arg.lock().unwrap().enable_stderr
+        self.arg.lock().enable_stderr
     }
 
     pub fn level(&self) -> LevelFilter {
-        self.arg.lock().unwrap().level
+        self.arg.lock().level
     }
 }
 
@@ -324,12 +324,11 @@ pub fn init_with_default_level(
         };
         let logger_handle = LoggerHandle::new(arg, handle);
 
-        *LOGGER_HANDLE.lock().unwrap() = Some(Arc::new(logger_handle));
+        *LOGGER_HANDLE.lock() = Some(Arc::new(logger_handle));
     });
 
     let logger_handle = LOGGER_HANDLE
         .lock()
-        .unwrap()
         .as_ref()
         .expect("logger handle must has been set.")
         .clone();
