@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: explorer-api
+  name: explorer-api
+  namespace: starcoin-halley
+spec:
+  ports:
+  - port: 8080
+    name: http
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: explorer-api
+  type: LoadBalancer
+status:
+  loadBalancer: {}
