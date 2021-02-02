@@ -165,14 +165,19 @@ impl VerifiedRpcClient {
             let mut none_txn_vec = Vec::new();
             let mut verified_txns: Vec<Transaction> = Vec::new();
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
-                if data.is_some() {
-                    let txn = data.expect("txn is none.");
-                    if id == txn.id() {
+                match data {
+                    Some(txn) => {
+                        ensure!(
+                            id == txn.id(),
+                            "request txn with id: {} from peer {}, but got txn {:?}",
+                            id,
+                            peer_id,
+                            txn
+                        );
                         verified_txns.push(txn);
-                        continue;
                     }
+                    None => none_txn_vec.push(id),
                 }
-                none_txn_vec.push(id);
             }
             Ok((none_txn_vec, verified_txns))
         } else {
