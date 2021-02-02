@@ -22,7 +22,7 @@ pub use self::legacy::{
 };
 pub use self::notifications::{
     NotificationsHandshakeError, NotificationsIn, NotificationsInSubstream, NotificationsOut,
-    NotificationsOutError, NotificationsOutSubstream,
+    NotificationsOutError, NotificationsOutSubstream, MAX_HANDSHAKE_SIZE,
 };
 
 mod collec;
