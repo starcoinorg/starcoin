@@ -1,21 +1,36 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::mock::SyncNodeMocker;
-use crate::tasks::{full_sync_task, BlockCollector};
+use crate::tasks::block_sync_task::SyncBlockData;
+use crate::tasks::mock::{MockBlockIdFetcher, SyncNodeMocker};
+use crate::tasks::{
+    full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
+    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask,
+};
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
+use futures::future::BoxFuture;
+use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::PeerStrategy;
+use network_api::{PeerId, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::BlockStore;
-use starcoin_types::block::{Block, BlockBody, BlockHeaderBuilder};
+use starcoin_types::{
+    block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
+    U256,
+};
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use stream_task::{Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
 
 #[stest::test]
@@ -429,6 +444,280 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
         TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
     let info2 = sync_task.await?.1.get_info();
     assert_eq!(info1, info2);
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_find_ancestor_same_number() -> Result<()> {
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = Arc::new(MerkleAccumulator::new_empty(store.clone()));
+
+    let fetcher = MockBlockIdFetcher::new(accumulator.clone());
+    fetcher.appends(generate_hash(100).as_slice())?;
+    let info0 = accumulator.get_info();
+
+    let store2 = Arc::new(MockAccumulatorStore::copy_from(store.as_ref()));
+    let accumulator2 = Arc::new(MerkleAccumulator::new_with_info(info0.clone(), store2));
+    let task_state = FindAncestorTask::new(
+        accumulator2.num_leaves() - 1,
+        accumulator.num_leaves() - 1,
+        7,
+        fetcher.clone(),
+    );
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let collector = AncestorCollector::new(accumulator2.clone());
+    let task = TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let ancestor = task.await?;
+    assert_eq!(ancestor.number, info0.num_leaves - 1);
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
+
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_find_ancestor_block_number_behind() -> Result<()> {
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = Arc::new(MerkleAccumulator::new_empty(store.clone()));
+
+    let fetcher = MockBlockIdFetcher::new(accumulator.clone());
+    fetcher.appends(generate_hash(100).as_slice())?;
+    let info0 = accumulator.get_info();
+
+    // remote node block id is greater than local.
+    fetcher.appends(generate_hash(100).as_slice())?;
+
+    let store2 = Arc::new(MockAccumulatorStore::copy_from(store.as_ref()));
+    let accumulator2 = Arc::new(MerkleAccumulator::new_with_info(info0.clone(), store2));
+    let task_state = FindAncestorTask::new(
+        accumulator2.num_leaves() - 1,
+        accumulator.num_leaves() - 1,
+        7,
+        fetcher.clone(),
+    );
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let collector = AncestorCollector::new(accumulator2.clone());
+    let task = TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let ancestor = task.await?;
+    assert_eq!(ancestor.number, info0.num_leaves - 1);
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
+
+    Ok(())
+}
+
+fn generate_hash(count: usize) -> Vec<HashValue> {
+    (0..count).map(|_| HashValue::random()).collect::<Vec<_>>()
+}
+
+#[stest::test]
+pub async fn test_find_ancestor_chain_fork() -> Result<()> {
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = Arc::new(MerkleAccumulator::new_empty(store.clone()));
+
+    let fetcher = MockBlockIdFetcher::new(accumulator.clone());
+    fetcher.appends(generate_hash(100).as_slice())?;
+    let info0 = accumulator.get_info();
+
+    fetcher.appends(generate_hash(100).as_slice())?;
+
+    let store2 = Arc::new(MockAccumulatorStore::copy_from(store.as_ref()));
+    let accumulator2 = Arc::new(MerkleAccumulator::new_with_info(info0.clone(), store2));
+
+    accumulator2.append(generate_hash(100).as_slice())?;
+    accumulator2.flush()?;
+
+    assert_ne!(accumulator.get_info(), accumulator2.get_info());
+    let batch_size = 7;
+    let task_state = FindAncestorTask::new(
+        accumulator2.num_leaves() - 1,
+        accumulator.num_leaves() - 1,
+        batch_size,
+        fetcher.clone(),
+    );
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let collector = AncestorCollector::new(accumulator2.clone());
+    let task = TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let ancestor = task.await?;
+    assert_eq!(ancestor.number, info0.num_leaves - 1);
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
+    //sub task not all finished, the collector return enough.
+    assert!(report.ok < report.sub_task);
+    assert_eq!(report.processed_items, 100 + 1);
+    Ok(())
+}
+
+#[derive(Default)]
+struct MockBlockFetcher {
+    blocks: Mutex<HashMap<HashValue, Block>>,
+}
+
+impl MockBlockFetcher {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn put(&self, block: Block) {
+        self.blocks.lock().unwrap().insert(block.id(), block);
+    }
+}
+
+impl BlockFetcher for MockBlockFetcher {
+    fn fetch_block(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+        let blocks = self.blocks.lock().unwrap();
+        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
+            .iter()
+            .map(|block_id| {
+                if let Some(block) = blocks.get(block_id).cloned() {
+                    Ok((block, None))
+                } else {
+                    Err(format_err!("Can not find block by id: {:?}", block_id))
+                }
+            })
+            .collect();
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            result
+        }
+        .boxed()
+    }
+}
+
+fn build_block_fetcher(total_blocks: u64) -> (MockBlockFetcher, MerkleAccumulator) {
+    let fetcher = MockBlockFetcher::new();
+
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = MerkleAccumulator::new_empty(store);
+    for i in 0..total_blocks {
+        let header = BlockHeaderBuilder::random().with_number(i).build();
+        let block = Block::new(header, vec![]);
+        accumulator.append(&[block.id()]).unwrap();
+        fetcher.put(block);
+    }
+    (fetcher, accumulator)
+}
+
+#[derive(Default)]
+struct MockLocalBlockStore {
+    store: Mutex<HashMap<HashValue, SyncBlockData>>,
+}
+
+impl MockLocalBlockStore {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn mock(&self, block: &Block) {
+        let block_id = block.id();
+        let block_info = BlockInfo::new(
+            block_id,
+            U256::from(1),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+        );
+        self.store.lock().unwrap().insert(
+            block.id(),
+            SyncBlockData::new(block.clone(), Some(block_info), None),
+        );
+    }
+}
+
+impl BlockLocalStore for MockLocalBlockStore {
+    fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>> {
+        let store = self.store.lock().unwrap();
+        Ok(block_ids.iter().map(|id| store.get(id).cloned()).collect())
+    }
+}
+
+#[stest::test]
+async fn test_block_sync() -> Result<()> {
+    let total_blocks = 100;
+    let (fetcher, accumulator) = build_block_fetcher(total_blocks);
+
+    let block_sync_state = BlockSyncTask::new(
+        accumulator,
+        0,
+        fetcher,
+        false,
+        MockLocalBlockStore::new(),
+        3,
+    );
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let sync_task =
+        TaskGenerator::new(block_sync_state, 5, 3, 1, vec![], event_handle.clone()).generate();
+    let result = sync_task.await?;
+    let last_block_number = result
+        .iter()
+        .map(|block_data| {
+            assert!(block_data.info.is_none());
+            block_data.block.header().number() as i64
+        })
+        .fold(-1, |parent, current| {
+            //ensure return block is ordered
+            assert_eq!(
+                parent + 1,
+                current,
+                "block sync task not return ordered blocks"
+            );
+            current
+        });
+
+    assert_eq!(last_block_number as u64, total_blocks - 1);
+
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
+    Ok(())
+}
+
+#[stest::test]
+async fn test_block_sync_with_local() -> Result<()> {
+    let total_blocks = 100;
+    let (fetcher, accumulator) = build_block_fetcher(total_blocks);
+
+    let local_store = MockLocalBlockStore::new();
+    fetcher
+        .blocks
+        .lock()
+        .unwrap()
+        .iter()
+        .for_each(|(_block_id, block)| {
+            if block.header().number() % 2 == 0 {
+                local_store.mock(block)
+            }
+        });
+    let block_sync_state = BlockSyncTask::new(accumulator, 0, fetcher, true, local_store, 3);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let sync_task =
+        TaskGenerator::new(block_sync_state, 5, 3, 1, vec![], event_handle.clone()).generate();
+    let result = sync_task.await?;
+    let last_block_number = result
+        .iter()
+        .map(|block_data| {
+            if block_data.block.header().number() % 2 == 0 {
+                assert!(block_data.info.is_some())
+            } else {
+                assert!(block_data.info.is_none())
+            }
+            block_data.block.header().number() as i64
+        })
+        .fold(-1, |parent, current| {
+            //ensure return block is ordered
+            assert_eq!(
+                parent + 1,
+                current,
+                "block sync task not return ordered blocks"
+            );
+            current
+        });
+
+    assert_eq!(last_block_number as u64, total_blocks - 1);
+
     let report = event_handle.get_reports().pop().unwrap();
     debug!("report: {}", report);
     Ok(())
