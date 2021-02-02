@@ -100,13 +100,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use tree_cache::TreeCache;
 
-fn create_literal_hash(word: &str) -> HashValue {
-    let mut s = word.as_bytes().to_vec();
-    assert!(s.len() <= HashValue::LENGTH);
-    s.resize(HashValue::LENGTH, 0);
-    HashValue::from_slice(&s).expect("Cannot fail")
-}
-
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.
 pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
 
