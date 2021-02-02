@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explorer-api-deployment
+  labels:
+    app: explorer-api
+  namespace: starcoin-halley
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: explorer-api
+  template:
+    metadata:
+      labels:
+        app: explorer-api
+    spec:
+      containers:
+        - name: explorer-api
+          image: wk3368/starcoin-explorer-api:v0.2.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: STARCOIN_ES_URL
+              value: "http://starcoin-elasticsearch-es-http.default.svc.cluster.local:9200"
+            - name: STARCOIN_ES_USER
+              value: elastic
+            - name: STARCOIN_ES_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: starcoin-elasticsearch-es-elastic-user
+                  key: elastic
+            - name: STARCOIN_ES_PREFIX
+              value: halley*
