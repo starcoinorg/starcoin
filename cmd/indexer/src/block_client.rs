@@ -1,6 +1,5 @@
 use crate::{BlockData, TransactionData};
 use anyhow::Result;
-use futures_util::compat::Future01CompatExt;
 use jsonrpc_core_client::RpcError;
 use starcoin_rpc_api::chain::ChainClient;
 use starcoin_rpc_api::types::{
@@ -19,21 +18,15 @@ impl BlockClient {
         }
     }
     pub async fn get_block_whole_by_height(&self, height: u64) -> Result<BlockData, RpcError> {
-        let block: Option<BlockView> = self
-            .node_client
-            .get_block_by_number(height)
-            .compat()
-            .await?;
+        let block: Option<BlockView> = self.node_client.get_block_by_number(height).await?;
         let block = block.ok_or_else(|| {
-            RpcError::Other(failure::err_msg(format!(
-                "cannot find block of height {}",
-                height
-            )))
+            RpcError::Other(Box::new(
+                failure::err_msg(format!("cannot find block of height {}", height)).compat(),
+            ))
         })?;
         let mut txn_infos: Vec<TransactionInfoView> = self
             .node_client
             .get_block_txn_infos(block.header.block_hash)
-            .compat()
             .await?;
         let mut txns_data = vec![];
 
@@ -42,19 +35,20 @@ impl BlockClient {
             let txn: Option<TransactionView> = self
                 .node_client
                 .get_transaction(txn_info.transaction_hash)
-                .compat()
                 .await?;
             let txn = txn.ok_or_else(|| {
-                RpcError::Other(failure::err_msg(format!(
-                    "cannot find txn with id {}",
-                    txn_info.transaction_hash
-                )))
+                RpcError::Other(Box::new(
+                    failure::err_msg(format!(
+                        "cannot find txn with id {}",
+                        txn_info.transaction_hash
+                    ))
+                    .compat(),
+                ))
             })?;
 
             let events: Vec<TransactionEventView> = self
                 .node_client
                 .get_events_by_txn_hash(txn_info.transaction_hash)
-                .compat()
                 .await?;
             txns_data.push(TransactionData {
                 info: txn_info,
@@ -71,7 +65,7 @@ impl BlockClient {
         let fetch_events_tasks = txn_infos
             .iter()
             .map(|txn_info| txn_info.transaction_hash)
-            .map(|txn_hash| self.node_client.get_events_by_txn_hash(txn_hash).compat());
+            .map(|txn_hash| self.node_client.get_events_by_txn_hash(txn_hash));
 
         let events = futures_util::future::try_join_all(fetch_events_tasks).await?;
 
@@ -89,7 +83,7 @@ impl BlockClient {
         Ok(BlockData { block, txns_data })
     }
     pub async fn get_chain_head(&self) -> Result<BlockHeaderView, RpcError> {
-        let chain_info: ChainInfoView = self.node_client.info().compat().await?;
+        let chain_info: ChainInfoView = self.node_client.info().await?;
         Ok(chain_info.head)
     }
 }

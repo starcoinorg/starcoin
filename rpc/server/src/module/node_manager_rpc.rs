@@ -36,7 +36,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn stop_service(&self, service_name: String) -> FutureResult<()> {
@@ -46,7 +46,7 @@ where
             Ok(())
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn start_service(&self, service_name: String) -> FutureResult<()> {
@@ -56,13 +56,13 @@ where
             Ok(())
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn check_service(&self, service_name: String) -> FutureResult<ServiceStatus> {
         let service = self.service.clone();
         let fut = async move { service.check_service(service_name).await }.map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn shutdown_system(&self) -> FutureResult<()> {
@@ -72,6 +72,6 @@ where
             Ok(())
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 }
