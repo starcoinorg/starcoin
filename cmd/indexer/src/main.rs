@@ -1,10 +1,9 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Clap;
 use elasticsearch::auth::Credentials;
 use elasticsearch::http::transport::SingleNodeConnectionPool;
 use elasticsearch::http::Url;
 use elasticsearch::Elasticsearch;
-use failure::Fail;
 use futures_retry::{FutureRetry, RetryPolicy};
 use futures_util::TryFutureExt;
 use jsonrpc_core_client::transports::http;
@@ -12,7 +11,7 @@ use starcoin_indexer::{BlockClient, BlockData, EsSinker, IndexConfig};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::chain::ChainClient;
 use std::time::Duration;
-use tokio_compat::runtime;
+use tokio::runtime;
 
 #[derive(Clap, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
@@ -38,7 +37,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
 
     loop {
         let remote_tip_header = FutureRetry::new(
-            || block_client.get_chain_head().map_err(|e| e.compat()),
+            || block_client.get_chain_head().map_err(|e| e),
             |e| {
                 warn!("[Retry]: get chain head, err: {}", &e);
                 RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
@@ -68,9 +67,8 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
         } else {
             let next_block: BlockData = FutureRetry::new(
                 || {
-                    block_client
-                        .get_block_whole_by_height(next_block_number)
-                        .map_err(|e| e.compat())
+                    block_client.get_block_whole_by_height(next_block_number)
+                    //.map_err(|e| e.compat())
                 },
                 |e| {
                     warn!("[Retry]: get chain block data, err: {}", &e);
@@ -125,11 +123,13 @@ fn main() -> anyhow::Result<()> {
     let opts: Options = Options::parse();
     info!("opts: {:?}", &opts);
     let mut rt = runtime::Builder::new()
-        .name_prefix("starcoin-indexer")
+        .thread_name("starcoin-indexer")
+        .threaded_scheduler()
+        .enable_all()
         .build()?;
     let channel: ChainClient = rt
         .block_on(http::connect(opts.node_url.as_str()))
-        .map_err(|e| e.compat())?;
+        .map_err(|e| anyhow!(format!("{}", e)))?;
     let block_client = BlockClient::new(channel);
     let mut transport = elasticsearch::http::transport::TransportBuilder::new(
         SingleNodeConnectionPool::new(opts.es_url),
@@ -145,7 +145,7 @@ fn main() -> anyhow::Result<()> {
     let index_config = IndexConfig::new_with_prefix(opts.es_index_prefix.as_str());
     let sinker = EsSinker::new(es, index_config);
 
-    rt.block_on_std(start_loop(block_client, sinker))?;
+    rt.block_on(start_loop(block_client, sinker))?;
 
     Ok(())
 }

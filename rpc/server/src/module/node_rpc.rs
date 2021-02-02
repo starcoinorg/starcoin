@@ -48,7 +48,7 @@ impl NodeApi for NodeRpcImpl {
             );
             Ok(node_info)
         };
-        Box::new(fut.map_err(map_err).boxed().compat())
+        Box::pin(fut.map_err(map_err).boxed())
     }
 
     fn peers(&self) -> FutureResult<Vec<PeerInfoView>> {
@@ -60,7 +60,7 @@ impl NodeApi for NodeRpcImpl {
                 .map(PeerInfoView::from)
                 .collect::<Vec<_>>())
         };
-        Box::new(fut.map_err(map_err).boxed().compat())
+        Box::pin(fut.map_err(map_err).boxed())
     }
 
     fn metrics(&self) -> Result<HashMap<String, String>> {

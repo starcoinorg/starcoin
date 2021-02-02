@@ -80,7 +80,7 @@ where
             let code = service.get(AccessPath::from(&module_id.0)).await?;
             Ok(code.map(StrView))
         };
-        Box::new(f.map_err(map_err).boxed().compat())
+        Box::pin(f.map_err(map_err).boxed())
     }
 
     fn get_resource(
@@ -107,7 +107,7 @@ where
                 }
             }
         };
-        Box::new(f.map_err(map_err).boxed().compat())
+        Box::pin(f.map_err(map_err).boxed())
     }
     fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValueView>> {
         let service = self.chain_state.clone();
@@ -132,7 +132,7 @@ where
             Ok(output.into_iter().map(Into::into).collect())
         }
         .map_err(map_err);
-        Box::new(f.boxed().compat())
+        Box::pin(f.boxed())
     }
     fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<TransactionOutputView> {
         let service = self.chain_state.clone();
@@ -171,6 +171,6 @@ where
             Ok(output.1.into())
         }
         .map_err(map_err);
-        Box::new(f.boxed().compat())
+        Box::pin(f.boxed())
     }
 }

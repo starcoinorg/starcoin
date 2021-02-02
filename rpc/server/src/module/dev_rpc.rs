@@ -57,6 +57,6 @@ where
             Ok(output.into_iter().map(Into::into).collect())
         }
         .map_err(map_err);
-        Box::new(f.boxed().compat())
+        Box::pin(f.boxed())
     }
 }

@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use futures::channel::mpsc;
-use futures::compat::Sink01CompatExt;
 use futures::future::AbortHandle;
 use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
@@ -442,8 +441,6 @@ async fn run_subscription<M, Handler>(
 {
     // TODO: should we use assgin_id_async?
     if let Ok(sink) = subscriber.assign_id(subscriber_id.clone()) {
-        let sink = sink.sink_compat();
-
         let forward = msg_channel
             .flat_map(move |m| {
                 let r = event_handler.handle(m);

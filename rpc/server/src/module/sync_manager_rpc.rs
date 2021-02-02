@@ -38,7 +38,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn cancel(&self) -> FutureResult<()> {
@@ -48,7 +48,7 @@ where
             Ok(())
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn start(
@@ -66,7 +66,7 @@ where
             Ok(())
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn progress(&self) -> FutureResult<Option<SyncProgressReport>> {
@@ -76,7 +76,7 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 
     fn peer_score(&self) -> FutureResult<PeerScoreResponse> {
@@ -86,6 +86,6 @@ where
             Ok(result)
         }
         .map_err(map_err);
-        Box::new(fut.boxed().compat())
+        Box::pin(fut.boxed())
     }
 }
