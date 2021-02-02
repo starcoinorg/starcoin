@@ -47,6 +47,8 @@ mod module;
 mod package;
 mod pending_transaction;
 mod script;
+#[cfg(test)]
+mod tests;
 mod transaction_argument;
 
 pub type Version = u64; // Height - also used for MVCC in StateDB

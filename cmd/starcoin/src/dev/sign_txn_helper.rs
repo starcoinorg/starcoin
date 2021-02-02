@@ -7,7 +7,6 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionPayload};
 use starcoin_vm_types::{genesis_config::ChainNetwork, on_chain_config::DaoConfig};
 

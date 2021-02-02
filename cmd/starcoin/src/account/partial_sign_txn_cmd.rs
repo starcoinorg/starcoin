@@ -4,8 +4,7 @@
 use crate::cli_state::CliState;
 use crate::mutlisig_transaction::MultisigTransaction;
 use crate::StarcoinOpt;
-use anyhow::ensure;
-use anyhow::Result;
+use anyhow::{ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::transaction;

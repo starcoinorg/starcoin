@@ -82,7 +82,6 @@ pub mod nibble;
 pub mod nibble_path;
 pub mod node_type;
 pub mod proof;
-pub mod restore;
 pub mod test_helper;
 pub mod tree_cache;
 
