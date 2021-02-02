@@ -3,11 +3,11 @@
 
 use anyhow::format_err;
 use log::info;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
 use std::time::SystemTime;
 
 fn now_seconds() -> u64 {
@@ -224,23 +224,21 @@ impl TaskEventCounterHandle {
         let mut reports = self
             .previous_counters
             .lock()
-            .unwrap()
             .iter()
             .map(|counter| counter.get_report())
             .collect::<Vec<_>>();
-        if let Some(counter) = self.current_counter.lock().unwrap().as_ref().take() {
+        if let Some(counter) = self.current_counter.lock().as_ref().take() {
             reports.push(counter.get_report());
         }
         reports
     }
 
     pub fn total_report(&self) -> Option<TaskProgressReport> {
-        if let Some(current_counter) = self.current_counter.lock().unwrap().as_ref().take() {
+        if let Some(current_counter) = self.current_counter.lock().as_ref().take() {
             let task_name = current_counter.task_name.clone();
             let mut reports = self
                 .previous_counters
                 .lock()
-                .unwrap()
                 .iter()
                 .filter(|task| task.task_name == task_name)
                 .map(|counter| counter.get_report())
@@ -256,7 +254,6 @@ impl TaskEventCounterHandle {
     pub fn get_report(&self) -> Option<TaskProgressReport> {
         self.current_counter
             .lock()
-            .unwrap()
             .as_ref()
             .map(|counter| counter.get_report())
     }
@@ -268,45 +265,44 @@ impl TaskEventHandle for TaskEventCounterHandle {
         let pre_counter = self
             .current_counter
             .lock()
-            .unwrap()
             .replace(TaskEventCounter::new(name, total_items));
         if let Some(pre_counter) = pre_counter {
-            self.previous_counters.lock().unwrap().push(pre_counter);
+            self.previous_counters.lock().push(pre_counter);
         }
     }
 
     fn on_sub_task(&self) {
-        if let Some(counter) = self.current_counter.lock().unwrap().as_ref() {
+        if let Some(counter) = self.current_counter.lock().as_ref() {
             counter.sub_task_counter.fetch_add(1, Ordering::Release);
         }
     }
 
     fn on_error(&self) {
-        if let Some(counter) = self.current_counter.lock().unwrap().as_ref() {
+        if let Some(counter) = self.current_counter.lock().as_ref() {
             counter.error_counter.fetch_add(1, Ordering::Release);
         }
     }
 
     fn on_ok(&self) {
-        if let Some(counter) = self.current_counter.lock().unwrap().as_ref() {
+        if let Some(counter) = self.current_counter.lock().as_ref() {
             counter.ok_counter.fetch_add(1, Ordering::Release);
         }
     }
 
     fn on_retry(&self) {
-        if let Some(counter) = self.current_counter.lock().unwrap().as_ref() {
+        if let Some(counter) = self.current_counter.lock().as_ref() {
             counter.retry_counter.fetch_add(1, Ordering::Release);
         }
     }
 
     fn on_item(&self) {
-        if let Some(counter) = self.current_counter.lock().unwrap().as_ref() {
+        if let Some(counter) = self.current_counter.lock().as_ref() {
             counter.item_counter.fetch_add(1, Ordering::Release);
         }
     }
 
     fn on_finish(&self, task_name: String) {
-        if let Some(current_counter) = self.current_counter.lock().unwrap().as_ref() {
+        if let Some(current_counter) = self.current_counter.lock().as_ref() {
             info!(
                 "{} finished, report: {}",
                 task_name,

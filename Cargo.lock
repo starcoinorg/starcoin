@@ -8651,6 +8651,7 @@ dependencies = [
  "futures-retry",
  "futures-timer",
  "log 0.4.14",
+ "parking_lot 0.11.1",
  "pin-project 0.4.27",
  "pin-utils",
  "rand 0.7.3",
