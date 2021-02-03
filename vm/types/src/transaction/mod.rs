@@ -108,6 +108,28 @@ impl RawUserTransaction {
         }
     }
 
+    pub fn new_with_token_code(
+        sender: AccountAddress,
+        sequence_number: u64,
+        payload: TransactionPayload,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        gas_token_code: String,
+    ) -> Self {
+
+        RawUserTransaction {
+            sender,
+            sequence_number,
+            payload,
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code,
+            expiration_timestamp_secs,
+            chain_id,
+        }
+    }
     /// Create a new `RawUserTransaction` with a script.
     ///
     /// A script transaction contains only code to execute. No publishing is allowed in scripts.

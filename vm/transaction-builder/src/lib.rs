@@ -125,7 +125,7 @@ pub fn build_transfer_txn_by_token_type(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    raw_peer_to_peer_txn(
+    raw_peer_to_peer_txn_with_token_code(
         sender,
         receiver,
         recipient_auth_key,
@@ -186,6 +186,37 @@ pub fn raw_peer_to_peer_txn(
         gas_price,
         expiration_timestamp_secs,
         chain_id,
+    )
+}
+
+pub fn raw_peer_to_peer_txn_with_token_code(
+    sender: AccountAddress,
+    receiver: AccountAddress,
+    recipient_auth_key: Option<AuthenticationKey>,
+    transfer_amount: u128,
+    seq_num: u64,
+    gas_price: u64,
+    max_gas: u64,
+    token_code: TokenCode,
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+) -> RawUserTransaction {
+    RawUserTransaction::new_with_token_code(
+        sender,
+        seq_num,
+        TransactionPayload::Script(encode_transfer_script_by_token_code(
+            //TODO should use latest?
+            StdlibVersion::Latest,
+            receiver,
+            recipient_auth_key,
+            transfer_amount,
+            token_code.clone(),
+        )),
+        max_gas,
+        gas_price,
+        expiration_timestamp_secs,
+        chain_id,
+        format!("{}::{}::{}", token_code.address, token_code.module, token_code.name),
     )
 }
 
