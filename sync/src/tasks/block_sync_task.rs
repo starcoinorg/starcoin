@@ -145,7 +145,7 @@ impl TaskState for BlockSyncTask {
     }
 
     fn next(&self) -> Option<Self> {
-        let next_start_number = self.start_number + self.batch_size;
+        let next_start_number = self.start_number.saturating_add(self.batch_size);
         if next_start_number > self.accumulator.num_leaves() {
             None
         } else {
@@ -161,7 +161,11 @@ impl TaskState for BlockSyncTask {
     }
 
     fn total_items(&self) -> Option<u64> {
-        Some(self.accumulator.num_leaves() - self.start_number)
+        Some(
+            self.accumulator
+                .num_leaves()
+                .saturating_sub(self.start_number),
+        )
     }
 }
 

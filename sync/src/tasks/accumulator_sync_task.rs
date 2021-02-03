@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::tasks::BlockIdFetcher;
-use anyhow::{ensure, Result};
+use anyhow::{ensure, format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -27,16 +27,20 @@ impl BlockAccumulatorSyncTask {
         target: AccumulatorInfo,
         fetcher: F,
         batch_size: u64,
-    ) -> Self
+    ) -> Result<Self>
     where
         F: BlockIdFetcher + 'static,
     {
-        Self {
+        ensure!(
+            target.num_leaves > start_number,
+            "target block number should > start_number"
+        );
+        Ok(Self {
             start_number,
             target,
             fetcher: Arc::new(fetcher),
             batch_size,
-        }
+        })
     }
 }
 
@@ -47,7 +51,9 @@ impl TaskState for BlockAccumulatorSyncTask {
         async move {
             let start = self.start_number;
             let target = self.target.num_leaves;
-            let mut max_size = target - start;
+            let mut max_size = target
+                .checked_sub(start)
+                .ok_or_else(|| format_err!("target block number should > start_number"))?;
             if max_size > self.batch_size {
                 max_size = self.batch_size;
             }
@@ -61,7 +67,7 @@ impl TaskState for BlockAccumulatorSyncTask {
     }
 
     fn next(&self) -> Option<Self> {
-        let next_start_number = self.start_number + (self.batch_size as u64);
+        let next_start_number = self.start_number.saturating_add(self.batch_size as u64);
         if next_start_number >= self.target.num_leaves {
             None
         } else {
@@ -75,7 +81,7 @@ impl TaskState for BlockAccumulatorSyncTask {
     }
 
     fn total_items(&self) -> Option<u64> {
-        Some(self.target.num_leaves - self.start_number)
+        Some(self.target.num_leaves.saturating_sub(self.start_number))
     }
 }
 

@@ -506,7 +506,13 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
                 if let Some(begin) = handle.task_begin.as_ref() {
-                    report.fix_percent(handle.target.block_header.number() - begin.number);
+                    report.fix_percent(
+                        handle
+                            .target
+                            .block_header
+                            .number()
+                            .saturating_sub(begin.number),
+                    );
                 }
 
                 SyncProgressReport {

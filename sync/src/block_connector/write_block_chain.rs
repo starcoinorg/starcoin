@@ -196,9 +196,17 @@ where
             .main
             .get_block(ancestor.id)?
             .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor.id))?;
-        let enacted_count = new_branch.current_header().number() - ancestor_block.header().number();
-        let retracted_count =
-            self.main.current_header().number() - ancestor_block.header().number();
+        let enacted_count = new_branch
+            .current_header()
+            .number()
+            .checked_sub(ancestor_block.header().number())
+            .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
+        let retracted_count = self
+            .main
+            .current_header()
+            .number()
+            .checked_sub(ancestor_block.header().number())
+            .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
 
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.main.current_header().id();

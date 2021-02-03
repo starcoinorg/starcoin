@@ -376,7 +376,7 @@ where
 
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
-    let target_block_number = target.block_accumulator_info.num_leaves - 1;
+    let target_block_number = target.block_accumulator_info.num_leaves.saturating_sub(1);
     let target_block_accumulator = target.block_accumulator_info;
 
     let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
@@ -427,7 +427,7 @@ where
             }
 
             // sub target
-            let target_number = latest_ancestor.number + 1000;
+            let target_number = latest_ancestor.number.saturating_add(1000);
             let sub_target_task = FindSubTargetTask::new(fetcher.clone(), target_number);
             let (peers, sub_target) = sub_target_task
                 .sub_target()
@@ -459,14 +459,17 @@ where
                 )
                 .await?;
             latest_block_chain = block_chain;
-            let total_num = latest_block_chain.current_header().number() - ancestor.number;
-            let total_time = get_unix_ts_as_millis() - start_time;
+            let total_num = latest_block_chain
+                .current_header()
+                .number()
+                .saturating_sub(ancestor.number);
+            let total_time = get_unix_ts_as_millis().saturating_sub(start_time);
             info!(
                 "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 strategy,
                 total_num,
                 total_time,
-                total_time / total_num as u128
+                total_time.checked_div(total_num as u128).unwrap_or(0)
             );
             if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
                 break;

@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+#![allow(clippy::integer_arithmetic)]
 use crate::block_connector::WriteBlockChainService;
-
 use config::NodeConfig;
 use consensus::Consensus;
 use starcoin_account_api::AccountInfo;
