@@ -335,10 +335,10 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
-use network::get_unix_ts_as_millis;
 use network_api::messages::PeerEvent;
 use network_api::{NetworkService, PeerStrategy};
 use starcoin_types::peer_info::{PeerId, PeerInfo};
+use std::time::Instant;
 use traits::ChainReader;
 
 pub fn full_sync_task<H, A, F, N>(
@@ -417,7 +417,7 @@ where
         }
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
-        let start_time = get_unix_ts_as_millis();
+        let start_now = Instant::now();
 
         loop {
             while let Ok(Some(peer_event)) = peer_receiver.try_next() {
@@ -463,7 +463,9 @@ where
                 .current_header()
                 .number()
                 .saturating_sub(ancestor.number);
-            let total_time = get_unix_ts_as_millis().saturating_sub(start_time);
+            let total_time = Instant::now()
+                .saturating_duration_since(start_now)
+                .as_millis();
             info!(
                 "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 strategy,
