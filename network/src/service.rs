@@ -235,8 +235,9 @@ impl ServiceHandler<Self, GetSelfPeer> for NetworkActorService {
         self.inner.self_peer.get_peer_info().clone()
     }
 }
-
-const LRU_CACHE_SIZE: usize = 1024;
+// max peers is 100(in: 25 + out:75), so blocks lru + txn lru max memory usage about is:
+// (100 +1 ) * ( LRU_CACHE_SIZE * 32) *2 = 64M
+const LRU_CACHE_SIZE: usize = 10240;
 
 #[derive(Debug)]
 pub struct Peer {
@@ -472,7 +473,7 @@ impl Inner {
                     {
                         debug!("peer({:?})'s total_difficulty is >= block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
                     } else {
-                        send_peer_count += 1;
+                        send_peer_count = send_peer_count.saturating_add(1);
                         peer.known_blocks.put(id, ());
 
                         self.network_service.write_notification(
@@ -525,7 +526,7 @@ impl Inner {
                         );
                         continue;
                     }
-                    send_peer_count += 1;
+                    send_peer_count = send_peer_count.saturating_add(1);
                     // if txn after known_transactions filter is same length with origin, just send origin message for avoid encode data again.
                     if txns_unhandled.len() == origin_txn_len {
                         self.network_service.write_notification(
