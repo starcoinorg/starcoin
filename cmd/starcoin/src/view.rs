@@ -213,9 +213,6 @@ pub struct TranscationOutputView {
     /// The amount of gas used during execution.
     pub gas_used: u64,
 
-    /// The resource increment size
-    pub delta_size: i64,
-
     /// The execution status.
     pub status: TransactionVMStatus,
 }
@@ -226,7 +223,6 @@ impl From<TransactionOutputView> for TranscationOutputView {
             write_set: output.write_set,
             events: output.events.into_iter().map(|e| e.into()).collect(),
             gas_used: output.gas_used.0,
-            delta_size: output.delta_size.0,
             status: output.status,
         }
     }

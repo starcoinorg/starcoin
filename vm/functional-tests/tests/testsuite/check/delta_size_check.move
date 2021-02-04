@@ -39,7 +39,6 @@ module Tester {
 
 //! new-transaction
 //! sender: bob
-// todo: delta_size break after vm upgrade to 12_14
 script {
 use {{bob}}::Tester;
 

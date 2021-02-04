@@ -975,7 +975,6 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
         WriteSet::default(),
         vec![],
         0,
-        0,
         TransactionStatus::Discard(err),
     )
 }
@@ -1059,7 +1058,6 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
         write_set,
         events,
         gas_used,
-        0,
         TransactionStatus::Keep(status),
     ))
 }
