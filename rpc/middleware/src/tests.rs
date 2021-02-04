@@ -1,9 +1,9 @@
 use super::*;
-use failure::_core::time::Duration;
 use futures::executor::block_on;
 use jsonrpc_core::{MetaIoHandler, Params, Value};
 use rand::Rng;
 use starcoin_metrics::get_all_metrics;
+use std::time::Duration;
 
 #[stest::test]
 fn test_middleware() {
