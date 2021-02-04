@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Result;
-use futures03::{StreamExt, TryStreamExt};
+use futures::{StreamExt, TryStreamExt};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::pubsub::MintBlock;
@@ -133,8 +133,8 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     std::thread::sleep(Duration::from_millis(300));
     let _e = node_handle.stop();
 
-    let events1 = futures03::executor::block_on(async move { handle1.await });
-    let events2 = futures03::executor::block_on(async move { handle2.await });
+    let events1 = futures::executor::block_on(async move { handle1.await });
+    let events2 = futures::executor::block_on(async move { handle2.await });
     assert_ne!(events1.len(), 0);
     assert_ne!(events2.len(), 0);
     Ok(())

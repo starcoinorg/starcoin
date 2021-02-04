@@ -5,8 +5,8 @@ use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 use actix::{Addr, System};
 use anyhow::anyhow;
-use futures03::channel::oneshot;
-use futures03::{TryStream, TryStreamExt};
+use futures::channel::oneshot;
+use futures::{TryStream, TryStreamExt};
 use jsonrpc_client_transports::RawClient;
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_api::PeerStrategy;
@@ -99,7 +99,7 @@ impl ConnectionProvider {
 
     fn block_on<F>(&self, future: F) -> F::Output
     where
-        F: futures03::Future + std::marker::Send,
+        F: futures::Future + std::marker::Send,
         F::Output: std::marker::Send,
     {
         self.runtime.lock().block_on(future)
@@ -133,7 +133,7 @@ impl RpcClient {
             tx.send(watcher).unwrap();
             let _ = sys.run();
         });
-        let watcher = futures03::executor::block_on(rx).expect("Init chain watcher fail.");
+        let watcher = futures::executor::block_on(rx).expect("Init chain watcher fail.");
         watcher.do_send(StartSubscribe {
             client: pubsub_client,
         });
@@ -153,7 +153,7 @@ impl RpcClient {
     where
         S: RpcAsyncService,
     {
-        let client = futures03::executor::block_on(async { rpc_service.connect_local().await })?;
+        let client = futures::executor::block_on(async { rpc_service.connect_local().await })?;
         Self::new(ConnSource::Local(Box::new(client)))
     }
 
@@ -175,7 +175,7 @@ impl RpcClient {
                 None => r.await?,
             }
         };
-        futures03::executor::block_on(f)
+        futures::executor::block_on(f)
     }
 
     pub fn watch_block(
@@ -187,7 +187,7 @@ impl RpcClient {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
             r.await?
         };
-        futures03::executor::block_on(f)
+        futures::executor::block_on(f)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {

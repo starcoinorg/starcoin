@@ -27,7 +27,7 @@ jsonrpc-ws-server = "17.0.0"
 jsonrpc-server-utils = "17.0.0"
 jsonrpc-pubsub = "17.0.0"
 jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
-futures = { version = "0.3", features = ["compat"] }
+futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = {path = "../../types"}
 starcoin-config = {path = "../../config"}

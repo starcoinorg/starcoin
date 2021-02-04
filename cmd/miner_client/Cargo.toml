@@ -9,7 +9,7 @@ anyhow = "1.0.38"
 actix = "0.10.0"
 actix-rt = "1.1"
 async-std = "1.9"
-futures = { version = "0.3" }
+futures = "0.3.12"
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
 traits = { path = "../../core/traits", package = "starcoin-traits" }
