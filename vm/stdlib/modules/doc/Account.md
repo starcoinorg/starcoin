@@ -376,6 +376,15 @@ Message for accept token events
 ## Constants
 
 
+<a name="0x1_Account_MAX_U64"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_MAX_U64">MAX_U64</a>: u128 = 18446744073709551615;
+</code></pre>
+
+
+
 <a name="0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST"></a>
 
 
@@ -399,6 +408,15 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_Account_EBAD_TRANSACTION_FEE_CURRENCY"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EBAD_TRANSACTION_FEE_CURRENCY">EBAD_TRANSACTION_FEE_CURRENCY</a>: u64 = 18;
 </code></pre>
 
 
@@ -453,6 +471,15 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG">EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG</a>: u64 = 9;
 </code></pre>
 
 
@@ -1557,9 +1584,25 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
     );
 
     // Check that the account has enough balance for all of the gas
+    <b>assert</b>(
+        (txn_gas_price <b>as</b> u128) * (txn_max_gas_units <b>as</b> u128) &lt;= <a href="Account.md#0x1_Account_MAX_U64">MAX_U64</a>,
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>),
+    );
     <b>let</b> max_transaction_fee = txn_gas_price * txn_max_gas_units;
-    <b>let</b> balance_amount = <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(txn_sender);
-    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>));
+    <b>if</b> (max_transaction_fee &gt; 0) {
+        <b>assert</b>(
+            <a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;(),
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EBAD_TRANSACTION_FEE_CURRENCY">EBAD_TRANSACTION_FEE_CURRENCY</a>)
+        );
+
+        <b>let</b> balance_amount = <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(txn_sender);
+        <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>));
+
+        <b>assert</b>(
+            (txn_sequence_number <b>as</b> u128) &lt; <a href="Account.md#0x1_Account_MAX_U64">MAX_U64</a>,
+            <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG">EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG</a>)
+        );
+    };
 
     // Check that the transaction sequence number matches the sequence number of the account
     <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>));

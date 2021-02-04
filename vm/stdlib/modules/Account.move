@@ -94,14 +94,18 @@ module Account {
         token_code: Token::TokenCode,
     }
 
+    const MAX_U64: u128 = 18446744073709551615;
+
     const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
     const EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
     const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
     const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
     const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 9;
 
     const EINSUFFICIENT_BALANCE: u64 = 10;
     const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
+    const EBAD_TRANSACTION_FEE_CURRENCY: u64 = 18;
 
     const EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED: u64 = 101;
     const EMALFORMED_AUTHENTICATION_KEY: u64 = 102;
@@ -706,9 +710,25 @@ module Account {
         );
 
         // Check that the account has enough balance for all of the gas
+        assert(
+            (txn_gas_price as u128) * (txn_max_gas_units as u128) <= MAX_U64,
+            Errors::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT),
+        );
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
-        let balance_amount = balance<TokenType>(txn_sender);
-        assert(balance_amount >= (max_transaction_fee as u128), Errors::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT));
+        if (max_transaction_fee > 0) {
+            assert(
+                STC::is_stc<TokenType>(),
+                Errors::invalid_argument(EBAD_TRANSACTION_FEE_CURRENCY)
+            );
+
+            let balance_amount = balance<TokenType>(txn_sender);
+            assert(balance_amount >= (max_transaction_fee as u128), Errors::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT));
+
+            assert(
+                (txn_sequence_number as u128) < MAX_U64,
+                Errors::limit_exceeded(EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG)
+            );
+        };
 
         // Check that the transaction sequence number matches the sequence number of the account
         assert(txn_sequence_number >= sender_account.sequence_number, Errors::invalid_argument(EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD));
