@@ -4,7 +4,7 @@
 use crate::pubsub_client::PubSubClient;
 use actix::prelude::*;
 use actix::AsyncContext;
-use futures03::channel::oneshot;
+use futures::channel::oneshot;
 use jsonrpc_core_client::RpcError;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
