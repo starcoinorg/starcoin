@@ -67,5 +67,3 @@ fun main() {
 }
 
 // check: EXECUTED
-// check: delta_size
-// check: 0
