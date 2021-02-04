@@ -19,11 +19,8 @@ impl BlockClient {
     }
     pub async fn get_block_whole_by_height(&self, height: u64) -> Result<BlockData, RpcError> {
         let block: Option<BlockView> = self.node_client.get_block_by_number(height).await?;
-        let block = block.ok_or_else(|| {
-            RpcError::Other(Box::new(
-                failure::err_msg(format!("cannot find block of height {}", height)).compat(),
-            ))
-        })?;
+        let block = block
+            .ok_or_else(|| RpcError::Client(format!("cannot find block of height {}", height)))?;
         let mut txn_infos: Vec<TransactionInfoView> = self
             .node_client
             .get_block_txn_infos(block.header.block_hash)
@@ -37,12 +34,9 @@ impl BlockClient {
                 .get_transaction(txn_info.transaction_hash)
                 .await?;
             let txn = txn.ok_or_else(|| {
-                RpcError::Other(Box::new(
-                    failure::err_msg(format!(
-                        "cannot find txn with id {}",
-                        txn_info.transaction_hash
-                    ))
-                    .compat(),
+                RpcError::Client(format!(
+                    "cannot find txn with id {}",
+                    txn_info.transaction_hash
                 ))
             })?;
 

@@ -7995,7 +7995,6 @@ dependencies = [
  "anyhow",
  "async-std",
  "bcs-ext",
- "failure",
  "futures 0.1.30",
  "futures 0.3.11",
  "hex",
@@ -8038,7 +8037,6 @@ name = "starcoin-rpc-middleware"
 version = "0.10.1"
 dependencies = [
  "anyhow",
- "failure",
  "futures 0.3.11",
  "futures01",
  "jsonrpc-core",
@@ -8060,7 +8058,6 @@ dependencies = [
  "api-limiter",
  "bcs-ext",
  "dashmap 4.0.2",
- "failure",
  "futures 0.3.11",
  "futures-channel",
  "governor",
