@@ -9,11 +9,6 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 thiserror = "1.0"
-# for RpcError convert.
-failure = "0.1"
-# for ipc connect
-tokio01 = { version="0.1", package="tokio"}
-tokio-compat = "0.1.5"
 serde = { version = "1.0.123", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 hex = "~0.4"
@@ -28,8 +23,7 @@ jsonrpc-server-utils = "17.0.0"
 jsonrpc-pubsub = "17.0.0"
 jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
-futures03 = { package="futures",version = "0.3", features = ["compat"] }
-futures = "0.1.29"
+futures = "0.3.12"
 parity-tokio-ipc = { version = "0.8"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}

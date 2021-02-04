@@ -3,7 +3,6 @@
 
 use crate::module::helpers::TransactionRequestFiller;
 use crate::module::map_err;
-use failure::_core::time::Duration;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
@@ -17,6 +16,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct AccountRpcImpl<Account, Pool, State, Chain>
