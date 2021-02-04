@@ -9,7 +9,7 @@ use crate::gas_schedule::{
 use crate::move_resource::MoveResource;
 use crate::on_chain_config::DaoConfig;
 use crate::on_chain_config::{
-    ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
+    ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE, TEST_GAS_SCHEDULE,
 };
 use crate::on_chain_resource::Epoch;
 use crate::time::{TimeService, TimeServiceType};
@@ -865,6 +865,22 @@ pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: GasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(4_000_000_000),
+        min_price_per_gas_unit: GasPrice::new(1),
+        max_price_per_gas_unit: GasPrice::new(10_000),
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
+        gas_unit_scaling_factor: 1,
+        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+    }
+});
+
+pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
+    GasConstants {
+        global_memory_per_byte_cost: GasUnits::new(4),
+        global_memory_per_byte_write_cost: GasUnits::new(9),
+        min_transaction_gas_units: GasUnits::new(600),
+        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        intrinsic_gas_per_byte: GasUnits::new(8),
+        maximum_number_of_gas_units: GasUnits::new(4_000_000_000),
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
@@ -893,7 +909,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600,
         vm_config: VMConfig {
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::Open,
         consensus_config: ConsensusConfig {
@@ -942,7 +958,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },
         publishing_option: VMPublishingOption::Open,
         consensus_config: ConsensusConfig {

@@ -4,7 +4,7 @@
 //! This file contains the starting gas schedule published at genesis.
 
 use crate::gas_schedule::{CostTable, GasCost};
-use crate::genesis_config::DEFAULT_GAS_CONSTANTS;
+use crate::genesis_config::{DEFAULT_GAS_CONSTANTS, TEST_GAS_CONSTANTS};
 use move_vm_types::gas_schedule::NativeCostIndex as N;
 use once_cell::sync::Lazy;
 use vm::{
@@ -16,7 +16,7 @@ use vm::{
     file_format_common::instruction_key,
 };
 
-pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
+fn initial_instruction_table() -> Vec<GasCost> {
     use Bytecode::*;
     let mut instrs = vec![
         (MoveTo(StructDefinitionIndex::new(0)), GasCost::new(13, 1)),
@@ -137,8 +137,10 @@ pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
             "all instructions must be in the cost table"
         );
     }
-    let instruction_table = instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>();
+    instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>()
+}
 
+fn initial_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
         (N::SHA3_256, GasCost::new(64, 1)),
@@ -171,8 +173,26 @@ pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
         native_table.len() == NUMBER_OF_NATIVE_FUNCTIONS,
         "all native functions must be in the cost table"
     );
+    native_table
+}
+
+pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
+    let instruction_table = initial_instruction_table();
+    let native_table = initial_native_table();
 
     let gas_constants = DEFAULT_GAS_CONSTANTS.clone();
+    CostTable {
+        instruction_table,
+        native_table,
+        gas_constants,
+    }
+});
+
+pub static TEST_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
+    let instruction_table = initial_instruction_table();
+    let native_table = initial_native_table();
+
+    let gas_constants = TEST_GAS_CONSTANTS.clone();
     CostTable {
         instruction_table,
         native_table,
