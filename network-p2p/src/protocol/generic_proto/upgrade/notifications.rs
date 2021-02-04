@@ -48,7 +48,7 @@ use std::{
 use unsigned_varint::codec::UviBytes;
 
 /// Maximum allowed size of the two handshake messages, in bytes.
-const MAX_HANDSHAKE_SIZE: usize = 1024;
+pub const MAX_HANDSHAKE_SIZE: usize = 2048;
 
 /// Upgrade that accepts a substream, sends back a status message, then becomes a unidirectional
 /// stream of messages.
