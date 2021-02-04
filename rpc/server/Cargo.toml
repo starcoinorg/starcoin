@@ -27,7 +27,6 @@ jsonrpc-ws-server = "17.0.0"
 jsonrpc-server-utils = "17.0.0"
 jsonrpc-pubsub = "17.0.0"
 jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
-tokio01 = { version="0.1", package="tokio"}
 futures = { version = "0.3", features = ["compat"] }
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = {path = "../../types"}
@@ -73,6 +72,5 @@ starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = {path = "../../core/genesis"}
-tokio-compat = "0.1.5"
 test-helper = { path = "../../test-helper" }
 starcoin-chain-mock = { path = "../../chain/mock" }
