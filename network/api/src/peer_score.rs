@@ -51,7 +51,6 @@ impl InverseScore {
 
 impl Score<u32> for InverseScore {
     fn execute(&self, time: u32) -> i64 {
-        assert!(time > 0);
         self.k / (time as i64)
     }
 }

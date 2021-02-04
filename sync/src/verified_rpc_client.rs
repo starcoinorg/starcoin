@@ -5,7 +5,7 @@ use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 use anyhow::{ensure, format_err, Result};
 use logger::prelude::*;
-use network::get_unix_ts_as_millis;
+use network::get_unix_ts;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
 use rand::prelude::SliceRandom;
@@ -416,11 +416,11 @@ impl VerifiedRpcClient {
             .peer_sync_per_time
             .with_label_values(&[&format!("peer-{:?}", peer_id)])
             .start_timer();
-        let start_time = get_unix_ts_as_millis();
+        let start_time = get_unix_ts();
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
         let _ = timer.stop_and_record();
-        let time = (get_unix_ts_as_millis().saturating_sub(start_time)) as u32;
+        let time = (get_unix_ts().saturating_sub(start_time)) as u32;
         let score = self.score(time);
         self.record(&peer_id, score);
         SYNC_SCORE_METRICS.update_metrics(peer_id.clone(), time, score);
