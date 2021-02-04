@@ -19,7 +19,7 @@ bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 derive_more = "0.99.11"
 either = "1.6.1"
 fnv = "1.0.6"
-futures = "0.3"
+futures = "0.3.12"
 futures_codec = "0.3"
 futures-timer = "3.0"
 linked-hash-map = "0.5.4"
