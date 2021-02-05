@@ -30,8 +30,6 @@ use types::{
 #[cfg(test)]
 mod test_create_block_template;
 
-const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
-
 #[derive(Debug)]
 pub struct GetHeadRequest;
 
@@ -227,15 +225,14 @@ where
 
     pub fn find_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
-        if let Ok(epoch) = self.chain.epoch_info() {
-            if epoch.end_block_number() != (self.chain.current_header().number() + 1) {
-                for maybe_uncle in self.uncles.values() {
-                    if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
-                        break;
-                    }
-                    if self.chain.can_be_uncle(maybe_uncle).unwrap_or_default() {
-                        new_uncle.push(maybe_uncle.clone())
-                    }
+        let epoch = self.chain.epoch();
+        if epoch.end_block_number() != (self.chain.current_header().number() + 1) {
+            for maybe_uncle in self.uncles.values() {
+                if new_uncle.len() as u64 >= epoch.max_uncles_per_block() {
+                    break;
+                }
+                if self.chain.can_be_uncle(maybe_uncle).unwrap_or_default() {
+                    new_uncle.push(maybe_uncle.clone())
                 }
             }
         }
