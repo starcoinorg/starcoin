@@ -412,11 +412,11 @@ Message for accept token events
 
 
 
-<a name="0x1_Account_EBAD_TRANSACTION_FEE_CURRENCY"></a>
+<a name="0x1_Account_EBAD_TRANSACTION_FEE_TOKEN"></a>
 
 
 
-<pre><code><b>const</b> <a href="Account.md#0x1_Account_EBAD_TRANSACTION_FEE_CURRENCY">EBAD_TRANSACTION_FEE_CURRENCY</a>: u64 = 18;
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EBAD_TRANSACTION_FEE_TOKEN">EBAD_TRANSACTION_FEE_TOKEN</a>: u64 = 18;
 </code></pre>
 
 
@@ -1592,7 +1592,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
     <b>if</b> (max_transaction_fee &gt; 0) {
         <b>assert</b>(
             <a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;(),
-            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EBAD_TRANSACTION_FEE_CURRENCY">EBAD_TRANSACTION_FEE_CURRENCY</a>)
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EBAD_TRANSACTION_FEE_TOKEN">EBAD_TRANSACTION_FEE_TOKEN</a>)
         );
 
         <b>let</b> balance_amount = <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(txn_sender);

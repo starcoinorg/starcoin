@@ -105,7 +105,7 @@ module Account {
 
     const EINSUFFICIENT_BALANCE: u64 = 10;
     const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
-    const EBAD_TRANSACTION_FEE_CURRENCY: u64 = 18;
+    const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
 
     const EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED: u64 = 101;
     const EMALFORMED_AUTHENTICATION_KEY: u64 = 102;
@@ -718,7 +718,7 @@ module Account {
         if (max_transaction_fee > 0) {
             assert(
                 STC::is_stc<TokenType>(),
-                Errors::invalid_argument(EBAD_TRANSACTION_FEE_CURRENCY)
+                Errors::invalid_argument(EBAD_TRANSACTION_FEE_TOKEN)
             );
 
             let balance_amount = balance<TokenType>(txn_sender);
