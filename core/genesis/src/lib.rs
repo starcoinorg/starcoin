@@ -151,7 +151,7 @@ impl Genesis {
             },
             true,
         )?;
-        let txn = RawUserTransaction::new(
+        let txn = RawUserTransaction::new_with_default_gas_token(
             CORE_CODE_ADDRESS,
             0,
             TransactionPayload::Package(package),

@@ -16,6 +16,7 @@ const PROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
 const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
 const PROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
 const PROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
+const PROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 9;
 
 const EINSUFFICIENT_BALANCE: u64 = 10;
 const ENOT_GENESIS_ACCOUNT: u64 = 11;
@@ -25,6 +26,7 @@ const EINVALID_TIMESTAMP: u64 = 14;
 const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
 const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
+const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
 
 const INVALID_STATE: u8 = 1;
 const REQUIRES_ADDRESS: u8 = 2;
@@ -65,6 +67,9 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                     StatusCode::INVALID_MODULE_PUBLISHER
                 }
                 (INVALID_ARGUMENT, PROLOGUE_SCRIPT_NOT_ALLOWED) => StatusCode::UNKNOWN_SCRIPT,
+                (LIMIT_EXCEEDED, PROLOGUE_SEQUENCE_NUMBER_TOO_BIG) => {
+                    StatusCode::SEQUENCE_NUMBER_TOO_BIG
+                }
                 (REQUIRES_ADDRESS, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
                 (INVALID_STATE, ENOT_GENESIS) => StatusCode::NOT_GENESIS,
                 (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
@@ -74,6 +79,9 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => StatusCode::COIN_DEPOSIT_IS_ZERO,
                 (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => StatusCode::DESTROY_TOKEN_NON_ZERO,
                 (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => StatusCode::BLOCK_NUMBER_MISMATCH,
+                (INVALID_ARGUMENT, EBAD_TRANSACTION_FEE_TOKEN) => {
+                    StatusCode::BAD_TRANSACTION_FEE_CURRENCY
+                }
                 (category, reason) => {
                     warn!(
                         "prologue runtime unknown: category({}), reason:({})",

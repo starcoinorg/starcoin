@@ -145,7 +145,7 @@ fn test_txn_verify_err_case() -> Result<()> {
         alice.auth_key(),
         100000,
     );
-    let txn = RawUserTransaction::new(
+    let txn = RawUserTransaction::new_with_default_gas_token(
         *alice.address(),
         0,
         TransactionPayload::Script(script),

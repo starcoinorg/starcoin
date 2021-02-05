@@ -85,7 +85,7 @@ pub fn test_wallet_unlock() -> Result<()> {
     let unlock_result = manager.unlock_account(*wallet.address(), "hell0", Duration::from_secs(1));
     assert!(unlock_result.is_err());
     manager.unlock_account(*wallet.address(), "hello", Duration::from_secs(1))?;
-    let fake_txn = RawUserTransaction::new(
+    let fake_txn = RawUserTransaction::new_with_default_gas_token(
         *wallet.address(),
         1,
         TransactionPayload::Script(Script::new(vec![], vec![], vec![])),

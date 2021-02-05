@@ -112,7 +112,7 @@ where
             }
         }
 
-        let raw_txn = RawUserTransaction::new(
+        let raw_txn = RawUserTransaction::new_with_default_gas_token(
             sender,
             next_seq_number,
             payload,
