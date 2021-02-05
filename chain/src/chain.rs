@@ -411,7 +411,7 @@ impl BlockChain {
 
         verify_block!(
             VerifyBlockField::State,
-            executed_accumulator_root == header.accumulator_root(),
+            executed_accumulator_root == header.txn_accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
 

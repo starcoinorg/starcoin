@@ -212,23 +212,23 @@ pub struct BlockHeaderView {
     /// Block author auth key.
     pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
-    pub accumulator_root: HashValue,
-    /// The parent block accumulator root hash.
-    pub parent_block_accumulator_root: HashValue,
+    pub txn_accumulator_root: HashValue,
+    /// The block accumulator root hash.
+    pub block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
     /// Gas used for contracts execution.
     pub gas_used: StrView<u64>,
     /// Block difficulty
     pub difficulty: U256,
-    /// Consensus nonce field.
-    pub nonce: u32,
     /// hash for block body
     pub body_hash: HashValue,
-    /// block header extra
-    pub extra: BlockHeaderExtra,
     /// The chain id
     pub chain_id: u8,
+    /// Consensus nonce field.
+    pub nonce: u32,
+    /// block header extra
+    pub extra: BlockHeaderExtra,
 }
 impl From<BlockHeader> for BlockHeaderView {
     fn from(origin: BlockHeader) -> Self {
@@ -239,15 +239,15 @@ impl From<BlockHeader> for BlockHeaderView {
             number: origin.number().into(),
             author: origin.author(),
             author_auth_key: origin.author_auth_key(),
-            accumulator_root: origin.accumulator_root(),
-            parent_block_accumulator_root: origin.parent_block_accumulator_root(),
+            txn_accumulator_root: origin.txn_accumulator_root(),
+            block_accumulator_root: origin.block_accumulator_root(),
             state_root: origin.state_root(),
             gas_used: origin.gas_used().into(),
             difficulty: origin.difficulty(),
-            nonce: origin.nonce(),
             body_hash: origin.body_hash(),
-            extra: *origin.extra(),
             chain_id: origin.chain_id().id(),
+            nonce: origin.nonce(),
+            extra: *origin.extra(),
         }
     }
 }

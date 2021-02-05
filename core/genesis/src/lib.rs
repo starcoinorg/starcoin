@@ -59,7 +59,7 @@ impl Display for Genesis {
         write!(
             f,
             "accumulator_root: {:?}; ",
-            self.block.header.accumulator_root()
+            self.block.header.txn_accumulator_root()
         )?;
         write!(f, "state_root: {:?}; ", self.block.header.state_root())?;
         write!(f, "difficulty: {:?}; ", self.block.header.difficulty())?;

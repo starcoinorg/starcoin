@@ -78,9 +78,9 @@ fn gen_header(
         state_root,
         0,
         U256::zero(),
-        0,
         body_hash,
         parent_header.chain_id(),
+        0,
         BlockHeaderExtra::new([0u8; 4]),
     )
 }
@@ -161,7 +161,7 @@ prop_compose! {
     //gen state_root, acc_root
     let (state_root, acc_root) = gen_root_hashes(
         storage,
-        parent_header.accumulator_root(),
+        parent_header.txn_accumulator_root(),
         parent_header.state_root(),
         txns,
         u64::max_value(), /*block_gas_limit*/
