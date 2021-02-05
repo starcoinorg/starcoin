@@ -20,6 +20,8 @@ use types::transaction;
 pub struct Options {
     /// Skip checks for early rejection, to make sure that local transactions are always imported.
     pub no_early_reject: bool,
+    /// reject txn whose gas_price is lower than this.
+    pub min_gas_price: u64,
 }
 
 #[cfg(test)]
@@ -27,6 +29,7 @@ impl Default for Options {
     fn default() -> Self {
         Options {
             no_early_reject: false,
+            min_gas_price: 0,
         }
     }
 }
@@ -69,6 +72,12 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
         &self,
         tx: PoolTransaction,
     ) -> Result<Self::VerifiedTransaction, Self::Error> {
+        if tx.gas_price() <= self.options.min_gas_price {
+            return Err(transaction::TransactionError::InsufficientGasPrice {
+                minimal: self.options.min_gas_price,
+                got: tx.gas_price(),
+            });
+        }
         let hash = tx.hash();
         let is_local_txn = tx.is_local();
         let is_retracted = tx.is_retracted();
