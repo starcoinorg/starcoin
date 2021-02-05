@@ -37,6 +37,7 @@ max_open_files = 40960
 
 [tx_pool]
 max_count = 8192
+min_gas_price = 1
 
 [vault]
 dir = "/data/my_starcoin_vault"

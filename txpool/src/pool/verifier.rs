@@ -72,7 +72,7 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
         &self,
         tx: PoolTransaction,
     ) -> Result<Self::VerifiedTransaction, Self::Error> {
-        if tx.gas_price() <= self.options.min_gas_price {
+        if tx.gas_price() < self.options.min_gas_price {
             return Err(transaction::TransactionError::InsufficientGasPrice {
                 minimal: self.options.min_gas_price,
                 got: tx.gas_price(),
