@@ -880,7 +880,7 @@ pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         min_transaction_gas_units: GasUnits::new(600),
         large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
         intrinsic_gas_per_byte: GasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(4_000_000_000),
+        maximum_number_of_gas_units: GasUnits::new(40_000_000),
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
