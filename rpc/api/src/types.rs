@@ -685,18 +685,16 @@ impl TransactionEventView {
 pub struct TransactionOutputView {
     pub events: Vec<TransactionEventView>,
     pub gas_used: StrView<u64>,
-    pub delta_size: StrView<i64>,
     pub status: TransactionVMStatus,
     pub write_set: Vec<TransactionOutputAction>,
 }
 
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
-        let (write_set, events, gas_used, delta_size, status) = txn_output.into_inner();
+        let (write_set, events, gas_used, status) = txn_output.into_inner();
         Self {
             events: events.into_iter().map(Into::into).collect(),
             gas_used: gas_used.into(),
-            delta_size: delta_size.into(),
             status: status.into(),
             write_set: write_set
                 .into_iter()

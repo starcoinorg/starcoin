@@ -535,9 +535,6 @@ pub struct TransactionOutput {
     /// The amount of gas used during execution.
     gas_used: u64,
 
-    /// The resource increment size
-    delta_size: i64,
-
     /// The execution status.
     status: TransactionStatus,
 }
@@ -547,14 +544,12 @@ impl TransactionOutput {
         write_set: WriteSet,
         events: Vec<ContractEvent>,
         gas_used: u64,
-        delta_size: i64,
         status: TransactionStatus,
     ) -> Self {
         TransactionOutput {
             write_set,
             events,
             gas_used,
-            delta_size,
             status,
         }
     }
@@ -575,18 +570,8 @@ impl TransactionOutput {
         &self.status
     }
 
-    pub fn delta_size(&self) -> i64 {
-        self.delta_size
-    }
-
-    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, i64, TransactionStatus) {
-        (
-            self.write_set,
-            self.events,
-            self.gas_used,
-            self.delta_size,
-            self.status,
-        )
+    pub fn into_inner(self) -> (WriteSet, Vec<ContractEvent>, u64, TransactionStatus) {
+        (self.write_set, self.events, self.gas_used, self.status)
     }
 }
 
