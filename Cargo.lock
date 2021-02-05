@@ -1034,9 +1034,9 @@ dependencies = [
 
 [[package]]
 name = "cargo_metadata"
-version = "0.12.2"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11a47b6286279a9998588ef7050d1ebc2500c69892a557c90fe5d071c64415dc"
+checksum = "7714a157da7991e23d90686b9524b9e12e0407a108647f52e9328f4b3d51ac7f"
 dependencies = [
  "cargo-platform",
  "semver 0.11.0",
@@ -1077,6 +1077,15 @@ name = "cfg-expr"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf3029692edb3cd77a7fb51dbbbdc4b550c958f7b2147cb7691e38b070f96b5d"
+dependencies = [
+ "smallvec 1.6.1",
+]
+
+[[package]]
+name = "cfg-expr"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb4f9cf6cb58661f5cdcda0240ab42788e009bd957ba56c1367aa01c7c6fbc05"
 dependencies = [
  "smallvec 1.6.1",
 ]
@@ -1865,8 +1874,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfc34c72c766278fa177275fc2173e0237899065ba55e7934db753db01518a59"
 dependencies = [
  "globset",
- "guppy",
+ "guppy 0.6.3",
  "itertools 0.9.0",
+ "once_cell",
+ "petgraph",
+ "rayon",
+ "serde",
+ "toml",
+]
+
+[[package]]
+name = "determinator"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f67196df4b7b51e340ba1adfc9361414c51321336b59c148d18da7acf8fe7f71"
+dependencies = [
+ "globset",
+ "guppy 0.7.0",
+ "itertools 0.10.0",
  "once_cell",
  "petgraph",
  "rayon",
@@ -2838,7 +2863,30 @@ dependencies = [
  "serde",
  "serde_json",
  "supercow",
- "target-spec",
+ "target-spec 0.5.0",
+]
+
+[[package]]
+name = "guppy"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63cc63895eaea7ace65b2818019602b5d150556954e25048e5a1b56c0b0da4af"
+dependencies = [
+ "cargo_metadata",
+ "fixedbitset",
+ "guppy-summaries",
+ "indexmap",
+ "itertools 0.10.0",
+ "nested",
+ "once_cell",
+ "pathdiff 0.2.0",
+ "petgraph",
+ "rayon",
+ "semver 0.11.0",
+ "serde",
+ "serde_json",
+ "supercow",
+ "target-spec 0.6.0",
 ]
 
 [[package]]
@@ -4046,9 +4094,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3aae342b73d57ad0b8b364bd12584819f2c1fe9114285dfcf8b0722607671635"
+checksum = "fe2382d8ed3918ea4ba70d98d5b74e47a168e0331965f3f17cdbc748bdebc5a3"
 dependencies = [
  "hashbrown 0.9.1",
 ]
@@ -8517,11 +8565,11 @@ dependencies = [
  "anyhow",
  "chrono",
  "colored-diff",
- "determinator",
+ "determinator 0.2.0",
  "diem-workspace-hack",
  "env_logger 0.8.2",
  "globset",
- "guppy",
+ "guppy 0.7.0",
  "indexmap",
  "indoc",
  "log 0.4.14",
@@ -8790,7 +8838,17 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6e124d078c7958d618b8322f040d72eccfd02a30e12f050307f5ad3bbcf904e"
 dependencies = [
- "cfg-expr",
+ "cfg-expr 0.5.1",
+ "serde",
+]
+
+[[package]]
+name = "target-spec"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "956c2aeccd9cc67a543e04559d46aedc8aa9cda15e5884bcfabb8217fd130e2a"
+dependencies = [
+ "cfg-expr 0.6.0",
  "serde",
 ]
 
@@ -9989,11 +10047,11 @@ dependencies = [
  "anyhow",
  "chrono",
  "colored-diff",
- "determinator",
+ "determinator 0.1.1",
  "diem-workspace-hack",
  "env_logger 0.8.2",
  "globset",
- "guppy",
+ "guppy 0.6.3",
  "indexmap",
  "indoc",
  "log 0.4.14",
@@ -10012,9 +10070,9 @@ name = "x-core"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=b96d25b270a9b3fc1301ac56951fccb7da40dc53#b96d25b270a9b3fc1301ac56951fccb7da40dc53"
 dependencies = [
- "determinator",
+ "determinator 0.1.1",
  "diem-workspace-hack",
- "guppy",
+ "guppy 0.6.3",
  "hex",
  "indoc",
  "log 0.4.14",
@@ -10030,7 +10088,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=b96d25b270a9b3fc1301ac56951fccb7da40dc53#b96d25b270a9b3fc1301ac56951fccb7da40dc53"
 dependencies = [
  "diem-workspace-hack",
- "guppy",
+ "guppy 0.6.3",
  "once_cell",
  "serde",
  "toml",
