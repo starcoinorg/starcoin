@@ -10,7 +10,6 @@ use starcoin_chain_api::{
 };
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::collections::HashSet;
-const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
 arg_enum! {
     #[derive(Debug)]
@@ -80,7 +79,7 @@ pub trait BlockVerifier {
         }
         verify_block!(
             VerifyBlockField::Uncle,
-            uncles.len() <= MAX_UNCLE_COUNT_PER_BLOCK,
+            uncles.len() as u64 <= epoch.max_uncles_per_block(),
             "too many uncles {} in block {}",
             uncles.len(),
             header.id()
