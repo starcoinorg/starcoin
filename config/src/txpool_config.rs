@@ -32,6 +32,11 @@ pub struct TxPoolConfig {
     #[structopt(name = "txpool-tx-propagate-interval", long)]
     /// interval(s) of tx propagation timer. default to 2.
     tx_propagate_interval: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "txpool-min-gas-price", long)]
+    /// reject transaction whose gas_price is less than the min_gas_price. default to 1.
+    min_gas_price: Option<u64>,
 }
 
 impl TxPoolConfig {
@@ -61,6 +66,9 @@ impl TxPoolConfig {
     pub fn tx_propagate_interval(&self) -> u64 {
         self.tx_propagate_interval.unwrap_or(2)
     }
+    pub fn min_gas_price(&self) -> u64 {
+        self.min_gas_price.unwrap_or(1)
+    }
 }
 
 impl ConfigModule for TxPoolConfig {
@@ -77,6 +85,9 @@ impl ConfigModule for TxPoolConfig {
         }
         if let Some(m) = txpool_opt.tx_propagate_interval.as_ref() {
             self.tx_propagate_interval = Some(*m);
+        }
+        if let Some(m) = txpool_opt.min_gas_price.as_ref() {
+            self.min_gas_price = Some(*m);
         }
         Ok(())
     }

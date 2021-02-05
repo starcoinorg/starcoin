@@ -41,6 +41,7 @@ impl TxPoolService {
         let pool_config = &node_config.tx_pool;
         let verifier_options = pool::VerifierOptions {
             no_early_reject: false,
+            min_gas_price: node_config.tx_pool.min_gas_price(),
         };
         let queue = TxnQueue::new(
             tx_pool::Options {
