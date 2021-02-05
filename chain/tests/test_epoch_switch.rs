@@ -53,7 +53,7 @@ pub fn build_transaction(
     payload: TransactionPayload,
     expire_time: u64,
 ) -> RawUserTransaction {
-    RawUserTransaction::new(
+    RawUserTransaction::new_with_default_gas_token(
         user_address,
         seq_number,
         payload,

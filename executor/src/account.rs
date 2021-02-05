@@ -214,7 +214,7 @@ impl Account {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> RawUserTransaction {
-        RawUserTransaction::new(
+        RawUserTransaction::new_with_default_gas_token(
             sender,
             sequence_number,
             program,

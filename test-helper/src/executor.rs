@@ -179,7 +179,7 @@ pub fn build_raw_txn(
         ret.pop().unwrap().1.cast().unwrap()
     };
 
-    RawUserTransaction::new(
+    RawUserTransaction::new_with_default_gas_token(
         user_address,
         seq_number,
         payload,

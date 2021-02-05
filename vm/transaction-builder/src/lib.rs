@@ -102,7 +102,7 @@ pub fn build_batch_transfer_txn(
             TransactionArgument::U128(amount),
         ],
     );
-    RawUserTransaction::new(
+    RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
         TransactionPayload::Script(script),
@@ -171,7 +171,7 @@ pub fn raw_peer_to_peer_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    RawUserTransaction::new(
+    RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
         TransactionPayload::Script(encode_transfer_script_by_token_code(
@@ -198,7 +198,7 @@ pub fn raw_accept_token_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    RawUserTransaction::new(
+    RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
@@ -299,7 +299,7 @@ pub fn create_signed_txn_with_association_account(
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
-    let raw_txn = RawUserTransaction::new(
+    let raw_txn = RawUserTransaction::new_with_default_gas_token(
         account_config::association_address(),
         sequence_number,
         payload,

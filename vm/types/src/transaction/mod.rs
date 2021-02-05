@@ -95,6 +95,28 @@ impl RawUserTransaction {
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
+        gas_token_code: String,
+    ) -> Self {
+        RawUserTransaction {
+            sender,
+            sequence_number,
+            payload,
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code,
+            expiration_timestamp_secs,
+            chain_id,
+        }
+    }
+
+    pub fn new_with_default_gas_token(
+        sender: AccountAddress,
+        sequence_number: u64,
+        payload: TransactionPayload,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -216,7 +238,7 @@ impl RawUserTransaction {
     }
 
     pub fn mock_by_sender(sender: AccountAddress) -> Self {
-        Self::new(
+        Self::new_with_default_gas_token(
             sender,
             0,
             TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
@@ -228,7 +250,7 @@ impl RawUserTransaction {
     }
 
     pub fn mock_from(compiled_script: Vec<u8>) -> Self {
-        Self::new(
+        Self::new_with_default_gas_token(
             AccountAddress::ZERO,
             0,
             TransactionPayload::Script(Script::new(compiled_script, vec![], vec![])),

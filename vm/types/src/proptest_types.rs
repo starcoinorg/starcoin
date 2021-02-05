@@ -245,7 +245,7 @@ impl RawUserTransactionGen {
         let temp_payload = payload.unwrap_or(self.payload);
 
         sender_info.sequence_number += 1;
-        RawUserTransaction::new(
+        RawUserTransaction::new_with_default_gas_token(
             sender_info.address,
             sequence_number,
             temp_payload,
@@ -280,7 +280,7 @@ impl RawUserTransaction {
                     gas_unit_price,
                     expiration_time_secs,
                 )| {
-                    RawUserTransaction::new(
+                    RawUserTransaction::new_with_default_gas_token(
                         sender,
                         sequence_number,
                         payload,

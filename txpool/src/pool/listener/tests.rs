@@ -79,7 +79,7 @@ fn test_notify() {
 }
 
 fn new_tx() -> Arc<Transaction> {
-    let raw = transaction::RawUserTransaction::new(
+    let raw = transaction::RawUserTransaction::new_with_default_gas_token(
         AccountAddress::random(),
         4,
         TransactionPayload::Script(Script::new(vec![1, 2, 3], vec![], vec![])),

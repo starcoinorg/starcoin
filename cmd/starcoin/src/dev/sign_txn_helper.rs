@@ -51,7 +51,7 @@ pub fn sign_txn_by_rpc_client(
             .ok_or_else(|| format_err!("Only support builtin network"))?,
     );
     let expiration_time = expiration_time + node_info.now_seconds;
-    let raw_txn = RawUserTransaction::new(
+    let raw_txn = RawUserTransaction::new_with_default_gas_token(
         account.address,
         account_resource.sequence_number(),
         payload,

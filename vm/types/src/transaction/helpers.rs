@@ -30,7 +30,7 @@ pub fn create_user_txn<T: TransactionSigner + ?Sized>(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> Result<SignedUserTransaction> {
-    let raw_txn = RawUserTransaction::new(
+    let raw_txn = RawUserTransaction::new_with_default_gas_token(
         sender_address,
         sender_sequence_number,
         payload,
