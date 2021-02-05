@@ -740,9 +740,11 @@ module Account {
         aborts_if !exists<Account>(txn_sender);
         aborts_if Hash::sha3_256(txn_public_key) != global<Account>(txn_sender).authentication_key;
         aborts_if txn_gas_price * txn_max_gas_units > max_u64();
-        aborts_if !exists<Balance<TokenType>>(txn_sender);
+        aborts_if txn_gas_price * txn_max_gas_units > 0 && !exists<Balance<TokenType>>(txn_sender);
+        aborts_if txn_gas_price * txn_max_gas_units > 0 && Token::spec_token_code<TokenType>() != Token::spec_token_code<STC>();
         //abort condition for assert(balance_amount >= max_transaction_fee)
-        aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
+        aborts_if txn_gas_price * txn_max_gas_units > 0 && global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
+        aborts_if txn_gas_price * txn_max_gas_units > 0 && txn_sequence_number >= max_u64();
         aborts_if txn_sequence_number < global<Account>(txn_sender).sequence_number;
         aborts_if txn_sequence_number != global<Account>(txn_sender).sequence_number;
     }

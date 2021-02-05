@@ -297,7 +297,7 @@ fn create_transaction(
     let signed_txn = executor::create_signed_txn_with_association_account(
         TransactionPayload::Script(program),
         sequence_number,
-        400_000_000,
+        40_000_000,
         1,
         expiration_timestamp_secs,
         net,
