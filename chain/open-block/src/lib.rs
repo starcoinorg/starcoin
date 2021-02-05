@@ -256,7 +256,6 @@ impl OpenedBlock {
             accumulator_root,
             state_root,
             self.gas_used,
-            body.hash(),
             body,
             self.chain_id,
             self.difficulty,

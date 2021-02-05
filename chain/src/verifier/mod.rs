@@ -216,12 +216,12 @@ impl BlockVerifier for BasicVerifier {
             current_block_info
                 .get_block_accumulator_info()
                 .get_accumulator_root()
-                == &new_block_header.parent_block_accumulator_root(),
+                == &new_block_header.block_accumulator_root(),
             "Block accumulator root miss match {:?} : {:?}",
             current_block_info
                 .get_block_accumulator_info()
                 .get_accumulator_root(),
-            new_block_header.parent_block_accumulator_root(),
+            new_block_header.block_accumulator_root(),
         );
         Ok(())
     }

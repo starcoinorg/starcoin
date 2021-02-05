@@ -125,23 +125,21 @@ pub struct BlockHeader {
     /// Block author auth key.
     author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
-    accumulator_root: HashValue,
+    txn_accumulator_root: HashValue,
     /// The parent block accumulator root hash.
-    /// TODO rename to block_accumulator_root
-    parent_block_accumulator_root: HashValue,
+    block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     state_root: HashValue,
     /// Gas used for contracts execution.
     gas_used: u64,
     /// Block difficulty
     difficulty: U256,
-    //TODO move nonce to before extra
-    /// Consensus nonce field.
-    nonce: u32,
     /// hash for block body
     body_hash: HashValue,
     /// The chain id
     chain_id: ChainId,
+    /// Consensus nonce field.
+    nonce: u32,
     /// block header extra
     extra: BlockHeaderExtra,
 }
@@ -153,25 +151,25 @@ impl BlockHeader {
         number: BlockNumber,
         author: AccountAddress,
         author_auth_key: Option<AuthenticationKey>,
-        accumulator_root: HashValue,
-        parent_block_accumulator_root: HashValue,
+        txn_accumulator_root: HashValue,
+        block_accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
         difficulty: U256,
-        nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        nonce: u32,
         extra: BlockHeaderExtra,
     ) -> BlockHeader {
         let mut header = BlockHeader {
             id: None,
             parent_hash,
-            parent_block_accumulator_root,
+            block_accumulator_root,
             number,
             timestamp,
             author,
             author_auth_key,
-            accumulator_root,
+            txn_accumulator_root,
             state_root,
             gas_used,
             difficulty,
@@ -222,8 +220,8 @@ impl BlockHeader {
         self.author_auth_key
     }
 
-    pub fn accumulator_root(&self) -> HashValue {
-        self.accumulator_root
+    pub fn txn_accumulator_root(&self) -> HashValue {
+        self.txn_accumulator_root
     }
 
     pub fn state_root(&self) -> HashValue {
@@ -242,8 +240,8 @@ impl BlockHeader {
         self.difficulty
     }
 
-    pub fn parent_block_accumulator_root(&self) -> HashValue {
-        self.parent_block_accumulator_root
+    pub fn block_accumulator_root(&self) -> HashValue {
+        self.block_accumulator_root
     }
 
     pub fn body_hash(&self) -> HashValue {
@@ -265,7 +263,7 @@ impl BlockHeader {
     pub fn genesis_block_header(
         parent_hash: HashValue,
         timestamp: u64,
-        accumulator_root: HashValue,
+        txn_accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
         body_hash: HashValue,
@@ -277,14 +275,14 @@ impl BlockHeader {
             0,
             CORE_CODE_ADDRESS,
             None,
-            accumulator_root,
+            txn_accumulator_root,
             *ACCUMULATOR_PLACEHOLDER_HASH,
             state_root,
             0,
             difficulty,
-            0,
             body_hash,
             chain_id,
+            0,
             BlockHeaderExtra::default(),
         )
     }
@@ -301,9 +299,9 @@ impl BlockHeader {
             HashValue::random(),
             rand::random(),
             U256::max_value(),
-            0,
             HashValue::random(),
             ChainId::test(),
+            0,
             BlockHeaderExtra([0u8; 4]),
         )
     }
@@ -326,14 +324,14 @@ impl<'de> Deserialize<'de> for BlockHeader {
             number: BlockNumber,
             author: AccountAddress,
             author_auth_key: Option<AuthenticationKey>,
-            accumulator_root: HashValue,
-            parent_block_accumulator_root: HashValue,
+            txn_accumulator_root: HashValue,
+            block_accumulator_root: HashValue,
             state_root: HashValue,
             gas_used: u64,
             difficulty: U256,
-            nonce: u32,
             body_hash: HashValue,
             chain_id: ChainId,
+            nonce: u32,
             extra: BlockHeaderExtra,
         }
 
@@ -344,14 +342,14 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header.number,
             header.author,
             header.author_auth_key,
-            header.accumulator_root,
-            header.parent_block_accumulator_root,
+            header.txn_accumulator_root,
+            header.block_accumulator_root,
             header.state_root,
             header.gas_used,
             header.difficulty,
-            header.nonce,
             header.body_hash,
             header.chain_id,
+            header.nonce,
             header.extra,
         ))
     }
@@ -370,9 +368,9 @@ impl Default for BlockHeader {
             HashValue::zero(),
             0,
             0.into(),
-            0,
             HashValue::zero(),
             ChainId::test(),
+            0,
             BlockHeaderExtra([0u8; 4]),
         )
     }
@@ -391,9 +389,9 @@ impl Sample for BlockHeader {
             *SPARSE_MERKLE_PLACEHOLDER_HASH,
             0,
             U256::from(1),
-            0,
             BlockBody::sample().crypto_hash(),
             ChainId::test(),
+            0,
             BlockHeaderExtra([0u8; 4]),
         )
     }
@@ -407,8 +405,8 @@ impl Into<RawBlockHeader> for BlockHeader {
             number: self.number,
             author: self.author,
             author_auth_key: self.author_auth_key,
-            accumulator_root: self.accumulator_root,
-            parent_block_accumulator_root: self.parent_block_accumulator_root,
+            accumulator_root: self.txn_accumulator_root,
+            parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
             gas_used: self.gas_used,
             difficulty: self.difficulty,
@@ -492,7 +490,7 @@ impl BlockHeaderBuilder {
     }
 
     pub fn with_accumulator_root(mut self, accumulator_root: HashValue) -> Self {
-        self.buffer.accumulator_root = accumulator_root;
+        self.buffer.txn_accumulator_root = accumulator_root;
         self
     }
 
@@ -500,7 +498,7 @@ impl BlockHeaderBuilder {
         mut self,
         parent_block_accumulator_root: HashValue,
     ) -> Self {
-        self.buffer.parent_block_accumulator_root = parent_block_accumulator_root;
+        self.buffer.block_accumulator_root = parent_block_accumulator_root;
         self
     }
 
@@ -802,16 +800,17 @@ pub struct BlockTemplate {
     pub author: AccountAddress,
     /// Block author auth key.
     pub author_auth_key: Option<AuthenticationKey>,
-    /// The accumulator root hash after executing this block.
-    pub accumulator_root: HashValue,
-    /// The parent block accumulator root hash.
-    pub parent_block_accumulator_root: HashValue,
+    /// The transaction accumulator root hash after executing this block.
+    pub txn_accumulator_root: HashValue,
+    /// The block accumulator root hash.
+    pub block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
     /// Gas used for contracts execution.
     pub gas_used: u64,
     /// hash for block body
     pub body_hash: HashValue,
+    /// body of the block
     pub body: BlockBody,
     /// The chain id
     pub chain_id: ChainId,
@@ -827,7 +826,6 @@ impl BlockTemplate {
         accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
-        body_hash: HashValue,
         body: BlockBody,
         chain_id: ChainId,
         difficulty: U256,
@@ -838,15 +836,15 @@ impl BlockTemplate {
             block_metadata.into_inner();
         Self {
             parent_hash,
-            parent_block_accumulator_root,
+            block_accumulator_root: parent_block_accumulator_root,
             timestamp,
             number,
             author,
             author_auth_key,
-            accumulator_root,
+            txn_accumulator_root: accumulator_root,
             state_root,
             gas_used,
-            body_hash,
+            body_hash: body.hash(),
             body,
             chain_id,
             difficulty,
@@ -861,14 +859,14 @@ impl BlockTemplate {
             self.number,
             self.author,
             self.author_auth_key,
-            self.accumulator_root,
-            self.parent_block_accumulator_root,
+            self.txn_accumulator_root,
+            self.block_accumulator_root,
             self.state_root,
             self.gas_used,
             self.difficulty,
-            nonce,
             self.body_hash,
             self.chain_id,
+            nonce,
             extra,
         );
         Block {
@@ -884,8 +882,8 @@ impl BlockTemplate {
             number: self.number,
             author: self.author,
             author_auth_key: self.author_auth_key,
-            accumulator_root: self.accumulator_root,
-            parent_block_accumulator_root: self.parent_block_accumulator_root,
+            accumulator_root: self.txn_accumulator_root,
+            parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
             gas_used: self.gas_used,
             body_hash: self.body_hash,
@@ -915,14 +913,14 @@ impl BlockTemplate {
             self.number,
             self.author,
             self.author_auth_key,
-            self.accumulator_root,
-            self.parent_block_accumulator_root,
+            self.txn_accumulator_root,
+            self.block_accumulator_root,
             self.state_root,
             self.gas_used,
             self.difficulty,
-            nonce,
             self.body_hash,
             self.chain_id,
+            nonce,
             extra,
         )
     }
@@ -930,12 +928,12 @@ impl BlockTemplate {
     pub fn from_block(block: Block, strategy: ConsensusStrategy) -> Self {
         BlockTemplate {
             parent_hash: block.header().parent_hash,
-            parent_block_accumulator_root: block.header().parent_block_accumulator_root(),
+            block_accumulator_root: block.header().block_accumulator_root(),
             timestamp: block.header().timestamp,
             number: block.header().number,
             author: block.header().author,
             author_auth_key: block.header().author_auth_key,
-            accumulator_root: block.header().accumulator_root,
+            txn_accumulator_root: block.header().txn_accumulator_root,
             state_root: block.header().state_root,
             gas_used: block.header().gas_used,
             body: block.body,

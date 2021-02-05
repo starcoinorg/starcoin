@@ -38,9 +38,9 @@ fn test_block() {
         HashValue::zero(),
         0,
         U256::zero(),
-        0,
         HashValue::random(),
         ChainId::test(),
+        0,
         BlockHeaderExtra::new([0u8; 4]),
     );
     storage
@@ -98,9 +98,9 @@ fn test_block_number() {
         HashValue::zero(),
         0,
         U256::zero(),
-        0,
         HashValue::random(),
         ChainId::test(),
+        0,
         BlockHeaderExtra::new([0u8; 4]),
     );
     storage
