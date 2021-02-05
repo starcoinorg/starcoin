@@ -231,7 +231,6 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
 
                 let body = BlockBody {
                     transactions,
-                    hash,
                     uncles,
                 };
                 bodies.push(body);

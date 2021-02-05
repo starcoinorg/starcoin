@@ -125,7 +125,7 @@ impl SyncService2 {
                     || peer_selector.len() < (config.net().min_peers() as usize)
                 {
                     info!(
-                        "[sync]Wait enough peers {:?} : {:?}",
+                        "[sync]Wait enough peers, current: {:?} peers, min peers: {:?}",
                         peer_selector.len(),
                         config.net().min_peers()
                     );
@@ -140,7 +140,6 @@ impl SyncService2 {
                 peer_selector.retain(peers.as_ref())
             }
             if peer_selector.is_empty() {
-                //info!("[sync] No peers to sync.");
                 return Err(format_err!("[sync] No peers to sync."));
             }
             let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());

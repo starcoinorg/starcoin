@@ -1,4 +1,3 @@
-use crate::helper;
 use anyhow::{bail, Result};
 use logger::prelude::*;
 use network::NetworkServiceRef;
@@ -101,12 +100,10 @@ impl Inner {
         bail!("fail to sync txn from all peers")
     }
     async fn sync_txn_from_peer(&self, peer_id: PeerId) -> Result<()> {
-        let txn_data = helper::get_txns_with_size(
-            &self.rpc_client,
-            peer_id.clone(),
-            GetTxnsWithSize { max_size: 100 },
-        )
-        .await?;
+        let txn_data = self
+            .rpc_client
+            .get_txns_from_pool(peer_id.clone(), GetTxnsWithSize { max_size: 100 })
+            .await?;
         let import_result = self.pool.add_txns(txn_data);
         let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);

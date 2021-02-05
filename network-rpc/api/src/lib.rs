@@ -11,6 +11,8 @@ use starcoin_crypto::HashValue;
 use starcoin_state_api::StateWithProof;
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
@@ -20,8 +22,7 @@ mod remote_chain_state;
 pub use network_rpc_core::RawRpcClient;
 pub use remote_chain_state::RemoteChainStateReader;
 
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_state::AccountState;
+pub use starcoin_types::block::BlockBody;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeaders {
@@ -54,25 +55,6 @@ impl GetBlockHeaders {
     }
 }
 
-#[derive(Eq, Serialize, Deserialize, PartialEq, Clone, Debug)]
-pub struct BlockBody {
-    pub hash: HashValue,
-    pub transactions: Vec<SignedUserTransaction>,
-    pub uncles: Option<Vec<BlockHeader>>,
-}
-
-impl BlockBody {
-    pub fn id(&self) -> HashValue {
-        self.hash
-    }
-}
-
-impl Into<starcoin_types::block::BlockBody> for BlockBody {
-    fn into(self) -> starcoin_types::block::BlockBody {
-        starcoin_types::block::BlockBody::new(self.transactions, self.uncles)
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeadersByNumber {
     pub number: BlockNumber,
@@ -95,6 +77,16 @@ impl Into<Vec<BlockNumber>> for GetBlockHeadersByNumber {
             last_number -= self.step
         }
         numbers
+    }
+}
+
+impl IntoIterator for GetBlockHeadersByNumber {
+    type Item = BlockNumber;
+    type IntoIter = std::vec::IntoIter<BlockNumber>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let vec: Vec<BlockNumber> = self.into();
+        vec.into_iter()
     }
 }
 
