@@ -166,11 +166,12 @@ where
         let ancestor_block_info = self.ancestor_block_info().map_err(TaskError::BreakError)?;
         let accumulator_sync_task = BlockAccumulatorSyncTask::new(
             // start_number is include, so start from ancestor.number + 1
-            self.ancestor.number + 1,
+            self.ancestor.number.saturating_add(1),
             self.target_block_accumulator.clone(),
             self.fetcher.clone(),
             100,
-        );
+        )
+        .map_err(TaskError::BreakError)?;
         let sub_accumulator_task = TaskGenerator::new(
             accumulator_sync_task,
             buffer_size,
@@ -185,11 +186,11 @@ where
             self.event_handle.clone(),
         ).and_then(move |(ancestor, accumulator), event_handle| {
             //start_number is include, so start from ancestor.number + 1
-            let start_number = ancestor.number + 1;
+            let start_number = ancestor.number.saturating_add(1);
             let check_local_store = ancestor_block_info.total_difficulty < current_block_info.total_difficulty;
             info!(
                 "[sync] Start sync block, ancestor: {:?}, start_number: {}, check_local_store: {:?}, target_number: {}",
-                ancestor, start_number, check_local_store, accumulator.num_leaves() -1 );
+                ancestor, start_number, check_local_store, accumulator.num_leaves().saturating_sub(1) );
             let block_sync_task = BlockSyncTask::new(
                 accumulator,
                 start_number,

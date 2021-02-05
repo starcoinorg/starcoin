@@ -5,7 +5,6 @@ use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 use anyhow::{ensure, format_err, Result};
 use logger::prelude::*;
-use network::get_unix_ts_as_millis;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
 use rand::prelude::SliceRandom;
@@ -29,6 +28,7 @@ use starcoin_types::{
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::sync::Arc;
+use std::time::Instant;
 
 pub trait RpcVerify<C: Clone> {
     fn filter<T, F>(&mut self, rpc_data: Vec<T>, hash_fun: F) -> Vec<T>
@@ -416,11 +416,13 @@ impl VerifiedRpcClient {
             .peer_sync_per_time
             .with_label_values(&[&format!("peer-{:?}", peer_id)])
             .start_timer();
-        let start_time = get_unix_ts_as_millis();
+        let start_time = Instant::now();
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
         let _ = timer.stop_and_record();
-        let time = (get_unix_ts_as_millis() - start_time) as u32;
+        let time = (Instant::now()
+            .saturating_duration_since(start_time)
+            .as_millis()) as u32;
         let score = self.score(time);
         self.record(&peer_id, score);
         SYNC_SCORE_METRICS.update_metrics(peer_id.clone(), time, score);

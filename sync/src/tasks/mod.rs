@@ -335,10 +335,10 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
-use network::get_unix_ts_as_millis;
 use network_api::messages::PeerEvent;
 use network_api::{NetworkService, PeerStrategy};
 use starcoin_types::peer_info::{PeerId, PeerInfo};
+use std::time::Instant;
 use traits::ChainReader;
 
 pub fn full_sync_task<H, A, F, N>(
@@ -376,7 +376,7 @@ where
 
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
-    let target_block_number = target.block_accumulator_info.num_leaves - 1;
+    let target_block_number = target.block_accumulator_info.num_leaves.saturating_sub(1);
     let target_block_accumulator = target.block_accumulator_info;
 
     let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
@@ -417,7 +417,7 @@ where
         }
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
-        let start_time = get_unix_ts_as_millis();
+        let start_now = Instant::now();
 
         loop {
             while let Ok(Some(peer_event)) = peer_receiver.try_next() {
@@ -427,7 +427,7 @@ where
             }
 
             // sub target
-            let target_number = latest_ancestor.number + 1000;
+            let target_number = latest_ancestor.number.saturating_add(1000);
             let sub_target_task = FindSubTargetTask::new(fetcher.clone(), target_number);
             let (peers, sub_target) = sub_target_task
                 .sub_target()
@@ -459,14 +459,19 @@ where
                 )
                 .await?;
             latest_block_chain = block_chain;
-            let total_num = latest_block_chain.current_header().number() - ancestor.number;
-            let total_time = get_unix_ts_as_millis() - start_time;
+            let total_num = latest_block_chain
+                .current_header()
+                .number()
+                .saturating_sub(ancestor.number);
+            let total_time = Instant::now()
+                .saturating_duration_since(start_now)
+                .as_millis();
             info!(
                 "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 strategy,
                 total_num,
                 total_time,
-                total_time / total_num as u128
+                total_time.checked_div(total_num as u128).unwrap_or(0)
             );
             if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
                 break;

@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+#![allow(clippy::integer_arithmetic)]
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
@@ -436,7 +436,8 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
     let fetcher = MockBlockIdFetcher::new(Arc::new(accumulator));
     let store2 = MockAccumulatorStore::copy_from(store.as_ref());
 
-    let task_state = BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7);
+    let task_state =
+        BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7).unwrap();
     let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
     let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
     let event_handle = Arc::new(TaskEventCounterHandle::new());

@@ -59,7 +59,7 @@ impl TaskState for FindAncestorTask {
                 .enumerate()
                 .map(|(idx, id)| BlockIdAndNumber {
                     id,
-                    number: current_number - (idx as u64),
+                    number: current_number.saturating_sub(idx as u64),
                 })
                 .collect();
             Ok(id_and_numbers)
