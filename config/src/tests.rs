@@ -148,9 +148,25 @@ fn test_genesis_config_security() -> Result<()> {
         }
         let genesis_config = net.genesis_config().clone();
         // min_price_per_gas_unit must be great than 0
-        assert!(genesis_config.vm_config.gas_schedule.gas_constants.min_price_per_gas_unit.get() > 0);
+        assert!(
+            genesis_config
+                .vm_config
+                .gas_schedule
+                .gas_constants
+                .min_price_per_gas_unit
+                .get()
+                > 0
+        );
         // maximum_number_of_gas_units must be less than base_block_gas_limit
-        assert!(genesis_config.vm_config.gas_schedule.gas_constants.maximum_number_of_gas_units.get() < genesis_config.consensus_config.base_block_gas_limit);
+        assert!(
+            genesis_config
+                .vm_config
+                .gas_schedule
+                .gas_constants
+                .maximum_number_of_gas_units
+                .get()
+                < genesis_config.consensus_config.base_block_gas_limit
+        );
     }
     Ok(())
 }
