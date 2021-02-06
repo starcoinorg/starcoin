@@ -52,7 +52,6 @@ pub enum RpcErrorCode {
 #[serde(deny_unknown_fields)]
 pub struct NetRpcError {
     error_code: u32,
-    /// Message
     message: String,
 }
 

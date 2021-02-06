@@ -86,6 +86,7 @@ where
                 .fetch_block_infos_from_peer(Some(peer_id), hashs)
                 .await?
                 .pop()
+                .flatten()
                 .ok_or_else(|| format_err!("Target BlockInfo is none when create sub target"))?;
             Ok((
                 target_peers,

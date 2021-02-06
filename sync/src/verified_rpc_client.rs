@@ -12,8 +12,8 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
 use starcoin_network_rpc_api::{
-    gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetBlockIds, GetTxnsWithHash, RawRpcClient,
+    gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
+    GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::SyncTarget;
@@ -41,7 +41,7 @@ pub trait RpcVerifier<Req, Resp> {
     fn verify(&self, peer_id: PeerId, req: Req, resp: Resp) -> Result<Resp, RpcVerifyError>;
 }
 
-impl<Req, ReqItem, RespItem, F> RpcVerifier<Req, Vec<RespItem>> for F
+impl<Req, ReqItem, RespItem, F> RpcVerifier<Req, Vec<Option<RespItem>>> for F
 where
     Req: IntoIterator<Item = ReqItem>,
     ReqItem: Debug,
@@ -52,25 +52,29 @@ where
         &self,
         peer_id: PeerId,
         req: Req,
-        resp: Vec<RespItem>,
-    ) -> Result<Vec<RespItem>, RpcVerifyError> {
+        resp: Vec<Option<RespItem>>,
+    ) -> Result<Vec<Option<RespItem>>, RpcVerifyError> {
         req.into_iter()
             .zip(resp.into_iter())
             .into_iter()
             .map(|(req_item, resp_item)| {
-                if (self)(&req_item, &resp_item) {
-                    Ok(resp_item)
+                if let Some(resp_item) = resp_item {
+                    if (self)(&req_item, &resp_item) {
+                        Ok(Some(resp_item))
+                    } else {
+                        Err(RpcVerifyError::InvalidResponse(
+                            peer_id.clone(),
+                            format!(
+                                "request item: {:?} not match with resp item: {:?}",
+                                req_item, resp_item
+                            ),
+                        ))
+                    }
                 } else {
-                    Err(RpcVerifyError::InvalidResponse(
-                        peer_id.clone(),
-                        format!(
-                            "req item: {:?} not match with resp item: {:?}",
-                            req_item, resp_item
-                        ),
-                    ))
+                    Ok(None)
                 }
             })
-            .collect::<Result<Vec<RespItem>, RpcVerifyError>>()
+            .collect::<Result<Vec<Option<RespItem>>, RpcVerifyError>>()
     }
 }
 
@@ -186,9 +190,9 @@ impl VerifiedRpcClient {
     pub async fn get_headers_by_number(
         &self,
         req: GetBlockHeadersByNumber,
-    ) -> Result<Vec<BlockHeader>> {
+    ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
-        let resp: Vec<BlockHeader> = self
+        let resp: Vec<Option<BlockHeader>> = self
             .client
             .get_headers_by_number(peer_id.clone(), req.clone())
             .await?;
@@ -196,25 +200,12 @@ impl VerifiedRpcClient {
         Ok(resp)
     }
 
-    pub async fn get_headers(
+    pub async fn get_headers_by_hash(
         &self,
-        req: GetBlockHeaders,
-        number: BlockNumber,
-    ) -> Result<(Vec<BlockHeader>, PeerId)> {
+        req: Vec<HashValue>,
+    ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
-        debug!("rpc select peer {:?}", peer_id);
-        let resp = self
-            .client
-            .get_headers(peer_id.clone(), req.clone())
-            .await?;
-        let req = req.into_numbers(number);
-        let resp = BLOCK_NUMBER_VERIFIER.verify(peer_id.clone(), req, resp)?;
-        Ok((resp, peer_id))
-    }
-
-    pub async fn get_headers_by_hash(&self, req: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
-        let peer_id = self.select_a_peer()?;
-        let resp: Vec<BlockHeader> = self
+        let resp: Vec<Option<BlockHeader>> = self
             .client
             .get_headers_by_hash(peer_id.clone(), req.clone())
             .await?;
@@ -225,10 +216,10 @@ impl VerifiedRpcClient {
     pub async fn get_bodies_by_hash(
         &self,
         req: Vec<HashValue>,
-    ) -> Result<(Vec<BlockBody>, PeerId)> {
+    ) -> Result<(Vec<Option<BlockBody>>, PeerId)> {
         let peer_id = self.select_a_peer()?;
         debug!("rpc select peer {}", &peer_id);
-        let resp: Vec<BlockBody> = self
+        let resp: Vec<Option<BlockBody>> = self
             .client
             .get_bodies_by_hash(peer_id.clone(), req.clone())
             .await?;
@@ -236,7 +227,7 @@ impl VerifiedRpcClient {
         Ok((resp, peer_id))
     }
 
-    pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockInfo>> {
+    pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.get_block_infos_from_peer(None, hashes).await
     }
 
@@ -244,7 +235,7 @@ impl VerifiedRpcClient {
         &self,
         peer_id: Option<PeerId>,
         req: Vec<HashValue>,
-    ) -> Result<Vec<BlockInfo>> {
+    ) -> Result<Vec<Option<BlockInfo>>> {
         let peer_id = match peer_id {
             None => self.select_a_peer()?,
             Some(p) => p,
@@ -275,6 +266,7 @@ impl VerifiedRpcClient {
             .get_block_infos(peer_id.clone(), vec![block_id])
             .await?
             .pop()
+            .flatten()
             .ok_or_else(|| {
                 format_err!(
                     "Get block info by id:{} from peer_id:{} return None",
@@ -292,23 +284,6 @@ impl VerifiedRpcClient {
             block_info,
             peers: self.peer_selector.peers(),
         })
-    }
-
-    pub async fn get_blocks_by_number(
-        &self,
-        req: GetBlockHeaders,
-        number: BlockNumber,
-    ) -> Result<Vec<Block>> {
-        let (headers, _) = self.get_headers(req, number).await?;
-        let hashs = headers.iter().map(|header| header.id()).collect();
-        let (bodies, _) = self.get_bodies_by_hash(hashs).await?;
-        //TODO verify headers and bodies' length.
-        let blocks: Vec<Block> = headers
-            .into_iter()
-            .zip(bodies.into_iter())
-            .map(|(header, body)| Block::new(header, body))
-            .collect();
-        Ok(blocks)
     }
 
     pub async fn get_state_node_by_node_hash(

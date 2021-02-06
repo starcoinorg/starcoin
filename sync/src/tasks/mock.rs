@@ -83,7 +83,7 @@ impl BlockIdFetcher for MockBlockIdFetcher {
         &self,
         _peer_id: Option<PeerId>,
         _hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
         unimplemented!()
     }
 
@@ -196,10 +196,10 @@ impl BlockIdFetcher for SyncNodeMocker {
         &self,
         _peer_id: Option<PeerId>,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
-        let mut result: Vec<BlockInfo> = Vec::new();
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+        let mut result: Vec<Option<BlockInfo>> = Vec::new();
         hashes.into_iter().for_each(|hash| {
-            result.push(self.chain().get_block_info(Some(hash)).unwrap().unwrap());
+            result.push(self.chain().get_block_info(Some(hash)).unwrap());
         });
         async move {
             self.delay().await;

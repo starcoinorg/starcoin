@@ -63,14 +63,14 @@ fn test_network_rpc() {
     assert!(ping.is_err(), "expect return err, but return ok");
 
     let req = GetBlockHeadersByNumber::new(1, 1, 1);
-    let resp: Vec<BlockHeader> = block_on(async {
+    let resp: Vec<Option<BlockHeader>> = block_on(async {
         client
             .get_headers_by_number(peer_id_2.clone(), req)
             .await
             .unwrap()
     });
     assert!(!resp.is_empty());
-    let state_root = resp[0].state_root();
+    let state_root = resp[0].as_ref().unwrap().state_root();
 
     let state_req = GetStateWithProof {
         state_root,

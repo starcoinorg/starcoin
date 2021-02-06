@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use futures::future::BoxFuture;
+use network_rpc_core::{NetRpcError, RpcErrorCode};
 use network_rpc_derive::*;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -24,34 +25,15 @@ pub use remote_chain_state::RemoteChainStateReader;
 
 pub use starcoin_types::block::BlockBody;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetBlockHeaders {
-    pub block_id: HashValue,
-    pub max_size: u64,
-    pub step: u64,
-    pub reverse: bool,
-}
+pub const MAX_BLOCK_REQUEST_SIZE: u64 = 50;
+pub const MAX_BLOCK_HEADER_REQUEST_SIZE: u64 = 1000;
+pub const MAX_TXN_REQUEST_SIZE: u64 = 1000;
+pub const MAX_BLOCK_INFO_REQUEST_SIZE: u64 = 1000;
+pub const MAX_BLOCK_IDS_REQUEST_SIZE: u64 = 10000;
 
-impl GetBlockHeaders {
-    pub fn into_numbers(self, number: BlockNumber) -> Vec<BlockNumber> {
-        let mut numbers = Vec::new();
-        let mut last_number = number;
-        loop {
-            if numbers.len() as u64 >= self.max_size {
-                break;
-            }
-
-            last_number = if self.reverse {
-                if last_number < self.step {
-                    break;
-                }
-                last_number - self.step
-            } else {
-                last_number + self.step
-            };
-            numbers.push(last_number);
-        }
-        numbers
+pub trait RpcRequest {
+    fn verify(&self) -> Result<()> {
+        Ok(())
     }
 }
 
@@ -60,6 +42,29 @@ pub struct GetBlockHeadersByNumber {
     pub number: BlockNumber,
     pub max_size: u64,
     pub step: u64,
+}
+
+impl GetBlockHeadersByNumber {
+    pub fn new(number: BlockNumber, step: u64, max_size: u64) -> Self {
+        GetBlockHeadersByNumber {
+            number,
+            max_size,
+            step,
+        }
+    }
+}
+
+impl RpcRequest for GetBlockHeadersByNumber {
+    fn verify(&self) -> Result<()> {
+        if self.max_size > MAX_BLOCK_REQUEST_SIZE {
+            return Err(NetRpcError::new(
+                RpcErrorCode::BadRequest,
+                format!("max_size is too big > {}", MAX_BLOCK_REQUEST_SIZE),
+            )
+            .into());
+        }
+        Ok(())
+    }
 }
 
 impl Into<Vec<BlockNumber>> for GetBlockHeadersByNumber {
@@ -96,30 +101,22 @@ pub struct GetAccumulatorNodeByNodeHash {
     pub accumulator_storage_type: AccumulatorStoreType,
 }
 
-impl GetBlockHeadersByNumber {
-    pub fn new(number: BlockNumber, step: u64, max_size: u64) -> Self {
-        GetBlockHeadersByNumber {
-            number,
-            max_size,
-            step,
-        }
-    }
-}
-
-impl GetBlockHeaders {
-    pub fn new(block_id: HashValue, step: u64, reverse: bool, max_size: u64) -> Self {
-        GetBlockHeaders {
-            block_id,
-            max_size,
-            step,
-            reverse,
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetTxnsWithSize {
     pub max_size: u64,
+}
+
+impl RpcRequest for GetTxnsWithSize {
+    fn verify(&self) -> Result<()> {
+        if self.max_size > MAX_TXN_REQUEST_SIZE {
+            return Err(NetRpcError::new(
+                RpcErrorCode::BadRequest,
+                format!("max_size is too big > {}", MAX_TXN_REQUEST_SIZE),
+            )
+            .into());
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -134,6 +131,19 @@ impl GetTxnsWithHash {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+}
+
+impl RpcRequest for GetTxnsWithHash {
+    fn verify(&self) -> Result<()> {
+        if self.ids.len() as u64 > MAX_TXN_REQUEST_SIZE {
+            return Err(NetRpcError::new(
+                RpcErrorCode::BadRequest,
+                format!("max_size is too big > {}", MAX_TXN_REQUEST_SIZE),
+            )
+            .into());
+        }
+        Ok(())
     }
 }
 
@@ -155,6 +165,19 @@ pub struct GetBlockIds {
     pub start_number: BlockNumber,
     pub reverse: bool,
     pub max_size: u64,
+}
+
+impl RpcRequest for GetBlockIds {
+    fn verify(&self) -> Result<()> {
+        if self.max_size as u64 > MAX_BLOCK_IDS_REQUEST_SIZE {
+            return Err(NetRpcError::new(
+                RpcErrorCode::BadRequest,
+                format!("max_size is too big > {}", MAX_BLOCK_IDS_REQUEST_SIZE),
+            )
+            .into());
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -192,31 +215,25 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         request: GetBlockHeadersByNumber,
-    ) -> BoxFuture<Result<Vec<BlockHeader>>>;
-
-    fn get_headers(
-        &self,
-        peer_id: PeerId,
-        request: GetBlockHeaders,
-    ) -> BoxFuture<Result<Vec<BlockHeader>>>;
+    ) -> BoxFuture<Result<Vec<Option<BlockHeader>>>>;
 
     fn get_block_infos(
         &self,
         peer_id: PeerId,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>>;
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>>;
 
     fn get_bodies_by_hash(
         &self,
         peer_id: PeerId,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockBody>>>;
+    ) -> BoxFuture<Result<Vec<Option<BlockBody>>>>;
 
     fn get_headers_by_hash(
         &self,
         peer_id: PeerId,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockHeader>>>;
+    ) -> BoxFuture<Result<Vec<Option<BlockHeader>>>>;
 
     fn get_state_node_by_node_hash(
         &self,

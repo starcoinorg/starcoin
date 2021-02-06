@@ -49,7 +49,7 @@ pub trait BlockIdFetcher: Send + Sync {
         &self,
         peer_id: Option<PeerId>,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>>;
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>>;
 
     fn find_best_peer(&self) -> Option<PeerInfo>;
 }
@@ -97,7 +97,7 @@ impl BlockIdFetcher for VerifiedRpcClient {
         &self,
         peer_id: Option<PeerId>,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
         self.get_block_infos_from_peer(peer_id, hashes).boxed()
     }
 
@@ -156,7 +156,7 @@ where
         &self,
         peer_id: Option<PeerId>,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
         BlockIdFetcher::fetch_block_infos_from_peer(self.as_ref(), peer_id, hashes)
     }
 
