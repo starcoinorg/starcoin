@@ -172,9 +172,10 @@ impl MinerService {
                     task.block_template.difficulty,
                 ) {
                     warn!(
-                        "Failed to verify blob: {}, nonce: {}",
+                        "Failed to verify blob: {}, nonce: {}, err: {}",
                         hex::encode(task.minting_blob.as_slice()),
-                        nonce
+                        nonce,
+                        e
                     );
                     return Ok(());
                 }
@@ -182,7 +183,7 @@ impl MinerService {
         }
 
         if let Some(task) = self.current_task.take() {
-            block = task.finish(nonce, extra);
+            let block = task.finish(nonce, extra);
             info!("Mint new block: {}", block);
             ctx.broadcast(MinedBlock(Arc::new(block)));
             MINER_METRICS.block_mint_count.inc();
