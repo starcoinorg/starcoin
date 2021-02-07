@@ -37,7 +37,7 @@ sp-utils = {path = "../commons/utils"}
 stdlib = { path = "../vm/stdlib" }
 stest = { path = "../commons/stest" }
 starcoin-account-api = { path = "../account/api" }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.2", features = ["full"] }
 starcoin-genesis = { path = "../core/genesis" }
 proptest = "0.10.1"
 proptest-derive = { version = "0.2.0" }
