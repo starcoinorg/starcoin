@@ -165,29 +165,28 @@ impl MinerService {
                     );
                     return Ok(());
                 }
-                task.block_template.strategy.verify_blob(
+                if let Err(e) = task.block_template.strategy.verify_blob(
                     task.minting_blob.clone(),
                     nonce,
                     extra,
                     task.block_template.difficulty,
-                )?
+                ) {
+                    warn!(
+                        "Failed to verify blob: {}, nonce: {}",
+                        hex::encode(task.minting_blob.as_slice()),
+                        nonce
+                    );
+                    return Ok(());
+                }
             }
         }
 
-        let task = match self.current_task.take() {
-            Some(task) => task,
-            None => {
-                debug!(
-                    "MintTask is none, but got nonce: {}, extra:{:?} for minting_blob: {:?}, may be mint by other client.",
-                    nonce, extra, minting_blob,
-                );
-                return Ok(());
-            }
-        };
-        let block = task.finish(nonce, extra);
-        info!("Mint new block: {}", block);
-        ctx.broadcast(MinedBlock(Arc::new(block)));
-        MINER_METRICS.block_mint_count.inc();
+        if let Some(task) = self.current_task.take() {
+            block = task.finish(nonce, extra);
+            info!("Mint new block: {}", block);
+            ctx.broadcast(MinedBlock(Arc::new(block)));
+            MINER_METRICS.block_mint_count.inc();
+        }
         Ok(())
     }
 
