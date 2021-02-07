@@ -113,4 +113,25 @@ pub trait Consensus {
         }
         Ok(())
     }
+
+    fn verify_blob(
+        &self,
+        blob: Vec<u8>,
+        nonce: u32,
+        extra: BlockHeaderExtra,
+        difficulty: U256,
+    ) -> Result<()> {
+        let pow_hash: U256 = self.calculate_pow_hash(&blob, nonce, &extra)?.into();
+        let target = difficult_to_target(difficulty);
+        if pow_hash > target {
+            return Err(ConsensusVerifyError::VerifyNonceError {
+                target,
+                real: pow_hash,
+                nonce,
+                extra,
+            }
+            .into());
+        }
+        Ok(())
+    }
 }
