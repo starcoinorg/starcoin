@@ -71,7 +71,6 @@ module Authenticator {
 
     // Compute an authentication key for the ed25519 public key `public_key`
     public fun ed25519_authentication_key(public_key: vector<u8>): vector<u8> {
-        // TODO: add constant ED25519_SCHEME_ID = 0u8
         Vector::push_back(&mut public_key, ED25519_SCHEME_ID);
         Hash::sha3_256(public_key)
     }
@@ -126,8 +125,7 @@ module Authenticator {
             i = i + 1;
         };
         Vector::append(&mut authentication_key_preimage, BCS::to_bytes(&k.threshold));
-        // TODO: add constant MULTI_ED25519_SCHEME_ID = 1u8
-        Vector::push_back(&mut authentication_key_preimage, 1u8);
+        Vector::push_back(&mut authentication_key_preimage, MULTI_ED25519_SCHEME_ID);
         Hash::sha3_256(authentication_key_preimage)
     }
 

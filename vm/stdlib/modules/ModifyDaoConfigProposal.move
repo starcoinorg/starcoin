@@ -6,6 +6,7 @@ module ModifyDaoConfigProposal {
     use 0x1::Config;
     use 0x1::Dao;
     use 0x1::Errors;
+    use 0x1::Option;
 
     spec module {
         pragma verify;
@@ -35,7 +36,7 @@ module ModifyDaoConfigProposal {
         let dao_config_modify_cap = Config::extract_modify_config_capability<
             Dao::DaoConfig<TokenT>,
         >(signer);
-        // TODO: assert cap.account_address == token_issuer
+        assert(Config::account_address(&dao_config_modify_cap) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let cap = DaoConfigModifyCapability { cap: dao_config_modify_cap };
         move_to(signer, cap);
     }
@@ -45,6 +46,9 @@ module ModifyDaoConfigProposal {
         let sender = Signer::address_of(signer);
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
         include Config::AbortsIfCapNotExist<Dao::DaoConfig<TokenT>>{account: sender};
+        let config_cap = Config::spec_cap<Dao::DaoConfig<TokenT>>(sender);
+        aborts_if Option::spec_is_none(config_cap);
+        aborts_if Option::spec_get(config_cap).account_address != sender;
         aborts_if exists<DaoConfigModifyCapability<TokenT>>(sender);
         ensures exists<DaoConfigModifyCapability<TokenT>>(sender);
     }

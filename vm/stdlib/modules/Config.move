@@ -16,7 +16,6 @@ module Config {
     // Accounts with this privilege can modify config of type ConfigValue under account_address
     resource struct ModifyConfigCapability<ConfigValue: copyable> {
         account_address: address,
-        /// FIXME: events should put into Config resource.
         events: Event::EventHandle<ConfigChangeEvent<ConfigValue>>,
     }
 
@@ -62,7 +61,6 @@ module Config {
     // Set a config item to a new value with capability stored under signer
     public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config,ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);
-        //TODO define no capability error code.
         assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
         assert(Option::is_some(&cap_holder.cap), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
@@ -74,7 +72,6 @@ module Config {
 
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
         aborts_if !Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account)));
-        //Todo: why below aborts_if does not work?
         aborts_if !exists<Config<ConfigValue>>(Option::spec_get<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account))).account_address);
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
