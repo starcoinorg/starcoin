@@ -46,6 +46,7 @@ pub struct ChainStatusWithBlock {
 }
 
 pub struct BlockChain {
+    genesis_hash: HashValue,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     status: ChainStatusWithBlock,
@@ -83,8 +84,12 @@ impl BlockChain {
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
         let epoch = get_epoch_from_statedb(&chain_state)?;
+        let genesis = storage
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
+            genesis_hash: genesis,
             time_service,
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info.clone(),
@@ -497,8 +502,11 @@ impl BlockChain {
 
 impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
-        //TODO implements
-        unimplemented!()
+        ChainInfo::new(
+            self.status.head.header().chain_id(),
+            self.genesis_hash,
+            self.status.status.clone(),
+        )
     }
 
     fn status(&self) -> ChainStatus {

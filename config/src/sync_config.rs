@@ -41,7 +41,7 @@ impl SyncConfig {
 impl ConfigModule for SyncConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, _base: Arc<BaseConfig>) -> Result<()> {
         if opt.sync.peer_select_strategy.is_some() {
-            self.peer_select_strategy = opt.sync.peer_select_strategy.clone();
+            self.peer_select_strategy = opt.sync.peer_select_strategy;
         }
 
         if opt.sync.max_retry_times.is_some() {

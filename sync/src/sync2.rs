@@ -4,7 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::{full_sync_task, AncestorEvent};
-use crate::verified_rpc_client::VerifiedRpcClient;
+use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use config::NodeConfig;
 use futures::FutureExt;
@@ -12,7 +12,7 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
-use network_api::{PeerProvider, PeerSelector, PeerStrategy};
+use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
@@ -142,7 +142,7 @@ impl SyncService2 {
             if peer_selector.is_empty() {
                 return Err(format_err!("[sync] No peers to sync."));
             }
-            let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
+            let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
             let target = rpc_client.get_sync_target().await?;
 
             let startup_info = storage
@@ -153,32 +153,26 @@ impl SyncService2 {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
-            info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.block_header.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
+            info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
             if current_block_info.total_difficulty >= target.block_info.total_difficulty {
                 info!("[sync] Current is already bast.");
                 return Ok(None);
             }
 
             let peer_select_strategy = peer_strategy.unwrap_or_default();
-            let peer_selector =
-                PeerSelector::new(target.peers.clone(), peer_select_strategy.clone());
-            let rpc_client = Arc::new(VerifiedRpcClient::new(
-                peer_selector.clone(),
-                network.clone(),
-            ));
+            peer_selector.switch_strategy(peer_select_strategy);
 
             let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
                 current_block_id,
-                target.block_info.clone(),
+                target.clone(),
                 skip_pow_verify,
                 config.net().time_service(),
                 storage.clone(),
                 connector_service.clone(),
-                rpc_client,
+                Arc::new(rpc_client),
                 self_ref.clone(),
                 network.clone(),
                 config.sync.max_retry_times(),
-                peer_select_strategy,
             )?;
 
             self_ref.notify(SyncBeginEvent {
@@ -191,6 +185,7 @@ impl SyncService2 {
             Ok(Some(fut.await?))
             //Ok(())
         };
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let self_ref = ctx.self_ref();
         ctx.spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
@@ -205,8 +200,28 @@ impl SyncService2 {
                     }
                     Err(err) => {
                         if let Some(task_err) = err.downcast_ref::<TaskError>() {
-                            info!("[sync] Sync task is cancel");
-                            task_err.is_canceled()
+                            match task_err {
+                                TaskError::Canceled => {
+                                    info!("[sync] Sync task is cancel");
+                                    true
+                                }
+                                TaskError::BreakError(err) => {
+                                    if let Some(rpc_verify_err) =
+                                        err.downcast_ref::<RpcVerifyError>()
+                                    {
+                                        network.report_peer(
+                                            rpc_verify_err.peer_id.clone(),
+                                            ReputationChange::new_fatal("invalid_response"),
+                                        )
+                                    }
+                                    warn!("[sync] Sync task is interrupted by {:?}", err);
+                                    false
+                                }
+                                task_err => {
+                                    error!("[sync] Sync task error: {:?}", task_err);
+                                    false
+                                }
+                            }
                         } else {
                             error!("[sync] Sync task error: {:?}", err);
                             false
@@ -301,7 +316,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
                         .target
                         .peers
                         .iter()
-                        .any(|peer| peer.peer_id() == close_peer_id)
+                        .any(|peer_id| peer_id == &close_peer_id)
                     {
                         warn!(
                             "[sync] Current sync task may be failed because peer {} closed",
@@ -356,14 +371,12 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
-                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.block_header.number(), target_total_difficulty, current_total_difficulty);
+                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
                     self.stage = SyncStage::Done;
                     task_handle.cancel();
                 } else {
-                    let target_id_number = BlockIdAndNumber::new(
-                        target.block_header.id(),
-                        target.block_header.number(),
-                    );
+                    let target_id_number =
+                        BlockIdAndNumber::new(target.target_id.id(), target.target_id.number());
                     self.sync_status
                         .sync_begin(target_id_number, target.block_info.total_difficulty);
                     ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
@@ -508,26 +521,21 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
                     report.fix_percent(
                         handle
                             .target
-                            .block_header
+                            .target_id
                             .number()
                             .saturating_sub(begin.number),
                     );
                 }
 
                 SyncProgressReport {
-                    target_id: handle.target.block_header.id(),
+                    target_id: handle.target.target_id.id(),
                     begin_number: handle
                         .task_begin
                         .as_ref()
                         .map(|begin| -> u64 { begin.number }),
-                    target_number: handle.target.block_header.number(),
+                    target_number: handle.target.target_id.number(),
                     target_difficulty: handle.target.block_info.total_difficulty,
-                    target_peers: handle
-                        .target
-                        .peers
-                        .iter()
-                        .map(|peer| peer.peer_id())
-                        .collect(),
+                    target_peers: handle.target.peers.clone(),
                     current: report,
                 }
             })

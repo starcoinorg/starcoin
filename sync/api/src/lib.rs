@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
-use starcoin_service_registry::ServiceRequest;
-use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::{PeerId, PeerInfo};
-use starcoin_types::sync_status::SyncStatus;
-
-mod service;
 use network_api::PeerStrategy;
+use serde::{Deserialize, Serialize};
 pub use service::{SyncAsyncService, SyncServiceHandler};
 use starcoin_crypto::HashValue;
+use starcoin_service_registry::ServiceRequest;
+use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::PeerId;
+use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::U256;
 pub use stream_task::TaskProgressReport;
+
+mod service;
 
 #[derive(Clone, Debug)]
 pub struct StartSyncTxnEvent;
@@ -47,9 +47,9 @@ pub enum SyncNotify {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncTarget {
-    pub block_header: BlockHeader,
+    pub target_id: BlockIdAndNumber,
     pub block_info: BlockInfo,
-    pub peers: Vec<PeerInfo>,
+    pub peers: Vec<PeerId>,
 }
 
 #[derive(Debug, Clone)]

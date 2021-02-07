@@ -235,6 +235,7 @@ impl Genesis {
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
     ) -> Result<ChainInfo> {
+        storage.save_genesis(self.block.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
             storage.clone(),
@@ -242,7 +243,6 @@ impl Genesis {
             self.block.clone(),
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
-        storage.save_genesis(startup_info.main)?;
         storage.save_startup_info(startup_info)?;
         Ok(storage
             .get_chain_info()?

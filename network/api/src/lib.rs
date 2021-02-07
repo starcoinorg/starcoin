@@ -32,8 +32,6 @@ pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + Pee
     fn send_peer_message(&self, msg: PeerMessage);
     /// Broadcast notification to all connected peers
     fn broadcast(&self, notification: NotificationMessage);
-
-    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
 }
 
 pub trait NetworkActor:
@@ -62,6 +60,15 @@ where
     fn get_self_peer(&self) -> BoxFuture<'_, Result<PeerInfo>> {
         self.send(GetSelfPeer).boxed()
     }
+
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
+        if let Err(e) = self.notify(ReportReputation {
+            peer_id,
+            change: cost_benefit,
+        }) {
+            debug!("report_peer error: {}.", e);
+        }
+    }
 }
 
 impl<S> NetworkService for ServiceRef<S>
@@ -81,15 +88,6 @@ where
     fn broadcast(&self, notification: NotificationMessage) {
         if let Err(e) = self.notify(notification) {
             warn!("Broadcast network notification error: {}.", e);
-        }
-    }
-
-    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
-        if let Err(e) = self.notify(ReportReputation {
-            peer_id,
-            change: cost_benefit,
-        }) {
-            debug!("report_peer error: {}.", e);
         }
     }
 }

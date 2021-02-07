@@ -7,16 +7,17 @@ use anyhow::{format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
-use network_api::NetworkService;
+use network_api::{PeerProvider, ReputationChange};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
+use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::collections::HashMap;
 use std::sync::Arc;
-use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
 #[derive(Clone, Debug)]
 pub struct SyncBlockData {
@@ -113,7 +114,7 @@ impl TaskState for BlockSyncTask {
                     result_map
                 } else {
                     self.fetcher
-                        .fetch_block(no_exist_block_ids)
+                        .fetch_blocks(no_exist_block_ids)
                         .await?
                         .into_iter()
                         .fold(result_map, |mut result_map, (block, peer_id)| {
@@ -134,7 +135,7 @@ impl TaskState for BlockSyncTask {
             } else {
                 Ok(self
                     .fetcher
-                    .fetch_block(block_ids)
+                    .fetch_blocks(block_ids)
                     .await?
                     .into_iter()
                     .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
@@ -169,37 +170,36 @@ impl TaskState for BlockSyncTask {
     }
 }
 
-pub struct BlockCollector<N, H>
-where
-    N: NetworkService + 'static,
-    H: BlockConnectedEventHandle + 'static,
-{
+pub struct BlockCollector<N, H> {
     //node's current block info
     current_block_info: BlockInfo,
+    target: SyncTarget,
     // the block chain init by ancestor
     chain: BlockChain,
     event_handle: H,
-    network: N,
+    peer_provider: N,
     skip_pow_verify: bool,
 }
 
 impl<N, H> BlockCollector<N, H>
 where
-    N: NetworkService + 'static,
+    N: PeerProvider + 'static,
     H: BlockConnectedEventHandle + 'static,
 {
     pub fn new_with_handle(
         current_block_info: BlockInfo,
+        target: SyncTarget,
         chain: BlockChain,
         event_handle: H,
-        network: N,
+        peer_provider: N,
         skip_pow_verify: bool,
     ) -> Self {
         Self {
             current_block_info,
+            target,
             chain,
             event_handle,
-            network,
+            peer_provider,
             skip_pow_verify,
         }
     }
@@ -237,7 +237,7 @@ where
                             format!("{:?}", e),
                         )?;
                         if let Some(peer) = peer_id {
-                            self.network.report_peer(peer, (&e).into());
+                            self.peer_provider.report_peer(peer, (&e).into());
                         }
 
                         Err(e.into())
@@ -253,7 +253,7 @@ where
 
 impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
 where
-    N: NetworkService + 'static,
+    N: PeerProvider + 'static,
     H: BlockConnectedEventHandle + 'static,
 {
     type Output = BlockChain;
@@ -262,18 +262,23 @@ where
         let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp();
-        match block_info {
+        let block_info = match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
-                self.chain.connect(ExecutedBlock { block, block_info })?;
+                self.chain.connect(ExecutedBlock {
+                    block,
+                    block_info: block_info.clone(),
+                })?;
+                block_info
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;
                 self.chain
                     .time_service()
                     .adjust(GlobalTimeOnChain::new(timestamp));
-                let total_difficulty = self.chain.get_total_difficulty()?;
+                let block_info = self.chain.status().info;
+                let total_difficulty = block_info.get_total_difficulty();
                 // only try connect block when sync chain total_difficulty > node's current chain.
                 if total_difficulty > self.current_block_info.total_difficulty {
                     if let Err(e) = self.event_handle.handle(BlockConnectedEvent { block }) {
@@ -283,10 +288,37 @@ where
                         );
                     }
                 }
+                block_info
             }
-        }
+        };
 
-        Ok(CollectorState::Need)
+        //verify target
+        if block_info.block_accumulator_info.num_leaves
+            == self.target.block_info.block_accumulator_info.num_leaves
+        {
+            if block_info != self.target.block_info {
+                for peer_id in self.target.peers.as_slice() {
+                    warn!(
+                        "[sync] Report peer {} for invalid target, this peer may been a bad peer.",
+                        peer_id
+                    );
+                    self.peer_provider.report_peer(
+                        peer_id.clone(),
+                        ReputationChange::new_fatal("invalid target"),
+                    );
+                }
+                Err(TaskError::BreakError(format_err!(
+                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+                    self.target,
+                    block_info
+                ))
+                .into())
+            } else {
+                Ok(CollectorState::Enough)
+            }
+        } else {
+            Ok(CollectorState::Need)
+        }
     }
 
     fn finish(self) -> Result<Self::Output> {

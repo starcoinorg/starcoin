@@ -47,7 +47,7 @@ impl CommandAction for StartCommand {
             ctx.opt().force,
             ctx.opt().peers.as_ref().cloned().unwrap_or_default(),
             ctx.opt().skip_pow_verify,
-            ctx.opt().strategy.clone(),
+            ctx.opt().strategy,
         )
     }
 }

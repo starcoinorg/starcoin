@@ -8,6 +8,7 @@ use anyhow::Result;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use itertools::Itertools;
+use network_p2p_types::ReputationChange;
 use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
@@ -18,19 +19,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-pub trait PeerProvider: Send + Sync {
-    fn best_peer(&self) -> BoxFuture<Result<Option<PeerInfo>>> {
-        self.peer_selector()
-            .and_then(|selector| async move {
-                Ok(if let Some(bests) = selector.bests() {
-                    bests.choose(&mut rand::thread_rng()).cloned()
-                } else {
-                    None
-                })
-            })
-            .boxed()
-    }
-
+pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     /// Get all peers, the peer's order is unsorted.
     fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>>;
 
@@ -43,6 +32,8 @@ pub trait PeerProvider: Send + Sync {
             .and_then(|peers| async move { Ok(PeerSelector::new(peers, PeerStrategy::default())) })
             .boxed()
     }
+
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
 }
 
 #[derive(Clone)]
@@ -82,7 +73,7 @@ impl From<PeerInfo> for PeerDetail {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub enum PeerStrategy {
     Random,
     WeightedRandom,
@@ -157,6 +148,14 @@ impl PeerSelector {
         }
     }
 
+    pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
+        self.strategy = strategy
+    }
+
+    pub fn strategy(&self) -> PeerStrategy {
+        self.strategy
+    }
+
     pub fn peer_info(&self, peer_id: &PeerId) -> Option<PeerInfo> {
         self.details
             .lock()
@@ -191,7 +190,7 @@ impl PeerSelector {
         self.total_score.fetch_add(score as u64, Ordering::SeqCst);
     }
 
-    fn peer_exist(&self, peer_id: &PeerId) -> bool {
+    pub fn peer_exist(&self, peer_id: &PeerId) -> bool {
         for peer in self.details.lock().iter() {
             if &peer.peer_id() == peer_id {
                 return true;
@@ -200,9 +199,18 @@ impl PeerSelector {
         false
     }
 
-    pub fn add_peer(&self, peer_info: PeerInfo) {
-        if !self.peer_exist(&peer_info.peer_id()) {
-            self.details.lock().push(peer_info.into());
+    pub fn add_or_update_peer(&self, peer_info: PeerInfo) {
+        let mut details = self.details.lock();
+        let update = details
+            .iter_mut()
+            .find(|peer| peer.peer_id() == peer_info.peer_id())
+            .map(|peer| {
+                peer.peer_info = peer_info.clone();
+                true
+            })
+            .unwrap_or(false);
+        if !update {
+            details.push(peer_info.into())
         }
     }
 
@@ -229,11 +237,31 @@ impl PeerSelector {
         Some(best_peers)
     }
 
-    pub fn peers(&self) -> Vec<PeerInfo> {
+    pub fn best(&self) -> Option<PeerInfo> {
+        if let Some(peers) = self.bests() {
+            peers.choose(&mut rand::thread_rng()).cloned()
+        } else {
+            None
+        }
+    }
+
+    pub fn peers(&self) -> Vec<PeerId> {
         self.details
             .lock()
             .iter()
-            .map(|peer| peer.peer_info().clone())
+            .map(|peer| peer.peer_id())
+            .collect()
+    }
+
+    pub fn peers_by_filter<F>(&self, f: F) -> Vec<PeerId>
+    where
+        F: Fn(&PeerInfo) -> bool,
+    {
+        self.details
+            .lock()
+            .iter()
+            .filter(|peer| f(peer.peer_info()))
+            .map(|peer| peer.peer_id())
             .collect()
     }
 
@@ -242,7 +270,7 @@ impl PeerSelector {
         self.details.lock().retain(|peer| -> bool {
             let flag = peers.contains(&peer.peer_id());
             if flag {
-                score += peer.score_counter.score();
+                score = score.saturating_add(peer.score_counter.score());
             }
             flag
         });
@@ -250,7 +278,10 @@ impl PeerSelector {
     }
 
     pub fn select_peer(&self) -> Option<PeerId> {
-        let avg_score = self.total_score.load(Ordering::SeqCst) / self.len() as u64;
+        let avg_score = self
+            .total_score
+            .load(Ordering::SeqCst)
+            .checked_div(self.len() as u64)?;
         if avg_score < 200 {
             return self.random();
         }

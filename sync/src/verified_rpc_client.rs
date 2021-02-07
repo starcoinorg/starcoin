@@ -3,11 +3,10 @@
 
 use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
-use anyhow::{ensure, format_err, Result};
+use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
-use rand::prelude::SliceRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -17,8 +16,9 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
@@ -31,9 +31,16 @@ use std::time::Instant;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]
-pub enum RpcVerifyError {
-    #[error("Peer {0:?} return valid rpc response: {1:?}")]
-    InvalidResponse(PeerId, String),
+#[error("Peer {peer_id:?} return valid rpc response: {msg:?}")]
+pub struct RpcVerifyError {
+    pub peer_id: PeerId,
+    pub msg: String,
+}
+
+impl RpcVerifyError {
+    pub fn new(peer_id: PeerId, msg: String) -> Self {
+        Self { peer_id, msg }
+    }
 }
 
 pub trait RpcVerifier<Req, Resp> {
@@ -62,7 +69,7 @@ where
                     if (self)(&req_item, &resp_item) {
                         Ok(Some(resp_item))
                     } else {
-                        Err(RpcVerifyError::InvalidResponse(
+                        Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
                                 "request item: {:?} not match with resp item: {:?}",
@@ -127,11 +134,7 @@ impl VerifiedRpcClient {
     }
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
-        if let Some(peers) = self.peer_selector.bests() {
-            peers.choose(&mut rand::thread_rng()).cloned()
-        } else {
-            None
-        }
+        self.peer_selector.best()
     }
 
     pub fn select_a_peer(&self) -> Result<PeerId> {
@@ -153,13 +156,16 @@ impl VerifiedRpcClient {
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {
-                        ensure!(
-                            id == txn.id(),
-                            "request txn with id: {} from peer {}, but got txn {:?}",
-                            id,
-                            peer_id,
-                            txn
-                        );
+                        if id != txn.id() {
+                            return Err(RpcVerifyError::new(
+                                peer_id.clone(),
+                                format!(
+                                    "request txn with id: {} from peer {}, but got txn {:?}",
+                                    id, peer_id, txn
+                                ),
+                            )
+                            .into());
+                        }
                         verified_txns.push(txn);
                     }
                     None => none_txn_vec.push(id),
@@ -167,12 +173,16 @@ impl VerifiedRpcClient {
             }
             Ok((none_txn_vec, verified_txns))
         } else {
-            Err(format_err!(
-                "Txn len mismatch {:?} : {:?} from peer : {:?}.",
-                data.len(),
-                req.len(),
-                peer_id
-            ))
+            Err(RpcVerifyError::new(
+                peer_id.clone(),
+                format!(
+                    "Txn len mismatch {:?} : {:?} from peer : {:?}.",
+                    data.len(),
+                    req.len(),
+                    peer_id
+                ),
+            )
+            .into())
         }
     }
 
@@ -249,40 +259,43 @@ impl VerifiedRpcClient {
     }
 
     pub async fn get_sync_target(&self) -> Result<SyncTarget> {
-        //TODO optimize target selector,
+        //TODO optimize target selector, calculate best target from multi peers.
         let best_peers = self
             .peer_selector
             .bests()
             .ok_or_else(|| format_err!("No best peer to request"))?;
-        let peer = best_peers
-            .choose(&mut rand::thread_rng())
-            .ok_or_else(|| format_err!("No peer to request"))?;
-        let peer_id = peer.peer_id();
-        let header = peer.latest_header();
-        let block_id = header.id();
 
-        let block_info = self
-            .client
-            .get_block_infos(peer_id.clone(), vec![block_id])
-            .await?
-            .pop()
-            .flatten()
-            .ok_or_else(|| {
-                format_err!(
-                    "Get block info by id:{} from peer_id:{} return None",
-                    block_id,
-                    peer_id
-                )
-            })?;
-        ensure!(
-            block_id == block_info.block_id,
-            "Invalid block info from {}",
-            peer_id
-        );
+        let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
+            best_peers
+                .into_iter()
+                .fold(vec![], |mut chain_statuses, peer| {
+                    let update = chain_statuses
+                        .iter_mut()
+                        .find(|(chain_status, _peers)| peer.chain_info().status() == chain_status)
+                        .map(|(_chain_status, peers)| {
+                            peers.push(peer.peer_id());
+                            true
+                        })
+                        .unwrap_or(false);
+
+                    if !update {
+                        chain_statuses
+                            .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                    }
+                    chain_statuses
+                });
+        //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
+        if chain_statuses.len() > 1 {
+            chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
+                peers_1.len().cmp(&peers_2.len())
+            });
+        }
+        let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
+        let header = chain_status.head;
         Ok(SyncTarget {
-            block_header: header.clone(),
-            block_info,
-            peers: self.peer_selector.peers(),
+            target_id: BlockIdAndNumber::new(header.id(), header.number()),
+            block_info: chain_status.info,
+            peers,
         })
     }
 
@@ -335,16 +348,6 @@ impl VerifiedRpcClient {
     }
 
     pub async fn get_block_ids(
-        &self,
-        start_number: BlockNumber,
-        reverse: bool,
-        max_size: u64,
-    ) -> Result<Vec<HashValue>> {
-        self.get_block_ids_from_peer(None, start_number, reverse, max_size)
-            .await
-    }
-
-    pub async fn get_block_ids_from_peer(
         &self,
         peer_id: Option<PeerId>,
         start_number: BlockNumber,
