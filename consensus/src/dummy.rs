@@ -57,6 +57,6 @@ impl Consensus for DummyConsensus {
         _nonce: u32,
         _extra: &BlockHeaderExtra,
     ) -> Result<HashValue> {
-        unreachable!()
+        Ok(HashValue::zero())
     }
 }
