@@ -144,7 +144,7 @@ if any field is <code>0</code>, that means the proposal want to update.
     <b>let</b> dao_config_modify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
         <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;,
     &gt;(signer);
-    // TODO: <b>assert</b> cap.account_address == token_issuer
+    <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(&dao_config_modify_cap) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> cap = <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a> { cap: dao_config_modify_cap };
     move_to(signer, cap);
 }
@@ -261,6 +261,10 @@ if any field is <code>0</code>, that means the proposal want to update.
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
 <b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>include</b> <a href="Config.md#0x1_Config_AbortsIfCapNotExist">Config::AbortsIfCapNotExist</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;{account: sender};
+<a name="0x1_ModifyDaoConfigProposal_config_cap$4"></a>
+<b>let</b> config_cap = <a href="Config.md#0x1_Config_spec_cap">Config::spec_cap</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;(sender);
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(config_cap);
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(config_cap).account_address != sender;
 <b>aborts_if</b> <b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(sender);
 <b>ensures</b> <b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(sender);
 </code></pre>
@@ -285,7 +289,7 @@ if any field is <code>0</code>, that means the proposal want to update.
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> exec_delay &gt; 0 && exec_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">Dao::spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">Dao::CheckQuorumVotes</a>&lt;TokenT&gt;;
-<a name="0x1_ModifyDaoConfigProposal_sender$4"></a>
+<a name="0x1_ModifyDaoConfigProposal_sender$5"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;&gt;(sender);
 </code></pre>

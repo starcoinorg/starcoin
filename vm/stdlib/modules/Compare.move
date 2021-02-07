@@ -81,6 +81,15 @@ module Compare {
     spec fun cmp_u64 {
         aborts_if false;
     }
+
+    fun cmp_u128(i1: u128, i2: u128): u8 {
+        if (i1 == i2) EQUAL
+        else if (i1 < i2) LESS_THAN
+        else GREATER_THAN
+    }
+    spec fun cmp_u128 {
+        aborts_if false;
+    }
 }
 
 }

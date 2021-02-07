@@ -96,7 +96,7 @@
 <code>events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Config.md#0x1_Config_ConfigChangeEvent">Config::ConfigChangeEvent</a>&lt;ConfigValue&gt;&gt;</code>
 </dt>
 <dd>
- FIXME: events should put into Config resource.
+
 </dd>
 </dl>
 
@@ -252,7 +252,6 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set">set</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>,<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> signer_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    //TODO <b>define</b> no capability error code.
     <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address);
     <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&cap_holder.cap), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
