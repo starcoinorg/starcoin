@@ -53,7 +53,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 stdlib = {path ="../vm/stdlib"}
 starcoin-statedb = {path = "../state/statedb"}
 starcoin-move-compiler = { path = "../vm/compiler"}
-rand = "0.7.3"
+rand = "0.8.3"
 network-api = { path = "../network/api" }
 async-trait = "0.1.42"
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
