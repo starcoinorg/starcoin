@@ -209,12 +209,20 @@ impl SyncService2 {
                                     if let Some(rpc_verify_err) =
                                         err.downcast_ref::<RpcVerifyError>()
                                     {
-                                        network.report_peer(
-                                            rpc_verify_err.peer_id.clone(),
-                                            ReputationChange::new_fatal("invalid_response"),
-                                        )
+                                        for peer_id in rpc_verify_err.peers.as_slice() {
+                                            network.report_peer(
+                                                peer_id.clone(),
+                                                ReputationChange::new_fatal("invalid_response"),
+                                            )
+                                        }
+                                    }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
+                                        warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                     }
-                                    warn!("[sync] Sync task is interrupted by {:?}", err);
+                                    warn!(
+                                        "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
+                                        err,
+                                        err.root_cause(),
+                                    );
                                     false
                                 }
                                 task_err => {
