@@ -19,8 +19,8 @@ use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
     transaction::{
-        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionArgument,
-        TransactionOutput, TransactionPayload, TransactionStatus,
+        SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
+        TransactionPayload, TransactionStatus,
     },
     write_set::WriteSet,
 };
@@ -38,7 +38,9 @@ use starcoin_vm_types::on_chain_config::INITIAL_GAS_SCHEDULE;
 use starcoin_vm_types::transaction::{
     DryRunTransaction, Module, Package, Script, TransactionPayloadType,
 };
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
+use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
@@ -474,20 +476,19 @@ impl StarcoinVM {
                 &account_config::TRANSACTION_MANAGER_MODULE,
                 &PROLOGUE_NAME,
                 vec![gas_token_ty],
-                vec![
-                    Value::transaction_argument_signer_reference(genesis_address),
-                    Value::address(txn_data.sender),
-                    Value::u64(txn_sequence_number),
-                    Value::vector_u8(txn_public_key),
-                    Value::u64(txn_gas_price),
-                    Value::u64(txn_max_gas_amount),
-                    Value::u64(txn_expiration_time),
-                    Value::u8(chain_id),
-                    Value::u8(payload_type.into()),
-                    Value::vector_u8(script_or_package_hash.to_vec()),
-                    Value::address(package_address),
-                ],
-                genesis_address,
+                serialize_values(&vec![
+                    MoveValue::Signer(genesis_address),
+                    MoveValue::Address(txn_data.sender),
+                    MoveValue::U64(txn_sequence_number),
+                    MoveValue::vector_u8(txn_public_key),
+                    MoveValue::U64(txn_gas_price),
+                    MoveValue::U64(txn_max_gas_amount),
+                    MoveValue::U64(txn_expiration_time),
+                    MoveValue::U8(chain_id),
+                    MoveValue::U8(payload_type.into()),
+                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
+                    MoveValue::Address(package_address),
+                ]),
                 cost_strategy,
             )
             .or_else(convert_prologue_runtime_error)
@@ -522,19 +523,18 @@ impl StarcoinVM {
                 &account_config::TRANSACTION_MANAGER_MODULE,
                 &EPILOGUE_NAME,
                 vec![gas_token_ty],
-                vec![
-                    Value::transaction_argument_signer_reference(genesis_address),
-                    Value::address(txn_data.sender),
-                    Value::u64(txn_sequence_number),
-                    Value::u64(txn_gas_price),
-                    Value::u64(txn_max_gas_amount),
-                    Value::u64(gas_remaining),
-                    Value::u8(payload_type.into()),
-                    Value::vector_u8(script_or_package_hash.to_vec()),
-                    Value::address(package_address),
-                    Value::bool(success),
-                ],
-                genesis_address,
+                serialize_values(&vec![
+                    MoveValue::Signer(genesis_address),
+                    MoveValue::Address(txn_data.sender),
+                    MoveValue::U64(txn_sequence_number),
+                    MoveValue::U64(txn_gas_price),
+                    MoveValue::U64(txn_max_gas_amount),
+                    MoveValue::U64(gas_remaining),
+                    MoveValue::U8(payload_type.into()),
+                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
+                    MoveValue::Address(package_address),
+                    MoveValue::Bool(success),
+                ]),
                 cost_strategy,
             )
             .or_else(convert_normal_success_epilogue_error)
@@ -561,20 +561,20 @@ impl StarcoinVM {
             chain_id,
             parent_gas_used,
         ) = block_metadata.into_inner();
-        let args = vec![
-            Value::transaction_argument_signer_reference(txn_sender),
-            Value::vector_u8(parent_id.to_vec()),
-            Value::u64(timestamp),
-            Value::address(author),
+        let args = serialize_values(&vec![
+            MoveValue::Signer(txn_sender),
+            MoveValue::vector_u8(parent_id.to_vec()),
+            MoveValue::U64(timestamp),
+            MoveValue::Address(author),
             match author_auth_key {
-                Some(author_auth_key) => Value::vector_u8(author_auth_key.to_vec()),
-                None => Value::vector_u8(Vec::new()),
+                Some(author_auth_key) => MoveValue::vector_u8(author_auth_key.to_vec()),
+                None => MoveValue::vector_u8(Vec::new()),
             },
-            Value::u64(uncles),
-            Value::u64(number),
-            Value::u8(chain_id.id()),
-            Value::u64(parent_gas_used),
-        ];
+            MoveValue::U64(uncles),
+            MoveValue::U64(number),
+            MoveValue::U8(chain_id.id()),
+            MoveValue::U64(parent_gas_used),
+        ]);
         let mut session = self.move_vm.new_session(remote_cache);
         session
             .execute_function(
@@ -582,7 +582,6 @@ impl StarcoinVM {
                 &account_config::BLOCK_PROLOGUE_NAME,
                 vec![],
                 args,
-                txn_sender,
                 &mut cost_strategy,
             )
             .or_else(convert_prologue_runtime_error)?;
@@ -819,7 +818,7 @@ impl StarcoinVM {
         module: &ModuleId,
         function_name: &IdentStr,
         type_params: Vec<TypeTag>,
-        args: Vec<Value>,
+        args: Vec<Vec<u8>>,
     ) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
         let data_cache = StateViewCache::new(state_view);
         if let Err(err) = self.load_configs(&data_cache) {
@@ -977,19 +976,6 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
         0,
         TransactionStatus::Discard(err),
     )
-}
-
-pub fn convert_txn_args(args: &[TransactionArgument]) -> Vec<Value> {
-    args.iter()
-        .map(|arg| match arg {
-            TransactionArgument::U8(i) => Value::u8(*i),
-            TransactionArgument::U64(i) => Value::u64(*i),
-            TransactionArgument::U128(i) => Value::u128(*i),
-            TransactionArgument::Address(a) => Value::address(*a),
-            TransactionArgument::Bool(b) => Value::bool(*b),
-            TransactionArgument::U8Vector(v) => Value::vector_u8(v.clone()),
-        })
-        .collect()
 }
 
 pub fn txn_effects_to_writeset_and_events_cached<C: AccessPathCache>(

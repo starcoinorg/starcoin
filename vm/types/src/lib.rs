@@ -133,7 +133,7 @@ pub mod vm_status {
 
 pub mod bytecode_verifier {
     pub use bytecode_verifier::{
-        verify_main_signature, verify_module, verify_script, DependencyChecker,
+        dependencies, verify_main_signature, verify_module, verify_script,
     };
 }
 
