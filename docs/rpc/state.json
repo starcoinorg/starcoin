@@ -1,0 +1,773 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "state",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "state.get",
+      "params": [
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccessPath",
+            "type": "object",
+            "required": [
+              "address",
+              "path"
+            ],
+            "properties": {
+              "address": {
+                "description": "A struct that represents an account address.",
+                "type": "string"
+              },
+              "path": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Code"
+                    ],
+                    "properties": {
+                      "Code": {
+                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Resource"
+                    ],
+                    "properties": {
+                      "Resource": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "module",
+                          "name",
+                          "type_params"
+                        ],
+                        "properties": {
+                          "address": {
+                            "description": "A struct that represents an account address.",
+                            "type": "string"
+                          },
+                          "module": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "type_params": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "Bool",
+                                "U8",
+                                "U64",
+                                "U128",
+                                "Address",
+                                "Signer"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < Vec < u8 > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_Array_of_uint8",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    {
+      "name": "state.get_with_proof",
+      "params": [
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccessPath",
+            "type": "object",
+            "required": [
+              "address",
+              "path"
+            ],
+            "properties": {
+              "address": {
+                "description": "A struct that represents an account address.",
+                "type": "string"
+              },
+              "path": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Code"
+                    ],
+                    "properties": {
+                      "Code": {
+                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Resource"
+                    ],
+                    "properties": {
+                      "Resource": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "module",
+                          "name",
+                          "type_params"
+                        ],
+                        "properties": {
+                          "address": {
+                            "description": "A struct that represents an account address.",
+                            "type": "string"
+                          },
+                          "module": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "type_params": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "Bool",
+                                "U8",
+                                "U64",
+                                "U128",
+                                "Address",
+                                "Signer"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "StateWithProofView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "StateWithProofView",
+          "type": "object",
+          "required": [
+            "account_proof",
+            "account_state_proof"
+          ],
+          "properties": {
+            "account_proof": {
+              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
+              "type": "object",
+              "required": [
+                "siblings"
+              ],
+              "properties": {
+                "leaf": {
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": [
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ],
+                  "maxItems": 2,
+                  "minItems": 2
+                },
+                "siblings": {
+                  "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                  "type": "array",
+                  "items": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "account_state": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "account_state_proof": {
+              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
+              "type": "object",
+              "required": [
+                "siblings"
+              ],
+              "properties": {
+                "leaf": {
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": [
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ],
+                  "maxItems": 2,
+                  "minItems": 2
+                },
+                "siblings": {
+                  "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                  "type": "array",
+                  "items": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "state": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "state.get_account_state",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "description": "A struct that represents an account address.",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < AccountState >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_AccountState",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "storage_roots"
+          ],
+          "properties": {
+            "storage_roots": {
+              "type": "array",
+              "items": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "state.get_account_state_set",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "description": "A struct that represents an account address.",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < AccountStateSetView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_AccountStateSetView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "codes",
+            "resources"
+          ],
+          "properties": {
+            "codes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "is_resource",
+                  "type_",
+                  "value"
+                ],
+                "properties": {
+                  "is_resource": {
+                    "type": "boolean"
+                  },
+                  "type_": {
+                    "type": "object",
+                    "required": [
+                      "address",
+                      "module",
+                      "name",
+                      "type_params"
+                    ],
+                    "properties": {
+                      "address": {
+                        "description": "A struct that represents an account address.",
+                        "type": "string"
+                      },
+                      "module": {
+                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                        "type": "string"
+                      },
+                      "name": {
+                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                        "type": "string"
+                      },
+                      "type_params": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "Bool",
+                            "U8",
+                            "U64",
+                            "U128",
+                            "Address",
+                            "Signer"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "state.get_state_root",
+      "params": [],
+      "result": {
+        "name": "HashValue",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "HashValue",
+          "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+          "type": "object",
+          "required": [
+            "hash"
+          ],
+          "properties": {
+            "hash": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "state.get_with_proof_by_root",
+      "params": [
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccessPath",
+            "type": "object",
+            "required": [
+              "address",
+              "path"
+            ],
+            "properties": {
+              "address": {
+                "description": "A struct that represents an account address.",
+                "type": "string"
+              },
+              "path": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Code"
+                    ],
+                    "properties": {
+                      "Code": {
+                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Resource"
+                    ],
+                    "properties": {
+                      "Resource": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "module",
+                          "name",
+                          "type_params"
+                        ],
+                        "properties": {
+                          "address": {
+                            "description": "A struct that represents an account address.",
+                            "type": "string"
+                          },
+                          "module": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "type_params": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "Bool",
+                                "U8",
+                                "U64",
+                                "U128",
+                                "Address",
+                                "Signer"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "name": "state_root",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "StateWithProofView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "StateWithProofView",
+          "type": "object",
+          "required": [
+            "account_proof",
+            "account_state_proof"
+          ],
+          "properties": {
+            "account_proof": {
+              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
+              "type": "object",
+              "required": [
+                "siblings"
+              ],
+              "properties": {
+                "leaf": {
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": [
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ],
+                  "maxItems": 2,
+                  "minItems": 2
+                },
+                "siblings": {
+                  "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                  "type": "array",
+                  "items": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "account_state": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            },
+            "account_state_proof": {
+              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
+              "type": "object",
+              "required": [
+                "siblings"
+              ],
+              "properties": {
+                "leaf": {
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": [
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ],
+                  "maxItems": 2,
+                  "minItems": 2
+                },
+                "siblings": {
+                  "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                  "type": "array",
+                  "items": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "state": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

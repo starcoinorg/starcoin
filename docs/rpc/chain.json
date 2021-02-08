@@ -1,0 +1,4446 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "chain",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "chain.id",
+      "params": [],
+      "result": {
+        "name": "ChainId",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "ChainId",
+          "type": "object",
+          "required": [
+            "id",
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.info",
+      "params": [],
+      "result": {
+        "name": "ChainInfoView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "ChainInfoView",
+          "type": "object",
+          "required": [
+            "block_info",
+            "chain_id",
+            "genesis_hash",
+            "head"
+          ],
+          "properties": {
+            "block_info": {
+              "description": "`BlockInfo` is the object we store in the storage. It consists of the block as well as the execution result of this block.",
+              "type": "object",
+              "required": [
+                "block_accumulator_info",
+                "block_id",
+                "total_difficulty",
+                "txn_accumulator_info"
+              ],
+              "properties": {
+                "block_accumulator_info": {
+                  "description": "The block accumulator info.",
+                  "type": "object",
+                  "required": [
+                    "accumulator_root",
+                    "frozen_subtree_roots",
+                    "num_leaves",
+                    "num_nodes"
+                  ],
+                  "properties": {
+                    "accumulator_root": {
+                      "description": "Accumulator root hash",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "frozen_subtree_roots": {
+                      "description": "Frozen subtree roots of this accumulator.",
+                      "type": "array",
+                      "items": {
+                        "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "num_leaves": {
+                      "description": "The total number of leaves in this accumulator.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "num_nodes": {
+                      "description": "The total number of nodes in this accumulator.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    }
+                  }
+                },
+                "block_id": {
+                  "description": "Block id",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "total_difficulty": {
+                  "description": "The total difficulty.",
+                  "type": "string"
+                },
+                "txn_accumulator_info": {
+                  "description": "The transaction accumulator info",
+                  "type": "object",
+                  "required": [
+                    "accumulator_root",
+                    "frozen_subtree_roots",
+                    "num_leaves",
+                    "num_nodes"
+                  ],
+                  "properties": {
+                    "accumulator_root": {
+                      "description": "Accumulator root hash",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "frozen_subtree_roots": {
+                      "description": "Frozen subtree roots of this accumulator.",
+                      "type": "array",
+                      "items": {
+                        "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "num_leaves": {
+                      "description": "The total number of leaves in this accumulator.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "num_nodes": {
+                      "description": "The total number of nodes in this accumulator.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    }
+                  }
+                }
+              }
+            },
+            "chain_id": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            },
+            "genesis_hash": {
+              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "head": {
+              "type": "object",
+              "required": [
+                "author",
+                "block_accumulator_root",
+                "block_hash",
+                "body_hash",
+                "chain_id",
+                "difficulty",
+                "extra",
+                "gas_used",
+                "nonce",
+                "number",
+                "parent_hash",
+                "state_root",
+                "timestamp",
+                "txn_accumulator_root"
+              ],
+              "properties": {
+                "author": {
+                  "description": "Block author.",
+                  "type": "string"
+                },
+                "author_auth_key": {
+                  "description": "Block author auth key.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 32,
+                  "minItems": 32
+                },
+                "block_accumulator_root": {
+                  "description": "The block accumulator root hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "block_hash": {
+                  "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "body_hash": {
+                  "description": "hash for block body",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "chain_id": {
+                  "description": "The chain id",
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "difficulty": {
+                  "description": "Block difficulty",
+                  "type": "string"
+                },
+                "extra": {
+                  "description": "block header extra",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
+                },
+                "gas_used": {
+                  "description": "Gas used for contracts execution.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "nonce": {
+                  "description": "Consensus nonce field.",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                },
+                "number": {
+                  "description": "Block number.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "parent_hash": {
+                  "description": "Parent hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "state_root": {
+                  "description": "The last transaction state_root of this block after execute.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "timestamp": {
+                  "description": "Block timestamp.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "txn_accumulator_root": {
+                  "description": "The transaction accumulator root hash after executing this block.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_block_by_hash",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < BlockView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_BlockView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "body",
+            "header",
+            "uncles"
+          ],
+          "properties": {
+            "body": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Hashes"
+                  ],
+                  "properties": {
+                    "Hashes": {
+                      "type": "array",
+                      "items": {
+                        "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Full"
+                  ],
+                  "properties": {
+                    "Full": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "authenticator",
+                          "raw_txn",
+                          "transaction_hash"
+                        ],
+                        "properties": {
+                          "authenticator": {
+                            "description": "Public key and signature to authenticate",
+                            "anyOf": [
+                              {
+                                "description": "Single signature",
+                                "type": "object",
+                                "required": [
+                                  "Ed25519"
+                                ],
+                                "properties": {
+                                  "Ed25519": {
+                                    "type": "object",
+                                    "required": [
+                                      "public_key",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "public_key": {
+                                        "description": "An Ed25519 public key",
+                                        "type": "string"
+                                      },
+                                      "signature": {
+                                        "description": "An Ed25519 signature",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "description": "K-of-N multisignature",
+                                "type": "object",
+                                "required": [
+                                  "MultiEd25519"
+                                ],
+                                "properties": {
+                                  "MultiEd25519": {
+                                    "type": "object",
+                                    "required": [
+                                      "public_key",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "public_key": {
+                                        "description": "Vector of public keys in the multi-key Ed25519 structure along with the threshold.",
+                                        "type": "object",
+                                        "required": [
+                                          "public_keys",
+                                          "threshold"
+                                        ],
+                                        "properties": {
+                                          "public_keys": {
+                                            "type": "array",
+                                            "items": {
+                                              "description": "An Ed25519 public key",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "threshold": {
+                                            "type": "integer",
+                                            "format": "uint8",
+                                            "minimum": 0.0
+                                          }
+                                        }
+                                      },
+                                      "signature": {
+                                        "description": "Vector of the multi-key signatures along with a 32bit [u8; 4] bitmap required to map signatures with their corresponding public keys.\n\nNote that bits are read from left to right. For instance, in the following bitmap [0b0001_0000, 0b0000_0000, 0b0000_0000, 0b0000_0001], the 3rd and 31st positions are set.",
+                                        "type": "object",
+                                        "required": [
+                                          "bitmap",
+                                          "signatures"
+                                        ],
+                                        "properties": {
+                                          "bitmap": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "integer",
+                                              "format": "uint8",
+                                              "minimum": 0.0
+                                            },
+                                            "maxItems": 4,
+                                            "minItems": 4
+                                          },
+                                          "signatures": {
+                                            "type": "array",
+                                            "items": {
+                                              "description": "An Ed25519 signature",
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "raw_txn": {
+                            "description": "The raw transaction",
+                            "type": "object",
+                            "required": [
+                              "chain_id",
+                              "expiration_timestamp_secs",
+                              "gas_token_code",
+                              "gas_unit_price",
+                              "max_gas_amount",
+                              "payload",
+                              "sender",
+                              "sequence_number"
+                            ],
+                            "properties": {
+                              "chain_id": {
+                                "type": "integer",
+                                "format": "uint8",
+                                "minimum": 0.0
+                              },
+                              "expiration_timestamp_secs": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              },
+                              "gas_token_code": {
+                                "type": "string"
+                              },
+                              "gas_unit_price": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              },
+                              "max_gas_amount": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              },
+                              "payload": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "format": "uint8",
+                                  "minimum": 0.0
+                                }
+                              },
+                              "sender": {
+                                "description": "Sender's address.",
+                                "type": "string"
+                              },
+                              "sequence_number": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              }
+                            }
+                          },
+                          "transaction_hash": {
+                            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                            "type": "object",
+                            "required": [
+                              "hash"
+                            ],
+                            "properties": {
+                              "hash": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "header": {
+              "type": "object",
+              "required": [
+                "author",
+                "block_accumulator_root",
+                "block_hash",
+                "body_hash",
+                "chain_id",
+                "difficulty",
+                "extra",
+                "gas_used",
+                "nonce",
+                "number",
+                "parent_hash",
+                "state_root",
+                "timestamp",
+                "txn_accumulator_root"
+              ],
+              "properties": {
+                "author": {
+                  "description": "Block author.",
+                  "type": "string"
+                },
+                "author_auth_key": {
+                  "description": "Block author auth key.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 32,
+                  "minItems": 32
+                },
+                "block_accumulator_root": {
+                  "description": "The block accumulator root hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "block_hash": {
+                  "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "body_hash": {
+                  "description": "hash for block body",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "chain_id": {
+                  "description": "The chain id",
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "difficulty": {
+                  "description": "Block difficulty",
+                  "type": "string"
+                },
+                "extra": {
+                  "description": "block header extra",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
+                },
+                "gas_used": {
+                  "description": "Gas used for contracts execution.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "nonce": {
+                  "description": "Consensus nonce field.",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                },
+                "number": {
+                  "description": "Block number.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "parent_hash": {
+                  "description": "Parent hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "state_root": {
+                  "description": "The last transaction state_root of this block after execute.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "timestamp": {
+                  "description": "Block timestamp.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "txn_accumulator_root": {
+                  "description": "The transaction accumulator root hash after executing this block.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "uncles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "author",
+                  "block_accumulator_root",
+                  "block_hash",
+                  "body_hash",
+                  "chain_id",
+                  "difficulty",
+                  "extra",
+                  "gas_used",
+                  "nonce",
+                  "number",
+                  "parent_hash",
+                  "state_root",
+                  "timestamp",
+                  "txn_accumulator_root"
+                ],
+                "properties": {
+                  "author": {
+                    "description": "Block author.",
+                    "type": "string"
+                  },
+                  "author_auth_key": {
+                    "description": "Block author auth key.",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 32,
+                    "minItems": 32
+                  },
+                  "block_accumulator_root": {
+                    "description": "The block accumulator root hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "block_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "body_hash": {
+                    "description": "hash for block body",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "chain_id": {
+                    "description": "The chain id",
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "difficulty": {
+                    "description": "Block difficulty",
+                    "type": "string"
+                  },
+                  "extra": {
+                    "description": "block header extra",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 4,
+                    "minItems": 4
+                  },
+                  "gas_used": {
+                    "description": "Gas used for contracts execution.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "nonce": {
+                    "description": "Consensus nonce field.",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "number": {
+                    "description": "Block number.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "parent_hash": {
+                    "description": "Parent hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "state_root": {
+                    "description": "The last transaction state_root of this block after execute.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "timestamp": {
+                    "description": "Block timestamp.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "txn_accumulator_root": {
+                    "description": "The transaction accumulator root hash after executing this block.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_block_by_number",
+      "params": [
+        {
+          "name": "number",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < BlockView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_BlockView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "body",
+            "header",
+            "uncles"
+          ],
+          "properties": {
+            "body": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Hashes"
+                  ],
+                  "properties": {
+                    "Hashes": {
+                      "type": "array",
+                      "items": {
+                        "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Full"
+                  ],
+                  "properties": {
+                    "Full": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "authenticator",
+                          "raw_txn",
+                          "transaction_hash"
+                        ],
+                        "properties": {
+                          "authenticator": {
+                            "description": "Public key and signature to authenticate",
+                            "anyOf": [
+                              {
+                                "description": "Single signature",
+                                "type": "object",
+                                "required": [
+                                  "Ed25519"
+                                ],
+                                "properties": {
+                                  "Ed25519": {
+                                    "type": "object",
+                                    "required": [
+                                      "public_key",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "public_key": {
+                                        "description": "An Ed25519 public key",
+                                        "type": "string"
+                                      },
+                                      "signature": {
+                                        "description": "An Ed25519 signature",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "description": "K-of-N multisignature",
+                                "type": "object",
+                                "required": [
+                                  "MultiEd25519"
+                                ],
+                                "properties": {
+                                  "MultiEd25519": {
+                                    "type": "object",
+                                    "required": [
+                                      "public_key",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "public_key": {
+                                        "description": "Vector of public keys in the multi-key Ed25519 structure along with the threshold.",
+                                        "type": "object",
+                                        "required": [
+                                          "public_keys",
+                                          "threshold"
+                                        ],
+                                        "properties": {
+                                          "public_keys": {
+                                            "type": "array",
+                                            "items": {
+                                              "description": "An Ed25519 public key",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "threshold": {
+                                            "type": "integer",
+                                            "format": "uint8",
+                                            "minimum": 0.0
+                                          }
+                                        }
+                                      },
+                                      "signature": {
+                                        "description": "Vector of the multi-key signatures along with a 32bit [u8; 4] bitmap required to map signatures with their corresponding public keys.\n\nNote that bits are read from left to right. For instance, in the following bitmap [0b0001_0000, 0b0000_0000, 0b0000_0000, 0b0000_0001], the 3rd and 31st positions are set.",
+                                        "type": "object",
+                                        "required": [
+                                          "bitmap",
+                                          "signatures"
+                                        ],
+                                        "properties": {
+                                          "bitmap": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "integer",
+                                              "format": "uint8",
+                                              "minimum": 0.0
+                                            },
+                                            "maxItems": 4,
+                                            "minItems": 4
+                                          },
+                                          "signatures": {
+                                            "type": "array",
+                                            "items": {
+                                              "description": "An Ed25519 signature",
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "raw_txn": {
+                            "description": "The raw transaction",
+                            "type": "object",
+                            "required": [
+                              "chain_id",
+                              "expiration_timestamp_secs",
+                              "gas_token_code",
+                              "gas_unit_price",
+                              "max_gas_amount",
+                              "payload",
+                              "sender",
+                              "sequence_number"
+                            ],
+                            "properties": {
+                              "chain_id": {
+                                "type": "integer",
+                                "format": "uint8",
+                                "minimum": 0.0
+                              },
+                              "expiration_timestamp_secs": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              },
+                              "gas_token_code": {
+                                "type": "string"
+                              },
+                              "gas_unit_price": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              },
+                              "max_gas_amount": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              },
+                              "payload": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "format": "uint8",
+                                  "minimum": 0.0
+                                }
+                              },
+                              "sender": {
+                                "description": "Sender's address.",
+                                "type": "string"
+                              },
+                              "sequence_number": {
+                                "type": "integer",
+                                "format": "uint64",
+                                "minimum": 0.0
+                              }
+                            }
+                          },
+                          "transaction_hash": {
+                            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                            "type": "object",
+                            "required": [
+                              "hash"
+                            ],
+                            "properties": {
+                              "hash": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "header": {
+              "type": "object",
+              "required": [
+                "author",
+                "block_accumulator_root",
+                "block_hash",
+                "body_hash",
+                "chain_id",
+                "difficulty",
+                "extra",
+                "gas_used",
+                "nonce",
+                "number",
+                "parent_hash",
+                "state_root",
+                "timestamp",
+                "txn_accumulator_root"
+              ],
+              "properties": {
+                "author": {
+                  "description": "Block author.",
+                  "type": "string"
+                },
+                "author_auth_key": {
+                  "description": "Block author auth key.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 32,
+                  "minItems": 32
+                },
+                "block_accumulator_root": {
+                  "description": "The block accumulator root hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "block_hash": {
+                  "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "body_hash": {
+                  "description": "hash for block body",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "chain_id": {
+                  "description": "The chain id",
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "difficulty": {
+                  "description": "Block difficulty",
+                  "type": "string"
+                },
+                "extra": {
+                  "description": "block header extra",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
+                },
+                "gas_used": {
+                  "description": "Gas used for contracts execution.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "nonce": {
+                  "description": "Consensus nonce field.",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                },
+                "number": {
+                  "description": "Block number.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "parent_hash": {
+                  "description": "Parent hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "state_root": {
+                  "description": "The last transaction state_root of this block after execute.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "timestamp": {
+                  "description": "Block timestamp.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "txn_accumulator_root": {
+                  "description": "The transaction accumulator root hash after executing this block.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "uncles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "author",
+                  "block_accumulator_root",
+                  "block_hash",
+                  "body_hash",
+                  "chain_id",
+                  "difficulty",
+                  "extra",
+                  "gas_used",
+                  "nonce",
+                  "number",
+                  "parent_hash",
+                  "state_root",
+                  "timestamp",
+                  "txn_accumulator_root"
+                ],
+                "properties": {
+                  "author": {
+                    "description": "Block author.",
+                    "type": "string"
+                  },
+                  "author_auth_key": {
+                    "description": "Block author auth key.",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 32,
+                    "minItems": 32
+                  },
+                  "block_accumulator_root": {
+                    "description": "The block accumulator root hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "block_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "body_hash": {
+                    "description": "hash for block body",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "chain_id": {
+                    "description": "The chain id",
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "difficulty": {
+                    "description": "Block difficulty",
+                    "type": "string"
+                  },
+                  "extra": {
+                    "description": "block header extra",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 4,
+                    "minItems": 4
+                  },
+                  "gas_used": {
+                    "description": "Gas used for contracts execution.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "nonce": {
+                    "description": "Consensus nonce field.",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "number": {
+                    "description": "Block number.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "parent_hash": {
+                    "description": "Parent hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "state_root": {
+                    "description": "The last transaction state_root of this block after execute.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "timestamp": {
+                    "description": "Block timestamp.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "txn_accumulator_root": {
+                    "description": "The transaction accumulator root hash after executing this block.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_blocks_by_number",
+      "params": [
+        {
+          "name": "number",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_uint64",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "count",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < BlockView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_BlockView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "body",
+              "header",
+              "uncles"
+            ],
+            "properties": {
+              "body": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Hashes"
+                    ],
+                    "properties": {
+                      "Hashes": {
+                        "type": "array",
+                        "items": {
+                          "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Full"
+                    ],
+                    "properties": {
+                      "Full": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "authenticator",
+                            "raw_txn",
+                            "transaction_hash"
+                          ],
+                          "properties": {
+                            "authenticator": {
+                              "description": "Public key and signature to authenticate",
+                              "anyOf": [
+                                {
+                                  "description": "Single signature",
+                                  "type": "object",
+                                  "required": [
+                                    "Ed25519"
+                                  ],
+                                  "properties": {
+                                    "Ed25519": {
+                                      "type": "object",
+                                      "required": [
+                                        "public_key",
+                                        "signature"
+                                      ],
+                                      "properties": {
+                                        "public_key": {
+                                          "description": "An Ed25519 public key",
+                                          "type": "string"
+                                        },
+                                        "signature": {
+                                          "description": "An Ed25519 signature",
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "description": "K-of-N multisignature",
+                                  "type": "object",
+                                  "required": [
+                                    "MultiEd25519"
+                                  ],
+                                  "properties": {
+                                    "MultiEd25519": {
+                                      "type": "object",
+                                      "required": [
+                                        "public_key",
+                                        "signature"
+                                      ],
+                                      "properties": {
+                                        "public_key": {
+                                          "description": "Vector of public keys in the multi-key Ed25519 structure along with the threshold.",
+                                          "type": "object",
+                                          "required": [
+                                            "public_keys",
+                                            "threshold"
+                                          ],
+                                          "properties": {
+                                            "public_keys": {
+                                              "type": "array",
+                                              "items": {
+                                                "description": "An Ed25519 public key",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "threshold": {
+                                              "type": "integer",
+                                              "format": "uint8",
+                                              "minimum": 0.0
+                                            }
+                                          }
+                                        },
+                                        "signature": {
+                                          "description": "Vector of the multi-key signatures along with a 32bit [u8; 4] bitmap required to map signatures with their corresponding public keys.\n\nNote that bits are read from left to right. For instance, in the following bitmap [0b0001_0000, 0b0000_0000, 0b0000_0000, 0b0000_0001], the 3rd and 31st positions are set.",
+                                          "type": "object",
+                                          "required": [
+                                            "bitmap",
+                                            "signatures"
+                                          ],
+                                          "properties": {
+                                            "bitmap": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "integer",
+                                                "format": "uint8",
+                                                "minimum": 0.0
+                                              },
+                                              "maxItems": 4,
+                                              "minItems": 4
+                                            },
+                                            "signatures": {
+                                              "type": "array",
+                                              "items": {
+                                                "description": "An Ed25519 signature",
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "raw_txn": {
+                              "description": "The raw transaction",
+                              "type": "object",
+                              "required": [
+                                "chain_id",
+                                "expiration_timestamp_secs",
+                                "gas_token_code",
+                                "gas_unit_price",
+                                "max_gas_amount",
+                                "payload",
+                                "sender",
+                                "sequence_number"
+                              ],
+                              "properties": {
+                                "chain_id": {
+                                  "type": "integer",
+                                  "format": "uint8",
+                                  "minimum": 0.0
+                                },
+                                "expiration_timestamp_secs": {
+                                  "type": "integer",
+                                  "format": "uint64",
+                                  "minimum": 0.0
+                                },
+                                "gas_token_code": {
+                                  "type": "string"
+                                },
+                                "gas_unit_price": {
+                                  "type": "integer",
+                                  "format": "uint64",
+                                  "minimum": 0.0
+                                },
+                                "max_gas_amount": {
+                                  "type": "integer",
+                                  "format": "uint64",
+                                  "minimum": 0.0
+                                },
+                                "payload": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "format": "uint8",
+                                    "minimum": 0.0
+                                  }
+                                },
+                                "sender": {
+                                  "description": "Sender's address.",
+                                  "type": "string"
+                                },
+                                "sequence_number": {
+                                  "type": "integer",
+                                  "format": "uint64",
+                                  "minimum": 0.0
+                                }
+                              }
+                            },
+                            "transaction_hash": {
+                              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                              "type": "object",
+                              "required": [
+                                "hash"
+                              ],
+                              "properties": {
+                                "hash": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "header": {
+                "type": "object",
+                "required": [
+                  "author",
+                  "block_accumulator_root",
+                  "block_hash",
+                  "body_hash",
+                  "chain_id",
+                  "difficulty",
+                  "extra",
+                  "gas_used",
+                  "nonce",
+                  "number",
+                  "parent_hash",
+                  "state_root",
+                  "timestamp",
+                  "txn_accumulator_root"
+                ],
+                "properties": {
+                  "author": {
+                    "description": "Block author.",
+                    "type": "string"
+                  },
+                  "author_auth_key": {
+                    "description": "Block author auth key.",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 32,
+                    "minItems": 32
+                  },
+                  "block_accumulator_root": {
+                    "description": "The block accumulator root hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "block_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "body_hash": {
+                    "description": "hash for block body",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "chain_id": {
+                    "description": "The chain id",
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "difficulty": {
+                    "description": "Block difficulty",
+                    "type": "string"
+                  },
+                  "extra": {
+                    "description": "block header extra",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 4,
+                    "minItems": 4
+                  },
+                  "gas_used": {
+                    "description": "Gas used for contracts execution.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "nonce": {
+                    "description": "Consensus nonce field.",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "number": {
+                    "description": "Block number.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "parent_hash": {
+                    "description": "Parent hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "state_root": {
+                    "description": "The last transaction state_root of this block after execute.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "timestamp": {
+                    "description": "Block timestamp.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "txn_accumulator_root": {
+                    "description": "The transaction accumulator root hash after executing this block.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "uncles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "author",
+                    "block_accumulator_root",
+                    "block_hash",
+                    "body_hash",
+                    "chain_id",
+                    "difficulty",
+                    "extra",
+                    "gas_used",
+                    "nonce",
+                    "number",
+                    "parent_hash",
+                    "state_root",
+                    "timestamp",
+                    "txn_accumulator_root"
+                  ],
+                  "properties": {
+                    "author": {
+                      "description": "Block author.",
+                      "type": "string"
+                    },
+                    "author_auth_key": {
+                      "description": "Block author auth key.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      },
+                      "maxItems": 32,
+                      "minItems": 32
+                    },
+                    "block_accumulator_root": {
+                      "description": "The block accumulator root hash.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "block_hash": {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "body_hash": {
+                      "description": "hash for block body",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "chain_id": {
+                      "description": "The chain id",
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "difficulty": {
+                      "description": "Block difficulty",
+                      "type": "string"
+                    },
+                    "extra": {
+                      "description": "block header extra",
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      },
+                      "maxItems": 4,
+                      "minItems": 4
+                    },
+                    "gas_used": {
+                      "description": "Gas used for contracts execution.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "nonce": {
+                      "description": "Consensus nonce field.",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "number": {
+                      "description": "Block number.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "parent_hash": {
+                      "description": "Parent hash.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "state_root": {
+                      "description": "The last transaction state_root of this block after execute.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "description": "Block timestamp.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "txn_accumulator_root": {
+                      "description": "The transaction accumulator root hash after executing this block.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_transaction",
+      "params": [
+        {
+          "name": "transaction_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < TransactionView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_TransactionView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_hash",
+            "block_number",
+            "transaction_hash",
+            "transaction_index"
+          ],
+          "properties": {
+            "block_hash": {
+              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "block_metadata": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "author",
+                "chain_id",
+                "number",
+                "parent_gas_used",
+                "parent_hash",
+                "timestamp",
+                "uncles"
+              ],
+              "properties": {
+                "author": {
+                  "description": "A struct that represents an account address.",
+                  "type": "string"
+                },
+                "author_auth_key": {
+                  "description": "A struct that represents an account authentication key. An account's address is the last 16 bytes of authentication key used to create it",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "maxItems": 32,
+                  "minItems": 32
+                },
+                "chain_id": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "parent_gas_used": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "parent_hash": {
+                  "description": "Parent block hash.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "timestamp": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "uncles": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "block_number": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "transaction_hash": {
+              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "transaction_index": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "user_transaction": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "authenticator",
+                "raw_txn",
+                "transaction_hash"
+              ],
+              "properties": {
+                "authenticator": {
+                  "description": "Public key and signature to authenticate",
+                  "anyOf": [
+                    {
+                      "description": "Single signature",
+                      "type": "object",
+                      "required": [
+                        "Ed25519"
+                      ],
+                      "properties": {
+                        "Ed25519": {
+                          "type": "object",
+                          "required": [
+                            "public_key",
+                            "signature"
+                          ],
+                          "properties": {
+                            "public_key": {
+                              "description": "An Ed25519 public key",
+                              "type": "string"
+                            },
+                            "signature": {
+                              "description": "An Ed25519 signature",
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "description": "K-of-N multisignature",
+                      "type": "object",
+                      "required": [
+                        "MultiEd25519"
+                      ],
+                      "properties": {
+                        "MultiEd25519": {
+                          "type": "object",
+                          "required": [
+                            "public_key",
+                            "signature"
+                          ],
+                          "properties": {
+                            "public_key": {
+                              "description": "Vector of public keys in the multi-key Ed25519 structure along with the threshold.",
+                              "type": "object",
+                              "required": [
+                                "public_keys",
+                                "threshold"
+                              ],
+                              "properties": {
+                                "public_keys": {
+                                  "type": "array",
+                                  "items": {
+                                    "description": "An Ed25519 public key",
+                                    "type": "string"
+                                  }
+                                },
+                                "threshold": {
+                                  "type": "integer",
+                                  "format": "uint8",
+                                  "minimum": 0.0
+                                }
+                              }
+                            },
+                            "signature": {
+                              "description": "Vector of the multi-key signatures along with a 32bit [u8; 4] bitmap required to map signatures with their corresponding public keys.\n\nNote that bits are read from left to right. For instance, in the following bitmap [0b0001_0000, 0b0000_0000, 0b0000_0000, 0b0000_0001], the 3rd and 31st positions are set.",
+                              "type": "object",
+                              "required": [
+                                "bitmap",
+                                "signatures"
+                              ],
+                              "properties": {
+                                "bitmap": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "format": "uint8",
+                                    "minimum": 0.0
+                                  },
+                                  "maxItems": 4,
+                                  "minItems": 4
+                                },
+                                "signatures": {
+                                  "type": "array",
+                                  "items": {
+                                    "description": "An Ed25519 signature",
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "raw_txn": {
+                  "description": "The raw transaction",
+                  "type": "object",
+                  "required": [
+                    "chain_id",
+                    "expiration_timestamp_secs",
+                    "gas_token_code",
+                    "gas_unit_price",
+                    "max_gas_amount",
+                    "payload",
+                    "sender",
+                    "sequence_number"
+                  ],
+                  "properties": {
+                    "chain_id": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "expiration_timestamp_secs": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "gas_token_code": {
+                      "type": "string"
+                    },
+                    "gas_unit_price": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "max_gas_amount": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "payload": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      }
+                    },
+                    "sender": {
+                      "description": "Sender's address.",
+                      "type": "string"
+                    },
+                    "sequence_number": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    }
+                  }
+                },
+                "transaction_hash": {
+                  "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                  "type": "object",
+                  "required": [
+                    "hash"
+                  ],
+                  "properties": {
+                    "hash": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_transaction_info",
+      "params": [
+        {
+          "name": "transaction_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < TransactionInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_TransactionInfoView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_hash",
+            "block_number",
+            "event_root_hash",
+            "gas_used",
+            "state_root_hash",
+            "status",
+            "transaction_hash",
+            "transaction_index"
+          ],
+          "properties": {
+            "block_hash": {
+              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "block_number": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "event_root_hash": {
+              "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "gas_used": {
+              "description": "The amount of gas used.",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "state_root_hash": {
+              "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "status": {
+              "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Executed",
+                    "OutOfGas",
+                    "MiscellaneousError"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "MoveAbort"
+                  ],
+                  "properties": {
+                    "MoveAbort": {
+                      "type": "object",
+                      "required": [
+                        "abort_code",
+                        "location"
+                      ],
+                      "properties": {
+                        "abort_code": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "Script"
+                              ]
+                            },
+                            {
+                              "description": "Indicates `abort` occurred in the specified module",
+                              "type": "object",
+                              "required": [
+                                "Module"
+                              ],
+                              "properties": {
+                                "Module": {
+                                  "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                  "type": "object",
+                                  "required": [
+                                    "address",
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "address": {
+                                      "description": "A struct that represents an account address.",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "ExecutionFailure"
+                  ],
+                  "properties": {
+                    "ExecutionFailure": {
+                      "type": "object",
+                      "required": [
+                        "code_offset",
+                        "function",
+                        "location"
+                      ],
+                      "properties": {
+                        "code_offset": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "function": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "Script"
+                              ]
+                            },
+                            {
+                              "description": "Indicates `abort` occurred in the specified module",
+                              "type": "object",
+                              "required": [
+                                "Module"
+                              ],
+                              "properties": {
+                                "Module": {
+                                  "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                  "type": "object",
+                                  "required": [
+                                    "address",
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "address": {
+                                      "description": "A struct that represents an account address.",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Discard"
+                  ],
+                  "properties": {
+                    "Discard": {
+                      "type": "object",
+                      "required": [
+                        "status_code"
+                      ],
+                      "properties": {
+                        "status_code": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "transaction_hash": {
+              "description": "The hash of this transaction.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "transaction_index": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_block_txn_infos",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionInfoView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "block_hash",
+              "block_number",
+              "event_root_hash",
+              "gas_used",
+              "state_root_hash",
+              "status",
+              "transaction_hash",
+              "transaction_index"
+            ],
+            "properties": {
+              "block_hash": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "block_number": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "event_root_hash": {
+                "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "gas_used": {
+                "description": "The amount of gas used.",
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "state_root_hash": {
+                "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "status": {
+                "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Executed",
+                      "OutOfGas",
+                      "MiscellaneousError"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "MoveAbort"
+                    ],
+                    "properties": {
+                      "MoveAbort": {
+                        "type": "object",
+                        "required": [
+                          "abort_code",
+                          "location"
+                        ],
+                        "properties": {
+                          "abort_code": {
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0.0
+                          },
+                          "location": {
+                            "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "Script"
+                                ]
+                              },
+                              {
+                                "description": "Indicates `abort` occurred in the specified module",
+                                "type": "object",
+                                "required": [
+                                  "Module"
+                                ],
+                                "properties": {
+                                  "Module": {
+                                    "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                    "type": "object",
+                                    "required": [
+                                      "address",
+                                      "name"
+                                    ],
+                                    "properties": {
+                                      "address": {
+                                        "description": "A struct that represents an account address.",
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "ExecutionFailure"
+                    ],
+                    "properties": {
+                      "ExecutionFailure": {
+                        "type": "object",
+                        "required": [
+                          "code_offset",
+                          "function",
+                          "location"
+                        ],
+                        "properties": {
+                          "code_offset": {
+                            "type": "integer",
+                            "format": "uint16",
+                            "minimum": 0.0
+                          },
+                          "function": {
+                            "type": "integer",
+                            "format": "uint16",
+                            "minimum": 0.0
+                          },
+                          "location": {
+                            "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "Script"
+                                ]
+                              },
+                              {
+                                "description": "Indicates `abort` occurred in the specified module",
+                                "type": "object",
+                                "required": [
+                                  "Module"
+                                ],
+                                "properties": {
+                                  "Module": {
+                                    "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                    "type": "object",
+                                    "required": [
+                                      "address",
+                                      "name"
+                                    ],
+                                    "properties": {
+                                      "address": {
+                                        "description": "A struct that represents an account address.",
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Discard"
+                    ],
+                    "properties": {
+                      "Discard": {
+                        "type": "object",
+                        "required": [
+                          "status_code"
+                        ],
+                        "properties": {
+                          "status_code": {
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0.0
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "transaction_hash": {
+                "description": "The hash of this transaction.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "transaction_index": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_txn_info_by_block_and_index",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "name": "idx",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < TransactionInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_TransactionInfoView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_hash",
+            "block_number",
+            "event_root_hash",
+            "gas_used",
+            "state_root_hash",
+            "status",
+            "transaction_hash",
+            "transaction_index"
+          ],
+          "properties": {
+            "block_hash": {
+              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "block_number": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "event_root_hash": {
+              "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "gas_used": {
+              "description": "The amount of gas used.",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "state_root_hash": {
+              "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "status": {
+              "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Executed",
+                    "OutOfGas",
+                    "MiscellaneousError"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "MoveAbort"
+                  ],
+                  "properties": {
+                    "MoveAbort": {
+                      "type": "object",
+                      "required": [
+                        "abort_code",
+                        "location"
+                      ],
+                      "properties": {
+                        "abort_code": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "Script"
+                              ]
+                            },
+                            {
+                              "description": "Indicates `abort` occurred in the specified module",
+                              "type": "object",
+                              "required": [
+                                "Module"
+                              ],
+                              "properties": {
+                                "Module": {
+                                  "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                  "type": "object",
+                                  "required": [
+                                    "address",
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "address": {
+                                      "description": "A struct that represents an account address.",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "ExecutionFailure"
+                  ],
+                  "properties": {
+                    "ExecutionFailure": {
+                      "type": "object",
+                      "required": [
+                        "code_offset",
+                        "function",
+                        "location"
+                      ],
+                      "properties": {
+                        "code_offset": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "function": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "Script"
+                              ]
+                            },
+                            {
+                              "description": "Indicates `abort` occurred in the specified module",
+                              "type": "object",
+                              "required": [
+                                "Module"
+                              ],
+                              "properties": {
+                                "Module": {
+                                  "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                  "type": "object",
+                                  "required": [
+                                    "address",
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "address": {
+                                      "description": "A struct that represents an account address.",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Discard"
+                  ],
+                  "properties": {
+                    "Discard": {
+                      "type": "object",
+                      "required": [
+                        "status_code"
+                      ],
+                      "properties": {
+                        "status_code": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "transaction_hash": {
+              "description": "The hash of this transaction.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            },
+            "transaction_index": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_events_by_txn_hash",
+      "params": [
+        {
+          "name": "txn_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+            "type": "object",
+            "required": [
+              "hash"
+            ],
+            "properties": {
+              "hash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionEventView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionEventView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "data",
+              "event_key",
+              "event_seq_number",
+              "type_tag"
+            ],
+            "properties": {
+              "block_hash": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "block_number": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "event_key": {
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
+              },
+              "event_seq_number": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "transaction_hash": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "transaction_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "type_tag": {
+                "type": "string",
+                "enum": [
+                  "Bool",
+                  "U8",
+                  "U64",
+                  "U128",
+                  "Address",
+                  "Signer"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_events",
+      "params": [
+        {
+          "name": "filter",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "EventFilter",
+            "description": "Filter",
+            "type": "object",
+            "properties": {
+              "event_keys": {
+                "description": "Event keys",
+                "default": [],
+                "type": "array",
+                "items": {
+                  "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                  "type": "string"
+                }
+              },
+              "from_block": {
+                "description": "From Block",
+                "default": null,
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "limit": {
+                "description": "Limit: from latest to oldest",
+                "default": null,
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint",
+                "minimum": 0.0
+              },
+              "to_block": {
+                "description": "To Block",
+                "default": null,
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionEventView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionEventView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "data",
+              "event_key",
+              "event_seq_number",
+              "type_tag"
+            ],
+            "properties": {
+              "block_hash": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "block_number": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "event_key": {
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
+              },
+              "event_seq_number": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "transaction_hash": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "transaction_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "type_tag": {
+                "type": "string",
+                "enum": [
+                  "Bool",
+                  "U8",
+                  "U64",
+                  "U128",
+                  "Address",
+                  "Signer"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.epoch",
+      "params": [],
+      "result": {
+        "name": "EpochInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "EpochInfo",
+          "type": "object",
+          "required": [
+            "epoch",
+            "epoch_data"
+          ],
+          "properties": {
+            "epoch": {
+              "description": "The Epoch resource held under an account.",
+              "type": "object",
+              "required": [
+                "block_difficulty_window",
+                "block_gas_limit",
+                "block_time_target",
+                "end_block_number",
+                "max_uncles_per_block",
+                "new_epoch_events",
+                "number",
+                "reward_per_block",
+                "reward_per_uncle_percent",
+                "start_block_number",
+                "start_time",
+                "strategy"
+              ],
+              "properties": {
+                "block_difficulty_window": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "block_gas_limit": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "block_time_target": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "end_block_number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "max_uncles_per_block": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "new_epoch_events": {
+                  "description": "A Rust representation of an Event Handle Resource.",
+                  "type": "object",
+                  "required": [
+                    "count",
+                    "key"
+                  ],
+                  "properties": {
+                    "count": {
+                      "description": "Number of events in the event stream.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "key": {
+                      "description": "The associated globally unique key that is used as the key to the EventStore.",
+                      "type": "string"
+                    }
+                  }
+                },
+                "number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "reward_per_block": {
+                  "type": "integer",
+                  "format": "uint128",
+                  "minimum": 0.0
+                },
+                "reward_per_uncle_percent": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "start_block_number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "start_time": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "strategy": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "epoch_data": {
+              "description": "The Epoch data resource held under an account.",
+              "type": "object",
+              "required": [
+                "total_gas",
+                "total_reward",
+                "uncles"
+              ],
+              "properties": {
+                "total_gas": {
+                  "type": "integer",
+                  "format": "uint128",
+                  "minimum": 0.0
+                },
+                "total_reward": {
+                  "type": "integer",
+                  "format": "uint128",
+                  "minimum": 0.0
+                },
+                "uncles": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_epoch_info_by_number",
+      "params": [
+        {
+          "name": "number",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "EpochInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "EpochInfo",
+          "type": "object",
+          "required": [
+            "epoch",
+            "epoch_data"
+          ],
+          "properties": {
+            "epoch": {
+              "description": "The Epoch resource held under an account.",
+              "type": "object",
+              "required": [
+                "block_difficulty_window",
+                "block_gas_limit",
+                "block_time_target",
+                "end_block_number",
+                "max_uncles_per_block",
+                "new_epoch_events",
+                "number",
+                "reward_per_block",
+                "reward_per_uncle_percent",
+                "start_block_number",
+                "start_time",
+                "strategy"
+              ],
+              "properties": {
+                "block_difficulty_window": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "block_gas_limit": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "block_time_target": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "end_block_number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "max_uncles_per_block": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "new_epoch_events": {
+                  "description": "A Rust representation of an Event Handle Resource.",
+                  "type": "object",
+                  "required": [
+                    "count",
+                    "key"
+                  ],
+                  "properties": {
+                    "count": {
+                      "description": "Number of events in the event stream.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "key": {
+                      "description": "The associated globally unique key that is used as the key to the EventStore.",
+                      "type": "string"
+                    }
+                  }
+                },
+                "number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "reward_per_block": {
+                  "type": "integer",
+                  "format": "uint128",
+                  "minimum": 0.0
+                },
+                "reward_per_uncle_percent": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "start_block_number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "start_time": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "strategy": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "epoch_data": {
+              "description": "The Epoch data resource held under an account.",
+              "type": "object",
+              "required": [
+                "total_gas",
+                "total_reward",
+                "uncles"
+              ],
+              "properties": {
+                "total_gas": {
+                  "type": "integer",
+                  "format": "uint128",
+                  "minimum": 0.0
+                },
+                "total_reward": {
+                  "type": "integer",
+                  "format": "uint128",
+                  "minimum": 0.0
+                },
+                "uncles": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_global_time_by_number",
+      "params": [
+        {
+          "name": "number",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "GlobalTimeOnChain",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "GlobalTimeOnChain",
+          "description": "The CurrentTimeMilliseconds on chain.",
+          "type": "object",
+          "required": [
+            "milliseconds"
+          ],
+          "properties": {
+            "milliseconds": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_epoch_uncles_by_number",
+      "params": [
+        {
+          "name": "number",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < BlockSummaryView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_BlockSummaryView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "header",
+              "uncles"
+            ],
+            "properties": {
+              "header": {
+                "type": "object",
+                "required": [
+                  "author",
+                  "block_accumulator_root",
+                  "block_hash",
+                  "body_hash",
+                  "chain_id",
+                  "difficulty",
+                  "extra",
+                  "gas_used",
+                  "nonce",
+                  "number",
+                  "parent_hash",
+                  "state_root",
+                  "timestamp",
+                  "txn_accumulator_root"
+                ],
+                "properties": {
+                  "author": {
+                    "description": "Block author.",
+                    "type": "string"
+                  },
+                  "author_auth_key": {
+                    "description": "Block author auth key.",
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 32,
+                    "minItems": 32
+                  },
+                  "block_accumulator_root": {
+                    "description": "The block accumulator root hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "block_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "body_hash": {
+                    "description": "hash for block body",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "chain_id": {
+                    "description": "The chain id",
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "difficulty": {
+                    "description": "Block difficulty",
+                    "type": "string"
+                  },
+                  "extra": {
+                    "description": "block header extra",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "maxItems": 4,
+                    "minItems": 4
+                  },
+                  "gas_used": {
+                    "description": "Gas used for contracts execution.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "nonce": {
+                    "description": "Consensus nonce field.",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "number": {
+                    "description": "Block number.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "parent_hash": {
+                    "description": "Parent hash.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "state_root": {
+                    "description": "The last transaction state_root of this block after execute.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "timestamp": {
+                    "description": "Block timestamp.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "txn_accumulator_root": {
+                    "description": "The transaction accumulator root hash after executing this block.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "uncles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "author",
+                    "block_accumulator_root",
+                    "block_hash",
+                    "body_hash",
+                    "chain_id",
+                    "difficulty",
+                    "extra",
+                    "gas_used",
+                    "nonce",
+                    "number",
+                    "parent_hash",
+                    "state_root",
+                    "timestamp",
+                    "txn_accumulator_root"
+                  ],
+                  "properties": {
+                    "author": {
+                      "description": "Block author.",
+                      "type": "string"
+                    },
+                    "author_auth_key": {
+                      "description": "Block author auth key.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      },
+                      "maxItems": 32,
+                      "minItems": 32
+                    },
+                    "block_accumulator_root": {
+                      "description": "The block accumulator root hash.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "block_hash": {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "body_hash": {
+                      "description": "hash for block body",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "chain_id": {
+                      "description": "The chain id",
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "difficulty": {
+                      "description": "Block difficulty",
+                      "type": "string"
+                    },
+                    "extra": {
+                      "description": "block header extra",
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      },
+                      "maxItems": 4,
+                      "minItems": 4
+                    },
+                    "gas_used": {
+                      "description": "Gas used for contracts execution.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "nonce": {
+                      "description": "Consensus nonce field.",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "number": {
+                      "description": "Block number.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "parent_hash": {
+                      "description": "Parent hash.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "state_root": {
+                      "description": "The last transaction state_root of this block after execute.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "description": "Block timestamp.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "txn_accumulator_root": {
+                      "description": "The transaction accumulator root hash after executing this block.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_headers",
+      "params": [
+        {
+          "name": "ids",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Array_of_HashValue",
+            "type": "array",
+            "items": {
+              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+              "type": "object",
+              "required": [
+                "hash"
+              ],
+              "properties": {
+                "hash": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < BlockHeaderView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_BlockHeaderView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "author",
+              "block_accumulator_root",
+              "block_hash",
+              "body_hash",
+              "chain_id",
+              "difficulty",
+              "extra",
+              "gas_used",
+              "nonce",
+              "number",
+              "parent_hash",
+              "state_root",
+              "timestamp",
+              "txn_accumulator_root"
+            ],
+            "properties": {
+              "author": {
+                "description": "Block author.",
+                "type": "string"
+              },
+              "author_auth_key": {
+                "description": "Block author auth key.",
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "maxItems": 32,
+                "minItems": 32
+              },
+              "block_accumulator_root": {
+                "description": "The block accumulator root hash.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "block_hash": {
+                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "body_hash": {
+                "description": "hash for block body",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "chain_id": {
+                "description": "The chain id",
+                "type": "integer",
+                "format": "uint8",
+                "minimum": 0.0
+              },
+              "difficulty": {
+                "description": "Block difficulty",
+                "type": "string"
+              },
+              "extra": {
+                "description": "block header extra",
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "maxItems": 4,
+                "minItems": 4
+              },
+              "gas_used": {
+                "description": "Gas used for contracts execution.",
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "nonce": {
+                "description": "Consensus nonce field.",
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "number": {
+                "description": "Block number.",
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "parent_hash": {
+                "description": "Parent hash.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "state_root": {
+                "description": "The last transaction state_root of this block after execute.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              },
+              "timestamp": {
+                "description": "Block timestamp.",
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "txn_accumulator_root": {
+                "description": "The transaction accumulator root hash after executing this block.",
+                "type": "object",
+                "required": [
+                  "hash"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.epoch_uncle_summary_by_number",
+      "params": [
+        {
+          "name": "number",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "EpochUncleSummaryView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "EpochUncleSummaryView",
+          "type": "object",
+          "required": [
+            "epoch",
+            "epoch_summary",
+            "number_summary"
+          ],
+          "properties": {
+            "epoch": {
+              "description": "epoch number",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "epoch_summary": {
+              "type": "object",
+              "required": [
+                "avg",
+                "sum",
+                "time_avg",
+                "time_sum",
+                "uncles"
+              ],
+              "properties": {
+                "avg": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "sum": {
+                  "description": "sum(number of the block which contain uncle block - uncle parent block number).",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "time_avg": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "time_sum": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "uncles": {
+                  "description": "total uncle",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "number_summary": {
+              "type": "object",
+              "required": [
+                "avg",
+                "sum",
+                "time_avg",
+                "time_sum",
+                "uncles"
+              ],
+              "properties": {
+                "avg": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "sum": {
+                  "description": "sum(number of the block which contain uncle block - uncle parent block number).",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "time_avg": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "time_sum": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "uncles": {
+                  "description": "total uncle",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
