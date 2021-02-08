@@ -1,5 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+
 #![allow(clippy::integer_arithmetic)]
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{MockBlockIdFetcher, SyncNodeMocker};
@@ -7,6 +8,7 @@ use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask,
 };
+use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
@@ -31,7 +33,7 @@ use starcoin_types::{
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use stream_task::{Generator, TaskEventCounterHandle, TaskGenerator};
+use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
 
 #[stest::test]
@@ -53,7 +55,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -82,7 +84,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let (sender_2, _receiver_2) = unbounded();
     //sync again
     let target = arc_node1.sync_target();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -105,6 +107,56 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     reports
         .iter()
         .for_each(|report| debug!("reports: {}", report));
+
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_sync_invalid_target() -> Result<()> {
+    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let mut node1 = SyncNodeMocker::new(net1, 1, 0)?;
+    node1.produce_block(10)?;
+
+    let arc_node1 = Arc::new(node1);
+
+    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+
+    let node2 = SyncNodeMocker::new(net2.clone(), 1, 0)?;
+
+    let mut target = arc_node1.sync_target();
+
+    target.block_info.total_difficulty = U256::max_value();
+
+    let current_block_header = node2.chain().current_header();
+
+    let storage = node2.chain().get_storage();
+    let (sender_1, receiver_1) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
+        current_block_header.id(),
+        target.clone(),
+        false,
+        net2.time_service(),
+        storage.clone(),
+        sender_1,
+        arc_node1.clone(),
+        sender_2,
+        DummyNetworkService::default(),
+        15,
+    )?;
+    let _join_handle = node2.process_block_connect_event(receiver_1).await;
+    let sync_result = sync_task.await;
+    assert!(sync_result.is_err());
+    let err = sync_result.err().unwrap();
+    debug!("task_error: {:?}", err);
+    assert!(err.is_break_error());
+    if let TaskError::BreakError(err) = err {
+        let verify_err = err.downcast::<RpcVerifyError>().unwrap();
+        assert_eq!(verify_err.peers[0].clone(), arc_node1.peer_id);
+        debug!("{:?}", verify_err)
+    } else {
+        panic!("Expect BreakError, but got: {:?}", err)
+    }
 
     Ok(())
 }
@@ -161,7 +213,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -192,7 +244,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let (sender, receiver) = unbounded();
     let target = arc_node1.sync_target();
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -239,7 +291,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -291,7 +343,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -324,7 +376,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     //continue sync
     //TODO find a way to verify continue sync will reuse previous task local block.
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, _task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
@@ -374,7 +426,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
-    let (sync_task, task_handle, task_event_counter, _) = full_sync_task(
+    let (sync_task, task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,

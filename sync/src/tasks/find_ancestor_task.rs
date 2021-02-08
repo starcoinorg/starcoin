@@ -59,12 +59,12 @@ impl TaskState for FindAncestorTask {
     }
 
     fn next(&self) -> Option<Self> {
-        let next_number = self.start_number.saturating_sub(self.batch_size);
-
         //this should never happen, because all node's genesis block should same.
-        if next_number == 0 {
+        if self.start_number == 0 {
             return None;
         }
+
+        let next_number = self.start_number.saturating_sub(self.batch_size);
         Some(Self {
             start_number: next_number,
             batch_size: self.batch_size,
