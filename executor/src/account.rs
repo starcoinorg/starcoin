@@ -262,7 +262,7 @@ impl Balance {
 
     /// Returns the Move Value for the account balance
     pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(vec![Value::u128(self.token)], true))
+        Value::struct_(Struct::pack(vec![Value::u128(self.token)]))
     }
 
     /// Returns the value layout for the account balance
@@ -293,10 +293,10 @@ impl EventHandleGenerator {
     }
 
     pub fn to_value(&self) -> Value {
-        Value::struct_(Struct::pack(
-            vec![Value::u64(self.counter), Value::address(self.addr)],
-            true,
-        ))
+        Value::struct_(Struct::pack(vec![
+            Value::u64(self.counter),
+            Value::address(self.addr),
+        ]))
     }
     pub fn layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::U64, MoveTypeLayout::Address])
@@ -464,37 +464,25 @@ impl AccountData {
             .map(|(code, balance)| (code.clone(), balance.to_value()))
             .collect();
         let event_generator = self.event_generator.to_value();
-        let account = Value::struct_(Struct::pack(
-            vec![
-                // TODO: this needs to compute the auth key instead
-                Value::vector_u8(self.account.auth_key().to_vec()),
-                self.withdrawal_capability.as_ref().unwrap().value(),
-                self.key_rotation_capability.as_ref().unwrap().value(),
-                Value::struct_(Struct::pack(
-                    vec![
-                        Value::u64(self.withdraw_events.count()),
-                        Value::vector_u8(self.withdraw_events.key().to_vec()),
-                    ],
-                    true,
-                )),
-                Value::struct_(Struct::pack(
-                    vec![
-                        Value::u64(self.deposit_events.count()),
-                        Value::vector_u8(self.deposit_events.key().to_vec()),
-                    ],
-                    true,
-                )),
-                Value::struct_(Struct::pack(
-                    vec![
-                        Value::u64(self.accept_token_events.count()),
-                        Value::vector_u8(self.accept_token_events.key().to_vec()),
-                    ],
-                    true,
-                )),
-                Value::u64(self.sequence_number),
-            ],
-            true,
-        ));
+        let account = Value::struct_(Struct::pack(vec![
+            // TODO: this needs to compute the auth key instead
+            Value::vector_u8(self.account.auth_key().to_vec()),
+            self.withdrawal_capability.as_ref().unwrap().value(),
+            self.key_rotation_capability.as_ref().unwrap().value(),
+            Value::struct_(Struct::pack(vec![
+                Value::u64(self.withdraw_events.count()),
+                Value::vector_u8(self.withdraw_events.key().to_vec()),
+            ])),
+            Value::struct_(Struct::pack(vec![
+                Value::u64(self.deposit_events.count()),
+                Value::vector_u8(self.deposit_events.key().to_vec()),
+            ])),
+            Value::struct_(Struct::pack(vec![
+                Value::u64(self.accept_token_events.count()),
+                Value::vector_u8(self.accept_token_events.key().to_vec()),
+            ])),
+            Value::u64(self.sequence_number),
+        ]));
         (account, balances, event_generator)
     }
 
@@ -631,10 +619,9 @@ impl WithdrawCapability {
     }
 
     pub fn value(&self) -> Value {
-        Value::vector_resource_for_testing_only(vec![Value::struct_(Struct::pack(
-            vec![Value::address(self.account_address)],
-            true,
-        ))])
+        Value::vector_for_testing_only(vec![Value::struct_(Struct::pack(vec![Value::address(
+            self.account_address,
+        )]))])
     }
 }
 
@@ -652,10 +639,9 @@ impl KeyRotationCapability {
     }
 
     pub fn value(&self) -> Value {
-        Value::vector_resource_for_testing_only(vec![Value::struct_(Struct::pack(
-            vec![Value::address(self.account_address)],
-            true,
-        ))])
+        Value::vector_for_testing_only(vec![Value::struct_(Struct::pack(vec![Value::address(
+            self.account_address,
+        )]))])
     }
 }
 

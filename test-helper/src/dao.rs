@@ -19,7 +19,8 @@ use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{Script, TransactionArgument, TransactionPayload};
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;
-use starcoin_vm_types::values::{VMValueCast, Value};
+use starcoin_vm_types::value::{serialize_values, MoveValue};
+use starcoin_vm_types::values::VMValueCast;
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 
 //TODO transfer to enum
@@ -44,7 +45,10 @@ pub fn proposal_state(
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
         &Identifier::new("proposal_state").unwrap(),
         vec![token, action_ty],
-        vec![Value::address(proposer_address), Value::u64(proposal_id)],
+        serialize_values(&vec![
+            MoveValue::Address(proposer_address),
+            MoveValue::U64(proposal_id),
+        ]),
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
@@ -63,7 +67,10 @@ pub fn proposal_exist(
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
         &Identifier::new("proposal_exists").unwrap(),
         vec![token, action_ty],
-        vec![Value::address(proposer_address), Value::u64(proposal_id)],
+        serialize_values(&vec![
+            MoveValue::Address(proposer_address),
+            MoveValue::U64(proposal_id),
+        ]),
     )
     .unwrap();
     assert_eq!(ret.len(), 1);

@@ -21,14 +21,16 @@ use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
+use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{transaction::Package, values::Value, vm_status::StatusCode};
+use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use stdlib::transaction_scripts::compiled_transaction_script;
 use test_helper::executor::{
     account_execute, association_execute, blockmeta_execute, build_raw_txn, current_block_number,
     TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
 };
+
 use test_helper::executor::{
     compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
     prepare_genesis,
@@ -65,7 +67,7 @@ fn test_vm_version() {
             &version_module_id,
             &Identifier::new("get").unwrap(),
             vec![],
-            vec![Value::address(genesis_address())],
+            serialize_values(&vec![MoveValue::Address(genesis_address())]),
         )
         .unwrap();
     let readed_version: u64 = read_version.pop().unwrap().1.cast().unwrap();
@@ -87,7 +89,7 @@ fn test_consensus_config_get() -> Result<()> {
         &module_id,
         &Identifier::new("get_config").unwrap(),
         vec![],
-        vec![],
+        serialize_values(&vec![]),
     )?;
     let annotator = MoveValueAnnotator::new(&chain_state);
     let (t, v) = read_config.pop().unwrap();
