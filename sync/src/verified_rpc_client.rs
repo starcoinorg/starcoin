@@ -3,107 +3,99 @@
 
 use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
-use anyhow::{ensure, format_err, Result};
+use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
-use rand::prelude::SliceRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
 use starcoin_network_rpc_api::{
-    gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetBlockIds, GetTxnsWithHash, RawRpcClient,
+    gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
+    GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::Block;
+use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
 };
-use std::collections::HashSet;
-use std::hash::Hash;
+use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
+use thiserror::Error;
 
-pub trait RpcVerify<C: Clone> {
-    fn filter<T, F>(&mut self, rpc_data: Vec<T>, hash_fun: F) -> Vec<T>
-    where
-        F: Fn(&T) -> C;
+#[derive(Clone, Debug, Error)]
+#[error("Peer {peer_id:?} return valid rpc response: {msg:?}")]
+pub struct RpcVerifyError {
+    pub peer_id: PeerId,
+    pub msg: String,
 }
 
-pub struct RpcEntryVerify<C: Clone + Eq + Hash> {
-    entries: HashSet<C>,
-}
-
-impl<C: Clone + Eq + Hash> RpcVerify<C> for RpcEntryVerify<C> {
-    fn filter<T, F>(&mut self, rpc_data: Vec<T>, hash_fun: F) -> Vec<T>
-    where
-        F: Fn(&T) -> C,
-    {
-        let mut rpc_data = rpc_data;
-        let mut dirty_data = Vec::new();
-        for data in rpc_data.as_slice().iter() {
-            let hash = hash_fun(data);
-            if !self.entries.contains(&hash) {
-                dirty_data.push(hash);
-            }
-        }
-
-        if !dirty_data.is_empty() {
-            for hash in dirty_data.as_slice().iter() {
-                rpc_data.retain(|d| hash_fun(d) != *hash);
-            }
-        }
-
-        rpc_data
+impl RpcVerifyError {
+    pub fn new(peer_id: PeerId, msg: String) -> Self {
+        Self { peer_id, msg }
     }
 }
 
-impl From<&Vec<HashValue>> for RpcEntryVerify<HashValue> {
-    fn from(data: &Vec<HashValue>) -> Self {
-        let mut entries = HashSet::new();
-        for hash in data.iter() {
-            entries.insert(*hash);
-        }
-        Self { entries }
+pub trait RpcVerifier<Req, Resp> {
+    /// verify the rpc request and response
+    fn verify(&self, peer_id: PeerId, req: Req, resp: Resp) -> Result<Resp, RpcVerifyError>;
+}
+
+impl<Req, ReqItem, RespItem, F> RpcVerifier<Req, Vec<Option<RespItem>>> for F
+where
+    Req: IntoIterator<Item = ReqItem>,
+    ReqItem: Debug,
+    RespItem: Debug,
+    F: Fn(&ReqItem, &RespItem) -> bool,
+{
+    fn verify(
+        &self,
+        peer_id: PeerId,
+        req: Req,
+        resp: Vec<Option<RespItem>>,
+    ) -> Result<Vec<Option<RespItem>>, RpcVerifyError> {
+        req.into_iter()
+            .zip(resp.into_iter())
+            .into_iter()
+            .map(|(req_item, resp_item)| {
+                if let Some(resp_item) = resp_item {
+                    if (self)(&req_item, &resp_item) {
+                        Ok(Some(resp_item))
+                    } else {
+                        Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "request item: {:?} not match with resp item: {:?}",
+                                req_item, resp_item
+                            ),
+                        ))
+                    }
+                } else {
+                    Ok(None)
+                }
+            })
+            .collect::<Result<Vec<Option<RespItem>>, RpcVerifyError>>()
     }
 }
 
-impl From<&Vec<BlockNumber>> for RpcEntryVerify<BlockNumber> {
-    fn from(data: &Vec<BlockNumber>) -> Self {
-        let mut entries = HashSet::new();
-        for number in data.iter() {
-            entries.insert(*number);
-        }
-        Self { entries }
-    }
-}
+static BLOCK_NUMBER_VERIFIER: fn(&BlockNumber, &BlockHeader) -> bool =
+    |block_number, block_header| -> bool { *block_number == block_header.number() };
 
-impl From<&GetTxnsWithHash> for RpcEntryVerify<HashValue> {
-    fn from(data: &GetTxnsWithHash) -> Self {
-        let mut entries = HashSet::new();
-        for hash in data.clone().ids.into_iter() {
-            entries.insert(hash);
-        }
-        Self { entries }
-    }
-}
+static BLOCK_ID_VERIFIER: fn(&HashValue, &BlockHeader) -> bool =
+    |block_hash, block_header| -> bool { *block_hash == block_header.id() };
 
-impl From<&GetBlockHeadersByNumber> for RpcEntryVerify<BlockNumber> {
-    fn from(data: &GetBlockHeadersByNumber) -> Self {
-        let numbers: Vec<BlockNumber> = data.clone().into();
-        let mut entries = HashSet::new();
-        for number in numbers.into_iter() {
-            entries.insert(number);
-        }
-        Self { entries }
-    }
-}
+static BLOCK_BODY_VERIFIER: fn(&HashValue, &BlockBody) -> bool =
+    |body_hash, block_body| -> bool { *body_hash == block_body.hash() };
+
+static BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
+    |block_id, block_info| -> bool { *block_id == block_info.block_id };
 
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
 #[derive(Clone)]
@@ -142,11 +134,7 @@ impl VerifiedRpcClient {
     }
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
-        if let Some(peers) = self.peer_selector.bests() {
-            peers.choose(&mut rand::thread_rng()).cloned()
-        } else {
-            None
-        }
+        self.peer_selector.best()
     }
 
     pub fn select_a_peer(&self) -> Result<PeerId> {
@@ -157,9 +145,10 @@ impl VerifiedRpcClient {
 
     pub async fn get_txns(
         &self,
+        peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
     ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
-        let peer_id = self.select_a_peer()?;
+        let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
         let data = self.client.get_txns(peer_id.clone(), req.clone()).await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
@@ -167,13 +156,16 @@ impl VerifiedRpcClient {
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {
-                        ensure!(
-                            id == txn.id(),
-                            "request txn with id: {} from peer {}, but got txn {:?}",
-                            id,
-                            peer_id,
-                            txn
-                        );
+                        if id != txn.id() {
+                            return Err(RpcVerifyError::new(
+                                peer_id.clone(),
+                                format!(
+                                    "request txn with id: {} from peer {}, but got txn {:?}",
+                                    id, peer_id, txn
+                                ),
+                            )
+                            .into());
+                        }
                         verified_txns.push(txn);
                     }
                     None => none_txn_vec.push(id),
@@ -181,12 +173,16 @@ impl VerifiedRpcClient {
             }
             Ok((none_txn_vec, verified_txns))
         } else {
-            Err(format_err!(
-                "Txn len mismatch {:?} : {:?} from peer : {:?}.",
-                data.len(),
-                req.len(),
-                peer_id
-            ))
+            Err(RpcVerifyError::new(
+                peer_id.clone(),
+                format!(
+                    "Txn len mismatch {:?} : {:?} from peer : {:?}.",
+                    data.len(),
+                    req.len(),
+                    peer_id
+                ),
+            )
+            .into())
         }
     }
 
@@ -204,126 +200,103 @@ impl VerifiedRpcClient {
     pub async fn get_headers_by_number(
         &self,
         req: GetBlockHeadersByNumber,
-    ) -> Result<Vec<BlockHeader>> {
+    ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
-        let mut verify_condition: RpcEntryVerify<BlockNumber> = (&req).into();
-        let data = self.client.get_headers_by_number(peer_id, req).await?;
-        let verified_headers =
-            verify_condition.filter(data, |header| -> BlockNumber { header.number() });
-        Ok(verified_headers)
+        let resp: Vec<Option<BlockHeader>> = self
+            .client
+            .get_headers_by_number(peer_id.clone(), req.clone())
+            .await?;
+        let resp = BLOCK_NUMBER_VERIFIER.verify(peer_id, req, resp)?;
+        Ok(resp)
     }
 
-    pub async fn get_headers(
+    pub async fn get_headers_by_hash(
         &self,
-        req: GetBlockHeaders,
-        number: BlockNumber,
-    ) -> Result<(Vec<BlockHeader>, PeerId)> {
+        req: Vec<HashValue>,
+    ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
-        debug!("rpc select peer {:?}", peer_id);
-        let mut verify_condition: RpcEntryVerify<BlockNumber> =
-            (&req.clone().into_numbers(number)).into();
-        let data = self.client.get_headers(peer_id.clone(), req).await?;
-        let verified_headers =
-            verify_condition.filter(data, |header| -> BlockNumber { header.number() });
-        //TODO remove peer_id from result
-        Ok((verified_headers, peer_id))
-    }
-
-    pub async fn get_headers_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
-        let peer_id = self.select_a_peer()?;
-        let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data: Vec<BlockHeader> = self.client.get_headers_by_hash(peer_id, hashes).await?;
-        let verified_headers = verify_condition.filter(data, |header| -> HashValue { header.id() });
-        Ok(verified_headers)
+        let resp: Vec<Option<BlockHeader>> = self
+            .client
+            .get_headers_by_hash(peer_id.clone(), req.clone())
+            .await?;
+        let resp = BLOCK_ID_VERIFIER.verify(peer_id, req, resp)?;
+        Ok(resp)
     }
 
     pub async fn get_bodies_by_hash(
         &self,
-        hashes: Vec<HashValue>,
-    ) -> Result<(Vec<BlockBody>, PeerId)> {
+        req: Vec<HashValue>,
+    ) -> Result<(Vec<Option<BlockBody>>, PeerId)> {
         let peer_id = self.select_a_peer()?;
         debug!("rpc select peer {}", &peer_id);
-        let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data: Vec<BlockBody> = self
+        let resp: Vec<Option<BlockBody>> = self
             .client
-            .get_bodies_by_hash(peer_id.clone(), hashes)
+            .get_bodies_by_hash(peer_id.clone(), req.clone())
             .await?;
-        let verified_bodies = verify_condition.filter(data, |body| -> HashValue { body.id() });
-        Ok((verified_bodies, peer_id))
+        let resp = BLOCK_BODY_VERIFIER.verify(peer_id.clone(), req, resp)?;
+        Ok((resp, peer_id))
     }
 
-    pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockInfo>> {
+    pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.get_block_infos_from_peer(None, hashes).await
     }
 
     pub async fn get_block_infos_from_peer(
         &self,
         peer_id: Option<PeerId>,
-        hashes: Vec<HashValue>,
-    ) -> Result<Vec<BlockInfo>> {
+        req: Vec<HashValue>,
+    ) -> Result<Vec<Option<BlockInfo>>> {
         let peer_id = match peer_id {
             None => self.select_a_peer()?,
             Some(p) => p,
         };
-        let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data = self.client.get_block_infos(peer_id, hashes).await?;
-        let verified_infos =
-            verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
-        Ok(verified_infos)
+        let resp = self
+            .client
+            .get_block_infos(peer_id.clone(), req.clone())
+            .await?;
+        let resp = BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
+        Ok(resp)
     }
 
     pub async fn get_sync_target(&self) -> Result<SyncTarget> {
-        //TODO optimize target selector,
+        //TODO optimize target selector, calculate best target from multi peers.
         let best_peers = self
             .peer_selector
             .bests()
             .ok_or_else(|| format_err!("No best peer to request"))?;
-        let peer = best_peers
-            .choose(&mut rand::thread_rng())
-            .ok_or_else(|| format_err!("No peer to request"))?;
-        let peer_id = peer.peer_id();
-        let header = peer.latest_header();
-        let block_id = header.id();
 
-        let block_info = self
-            .client
-            .get_block_infos(peer_id.clone(), vec![block_id])
-            .await?
-            .pop()
-            .ok_or_else(|| {
-                format_err!(
-                    "Get block info by id:{} from peer_id:{} return None",
-                    block_id,
-                    peer_id
-                )
-            })?;
-        ensure!(
-            block_id == block_info.block_id,
-            "Invalid block info from {}",
-            peer_id
-        );
+        let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
+            best_peers
+                .into_iter()
+                .fold(vec![], |mut chain_statuses, peer| {
+                    let update = chain_statuses
+                        .iter_mut()
+                        .find(|(chain_status, _peers)| peer.chain_info().status() == chain_status)
+                        .map(|(_chain_status, peers)| {
+                            peers.push(peer.peer_id());
+                            true
+                        })
+                        .unwrap_or(false);
+
+                    if !update {
+                        chain_statuses
+                            .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                    }
+                    chain_statuses
+                });
+        //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
+        if chain_statuses.len() > 1 {
+            chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
+                peers_1.len().cmp(&peers_2.len())
+            });
+        }
+        let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
+        let header = chain_status.head;
         Ok(SyncTarget {
-            block_header: header.clone(),
-            block_info,
-            peers: self.peer_selector.peers(),
+            target_id: BlockIdAndNumber::new(header.id(), header.number()),
+            block_info: chain_status.info,
+            peers,
         })
-    }
-
-    pub async fn get_blocks_by_number(
-        &self,
-        req: GetBlockHeaders,
-        number: BlockNumber,
-    ) -> Result<Vec<Block>> {
-        let (headers, _) = self.get_headers(req, number).await?;
-        let hashs = headers.iter().map(|header| header.id()).collect();
-        let (bodies, _) = self.get_bodies_by_hash(hashs).await?;
-        //TODO verify headers and bodies' length.
-        let blocks: Vec<Block> = headers
-            .into_iter()
-            .zip(bodies.into_iter())
-            .map(|(header, body)| Block::new(header, body))
-            .collect();
-        Ok(blocks)
     }
 
     pub async fn get_state_node_by_node_hash(
@@ -375,16 +348,6 @@ impl VerifiedRpcClient {
     }
 
     pub async fn get_block_ids(
-        &self,
-        start_number: BlockNumber,
-        reverse: bool,
-        max_size: u64,
-    ) -> Result<Vec<HashValue>> {
-        self.get_block_ids_from_peer(None, start_number, reverse, max_size)
-            .await
-    }
-
-    pub async fn get_block_ids_from_peer(
         &self,
         peer_id: Option<PeerId>,
         start_number: BlockNumber,

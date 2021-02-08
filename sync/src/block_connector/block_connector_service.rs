@@ -8,7 +8,7 @@ use anyhow::{format_err, Result};
 use config::NodeConfig;
 use logger::prelude::*;
 use network::NetworkServiceRef;
-use network_api::NetworkService;
+use network_api::PeerProvider;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};

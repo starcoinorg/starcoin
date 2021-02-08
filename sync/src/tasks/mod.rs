@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verified_rpc_client::VerifiedRpcClient;
-use anyhow::{format_err, Result};
+use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
+use anyhow::{format_err, Error, Result};
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
@@ -21,23 +21,16 @@ use stream_task::{
     Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
 };
 
+pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {}
+
+impl<T> SyncFetcher for Arc<T> where T: SyncFetcher {}
+
 pub trait PeerOperator: Send + Sync {
-    fn filter(&self, peers: &[PeerId]);
-
-    fn new_peer(&self, beer_info: PeerInfo);
-
-    fn peers(&self) -> Vec<PeerId>;
+    fn peer_selector(&self) -> PeerSelector;
 }
 
 pub trait BlockIdFetcher: Send + Sync {
     fn fetch_block_ids(
-        &self,
-        start_number: BlockNumber,
-        reverse: bool,
-        max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>>;
-
-    fn fetch_block_ids_from_peer(
         &self,
         peer: Option<PeerId>,
         start_number: BlockNumber,
@@ -45,64 +38,41 @@ pub trait BlockIdFetcher: Send + Sync {
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>>;
 
-    fn fetch_block_infos_from_peer(
+    fn fetch_block_id(
         &self,
-        peer_id: Option<PeerId>,
-        hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>>;
-
-    fn find_best_peer(&self) -> Option<PeerInfo>;
+        peer: Option<PeerId>,
+        number: BlockNumber,
+    ) -> BoxFuture<Result<Option<HashValue>>> {
+        self.fetch_block_ids(peer, number, false, 1)
+            .and_then(|mut ids| async move { Ok(ids.pop()) })
+            .boxed()
+    }
 }
 
 impl PeerOperator for VerifiedRpcClient {
-    fn filter(&self, peers: &[PeerId]) {
-        self.selector().retain(peers)
+    fn peer_selector(&self) -> PeerSelector {
+        self.selector().clone()
     }
+}
 
-    fn new_peer(&self, peer_info: PeerInfo) {
-        self.selector().add_peer(peer_info);
-    }
-
-    fn peers(&self) -> Vec<PeerId> {
-        self.selector()
-            .peers()
-            .into_iter()
-            .map(|peer_info| peer_info.peer_id())
-            .collect()
+fn fetcher_err_map(err: Error) -> Error {
+    match err.downcast::<RpcVerifyError>() {
+        Ok(err) => TaskError::BreakError(err.into()).into(),
+        Err(err) => err,
     }
 }
 
 impl BlockIdFetcher for VerifiedRpcClient {
     fn fetch_block_ids(
         &self,
-        start_number: u64,
-        reverse: bool,
-        max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
-        self.get_block_ids(start_number, reverse, max_size).boxed()
-    }
-
-    fn fetch_block_ids_from_peer(
-        &self,
         peer: Option<PeerId>,
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
-        self.get_block_ids_from_peer(peer, start_number, reverse, max_size)
+        self.get_block_ids(peer, start_number, reverse, max_size)
+            .map_err(fetcher_err_map)
             .boxed()
-    }
-
-    fn fetch_block_infos_from_peer(
-        &self,
-        peer_id: Option<PeerId>,
-        hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
-        self.get_block_infos_from_peer(peer_id, hashes).boxed()
-    }
-
-    fn find_best_peer(&self) -> Option<PeerInfo> {
-        self.best_peer()
     }
 }
 
@@ -110,16 +80,8 @@ impl<T> PeerOperator for Arc<T>
 where
     T: PeerOperator,
 {
-    fn filter(&self, peers: &[PeerId]) {
-        PeerOperator::filter(self.as_ref(), peers)
-    }
-
-    fn new_peer(&self, peer_info: PeerInfo) {
-        PeerOperator::new_peer(self.as_ref(), peer_info)
-    }
-
-    fn peers(&self) -> Vec<PeerId> {
-        PeerOperator::peers(self.as_ref())
+    fn peer_selector(&self) -> PeerSelector {
+        PeerOperator::peer_selector(self.as_ref())
     }
 }
 
@@ -129,44 +91,17 @@ where
 {
     fn fetch_block_ids(
         &self,
-        start_number: u64,
-        reverse: bool,
-        max_size: u64,
-    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
-        BlockIdFetcher::fetch_block_ids(self.as_ref(), start_number, reverse, max_size)
-    }
-
-    fn fetch_block_ids_from_peer(
-        &self,
         peer: Option<PeerId>,
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
-        BlockIdFetcher::fetch_block_ids_from_peer(
-            self.as_ref(),
-            peer,
-            start_number,
-            reverse,
-            max_size,
-        )
-    }
-
-    fn fetch_block_infos_from_peer(
-        &self,
-        peer_id: Option<PeerId>,
-        hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
-        BlockIdFetcher::fetch_block_infos_from_peer(self.as_ref(), peer_id, hashes)
-    }
-
-    fn find_best_peer(&self) -> Option<PeerInfo> {
-        BlockIdFetcher::find_best_peer(self.as_ref())
+        BlockIdFetcher::fetch_block_ids(self.as_ref(), peer, start_number, reverse, max_size)
     }
 }
 
 pub trait BlockFetcher: Send + Sync {
-    fn fetch_block(
+    fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
@@ -176,16 +111,16 @@ impl<T> BlockFetcher for Arc<T>
 where
     T: BlockFetcher,
 {
-    fn fetch_block(
+    fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
-        BlockFetcher::fetch_block(self.as_ref(), block_ids)
+        BlockFetcher::fetch_blocks(self.as_ref(), block_ids)
     }
 }
 
 impl BlockFetcher for VerifiedRpcClient {
-    fn fetch_block(
+    fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
@@ -200,14 +135,27 @@ impl BlockFetcher for VerifiedRpcClient {
                         })
                     })
                     .collect();
-                results
+                results.map_err(fetcher_err_map)
             })
             .boxed()
     }
 }
 
 pub trait BlockInfoFetcher: Send + Sync {
-    fn fetch_block_infos(&self, block_ids: Vec<HashValue>) -> BoxFuture<Result<Vec<BlockInfo>>>;
+    fn fetch_block_infos(
+        &self,
+        peer_id: Option<PeerId>,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>>;
+    fn fetch_block_info(
+        &self,
+        peer_id: Option<PeerId>,
+        block_id: HashValue,
+    ) -> BoxFuture<Result<Option<BlockInfo>>> {
+        self.fetch_block_infos(peer_id, vec![block_id])
+            .and_then(|mut block_infos| async move { Ok(block_infos.pop().flatten()) })
+            .boxed()
+    }
 }
 
 impl<T> BlockInfoFetcher for Arc<T>
@@ -216,11 +164,26 @@ where
 {
     fn fetch_block_infos(
         &self,
+        peer_id: Option<PeerId>,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<'_, Result<Vec<BlockInfo>>> {
-        BlockInfoFetcher::fetch_block_infos(self.as_ref(), block_ids)
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+        BlockInfoFetcher::fetch_block_infos(self.as_ref(), peer_id, block_ids)
     }
 }
+
+impl BlockInfoFetcher for VerifiedRpcClient {
+    fn fetch_block_infos(
+        &self,
+        peer_id: Option<PeerId>,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockInfo>>>> {
+        self.get_block_infos_from_peer(peer_id, block_ids)
+            .map_err(fetcher_err_map)
+            .boxed()
+    }
+}
+
+impl SyncFetcher for VerifiedRpcClient {}
 
 pub trait BlockLocalStore: Send + Sync {
     fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>>;
@@ -330,29 +293,29 @@ mod tests;
 
 use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::block_sync_task::SyncBlockData;
-use crate::tasks::inner_sync_task::{FindSubTargetTask, InnerSyncTask};
+use crate::tasks::inner_sync_task::InnerSyncTask;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use futures::channel::mpsc::unbounded;
 use network_api::messages::PeerEvent;
-use network_api::{NetworkService, PeerStrategy};
-use starcoin_types::peer_info::{PeerId, PeerInfo};
+use network_api::{PeerProvider, PeerSelector};
+use starcoin_sync_api::SyncTarget;
+use starcoin_types::peer_info::PeerId;
 use std::time::Instant;
 use traits::ChainReader;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
-    target: BlockInfo,
+    target: SyncTarget,
     skip_pow_verify: bool,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     block_event_handle: H,
     fetcher: Arc<F>,
     ancestor_event_handle: A,
-    network: N,
+    peer_provider: N,
     max_retry_times: u64,
-    strategy: PeerStrategy,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -362,8 +325,8 @@ pub fn full_sync_task<H, A, F, N>(
 where
     H: BlockConnectedEventHandle + Sync + 'static,
     A: AncestorEventHandle + Sync + 'static,
-    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
-    N: NetworkService + 'static,
+    F: SyncFetcher + 'static,
+    N: PeerProvider + Clone + 'static,
 {
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
@@ -376,12 +339,14 @@ where
 
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
-    let target_block_number = target.block_accumulator_info.num_leaves.saturating_sub(1);
-    let target_block_accumulator = target.block_accumulator_info;
+    let target_block_number = target.target_id.number();
 
     let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
 
     let delay_milliseconds_on_error = 100;
+    //only keep the best peer for find ancestor.
+    fetcher.peer_selector().retain(target.peers.as_slice());
+
     let sync_task = TaskGenerator::new(
         FindAncestorTask::new(
             current_block_number,
@@ -401,7 +366,7 @@ where
     .generate();
     let (fut, _) = sync_task.with_handle();
 
-    let (peer_sender, mut peer_receiver) = unbounded::<PeerEvent>();
+    let (peer_sender, mut _peer_receiver) = unbounded::<PeerEvent>();
     let peer_event_handle = PeerEventHandle::new(peer_sender);
 
     let event_handle_clone = event_handle.clone();
@@ -420,34 +385,30 @@ where
         let start_now = Instant::now();
 
         loop {
-            while let Ok(Some(peer_event)) = peer_receiver.try_next() {
-                if let PeerEvent::Open(peer_id, chain_info) = peer_event {
-                    fetcher.new_peer(PeerInfo::new(peer_id, *chain_info));
-                }
-            }
-
-            // sub target
-            let target_number = latest_ancestor.number.saturating_add(1000);
-            let sub_target_task = FindSubTargetTask::new(fetcher.clone(), target_number);
-            let (peers, sub_target) = sub_target_task
-                .sub_target()
+            // for get new peers from network.
+            let all_peers = peer_provider
+                .peer_set()
                 .await
                 .map_err(TaskError::BreakError)?;
-            fetcher.filter(&peers);
+            for peer in all_peers {
+                fetcher.peer_selector().add_or_update_peer(peer);
+            }
+            let sub_target =
+                inner_sync_task::sub_target(target.clone(), latest_ancestor, fetcher.clone())
+                    .await
+                    .map_err(TaskError::BreakError)?;
 
-            let real_target = match sub_target {
-                None => target_block_accumulator.clone(),
-                Some((_, target)) => target,
-            };
+            fetcher.peer_selector().retain(sub_target.peers.as_slice());
+
             let inner = InnerSyncTask::new(
                 latest_ancestor,
-                real_target,
+                sub_target,
                 storage.clone(),
                 block_event_handle.clone(),
                 fetcher.clone(),
                 event_handle_clone.clone(),
                 time_service.clone(),
-                network.clone(),
+                peer_provider.clone(),
             );
             let (block_chain, _) = inner
                 .do_sync(
@@ -468,12 +429,12 @@ where
                 .as_millis();
             info!(
                 "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
-                strategy,
+                fetcher.peer_selector().strategy(),
                 total_num,
                 total_time,
                 total_time.checked_div(total_num as u128).unwrap_or(0)
             );
-            if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
+            if target.target_id.number() <= latest_block_chain.status().head.number() {
                 break;
             }
             latest_ancestor = latest_block_chain.current_header().into();

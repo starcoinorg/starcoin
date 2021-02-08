@@ -61,7 +61,9 @@ impl TaskState for BlockAccumulatorSyncTask {
                 "Accumulator sync task: start_number: {}, target_number: {}",
                 start, target
             );
-            self.fetcher.fetch_block_ids(start, false, max_size).await
+            self.fetcher
+                .fetch_block_ids(None, start, false, max_size)
+                .await
         }
         .boxed()
     }

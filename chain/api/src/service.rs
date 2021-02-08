@@ -99,7 +99,8 @@ pub trait ChainAsyncService:
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>>;
-    async fn main_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader>;
+    async fn main_block_header_by_number(&self, number: BlockNumber)
+        -> Result<Option<BlockHeader>>;
     async fn main_startup_info(&self) -> Result<StartupInfo>;
     async fn main_status(&self) -> Result<ChainStatus>;
     async fn epoch_info(&self) -> Result<EpochInfo>;
@@ -293,14 +294,15 @@ where
         }
     }
 
-    async fn main_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader> {
+    async fn main_block_header_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> Result<Option<BlockHeader>> {
         if let ChainResponse::BlockHeaderOption(header) = self
             .send(ChainRequest::GetBlockHeaderByNumber(number))
             .await??
         {
-            if let Some(h) = *header {
-                return Ok(h);
-            }
+            return Ok(*header);
         }
         bail!("Get chain block header by number response error.")
     }

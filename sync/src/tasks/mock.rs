@@ -1,21 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{BlockConnectedEvent, BlockFetcher, BlockIdFetcher, PeerOperator};
+use crate::tasks::{
+    BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
+};
 use anyhow::{format_err, Result};
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
+use network_api::{PeerInfo, PeerSelector, PeerStrategy};
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{Block, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::{PeerId, PeerInfo};
+use starcoin_sync_api::SyncTarget;
+use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,53 +50,21 @@ impl MockBlockIdFetcher {
     }
 }
 
-impl PeerOperator for MockBlockIdFetcher {
-    fn filter(&self, _peers: &[PeerId]) {}
-
-    fn new_peer(&self, _peer_info: PeerInfo) {}
-
-    fn peers(&self) -> Vec<PeerId> {
-        let mut peers = Vec::new();
-        peers.push(PeerId::random());
-        peers
-    }
-}
-
 impl BlockIdFetcher for MockBlockIdFetcher {
     fn fetch_block_ids(
-        &self,
-        start_number: u64,
-        reverse: bool,
-        max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
-        self.fetch_block_ids_async(start_number, reverse, max_size)
-            .boxed()
-    }
-
-    fn fetch_block_ids_from_peer(
         &self,
         _peer: Option<PeerId>,
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
-        self.fetch_block_ids(start_number, reverse, max_size)
-    }
-
-    fn fetch_block_infos_from_peer(
-        &self,
-        _peer_id: Option<PeerId>,
-        _hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
-        unimplemented!()
-    }
-
-    fn find_best_peer(&self) -> Option<PeerInfo> {
-        Some(PeerInfo::random())
+        self.fetch_block_ids_async(start_number, reverse, max_size)
+            .boxed()
     }
 }
 
 pub struct SyncNodeMocker {
+    pub peer_id: PeerId,
     pub chain_mocker: MockChain,
     pub delay_milliseconds: u64,
     pub random_error_percent: u32,
@@ -105,10 +77,40 @@ impl SyncNodeMocker {
         random_error_percent: u32,
     ) -> Result<Self> {
         Ok(Self {
+            peer_id: PeerId::random(),
             chain_mocker: MockChain::new(net)?,
             delay_milliseconds,
             random_error_percent,
         })
+    }
+
+    pub fn sync_target(&self) -> SyncTarget {
+        let status = self.chain().status();
+        SyncTarget {
+            target_id: BlockIdAndNumber::new(status.head.id(), status.head.number()),
+            block_info: status.info,
+            peers: vec![self.peer_id.clone()],
+        }
+    }
+
+    pub fn sync_target_by_number(&self, block_number: BlockNumber) -> Result<SyncTarget> {
+        let block = self
+            .chain()
+            .get_block_by_number(block_number)?
+            .ok_or_else(|| format_err!("Can not find block by number: {}", block_number))?;
+        let block_info = self
+            .chain()
+            .get_block_info(Some(block.id()))?
+            .ok_or_else(|| format_err!("Can not find block info by id: {}", block.id()))?;
+        Ok(SyncTarget {
+            target_id: BlockIdAndNumber::new(block.header().id(), block.header().number()),
+            block_info,
+            peers: vec![self.peer_id.clone()],
+        })
+    }
+
+    pub fn self_peer_info(&self) -> PeerInfo {
+        PeerInfo::new(self.peer_id.clone(), self.chain().info())
     }
 
     pub fn chain(&self) -> &BlockChain {
@@ -155,28 +157,13 @@ impl SyncNodeMocker {
 }
 
 impl PeerOperator for SyncNodeMocker {
-    fn filter(&self, _peers: &[PeerId]) {}
-
-    fn new_peer(&self, _peer_info: PeerInfo) {}
-
-    fn peers(&self) -> Vec<PeerId> {
-        let mut peers = Vec::new();
-        peers.push(PeerId::random());
-        peers
+    fn peer_selector(&self) -> PeerSelector {
+        PeerSelector::new(vec![self.self_peer_info()], PeerStrategy::default())
     }
 }
 
 impl BlockIdFetcher for SyncNodeMocker {
     fn fetch_block_ids(
-        &self,
-        start_number: u64,
-        reverse: bool,
-        max_size: u64,
-    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
-        self.fetch_block_ids_from_peer(None, start_number, reverse, max_size)
-    }
-
-    fn fetch_block_ids_from_peer(
         &self,
         _peer: Option<PeerId>,
         start_number: BlockNumber,
@@ -191,31 +178,10 @@ impl BlockIdFetcher for SyncNodeMocker {
         }
         .boxed()
     }
-
-    fn fetch_block_infos_from_peer(
-        &self,
-        _peer_id: Option<PeerId>,
-        hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
-        let mut result: Vec<BlockInfo> = Vec::new();
-        hashes.into_iter().for_each(|hash| {
-            result.push(self.chain().get_block_info(Some(hash)).unwrap().unwrap());
-        });
-        async move {
-            self.delay().await;
-            self.random_err()?;
-            Ok(result)
-        }
-        .boxed()
-    }
-
-    fn find_best_peer(&self) -> Option<PeerInfo> {
-        Some(PeerInfo::random())
-    }
 }
 
 impl BlockFetcher for SyncNodeMocker {
-    fn fetch_block(
+    fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
@@ -237,3 +203,24 @@ impl BlockFetcher for SyncNodeMocker {
         .boxed()
     }
 }
+
+impl BlockInfoFetcher for SyncNodeMocker {
+    fn fetch_block_infos(
+        &self,
+        _peer_id: Option<PeerId>,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+        let mut result: Vec<Option<BlockInfo>> = Vec::new();
+        block_ids.into_iter().for_each(|hash| {
+            result.push(self.chain().get_block_info(Some(hash)).unwrap());
+        });
+        async move {
+            self.delay().await;
+            self.random_err()?;
+            Ok(result)
+        }
+        .boxed()
+    }
+}
+
+impl SyncFetcher for SyncNodeMocker {}

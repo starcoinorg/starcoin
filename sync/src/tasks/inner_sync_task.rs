@@ -1,102 +1,79 @@
 use crate::tasks::{
     AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
-    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
+    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator, SyncFetcher,
 };
 use anyhow::format_err;
 use logger::prelude::*;
-use network_api::{NetworkService, PeerId};
-use rand::seq::IteratorRandom;
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+use network_api::{PeerId, PeerProvider};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
-use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
+use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
-use starcoin_types::{block::BlockNumber, time::TimeService};
+use starcoin_types::time::TimeService;
 use std::sync::Arc;
 use stream_task::{Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle};
 
-pub struct FindSubTargetTask<F>
-where
-    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
-{
+/// Split the full target to sub target
+pub async fn sub_target<F>(
+    full_target: SyncTarget,
+    ancestor: BlockIdAndNumber,
     fetcher: F,
-    target_number: BlockNumber,
-}
-
-impl<F> FindSubTargetTask<F>
+) -> anyhow::Result<SyncTarget>
 where
-    F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
+    F: SyncFetcher + 'static,
 {
-    pub fn new(fetcher: F, target_number: BlockNumber) -> Self {
-        Self {
-            fetcher,
-            target_number,
-        }
+    let target_number = ancestor.number.saturating_add(1000);
+    if target_number >= full_target.target_id.number() {
+        return Ok(full_target);
     }
-
-    async fn block_id_from_peer(&self, peer_id: PeerId) -> Option<HashValue> {
-        if let Ok(mut ids) = self
-            .fetcher
-            .fetch_block_ids_from_peer(Some(peer_id), self.target_number, false, 1)
-            .await
-        {
-            return ids.pop();
-        }
-        None
-    }
-
-    pub async fn sub_target(
-        self,
-    ) -> anyhow::Result<(Vec<PeerId>, Option<(BlockIdAndNumber, AccumulatorInfo)>)> {
-        //1. best peer get block id
-        let best_peer = self
-            .fetcher
-            .find_best_peer()
-            .ok_or_else(|| format_err!("Best peer is none when create sub target"))?;
-        let mut target_peers: Vec<PeerId> = Vec::new();
-        target_peers.push(best_peer.peer_id());
-        if let Some(target_id) = self.block_id_from_peer(best_peer.peer_id()).await {
-            info!(
-                "Best peer target id : {}: {:?}",
-                self.target_number, target_id
-            );
-            let mut hashs = Vec::new();
-            hashs.push(target_id);
-            //2. filter other peers
-            for peer_id in self.fetcher.peers() {
-                if best_peer.peer_id() != peer_id {
-                    if let Some(id) = self.block_id_from_peer(peer_id.clone()).await {
-                        if id == target_id {
-                            target_peers.push(peer_id);
-                        }
-                    }
+    //1. best peer get block id
+    let best_peer = fetcher
+        .peer_selector()
+        .best()
+        .ok_or_else(|| format_err!("Best peer is none when create sub target"))?;
+    let mut target_peers: Vec<PeerId> = Vec::new();
+    target_peers.push(best_peer.peer_id());
+    if let Some(target_id) = fetcher
+        .fetch_block_id(Some(best_peer.peer_id()), target_number)
+        .await?
+    {
+        info!("Best peer target id : {}: {:?}", target_number, target_id);
+        let best_block_info = fetcher
+            .fetch_block_info(Some(best_peer.peer_id()), target_id)
+            .await?
+            .ok_or_else(|| {
+                format_err!(
+                    "Fetch {} BlockInfo from {:?} return none when create sub target",
+                    target_id,
+                    best_peer.peer_id()
+                )
+            })?;
+        //2. filter other peers
+        for peer_id in fetcher.peer_selector().peers_by_filter(|peer| {
+            best_peer.peer_id() != peer.peer_id()
+                && peer.chain_info().status().head.number() >= target_number
+        }) {
+            if let Some(block_info) = fetcher
+                .fetch_block_info(Some(peer_id.clone()), target_id)
+                .await?
+            {
+                if best_block_info == block_info {
+                    target_peers.push(peer_id);
+                } else {
+                    warn!("[sync] Block {}'s block info is different at best peer {}({:?}) and peer {}({:?})", target_id, best_peer.peer_id(), best_block_info, peer_id, block_info);
                 }
             }
-
-            //3. get AccumulatorInfo
-            let peer_id = target_peers
-                .iter()
-                .choose(&mut rand::thread_rng())
-                .cloned()
-                .ok_or_else(|| format_err!("Random peer is none when create sub target"))?;
-            let info = self
-                .fetcher
-                .fetch_block_infos_from_peer(Some(peer_id), hashs)
-                .await?
-                .pop()
-                .ok_or_else(|| format_err!("Target BlockInfo is none when create sub target"))?;
-            Ok((
-                target_peers,
-                Some((
-                    BlockIdAndNumber::new(target_id, self.target_number),
-                    info.block_accumulator_info,
-                )),
-            ))
-        } else {
-            Ok((target_peers, None))
         }
+
+        Ok(SyncTarget {
+            target_id: BlockIdAndNumber::new(target_id, target_number),
+            block_info: best_block_info,
+            peers: target_peers,
+        })
+    } else {
+        Ok(full_target)
     }
 }
 
@@ -104,43 +81,43 @@ pub struct InnerSyncTask<H, F, N>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
     F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
-    N: NetworkService + 'static,
+    N: PeerProvider + Clone + 'static,
 {
     ancestor: BlockIdAndNumber,
-    target_block_accumulator: AccumulatorInfo,
+    target: SyncTarget,
     storage: Arc<dyn Store>,
     block_event_handle: H,
     fetcher: Arc<F>,
     event_handle: Arc<dyn TaskEventHandle>,
     time_service: Arc<dyn TimeService>,
-    network: N,
+    peer_provider: N,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
     F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
-    N: NetworkService + 'static,
+    N: PeerProvider + Clone + 'static,
 {
     pub fn new(
         ancestor: BlockIdAndNumber,
-        target_block_accumulator: AccumulatorInfo,
+        target: SyncTarget,
         storage: Arc<dyn Store>,
         block_event_handle: H,
         fetcher: Arc<F>,
         event_handle: Arc<dyn TaskEventHandle>,
         time_service: Arc<dyn TimeService>,
-        network: N,
+        peer_provider: N,
     ) -> Self {
         Self {
             ancestor,
-            target_block_accumulator,
+            target,
             storage,
             block_event_handle,
             fetcher,
             event_handle,
             time_service,
-            network,
+            peer_provider,
         }
     }
 
@@ -167,7 +144,7 @@ where
         let accumulator_sync_task = BlockAccumulatorSyncTask::new(
             // start_number is include, so start from ancestor.number + 1
             self.ancestor.number.saturating_add(1),
-            self.target_block_accumulator.clone(),
+            self.target.block_info.block_accumulator_info.clone(),
             self.fetcher.clone(),
             100,
         )
@@ -181,7 +158,7 @@ where
                 self.storage.get_accumulator_store(AccumulatorStoreType::Block),
                 self.ancestor,
                 ancestor_block_info.clone().block_accumulator_info,
-                self.target_block_accumulator.clone(),
+                self.target.block_info.block_accumulator_info.clone(),
             ),
             self.event_handle.clone(),
         ).and_then(move |(ancestor, accumulator), event_handle| {
@@ -200,7 +177,7 @@ where
                 1,
             );
             let chain = BlockChain::new(self.time_service.clone(), ancestor.id, self.storage.clone())?;
-            let block_collector = BlockCollector::new_with_handle(current_block_info.clone(), chain, self.block_event_handle.clone(), self.network.clone(), skip_pow_verify_when_sync);
+            let block_collector = BlockCollector::new_with_handle(current_block_info.clone(), self.target.clone(), chain, self.block_event_handle.clone(), self.peer_provider.clone(), skip_pow_verify_when_sync);
             Ok(TaskGenerator::new(
                 block_sync_task,
                 buffer_size,

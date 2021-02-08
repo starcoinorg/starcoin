@@ -1,30 +1,49 @@
 use futures::future::BoxFuture;
+use futures::FutureExt;
 use network_api::messages::NotificationMessage;
 use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider, ReputationChange};
+use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerInfo;
 
 #[derive(Clone)]
-pub struct DummyNetworkService;
+pub struct DummyNetworkService {
+    self_info: PeerInfo,
+}
+
+impl DummyNetworkService {
+    pub fn new(self_info: PeerInfo) -> Self {
+        Self { self_info }
+    }
+}
+
+impl Default for DummyNetworkService {
+    fn default() -> Self {
+        Self::new(PeerInfo::random())
+    }
+}
 
 #[async_trait::async_trait]
 impl NetworkService for DummyNetworkService {
     fn send_peer_message(&self, _msg: PeerMessage) {}
 
     fn broadcast(&self, _notification: NotificationMessage) {}
-
-    fn report_peer(&self, _peer_id: PeerId, _cost_benefit: ReputationChange) {}
 }
 
 impl PeerProvider for DummyNetworkService {
     fn peer_set(&self) -> BoxFuture<anyhow::Result<Vec<PeerInfo>>> {
-        unimplemented!()
+        async { Ok(vec![]) }.boxed()
     }
 
     fn get_peer(&self, _peer_id: PeerId) -> BoxFuture<anyhow::Result<Option<PeerInfo>>> {
-        unimplemented!()
+        async { Ok(None) }.boxed()
     }
 
-    fn get_self_peer(&self) -> BoxFuture<'_, anyhow::Result<PeerInfo>> {
-        unimplemented!()
+    fn get_self_peer(&self) -> BoxFuture<anyhow::Result<PeerInfo>> {
+        let info = self.self_info.clone();
+        async { Ok(info) }.boxed()
+    }
+
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
+        info!("report_peer {:?}: reputation: {:?}", peer_id, cost_benefit);
     }
 }

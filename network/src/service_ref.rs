@@ -33,10 +33,6 @@ impl NetworkService for NetworkServiceRef {
     fn broadcast(&self, notification: NotificationMessage) {
         self.service_ref.broadcast(notification)
     }
-
-    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
-        self.service_ref.report_peer(peer_id, cost_benefit)
-    }
 }
 
 impl PeerProvider for NetworkServiceRef {
@@ -50,6 +46,10 @@ impl PeerProvider for NetworkServiceRef {
 
     fn get_self_peer(&self) -> BoxFuture<'_, Result<PeerInfo>> {
         self.service_ref.get_self_peer()
+    }
+
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
+        self.service_ref.report_peer(peer_id, cost_benefit)
     }
 }
 
