@@ -3,11 +3,12 @@
 
 use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
+use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
-use network_api::{PeerProvider, ReputationChange};
+use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
@@ -297,21 +298,17 @@ where
             == self.target.block_info.block_accumulator_info.num_leaves
         {
             if block_info != self.target.block_info {
-                for peer_id in self.target.peers.as_slice() {
-                    warn!(
-                        "[sync] Report peer {} for invalid target, this peer may been a bad peer.",
-                        peer_id
-                    );
-                    self.peer_provider.report_peer(
-                        peer_id.clone(),
-                        ReputationChange::new_fatal("invalid target"),
-                    );
-                }
-                Err(TaskError::BreakError(format_err!(
+                Err(TaskError::BreakError(
+                    RpcVerifyError::new_with_peers(
+                        self.target.peers.clone(),
+                        format!(
                     "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                    self.target,
+                    self.target.block_info,
                     block_info
-                ))
+                ),
+                    )
+                    .into(),
+                )
                 .into())
             } else {
                 Ok(CollectorState::Enough)

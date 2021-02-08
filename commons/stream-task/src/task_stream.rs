@@ -52,9 +52,6 @@ impl ErrorHandler<anyhow::Error> for TaskErrorHandle {
                     RetryPolicy::ForwardError(TaskError::RetryLimitReached(attempt + 1, error))
                 }
                 TaskError::Canceled => RetryPolicy::ForwardError(TaskError::Canceled),
-                TaskError::CollectorError(e) => {
-                    RetryPolicy::ForwardError(TaskError::CollectorError(e))
-                }
             },
             Err(e) => {
                 debug!("Task error: {:?}, attempt: {}", e, attempt);

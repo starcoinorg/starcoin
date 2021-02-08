@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::peer_event_handle::PeerEventHandle;
 use crate::tasks::{full_sync_task, AncestorEvent};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
@@ -39,7 +38,6 @@ pub struct SyncTaskHandle {
     task_begin: Option<BlockIdAndNumber>,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
-    peer_event_handle: PeerEventHandle,
     peer_selector: PeerSelector,
 }
 
@@ -162,7 +160,7 @@ impl SyncService2 {
             let peer_select_strategy = peer_strategy.unwrap_or_default();
             peer_selector.switch_strategy(peer_select_strategy);
 
-            let (fut, task_handle, task_event_handle, peer_event_handle) = full_sync_task(
+            let (fut, task_handle, task_event_handle) = full_sync_task(
                 current_block_id,
                 target.clone(),
                 skip_pow_verify,
@@ -179,7 +177,6 @@ impl SyncService2 {
                 target,
                 task_handle,
                 task_event_handle,
-                peer_event_handle,
                 peer_selector,
             })?;
             Ok(Some(fut.await?))
@@ -209,12 +206,20 @@ impl SyncService2 {
                                     if let Some(rpc_verify_err) =
                                         err.downcast_ref::<RpcVerifyError>()
                                     {
-                                        network.report_peer(
-                                            rpc_verify_err.peer_id.clone(),
-                                            ReputationChange::new_fatal("invalid_response"),
-                                        )
+                                        for peer_id in rpc_verify_err.peers.as_slice() {
+                                            network.report_peer(
+                                                peer_id.clone(),
+                                                ReputationChange::new_fatal("invalid_response"),
+                                            )
+                                        }
+                                    }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
+                                        warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                     }
-                                    warn!("[sync] Sync task is interrupted by {:?}", err);
+                                    warn!(
+                                        "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
+                                        err,
+                                        err.root_cause(),
+                                    );
                                     false
                                 }
                                 task_err => {
@@ -298,12 +303,6 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
             return;
         }
 
-        if let SyncStage::Synchronizing(task_handle) = &mut self.stage {
-            if let Err(e) = task_handle.peer_event_handle.push(msg.clone()) {
-                error!("[sync] Push PeerEvent error: {:?}", e);
-            }
-        }
-
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("[sync] connect new peer:{:?}", open_peer_id);
@@ -334,17 +333,15 @@ pub struct SyncBeginEvent {
     target: SyncTarget,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
-    peer_event_handle: PeerEventHandle,
     peer_selector: PeerSelector,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
     fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
-        let (target, task_handle, task_event_handle, peer_event_handle, peer_selector) = (
+        let (target, task_handle, task_event_handle, peer_selector) = (
             msg.target,
             msg.task_handle,
             msg.task_event_handle,
-            msg.peer_event_handle,
             msg.peer_selector,
         );
         let sync_task_handle = SyncTaskHandle {
@@ -352,7 +349,6 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
             task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
-            peer_event_handle,
             peer_selector,
         };
         match std::mem::replace(

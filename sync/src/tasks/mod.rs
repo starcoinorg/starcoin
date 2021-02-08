@@ -1,25 +1,32 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tasks::block_sync_task::SyncBlockData;
+use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Error, Result};
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
+use network_api::{PeerProvider, PeerSelector};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
+use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::time::TimeService;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
+use std::time::Instant;
 use stream_task::{
     Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
 };
+use traits::ChainReader;
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {}
 
@@ -291,19 +298,9 @@ pub mod sync_score_metrics;
 #[cfg(test)]
 mod tests;
 
-use crate::peer_event_handle::PeerEventHandle;
-use crate::tasks::block_sync_task::SyncBlockData;
-use crate::tasks::inner_sync_task::InnerSyncTask;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
-use futures::channel::mpsc::unbounded;
-use network_api::messages::PeerEvent;
-use network_api::{PeerProvider, PeerSelector};
-use starcoin_sync_api::SyncTarget;
-use starcoin_types::peer_info::PeerId;
-use std::time::Instant;
-use traits::ChainReader;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
@@ -320,7 +317,6 @@ pub fn full_sync_task<H, A, F, N>(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
     Arc<TaskEventCounterHandle>,
-    PeerEventHandle,
 )>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
@@ -365,9 +361,6 @@ where
     )
     .generate();
     let (fut, _) = sync_task.with_handle();
-
-    let (peer_sender, mut _peer_receiver) = unbounded::<PeerEvent>();
-    let peer_event_handle = PeerEventHandle::new(peer_sender);
 
     let event_handle_clone = event_handle.clone();
 
@@ -443,5 +436,5 @@ where
     };
     let task = TaskFuture::new(all_fut.boxed());
     let (fut, handle) = task.with_handle();
-    Ok((fut, handle, event_handle, peer_event_handle))
+    Ok((fut, handle, event_handle))
 }

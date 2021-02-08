@@ -31,15 +31,22 @@ use std::time::Instant;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]
-#[error("Peer {peer_id:?} return valid rpc response: {msg:?}")]
+#[error("Peer {peers:?} return valid rpc response: {msg:?}")]
 pub struct RpcVerifyError {
-    pub peer_id: PeerId,
+    pub peers: Vec<PeerId>,
     pub msg: String,
 }
 
 impl RpcVerifyError {
     pub fn new(peer_id: PeerId, msg: String) -> Self {
-        Self { peer_id, msg }
+        Self {
+            peers: vec![peer_id],
+            msg,
+        }
+    }
+
+    pub fn new_with_peers(peers: Vec<PeerId>, msg: String) -> Self {
+        Self { peers, msg }
     }
 }
 
