@@ -17,7 +17,8 @@ use starcoin_vm_types::on_chain_config::{
     consensus_config_type_tag, vm_config_type_tag, ConsensusConfig, OnChainConfig, VMConfig,
     CONSENSUS_CONFIG_IDENTIFIER,
 };
-use starcoin_vm_types::values::{VMValueCast, Value};
+use starcoin_vm_types::value::{serialize_values, MoveValue};
+use starcoin_vm_types::values::VMValueCast;
 use test_helper::dao::{
     dao_vote_test, empty_txn_payload, execute_script_on_chain_config, on_chain_config_type_tag,
     reward_config_type_tag, transasction_timeout_type_tag, txn_publish_config_type_tag,
@@ -147,7 +148,7 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
         &module_id,
         &Identifier::new("is_module_allowed")?,
         vec![],
-        vec![Value::address(genesis_address())],
+        serialize_values(&vec![MoveValue::Address(genesis_address())]),
     )?;
     let is_script_allowed_on_chain: bool = read_config.pop().unwrap().1.cast().unwrap();
     assert_eq!(is_script_allowed_on_chain, module_publishing_allowed);

@@ -25,7 +25,7 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::genesis_config::DEFAULT_GAS_CONSTANTS;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
-    bytecode_verifier::{self, DependencyChecker},
+    bytecode_verifier::{self, dependencies},
     errors::{Location, VMError},
     file_format::{CompiledModule, CompiledScript},
     gas_schedule::GasAlgebra,
@@ -254,7 +254,7 @@ pub fn verify_script(
     deps: &[CompiledModule],
 ) -> std::result::Result<CompiledScript, VMError> {
     bytecode_verifier::verify_script(&script)?;
-    DependencyChecker::verify_script(&script, deps)?;
+    dependencies::verify_script(&script, deps)?;
     Ok(script)
 }
 
@@ -264,7 +264,7 @@ pub fn verify_module(
     deps: &[CompiledModule],
 ) -> std::result::Result<CompiledModule, VMError> {
     bytecode_verifier::verify_module(&module)?;
-    DependencyChecker::verify_module(&module, deps)?;
+    dependencies::verify_module(&module, deps)?;
     Ok(module)
 }
 

@@ -1,4 +1,20 @@
 Move prover returns: exiting with boogie verification errors
+error: abort with 2 does never occur (negative error)
+
+    ┌── tests/sources/functional/aborts_with_negative_check.move:15:29 ───
+    │
+ 15 │         aborts_with [check] 2, 3, 4;
+    │                             ^
+    │
+
+error: abort with 3 does never occur (negative error)
+
+    ┌── tests/sources/functional/aborts_with_negative_check.move:15:32 ───
+    │
+ 15 │         aborts_with [check] 2, 3, 4;
+    │                                ^
+    │
+
 error: abort with 4 does never occur (negative error)
 
     ┌── tests/sources/functional/aborts_with_negative_check.move:15:35 ───
