@@ -1,6 +1,6 @@
 [package]
 name = "move-prover"
-version = "0.10.1"
+version = "1.0.0-alpha"
 authors = ["Diem Association <opensource@diem.com>"]
 publish = false
 edition = "2018"
