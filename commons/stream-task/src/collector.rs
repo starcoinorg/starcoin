@@ -130,7 +130,6 @@ impl SinkError {
         match result {
             Err(err) => match err {
                 SinkError::StreamTaskError(err) => Err(err),
-                //SinkError::CollectorError(err) => Err(TaskError::CollectorError(err)),
                 SinkError::CollectorEnough => Ok(()),
             },
             Ok(()) => Ok(()),
@@ -162,7 +161,7 @@ impl<Item, Output> FutureTaskSink<Item, Output> {
             let mut receiver = receiver.fuse();
             while let Some(item) = receiver.next().await {
                 event_handle.on_item();
-                let collector_state = collector.collect(item).map_err(TaskError::CollectorError)?;
+                let collector_state = collector.collect(item).map_err(TaskError::map)?;
                 match collector_state {
                     CollectorState::Enough => break,
                     CollectorState::Need => {
@@ -170,7 +169,7 @@ impl<Item, Output> FutureTaskSink<Item, Output> {
                     }
                 }
             }
-            collector.finish().map_err(TaskError::CollectorError)
+            collector.finish().map_err(TaskError::map)
         });
         Self {
             sender,

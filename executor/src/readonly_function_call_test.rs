@@ -10,6 +10,7 @@ use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
+use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
@@ -84,7 +85,7 @@ fn test_readonly_function_call() -> Result<()> {
         vec![],
     )?;
 
-    let value = Value::struct_(Struct::pack(vec![Value::u64(20)], false));
+    let value = Value::struct_(Struct::pack(vec![Value::u64(20)]));
     let ty = TypeTag::Struct(StructTag {
         address: *account1.address(),
         module: Identifier::new("A").unwrap(),
@@ -121,13 +122,13 @@ fn test_readonly_function_call() -> Result<()> {
             ))
             .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
     }
-    let value = Value::transaction_argument_signer_reference(*account1.address());
+    let value = MoveValue::Signer(*account1.address());
     let _result = crate::execute_readonly_function(
         &chain_state,
         &compiled_module.self_id(),
         &Identifier::new("set_s").unwrap(),
         vec![],
-        vec![value],
+        serialize_values(&vec![value]),
     )
     .map_err(|err| {
         assert_eq!(err, VMStatus::Error(StatusCode::REJECTED_WRITE_SET));

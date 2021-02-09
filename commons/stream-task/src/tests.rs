@@ -312,7 +312,7 @@ async fn test_collector_error() {
     .await;
     assert!(result.is_err());
     let task_err = result.err().unwrap();
-    assert!(task_err.is_collector_error());
+    assert!(task_err.is_break_error());
 }
 
 #[stest::test]

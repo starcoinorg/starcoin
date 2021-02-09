@@ -96,6 +96,12 @@ impl BlockIdAndNumber {
     pub fn new(id: HashValue, number: BlockNumber) -> Self {
         Self { id, number }
     }
+    pub fn id(&self) -> HashValue {
+        self.id
+    }
+    pub fn number(&self) -> BlockNumber {
+        self.number
+    }
 }
 
 impl From<BlockHeader> for BlockIdAndNumber {
@@ -126,7 +132,7 @@ pub struct BlockHeader {
     author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     txn_accumulator_root: HashValue,
-    /// The parent block accumulator root hash.
+    /// The parent block info's block accumulator root hash.
     block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     state_root: HashValue,

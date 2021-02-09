@@ -19,9 +19,10 @@ use bytecode::{
     stackless_bytecode::{
         AssignKind, BorrowNode,
         Bytecode::{self, *},
-        Constant, Label, Operation, SpecBlockId, TempIndex,
+        Constant, Label, Operation, SpecBlockId,
     },
     stackless_control_flow_graph::{BlockId, StacklessControlFlowGraph},
+    verification_analysis,
 };
 use move_model::{
     code_writer::CodeWriter,
@@ -53,6 +54,7 @@ use crate::{
     spec_translator::{ConditionDistribution, FunctionEntryPoint, SpecEnv, SpecTranslator},
 };
 use bytecode::function_target_pipeline::FunctionVariant;
+use move_model::ast::TempIndex;
 
 const MODIFY_RESOURCE_FAILS_MESSAGE: &str =
     "caller does not have permission for this resource modification";
@@ -130,7 +132,7 @@ impl BytecodeContext {
     fn collect_loop_targets(func_target: &FunctionTarget<'_>) -> BTreeMap<Label, BTreeSet<usize>> {
         let code = func_target.get_bytecode();
         let cfg = StacklessControlFlowGraph::new_forward(code);
-        let entry = cfg.entry_blocks()[0];
+        let entry = cfg.entry_block();
         let nodes = cfg.blocks();
         let edges: Vec<(BlockId, BlockId)> = nodes
             .iter()
@@ -151,11 +153,17 @@ impl BytecodeContext {
         {
             let block_id_to_label: BTreeMap<BlockId, Label> = loop_headers
                 .iter()
-                .map(|x| {
-                    if let Label(_, label) = code[cfg.block_start(*x) as usize] {
-                        Some((*x, label))
-                    } else {
-                        None
+                .map(|x| match cfg.content(*x) {
+                    bytecode::stackless_control_flow_graph::BlockContent::Dummy => None,
+                    bytecode::stackless_control_flow_graph::BlockContent::Basic {
+                        lower,
+                        upper: _,
+                    } => {
+                        if let Label(_, label) = code[*lower as usize] {
+                            Some((*x, label))
+                        } else {
+                            None
+                        }
                     }
                 })
                 .flatten()
@@ -167,11 +175,14 @@ impl BytecodeContext {
                     .or_insert_with(BTreeSet::new);
                 let natural_loop_targets = natural_loop
                     .iter()
-                    .map(|block_id| {
-                        cfg.instr_indexes(*block_id)
+                    .map(|block_id| match cfg.is_dummmy(*block_id) {
+                        true => BTreeSet::new(),
+                        false => cfg
+                            .instr_indexes(*block_id)
+                            .unwrap()
                             .map(|x| Self::targets(&code[x as usize]))
                             .flatten()
-                            .collect::<BTreeSet<usize>>()
+                            .collect::<BTreeSet<usize>>(),
                     })
                     .flatten()
                     .collect::<BTreeSet<usize>>();
@@ -262,7 +273,7 @@ impl<'env> ModuleTranslator<'env> {
     /// Translates this module.
     fn translate(&mut self) {
         log!(
-            if self.module_env.is_dependency() {
+            if !self.module_env.is_target() {
                 Level::Debug
             } else {
                 Level::Info
@@ -278,10 +289,6 @@ impl<'env> ModuleTranslator<'env> {
         spec_translator.translate_spec_vars();
         spec_translator.translate_spec_funs();
         self.translate_structs();
-        // Don't translate functions if the module doesn't need to be translated
-        if !self.module_env.should_translate() {
-            return;
-        }
         self.translate_functions();
     }
 
@@ -527,7 +534,7 @@ impl<'env> ModuleTranslator<'env> {
                     .get_target(&func_env, FunctionVariant::Baseline),
             );
         }
-        if num_fun > 0 && !self.module_env.is_dependency() {
+        if num_fun > 0 && self.module_env.is_target() {
             debug!(
                 "{} out of {} functions have (directly or indirectly) \
                  specifications in module `{}`",
@@ -586,10 +593,7 @@ impl<'env> ModuleTranslator<'env> {
 
         // If the function is not verified, or the timeout is less than the estimated time,
         // stop here.
-        if !func_target
-            .func_env
-            .should_verify(self.options.prover.verify_scope)
-        {
+        if !verification_analysis::get_info(func_target).verified {
             return;
         }
         if let Some(n) = func_target.module_env().env.get_num_property(
@@ -941,7 +945,11 @@ impl<'env> ModuleTranslator<'env> {
         // Set location of this code in the CodeWriter.
         let loc = func_target.get_bytecode_loc(bytecode.get_attr_id());
         self.writer.set_location(&loc);
-        emitln!(self.writer, "// {}", bytecode.display(func_target));
+        emitln!(
+            self.writer,
+            "// {}",
+            bytecode.display(func_target, &BTreeMap::default())
+        );
 
         // Helper function to get an Rc<String> for a local.
         let str_local = |idx: usize| {

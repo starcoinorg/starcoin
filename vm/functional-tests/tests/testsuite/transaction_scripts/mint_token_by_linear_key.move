@@ -44,5 +44,5 @@ script {
 //! type-args: 0x1::STC::STC
 stdlib_script::mint_token_by_linear_key
 // check: gas_used
-// check: 173305
+// check: 173307
 // check: "Keep(EXECUTED)"

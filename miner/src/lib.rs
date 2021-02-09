@@ -4,6 +4,7 @@
 use crate::metrics::MINER_METRICS;
 use crate::task::MintTask;
 use anyhow::Result;
+use consensus::Consensus;
 use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
@@ -147,8 +148,7 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<MinerService>,
     ) -> Result<()> {
-        let task = match self.current_task.take() {
-            Some(task) => task,
+        match self.current_task.as_ref() {
             None => {
                 debug!(
                     "MintTask is none, but got nonce: {}, extra:{:?} for minting_blob: {:?}, may be mint by other client.",
@@ -156,21 +156,38 @@ impl MinerService {
                 );
                 return Ok(());
             }
-        };
-
-        if task.minting_blob != minting_blob {
-            info!(
-                "[miner] Jobs hash mismatch expect: {}, got: {}, probably received old job result.",
-                hex::encode(task.minting_blob.as_slice()),
-                hex::encode(minting_blob.as_slice())
-            );
-            self.current_task = Some(task);
-            return Ok(());
+            Some(task) => {
+                if task.minting_blob != minting_blob {
+                    info!(
+                        "[miner] Jobs hash mismatch expect: {}, got: {}, probably received old job result.",
+                        hex::encode(task.minting_blob.as_slice()),
+                        hex::encode(minting_blob.as_slice())
+                    );
+                    return Ok(());
+                }
+                if let Err(e) = task.block_template.strategy.verify_blob(
+                    task.minting_blob.clone(),
+                    nonce,
+                    extra,
+                    task.block_template.difficulty,
+                ) {
+                    warn!(
+                        "Failed to verify blob: {}, nonce: {}, err: {}",
+                        hex::encode(task.minting_blob.as_slice()),
+                        nonce,
+                        e
+                    );
+                    return Ok(());
+                }
+            }
         }
-        let block = task.finish(nonce, extra);
-        info!("Mint new block: {}", block);
-        ctx.broadcast(MinedBlock(Arc::new(block)));
-        MINER_METRICS.block_mint_count.inc();
+
+        if let Some(task) = self.current_task.take() {
+            let block = task.finish(nonce, extra);
+            info!("Mint new block: {}", block);
+            ctx.broadcast(MinedBlock(Arc::new(block)));
+            MINER_METRICS.block_mint_count.inc();
+        }
         Ok(())
     }
 

@@ -12,7 +12,7 @@ use starcoin_crypto::HashValue;
 use starcoin_move_compiler::{
     compiled_unit::CompiledUnit, move_compile_and_report, shared::Address,
 };
-use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
+use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::BuiltinNetworkID;
 use std::collections::HashSet;
@@ -100,7 +100,7 @@ static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<C
             let mut verified_modules = vec![];
             for (_, module) in modules.into_iter() {
                 verify_module(&module).expect("stdlib module failed to verify");
-                DependencyChecker::verify_module(&module, &verified_modules)
+                dependencies::verify_module(&module, &verified_modules)
                     .expect("stdlib module dependency failed to verify");
                 verified_modules.push(module)
             }
@@ -213,7 +213,7 @@ pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
         match compiled_unit {
             CompiledUnit::Module { module, .. } => {
                 verify_module(&module).expect("stdlib module failed to verify");
-                DependencyChecker::verify_module(&module, modules.values())
+                dependencies::verify_module(&module, modules.values())
                     .expect("stdlib module dependency failed to verify");
                 // Tag each module with its index in the module dependency order. Needed for
                 // when they are deserialized and verified later on.

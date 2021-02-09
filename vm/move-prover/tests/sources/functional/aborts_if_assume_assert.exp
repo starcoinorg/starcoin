@@ -20,6 +20,8 @@ error: function does not abort under this condition
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/aborts_if_assume_assert.move:44:5: asserted_spec_invalid
+    =         x = <redacted>,
+    =         result = <redacted>
     =     at tests/sources/functional/aborts_if_assume_assert.move:45:9: asserted_spec_invalid
 
 error: function does not abort under this condition
@@ -30,4 +32,6 @@ error: function does not abort under this condition
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/aborts_if_assume_assert.move:76:5: assumed_spec_invalid
+    =         x = <redacted>,
+    =         result = <redacted>
     =     at tests/sources/functional/aborts_if_assume_assert.move:77:9: assumed_spec_invalid

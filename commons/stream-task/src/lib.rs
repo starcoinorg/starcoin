@@ -25,13 +25,18 @@ pub enum TaskError {
         "Task failed because maximum number of retry attempts({0}) reached, last error: {1:?}"
     )]
     RetryLimitReached(usize, anyhow::Error),
-    #[error("Task failed because collector error {0:?}")]
-    CollectorError(anyhow::Error),
     #[error("Task has been canceled.")]
     Canceled,
 }
 
 impl TaskError {
+    pub fn map(error: anyhow::Error) -> Self {
+        match error.downcast::<Self>() {
+            Ok(task_err) => task_err,
+            Err(err) => TaskError::BreakError(err),
+        }
+    }
+
     pub fn is_canceled(&self) -> bool {
         matches!(self, Self::Canceled)
     }
@@ -42,10 +47,6 @@ impl TaskError {
 
     pub fn is_retry_limit_reached(&self) -> bool {
         matches!(self, Self::RetryLimitReached(_, _))
-    }
-
-    pub fn is_collector_error(&self) -> bool {
-        matches!(self, Self::CollectorError(_))
     }
 }
 

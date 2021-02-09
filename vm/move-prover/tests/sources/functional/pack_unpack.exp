@@ -7,7 +7,10 @@ error: data invariant does not hold
     │         ^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/pack_unpack.move:129:5: call_public_violating_invariant_incorrect
+    =         r = <redacted>
     =     at tests/sources/functional/pack_unpack.move:134:5: public_update_value
+    =         s = <redacted>,
+    =         v = <redacted>
 
 error: data invariant does not hold
 
@@ -17,6 +20,8 @@ error: data invariant does not hold
     │         ^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/pack_unpack.move:102:5: move_ref_unchanged_invariant_incorrect
+    =         r1 = <redacted>,
+    =         r2 = <redacted>
     =     at tests/sources/functional/pack_unpack.move:103:43: move_ref_unchanged_invariant_incorrect
 
 error: data invariant does not hold for value extracted from reference
@@ -27,6 +32,7 @@ error: data invariant does not hold for value extracted from reference
      │                               ^
      │
      =     at tests/sources/functional/pack_unpack.move:169:5: private_pass_value_violating_invariant_incorrect
+     =         s = <redacted>
 
 error: data invariant does not hold for value extracted from reference
 
@@ -36,6 +42,7 @@ error: data invariant does not hold for value extracted from reference
      │                               ^^^^^^^^^
      │
      =     at tests/sources/functional/pack_unpack.move:159:5: private_select_value_violating_invariant_incorrect
+     =         r = <redacted>
 
 error: data invariant does not hold for value extracted from reference
 
@@ -45,6 +52,8 @@ error: data invariant does not hold for value extracted from reference
      │                               ^
      │
      =     at tests/sources/functional/pack_unpack.move:145:5: select_value_violating_invariant_incorrect
+     =         r = <redacted>,
+     =         s = <redacted>
      =     at tests/sources/functional/pack_unpack.move:147:9: select_value_violating_invariant_incorrect
 
 error: data invariant does not hold
@@ -55,9 +64,14 @@ error: data invariant does not hold
     │         ^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/pack_unpack.move:195:5: update_via_returned_ref_invariant_incorrect
+    =         r = <redacted>,
+    =         v_ref = <redacted>
     =     at tests/sources/functional/pack_unpack.move:196:17: update_via_returned_ref_invariant_incorrect
     =     at tests/sources/functional/pack_unpack.move:197:35: update_via_returned_ref_invariant_incorrect
     =     at tests/sources/functional/pack_unpack.move:186:5: get_value_ref
+    =         r = <redacted>,
+    =         result_1 = <redacted>,
+    =         result_2 = <redacted>
     =     at tests/sources/functional/pack_unpack.move:187:9: get_value_ref
     =     at tests/sources/functional/pack_unpack.move:186:9: get_value_ref
     =     at tests/sources/functional/pack_unpack.move:197:13: update_via_returned_ref_invariant_incorrect
@@ -71,9 +85,15 @@ error: post-condition does not hold
      │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      │
      =     at tests/sources/functional/pack_unpack.move:202:5: update_via_returned_ref_var_incorrect
+     =         r = <redacted>,
+     =         v_ref = <redacted>,
+     =         result = <redacted>
      =     at tests/sources/functional/pack_unpack.move:203:17: update_via_returned_ref_var_incorrect
      =     at tests/sources/functional/pack_unpack.move:204:35: update_via_returned_ref_var_incorrect
      =     at tests/sources/functional/pack_unpack.move:186:5: get_value_ref
+     =         r = <redacted>,
+     =         result_1 = <redacted>,
+     =         result_2 = <redacted>
      =     at tests/sources/functional/pack_unpack.move:187:9: get_value_ref
      =     at tests/sources/functional/pack_unpack.move:186:9: get_value_ref
      =     at tests/sources/functional/pack_unpack.move:204:13: update_via_returned_ref_var_incorrect

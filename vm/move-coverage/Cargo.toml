@@ -18,8 +18,8 @@ colored = "2.0.0"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types"}
-bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="b96d25b270a9b3fc1301ac56951fccb7da40dc53" }
-bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="b96d25b270a9b3fc1301ac56951fccb7da40dc53" }
+bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="d17462147b800bf6c8b5fc7414924e5c23e6074d" }
+bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="d17462147b800bf6c8b5fc7414924e5c23e6074d" }
 
 [features]
 default = []

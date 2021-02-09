@@ -7,12 +7,12 @@ use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
-use network_api::NetworkService;
+use network_api::{NetworkService, PeerProvider};
 use starcoin_network::NetworkServiceRef;
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithHash};
+use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::block_connector::BlockConnectorService;
-use starcoin_sync::helper::get_txns_with_hash;
+use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -57,7 +57,7 @@ impl BlockRelayer {
 
     async fn fill_compact_block(
         txpool: TxPoolService,
-        rpc_client: NetworkRpcClient,
+        rpc_client: VerifiedRpcClient,
         compact_block: CompactBlock,
         peer_id: PeerId,
     ) -> Result<Block> {
@@ -90,14 +90,14 @@ impl BlockRelayer {
                 .iter()
                 .map(|&short_id| short_id.0)
                 .collect();
-            let (_, fetched_missing_txn) = get_txns_with_hash(
-                &rpc_client,
-                peer_id,
-                GetTxnsWithHash {
-                    ids: missing_txn_ids,
-                },
-            )
-            .await?;
+            let (_, fetched_missing_txn) = rpc_client
+                .get_txns(
+                    Some(peer_id),
+                    GetTxnsWithHash {
+                        ids: missing_txn_ids,
+                    },
+                )
+                .await?;
             let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> = {
                 fetched_missing_txn
                     .into_iter()
@@ -126,7 +126,6 @@ impl BlockRelayer {
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
-        let rpc_client = NetworkRpcClient::new(network);
         let txpool = self.txpool.clone();
         let fut = async move {
             let compact_block = compact_block_msg.message.compact_block;
@@ -136,6 +135,7 @@ impl BlockRelayer {
             if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
                 debug!("Block is failed block : {:?}", block_id);
             } else {
+                let rpc_client = VerifiedRpcClient::new(network.peer_selector().await?, network);
                 let block = BlockRelayer::fill_compact_block(
                     txpool.clone(),
                     rpc_client,
