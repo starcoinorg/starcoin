@@ -827,7 +827,7 @@ static UNCLE_RATE_TARGET: u64 = 240;
 static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static MIN_BLOCK_TIME_TARGET: u64 = 10000;
+static MIN_BLOCK_TIME_TARGET: u64 = 5000;
 static MAX_BLOCK_TIME_TARGET: u64 = 60000;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
@@ -845,7 +845,7 @@ static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(1));
 
-pub static BASE_BLOCK_GAS_LIMIT: u64 = 100_000_000; //must big than maximum_number_of_gas_units
+pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 
@@ -1102,16 +1102,24 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
+pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+    vec![
+        "/dns4/barnard1.seed.starcoin.org/tcp/9840/p2p/12D3KooWJcsd9JQngZFsHgYgkHymk7anN8fKqBtD1x8jEbq64QET".parse().expect("parse multi addr should be ok"),
+        "/dns4/barnard2.seed.starcoin.org/tcp/9840/p2p/12D3KooWMKgVbWRQain4Sbw4DUnAJMykjdFanAcePn5xsTZihGTo".parse().expect("parse multi addr should be ok"),
+        "/dns4/barnard3.seed.starcoin.org/tcp/9840/p2p/12D3KooWAcg5cxPnnLNUcYR9WdyTBL1Sotr7W1Suq8b48x2F33Vx".parse().expect("parse multi addr should be ok"),
+        "/dns4/barnard4.seed.starcoin.org/tcp/9840/p2p/12D3KooWRUQ4CZ6tiy2kZo5vVjm27ksYJAqMwB2QPfqpB5WEfzy4".parse().expect("parse multi addr should be ok"),
+        "/dns4/barnard5.seed.starcoin.org/tcp/9840/p2p/12D3KooWPwRSY555ycvo8BNiEqWqaJRvgtkv7BfJhq9JWHty6e2R".parse().expect("parse multi addr should be ok"),
+        "/dns4/barnard6.seed.starcoin.org/tcp/9840/p2p/12D3KooWSMJRCgT4inuEZNxvjSCHY1d3DwVX3SQ6qrvqAZCLLMwJ".parse().expect("parse multi addr should be ok"),
+    ]
+});
 
 pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    //TODO set public key
-    let (_association_private_key, association_public_key) = genesis_multi_key_pair();
+    // This is a test config,
     //TODO conform launch time
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
             network: BuiltinNetworkID::Proxima,
-            block_number: 504882,
+            block_number: 571111,
         }),
         version: Version { major: 1 },
         reward_delay: 7,
@@ -1121,7 +1129,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: VMPublishingOption::CustomScripts,
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -1135,7 +1143,8 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
-        association_key_pair: (None, association_public_key),
+        association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("3e6c08fb7f265a35ffd121c809bfa233041d92165c2fdd13f8b85be0814243ba2d616c5105dc8baa39ff764bbcd072e44fcb8bfe5a2f773636285c40d1af15087b00e16ec03438e99858127374c3c148b57a5e10068ca956eff06240c8199f46e4746a6fac58d7d65cfd3ccad4331d071a9ff1a0a29c3bc3896b86c0a7f4ce79e75fbc8422501f5a6bb50ae39e7656949f76d24ce4b677ea224254d8661e509d839e3222ea576580b965d94920765aa1ec62047b7536b0ae57fbdffef968f09e3a5847fb627a9a7909961b21c50c868e26797e2a406879f5cf1d80f4035a448a32fa70d239907d561e116d03dfd9fcba8ab1095117b36b188bf277cc977fc4af87c071e8106a551f0bfe57e9aa2b03d037afd3aaab5c8f0eb56d725f598deada04")
+            .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
