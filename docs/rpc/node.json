@@ -1,0 +1,850 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "node",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "node.status",
+      "params": [],
+      "result": {
+        "name": "bool",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Boolean",
+          "type": "boolean"
+        }
+      }
+    },
+    {
+      "name": "node.info",
+      "params": [],
+      "result": {
+        "name": "NodeInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "NodeInfo",
+          "type": "object",
+          "required": [
+            "consensus",
+            "net",
+            "now_seconds",
+            "peer_info",
+            "self_address"
+          ],
+          "properties": {
+            "consensus": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "Dummy"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "Argon"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "Keccak"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "CryptoNight"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "net": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Builtin"
+                  ],
+                  "properties": {
+                    "Builtin": {
+                      "type": "string",
+                      "enum": [
+                        "Test",
+                        "Dev",
+                        "Halley",
+                        "Proxima",
+                        "Barnard",
+                        "Main"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Custom"
+                  ],
+                  "properties": {
+                    "Custom": {
+                      "type": "object",
+                      "required": [
+                        "chain_id",
+                        "chain_name"
+                      ],
+                      "properties": {
+                        "chain_id": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "format": "uint8",
+                              "minimum": 0.0
+                            }
+                          }
+                        },
+                        "chain_name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "now_seconds": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "peer_info": {
+              "description": "Node self peer info",
+              "type": "object",
+              "required": [
+                "chain_info",
+                "peer_id"
+              ],
+              "properties": {
+                "chain_info": {
+                  "type": "object",
+                  "required": [
+                    "block_info",
+                    "chain_id",
+                    "genesis_hash",
+                    "head"
+                  ],
+                  "properties": {
+                    "block_info": {
+                      "description": "`BlockInfo` is the object we store in the storage. It consists of the block as well as the execution result of this block.",
+                      "type": "object",
+                      "required": [
+                        "block_accumulator_info",
+                        "block_id",
+                        "total_difficulty",
+                        "txn_accumulator_info"
+                      ],
+                      "properties": {
+                        "block_accumulator_info": {
+                          "description": "The block accumulator info.",
+                          "type": "object",
+                          "required": [
+                            "accumulator_root",
+                            "frozen_subtree_roots",
+                            "num_leaves",
+                            "num_nodes"
+                          ],
+                          "properties": {
+                            "accumulator_root": {
+                              "description": "Accumulator root hash",
+                              "type": "object",
+                              "required": [
+                                "hash"
+                              ],
+                              "properties": {
+                                "hash": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "frozen_subtree_roots": {
+                              "description": "Frozen subtree roots of this accumulator.",
+                              "type": "array",
+                              "items": {
+                                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                                "type": "object",
+                                "required": [
+                                  "hash"
+                                ],
+                                "properties": {
+                                  "hash": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "num_leaves": {
+                              "description": "The total number of leaves in this accumulator.",
+                              "type": "integer",
+                              "format": "uint64",
+                              "minimum": 0.0
+                            },
+                            "num_nodes": {
+                              "description": "The total number of nodes in this accumulator.",
+                              "type": "integer",
+                              "format": "uint64",
+                              "minimum": 0.0
+                            }
+                          }
+                        },
+                        "block_id": {
+                          "description": "Block id",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "total_difficulty": {
+                          "description": "The total difficulty.",
+                          "type": "string"
+                        },
+                        "txn_accumulator_info": {
+                          "description": "The transaction accumulator info",
+                          "type": "object",
+                          "required": [
+                            "accumulator_root",
+                            "frozen_subtree_roots",
+                            "num_leaves",
+                            "num_nodes"
+                          ],
+                          "properties": {
+                            "accumulator_root": {
+                              "description": "Accumulator root hash",
+                              "type": "object",
+                              "required": [
+                                "hash"
+                              ],
+                              "properties": {
+                                "hash": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "frozen_subtree_roots": {
+                              "description": "Frozen subtree roots of this accumulator.",
+                              "type": "array",
+                              "items": {
+                                "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                                "type": "object",
+                                "required": [
+                                  "hash"
+                                ],
+                                "properties": {
+                                  "hash": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "num_leaves": {
+                              "description": "The total number of leaves in this accumulator.",
+                              "type": "integer",
+                              "format": "uint64",
+                              "minimum": 0.0
+                            },
+                            "num_nodes": {
+                              "description": "The total number of nodes in this accumulator.",
+                              "type": "integer",
+                              "format": "uint64",
+                              "minimum": 0.0
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "chain_id": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    },
+                    "genesis_hash": {
+                      "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                      "type": "object",
+                      "required": [
+                        "hash"
+                      ],
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "head": {
+                      "type": "object",
+                      "required": [
+                        "author",
+                        "block_accumulator_root",
+                        "block_hash",
+                        "body_hash",
+                        "chain_id",
+                        "difficulty",
+                        "extra",
+                        "gas_used",
+                        "nonce",
+                        "number",
+                        "parent_hash",
+                        "state_root",
+                        "timestamp",
+                        "txn_accumulator_root"
+                      ],
+                      "properties": {
+                        "author": {
+                          "description": "Block author.",
+                          "type": "string"
+                        },
+                        "author_auth_key": {
+                          "description": "Block author auth key.",
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "integer",
+                            "format": "uint8",
+                            "minimum": 0.0
+                          },
+                          "maxItems": 32,
+                          "minItems": 32
+                        },
+                        "block_accumulator_root": {
+                          "description": "The block accumulator root hash.",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "block_hash": {
+                          "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "body_hash": {
+                          "description": "hash for block body",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "chain_id": {
+                          "description": "The chain id",
+                          "type": "integer",
+                          "format": "uint8",
+                          "minimum": 0.0
+                        },
+                        "difficulty": {
+                          "description": "Block difficulty",
+                          "type": "string"
+                        },
+                        "extra": {
+                          "description": "block header extra",
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "format": "uint8",
+                            "minimum": 0.0
+                          },
+                          "maxItems": 4,
+                          "minItems": 4
+                        },
+                        "gas_used": {
+                          "description": "Gas used for contracts execution.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "nonce": {
+                          "description": "Consensus nonce field.",
+                          "type": "integer",
+                          "format": "uint32",
+                          "minimum": 0.0
+                        },
+                        "number": {
+                          "description": "Block number.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "parent_hash": {
+                          "description": "Parent hash.",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "state_root": {
+                          "description": "The last transaction state_root of this block after execute.",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "timestamp": {
+                          "description": "Block timestamp.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "txn_accumulator_root": {
+                          "description": "The transaction accumulator root hash after executing this block.",
+                          "type": "object",
+                          "required": [
+                            "hash"
+                          ],
+                          "properties": {
+                            "hash": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "peer_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "self_address": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "node.peers",
+      "params": [],
+      "result": {
+        "name": "Vec < PeerInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_PeerInfoView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "chain_info",
+              "peer_id"
+            ],
+            "properties": {
+              "chain_info": {
+                "type": "object",
+                "required": [
+                  "block_info",
+                  "chain_id",
+                  "genesis_hash",
+                  "head"
+                ],
+                "properties": {
+                  "block_info": {
+                    "description": "`BlockInfo` is the object we store in the storage. It consists of the block as well as the execution result of this block.",
+                    "type": "object",
+                    "required": [
+                      "block_accumulator_info",
+                      "block_id",
+                      "total_difficulty",
+                      "txn_accumulator_info"
+                    ],
+                    "properties": {
+                      "block_accumulator_info": {
+                        "description": "The block accumulator info.",
+                        "type": "object",
+                        "required": [
+                          "accumulator_root",
+                          "frozen_subtree_roots",
+                          "num_leaves",
+                          "num_nodes"
+                        ],
+                        "properties": {
+                          "accumulator_root": {
+                            "description": "Accumulator root hash",
+                            "type": "object",
+                            "required": [
+                              "hash"
+                            ],
+                            "properties": {
+                              "hash": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "frozen_subtree_roots": {
+                            "description": "Frozen subtree roots of this accumulator.",
+                            "type": "array",
+                            "items": {
+                              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                              "type": "object",
+                              "required": [
+                                "hash"
+                              ],
+                              "properties": {
+                                "hash": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "num_leaves": {
+                            "description": "The total number of leaves in this accumulator.",
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0.0
+                          },
+                          "num_nodes": {
+                            "description": "The total number of nodes in this accumulator.",
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0.0
+                          }
+                        }
+                      },
+                      "block_id": {
+                        "description": "Block id",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "total_difficulty": {
+                        "description": "The total difficulty.",
+                        "type": "string"
+                      },
+                      "txn_accumulator_info": {
+                        "description": "The transaction accumulator info",
+                        "type": "object",
+                        "required": [
+                          "accumulator_root",
+                          "frozen_subtree_roots",
+                          "num_leaves",
+                          "num_nodes"
+                        ],
+                        "properties": {
+                          "accumulator_root": {
+                            "description": "Accumulator root hash",
+                            "type": "object",
+                            "required": [
+                              "hash"
+                            ],
+                            "properties": {
+                              "hash": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "frozen_subtree_roots": {
+                            "description": "Frozen subtree roots of this accumulator.",
+                            "type": "array",
+                            "items": {
+                              "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                              "type": "object",
+                              "required": [
+                                "hash"
+                              ],
+                              "properties": {
+                                "hash": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "num_leaves": {
+                            "description": "The total number of leaves in this accumulator.",
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0.0
+                          },
+                          "num_nodes": {
+                            "description": "The total number of nodes in this accumulator.",
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0.0
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "chain_id": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  },
+                  "genesis_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": "object",
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "head": {
+                    "type": "object",
+                    "required": [
+                      "author",
+                      "block_accumulator_root",
+                      "block_hash",
+                      "body_hash",
+                      "chain_id",
+                      "difficulty",
+                      "extra",
+                      "gas_used",
+                      "nonce",
+                      "number",
+                      "parent_hash",
+                      "state_root",
+                      "timestamp",
+                      "txn_accumulator_root"
+                    ],
+                    "properties": {
+                      "author": {
+                        "description": "Block author.",
+                        "type": "string"
+                      },
+                      "author_auth_key": {
+                        "description": "Block author auth key.",
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "integer",
+                          "format": "uint8",
+                          "minimum": 0.0
+                        },
+                        "maxItems": 32,
+                        "minItems": 32
+                      },
+                      "block_accumulator_root": {
+                        "description": "The block accumulator root hash.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "block_hash": {
+                        "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "body_hash": {
+                        "description": "hash for block body",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "chain_id": {
+                        "description": "The chain id",
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      },
+                      "difficulty": {
+                        "description": "Block difficulty",
+                        "type": "string"
+                      },
+                      "extra": {
+                        "description": "block header extra",
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "format": "uint8",
+                          "minimum": 0.0
+                        },
+                        "maxItems": 4,
+                        "minItems": 4
+                      },
+                      "gas_used": {
+                        "description": "Gas used for contracts execution.",
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      },
+                      "nonce": {
+                        "description": "Consensus nonce field.",
+                        "type": "integer",
+                        "format": "uint32",
+                        "minimum": 0.0
+                      },
+                      "number": {
+                        "description": "Block number.",
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      },
+                      "parent_hash": {
+                        "description": "Parent hash.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "state_root": {
+                        "description": "The last transaction state_root of this block after execute.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "timestamp": {
+                        "description": "Block timestamp.",
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      },
+                      "txn_accumulator_root": {
+                        "description": "The transaction accumulator root hash after executing this block.",
+                        "type": "object",
+                        "required": [
+                          "hash"
+                        ],
+                        "properties": {
+                          "hash": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "peer_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "node.metrics",
+      "params": [],
+      "result": {
+        "name": "HashMap < String, String >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Map_of_String",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

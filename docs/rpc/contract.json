@@ -1,0 +1,1047 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "contract.get_code",
+      "params": [
+        {
+          "name": "module_id",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "StrView_for_ModuleId",
+            "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+            "type": "object",
+            "required": [
+              "address",
+              "name"
+            ],
+            "properties": {
+              "address": {
+                "description": "A struct that represents an account address.",
+                "type": "string"
+              },
+              "name": {
+                "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < StrView < Vec < u8 > > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_StrView_for_Array_of_uint8",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    {
+      "name": "contract.get_resource",
+      "params": [
+        {
+          "name": "addr",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "description": "A struct that represents an account address.",
+            "type": "string"
+          }
+        },
+        {
+          "name": "resource_type",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "StrView_for_StructTag",
+            "type": "object",
+            "required": [
+              "address",
+              "module",
+              "name",
+              "type_params"
+            ],
+            "properties": {
+              "address": {
+                "description": "A struct that represents an account address.",
+                "type": "string"
+              },
+              "module": {
+                "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                "type": "string"
+              },
+              "name": {
+                "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                "type": "string"
+              },
+              "type_params": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "Bool",
+                    "U8",
+                    "U64",
+                    "U128",
+                    "Address",
+                    "Signer"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < AnnotatedMoveStructView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_AnnotatedMoveStructView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "is_resource",
+            "type_",
+            "value"
+          ],
+          "properties": {
+            "is_resource": {
+              "type": "boolean"
+            },
+            "type_": {
+              "type": "object",
+              "required": [
+                "address",
+                "module",
+                "name",
+                "type_params"
+              ],
+              "properties": {
+                "address": {
+                  "description": "A struct that represents an account address.",
+                  "type": "string"
+                },
+                "module": {
+                  "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                  "type": "string"
+                },
+                "type_params": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "Bool",
+                      "U8",
+                      "U64",
+                      "U128",
+                      "Address",
+                      "Signer"
+                    ]
+                  }
+                }
+              }
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "contract.call",
+      "params": [
+        {
+          "name": "call",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "ContractCall",
+            "type": "object",
+            "required": [
+              "args",
+              "func",
+              "module_address",
+              "module_name",
+              "type_args"
+            ],
+            "properties": {
+              "args": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "U8"
+                      ],
+                      "properties": {
+                        "U8": {
+                          "type": "integer",
+                          "format": "uint8",
+                          "minimum": 0.0
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "U64"
+                      ],
+                      "properties": {
+                        "U64": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "U128"
+                      ],
+                      "properties": {
+                        "U128": {
+                          "type": "integer",
+                          "format": "uint128",
+                          "minimum": 0.0
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "Address"
+                      ],
+                      "properties": {
+                        "Address": {
+                          "description": "A struct that represents an account address.",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "U8Vector"
+                      ],
+                      "properties": {
+                        "U8Vector": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "Bool"
+                      ],
+                      "properties": {
+                        "Bool": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "func": {
+                "type": "string"
+              },
+              "module_address": {
+                "description": "A struct that represents an account address.",
+                "type": "string"
+              },
+              "module_name": {
+                "type": "string"
+              },
+              "type_args": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "Bool",
+                    "U8",
+                    "U64",
+                    "U128",
+                    "Address",
+                    "Signer"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < AnnotatedMoveValueView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_AnnotatedMoveValueView",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "U8"
+                ],
+                "properties": {
+                  "U8": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U64"
+                ],
+                "properties": {
+                  "U64": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "U128"
+                ],
+                "properties": {
+                  "U128": {
+                    "type": "integer",
+                    "format": "uint128",
+                    "minimum": 0.0
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "Bool"
+                ],
+                "properties": {
+                  "Bool": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "Address"
+                ],
+                "properties": {
+                  "Address": {
+                    "description": "A struct that represents an account address.",
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "Vector"
+                ],
+                "properties": {
+                  "Vector": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "Bytes"
+                ],
+                "properties": {
+                  "Bytes": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "Struct"
+                ],
+                "properties": {
+                  "Struct": {
+                    "type": "object",
+                    "required": [
+                      "is_resource",
+                      "type_",
+                      "value"
+                    ],
+                    "properties": {
+                      "is_resource": {
+                        "type": "boolean"
+                      },
+                      "type_": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "module",
+                          "name",
+                          "type_params"
+                        ],
+                        "properties": {
+                          "address": {
+                            "description": "A struct that represents an account address.",
+                            "type": "string"
+                          },
+                          "module": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                            "type": "string"
+                          },
+                          "type_params": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "Bool",
+                                "U8",
+                                "U64",
+                                "U128",
+                                "Address",
+                                "Signer"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "contract.dry_run",
+      "params": [
+        {
+          "name": "txn",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "DryRunTransactionRequest",
+            "type": "object",
+            "properties": {
+              "chain_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint8",
+                "minimum": 0.0
+              },
+              "expiration_timestamp_secs": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "gas_token_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "gas_unit_price": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "max_gas_amount": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "modules": {
+                "description": "module codes.",
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                }
+              },
+              "script": {
+                "description": "The transaction script to execute.",
+                "default": null,
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "args": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "U8"
+                          ],
+                          "properties": {
+                            "U8": {
+                              "type": "integer",
+                              "format": "uint8",
+                              "minimum": 0.0
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "U64"
+                          ],
+                          "properties": {
+                            "U64": {
+                              "type": "integer",
+                              "format": "uint64",
+                              "minimum": 0.0
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "U128"
+                          ],
+                          "properties": {
+                            "U128": {
+                              "type": "integer",
+                              "format": "uint128",
+                              "minimum": 0.0
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "Address"
+                          ],
+                          "properties": {
+                            "Address": {
+                              "description": "A struct that represents an account address.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "U8Vector"
+                          ],
+                          "properties": {
+                            "U8Vector": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "Bool"
+                          ],
+                          "properties": {
+                            "Bool": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "code": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "ByteCode"
+                        ],
+                        "properties": {
+                          "ByteCode": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "format": "uint8",
+                              "minimum": 0.0
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "ScriptName"
+                        ],
+                        "properties": {
+                          "ScriptName": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "type_args": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "Bool",
+                        "U8",
+                        "U64",
+                        "U128",
+                        "Address",
+                        "Signer"
+                      ]
+                    }
+                  }
+                }
+              },
+              "sender": {
+                "description": "Sender's address.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sender_public_key": {
+                "description": "Sender's public key",
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "Single"
+                        ],
+                        "properties": {
+                          "Single": {
+                            "description": "An Ed25519 public key",
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Multi"
+                        ],
+                        "properties": {
+                          "Multi": {
+                            "description": "Vector of public keys in the multi-key Ed25519 structure along with the threshold.",
+                            "type": "object",
+                            "required": [
+                              "public_keys",
+                              "threshold"
+                            ],
+                            "properties": {
+                              "public_keys": {
+                                "type": "array",
+                                "items": {
+                                  "description": "An Ed25519 public key",
+                                  "type": "string"
+                                }
+                              },
+                              "threshold": {
+                                "type": "integer",
+                                "format": "uint8",
+                                "minimum": 0.0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sequence_number": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionOutputView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "TransactionOutputView",
+          "type": "object",
+          "required": [
+            "events",
+            "gas_used",
+            "status",
+            "write_set"
+          ],
+          "properties": {
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "data",
+                  "event_key",
+                  "event_seq_number",
+                  "type_tag"
+                ],
+                "properties": {
+                  "block_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "block_number": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    }
+                  },
+                  "event_key": {
+                    "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                    "type": "string"
+                  },
+                  "event_seq_number": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "transaction_hash": {
+                    "description": "Output value of our hash function. Intentionally opaque for safety and modularity.",
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "required": [
+                      "hash"
+                    ],
+                    "properties": {
+                      "hash": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "transaction_index": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "type_tag": {
+                    "type": "string",
+                    "enum": [
+                      "Bool",
+                      "U8",
+                      "U64",
+                      "U128",
+                      "Address",
+                      "Signer"
+                    ]
+                  }
+                }
+              }
+            },
+            "gas_used": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "status": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Executed",
+                    "OutOfGas",
+                    "MiscellaneousError"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "MoveAbort"
+                  ],
+                  "properties": {
+                    "MoveAbort": {
+                      "type": "object",
+                      "required": [
+                        "abort_code",
+                        "location"
+                      ],
+                      "properties": {
+                        "abort_code": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "Script"
+                              ]
+                            },
+                            {
+                              "description": "Indicates `abort` occurred in the specified module",
+                              "type": "object",
+                              "required": [
+                                "Module"
+                              ],
+                              "properties": {
+                                "Module": {
+                                  "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                  "type": "object",
+                                  "required": [
+                                    "address",
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "address": {
+                                      "description": "A struct that represents an account address.",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "ExecutionFailure"
+                  ],
+                  "properties": {
+                    "ExecutionFailure": {
+                      "type": "object",
+                      "required": [
+                        "code_offset",
+                        "function",
+                        "location"
+                      ],
+                      "properties": {
+                        "code_offset": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "function": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "description": "An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in a module, or in a script",
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "Script"
+                              ]
+                            },
+                            {
+                              "description": "Indicates `abort` occurred in the specified module",
+                              "type": "object",
+                              "required": [
+                                "Module"
+                              ],
+                              "properties": {
+                                "Module": {
+                                  "description": "Represents the initial key into global storage where we first index by the address, and then the struct tag",
+                                  "type": "object",
+                                  "required": [
+                                    "address",
+                                    "name"
+                                  ],
+                                  "properties": {
+                                    "address": {
+                                      "description": "A struct that represents an account address.",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "description": "An owned identifier.\n\nFor more details, see the module level documentation.",
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Discard"
+                  ],
+                  "properties": {
+                    "Discard": {
+                      "type": "object",
+                      "required": [
+                        "status_code"
+                      ],
+                      "properties": {
+                        "status_code": {
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "write_set": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "action",
+                  "address",
+                  "path"
+                ],
+                "properties": {
+                  "action": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Deletion"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Value"
+                        ],
+                        "properties": {
+                          "Value": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "format": "uint8",
+                              "minimum": 0.0
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "address": {
+                    "description": "A struct that represents an account address.",
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "network_manager",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "network_manager.state",
+      "params": [],
+      "result": {
+        "name": "NetworkState",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "NetworkState",
+          "description": "Returns general information about the networking.\n\nMeant for general diagnostic purposes.\n\n**Warning**: This API is not stable.",
+          "type": "object",
+          "required": [
+            "connected_peers",
+            "external_addresses",
+            "listened_addresses",
+            "not_connected_peers",
+            "peer_id",
+            "peerset"
+          ],
+          "properties": {
+            "connected_peers": {
+              "description": "List of node we're connected to.",
+              "type": "object",
+              "additionalProperties": {
+                "description": "Part of the `NetworkState` struct. Unstable.",
+                "type": "object",
+                "required": [
+                  "enabled",
+                  "endpoint",
+                  "known_addresses",
+                  "open"
+                ],
+                "properties": {
+                  "enabled": {
+                    "description": "If true, the peer is \"enabled\", which means that we try to open Substrate-related protocols with this peer. If false, we stick to Kademlia and/or other network-only protocols.",
+                    "type": "boolean"
+                  },
+                  "endpoint": {
+                    "description": "How we are connected to the node.",
+                    "anyOf": [
+                      {
+                        "description": "We are dialing the given address.",
+                        "type": "object",
+                        "required": [
+                          "Dialing"
+                        ],
+                        "properties": {
+                          "Dialing": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "description": "We are listening.",
+                        "type": "object",
+                        "required": [
+                          "Listening"
+                        ],
+                        "properties": {
+                          "Listening": {
+                            "type": "object",
+                            "required": [
+                              "local_addr",
+                              "send_back_addr"
+                            ],
+                            "properties": {
+                              "local_addr": {
+                                "description": "Local address of the connection.",
+                                "type": "string"
+                              },
+                              "send_back_addr": {
+                                "description": "Address data is sent back to.",
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "known_addresses": {
+                    "description": "List of addresses known for this node.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "latest_ping_time": {
+                    "description": "Latest ping duration with this node.",
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "required": [
+                      "nanos",
+                      "secs"
+                    ],
+                    "properties": {
+                      "nanos": {
+                        "type": "integer",
+                        "format": "uint32",
+                        "minimum": 0.0
+                      },
+                      "secs": {
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      }
+                    }
+                  },
+                  "open": {
+                    "description": "If true, the peer is \"open\", which means that we have a Substrate-related protocol with this peer.",
+                    "type": "boolean"
+                  },
+                  "version_string": {
+                    "description": "Node information, as provided by the node itself. Can be empty if not known yet.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
+            "external_addresses": {
+              "description": "List of addresses the node knows it can be reached as.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "listened_addresses": {
+              "description": "List of addresses the node is currently listening on.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "not_connected_peers": {
+              "description": "List of node that we know of but that we're not connected to.",
+              "type": "object",
+              "additionalProperties": {
+                "description": "Part of the `NetworkState` struct. Unstable.",
+                "type": "object",
+                "required": [
+                  "known_addresses"
+                ],
+                "properties": {
+                  "known_addresses": {
+                    "description": "List of addresses known for this node.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "latest_ping_time": {
+                    "description": "Latest ping duration with this node, if we were ever connected to this node.",
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "required": [
+                      "nanos",
+                      "secs"
+                    ],
+                    "properties": {
+                      "nanos": {
+                        "type": "integer",
+                        "format": "uint32",
+                        "minimum": 0.0
+                      },
+                      "secs": {
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      }
+                    }
+                  },
+                  "version_string": {
+                    "description": "Node information, as provided by the node itself, if we were ever connected to this node.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
+            "peer_id": {
+              "description": "PeerId of the local node.",
+              "type": "string"
+            },
+            "peerset": {
+              "description": "State of the peerset manager."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "network_manager.known_peers",
+      "params": [],
+      "result": {
+        "name": "Vec < PeerId >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_PeerId",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "network_manager.get_address",
+      "params": [
+        {
+          "name": "peer_id",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < MultiAddr >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_String",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "network_manager.add_peer",
+      "params": [
+        {
+          "name": "peer",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    }
+  ]
+}
+
