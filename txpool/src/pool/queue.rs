@@ -512,7 +512,7 @@ impl TransactionQueue {
     {
         let ready = Self::ready(client, block_number, current_timestamp);
         let status = self.pool.read().status(ready);
-        info!("queue inner status: {:?}", status);
+        debug!("txpool queue inner status: {:?}", status);
     }
 
     /// Returns a status of the queue.

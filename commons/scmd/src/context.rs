@@ -393,8 +393,11 @@ where
                                                 global_opt.clone(),
                                                 &arg_matches,
                                             );
-                                            print_action_result(output_format, result, true)
-                                                .expect("Print result should success.")
+                                            if let Err(err) =
+                                                print_action_result(output_format, result, true)
+                                            {
+                                                println!("Print result error: {:?}", err);
+                                            }
                                         }
                                         Err(e) => {
                                             println!("{}", e);
