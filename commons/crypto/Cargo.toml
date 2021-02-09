@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-crypto"
-version = "0.10.1"
+version = "1.0.0-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
