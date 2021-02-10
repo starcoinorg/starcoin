@@ -4,7 +4,6 @@ metadata:
   labels:
     app: explorer-api
   name: explorer-api
-  namespace: starcoin-halley
 spec:
   ports:
   - port: 8080
