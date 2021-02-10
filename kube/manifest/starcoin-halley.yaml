@@ -77,8 +77,19 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-      nodeSelector:
-        doks.digitalocean.com/node-pool: node-pool2
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: doks.digitalocean.com/node-pool
+                      operator: In
+                      values:
+                        - ci-pool
+                        - ci-pool2
+                topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume
