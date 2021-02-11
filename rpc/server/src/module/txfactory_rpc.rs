@@ -12,7 +12,7 @@ pub struct TxFactoryStatusHandle {}
 
 impl TxFactoryStatusHandle {
     pub fn handle_action(action: FactoryAction) -> bool {
-        let result = match action {
+        let _result = match action {
             FactoryAction::Stop => FACTORY_STATUS.compare_and_swap(true, false, Ordering::SeqCst),
             FactoryAction::Start => FACTORY_STATUS.compare_and_swap(false, true, Ordering::SeqCst),
             _ => true,
