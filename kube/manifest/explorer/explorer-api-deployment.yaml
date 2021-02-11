@@ -4,7 +4,6 @@ metadata:
   name: explorer-api-deployment
   labels:
     app: explorer-api
-  namespace: starcoin-halley
 spec:
   replicas: 1
   selector:

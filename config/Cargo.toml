@@ -29,6 +29,6 @@ starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
 network-p2p-types = { path = "../network-p2p/types"}
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
-diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="d17462147b800bf6c8b5fc7414924e5c23e6074d" }
+diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="809978a9b6064857211d5ed56d6628909ca7553f" }
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
