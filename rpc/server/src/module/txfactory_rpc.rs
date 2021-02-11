@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_rpc_api::types::FactoryAction;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-static FACTORY_STATUS: AtomicBool = AtomicBool::new(false);
+static FACTORY_STATUS: AtomicBool = AtomicBool::new(true);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TxFactoryStatusHandle {}
@@ -17,7 +17,6 @@ impl TxFactoryStatusHandle {
             FactoryAction::Start => FACTORY_STATUS.compare_and_swap(false, true, Ordering::SeqCst),
             _ => true,
         };
-        println!("tx_factory status set: {}", result);
         FACTORY_STATUS.load(Ordering::SeqCst)
     }
 }
