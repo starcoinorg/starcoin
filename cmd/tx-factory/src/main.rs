@@ -485,7 +485,7 @@ impl TxnMocker {
         let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
         let mut i = 0;
-        let batch_size = 50;
+        let batch_size = 30;
         let mut addr_vec = vec![];
         let mut auth_key_vec = vec![];
         let mut sub_account_list = vec![];
