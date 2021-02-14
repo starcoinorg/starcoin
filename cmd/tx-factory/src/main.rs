@@ -503,7 +503,7 @@ impl TxnMocker {
                     addr_vec.clone(),
                     auth_key_vec.clone(),
                     1000000000,
-                    90000,
+                    1,
                     expiration_timestamp,
                 )?;
                 let result = self.submit_txn(txn, self.account_address, true);
