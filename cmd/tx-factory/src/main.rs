@@ -78,6 +78,13 @@ pub struct TxFactoryOpt {
     pub round_num: u32,
     #[structopt(long, short = "w", default_value = "60", help = "watch_timeout")]
     pub watch_timeout: u32,
+    #[structopt(
+        long,
+        short = "b",
+        default_value = "50",
+        help = "create account batch size"
+    )]
+    pub batch_size: u32,
 }
 
 const INITIAL_BALANCE: u128 = 1_000_000_000;
@@ -140,6 +147,7 @@ fn main() {
         account_num = 0;
     }
     let watch_timeout = opts.watch_timeout;
+    let batch_size = opts.batch_size;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone());
     while matches!(connected, Err(_)) {
@@ -188,7 +196,7 @@ fn main() {
     .unwrap();
     let handle = std::thread::spawn(move || {
         let accounts = tx_mocker
-            .get_accounts(account_num)
+            .get_accounts(account_num, batch_size)
             .expect("create accounts should success");
         while !stopping_signal.load(Ordering::SeqCst) {
             if tx_mocker.get_factory_status() {
@@ -428,7 +436,7 @@ impl TxnMocker {
         self.submit_txn(raw_txn, sender, blocking)
     }
 
-    fn get_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
+    fn get_accounts(&mut self, account_num: u32, batch_size: u32) -> Result<Vec<AccountInfo>> {
         // first get account from local
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
@@ -462,7 +470,7 @@ impl TxnMocker {
         if (available_list.len() as u32) < account_num {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
-            let lack = self.create_accounts(lack_len + 20)?;
+            let lack = self.create_accounts(lack_len + 20, batch_size)?;
             let state_reader = RemoteStateReader::new(&self.client)?;
             let account_state_reader = AccountStateReader::new(&state_reader);
             for account in lack {
@@ -480,12 +488,12 @@ impl TxnMocker {
         Ok(available_list)
     }
 
-    fn create_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
+    fn create_accounts(&mut self, account_num: u32, batch_size: u32) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
         let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
         let mut i = 0;
-        let batch_size = 30;
+        // let batch_size = 30;
         let mut addr_vec = vec![];
         let mut auth_key_vec = vec![];
         let mut sub_account_list = vec![];
@@ -495,7 +503,7 @@ impl TxnMocker {
             addr_vec.push(account.address);
             auth_key_vec.push(account.auth_key());
             sub_account_list.push(account);
-            if addr_vec.len() >= batch_size {
+            if addr_vec.len() >= batch_size as usize {
                 //submit create batch account transaction
                 let txn = self.generator.generate_account_txn(
                     self.next_sequence_number,
