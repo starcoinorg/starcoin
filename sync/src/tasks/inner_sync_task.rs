@@ -6,7 +6,6 @@ use anyhow::format_err;
 use logger::prelude::*;
 use network_api::{PeerId, PeerProvider};
 use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -155,29 +154,36 @@ where
             max_retry_times,
             delay_milliseconds_on_error,
             AccumulatorCollector::new(
-                self.storage.get_accumulator_store(AccumulatorStoreType::Block),
+                self.storage
+                    .get_accumulator_store(AccumulatorStoreType::Block),
                 self.ancestor,
                 ancestor_block_info.clone().block_accumulator_info,
                 self.target.block_info.block_accumulator_info.clone(),
             ),
             self.event_handle.clone(),
-        ).and_then(move |(ancestor, accumulator), event_handle| {
-            //start_number is include, so start from ancestor.number + 1
-            let start_number = ancestor.number.saturating_add(1);
-            let check_local_store = ancestor_block_info.total_difficulty < current_block_info.total_difficulty;
-            info!(
-                "[sync] Start sync block, ancestor: {:?}, start_number: {}, check_local_store: {:?}, target_number: {}",
-                ancestor, start_number, check_local_store, accumulator.num_leaves().saturating_sub(1) );
+        )
+        .and_then(move |(ancestor, accumulator), event_handle| {
+            let check_local_store =
+                ancestor_block_info.total_difficulty < current_block_info.total_difficulty;
+
             let block_sync_task = BlockSyncTask::new(
                 accumulator,
-                start_number,
+                ancestor,
                 self.fetcher.clone(),
                 check_local_store,
                 self.storage.clone(),
                 1,
             );
-            let chain = BlockChain::new(self.time_service.clone(), ancestor.id, self.storage.clone())?;
-            let block_collector = BlockCollector::new_with_handle(current_block_info.clone(), self.target.clone(), chain, self.block_event_handle.clone(), self.peer_provider.clone(), skip_pow_verify_when_sync);
+            let chain =
+                BlockChain::new(self.time_service.clone(), ancestor.id, self.storage.clone())?;
+            let block_collector = BlockCollector::new_with_handle(
+                current_block_info.clone(),
+                self.target.clone(),
+                chain,
+                self.block_event_handle.clone(),
+                self.peer_provider.clone(),
+                skip_pow_verify_when_sync,
+            );
             Ok(TaskGenerator::new(
                 block_sync_task,
                 buffer_size,
@@ -186,7 +192,8 @@ where
                 block_collector,
                 event_handle,
             ))
-        }).generate();
+        })
+        .generate();
 
         let (fut, handle) = sub_accumulator_task.with_handle();
         let block_chain = fut.await?;

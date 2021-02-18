@@ -649,6 +649,7 @@ fn build_block_fetcher(total_blocks: u64) -> (MockBlockFetcher, MerkleAccumulato
         accumulator.append(&[block.id()]).unwrap();
         fetcher.put(block);
     }
+    accumulator.flush().unwrap();
     (fetcher, accumulator)
 }
 
@@ -684,14 +685,22 @@ impl BlockLocalStore for MockLocalBlockStore {
     }
 }
 
-#[stest::test]
-async fn test_block_sync() -> Result<()> {
-    let total_blocks = 100;
+async fn block_sync_task_test(total_blocks: u64, ancestor_number: u64) -> Result<()> {
+    assert!(
+        total_blocks > ancestor_number,
+        "total blocks should > ancestor number"
+    );
     let (fetcher, accumulator) = build_block_fetcher(total_blocks);
+    let ancestor = BlockIdAndNumber::new(
+        accumulator
+            .get_leaf(ancestor_number)?
+            .expect("ancestor should exist"),
+        ancestor_number,
+    );
 
     let block_sync_state = BlockSyncTask::new(
         accumulator,
-        0,
+        ancestor,
         fetcher,
         false,
         MockLocalBlockStore::new(),
@@ -701,13 +710,14 @@ async fn test_block_sync() -> Result<()> {
     let sync_task =
         TaskGenerator::new(block_sync_state, 5, 3, 1, vec![], event_handle.clone()).generate();
     let result = sync_task.await?;
+    assert!(!result.is_empty(), "task result is empty.");
     let last_block_number = result
         .iter()
         .map(|block_data| {
             assert!(block_data.info.is_none());
-            block_data.block.header().number() as i64
+            block_data.block.header().number()
         })
-        .fold(-1, |parent, current| {
+        .fold(ancestor.number, |parent, current| {
             //ensure return block is ordered
             assert_eq!(
                 parent + 1,
@@ -717,11 +727,21 @@ async fn test_block_sync() -> Result<()> {
             current
         });
 
-    assert_eq!(last_block_number as u64, total_blocks - 1);
+    assert_eq!(last_block_number, total_blocks - 1);
 
     let report = event_handle.get_reports().pop().unwrap();
     debug!("report: {}", report);
     Ok(())
+}
+
+#[stest::test]
+async fn test_block_sync() -> Result<()> {
+    block_sync_task_test(100, 0).await
+}
+
+#[stest::test]
+async fn test_block_sync_one_block() -> Result<()> {
+    block_sync_task_test(2, 0).await
 }
 
 #[stest::test]
@@ -740,7 +760,12 @@ async fn test_block_sync_with_local() -> Result<()> {
                 local_store.mock(block)
             }
         });
-    let block_sync_state = BlockSyncTask::new(accumulator, 0, fetcher, true, local_store, 3);
+    let ancestor_number = 0;
+    let ancestor = BlockIdAndNumber::new(
+        accumulator.get_leaf(ancestor_number)?.unwrap(),
+        ancestor_number,
+    );
+    let block_sync_state = BlockSyncTask::new(accumulator, ancestor, fetcher, true, local_store, 3);
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let sync_task =
         TaskGenerator::new(block_sync_state, 5, 3, 1, vec![], event_handle.clone()).generate();
@@ -753,9 +778,9 @@ async fn test_block_sync_with_local() -> Result<()> {
             } else {
                 assert!(block_data.info.is_none())
             }
-            block_data.block.header().number() as i64
+            block_data.block.header().number()
         })
-        .fold(-1, |parent, current| {
+        .fold(ancestor_number, |parent, current| {
             //ensure return block is ordered
             assert_eq!(
                 parent + 1,
