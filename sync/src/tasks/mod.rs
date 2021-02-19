@@ -298,6 +298,7 @@ pub mod sync_score_metrics;
 #[cfg(test)]
 mod tests;
 
+use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
@@ -376,6 +377,11 @@ where
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
         let start_now = Instant::now();
+        let self_peer = peer_provider
+            .get_self_peer()
+            .await
+            .map_err(TaskError::BreakError)?
+            .peer_id();
 
         loop {
             // for get new peers from network.
@@ -421,11 +427,18 @@ where
                 .saturating_duration_since(start_now)
                 .as_millis();
             info!(
-                "sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
+                "[sync] sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 fetcher.peer_selector().strategy(),
                 total_num,
                 total_time,
                 total_time.checked_div(total_num as u128).unwrap_or(0)
+            );
+
+            SYNC_SCORE_METRICS.report_sub_sync_target_metrics(
+                &self_peer,
+                fetcher.peer_selector().strategy(),
+                total_num as i64,
+                total_time as i64,
             );
             if target.target_id.number() <= latest_block_chain.status().head.number() {
                 break;

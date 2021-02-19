@@ -157,7 +157,8 @@ impl SyncService2 {
                 return Ok(None);
             }
 
-            let peer_select_strategy = peer_strategy.unwrap_or(config.sync.peer_select_strategy());
+            let peer_select_strategy =
+                peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
             peer_selector.switch_strategy(peer_select_strategy);
 
             let (fut, task_handle, task_event_handle) = full_sync_task(
