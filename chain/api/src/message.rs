@@ -26,6 +26,7 @@ pub enum ChainRequest {
     GetBlockHeaderByNumber(BlockNumber),
     GetBlockByHash(HashValue),
     GetBlockInfoByHash(HashValue),
+    GetBlockInfoByNumber(u64),
     GetStartupInfo(),
     GetHeadChainStatus(),
     GetEpochInfo(),

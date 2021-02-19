@@ -48,7 +48,7 @@ impl CommandAction for StatEpochCommand {
             }
             let epoch = client.get_epoch_info_by_number(block_number).unwrap();
             println!(
-                "epoch: {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
+                "epoch: {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
                 epoch.number(),
                 epoch.block_time_target(),
                 epoch.total_reward(),
@@ -56,6 +56,7 @@ impl CommandAction for StatEpochCommand {
                 epoch.reward_per_uncle_percent(),
                 epoch.epoch_data().uncles(),
                 epoch.epoch_data().total_gas(),
+                epoch.start_time(),
             );
             // vec_epoch.push(epoch);
             epoch_number += 1;

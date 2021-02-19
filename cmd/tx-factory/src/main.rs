@@ -113,11 +113,14 @@ fn get_account_or_default(
                 info!("account balance is null.");
             }
             // account has enough STC
-            let start_blance = INITIAL_BALANCE * account_num as u128;
-            while balance.unwrap() < start_blance {
+            let start_balance = INITIAL_BALANCE * account_num as u128;
+            while balance.unwrap() < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = account_state_reader.get_balance(&addr)?;
-                info!("account balance is {:?}, min is: {}", balance, start_blance);
+                info!(
+                    "account balance is {:?}, min is: {}",
+                    balance, start_balance
+                );
             }
 
             default_account.unwrap()
@@ -454,11 +457,13 @@ impl TxnMocker {
                     )
                     .is_ok()
                 {
-                    let account_resource = account_state_reader
-                        .get_account_resource(&account.address())
+                    let balance = account_state_reader
+                        .get_balance(&account.address())
                         .unwrap_or(None);
-                    if account_resource.is_some() {
-                        available_list.push(account);
+                    if let Some(amount) = balance {
+                        if amount > 0 {
+                            available_list.push(account);
+                        }
                     }
                 }
                 index += 1;
@@ -590,7 +595,7 @@ impl TxnMocker {
                     accounts[j].address,
                     accounts[j].public_key.as_single(),
                     1,
-                    1,
+                    1000,
                     sequences[index],
                     false,
                     expiration_timestamp,

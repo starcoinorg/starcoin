@@ -24,13 +24,17 @@ pub struct BlockStatView {
     pub number: u64,
     pub gas_used: u64,
     pub difficulty: U256,
+    pub txn_count: u64,
+    pub timestamps: u64,
 }
 impl BlockStatView {
-    fn new(number: u64, gas_used: u64, difficulty: U256) -> Self {
+    fn new(number: u64, gas_used: u64, difficulty: U256, txn_count: u64, timestamps: u64) -> Self {
         Self {
             number,
             gas_used,
             difficulty,
+            txn_count,
+            timestamps,
         }
     }
 }
@@ -66,8 +70,9 @@ impl CommandAction for StatBlockCommand {
                 block.header.number.0,
                 block.header.gas_used.0,
                 block.header.difficulty,
+                block.body.txn_hashes().len() as u64,
+                block.header.timestamp.0,
             );
-            println!("{:?}", stat_view);
             vec_stat_block.push(stat_view);
             block_number += 1;
         }

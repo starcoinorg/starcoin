@@ -119,6 +119,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,
             ))),
+            ChainRequest::GetBlockInfoByNumber(number) => Ok(ChainResponse::BlockInfoOption(
+                Box::new(self.inner.main_block_info_by_number(number)?),
+            )),
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(Box::new(
                 self.inner.main_startup_info(),
             ))),
@@ -365,6 +368,10 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
         self.main.get_header_by_number(number)
+    }
+
+    fn main_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>> {
+        self.main.get_block_info_by_number(number)
     }
 
     fn main_startup_info(&self) -> StartupInfo {
