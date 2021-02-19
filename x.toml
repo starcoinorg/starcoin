@@ -46,6 +46,22 @@ warn = [
     "clippy::wildcard_dependencies",
 ]
 
+
+[hakari]
+version = "v2"
+hakari-package = "diem-workspace-hack"
+unify-target-host = "replicate-target-as-host"
+
+[[hakari.platforms]]
+triple = "x86_64-unknown-linux-gnu"
+target-features = "unknown"
+
+# Also exclude the devtools packages since they get compiled with a different set of options.
+[[hakari.omitted-packages]]
+name = "x"
+version = "0.1.0"
+workspace-path = "devtools/x"
+
 # This follows the same syntax as CargoOptionsSummary in guppy.
 [summaries.default]
 version = "v2"
@@ -95,8 +111,6 @@ features = ["fuzzing"]
 members = [
     "common/proptest-helpers",
     "devtools/x",
-    "devtools/x-core",
-    "devtools/x-lint",
 ]
 
 # Interesting subsets of the workspace, These are used for generating and
@@ -129,16 +143,6 @@ mark-changed = "all"
 [[determinator.path-rule]]
 globs = ["cargo-toolchain", "cargo-flags", "scripts/dev_setup.sh", "x.toml"]
 mark-changed = "all"
-
-[[determinator.path-rule]]
-# Ignore website and other ancillary files, and scripts not listed above.
-globs = []
-mark-changed = []
-
-[[determinator.path-rule]]
-# A bunch of images that should be ignored, I guess.
-globs = []
-mark-changed = []
 
 [[determinator.package-rule]]
 # x controls the build process, so if it changes, build everything.
