@@ -3,8 +3,8 @@
 
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    register_histogram_vec, register_int_counter, register_int_gauge, HistogramOpts, HistogramVec,
-    IntCounter, IntGauge, Opts, PrometheusError,
+    default_registry, register_histogram_vec, register_int_counter, register_int_gauge,
+    HistogramOpts, HistogramVec, IntCounter, IntGauge, Opts, PrometheusError,
 };
 
 const SC_NS: &str = "starcoin";
@@ -71,6 +71,14 @@ impl ChainMetrics {
             "rollback block size".to_string()
         )
         .namespace(SC_NS))?;
+
+        default_registry().register(Box::new(try_connect_count.clone()))?;
+        default_registry().register(Box::new(duplicate_conn_count.clone()))?;
+        default_registry().register(Box::new(broadcast_head_count.clone()))?;
+        default_registry().register(Box::new(verify_fail_count.clone()))?;
+        default_registry().register(Box::new(exe_block_time.clone()))?;
+        default_registry().register(Box::new(branch_total_count.clone()))?;
+        default_registry().register(Box::new(rollback_block_size.clone()))?;
 
         Ok(Self {
             try_connect_count,
