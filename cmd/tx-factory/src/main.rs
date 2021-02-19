@@ -26,8 +26,6 @@ use structopt::StructOpt;
 pub struct TxFactoryOpt {
     #[structopt(long, parse(from_os_str))]
     pub ipc_path: PathBuf,
-    // #[structopt(long, short = "a", default_value = "0.0.0.0:8000")]
-    // pub server_addr: String,
     #[structopt(
         long,
         short = "i",
@@ -92,7 +90,6 @@ const INITIAL_BALANCE: u128 = 1_000_000_000;
 fn get_account_or_default(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
-    account_num: u32,
 ) -> Result<AccountInfo> {
     let account = match account_address {
         None => {
@@ -112,17 +109,6 @@ fn get_account_or_default(
                 balance = account_state_reader.get_balance(&addr)?;
                 info!("account balance is null.");
             }
-            // account has enough STC
-            let start_balance = INITIAL_BALANCE * account_num as u128;
-            while balance.unwrap() < start_balance {
-                std::thread::sleep(Duration::from_millis(1000));
-                balance = account_state_reader.get_balance(&addr)?;
-                info!(
-                    "account balance is {:?}, min is: {}",
-                    balance, start_balance
-                );
-            }
-
             default_account.unwrap()
         }
         Some(a) => match client.account_get(a)? {
@@ -160,7 +146,7 @@ fn main() {
     }
     let client = connected.unwrap();
 
-    let account = get_account_or_default(&client, account_address, account_num).unwrap();
+    let account = get_account_or_default(&client, account_address).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
     let receiver_public_key = opts.receiver_public_key;
@@ -475,7 +461,20 @@ impl TxnMocker {
         if (available_list.len() as u32) < account_num {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
-            let lack = self.create_accounts(lack_len + 20, batch_size)?;
+            // account has enough STC
+            let state_reader = RemoteStateReader::new(&self.client)?;
+            let account_state_reader = AccountStateReader::new(&state_reader);
+            let start_balance = INITIAL_BALANCE * lack_len as u128;
+            let mut balance = account_state_reader.get_balance(&self.account_address)?;
+            while balance.unwrap() < start_balance {
+                std::thread::sleep(Duration::from_millis(1000));
+                balance = account_state_reader.get_balance(&self.account_address)?;
+                info!(
+                    "account balance is {:?}, min is: {}",
+                    balance, start_balance
+                );
+            }
+            let lack = self.create_accounts(lack_len, batch_size)?;
             let state_reader = RemoteStateReader::new(&self.client)?;
             let account_state_reader = AccountStateReader::new(&state_reader);
             for account in lack {
