@@ -1,12 +1,11 @@
-FROM summerwind/actions-runner:v2.275.1
+FROM summerwind/actions-runner:v2.276.1-a4350d0
 
 ADD scripts /starcoin/scripts
 ADD vm/move-prover/scripts /starcoin/vm/move-prover/scripts
 
 WORKDIR /starcoin
-
+#Do not install rust in docker, install rust in action because project dependency rust version will change.
 RUN set -eux;  sudo apt-get update -y \
-  && bash ./scripts/dev_setup_rust.sh \
   &&  bash ./scripts/dev_setup_apt.sh \
   &&  bash ./scripts/ops_setup.sh \
   && sudo rm -rf /var/lib/apt/lists/*
