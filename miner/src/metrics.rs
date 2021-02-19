@@ -3,8 +3,8 @@
 
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    register_histogram_vec, register_int_gauge, HistogramOpts, HistogramVec, IntGauge, Opts,
-    PrometheusError,
+    default_registry, register_histogram_vec, register_int_gauge, HistogramOpts, HistogramVec,
+    IntGauge, Opts, PrometheusError,
 };
 
 pub static MINER_METRICS: Lazy<MinerMetrics> = Lazy::new(|| MinerMetrics::register().unwrap());
@@ -25,6 +25,9 @@ impl MinerMetrics {
             HistogramOpts::new("block_mint_time", "Histogram of block mint").namespace("starcoin"),
             &["mint_time"]
         )?;
+
+        default_registry().register(Box::new(block_mint_count.clone()))?;
+        default_registry().register(Box::new(block_mint_time.clone()))?;
 
         Ok(Self {
             block_mint_count,
