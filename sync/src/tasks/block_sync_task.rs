@@ -13,7 +13,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::collections::HashMap;
@@ -57,7 +57,7 @@ pub struct BlockSyncTask {
 impl BlockSyncTask {
     pub fn new<F, S>(
         accumulator: MerkleAccumulator,
-        start_number: BlockNumber,
+        ancestor: BlockIdAndNumber,
         fetcher: F,
         check_local_store: bool,
         local_store: S,
@@ -67,6 +67,12 @@ impl BlockSyncTask {
         F: BlockFetcher + 'static,
         S: BlockLocalStore + 'static,
     {
+        //start_number is include, so start from ancestor.number + 1
+        let start_number = ancestor.number.saturating_add(1);
+        info!(
+            "[sync] Start sync block, ancestor: {:?}, start_number: {}, check_local_store: {:?}, target_number: {}",
+            ancestor, start_number, check_local_store, accumulator.num_leaves().saturating_sub(1) );
+
         Self {
             accumulator: Arc::new(accumulator),
             start_number,

@@ -711,9 +711,8 @@ impl RequestResponseCodec for GenericCodec {
 
 #[cfg(test)]
 mod tests {
-    use futures::channel::mpsc;
+    use super::*;
     use futures::executor::LocalPool;
-    use futures::prelude::*;
     use futures::task::Spawn;
     use libp2p::core::transport::{MemoryTransport, Transport};
     use libp2p::core::upgrade;
@@ -721,6 +720,7 @@ mod tests {
     use libp2p::noise;
     use libp2p::swarm::{Swarm, SwarmEvent};
     use libp2p::Multiaddr;
+    use network_p2p_types::RequestFailure;
     use std::{iter, time::Duration};
 
     #[test]
@@ -827,6 +827,128 @@ mod tests {
                         assert_eq!(Some(request_id), sent_request_id);
                         let result = result.unwrap();
                         assert_eq!(result, b"this is a response");
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
+    }
+
+    #[stest::test]
+    fn test_request_response_timeout() {
+        let protocol_name = "/test/req-resp/timeout";
+        let mut pool = LocalPool::new();
+        let timeout = Duration::from_millis(500);
+        // Build swarms whose behaviour is `RequestResponsesBehaviour`.
+        let mut swarms = (0..2)
+            .map(|_| {
+                let keypair = Keypair::generate_ed25519();
+
+                let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+                    .into_authentic(&keypair)
+                    .unwrap();
+
+                let transport = MemoryTransport
+                    .upgrade(upgrade::Version::V1)
+                    .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+                    .multiplex(libp2p::yamux::YamuxConfig::default())
+                    .boxed();
+
+                let behaviour = {
+                    let (tx, mut rx) = mpsc::channel(64);
+
+                    let b =
+                        super::RequestResponsesBehaviour::new(iter::once(super::ProtocolConfig {
+                            name: From::from(protocol_name),
+                            max_request_size: 1024,
+                            max_response_size: 1024 * 1024,
+                            request_timeout: timeout,
+                            inbound_queue: Some(tx),
+                        }))
+                        .unwrap();
+
+                    pool.spawner()
+                        .spawn_obj(
+                            async move {
+                                while let Some(rq) = rx.next().await {
+                                    assert_eq!(rq.payload, b"this is a request");
+                                    //delay to timeout
+                                    let delay = futures_timer::Delay::new(
+                                        timeout + Duration::from_millis(100),
+                                    );
+                                    delay.await;
+                                    let _ =
+                                        rq.pending_response.send(b"this is a response".to_vec());
+                                }
+                            }
+                            .boxed()
+                            .into(),
+                        )
+                        .unwrap();
+
+                    b
+                };
+
+                let mut swarm = Swarm::new(transport, behaviour, keypair.public().into_peer_id());
+                let listen_addr: Multiaddr = format!("/memory/{}", rand::random::<u64>())
+                    .parse()
+                    .unwrap();
+
+                Swarm::listen_on(&mut swarm, listen_addr.clone()).unwrap();
+                (swarm, listen_addr)
+            })
+            .collect::<Vec<_>>();
+
+        // Ask `swarm[0]` to dial `swarm[1]`. There isn't any discovery mechanism in place in
+        // this test, so they wouldn't connect to each other.
+        {
+            let dial_addr = swarms[1].1.clone();
+            Swarm::dial_addr(&mut swarms[0].0, dial_addr).unwrap();
+        }
+
+        // Running `swarm[0]` in the background.
+        pool.spawner()
+            .spawn_obj({
+                let (mut swarm, _) = swarms.remove(0);
+                async move {
+                    loop {
+                        if let SwarmEvent::Behaviour(super::Event::InboundRequest {
+                            result, ..
+                        }) = swarm.next_event().await
+                        {
+                            result.unwrap();
+                        }
+                    }
+                }
+                .boxed()
+                .into()
+            })
+            .unwrap();
+
+        // Remove and run the remaining swarm.
+        let (mut swarm, _) = swarms.remove(0);
+        pool.run_until(async move {
+            let mut sent_request_id = None;
+
+            loop {
+                match swarm.next_event().await {
+                    SwarmEvent::ConnectionEstablished { peer_id, .. } => {
+                        let id = swarm
+                            .send_request(&peer_id, protocol_name, b"this is a request".to_vec())
+                            .unwrap();
+                        assert!(sent_request_id.is_none());
+                        sent_request_id = Some(id);
+                    }
+                    SwarmEvent::Behaviour(super::Event::RequestFinished { request_id, result }) => {
+                        assert_eq!(Some(request_id), sent_request_id);
+                        assert!(result.is_err());
+                        let error = result.err().unwrap();
+                        debug!("response error: {:?}", error);
+                        assert!(matches!(error, RequestFailure::Network(_)));
+                        if let RequestFailure::Network(error) = error {
+                            assert!(matches!(error, OutboundFailure::Timeout));
+                        }
                         break;
                     }
                     _ => {}
