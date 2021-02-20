@@ -804,14 +804,6 @@ impl StarcoinVM {
         Ok(result)
     }
 
-    pub fn execute_transactions(
-        &mut self,
-        state_view: &dyn StateView,
-        transactions: Vec<Transaction>,
-    ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
-        self.execute_block_transactions(state_view, transactions, None)
-    }
-
     pub fn execute_readonly_function(
         &mut self,
         state_view: &dyn StateView,
