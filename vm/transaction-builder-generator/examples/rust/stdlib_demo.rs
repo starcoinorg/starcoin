@@ -8,8 +8,8 @@ use starcoin_types::{AccountAddress, Identifier, StructTag, TypeTag};
 fn main() {
     let token = TypeTag::Struct(StructTag {
         address: AccountAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-        module: Identifier("LBR".into()),
-        name: Identifier("LBR".into()),
+        module: Identifier("STC".into()),
+        name: Identifier("STC".into()),
         type_params: Vec::new(),
     });
     let payee = AccountAddress([
