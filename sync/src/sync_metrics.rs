@@ -118,6 +118,7 @@ impl SyncMetrics {
             .namespace(SC_NS),
             &["sync_done_count"]
         )?;
+
         Ok(Self {
             sync_total_count,
             sync_succ_count,

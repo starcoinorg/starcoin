@@ -1,9 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain::TPSCommand;
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
@@ -29,25 +30,25 @@ impl CommandAction for StatTPSCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let chain_info = client.chain_info().unwrap();
+        let chain_info = client.chain_info()?;
         let end_number = chain_info.head.number.0;
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;
-        let epoch_block_count = consensus_config.unwrap().epoch_block_count;
+        let consensus_config = account_state_reader
+            .get_on_chain_config::<ConsensusConfig>()?
+            .ok_or_else(|| format_err!("ConsensusConfig not exist on chain."))?;
+        let epoch_block_count = consensus_config.epoch_block_count;
         let epoch_count = end_number / epoch_block_count + 1;
         // get tps
         let mut epoch = 1;
-        let vec_tps = vec![];
+        let mut vec_tps = vec![];
         while epoch < epoch_count {
-            // let mut block_number = epoch * epoch_block_count - 1;
-            // if block_number >= end_number {
-            //     block_number = end_number;
-            // }
-            //TODO calculate tps at client
-            //let tps = client.tps(Some(block_number)).unwrap();
-            //            println!("tps: {:?}", tps);
-            //          vec_tps.push(tps);
+            let mut block_number = epoch * epoch_block_count - 1;
+            if block_number >= end_number {
+                block_number = end_number;
+            }
+            let tps = TPSCommand::epoch_tps(client, chain_info.clone(), end_number, block_number)?;
+            vec_tps.push(tps);
             epoch += 1;
         }
         Ok(vec_tps)

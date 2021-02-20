@@ -33,7 +33,7 @@ spec:
       app: starcoin-stress
       network: centauri
   serviceName: centauri-svc
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       name: starcoin-stress
@@ -45,6 +45,10 @@ spec:
       - name: starcoin
         image: starcoin/starcoin:feature-stress2
         imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 1
         command:
           - bash
           - -c
@@ -57,10 +61,15 @@ spec:
               node_key_flag="--node-key ${node_key}";
             fi;
             if [ $POD_NAME = "starcoin-stress-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin  -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed=true --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin  -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed=true --discover-local=true $node_key_flag;
             sleep 5;
             else
-              /starcoin/starcoin  -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) --disable-mdns=false $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin  -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) --discover-local=true $node_key_flag;
+            fi;
+            ret=$?;
+            if [ $ret -ne 0 ]; then
+              echo "Node start fail, try to remove config.";
+              rm /sc-data/centauri/config.toml;
             fi;
         ports:
           - containerPort: 9840
@@ -101,6 +110,8 @@ spec:
         volumeMounts:
           - name: starcoin-stress-volume
             mountPath: /sc-data
+      nodeSelector:
+          doks.digitalocean.com/node-pool: pool-stress
   volumeClaimTemplates:
   - metadata:
       name: starcoin-stress-volume

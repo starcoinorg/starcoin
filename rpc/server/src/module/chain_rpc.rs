@@ -13,7 +13,7 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -80,6 +80,18 @@ where
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
             Ok(result.map(|b| b.try_into()).transpose()?)
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfo>> {
+        let service = self.service.clone();
+
+        let fut = async move {
+            let result = service.get_block_info_by_number(number).await?;
+            Ok(result)
         }
         .map_err(map_err);
 

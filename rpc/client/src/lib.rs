@@ -39,7 +39,7 @@ use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -555,6 +555,15 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_number(number))
             .map_err(map_err)
     }
+
+    pub fn chain_get_block_info_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<Option<BlockInfo>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_number(number))
+            .map_err(map_err)
+    }
+
     pub fn chain_get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,

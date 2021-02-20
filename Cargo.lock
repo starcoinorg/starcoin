@@ -390,7 +390,6 @@ version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b72c1f1154e234325b50864a349b9c8e56939e266a4c307c0f159812df2f9537"
 dependencies = [
- "bytes 0.5.6",
  "flate2",
  "futures-core",
  "memchr",
@@ -2061,7 +2060,7 @@ dependencies = [
  "prost",
  "quote 0.6.13",
  "rand 0.7.3",
- "reqwest 0.11.0",
+ "reqwest",
  "rusty-fork",
  "serde",
  "serde_json",
@@ -2237,15 +2236,15 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elasticsearch"
-version = "7.10.0-alpha.1"
+version = "7.11.0-alpha.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "178d260175cbe5578029036dad1a7411eb5c669dcf12e9c3f50e699e6ca3ef7b"
+checksum = "c56ed5adbc4f665685356405132107c35f905b02f3d429814c680f134f8e8edd"
 dependencies = [
  "base64 0.11.0",
- "bytes 0.5.6",
+ "bytes 1.0.1",
  "dyn-clone",
  "percent-encoding 2.1.0",
- "reqwest 0.10.10",
+ "reqwest",
  "rustc_version",
  "serde",
  "serde_json",
@@ -6316,43 +6315,6 @@ dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.9",
  "syn 1.0.60",
-]
-
-[[package]]
-name = "reqwest"
-version = "0.10.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0718f81a8e14c4dbb3b34cf23dc6aaf9ab8a0dfec160c534b3dbca1aaa21f47c"
-dependencies = [
- "async-compression",
- "base64 0.13.0",
- "bytes 0.5.6",
- "encoding_rs",
- "futures-core",
- "futures-util",
- "http",
- "http-body 0.3.1",
- "hyper 0.13.10",
- "hyper-tls 0.4.3",
- "ipnet",
- "js-sys",
- "lazy_static",
- "log 0.4.14",
- "mime 0.3.16",
- "mime_guess",
- "native-tls",
- "percent-encoding 2.1.0",
- "pin-project-lite 0.2.4",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "tokio 0.2.25",
- "tokio-tls 0.3.1",
- "url 2.2.0",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "winreg 0.7.0",
 ]
 
 [[package]]
