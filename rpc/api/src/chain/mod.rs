@@ -11,7 +11,7 @@ use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[rpc]
@@ -35,6 +35,8 @@ pub trait ChainApi {
         number: Option<BlockNumber>,
         count: u64,
     ) -> FutureResult<Vec<BlockView>>;
+    #[rpc(name = "chain.get_block_info_by_number")]
+    fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfo>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
     fn get_transaction(&self, transaction_hash: HashValue)
