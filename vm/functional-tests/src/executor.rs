@@ -182,7 +182,7 @@ impl FakeExecutor {
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         let mut vm = StarcoinVM::new();
-        vm.execute_transactions(&self.data_store, txn_block)
+        vm.execute_block_transactions(&self.data_store, txn_block, None)
     }
 
     pub fn execute_transaction(&self, txn: SignedUserTransaction) -> (VMStatus, TransactionOutput) {
