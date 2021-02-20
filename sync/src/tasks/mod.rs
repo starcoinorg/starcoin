@@ -377,11 +377,6 @@ where
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
         let start_now = Instant::now();
-        let self_peer = peer_provider
-            .get_self_peer()
-            .await
-            .map_err(TaskError::BreakError)?
-            .peer_id();
 
         loop {
             // for get new peers from network.
@@ -435,7 +430,6 @@ where
             );
 
             SYNC_SCORE_METRICS.report_sub_sync_target_metrics(
-                &self_peer,
                 fetcher.peer_selector().strategy(),
                 total_num as i64,
                 total_time as i64,

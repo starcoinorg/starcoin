@@ -92,18 +92,12 @@ impl SyncScoreMetrics {
             .set(score);
     }
 
-    pub fn report_sub_sync_target_metrics(
-        &self,
-        peer: &PeerId,
-        strategy: PeerStrategy,
-        count: i64,
-        time: i64,
-    ) {
+    pub fn report_sub_sync_target_metrics(&self, strategy: PeerStrategy, count: i64, time: i64) {
         self.sub_sync_target_count
-            .with_label_values(&[&format!("peer-{:?}-{:?}", peer, strategy)])
+            .with_label_values(&[&format!("peer-{:?}", strategy)])
             .set(count);
         self.sub_sync_target_time
-            .with_label_values(&[&format!("peer-{:?}-{:?}", peer, strategy)])
+            .with_label_values(&[&format!("peer-{:?}", strategy)])
             .set(time);
     }
 }

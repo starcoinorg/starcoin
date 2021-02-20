@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    default_registry, register_histogram_vec, register_int_counter_vec, HistogramOpts,
-    HistogramVec, IntCounterVec, Opts, PrometheusError,
+    register_histogram_vec, register_int_counter_vec, HistogramOpts, HistogramVec, IntCounterVec,
+    Opts, PrometheusError,
 };
 
 const SC_NS: &str = "starcoin";
@@ -118,17 +118,6 @@ impl SyncMetrics {
             .namespace(SC_NS),
             &["sync_done_count"]
         )?;
-
-        default_registry().register(Box::new(sync_total_count.clone()))?;
-        default_registry().register(Box::new(sync_succ_count.clone()))?;
-        default_registry().register(Box::new(sync_fail_count.clone()))?;
-        default_registry().register(Box::new(sync_verify_fail_count.clone()))?;
-        default_registry().register(Box::new(sync_done_time.clone()))?;
-        default_registry().register(Box::new(sync_get_block_time.clone()))?;
-        default_registry().register(Box::new(sync_get_block_ids_time.clone()))?;
-        default_registry().register(Box::new(sync_apply_block_time.clone()))?;
-        default_registry().register(Box::new(sync_count.clone()))?;
-        default_registry().register(Box::new(sync_done_count.clone()))?;
 
         Ok(Self {
             sync_total_count,
