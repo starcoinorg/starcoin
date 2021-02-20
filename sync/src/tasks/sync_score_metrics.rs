@@ -1,3 +1,4 @@
+use network_api::PeerStrategy;
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
     default_registry, register_int_counter_vec, HistogramOpts, HistogramVec, IntCounterVec,
@@ -17,6 +18,8 @@ pub struct SyncScoreMetrics {
     peer_sync_total_count: UIntCounterVec,
     pub peer_sync_per_time: HistogramVec,
     peer_sync_per_score: IntGaugeVec,
+    sub_sync_target_count: IntGaugeVec,
+    sub_sync_target_time: IntGaugeVec,
 }
 
 impl SyncScoreMetrics {
@@ -46,10 +49,22 @@ impl SyncScoreMetrics {
             &["per_score"],
         )?;
 
+        let sub_sync_target_count = IntGaugeVec::new(
+            Opts::new("sub_sync_target_count", "sub sync target count").namespace(SC_NS),
+            &["sub_count"],
+        )?;
+
+        let sub_sync_target_time = IntGaugeVec::new(
+            Opts::new("sub_sync_target_time", "sub sync target time").namespace(SC_NS),
+            &["sub_time"],
+        )?;
+
         default_registry().register(Box::new(peer_sync_total_time.clone()))?;
         default_registry().register(Box::new(peer_sync_total_count.clone()))?;
         default_registry().register(Box::new(peer_sync_per_time.clone()))?;
         default_registry().register(Box::new(peer_sync_per_score.clone()))?;
+        default_registry().register(Box::new(sub_sync_target_count.clone()))?;
+        default_registry().register(Box::new(sub_sync_target_time.clone()))?;
 
         Ok(Self {
             peer_sync_total_score,
@@ -57,6 +72,8 @@ impl SyncScoreMetrics {
             peer_sync_total_count,
             peer_sync_per_time,
             peer_sync_per_score,
+            sub_sync_target_count,
+            sub_sync_target_time,
         })
     }
 
@@ -73,5 +90,14 @@ impl SyncScoreMetrics {
         self.peer_sync_per_score
             .with_label_values(&[&format!("peer-{:?}", peer)])
             .set(score);
+    }
+
+    pub fn report_sub_sync_target_metrics(&self, strategy: PeerStrategy, count: i64, time: i64) {
+        self.sub_sync_target_count
+            .with_label_values(&[&format!("peer-{:?}", strategy)])
+            .set(count);
+        self.sub_sync_target_time
+            .with_label_values(&[&format!("peer-{:?}", strategy)])
+            .set(time);
     }
 }
