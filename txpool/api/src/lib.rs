@@ -93,7 +93,9 @@ impl PropagateTransactions {
 // we make next propagation ready.
 impl Drop for PropagateTransactions {
     fn drop(&mut self) {
-        self.next_propagation_ready
-            .compare_and_swap(false, true, Ordering::AcqRel);
+        let _ = self
+            .next_propagation_ready
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Relaxed)
+            .unwrap_or_else(|x| x);
     }
 }

@@ -647,7 +647,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         }
 
         // Poll the stream that fires when we need to start a random Kademlia query.
-        while let Poll::Ready(_) = self.next_kad_random_query.poll_unpin(cx) {
+        while self.next_kad_random_query.poll_unpin(cx).is_ready() {
             let actually_started = if self.num_connections < self.discovery_only_if_under_num {
                 let random_peer_id = PeerId::random();
                 debug!(target: "sub-libp2p",

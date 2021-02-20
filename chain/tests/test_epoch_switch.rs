@@ -90,29 +90,28 @@ fn create_user_txn(
     Ok(vec![txn])
 }
 
-fn create_vote_txn(
+fn build_create_vote_txn(
     alice: &Account,
     seq_number: u64,
     vote_script: Script,
     expire_time: u64,
-) -> Result<SignedUserTransaction> {
-    let txn = alice.sign_txn(build_transaction(
+) -> SignedUserTransaction {
+    alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
         TransactionPayload::Script(vote_script),
         expire_time,
-    ));
-    Ok(txn)
+    ))
 }
 
-fn cast_vote_txn(
+fn build_cast_vote_txn(
     seq_number: u64,
     alice: &Account,
     action_type_tag: TypeTag,
     voting_power: u128,
     net: &ChainNetwork,
     expire_time: u64,
-) -> Result<SignedUserTransaction> {
+) -> SignedUserTransaction {
     let script =
         compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
     let proposer_id = 0;
@@ -127,22 +126,21 @@ fn cast_vote_txn(
             TransactionArgument::U128(voting_power / 2),
         ],
     );
-    let txn = alice.sign_txn(build_transaction(
+    alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
         TransactionPayload::Script(vote_script),
         expire_time,
-    ));
-    Ok(txn)
+    ))
 }
 
-fn queue_txn(
+fn build_queue_txn(
     seq_number: u64,
     alice: &Account,
     net: &ChainNetwork,
     action_type_tag: TypeTag,
     expire_time: u64,
-) -> Result<SignedUserTransaction> {
+) -> SignedUserTransaction {
     let script =
         compiled_transaction_script(net.stdlib_version(), StdlibScript::QueueProposalAction)
             .into_vec();
@@ -154,28 +152,26 @@ fn queue_txn(
             TransactionArgument::U64(0),
         ],
     );
-    let txn = alice.sign_txn(build_transaction(
+    alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
         TransactionPayload::Script(script),
         expire_time,
-    ));
-    Ok(txn)
+    ))
 }
 
-fn execute_txn(
+fn build_execute_txn(
     seq_number: u64,
     alice: &Account,
     execute_script: Script,
     expire_time: u64,
-) -> Result<SignedUserTransaction> {
-    let txn = alice.sign_txn(build_transaction(
+) -> SignedUserTransaction {
+    alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
         TransactionPayload::Script(execute_script),
         expire_time,
-    ));
-    Ok(txn)
+    ))
 }
 
 pub fn modify_on_chain_config_by_dao_block(
@@ -234,12 +230,12 @@ pub fn modify_on_chain_config_by_dao_block(
         let block2 = create_new_block(
             &chain,
             &alice,
-            vec![create_vote_txn(
+            vec![build_create_vote_txn(
                 &alice,
                 alice_seq,
                 vote_script,
                 block_timestamp / 1000,
-            )?],
+            )],
         )?;
         chain.apply(block2)?;
 
@@ -268,14 +264,14 @@ pub fn modify_on_chain_config_by_dao_block(
         let block3 = create_new_block(
             &chain,
             &alice,
-            vec![cast_vote_txn(
+            vec![build_cast_vote_txn(
                 alice_seq,
                 &alice,
                 action_type_tag.clone(),
                 voting_power,
                 net,
                 block_timestamp / 1000,
-            )?],
+            )],
         )?;
         chain.apply(block3)?;
     }
@@ -332,13 +328,13 @@ pub fn modify_on_chain_config_by_dao_block(
         let block6 = create_new_block(
             &chain,
             &alice,
-            vec![queue_txn(
+            vec![build_queue_txn(
                 alice_seq,
                 &alice,
                 net,
                 action_type_tag.clone(),
                 block_timestamp / 1000,
-            )?],
+            )],
         )?;
         chain.apply(block6)?;
         let chain_state = chain.chain_state();
@@ -378,12 +374,12 @@ pub fn modify_on_chain_config_by_dao_block(
         let block8 = create_new_block(
             &chain,
             &alice,
-            vec![execute_txn(
+            vec![build_execute_txn(
                 alice_seq,
                 &alice,
                 execute_script,
                 block_timestamp / 1000,
-            )?],
+            )],
         )?;
         chain.apply(block8)?;
     }

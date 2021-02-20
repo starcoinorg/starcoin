@@ -144,7 +144,8 @@ impl TxPoolSyncService for TxPoolService {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["rollback"])
             .start_timer();
-        self.inner.chain_new_block(enacted, retracted)
+        self.inner.chain_new_block(enacted, retracted);
+        Ok(())
     }
 
     fn status(&self) -> TxPoolStatus {
@@ -275,7 +276,7 @@ impl Inner {
         rx
     }
 
-    pub(crate) fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
+    pub(crate) fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
         debug!(
             "receive chain_new_block msg, enacted: {:?}, retracted: {:?}",
             enacted
@@ -304,9 +305,12 @@ impl Inner {
                 txns.into_iter()
             })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
-        let _ = self.queue.import(self.get_pool_client(), txns);
-
-        Ok(())
+        let results = self.queue.import(self.get_pool_client(), txns);
+        for result in results {
+            if let Err(err) = result {
+                debug!("retracted transaction fail: {}", err);
+            }
+        }
     }
 
     fn get_pool_client(&self) -> PoolClient {

@@ -3,6 +3,7 @@
 
 use crate::{checker::*, common::Sp, errors::*};
 
+#[allow(clippy::unnecessary_wraps)]
 fn check_sp(sp: &Sp<Directive>, d: &Directive, start: usize, end: usize) -> Result<()> {
     assert_eq!(sp.start, start);
     assert_eq!(sp.end, end);
@@ -86,13 +87,11 @@ fn check_quoted_and_unquoted_mixed() -> Result<()> {
 }
 
 #[test]
-fn check_empty() -> Result<()> {
+fn check_empty() {
     Directive::parse_line("// check:").unwrap_err();
-    Ok(())
 }
 
 #[test]
-fn not_empty() -> Result<()> {
+fn not_empty() {
     Directive::parse_line("// not:").unwrap_err();
-    Ok(())
 }

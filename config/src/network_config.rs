@@ -330,7 +330,7 @@ impl NetworkConfig {
         Ok(())
     }
 
-    fn generate_listen_address(&mut self) -> Result<()> {
+    fn generate_listen_address(&mut self) {
         if self.listen.is_some() {
             self.generate_listen = self.listen.clone();
         } else {
@@ -353,7 +353,6 @@ impl NetworkConfig {
             };
             self.generate_listen = Some(listen);
         }
-        Ok(())
     }
 }
 
@@ -401,7 +400,7 @@ impl ConfigModule for NetworkConfig {
         }
 
         self.load_or_generate_keypair()?;
-        self.generate_listen_address()?;
+        self.generate_listen_address();
         Ok(())
     }
 }

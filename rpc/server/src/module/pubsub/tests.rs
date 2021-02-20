@@ -132,7 +132,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
             assert_eq!(v.as_str(), Some("1"));
         }
         p => {
-            assert!(false, "subscribe return unexpected result, {:?}", &p);
+            panic!("subscribe return unexpected result, {:?}", &p);
         }
     }
     Ok(())

@@ -162,9 +162,9 @@ impl AccumulatorTree {
             .collect();
         //aggregator all nodes
         not_frozen_nodes.extend_from_slice(&to_freeze);
-        self.update_temp_nodes(not_frozen_nodes.clone())?;
+        self.update_temp_nodes(not_frozen_nodes.clone());
         // udpate to cache
-        self.update_cache(not_frozen_nodes)?;
+        self.update_cache(not_frozen_nodes);
         // update self properties
         self.root_hash = hash;
         self.num_leaves = last_new_leaf_count;
@@ -246,15 +246,14 @@ impl AccumulatorTree {
     }
 
     /// Update node to cache.
-    fn update_cache(&mut self, node_vec: Vec<AccumulatorNode>) -> Result<()> {
+    fn update_cache(&mut self, node_vec: Vec<AccumulatorNode>) {
         self.save_node_indexes(node_vec)
     }
 
-    fn update_temp_nodes(&mut self, nodes: Vec<AccumulatorNode>) -> Result<()> {
+    fn update_temp_nodes(&mut self, nodes: Vec<AccumulatorNode>) {
         for node in nodes {
             self.update_nodes.insert(node.hash(), node);
         }
-        Ok(())
     }
 
     fn get_node_index(&mut self, key: NodeCacheKey) -> Option<HashValue> {
@@ -331,7 +330,7 @@ impl AccumulatorTree {
         bail!("node hash not found:{:?}", index)
     }
 
-    fn save_node_indexes(&mut self, nodes: Vec<AccumulatorNode>) -> Result<()> {
+    fn save_node_indexes(&mut self, nodes: Vec<AccumulatorNode>) {
         let id = format!("{:p}", self);
         let cache = &mut self.index_cache;
         for node in nodes {
@@ -339,7 +338,6 @@ impl AccumulatorTree {
                 trace!("cache exist node hash: {}-{:?}-{:?}", id, node.index(), old);
             }
         }
-        Ok(())
     }
 
     fn rightmost_leaf_index(&self) -> u64 {
