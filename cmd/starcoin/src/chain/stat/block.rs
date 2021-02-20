@@ -52,7 +52,7 @@ impl CommandAction for StatBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let chain_info = client.chain_info().unwrap();
+        let chain_info = client.chain_info()?;
         let current_head_number = chain_info.head.number.0;
         let end_number = if opt.end_number >= 1 && opt.end_number < current_head_number {
             opt.end_number

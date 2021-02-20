@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::ChainInfoView;
 use starcoin_rpc_client::RpcClient;
@@ -61,7 +61,7 @@ impl TPSCommand {
 
         let start_block_info = client
             .chain_get_block_info_by_number(start_block_number)?
-            .unwrap();
+            .ok_or_else(|| format_err!("block_info : {} not found", start_block_number))?;
         let start_leaves = start_block_info.txn_accumulator_info.num_leaves;
 
         let tps = if current_number < end_block_number {
@@ -79,7 +79,7 @@ impl TPSCommand {
             // count txn
             let end_block_info = client
                 .chain_get_block_info_by_number(end_block_number)?
-                .unwrap();
+                .ok_or_else(|| format_err!("block_info : {} not found", end_block_number))?;
             let end_leaves = end_block_info.txn_accumulator_info.num_leaves;
             let total_count = end_leaves - start_leaves;
             TPS::new(total_count, duration, total_count / duration)

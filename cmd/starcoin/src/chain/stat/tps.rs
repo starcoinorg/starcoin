@@ -4,7 +4,7 @@
 use crate::chain::TPSCommand;
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
@@ -34,8 +34,10 @@ impl CommandAction for StatTPSCommand {
         let end_number = chain_info.head.number.0;
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;
-        let epoch_block_count = consensus_config.unwrap().epoch_block_count;
+        let consensus_config = account_state_reader
+            .get_on_chain_config::<ConsensusConfig>()?
+            .ok_or_else(|| format_err!("ConsensusConfig not exist on chain."))?;
+        let epoch_block_count = consensus_config.epoch_block_count;
         let epoch_count = end_number / epoch_block_count + 1;
         // get tps
         let mut epoch = 1;
