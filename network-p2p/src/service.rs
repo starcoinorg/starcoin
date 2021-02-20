@@ -43,9 +43,7 @@ use crate::network_state::{
 use crate::protocol::event::Event;
 use crate::protocol::generic_proto::{NotificationsSink, Ready};
 use crate::protocol::Protocol;
-use crate::request_responses::{
-    InboundFailure, OutboundFailure, RequestFailure, RequestId, ResponseFailure, SendRequestError,
-};
+use crate::request_responses::{InboundFailure, OutboundFailure, RequestFailure, ResponseFailure};
 use crate::Multiaddr;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
@@ -55,7 +53,6 @@ use crate::{
     config::{parse_addr, parse_str_addr, NonReservedPeerMode},
     transport,
 };
-use bitflags::_core::time::Duration;
 use futures::channel::oneshot::Canceled;
 use futures::{
     channel::{mpsc, oneshot},
@@ -78,7 +75,6 @@ use starcoin_metrics::{Histogram, HistogramVec};
 use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::time::Instant;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -337,7 +333,6 @@ impl NetworkWorker {
             event_streams: out_events::OutChannels::new(params.metrics_registry.as_ref())?,
             metrics,
             boot_node_ids,
-            pending_requests: HashMap::with_capacity(128),
             peers_notifications_sinks,
         })
     }
@@ -958,17 +953,6 @@ pub struct NetworkWorker {
     metrics: Option<Metrics>,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
-    /// Requests started using [`NetworkService::request`]. Includes the channel to send back the
-    /// response, when the request has started, and the name of the protocol for diagnostic
-    /// purposes.
-    pending_requests: HashMap<
-        RequestId,
-        (
-            oneshot::Sender<Result<Vec<u8>, RequestFailure>>,
-            Instant,
-            String,
-        ),
-    >,
     /// For each peer, an object that allows sending notifications to
     /// that peer. Shared with the [`NetworkService`].
     peers_notifications_sinks: Arc<Mutex<HashMap<PeerId, NotificationsSink>>>,
@@ -1005,32 +989,8 @@ impl Future for NetworkWorker {
                 } => {
                     // Calling `send_request` can fail immediately in some circumstances.
                     // This is handled by sending back an error on the channel.
-                    match this
-                        .network_service
-                        .send_request(&target, &protocol, request)
-                    {
-                        Ok(request_id) => {
-                            if let Some(metrics) = this.metrics.as_ref() {
-                                metrics
-                                    .requests_out_started_total
-                                    .with_label_values(&[&protocol])
-                                    .inc();
-                            }
-                            this.pending_requests.insert(
-                                request_id,
-                                (pending_response, Instant::now(), protocol.to_string()),
-                            );
-                        }
-                        Err(SendRequestError::NotConnected) => {
-                            let err = RequestFailure::Network(OutboundFailure::ConnectionClosed);
-                            let _ = pending_response.send(Err(err));
-                        }
-                        Err(SendRequestError::UnknownProtocol) => {
-                            let err =
-                                RequestFailure::Network(OutboundFailure::UnsupportedProtocols);
-                            let _ = pending_response.send(Err(err));
-                        }
-                    }
+                    this.network_service
+                        .send_request(&target, &protocol, request, pending_response)
                 }
                 ServiceToWorkerMsg::DisconnectPeer(who) => this
                     .network_service
@@ -1089,11 +1049,7 @@ impl Future for NetworkWorker {
                                 metrics
                                     .requests_in_success_total
                                     .with_label_values(&[&protocol])
-                                    .observe(
-                                        serve_time
-                                            .unwrap_or_else(|| Duration::from_secs(0))
-                                            .as_secs_f64(),
-                                    );
+                                    .observe(serve_time.as_secs_f64());
                             }
                             Err(err) => {
                                 let reason = match err {
@@ -1118,47 +1074,43 @@ impl Future for NetworkWorker {
                     }
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RequestFinished {
-                    request_id,
+                    protocol,
+                    duration,
                     result,
+                    ..
                 })) => {
-                    if let Some((send_back, started, protocol)) =
-                        this.pending_requests.remove(&request_id)
-                    {
-                        if let Some(metrics) = this.metrics.as_ref() {
-                            match &result {
-                                Ok(_) => {
-                                    metrics
-                                        .requests_out_success_total
-                                        .with_label_values(&[&protocol])
-                                        .observe(started.elapsed().as_secs_f64());
-                                }
-                                Err(err) => {
-                                    let reason = match err {
-                                        RequestFailure::Refused => "refused",
-                                        RequestFailure::Network(OutboundFailure::DialFailure) => {
-                                            "dial-failure"
-                                        }
-                                        RequestFailure::Network(OutboundFailure::Timeout) => {
-                                            "timeout"
-                                        }
-                                        RequestFailure::Network(
-                                            OutboundFailure::ConnectionClosed,
-                                        ) => "connection-closed",
-                                        RequestFailure::Network(
-                                            OutboundFailure::UnsupportedProtocols,
-                                        ) => "unsupported",
-                                    };
+                    if let Some(metrics) = this.metrics.as_ref() {
+                        match &result {
+                            Ok(_) => {
+                                metrics
+                                    .requests_out_success_total
+                                    .with_label_values(&[&protocol])
+                                    .observe(duration.as_secs_f64());
+                            }
+                            Err(err) => {
+                                let reason = match err {
+                                    RequestFailure::Refused => "refused",
+                                    RequestFailure::Network(OutboundFailure::DialFailure) => {
+                                        "dial-failure"
+                                    }
 
-                                    metrics
-                                        .requests_out_failure_total
-                                        .with_label_values(&[&protocol, reason])
-                                        .inc();
-                                }
+                                    RequestFailure::Network(OutboundFailure::Timeout) => "timeout",
+                                    RequestFailure::Network(OutboundFailure::ConnectionClosed) => {
+                                        "connection-closed"
+                                    }
+                                    RequestFailure::Network(
+                                        OutboundFailure::UnsupportedProtocols,
+                                    ) => "unsupported",
+                                    RequestFailure::NotConnected => "not-connected",
+                                    RequestFailure::UnknownProtocol => "unknown-protocol",
+                                    RequestFailure::Obsolete => "obsolete",
+                                };
+                                metrics
+                                    .requests_out_failure_total
+                                    .with_label_values(&[&protocol, reason])
+                                    .inc();
                             }
                         }
-                        let _ = send_back.send(result);
-                    } else {
-                        error!("Request not in pending_requests");
                     }
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}

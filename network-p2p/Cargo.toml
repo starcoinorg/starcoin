@@ -49,9 +49,9 @@ bs58 = "0.3.1"
 
 
 [dependencies.libp2p]
-version = "0.33.0"
+version = "0.35.1"
 default-features = false
-features = ["dns", "identify", "kad", "mdns", "mplex", "noise", "ping", "request-response", "tcp-async-std", "websocket", "yamux", "wasm-ext"]
+features = ["dns", "identify", "kad", "mdns", "mplex", "noise", "ping", "tcp-async-io", "request-response", "websocket", "yamux", "wasm-ext"]
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}

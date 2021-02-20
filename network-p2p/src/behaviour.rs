@@ -17,12 +17,13 @@
 use crate::discovery::DiscoveryConfig;
 use crate::protocol::generic_proto::NotificationsSink;
 use crate::protocol::{CustomMessageOutcome, Protocol};
-use crate::request_responses::{RequestFailure, RequestId, ResponseFailure, SendRequestError};
+use crate::request_responses::{RequestFailure, ResponseFailure};
 use crate::{
     discovery::DiscoveryBehaviour, discovery::DiscoveryOut, peer_info, protocol::event::DhtEvent,
     request_responses, DiscoveryNetBehaviour, ProtocolId,
 };
 use bytes::Bytes;
+use futures::channel::oneshot;
 use libp2p::core::{Multiaddr, PeerId, PublicKey};
 use libp2p::identify::IdentifyInfo;
 use libp2p::kad::record;
@@ -104,15 +105,21 @@ pub enum BehaviourOut {
         protocol: Cow<'static, str>,
         /// If `Ok`, contains the time elapsed between when we received the request and when we
         /// sent back the response. If `Err`, the error that happened.
-        result: Result<Option<Duration>, ResponseFailure>,
+        result: Result<Duration, ResponseFailure>,
     },
 
-    /// A request initiated using [`Behaviour::send_request`] has succeeded or failed.
+    /// A request has succeeded or failed.
+    ///
+    /// This event is generated for statistics purposes.
     RequestFinished {
-        /// Request that has succeeded.
-        request_id: RequestId,
-        /// Response sent by the remote or reason for failure.
-        result: Result<Vec<u8>, RequestFailure>,
+        /// Peer that we send a request to.
+        peer: PeerId,
+        /// Name of the protocol in question.
+        protocol: Cow<'static, str>,
+        /// Duration the request took.
+        duration: Duration,
+        /// Result of the request.
+        result: Result<(), RequestFailure>,
     },
 
     RandomKademliaStarted(ProtocolId),
@@ -209,17 +216,15 @@ impl Behaviour {
     }
 
     /// Initiates sending a request.
-    ///
-    /// An error is returned if we are not connected to the target peer of if the protocol doesn't
-    /// match one that has been registered.
     pub fn send_request(
         &mut self,
         target: &PeerId,
         protocol: &str,
         request: Vec<u8>,
-    ) -> Result<RequestId, SendRequestError> {
+        pending_response: oneshot::Sender<Result<Vec<u8>, RequestFailure>>,
+    ) {
         self.request_responses
-            .send_request(target, protocol, request)
+            .send_request(target, protocol, request, pending_response)
     }
 
     /// Registers a new notifications protocol.
@@ -323,9 +328,18 @@ impl NetworkBehaviourEventProcess<request_responses::Event> for Behaviour {
                 });
             }
 
-            request_responses::Event::RequestFinished { request_id, result } => {
-                self.events
-                    .push_back(BehaviourOut::RequestFinished { request_id, result });
+            request_responses::Event::RequestFinished {
+                peer,
+                protocol,
+                duration,
+                result,
+            } => {
+                self.events.push_back(BehaviourOut::RequestFinished {
+                    peer,
+                    protocol,
+                    duration,
+                    result,
+                });
             }
         }
     }

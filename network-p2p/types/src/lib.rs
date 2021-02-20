@@ -171,9 +171,15 @@ impl From<multiaddr::Error> for ParseErr {
 /// Error in a request.
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum RequestFailure {
+    /// We are not currently connected to the requested peer.
+    NotConnected,
+    /// Given protocol hasn't been registered.
+    UnknownProtocol,
     /// Remote has closed the substream before answering, thereby signaling that it considers the
     /// request as valid, but refused to answer it.
     Refused,
+    /// The remote replied, but the local node is no longer interested in the response.
+    Obsolete,
     /// Problem on the network.
     #[display(fmt = "Problem on the network")]
     Network(#[error(ignore)] OutboundFailure),
