@@ -41,6 +41,7 @@ pub trait ReadableChainService {
     fn main_head_block(&self) -> Block;
     fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
     fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
+    fn main_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
     fn main_startup_info(&self) -> StartupInfo;
     fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>>;
     fn epoch_info(&self) -> Result<EpochInfo>;
@@ -80,6 +81,7 @@ pub trait ChainAsyncService:
         uncle_id: HashValue,
     ) -> Result<Vec<BlockHeader>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
+    async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
     async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
@@ -175,6 +177,16 @@ where
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>> {
         if let ChainResponse::BlockInfoOption(block_info) =
             self.send(ChainRequest::GetBlockInfoByHash(*hash)).await??
+        {
+            return Ok(*block_info);
+        }
+        Ok(None)
+    }
+
+    async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>> {
+        if let ChainResponse::BlockInfoOption(block_info) = self
+            .send(ChainRequest::GetBlockInfoByNumber(number))
+            .await??
         {
             return Ok(*block_info);
         }

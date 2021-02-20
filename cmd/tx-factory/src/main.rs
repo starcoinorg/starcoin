@@ -26,8 +26,6 @@ use structopt::StructOpt;
 pub struct TxFactoryOpt {
     #[structopt(long, parse(from_os_str))]
     pub ipc_path: PathBuf,
-    // #[structopt(long, short = "a", default_value = "0.0.0.0:8000")]
-    // pub server_addr: String,
     #[structopt(
         long,
         short = "i",
@@ -78,6 +76,13 @@ pub struct TxFactoryOpt {
     pub round_num: u32,
     #[structopt(long, short = "w", default_value = "60", help = "watch_timeout")]
     pub watch_timeout: u32,
+    #[structopt(
+        long,
+        short = "b",
+        default_value = "50",
+        help = "create account batch size"
+    )]
+    pub batch_size: u32,
 }
 
 const INITIAL_BALANCE: u128 = 1_000_000_000;
@@ -85,7 +90,6 @@ const INITIAL_BALANCE: u128 = 1_000_000_000;
 fn get_account_or_default(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
-    account_num: u32,
 ) -> Result<AccountInfo> {
     let account = match account_address {
         None => {
@@ -105,14 +109,6 @@ fn get_account_or_default(
                 balance = account_state_reader.get_balance(&addr)?;
                 info!("account balance is null.");
             }
-            // account has enough STC
-            let start_blance = INITIAL_BALANCE * account_num as u128;
-            while balance.unwrap() < start_blance {
-                std::thread::sleep(Duration::from_millis(1000));
-                balance = account_state_reader.get_balance(&addr)?;
-                info!("account balance is {:?}, min is: {}", balance, start_blance);
-            }
-
             default_account.unwrap()
         }
         Some(a) => match client.account_get(a)? {
@@ -140,6 +136,7 @@ fn main() {
         account_num = 0;
     }
     let watch_timeout = opts.watch_timeout;
+    let batch_size = opts.batch_size;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone());
     while matches!(connected, Err(_)) {
@@ -149,7 +146,7 @@ fn main() {
     }
     let client = connected.unwrap();
 
-    let account = get_account_or_default(&client, account_address, account_num).unwrap();
+    let account = get_account_or_default(&client, account_address).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
     let receiver_public_key = opts.receiver_public_key;
@@ -188,7 +185,7 @@ fn main() {
     .unwrap();
     let handle = std::thread::spawn(move || {
         let accounts = tx_mocker
-            .get_accounts(account_num)
+            .get_accounts(account_num, batch_size)
             .expect("create accounts should success");
         while !stopping_signal.load(Ordering::SeqCst) {
             if tx_mocker.get_factory_status() {
@@ -428,7 +425,7 @@ impl TxnMocker {
         self.submit_txn(raw_txn, sender, blocking)
     }
 
-    fn get_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
+    fn get_accounts(&mut self, account_num: u32, batch_size: u32) -> Result<Vec<AccountInfo>> {
         // first get account from local
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
@@ -446,11 +443,13 @@ impl TxnMocker {
                     )
                     .is_ok()
                 {
-                    let account_resource = account_state_reader
-                        .get_account_resource(&account.address())
+                    let balance = account_state_reader
+                        .get_balance(&account.address())
                         .unwrap_or(None);
-                    if account_resource.is_some() {
-                        available_list.push(account);
+                    if let Some(amount) = balance {
+                        if amount > 0 {
+                            available_list.push(account);
+                        }
                     }
                 }
                 index += 1;
@@ -462,7 +461,20 @@ impl TxnMocker {
         if (available_list.len() as u32) < account_num {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
-            let lack = self.create_accounts(lack_len + 20)?;
+            // account has enough STC
+            let state_reader = RemoteStateReader::new(&self.client)?;
+            let account_state_reader = AccountStateReader::new(&state_reader);
+            let start_balance = INITIAL_BALANCE * lack_len as u128;
+            let mut balance = account_state_reader.get_balance(&self.account_address)?;
+            while balance.unwrap() < start_balance {
+                std::thread::sleep(Duration::from_millis(1000));
+                balance = account_state_reader.get_balance(&self.account_address)?;
+                info!(
+                    "account balance is {:?}, min is: {}",
+                    balance, start_balance
+                );
+            }
+            let lack = self.create_accounts(lack_len, batch_size)?;
             let state_reader = RemoteStateReader::new(&self.client)?;
             let account_state_reader = AccountStateReader::new(&state_reader);
             for account in lack {
@@ -480,12 +492,12 @@ impl TxnMocker {
         Ok(available_list)
     }
 
-    fn create_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
+    fn create_accounts(&mut self, account_num: u32, batch_size: u32) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
         let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
         let mut i = 0;
-        let batch_size = 50;
+        // let batch_size = 30;
         let mut addr_vec = vec![];
         let mut auth_key_vec = vec![];
         let mut sub_account_list = vec![];
@@ -495,7 +507,7 @@ impl TxnMocker {
             addr_vec.push(account.address);
             auth_key_vec.push(account.auth_key());
             sub_account_list.push(account);
-            if addr_vec.len() >= batch_size {
+            if addr_vec.len() >= batch_size as usize {
                 //submit create batch account transaction
                 let txn = self.generator.generate_account_txn(
                     self.next_sequence_number,
@@ -503,7 +515,7 @@ impl TxnMocker {
                     addr_vec.clone(),
                     auth_key_vec.clone(),
                     1000000000,
-                    90000,
+                    1,
                     expiration_timestamp,
                 )?;
                 let result = self.submit_txn(txn, self.account_address, true);
@@ -582,7 +594,7 @@ impl TxnMocker {
                     accounts[j].address,
                     accounts[j].public_key.as_single(),
                     1,
-                    1,
+                    1000,
                     sequences[index],
                     false,
                     expiration_timestamp,

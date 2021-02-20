@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RemoteStateReader;
@@ -50,7 +50,9 @@ impl CommandAction for VerifyEpochCommand {
         let uncles = epoch_info.uncles();
         let mut total_uncle = 0u64;
         for number in start..end {
-            let block = client.chain_get_block_by_number(number)?.unwrap();
+            let block = client
+                .chain_get_block_by_number(number)?
+                .ok_or_else(|| format_err!("block: {} not found", number))?;
             block_map.insert(number, block.clone());
             total_uncle += block.uncles.len() as u64;
         }
@@ -82,9 +84,10 @@ impl CommandAction for VerifyEpochCommand {
             let blocks = last_epoch_info.end_block_number() - last_epoch_info.start_block_number();
             let uncles_rate = last_epoch_info.uncles() * 1000 / blocks;
             let total_time = client
-                .chain_get_block_by_number(last_epoch_info.end_block_number())
-                .unwrap()
-                .unwrap()
+                .chain_get_block_by_number(last_epoch_info.end_block_number())?
+                .ok_or_else(|| {
+                    format_err!("block: {} not found", last_epoch_info.end_block_number())
+                })?
                 .header
                 .timestamp
                 .0
@@ -94,7 +97,7 @@ impl CommandAction for VerifyEpochCommand {
             let account_state_reader = AccountStateReader::new(&chain_state_reader);
             let consensus_config = account_state_reader
                 .get_on_chain_config::<ConsensusConfig>()?
-                .unwrap();
+                .ok_or_else(|| format_err!("ConsensusConfig not exist on chain."))?;
 
             let mut time_target =
                 (1000 + uncles_rate) * avg_block_time / (consensus_config.uncle_rate_target + 1000);
