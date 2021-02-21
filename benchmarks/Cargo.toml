@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 criterion = "0.3.1"
-proptest = "0.10.1"
+proptest = "1.0.0"
 futures-timer = "3.0"
 types = { path = "../types", package = "starcoin-types" }
 starcoin-storage = { path = "../storage" }

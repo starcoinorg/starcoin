@@ -676,7 +676,7 @@ dependencies = [
  "futures-timer",
  "network-api",
  "parking_lot 0.11.1",
- "proptest",
+ "proptest 1.0.0",
  "rand 0.7.3",
  "rand_core 0.6.2",
  "starcoin-account-api",
@@ -1889,7 +1889,7 @@ dependencies = [
  "hkdf",
  "mirai-annotations",
  "once_cell",
- "proptest",
+ "proptest 0.10.1",
  "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -1984,7 +1984,7 @@ source = "git+https://github.com/starcoinorg/diem?rev=809978a9b6064857211d5ed56d
 dependencies = [
  "crossbeam 0.8.0",
  "diem-workspace-hack",
- "proptest",
+ "proptest 0.10.1",
  "proptest-derive",
 ]
 
@@ -2441,7 +2441,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "once_cell",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.6.2",
@@ -4433,7 +4433,7 @@ dependencies = [
  "hex",
  "mirai-annotations",
  "once_cell",
- "proptest",
+ "proptest 0.10.1",
  "proptest-derive",
  "rand 0.7.3",
  "ref-cast",
@@ -5767,6 +5767,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "proptest"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e0d9cc07f18492d879586c92b485def06bc850da3118075cd45d50e9c95b0e5"
+dependencies = [
+ "bit-set",
+ "bitflags",
+ "byteorder",
+ "lazy_static",
+ "num-traits",
+ "quick-error 2.0.0",
+ "rand 0.8.3",
+ "rand_chacha 0.3.0",
+ "rand_xorshift 0.3.0",
+ "regex-syntax",
+ "rusty-fork",
+ "tempfile",
+]
+
+[[package]]
 name = "proptest-derive"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6168,6 +6188,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77d416b86801d23dde1aa643023b775c3a462efc0ed96443add11546cdf1dca8"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "rand_xorshift"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
+dependencies = [
+ "rand_core 0.6.2",
 ]
 
 [[package]]
@@ -7205,7 +7234,7 @@ dependencies = [
  "mirai-annotations",
  "once_cell",
  "parking_lot 0.11.1",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.6.2",
@@ -7250,7 +7279,7 @@ dependencies = [
  "bcs-ext",
  "clap 2.33.3",
  "once_cell",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "sp-utils",
  "starcoin-account-api",
@@ -7314,7 +7343,7 @@ dependencies = [
  "futures-timer",
  "once_cell",
  "parking_lot 0.11.1",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "starcoin-account-api",
  "starcoin-account-lib",
@@ -7470,7 +7499,7 @@ dependencies = [
  "futures 0.3.12",
  "hex",
  "once_cell",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.6.2",
@@ -8106,7 +8135,7 @@ version = "0.4.1"
 dependencies = [
  "crossbeam 0.7.3",
  "diem-proptest-helpers",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
 ]
 
@@ -8409,7 +8438,7 @@ dependencies = [
  "lru",
  "once_cell",
  "parking_lot 0.11.1",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "rand 0.7.3",
  "rocksdb",
@@ -8576,7 +8605,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.1",
  "prometheus 0.10.0",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.6.2",
@@ -8645,7 +8674,7 @@ dependencies = [
  "network-p2p-types",
  "num_enum",
  "once_cell",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "prost",
  "rand 0.7.3",
@@ -8715,7 +8744,7 @@ dependencies = [
  "network-p2p-types",
  "num_enum",
  "once_cell",
- "proptest",
+ "proptest 1.0.0",
  "proptest-derive",
  "rand 0.7.3",
  "serde",
@@ -10026,7 +10055,7 @@ dependencies = [
  "move-core-types",
  "num-variants",
  "once_cell",
- "proptest",
+ "proptest 0.10.1",
  "proptest-derive",
  "ref-cast",
 ]
