@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::TransactionView;
+use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -22,7 +22,7 @@ impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = Option<TransactionView>;
+    type ReturnItem = Option<TransactionInfoView>;
 
     fn run(
         &self,
@@ -30,7 +30,7 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let txn_info = client.chain_get_transaction(opt.hash)?;
+        let txn_info = client.chain_get_transaction_info(opt.hash)?;
 
         Ok(txn_info)
     }
