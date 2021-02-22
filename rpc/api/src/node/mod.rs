@@ -53,5 +53,5 @@ pub trait NodeApi {
     fn peers(&self) -> FutureResult<Vec<PeerInfoView>>;
 
     #[rpc(name = "node.metrics")]
-    fn metrics(&self) -> Result<HashMap<String, String>>;
+    fn metrics(&self) -> FutureResult<HashMap<String, String>>;
 }
