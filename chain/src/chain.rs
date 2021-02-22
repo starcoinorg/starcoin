@@ -21,6 +21,7 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::transaction::BlockTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -484,14 +485,19 @@ impl BlockChain {
             storage.save_contract_events(*info_id, events)?;
         }
         storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
-        storage.save_transaction_infos(txn_infos)?;
+        storage.save_transaction_infos(
+            txn_infos
+                .into_iter()
+                .map(|info| BlockTransactionInfo::new(block_id, info))
+                .collect(),
+        )?;
 
         let txn_id_vec = transactions
             .iter()
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         // save block's transactions
-        storage.save_block_transactions(block_id, txn_id_vec)?;
+        storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         // save transactions
         storage.save_transaction_batch(transactions)?;
         storage.commit_block(block)?;
@@ -573,7 +579,7 @@ impl ChainReader for BlockChain {
         self.storage.get_transaction(txn_hash)
     }
 
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<BlockTransactionInfo>> {
         let txn_info_ids = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
             if self.check_exist_transaction_info(txn_info_id) {
@@ -583,7 +589,10 @@ impl ChainReader for BlockChain {
         Ok(None)
     }
 
-    fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>> {
+    fn get_transaction_info_by_version(
+        &self,
+        version: u64,
+    ) -> Result<Option<BlockTransactionInfo>> {
         match self.txn_accumulator.get_leaf(version)? {
             None => Ok(None),
             Some(hash) => self.storage.get_transaction_info(hash),

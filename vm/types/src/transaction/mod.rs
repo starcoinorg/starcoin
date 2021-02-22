@@ -685,6 +685,38 @@ impl Sample for TransactionInfo {
     }
 }
 
+/// `BlockTransactionInfo` is a wrapper of `TransactionInfo` with an extra `block_id`
+/// which is the block that include the txn producing the txn info.
+/// We cannot put the block_id into txn_info, because txn_info is accumulated into block header.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct BlockTransactionInfo {
+    block_id: HashValue,
+    txn_info: TransactionInfo,
+}
+
+impl Deref for BlockTransactionInfo {
+    type Target = TransactionInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.txn_info
+    }
+}
+impl Into<(HashValue, TransactionInfo)> for BlockTransactionInfo {
+    fn into(self) -> (HashValue, TransactionInfo) {
+        (self.block_id, self.txn_info)
+    }
+}
+
+impl BlockTransactionInfo {
+    pub fn new(block_id: HashValue, txn_info: TransactionInfo) -> Self {
+        Self { block_id, txn_info }
+    }
+
+    pub fn block_id(&self) -> HashValue {
+        self.block_id
+    }
+}
+
 /// `Transaction` will be the transaction type used internally in the diem node to represent the
 /// transaction to be processed and persisted.
 ///
