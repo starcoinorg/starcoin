@@ -30,7 +30,7 @@ starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
 starcoin-vm-types = { path = "../vm/types"}
 proptest = { version = "0.10.1", default-features = false, optional = true }
-proptest-derive = { version = "0.2.0", default-features = false, optional = true }
+proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 sp-utils = {path = "../commons/utils"}
 
 [dev-dependencies]
@@ -40,7 +40,7 @@ starcoin-account-api = { path = "../account/api" }
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = { path = "../core/genesis" }
 proptest = "0.10.1"
-proptest-derive = { version = "0.2.0" }
+proptest-derive = { version = "0.3.0" }
 test-helper = { path = "../test-helper" }
 starcoin-chain-mock = { path = "./mock" }
 starcoin-types = { path = "../types", package = "starcoin-types", features = ["fuzzing"]}

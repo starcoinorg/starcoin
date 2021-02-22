@@ -1890,7 +1890,7 @@ dependencies = [
  "mirai-annotations",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.2.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -1985,7 +1985,7 @@ dependencies = [
  "crossbeam 0.8.0",
  "diem-workspace-hack",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.2.0",
 ]
 
 [[package]]
@@ -2442,7 +2442,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.7.3",
  "rand_core 0.6.2",
  "serde",
@@ -4434,7 +4434,7 @@ dependencies = [
  "mirai-annotations",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.2.0",
  "rand 0.7.3",
  "ref-cast",
  "serde",
@@ -5771,6 +5771,17 @@ name = "proptest-derive"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "051d9d20dbe9e9dfe594328b6eaab72ccf571fee818991dd1c1ba5469b5f32d4"
+dependencies = [
+ "proc-macro2 0.4.30",
+ "quote 0.6.13",
+ "syn 0.15.44",
+]
+
+[[package]]
+name = "proptest-derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90b46295382dc76166cb7cf2bb4a97952464e4b7ed5a43e6cd34e1fec3349ddc"
 dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
@@ -7206,7 +7217,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.1",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.7.3",
  "rand_core 0.6.2",
  "serde",
@@ -7251,7 +7262,7 @@ dependencies = [
  "clap 2.33.3",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "sp-utils",
  "starcoin-account-api",
  "starcoin-accumulator",
@@ -7315,7 +7326,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.1",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "starcoin-account-api",
  "starcoin-account-lib",
  "starcoin-accumulator",
@@ -7471,7 +7482,7 @@ dependencies = [
  "hex",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.7.3",
  "rand_core 0.6.2",
  "rust-argon2",
@@ -8107,7 +8118,7 @@ dependencies = [
  "crossbeam 0.7.3",
  "diem-proptest-helpers",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
 ]
 
 [[package]]
@@ -8410,7 +8421,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.1",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.7.3",
  "rocksdb",
  "serde",
@@ -8577,7 +8588,7 @@ dependencies = [
  "parking_lot 0.11.1",
  "prometheus 0.10.0",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.7.3",
  "rand_core 0.6.2",
  "serde",
@@ -8646,7 +8657,7 @@ dependencies = [
  "num_enum",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "prost",
  "rand 0.7.3",
  "rand_core 0.6.2",
@@ -8716,7 +8727,7 @@ dependencies = [
  "num_enum",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.7.3",
  "serde",
  "serde-helpers",
@@ -10027,7 +10038,7 @@ dependencies = [
  "num-variants",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.2.0",
  "ref-cast",
 ]
 
