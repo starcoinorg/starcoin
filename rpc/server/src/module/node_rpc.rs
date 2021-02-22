@@ -63,7 +63,21 @@ impl NodeApi for NodeRpcImpl {
         Box::pin(fut.map_err(map_err).boxed())
     }
 
-    fn metrics(&self) -> Result<HashMap<String, String>> {
-        Ok(starcoin_metrics::get_all_metrics())
+    fn metrics(&self) -> FutureResult<HashMap<String, String>> {
+        let service = self.service.clone().unwrap();
+        let fut = async move {
+            let peer_info = service.get_self_peer().await?;
+            let mut metrics_map = starcoin_metrics::get_all_metrics();
+            metrics_map.insert(
+                "node_head_number".parse().unwrap(),
+                peer_info.chain_info().head().number().to_string(),
+            );
+            metrics_map.insert(
+                "node_peer_id".parse().unwrap(),
+                peer_info.peer_id().to_string(),
+            );
+            Ok(metrics_map)
+        };
+        Box::pin(fut.map_err(map_err).boxed())
     }
 }
