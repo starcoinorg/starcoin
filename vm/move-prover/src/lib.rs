@@ -219,6 +219,7 @@ fn run_abigen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Resul
     Ok(())
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn run_errmapgen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Result<()> {
     let mut generator = ErrmapGen::new(env, &options.errmapgen);
     let checking_elapsed = now.elapsed();
