@@ -39,7 +39,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 network-api = { package = "network-api", path = "../network/api" }
 
 proptest = { version = "0.10.1", default-features = false, optional = true }
-proptest-derive = { version = "0.2.0", default-features = false, optional = true }
+proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 
 
 [dev-dependencies]
@@ -49,7 +49,7 @@ starcoin-open-block = {path = "../chain/open-block"}
 starcoin-genesis = { path = "../core/genesis" }
 test-helper = { path = "../test-helper" }
 proptest = "0.10.1"
-proptest-derive = { version = "0.2.0" }
+proptest-derive = { version = "0.3.0" }
 
 
 [features]
