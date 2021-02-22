@@ -94,7 +94,12 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let storage = self.storage.clone();
         let fut = async move {
             if let Ok(txn_infos) = storage.get_block_transaction_infos(block_id) {
-                Ok(Some(txn_infos))
+                Ok(Some(
+                    txn_infos
+                        .into_iter()
+                        .map(|info| Into::<(HashValue, TransactionInfo)>::into(info).1)
+                        .collect(),
+                ))
             } else {
                 Ok(None)
             }

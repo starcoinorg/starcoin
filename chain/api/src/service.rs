@@ -9,7 +9,7 @@ use starcoin_types::block::{BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_types::transaction::{BlockTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
@@ -24,14 +24,13 @@ pub trait ReadableChainService {
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    fn get_transaction_block_hash(&self, txn_hash: HashValue) -> Result<Option<HashValue>>;
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<BlockTransactionInfo>>;
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<BlockTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<TransactionInfo>>;
+    ) -> Result<Option<BlockTransactionInfo>>;
     fn get_events_by_txn_info_hash(
         &self,
         txn_info_id: HashValue,
@@ -83,14 +82,18 @@ pub trait ChainAsyncService:
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
-    async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    async fn get_transaction_info(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<BlockTransactionInfo>>;
     async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
-    async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<TransactionInfo>>;
+    async fn get_block_txn_infos(&self, block_hash: HashValue)
+        -> Result<Vec<BlockTransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> Result<Option<TransactionInfo>>;
+    ) -> Result<Option<BlockTransactionInfo>>;
     async fn get_events_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<ContractEventInfo>>;
     /// for main
     async fn main_head_header(&self) -> Result<BlockHeader>;
@@ -202,7 +205,10 @@ where
         }
     }
 
-    async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
+    async fn get_transaction_info(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<BlockTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetTransactionInfo(txn_hash))
             .await??;
@@ -224,12 +230,15 @@ where
         }
     }
 
-    async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<TransactionInfo>> {
+    async fn get_block_txn_infos(
+        &self,
+        block_hash: HashValue,
+    ) -> Result<Vec<BlockTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetBlockTransactionInfos(block_hash))
             .await??;
-        if let ChainResponse::TransactionInfos(vec_txn_id) = response {
-            Ok(vec_txn_id)
+        if let ChainResponse::TransactionInfos(txn_infos) = response {
+            Ok(txn_infos)
         } else {
             bail!("get block's transaction_info error.")
         }
@@ -239,7 +248,7 @@ where
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<TransactionInfo>> {
+    ) -> Result<Option<BlockTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetTransactionInfoByBlockAndIndex {
                 block_hash: block_id,

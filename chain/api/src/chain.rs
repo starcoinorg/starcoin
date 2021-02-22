@@ -6,19 +6,18 @@ use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::transaction::BlockTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    transaction::{Transaction, TransactionInfo},
+    transaction::Transaction,
     U256,
 };
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
 use std::collections::HashMap;
 
-pub struct VerifiedBlock(pub Block);
-
 pub use starcoin_types::block::ExecutedBlock;
-
+pub struct VerifiedBlock(pub Block);
 pub type MintedUncleNumber = u64;
 
 pub trait ChainReader {
@@ -37,10 +36,11 @@ pub trait ChainReader {
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// Get transaction info by transaction's hash
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<BlockTransactionInfo>>;
 
     /// get txn info at version in main chain.
-    fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>>;
+    fn get_transaction_info_by_version(&self, version: u64)
+        -> Result<Option<BlockTransactionInfo>>;
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;

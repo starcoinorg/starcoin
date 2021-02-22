@@ -16,6 +16,7 @@ use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::transaction::TransactionInfo;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -160,16 +161,18 @@ where
             };
 
             let block = service
-                .get_transaction_block(transaction_hash)
+                .get_block_by_hash(txn_info.block_id())
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "cannot locate the block which include txn {}",
+                        "cannot find the block {}  which include txn {}",
+                        txn_info.block_id(),
                         transaction_hash
                     )
                 })?;
 
-            TransactionInfoView::new(txn_info, &block).map(Some)
+            TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(txn_info).1, &block)
+                .map(Some)
         }
         .map_err(map_err);
 
@@ -185,7 +188,9 @@ where
                 None => Ok(vec![]),
                 Some(block) => txn_infos
                     .into_iter()
-                    .map(|info| TransactionInfoView::new(info, &block))
+                    .map(|info| {
+                        TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(info).1, &block)
+                    })
                     .collect::<Result<Vec<_>, _>>(),
             }
         }
@@ -209,7 +214,12 @@ where
                         .get_txn_info_by_block_and_index(block_hash, idx)
                         .await?;
                     txn_info
-                        .map(|info| TransactionInfoView::new(info, &block))
+                        .map(|info| {
+                            TransactionInfoView::new(
+                                Into::<(_, TransactionInfo)>::into(info).1,
+                                &block,
+                            )
+                        })
                         .transpose()
                 }
             }

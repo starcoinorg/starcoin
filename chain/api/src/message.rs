@@ -7,12 +7,13 @@ use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockSummary;
 use starcoin_types::block::EpochUncleSummary;
 use starcoin_types::stress_test::TPS;
+use starcoin_types::transaction::BlockTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     contract_event::ContractEventInfo,
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
-    transaction::{Transaction, TransactionInfo},
+    transaction::Transaction,
 };
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
@@ -76,8 +77,8 @@ pub enum ChainResponse {
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
     BlockHeaderVec(Vec<BlockHeader>),
-    TransactionInfos(Vec<TransactionInfo>),
-    TransactionInfo(Option<TransactionInfo>),
+    TransactionInfos(Vec<BlockTransactionInfo>),
+    TransactionInfo(Option<BlockTransactionInfo>),
     Events(Vec<ContractEventInfo>),
     MainEvents(Vec<ContractEventInfo>),
     None,
