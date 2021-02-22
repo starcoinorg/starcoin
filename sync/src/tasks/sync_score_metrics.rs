@@ -121,9 +121,10 @@ impl SyncScoreMetrics {
         self.sub_sync_target_time
             .with_label_values(&[&format!("peer-{:?}", strategy)])
             .set(time);
+        let (avg_time, _) = time.overflowing_div(count);
         self.sub_sync_target_avg_time
             .with_label_values(&[&format!("peer-{:?}", strategy)])
-            .set(time / count);
+            .set(avg_time);
         self.sub_sync_target_peers
             .with_label_values(&[&format!("peer-{:?}", strategy)])
             .set(peers as i64);
