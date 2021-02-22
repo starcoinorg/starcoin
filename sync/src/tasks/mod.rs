@@ -430,6 +430,7 @@ where
             );
 
             SYNC_SCORE_METRICS.report_sub_sync_target_metrics(
+                fetcher.peer_selector().len(),
                 fetcher.peer_selector().strategy(),
                 total_num as i64,
                 total_time as i64,

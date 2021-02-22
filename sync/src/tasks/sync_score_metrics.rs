@@ -20,6 +20,8 @@ pub struct SyncScoreMetrics {
     peer_sync_per_score: IntGaugeVec,
     sub_sync_target_count: IntGaugeVec,
     sub_sync_target_time: IntGaugeVec,
+    sub_sync_target_avg_time: IntGaugeVec,
+    sub_sync_target_peers: IntGaugeVec,
 }
 
 impl SyncScoreMetrics {
@@ -59,12 +61,24 @@ impl SyncScoreMetrics {
             &["sub_time"],
         )?;
 
+        let sub_sync_target_avg_time = IntGaugeVec::new(
+            Opts::new("sub_sync_target_avg_time", "sub sync target avg time").namespace(SC_NS),
+            &["sub_avg_time"],
+        )?;
+
+        let sub_sync_target_peers = IntGaugeVec::new(
+            Opts::new("sub_sync_target_peers", "sub sync target peers").namespace(SC_NS),
+            &["sub_peers"],
+        )?;
+
         default_registry().register(Box::new(peer_sync_total_time.clone()))?;
         default_registry().register(Box::new(peer_sync_total_count.clone()))?;
         default_registry().register(Box::new(peer_sync_per_time.clone()))?;
         default_registry().register(Box::new(peer_sync_per_score.clone()))?;
         default_registry().register(Box::new(sub_sync_target_count.clone()))?;
         default_registry().register(Box::new(sub_sync_target_time.clone()))?;
+        default_registry().register(Box::new(sub_sync_target_avg_time.clone()))?;
+        default_registry().register(Box::new(sub_sync_target_peers.clone()))?;
 
         Ok(Self {
             peer_sync_total_score,
@@ -74,6 +88,8 @@ impl SyncScoreMetrics {
             peer_sync_per_score,
             sub_sync_target_count,
             sub_sync_target_time,
+            sub_sync_target_avg_time,
+            sub_sync_target_peers,
         })
     }
 
@@ -92,12 +108,24 @@ impl SyncScoreMetrics {
             .set(score);
     }
 
-    pub fn report_sub_sync_target_metrics(&self, strategy: PeerStrategy, count: i64, time: i64) {
+    pub fn report_sub_sync_target_metrics(
+        &self,
+        peers: usize,
+        strategy: PeerStrategy,
+        count: i64,
+        time: i64,
+    ) {
         self.sub_sync_target_count
             .with_label_values(&[&format!("peer-{:?}", strategy)])
             .set(count);
         self.sub_sync_target_time
             .with_label_values(&[&format!("peer-{:?}", strategy)])
             .set(time);
+        self.sub_sync_target_avg_time
+            .with_label_values(&[&format!("peer-{:?}", strategy)])
+            .set(time / count);
+        self.sub_sync_target_peers
+            .with_label_values(&[&format!("peer-{:?}", strategy)])
+            .set(peers as i64);
     }
 }
