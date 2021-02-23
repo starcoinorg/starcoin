@@ -81,7 +81,7 @@ struct Inner {
 impl Inner {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
-        let best_peers = self.peer_provider.peer_selector().await?.top(10);
+        let best_peers = self.peer_provider.peer_selector(None).await?.top(10);
         if best_peers.is_empty() {
             info!("No peer to sync txn.");
             return Ok(());

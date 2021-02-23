@@ -135,7 +135,8 @@ impl BlockRelayer {
             if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
                 debug!("Block is failed block : {:?}", block_id);
             } else {
-                let rpc_client = VerifiedRpcClient::new(network.peer_selector().await?, network);
+                let rpc_client =
+                    VerifiedRpcClient::new(network.peer_selector(None).await?, network);
                 let block = BlockRelayer::fill_compact_block(
                     txpool.clone(),
                     rpc_client,

@@ -117,7 +117,10 @@ impl SyncService2 {
         let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
         let fut = async move {
-            let mut peer_selector = network.peer_selector().await?;
+            let peer_select_strategy =
+                peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
+
+            let mut peer_selector = network.peer_selector(Some(peer_select_strategy)).await?;
             loop {
                 if peer_selector.is_empty()
                     || peer_selector.len() < (config.net().min_peers() as usize)
@@ -128,7 +131,7 @@ impl SyncService2 {
                         config.net().min_peers()
                     );
                     Delay::new(Duration::from_secs(1)).await;
-                    peer_selector = network.peer_selector().await?;
+                    peer_selector = network.peer_selector(Some(peer_select_strategy)).await?;
                 } else {
                     break;
                 }
@@ -156,10 +159,6 @@ impl SyncService2 {
                 info!("[sync] Current is already bast.");
                 return Ok(None);
             }
-
-            let peer_select_strategy =
-                peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
-            peer_selector.switch_strategy(peer_select_strategy);
 
             let (fut, task_handle, task_event_handle) = full_sync_task(
                 current_block_id,

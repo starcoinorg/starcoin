@@ -27,9 +27,13 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
 
     fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
 
-    fn peer_selector(&self) -> BoxFuture<Result<PeerSelector>> {
+    fn peer_selector(
+        &self,
+        peer_strategy: Option<PeerStrategy>,
+    ) -> BoxFuture<Result<PeerSelector>> {
+        let strategy = async move { peer_strategy.unwrap_or_default() };
         self.peer_set()
-            .and_then(|peers| async move { Ok(PeerSelector::new(peers, PeerStrategy::default())) })
+            .and_then(|peers| async move { Ok(PeerSelector::new(peers, strategy.await)) })
             .boxed()
     }
 

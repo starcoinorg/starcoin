@@ -376,7 +376,6 @@ where
         }
         let mut latest_ancestor = ancestor;
         let mut latest_block_chain;
-        let start_now = Instant::now();
 
         loop {
             // for get new peers from network.
@@ -404,6 +403,7 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
             );
+            let start_now = Instant::now();
             let (block_chain, _) = inner
                 .do_sync(
                     current_block_info.clone(),
@@ -413,14 +413,14 @@ where
                     skip_pow_verify,
                 )
                 .await?;
+            let total_time = Instant::now()
+                .saturating_duration_since(start_now)
+                .as_millis();
             latest_block_chain = block_chain;
             let total_num = latest_block_chain
                 .current_header()
                 .number()
                 .saturating_sub(ancestor.number);
-            let total_time = Instant::now()
-                .saturating_duration_since(start_now)
-                .as_millis();
             info!(
                 "[sync] sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 fetcher.peer_selector().strategy(),
