@@ -3,5 +3,4 @@
 #![deny(clippy::integer_arithmetic)]
 mod chain;
 pub mod verifier;
-
 pub use chain::BlockChain;
