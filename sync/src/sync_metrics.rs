@@ -5,7 +5,7 @@ use starcoin_metrics::{
 };
 
 const SC_NS: &str = "starcoin";
-const PRIFIX: &str = "sync_";
+const PREFIX: &str = "sync_";
 
 pub const LABEL_BLOCK: &str = "block";
 pub const LABEL_BLOCK_BODY: &str = "body";
@@ -34,7 +34,7 @@ impl SyncMetrics {
     pub fn register() -> Result<Self, PrometheusError> {
         let sync_total_count = register_int_counter_vec!(
             Opts::new(
-                format!("{}{}", PRIFIX, "sync_total_count"),
+                format!("{}{}", PREFIX, "sync_total_count"),
                 "sync total count".to_string()
             )
             .namespace(SC_NS),
@@ -43,7 +43,7 @@ impl SyncMetrics {
 
         let sync_succ_count = register_int_counter_vec!(
             Opts::new(
-                format!("{}{}", PRIFIX, "sync_succ_count"),
+                format!("{}{}", PREFIX, "sync_succ_count"),
                 "sync succ count".to_string()
             )
             .namespace(SC_NS),
@@ -52,7 +52,7 @@ impl SyncMetrics {
 
         let sync_fail_count = register_int_counter_vec!(
             Opts::new(
-                format!("{}{}", PRIFIX, "sync_fail_count"),
+                format!("{}{}", PREFIX, "sync_fail_count"),
                 "sync fail count".to_string()
             )
             .namespace(SC_NS),
@@ -61,7 +61,7 @@ impl SyncMetrics {
 
         let sync_verify_fail_count = register_int_counter_vec!(
             Opts::new(
-                format!("{}{}", PRIFIX, "sync_verify_fail_count"),
+                format!("{}{}", PREFIX, "sync_verify_fail_count"),
                 "sync verify fail count".to_string()
             )
             .namespace(SC_NS),
@@ -70,7 +70,7 @@ impl SyncMetrics {
 
         let sync_done_time = register_histogram_vec!(
             HistogramOpts::new(
-                format!("{}{}", PRIFIX, "sync_done_time"),
+                format!("{}{}", PREFIX, "sync_done_time"),
                 "sync done time".to_string()
             )
             .namespace(SC_NS),
@@ -78,7 +78,7 @@ impl SyncMetrics {
         )?;
         let sync_get_block_time = register_histogram_vec!(
             HistogramOpts::new(
-                format!("{}{}", PRIFIX, "sync_get_block_time"),
+                format!("{}{}", PREFIX, "sync_get_block_time"),
                 "sync get_block time".to_string()
             )
             .namespace(SC_NS),
@@ -86,7 +86,7 @@ impl SyncMetrics {
         )?;
         let sync_get_block_ids_time = register_histogram_vec!(
             HistogramOpts::new(
-                format!("{}{}", PRIFIX, "sync_get_block_ids_time"),
+                format!("{}{}", PREFIX, "sync_get_block_ids_time"),
                 "sync get_block_ids time".to_string()
             )
             .namespace(SC_NS),
@@ -94,7 +94,7 @@ impl SyncMetrics {
         )?;
         let sync_apply_block_time = register_histogram_vec!(
             HistogramOpts::new(
-                format!("{}{}", PRIFIX, "sync_apply_block_time"),
+                format!("{}{}", PREFIX, "sync_apply_block_time"),
                 "sync apply_block time".to_string()
             )
             .namespace(SC_NS),
@@ -103,7 +103,7 @@ impl SyncMetrics {
 
         let sync_count = register_int_counter_vec!(
             Opts::new(
-                format!("{}{}", PRIFIX, "sync_count"),
+                format!("{}{}", PREFIX, "sync_count"),
                 "sync count".to_string()
             )
             .namespace(SC_NS),
@@ -112,7 +112,7 @@ impl SyncMetrics {
 
         let sync_done_count = register_int_counter_vec!(
             Opts::new(
-                format!("{}{}", PRIFIX, "sync_done_count"),
+                format!("{}{}", PREFIX, "sync_done_count"),
                 "sync done count".to_string()
             )
             .namespace(SC_NS),

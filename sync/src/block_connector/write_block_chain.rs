@@ -169,8 +169,11 @@ where
         parent_id == &self.startup_info.main
     }
 
-    fn update_startup_info(&mut self, man_head: &BlockHeader) -> Result<()> {
-        self.startup_info.update_main(man_head);
+    fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
+        self.startup_info.update_main(main_head);
+        WRITE_BLOCK_CHAIN_METRICS
+            .current_head_number
+            .set(main_head.number() as i64);
         self.storage.save_startup_info(self.startup_info.clone())
     }
 
