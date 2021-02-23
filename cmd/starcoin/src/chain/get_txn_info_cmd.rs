@@ -12,10 +12,16 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn_info")]
 pub struct GetTransactionInfoOpt {
-    #[structopt(name = "block-hash")]
-    block_hash: HashValue,
-    #[structopt(name = "idx", help = "the index(start from 0) of the txn in the block")]
-    idx: u64,
+    #[structopt(name = "txn-hash")]
+    /// txn hash
+    txn_hash: Option<HashValue>,
+
+    #[structopt(name = "block-hash", long, required_unless = "txn-hash")]
+    /// block hash which include the txn, only used when txn-hash is missing.
+    block_hash: Option<HashValue>,
+    #[structopt(name = "idx", long, required_unless = "txn-hash")]
+    /// the index(start from 0) of the txn in the block
+    idx: Option<u64>,
 }
 
 pub struct GetTransactionInfoCommand;
@@ -32,9 +38,13 @@ impl CommandAction for GetTransactionInfoCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction_info =
-            client.chain_get_txn_info_by_block_and_index(opt.block_hash, opt.idx)?;
-
-        Ok(transaction_info)
+        match &opt.txn_hash {
+            Some(txn_hash) => Ok(client.chain_get_transaction_info(*txn_hash)?),
+            None => {
+                let block_hash = opt.block_hash.expect("block-hash exists");
+                let idx = opt.idx.expect("idx exists");
+                Ok(client.chain_get_txn_info_by_block_and_index(block_hash, idx)?)
+            }
+        }
     }
 }

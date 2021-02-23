@@ -403,17 +403,19 @@ impl TransactionView {
         let block_number = block.header.number();
         let transaction_index = match &txn {
             Transaction::BlockMetadata(_) => 0,
-            _ => block
-                .transactions()
-                .iter()
-                .position(|t| t.id() == transaction_hash)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "cannot find txn {} in block {}",
-                        transaction_hash,
-                        block_hash
-                    )
-                })? as u32,
+            _ => {
+                1 + block
+                    .transactions()
+                    .iter()
+                    .position(|t| t.id() == transaction_hash)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "cannot find txn {} in block {}",
+                            transaction_hash,
+                            block_hash
+                        )
+                    })? as u32
+            }
         };
 
         let (meta, txn) = match txn {
@@ -424,7 +426,7 @@ impl TransactionView {
             block_hash,
             block_number: block_number.into(),
             transaction_hash,
-            transaction_index: transaction_index + 1,
+            transaction_index,
             block_metadata: meta,
             user_transaction: txn,
         })
