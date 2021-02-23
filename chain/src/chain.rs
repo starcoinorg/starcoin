@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_metrics::CHAIN_METRICS;
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
@@ -886,6 +887,9 @@ impl ChainWriter for BlockChain {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         };
+        CHAIN_METRICS
+            .current_head_number
+            .set(self.status.head.header.number() as i64);
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
             self.update_uncle_cache()?;
