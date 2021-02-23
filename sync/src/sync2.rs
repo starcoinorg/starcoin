@@ -120,7 +120,8 @@ impl SyncService2 {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
 
-            let mut peer_selector = network.peer_selector(Some(peer_select_strategy)).await?;
+            let mut peer_set = network.peer_set().await?;
+            let mut peer_selector = PeerSelector::new(peer_set, peer_select_strategy);
             loop {
                 if peer_selector.is_empty()
                     || peer_selector.len() < (config.net().min_peers() as usize)
@@ -131,7 +132,8 @@ impl SyncService2 {
                         config.net().min_peers()
                     );
                     Delay::new(Duration::from_secs(1)).await;
-                    peer_selector = network.peer_selector(Some(peer_select_strategy)).await?;
+                    peer_set = network.peer_set().await?;
+                    peer_selector = PeerSelector::new(peer_set, peer_select_strategy);
                 } else {
                     break;
                 }

@@ -6,7 +6,6 @@ use crate::PeerId;
 use crate::PeerInfo;
 use anyhow::Result;
 use futures::future::BoxFuture;
-use futures::{FutureExt, TryFutureExt};
 use itertools::Itertools;
 use network_p2p_types::ReputationChange;
 use parking_lot::Mutex;
@@ -26,16 +25,6 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     fn get_peer(&self, peer_id: PeerId) -> BoxFuture<Result<Option<PeerInfo>>>;
 
     fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
-
-    fn peer_selector(
-        &self,
-        peer_strategy: Option<PeerStrategy>,
-    ) -> BoxFuture<Result<PeerSelector>> {
-        let strategy = async move { peer_strategy.unwrap_or_default() };
-        self.peer_set()
-            .and_then(|peers| async move { Ok(PeerSelector::new(peers, strategy.await)) })
-            .boxed()
-    }
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
 }
