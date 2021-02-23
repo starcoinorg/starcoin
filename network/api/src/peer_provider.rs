@@ -333,7 +333,7 @@ impl PeerSelector {
 
         let mut random = rand::thread_rng();
         let total_score = self.total_score.load(Ordering::SeqCst);
-        let random_score: u64 = random.gen_range(1, total_score);
+        let random_score: u64 = random.gen_range(1..total_score);
         let mut tmp_score: u64 = 0;
         for peer_detail in self.details.lock().iter() {
             tmp_score += peer_detail.score_counter.score();

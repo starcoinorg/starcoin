@@ -15,7 +15,7 @@ use move_prover_test_utils::{
 
 use datatest_stable::Requirements;
 #[allow(unused_imports)]
-use log::{debug, warn};
+use log::{debug, info, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 const ENV_FLAGS: &str = "MVP_TEST_FLAGS";
@@ -54,6 +54,7 @@ fn test_runner(path: &Path) -> datatest_stable::Result<()> {
         }
     }
     options.prover.stable_test_output = true;
+    options.backend.stable_test_output = true;
 
     let mut error_writer = Buffer::no_color();
     let mut diags = match run_move_prover(&mut error_writer, options) {
@@ -125,6 +126,7 @@ fn cvc4blacklisted(path: &Path) -> bool {
         path_str == "../stdlib/modules/DesignatedDealer.move" ||
         path_str == "tests/sources/functional/marketcap.move" ||
         path_str == "tests/sources/functional/invariants.move" ||
+        path_str == "tests/sources/functional/invariants_resources.move" ||
         path_str == "tests/sources/functional/module_invariants.move" ||
         path_str == "tests/sources/functional/ModifiesSchemaTest.move" ||
         path_str == "tests/sources/functional/resources.move" ||
@@ -177,6 +179,10 @@ fn cvc4blacklisted(path: &Path) -> bool {
         path_str == "../stdlib/modules/Genesis.move" ||
         path_str == "../stdlib/modules/DiemAccount.move" ||
 
+	path_str == "tests/sources/functional/script_incorrect.move" ||
+	path_str == "tests/sources/functional/emits.move" ||
+	path_str == "tests/sources/functional/friend.move" ||
+	path_str == "tests/sources/regression/set_200701.move" ||
         path_str == "../stdlib/modules/AccountLimits.move" || // This one takes over a minute
 
         true

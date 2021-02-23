@@ -1,6 +1,6 @@
-module TestLCS {
+module TestBCS {
+    use 0x1::BCS;
 
-    use 0x1::LCS;
 
     spec module {
         pragma verify = true;
@@ -9,8 +9,8 @@ module TestLCS {
 
     fun bcs_test1<Thing>(v1: &Thing, v2: &Thing): (vector<u8>, vector<u8>)
     {
-        let s1 = LCS::to_bytes(v1);
-        let s2 = LCS::to_bytes(v2);
+        let s1 = BCS::to_bytes(v1);
+        let s2 = BCS::to_bytes(v2);
         (s1, s2)
     }
     spec fun bcs_test1 {
@@ -25,8 +25,8 @@ module TestLCS {
 
     fun bcs_test1_incorrect<Thing>(v1: &Thing, v2: &Thing): (vector<u8>, vector<u8>)
     {
-        let s1 = LCS::to_bytes(v1);
-        let s2 = LCS::to_bytes(v2);
+        let s1 = BCS::to_bytes(v1);
+        let s2 = BCS::to_bytes(v2);
         (s1, s2)
     }
     spec fun bcs_test1_incorrect {

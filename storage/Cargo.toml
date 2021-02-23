@@ -38,7 +38,7 @@ features = ["lz4"]
 [dev-dependencies]
 proptest = "0.10.1"
 proptest-derive = "0.3.0"
-rand = "0.7.3"
+rand = "0.8.3"
 starcoin-types = {path = "../types", features = ["fuzzing"]}
 
 [features]

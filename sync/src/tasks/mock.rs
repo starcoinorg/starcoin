@@ -128,7 +128,7 @@ impl SyncNodeMocker {
     }
     fn random_err(&self) -> Result<()> {
         if self.random_error_percent > 0 {
-            let rnd = rand::thread_rng().gen_range(0, 100);
+            let rnd = rand::thread_rng().gen_range(0..100);
             if rnd <= self.random_error_percent {
                 return Err(format_err!("Random error {}", rnd));
             }

@@ -10,7 +10,7 @@ fn test_middleware() {
     let mut io_handler = MetaIoHandler::with_middleware(MetricMiddleware);
     io_handler.add_method("status", |_params: Params| async {
         let mut rng = rand::thread_rng();
-        let sleep_time = rng.gen_range(1, 50);
+        let sleep_time = rng.gen_range(1..50);
         std::thread::sleep(Duration::from_millis(sleep_time));
         Ok(Value::Bool(true))
     });

@@ -31,7 +31,7 @@ impl CpuSolver {
     fn nonce_generator(nonce_range: &Range<u32>) -> u32 {
         let mut rng = rand::thread_rng();
         let Range { start, end } = nonce_range;
-        rng.gen_range(start, end)
+        rng.gen_range(*start..*end)
     }
 
     fn partition_nonce(id: u32, total: u32) -> Range<u32> {

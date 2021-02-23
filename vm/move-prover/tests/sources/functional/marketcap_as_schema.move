@@ -3,6 +3,10 @@ address 0x1 {
 
 module TestMarketCapWithSchemas {
 
+    /*
+    TODO(refactoring): this test is deactivated until we have ported this (or a similar) feature, or decided to
+      drop it in which case the test should be removed.
+
     spec module {
         pragma verify = true;
     }
@@ -32,7 +36,7 @@ module TestMarketCapWithSchemas {
 
 
     resource struct MarketCap<X> {
-        // The sum of the values of all LibraCoin::T resources in the system
+        // The sum of the values of all DiemCoin::T resources in the system
         total_value: u128,
     }
 
@@ -67,6 +71,8 @@ module TestMarketCapWithSchemas {
          aborts_if coin_ref.value + check.value / 2 > max_u64();
          ensures coin_ref.value == old(coin_ref.value) + check.value / 2;
      }
+
+     */
 }
 
 }

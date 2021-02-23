@@ -43,6 +43,9 @@ module TestReferences {
     fun mut_b(b: &mut u64) {
         *b = 10;
     }
+    spec fun mut_b {
+        ensures b == 10;
+    }
 
     fun mut_ref() {
         let b: u64 = 20;

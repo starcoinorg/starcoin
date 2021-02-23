@@ -130,11 +130,11 @@ pub mod vm_status {
         pub use move_core_types::vm_status::sub_status::*;
     }
 }
-
+pub mod effects {
+    pub use move_core_types::effects::*;
+}
 pub mod bytecode_verifier {
-    pub use bytecode_verifier::{
-        dependencies, verify_main_signature, verify_module, verify_script,
-    };
+    pub use bytecode_verifier::{dependencies, script_signature, verify_module, verify_script};
 }
 
 pub mod access_path;
