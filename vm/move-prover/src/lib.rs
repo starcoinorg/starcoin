@@ -84,7 +84,7 @@ pub fn run_move_prover<W: WriteColor>(
     // Same for the error map generator
     if options.run_errmapgen {
         run_errmapgen(&env, &options, now);
-        return Ok(())
+        return Ok(());
     }
 
     let targets = create_and_process_bytecode(&options, &env);
