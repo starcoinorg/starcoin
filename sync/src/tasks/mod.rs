@@ -420,7 +420,7 @@ where
             let total_num = latest_block_chain
                 .current_header()
                 .number()
-                .saturating_sub(ancestor.number);
+                .saturating_sub(latest_ancestor.number);
             info!(
                 "[sync] sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 fetcher.peer_selector().strategy(),
