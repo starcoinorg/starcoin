@@ -1,0 +1,36 @@
+name: Publish developer docs
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: '0.71.0'
+          extended: true
+      - name: Version
+        run: hugo version
+      - name: Build
+        run: hugo -s ./developer.starcoin.org --minify
+      - name: Deploy
+        # Only deploy on master.
+        if: github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v2
+        env:
+          ACTIONS_DEPLOY_KEY: ${{ secrets.DOCS_ACTION_DEPLOY_KEY }}
+          EXTERNAL_REPOSITORY: starcoinorg/starcoinorg.github.io
+          PUBLISH_BRANCH: master
+          PUBLISH_DIR: ./developer.starcoin.org/public
