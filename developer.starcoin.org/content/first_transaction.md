@@ -82,11 +82,11 @@ where `-p my-pass` is the password that was needed when creating the account.
 Once the account is unlocked, execute the following command.
 
 ```bash
-starcoin% txn transfer -s 1d8133a0c1a07366de459fb08d28d2a6 -r bfbed907d7ba364e1445b971f9182949 -k 7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d -v 10000
+starcoin% account transfer -s 0x1d8133a0c1a07366de459fb08d28d2a6 -r 0xbfbed907d7ba364e1445b971f9182949 -k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d -v 10000
 +-----------------+------------------------------------------------------------------+
 | gas_unit_price  | 1                                                                |
 +-----------------+------------------------------------------------------------------+
-| id              | 44433463c38aacd31731fba1a38d3a38f9a14c0281a264634e470c8f25bd557d |
+| id              | 0x44433463c38aacd31731fba1a38d3a38f9a14c0281a264634e470c8f25bd557d |
 +-----------------+------------------------------------------------------------------+
 | max_gas_amount  | 1000000                                                          |
 +-----------------+------------------------------------------------------------------+
@@ -96,9 +96,9 @@ starcoin% txn transfer -s 1d8133a0c1a07366de459fb08d28d2a6 -r bfbed907d7ba364e14
 +-----------------+------------------------------------------------------------------+
 ```
 
-- `-F 1d8133a0c1a07366de459fb08d28d2a6`: is Alice's account address.
-- `-T bfbed907d7ba364e1445b971f9182949`: is Bob's account address.
-- `-k 7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`: is the public key of Bob.
+- `-f 0x1d8133a0c1a07366de459fb08d28d2a6`: is Alice's account address.
+- `-t 0xbfbed907d7ba364e1445b971f9182949`: is Bob's account address.
+- `-k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`: is the public key of Bob.
 
 > If, Bob's account does not yet exist on the chain, then his public key should be provided, the transfer transaction will automatically create Bob's account on the chain.
 
@@ -109,15 +109,15 @@ Then check Bob's account information again:.
 
 
 ``` bash
-starcoin% account show bfbed907d7ba364e1445b971f9182949
+starcoin% account show 0xbfbed907d7ba364e1445b971f9182949
 +--------------------+------------------------------------------------------------------+
-| account.address    | bfbed907d7ba364e1445b971f9182949                                 |
+| account.address    | 0xbfbed907d7ba364e1445b971f9182949                                 |
 +--------------------+------------------------------------------------------------------+
 | account.is_default | false                                                            |
 +--------------------+------------------------------------------------------------------+
-| account.public_key | d80234b11619e62a62fac048b2b79a9eec1727b476155e1f8fe19c89c7443076 |
+| account.public_key | 0xd80234b11619e62a62fac048b2b79a9eec1727b476155e1f8fe19c89c7443076 |
 +--------------------+------------------------------------------------------------------+
-| auth_key_prefix    | 7c87272c7fc2f5586a0770d1d718f14f                                 |
+| auth_key_prefix    | 0x7c87272c7fc2f5586a0770d1d718f14f                                 |
 +--------------------+------------------------------------------------------------------+
 | balances.STC       | 10000                                                            |
 +--------------------+------------------------------------------------------------------+
