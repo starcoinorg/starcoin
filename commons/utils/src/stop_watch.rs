@@ -35,10 +35,14 @@ pub fn watch(watch_name: &str, label: &str) {
 
 /// Start watching.
 pub fn start_watch() {
-    WATCH_STATUS.compare_and_swap(false, true, Ordering::SeqCst);
+    let _ = WATCH_STATUS
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::Relaxed)
+        .unwrap_or_else(|x| x);
 }
 
 /// Stop watching.
 pub fn stop_watch() {
-    WATCH_STATUS.compare_and_swap(true, false, Ordering::SeqCst);
+    let _ = WATCH_STATUS
+        .compare_exchange(true, false, Ordering::SeqCst, Ordering::Relaxed)
+        .unwrap_or_else(|x| x);
 }

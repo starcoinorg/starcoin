@@ -27,15 +27,18 @@ impl CacheStorage {
     }
     pub fn get_obj(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<CacheObject>> {
         record_metrics("cache", prefix_name, "get").end_with(|| {
-            compose_key(prefix_name.to_string(), key)
-                .map(|key| self.cache.lock().get(&key).cloned())
+            Ok(self
+                .cache
+                .lock()
+                .get(&compose_key(prefix_name.to_string(), key))
+                .cloned())
         })
     }
 
     pub fn put_obj(&self, prefix_name: &str, key: Vec<u8>, obj: CacheObject) -> Result<()> {
         record_metrics("cache", prefix_name, "put").end_with(|| {
             let mut cache = self.cache.lock();
-            cache.put(compose_key(prefix_name.to_string(), key)?, obj);
+            cache.put(compose_key(prefix_name.to_string(), key), obj);
             CACHE_ITEMS.set(cache.len() as u64);
             Ok(())
         })
@@ -70,8 +73,11 @@ impl Default for CacheStorage {
 impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("cache", prefix_name, "get").end_with(|| {
-            compose_key(prefix_name.to_string(), key)
-                .map(|key| self.cache.lock().get(&key).and_then(|v| v.into()))
+            Ok(self
+                .cache
+                .lock()
+                .get(&compose_key(prefix_name.to_string(), key))
+                .and_then(|v| v.into()))
         })
     }
 
@@ -79,7 +85,7 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", prefix_name, "put").end_with(|| {
             let mut cache = self.cache.lock();
             cache.put(
-                compose_key(prefix_name.to_string(), key)?,
+                compose_key(prefix_name.to_string(), key),
                 CacheObject::Value(value),
             );
             CACHE_ITEMS.set(cache.len() as u64);
@@ -89,14 +95,17 @@ impl InnerStore for CacheStorage {
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         record_metrics("cache", prefix_name, "contains_key").end_with(|| {
-            let compose = compose_key(prefix_name.to_string(), key)?;
-            Ok(self.cache.lock().contains(&compose))
+            Ok(self
+                .cache
+                .lock()
+                .contains(&compose_key(prefix_name.to_string(), key)))
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("cache", prefix_name, "remove").end_with(|| {
-            let compose = compose_key(prefix_name.to_string(), key)?;
-            self.cache.lock().pop(&compose);
+            self.cache
+                .lock()
+                .pop(&compose_key(prefix_name.to_string(), key));
             Ok(())
         })
     }
@@ -126,10 +135,10 @@ impl InnerStore for CacheStorage {
     }
 }
 
-fn compose_key(prefix_name: String, source_key: Vec<u8>) -> Result<Vec<u8>> {
+fn compose_key(prefix_name: String, source_key: Vec<u8>) -> Vec<u8> {
     let temp_vec = prefix_name.as_bytes().to_vec();
     let mut compose = Vec::with_capacity(temp_vec.len() + source_key.len());
     compose.extend(temp_vec);
     compose.extend(source_key);
-    Ok(compose)
+    compose
 }

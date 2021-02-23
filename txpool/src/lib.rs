@@ -122,7 +122,8 @@ impl TxPoolActorService {
                 Ok(txs) if !txs.is_empty() => {
                     if self
                         .next_propagation_ready
-                        .compare_and_swap(true, false, Ordering::AcqRel)
+                        .compare_exchange(true, false, Ordering::AcqRel, Ordering::Relaxed)
+                        .unwrap_or_else(|x| x)
                     {
                         let request =
                             PropagateTransactions::new(txs, self.next_propagation_ready.clone());

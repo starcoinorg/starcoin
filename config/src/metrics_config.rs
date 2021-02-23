@@ -52,7 +52,7 @@ impl MetricsConfig {
         self.metrics_address
     }
 
-    fn generate_address(&mut self) -> Result<()> {
+    fn generate_address(&mut self) {
         if !self.disable_metrics() {
             self.metrics_address = Some(SocketAddr::new(
                 self.address.unwrap_or(DEFAULT_METRIC_SERVER_ADDRESS),
@@ -68,7 +68,6 @@ impl MetricsConfig {
                 }),
             ));
         }
-        Ok(())
     }
 }
 
@@ -85,7 +84,7 @@ impl ConfigModule for MetricsConfig {
         if opt.metrics.port.is_some() {
             self.port = opt.metrics.port;
         }
-        self.generate_address()?;
+        self.generate_address();
         Ok(())
     }
 }

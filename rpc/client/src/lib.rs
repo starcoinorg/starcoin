@@ -737,11 +737,9 @@ impl RpcClient {
             }
         };
         let result = f(inner).await;
-        if let Err(rpc_error) = &result {
-            if let jsonrpc_client_transports::RpcError::Other(e) = rpc_error {
-                error!("rpc error due to {}", e);
-                *(self.inner.lock()) = None;
-            }
+        if let Err(jsonrpc_client_transports::RpcError::Other(e)) = &result {
+            error!("rpc error due to {}", e);
+            *(self.inner.lock()) = None;
         }
         result
     }

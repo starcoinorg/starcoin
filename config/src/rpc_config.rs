@@ -431,7 +431,7 @@ impl RpcConfig {
         self.base.as_ref().expect("Config should init.")
     }
 
-    fn generate_address(&mut self) -> Result<()> {
+    fn generate_address(&mut self) {
         let base = self.base();
         let (http_port, tcp_port, ws_port) = if base.net().is_test() {
             let ports = get_random_available_ports(3);
@@ -474,7 +474,6 @@ impl RpcConfig {
         } else {
             Some(ListenAddress::new("ws", self.rpc_address(), ws_port))
         };
-        Ok(())
     }
 
     #[cfg(not(windows))]
@@ -506,7 +505,7 @@ impl ConfigModule for RpcConfig {
         self.ipc.merge(&opt.rpc.ipc)?;
         self.api_quotas.merge(&opt.rpc.api_quotas)?;
 
-        self.generate_address()?;
+        self.generate_address();
 
         info!("Http rpc address: {:?}", self.get_http_address());
         info!("TCP rpc address: {:?}", self.get_tcp_address());
