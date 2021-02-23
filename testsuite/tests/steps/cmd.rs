@@ -52,7 +52,7 @@ pub fn steps() -> Steps<MyWorld> {
             info!("parameter: {:?}", vec.clone());
             let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
 
-            info!("cmd execute result: {:?}", result);
+            debug!("cmd execute result: {:?}", result);
 
             world.value = Some(result);
         })

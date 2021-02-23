@@ -6,14 +6,22 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::TransactionInfoView;
+use starcoin_rpc_api::types::TransactionView;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_txn")]
 pub struct GetOpt {
     #[structopt(name = "txn-hash")]
-    hash: HashValue,
+    /// txn hash
+    txn_hash: Option<HashValue>,
+
+    #[structopt(name = "block-hash", long, required_unless = "txn-hash")]
+    /// block hash which include the txn, only used when txn-hash is missing.
+    block_hash: Option<HashValue>,
+    #[structopt(name = "idx", long, required_unless = "txn-hash")]
+    /// the index(start from 0) of the txn in the block
+    idx: Option<u64>,
 }
 
 pub struct GetTransactionCommand;
@@ -22,7 +30,7 @@ impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = Option<TransactionInfoView>;
+    type ReturnItem = Option<TransactionView>;
 
     fn run(
         &self,
@@ -30,8 +38,17 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let txn_info = client.chain_get_transaction_info(opt.hash)?;
-
-        Ok(txn_info)
+        match &opt.txn_hash {
+            Some(txn_hash) => Ok(client.chain_get_transaction(*txn_hash)?),
+            None => {
+                let block_hash = opt.block_hash.expect("block-hash exists");
+                let idx = opt.idx.expect("idx exists");
+                let txn_info = client.chain_get_txn_info_by_block_and_index(block_hash, idx)?;
+                match txn_info {
+                    Some(info) => Ok(client.chain_get_transaction(info.transaction_hash)?),
+                    None => Ok(None),
+                }
+            }
+        }
     }
 }
