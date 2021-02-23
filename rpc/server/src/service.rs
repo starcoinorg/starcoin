@@ -162,9 +162,7 @@ impl RpcService {
             info!("Ipc rpc server start at :{:?}", ipc_file);
             Some(
                 jsonrpc_ipc_server::ServerBuilder::new(io_handler)
-                    .session_meta_extractor(RpcExtractor {
-                        http_ip_headers: self.config.rpc.http.ip_headers(),
-                    })
+                    .session_meta_extractor(RpcExtractor::default())
                     .start(ipc_file.to_str().expect("Path to string should success."))?,
             )
         })
@@ -176,7 +174,9 @@ impl RpcService {
             let apis = self.config.rpc.http.apis().list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
-                .meta_extractor(RpcExtractor::default())
+                .meta_extractor(RpcExtractor {
+                    http_ip_headers: self.config.rpc.http.ip_headers(),
+                })
                 .cors(DomainsValidation::AllowOnly(vec![
                     AccessControlAllowOrigin::Null,
                     AccessControlAllowOrigin::Any,

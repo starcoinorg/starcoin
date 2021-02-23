@@ -7,7 +7,7 @@ use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
-use network_api::{NetworkService, PeerProvider};
+use network_api::{NetworkService, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -135,7 +135,9 @@ impl BlockRelayer {
             if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
                 debug!("Block is failed block : {:?}", block_id);
             } else {
-                let rpc_client = VerifiedRpcClient::new(network.peer_selector().await?, network);
+                let peers = network.peer_set().await?;
+                let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+                let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                 let block = BlockRelayer::fill_compact_block(
                     txpool.clone(),
                     rpc_client,
