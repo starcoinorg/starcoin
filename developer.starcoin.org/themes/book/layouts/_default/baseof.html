@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.Language.Lang }}" dir={{ .Site.Language.LanguageDirection }}>
+
+<head>
+    {{ partial "docs/html-head" . }}
+    {{ partial "docs/inject/head" . }}
+</head>
+
+<body dir={{ .Site.Language.LanguageDirection }}>
+<!--顶部导航开始-->
+
+<!--<link rel="stylesheet" href="/css/amazeui.min.css">-->
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/animate.css">
+<!--<script src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>-->
+<script src="/js/jquery.min.js"></script>
+<script src="/js/nav.js"></script>
+<div class="top-header flex">
+    <header class="am-topbar am-topbar-fixed-top header-height">
+        <div id="nav-backgroud-layer" class="nav-backgroud-layer"></div>
+        <div class="am-container">
+            <h1 class="am-topbar-brand logo">
+                <a href="http://starcoin.org/index.html" class="logo">Starcoin</a>
+            </h1>
+
+            <button class="am-topbar-btn am-topbar-toggle am-btn am-btn-sm am-btn-secondary am-show-sm-only" id="nav-btn">
+                <span class="am-sr-only">导航切换</span>
+                <span class="am-icon-bars"></span>
+            </button>
+
+            <div class="am-collapse am-topbar-collapse nav-div" id="collapse-head">
+                <ul class="am-nav am-nav-pills am-topbar-nav nav-ul-top">
+                    <li><a href="http://starcoin.org/index.html">Overview</a></li>
+                    <li><a href="http://starcoin.org/index.html">News</a></li>
+                    <li><a href="http://developer.starcoin.org ">Developer </a></li>
+                    <li><a href="http://starcoin.org/contact.html">Contact</a></li>
+                </ul>
+
+                <div class="am-topbar-right header-right">
+                    <ul class="am-nav am-nav-pills am-topbar-nav  header-right-ul">
+                        <li class="header-right-a-acitve"><a href="http://starcoin.org/index.html">Overview</a></li>
+                        <li class=""><a href="http://news.starcoin.org">News</a></li>
+                        <li ><a href="http://developer.starcoin.org ">Developer </a></li>
+                        <li class="contact"><a href="http://starcoin.org/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </header>
+</div>
+<!--顶部导航结束-->
+
+<input type="checkbox" class="hidden" id="menu-control"/>
+
+<main class="container flex main-container am-container">
+    <aside class="book-menu">
+        {{ template "menu" . }} <!-- Left menu Content -->
+    </aside>
+
+    <div class="book-page">
+        <header class="book-header">
+            {{ template "header" . }} <!-- Mobile layout header -->
+        </header>
+
+        {{ partial "docs/inject/content-before" . }}
+        {{ template "main" . }} <!-- Page Content -->
+        {{ partial "docs/inject/content-after" . }}
+
+        <!--<footer class="book-footer">-->
+            <!--{{ template "footer" . }} &lt;!&ndash; Footer under page content &ndash;&gt;-->
+            <!--{{ partial "docs/inject/footer" . }}-->
+        <!--</footer>-->
+
+        {{ template "comments" . }} <!-- Comments block -->
+
+        <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    {{ if default true (default .Site.Params.BookToC .Params.BookToC) }}
+    <aside class="book-toc">
+        {{ template "toc" . }} <!-- Table of Contents -->
+    </aside>
+    {{ end }}
+</main>
+
+{{ partial "docs/inject/body" . }}
+
+<!--底部导航开始-->
+<div class="clear-both"></div>
+<footer class="am-footer am-footer-default main-footer">
+    <div class="am-footer-miscs ">
+        <p>© 2018-2020 <a href="http://starcoin.org/" target="_blank">Starcoin.org</a> All rights reserved. </p>
+    </div>
+    <div class="container flex am-container">
+        {{ if .Site.IsMultiLingual }}
+        {{ partial "docs/languages" . }}
+        {{ end }}
+        {{ if and .File .Site.Params.BookRepo .Site.Params.BookEditPath }}
+
+          <a class="flex align-center" href="{{ .Site.Params.BookRepo }}/{{ .Site.Params.BookEditPath }}/{{ .Site.Params.contentDir }}/{{ replace .File.Path "\\" "/" }}" target="_blank" rel="noopener">
+          <img src="{{ "svg/edit.svg" | relURL }}" class="book-icon" alt="Edit" />
+          <span>{{ i18n "Edit this page" }}</span>
+          </a>
+
+        {{ end }}
+    </div>
+</footer>
+
+<!--底部导航结束-->
+</body>
+
+</html>
+
+{{ define "menu" }}
+{{ partial "docs/menu" . }}
+{{ end }}
+
+{{ define "header" }}
+{{ partial "docs/header" . }}
+
+{{ if default true (default .Site.Params.BookToC .Params.BookToC) }}
+<input type="checkbox" class="hidden" id="toc-control"/>
+<aside class="hidden clearfix">
+    {{ template "toc" . }}
+</aside>
+{{ end }}
+{{ end }}
+
+{{ define "footer" }}
+{{ partial "docs/footer" . }}
+{{ end }}
+
+{{ define "comments" }}
+{{ if and .Content (default true (default .Site.Params.BookComments .Params.BookComments)) }}
+<div class="book-comments">
+    {{- partial "docs/comments" . -}}
+</div>
+{{ end }}
+{{ end }}
+
+{{ define "main" }}
+<article class="markdown">
+    {{- .Content -}}
+</article>
+{{ end }}
+
+{{ define "toc" }}
+{{ partial "docs/toc" . }}
+{{ end }}
