@@ -64,7 +64,7 @@ module TestPureFun {
         }
 
         define dr_x(): u64 {
-            get_x(CoreAddresses::DIEM_ROOT_ADDRESS())
+            get_x(CoreAddresses::ASSOCIATION_ROOT_ADDRESS())
         }
     }
 

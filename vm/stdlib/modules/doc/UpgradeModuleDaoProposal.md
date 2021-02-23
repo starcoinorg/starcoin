@@ -236,7 +236,7 @@ propose a module upgrade, called by proposer.
 
 
 
-<pre><code><b>pragma</b> verify;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict;
 <b>pragma</b> aborts_if_is_partial;
 </code></pre>

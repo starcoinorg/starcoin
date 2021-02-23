@@ -14,7 +14,7 @@ module TestPureFun {
     }
 
     spec fun init {
-        aborts_if Signer::spec_address_of(dr_account) != CoreAddresses::DIEM_ROOT_ADDRESS();
+        aborts_if Signer::spec_address_of(dr_account) != CoreAddresses::ASSOCIATION_ROOT_ADDRESS();
         aborts_if exists<T>(Signer::spec_address_of(dr_account));
         ensures dr_x() == pure_f_2();
     }
@@ -62,7 +62,7 @@ module TestPureFun {
 
     spec module {
         define dr_x(): u64 {
-            get_x(CoreAddresses::DIEM_ROOT_ADDRESS())
+            get_x(CoreAddresses::ASSOCIATION_ROOT_ADDRESS())
         }
     }
 
