@@ -15,7 +15,7 @@ use move_prover_test_utils::{
 
 use datatest_stable::Requirements;
 #[allow(unused_imports)]
-use log::{debug, warn};
+use log::{debug, info, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 const ENV_FLAGS: &str = "MVP_TEST_FLAGS";
@@ -46,14 +46,15 @@ fn test_runner(path: &Path) -> datatest_stable::Result<()> {
     options.setup_logging_for_test();
     if no_boogie {
         options.prover.generate_only = true;
-        if !NOT_CONFIGURED_WARNED
+        if NOT_CONFIGURED_WARNED
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-            .unwrap_or_else(|x| x)
+            .is_ok()
         {
             warn!("Prover tools are not configured, verification tests will be skipped.");
         }
     }
     options.prover.stable_test_output = true;
+    options.backend.stable_test_output = true;
 
     let mut error_writer = Buffer::no_color();
     let mut diags = match run_move_prover(&mut error_writer, options) {
@@ -74,8 +75,17 @@ fn test_runner(path: &Path) -> datatest_stable::Result<()> {
         }
     }
 
-    // Run again with cvc4
-    if !no_boogie && !read_env_var("CVC4_EXE").is_empty() && !cvc4blacklisted(path) {
+    // Run again with cvc4 if TEST_CVC4 is set and UPBL (update baselines) is not set.
+    // We do not run CVC4 based tests by default because the way how things are setup,
+    // they would always be run in CI and make verification roughly 2x slower because all tools
+    // are installed in CI and on user machines and `CVC4_EXE` is always set.
+    if !read_env_var("MVP_TEST_CVC4").is_empty()
+        && read_env_var("UPBL").is_empty()
+        && !no_boogie
+        && !read_env_var("CVC4_EXE").is_empty()
+        && !cvc4_deny_listed(path)
+    {
+        info!("running with cvc4");
         args.push("--use-cvc4".to_owned());
         options = Options::create_from_args(&args)?;
         options.setup_logging_for_test();
@@ -101,85 +111,75 @@ fn test_runner(path: &Path) -> datatest_stable::Result<()> {
     Ok(())
 }
 
-fn cvc4blacklisted(path: &Path) -> bool {
+fn cvc4_deny_listed(path: &Path) -> bool {
     let path_str = path.to_str().unwrap();
-    if path_str == "../stdlib/modules/ValidatorOperatorConfig.move" ||
-        path_str == "../stdlib/modules/Option.move" ||
-        path_str == "../stdlib/modules/RegisteredCurrencies.move" ||
-        path_str == "../stdlib/modules/AccountFreezing.move" ||
-        path_str == "../stdlib/modules/DiemTransactionPublishingOption.move" ||
-        path_str == "../stdlib/modules/VASP.move" ||
-        path_str == "../stdlib/modules/ValidatorConfig.move" ||
-        path_str == "../stdlib/modules/DiemConfig.move" ||
-        path_str == "../stdlib/modules/DiemSystem.move" ||
-        path_str == "../stdlib/modules/XUS.move" ||
-        path_str == "../stdlib/modules/DualAttestation.move" ||
-        path_str == "../stdlib/modules/XDX.move" ||
-        path_str == "tests/sources/functional/cast.move" ||
-        path_str == "../stdlib/modules/RecoveryAddress.move" ||
-        path_str == "tests/sources/functional/loops.move" ||
-        path_str == "../stdlib/transaction_scripts/add_validator_and_reconfigure.move" ||
-        path_str == "../stdlib/transaction_scripts/rotate_authentication_key.move" ||
-        path_str == "tests/sources/functional/aborts_if_assume_assert.move" ||
-        path_str == "../stdlib/transaction_scripts/remove_validator_and_reconfigure.move" ||
-        path_str == "../stdlib/modules/DesignatedDealer.move" ||
-        path_str == "tests/sources/functional/marketcap.move" ||
-        path_str == "tests/sources/functional/invariants.move" ||
-        path_str == "tests/sources/functional/module_invariants.move" ||
-        path_str == "tests/sources/functional/ModifiesSchemaTest.move" ||
-        path_str == "tests/sources/functional/resources.move" ||
-        path_str == "tests/sources/functional/schema_exp.move" ||
-        path_str == "tests/sources/functional/marketcap_generic.move" ||
-        path_str == "tests/sources/functional/aborts_if_with_code.move" ||
-        path_str == "tests/sources/functional/address_serialization_constant_size.move" ||
-        path_str == "../stdlib/transaction_scripts/set_validator_config_and_reconfigure.move" ||
-        path_str == "tests/sources/functional/global_invariants.move" ||
-        path_str == "tests/sources/functional/nested_invariants.move" ||
-        path_str == "../stdlib/transaction_scripts/rotate_authentication_key_with_recovery_address.move" ||
-        path_str == "tests/sources/functional/marketcap_as_schema_apply.move" ||
-        path_str == "tests/sources/functional/global_vars.move" ||
-        path_str == "../stdlib/transaction_scripts/rotate_authentication_key_with_nonce.move" ||
-        path_str == "tests/sources/functional/specs_in_fun_ref.move" ||
-        path_str == "tests/sources/functional/references.move" ||
-        path_str == "tests/sources/functional/mut_ref_unpack.move" ||
-        path_str == "tests/sources/functional/hash_model.move" ||
-        path_str == "tests/sources/functional/ModifiesErrorTest.move" ||
-        path_str == "tests/sources/functional/consts.move" ||
-        path_str == "tests/sources/functional/type_values.move" ||
-        path_str == "tests/sources/functional/pragma.move" ||
-        path_str == "tests/sources/functional/exists_in_vector.move" ||
-        path_str == "tests/sources/functional/aborts_with_check.move" ||
-        path_str == "tests/sources/functional/aborts_with_negative_check.move" ||
-        path_str == "tests/sources/functional/opaque.move" ||
-        path_str == "tests/sources/functional/marketcap_as_schema.move" ||
-        path_str == "tests/sources/functional/aborts_if.move" ||
-        path_str == "tests/sources/functional/address_quant.move" ||
-        path_str == "tests/sources/functional/hash_model_invalid.move" ||
-        path_str == "tests/sources/functional/serialize_model.move" ||
-        path_str == "tests/sources/functional/return_values.move" ||
-        path_str == "tests/sources/functional/pack_unpack.move" ||
-        path_str == "tests/sources/functional/specs_in_fun.move" ||
-        path_str == "tests/sources/functional/arithm.move" ||
-        path_str == "tests/sources/regression/Escape.move" ||
-        path_str == "tests/sources/functional/mut_ref_accross_modules.move" ||
-        path_str == "tests/sources/regression/type_param_bug_200228.move" ||
-        path_str == "tests/sources/regression/trace200527.move" ||
-        path_str == "tests/sources/regression/generic_invariant200518.move" ||
-        path_str == "../stdlib/transaction_scripts/rotate_authentication_key_with_nonce_admin.move" ||
-        path_str == "tests/sources/functional/simple_vector_client.move" ||
-        path_str == "../stdlib/transaction_scripts/publish_shared_ed25519_public_key.move" ||
-        path_str == "tests/sources/functional/verify_vector.move" ||
-        path_str == "../stdlib/transaction_scripts/create_designated_dealer.move" ||
-        path_str == "../stdlib/transaction_scripts/create_parent_vasp_account.move" ||
-        path_str == "../stdlib/modules/Diem.move" ||
-        path_str == "../stdlib/transaction_scripts/create_child_vasp_account.move" ||
-        path_str == "../stdlib/modules/FixedPoint32.move" ||
-        path_str == "../stdlib/modules/Genesis.move" ||
-        path_str == "../stdlib/modules/DiemAccount.move" ||
-
-        path_str == "../stdlib/modules/AccountLimits.move" || // This one takes over a minute
-
-        true
+    if path_str == "tests/sources/functional/cast.move"
+        || path_str == "tests/sources/functional/loops.move"
+        || path_str == "tests/sources/functional/aborts_if_assume_assert.move"
+        || path_str == "tests/sources/functional/marketcap.move"
+        || path_str == "tests/sources/functional/invariants.move"
+        || path_str == "tests/sources/functional/invariants_resources.move"
+        || path_str == "tests/sources/functional/module_invariants.move"
+        || path_str == "tests/sources/functional/ModifiesSchemaTest.move"
+        || path_str == "tests/sources/functional/resources.move"
+        || path_str == "tests/sources/functional/schema_exp.move"
+        || path_str == "tests/sources/functional/marketcap_generic.move"
+        || path_str == "tests/sources/functional/aborts_if_with_code.move"
+        || path_str == "tests/sources/functional/address_serialization_constant_size.move"
+        || path_str == "tests/sources/functional/global_invariants.move"
+        || path_str == "tests/sources/functional/nested_invariants.move"
+        || path_str == "tests/sources/functional/marketcap_as_schema_apply.move"
+        || path_str == "tests/sources/functional/global_vars.move"
+        || path_str == "tests/sources/functional/specs_in_fun_ref.move"
+        || path_str == "tests/sources/functional/references.move"
+        || path_str == "tests/sources/functional/mut_ref_unpack.move"
+        || path_str == "tests/sources/functional/hash_model.move"
+        || path_str == "tests/sources/functional/ModifiesErrorTest.move"
+        || path_str == "tests/sources/functional/consts.move"
+        || path_str == "tests/sources/functional/type_values.move"
+        || path_str == "tests/sources/functional/pragma.move"
+        || path_str == "tests/sources/functional/exists_in_vector.move"
+        || path_str == "tests/sources/functional/aborts_with_check.move"
+        || path_str == "tests/sources/functional/aborts_with_negative_check.move"
+        || path_str == "tests/sources/functional/opaque.move"
+        || path_str == "tests/sources/functional/marketcap_as_schema.move"
+        || path_str == "tests/sources/functional/aborts_if.move"
+        || path_str == "tests/sources/functional/address_quant.move"
+        || path_str == "tests/sources/functional/hash_model_invalid.move"
+        || path_str == "tests/sources/functional/serialize_model.move"
+        || path_str == "tests/sources/functional/return_values.move"
+        || path_str == "tests/sources/functional/pack_unpack.move"
+        || path_str == "tests/sources/functional/specs_in_fun.move"
+        || path_str == "tests/sources/functional/arithm.move"
+        || path_str == "tests/sources/regression/Escape.move"
+        || path_str == "tests/sources/functional/mut_ref_accross_modules.move"
+        || path_str == "tests/sources/regression/type_param_bug_200228.move"
+        || path_str == "tests/sources/regression/trace200527.move"
+        || path_str == "tests/sources/regression/generic_invariant200518.move"
+        || path_str == "tests/sources/functional/simple_vector_client.move"
+        || path_str == "tests/sources/functional/verify_vector.move"
+        || path_str == "tests/sources/functional/script_incorrect.move"
+        || path_str == "tests/sources/functional/emits.move"
+        || path_str == "tests/sources/functional/friend.move"
+        || path_str == "tests/sources/regression/set_200701.move"
+        || path_str == "../stdlib/transaction_scripts/queue_proposal_action.move"
+        || path_str == "../stdlib/transaction_scripts/destroy_terminated_proposal.move"
+        || path_str == "../stdlib/transaction_scripts/execute_modify_dao_config_proposal.move"
+        || path_str == "../stdlib/transaction_scripts/propose_modify_dao_config.move"
+        || path_str == "../stdlib/transaction_scripts/submit_module_upgrade_plan.move"
+        || path_str == "../stdlib/transaction_scripts/propose_module_upgrade.move"
+        || path_str == "../stdlib/transaction_scripts/cast_vote.move"
+        || path_str == "../stdlib/transaction_scripts/unstake_vote.move"
+        || path_str == "../stdlib/transaction_scripts/revoke_vote.move"
+        || path_str == "../stdlib/modules/TransactionPublishOption.move"
+        || path_str == "../stdlib/modules/OnChainConfigDao.move"
+        || path_str == "../stdlib/modules/Authenticator.move"
+        || path_str == "../stdlib/modules/MintDaoProposal.move"
+        || path_str == "../stdlib/modules/Dao.move"
+        || path_str == "../stdlib/modules/ConsensusConfig.move"
+        || path_str == "../stdlib/modules/UpgradeModuleDaoProposal.move"
+        || path_str == "../stdlib/modules/ModifyDaoConfigProposal.move"
+        || false
     {
         return true;
     }
@@ -231,7 +231,7 @@ fn main() {
         reqs.push(Requirements::new(
             test_runner,
             "stdlib".to_string(),
-            "../stdlib".to_string(),
+            "../stdlib/modules".to_string(),
             r".*\.move$".to_string(),
         ));
     }

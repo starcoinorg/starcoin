@@ -17,8 +17,8 @@ serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="f
 serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="f2b44e0455ca19cda822523e3038d6b6bae78b28"}
 
 starcoin-vm-types = { path = "../types"}
-diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="809978a9b6064857211d5ed56d6628909ca7553f" }
-move-core-types = {git = "https://github.com/starcoinorg/diem", rev="809978a9b6064857211d5ed56d6628909ca7553f" }
+diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="8c4da62a52f4a30533e2deebfc33cfdbdef6c52f" }
+move-core-types = {git = "https://github.com/starcoinorg/diem", rev="8c4da62a52f4a30533e2deebfc33cfdbdef6c52f" }
 bcs = "0.1.2"
 
 [dev-dependencies]

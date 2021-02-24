@@ -11,6 +11,6 @@ fun main() {
     OddOrEven::is_odd(1001);
 }
 }
-// check: "EXECUTION_FAILURE { status_code: OUT_OF_GAS, location: 0xa4a46d1b1421502568a4a6ac326d7250::OddOrEven,"
+// check: "EXECUTION_FAILURE { status_code: OUT_OF_GAS, location: 0xd98f86e3303c97b00313854b8314f51b::OddOrEven,"
 // check: "gas_used: 600000,"
 // check: "Keep(OUT_OF_GAS)"

@@ -26,15 +26,6 @@ use move_model::model::VerificationScope;
 /// Represents the virtual path to the boogie prelude which is inlined into the binary.
 pub const INLINE_PRELUDE: &str = "<inline-prelude>";
 
-/// Default flags passed to boogie. Additional flags will be added to this via the -B option.
-
-const DEFAULT_BOOGIE_FLAGS: &[&str] = &[
-    "-doModSetAnalysis",
-    "-printVerifiedProceduresCount:0",
-    "-printModel:1",
-    "-enhancedErrorMessages:1",
-];
-
 /// Atomic used to prevent re-initialization of logging.
 static LOGGER_CONFIGURED: AtomicBool = AtomicBool::new(false);
 
@@ -70,8 +61,6 @@ pub struct Options {
     pub prover: ProverOptions,
     /// Options for the prover backend.
     pub backend: BoogieOptions,
-    /// Whether to use the v2 translation schema.
-    pub trans_v2: bool,
     /// Options for the documentation generator.
     pub docgen: DocgenOptions,
     /// Options for the ABI generator.
@@ -98,7 +87,6 @@ impl Default for Options {
             move_deps: vec![],
             prover: ProverOptions::default(),
             backend: BoogieOptions::default(),
-            trans_v2: false,
             docgen: DocgenOptions::default(),
             abigen: AbigenOptions::default(),
             errmapgen: ErrmapOptions::default(),
@@ -202,9 +190,9 @@ impl Options {
                     .help("keep intermediate artifacts of the backend around")
             )
             .arg(
-                Arg::with_name("trans_v2")
-                    .long("v2")
-                    .help("whether to use the new v2 translation and backend")
+                Arg::with_name("trans_v1")
+                    .long("v1")
+                    .help("whether to use the old v1 translation and backend")
             )
             .arg(
                 Arg::with_name("negative")
@@ -341,6 +329,13 @@ impl Options {
                     .help("whether to run the Boogie instances sequentially")
             )
             .arg(
+                Arg::with_name("stable-test-output")
+                    .long("stable-test-output")
+                    .help("instruct the prover to produce output in diagnosis which is stable \
+                     and suitable for baseline tests. This redacts values in diagnosis which might\
+                     be non-deterministic, and may do other things to keep output stable.")
+            )
+            .arg(
                 Arg::with_name("use-cvc4")
                     .long("use-cvc4")
                     .help("use cvc4 solver instead of z3")
@@ -445,16 +440,18 @@ impl Options {
                 .value_of("num-instances")
                 .unwrap()
                 .parse::<usize>()?;
-            options.prover.num_instances = std::cmp::max(num_instances, 1); // at least one instance
+            options.backend.num_instances = std::cmp::max(num_instances, 1); // at least one instance
         }
         if matches.is_present("sequential") {
             options.prover.sequential_task = true;
+            options.prover.sequential_task = true;
+        }
+        if matches.is_present("stable-test-output") {
+            //options.prover.stable_test_output = true;
+            options.backend.stable_test_output = true;
         }
         if matches.is_present("keep") {
             options.backend.keep_artifacts = true;
-        }
-        if matches.is_present("trans_v2") {
-            options.trans_v2 = true;
         }
         if matches.is_present("negative") {
             options.prover.negative_checks = true;
@@ -512,86 +509,13 @@ impl Options {
         // Loggers are global static, so we have to protect against reinitializing.
         if LOGGER_CONFIGURED
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-            .unwrap_or_else(|x| x)
+            .is_err()
         {
             return;
         }
         TEST_MODE.store(true, Ordering::Relaxed);
         SimpleLogger::init(self.verbosity_level, Config::default())
             .expect("UnexpectedSimpleLogger failure");
-    }
-
-    /// Returns command line to call boogie.
-    pub fn get_boogie_command(&self, boogie_file: &str) -> Vec<String> {
-        let mut result = vec![self.backend.boogie_exe.clone()];
-        let mut add = |sl: &[&str]| result.extend(sl.iter().map(|s| (*s).to_string()));
-        add(DEFAULT_BOOGIE_FLAGS);
-        if !self.prover.negative_checks {
-            // Right now, we let boogie only produce one error per procedure. The boogie wrapper isn't
-            // capable to sort out multiple errors and associate them with models otherwise.
-            add(&["-errorLimit:1"]);
-        }
-        if self.backend.use_cvc4 {
-            add(&[
-                "-proverOpt:SOLVER=cvc4",
-                &format!("-proverOpt:PROVER_PATH={}", &self.backend.cvc4_exe),
-            ]);
-        } else {
-            add(&[&format!("-proverOpt:PROVER_PATH={}", &self.backend.z3_exe)]);
-        }
-        if self.backend.use_array_theory {
-            add(&[
-                "-useArrayTheory",
-                "/proverOpt:O:smt.array.extensional=false",
-            ]);
-        } else {
-            add(&[&format!(
-                "-proverOpt:O:smt.QI.EAGER_THRESHOLD={}",
-                self.backend.eager_threshold
-            )]);
-            add(&[&format!(
-                "-proverOpt:O:smt.QI.LAZY_THRESHOLD={}",
-                self.backend.lazy_threshold
-            )]);
-        }
-        add(&[&format!(
-            "-vcsCores:{}",
-            if self.prover.stable_test_output {
-                // Do not use multiple cores if stable test output is requested.
-                // Error messages may appear in non-deterministic order otherwise.
-                1
-            } else {
-                self.backend.proc_cores
-            }
-        )]);
-        // TODO: see what we can make out of these flags.
-        //add(&["-proverOpt:O:smt.QI.PROFILE=true"]);
-        //add(&["-proverOpt:O:trace=true"]);
-        //add(&["-proverOpt:VERBOSITY=3"]);
-        //add(&["-proverOpt:C:-st"]);
-        if self.backend.generate_smt {
-            add(&["-proverLog:@PROC@.smt"]);
-        }
-        for f in &self.backend.boogie_flags {
-            add(&[f.as_str()]);
-        }
-        add(&[boogie_file]);
-        result
-    }
-
-    /// Returns name of file where to log boogie output.
-    pub fn get_boogie_log_file(&self, boogie_file: &str) -> String {
-        format!("{}.log", boogie_file)
-    }
-
-    /// Adjust a timeout value, given in seconds, for the runtime environment.
-    pub fn adjust_timeout(&self, time: usize) -> usize {
-        // If running on a Linux flavor as in Ci, add 100% to the timeout for added
-        // robustness against flakiness.
-        match std::env::consts::OS {
-            "linux" | "freebsd" | "openbsd" => time + time,
-            _ => time,
-        }
     }
 
     /// Convenience function to enable debugging (like high verbosity) on this instance.

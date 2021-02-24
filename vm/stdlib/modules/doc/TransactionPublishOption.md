@@ -256,7 +256,7 @@ The script hash has an invalid length
 
 
 
-<pre><code><b>pragma</b> verify = <b>true</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
 <a name="0x1_TransactionPublishOption_spec_is_script_allowed"></a>
 <b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">spec_is_script_allowed</a>(addr: address, hash: vector&lt;u8&gt;) : bool{

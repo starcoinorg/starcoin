@@ -340,7 +340,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
 
 
 
-<pre><code><b>pragma</b> verify;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict;
 </code></pre>
 

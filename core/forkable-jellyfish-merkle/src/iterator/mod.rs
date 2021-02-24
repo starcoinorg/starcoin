@@ -23,6 +23,9 @@ use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
 use std::marker::PhantomData;
 
+#[cfg(test)]
+use short_hex_str::AsShortHexStr;
+
 /// `NodeVisitInfo` keeps track of the status of an internal node during the iteration process. It
 /// indicates which ones of its children have been visited.
 #[derive(Debug)]

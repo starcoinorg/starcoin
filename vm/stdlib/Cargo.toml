@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/diem", version = "0.1.0",rev="809978a9b6064857211d5ed56d6628909ca7553f" }
-datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="809978a9b6064857211d5ed56d6628909ca7553f" }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/diem", version = "0.1.0",rev="8c4da62a52f4a30533e2deebfc33cfdbdef6c52f" }
+datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="8c4da62a52f4a30533e2deebfc33cfdbdef6c52f" }
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }

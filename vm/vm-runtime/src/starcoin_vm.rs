@@ -10,7 +10,6 @@ use crate::metrics::{BLOCK_UNCLES, TXN_EXECUTION_GAS_USAGE};
 use anyhow::{format_err, Error, Result};
 use crypto::HashValue;
 use move_vm_runtime::data_cache::RemoteCache;
-use move_vm_runtime::data_cache::TransactionEffects;
 use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
 use starcoin_logger::prelude::*;
 use starcoin_move_compiler::check_module_compat;
@@ -44,9 +43,10 @@ use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
+    effects::{ChangeSet as MoveChangeSet, Event as MoveEvent},
     errors::{self, IndexKind, Location},
     event::EventKey,
-    gas_schedule::{self, CostTable, GasAlgebra, GasCarrier, GasUnits},
+    gas_schedule::{self, CostTable, GasAlgebra, GasCarrier, GasUnits, InternalGasUnits},
     language_storage::TypeTag,
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_view::StateView,
@@ -136,12 +136,7 @@ impl StarcoinVM {
         // The submitted max gas units that the transaction can consume is greater than the
         // maximum number of gas units bound that we have set for any
         // transaction.
-        if txn_data
-            .max_gas_amount()
-            .map(|gas| gas * gas_constants.gas_unit_scaling_factor)
-            .get()
-            > gas_constants.maximum_number_of_gas_units.get()
-        {
+        if txn_data.max_gas_amount().get() > gas_constants.maximum_number_of_gas_units.get() {
             warn!(
                 "[VM] Gas unit error; max {}, submitted {}, with scaling_factor {}",
                 gas_constants.maximum_number_of_gas_units.get(),
@@ -157,9 +152,8 @@ impl StarcoinVM {
         // intrinsic cost of the transaction as calculated against the size of the
         // underlying `RawTransaction`
         let min_txn_fee = gas_schedule::calculate_intrinsic_gas(raw_bytes_len, gas_constants);
-        if txn_data
-            .max_gas_amount()
-            .map(|gas| gas * gas_constants.gas_unit_scaling_factor)
+        if gas_constants
+            .to_internal_units(txn_data.max_gas_amount())
             .get()
             < min_txn_fee.get()
         {
@@ -825,8 +819,8 @@ impl StarcoinVM {
             .execute_readonly_function(module, function_name, type_params, args, &mut cost_strategy)
             .map_err(|e| e.into_vm_status())?;
 
-        let effects = session.finish().map_err(|e| e.into_vm_status())?;
-        let (writeset, _events) = txn_effects_to_writeset_and_events(effects)?;
+        let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
+        let (writeset, _events) = convert_changeset_and_events(changeset, events)?;
         if !writeset.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
@@ -942,7 +936,7 @@ pub(crate) fn charge_global_write_gas_usage<R: RemoteCache>(
             )
             .get();
     cost_strategy
-        .deduct_gas(GasUnits::new(total_cost))
+        .deduct_gas(InternalGasUnits::new(total_cost))
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
 }
 
@@ -970,52 +964,56 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
     )
 }
 
-pub fn txn_effects_to_writeset_and_events_cached<C: AccessPathCache>(
+pub fn convert_changeset_and_events_cached<C: AccessPathCache>(
     ap_cache: &mut C,
-    effects: TransactionEffects,
+    changeset: MoveChangeSet,
+    events: Vec<MoveEvent>,
 ) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
     // TODO: Cache access path computations if necessary.
     let mut ops = vec![];
 
-    for (addr, vals) in effects.resources {
-        for (struct_tag, val_opt) in vals {
+    for (addr, account_changeset) in changeset.accounts {
+        for (struct_tag, blob_opt) in account_changeset.resources {
             let ap = ap_cache.get_resource_path(addr, struct_tag);
-            let op = match val_opt {
+            let op = match blob_opt {
                 None => WriteOp::Deletion,
-                Some((ty_layout, val)) => {
-                    let blob = val
-                        .simple_serialize(&ty_layout)
-                        .ok_or(VMStatus::Error(StatusCode::VALUE_SERIALIZATION_ERROR))?;
-
-                    WriteOp::Value(blob)
-                }
+                Some(blob) => WriteOp::Value(blob),
             };
             ops.push((ap, op))
         }
-    }
 
-    for (module_id, blob) in effects.modules {
-        ops.push((ap_cache.get_module_path(module_id), WriteOp::Value(blob)))
+        for (name, blob_opt) in account_changeset.modules {
+            let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
+            let op = match blob_opt {
+                None => WriteOp::Deletion,
+                Some(blob) => WriteOp::Value(blob),
+            };
+
+            ops.push((ap, op))
+        }
     }
 
     let ws = WriteSetMut::new(ops)
         .freeze()
         .map_err(|_| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
 
-    let events = effects
-        .events
+    let events = events
         .into_iter()
-        .map(|(guid, seq_num, ty_tag, ty_layout, val)| {
-            let msg = val
-                .simple_serialize(&ty_layout)
-                .ok_or(VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
+        .map(|(guid, seq_num, ty_tag, blob)| {
             let key = EventKey::try_from(guid.as_slice())
                 .map_err(|_| VMStatus::Error(StatusCode::EVENT_KEY_MISMATCH))?;
-            Ok(ContractEvent::new(key, seq_num, ty_tag, msg))
+            Ok(ContractEvent::new(key, seq_num, ty_tag, blob))
         })
         .collect::<Result<Vec<_>, VMStatus>>()?;
 
     Ok((ws, events))
+}
+
+pub fn convert_changeset_and_events(
+    changeset: MoveChangeSet,
+    events: Vec<MoveEvent>,
+) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
+    convert_changeset_and_events_cached(&mut (), changeset, events)
 }
 
 pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
@@ -1027,8 +1025,8 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
 ) -> Result<TransactionOutput, VMStatus> {
     let gas_used: u64 = max_gas_amount.sub(cost_strategy.remaining_gas()).get();
 
-    let effects = session.finish().map_err(|e| e.into_vm_status())?;
-    let (write_set, events) = txn_effects_to_writeset_and_events_cached(ap_cache, effects)?;
+    let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
+    let (write_set, events) = convert_changeset_and_events_cached(ap_cache, changeset, events)?;
 
     TXN_EXECUTION_GAS_USAGE.observe(gas_used as f64);
 
@@ -1038,12 +1036,6 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
         gas_used,
         TransactionStatus::Keep(status),
     ))
-}
-
-pub fn txn_effects_to_writeset_and_events(
-    effects: TransactionEffects,
-) -> Result<(WriteSet, Vec<ContractEvent>), VMStatus> {
-    txn_effects_to_writeset_and_events_cached(&mut (), effects)
 }
 
 pub enum VerifiedTransactionPayload {

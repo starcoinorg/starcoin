@@ -9,7 +9,6 @@ use crate::{
     resolver::Resolver,
 };
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::value::MoveTypeLayout;
@@ -18,6 +17,7 @@ use starcoin_vm_types::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
     errors::{Location, PartialVMError},
+    file_format::{Ability, AbilitySet},
     identifier::Identifier,
     language_storage::StructTag,
     value::{MoveStruct, MoveValue},
@@ -35,9 +35,9 @@ mod resolver;
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct AnnotatedMoveStruct {
-    pub is_resource: bool,
+    pub abilities: AbilitySet,
     pub type_: StructTag,
     pub value: Vec<(Identifier, AnnotatedMoveValue)>,
 }
@@ -46,7 +46,7 @@ pub struct AnnotatedMoveStruct {
 /// for debugging/client purpose right now and just for a better visualization of on chain data. In
 /// the long run, we would like to transform this struct to a Json value so that we can have a cross
 /// platform interpretation of the on chain data.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub enum AnnotatedMoveValue {
     U8(u8),
     U64(u64),
@@ -160,7 +160,7 @@ impl<'a> MoveValueAnnotator<'a> {
             annotated_fields.push(self.annotate_value(v, ty)?);
         }
         Ok(AnnotatedMoveStruct {
-            is_resource: ty.is_resource,
+            abilities: ty.abilities.0,
             type_: struct_tag,
             value: field_names
                 .into_iter()
@@ -243,12 +243,8 @@ fn pretty_print_struct(
     value: &AnnotatedMoveStruct,
     indent: u64,
 ) -> std::fmt::Result {
-    writeln!(
-        f,
-        "{}{} {{",
-        if value.is_resource { "resource " } else { "" },
-        value.type_
-    )?;
+    pretty_print_ability_modifiers(f, value.abilities)?;
+    writeln!(f, "{} {{", value.type_)?;
     for (field_name, v) in value.value.iter() {
         write_indent(f, indent + 4)?;
         write!(f, "{}: ", field_name)?;
@@ -257,6 +253,18 @@ fn pretty_print_struct(
     }
     write_indent(f, indent)?;
     write!(f, "}}")
+}
+
+fn pretty_print_ability_modifiers(f: &mut Formatter, abilities: AbilitySet) -> std::fmt::Result {
+    for ability in abilities {
+        match ability {
+            Ability::Copy => write!(f, "copy ")?,
+            Ability::Drop => write!(f, "drop ")?,
+            Ability::Store => write!(f, "store ")?,
+            Ability::Key => write!(f, "key ")?,
+        }
+    }
+    Ok(())
 }
 
 impl Display for AnnotatedMoveValue {

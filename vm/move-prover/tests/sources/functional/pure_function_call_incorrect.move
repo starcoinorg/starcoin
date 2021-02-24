@@ -63,7 +63,7 @@ module TestPureFun {
             impure_f_2()
         }
 
-        define lr_x(): u64 {
+        define dr_x(): u64 {
             get_x(CoreAddresses::ASSOCIATION_ROOT_ADDRESS())
         }
     }

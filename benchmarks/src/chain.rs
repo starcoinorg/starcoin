@@ -85,7 +85,7 @@ impl ChainBencher {
         let max_num = self.chain.read().current_header().number();
         let mut rng = rand::thread_rng();
         for _i in 0..times {
-            let number = rng.gen_range(0, max_num);
+            let number = rng.gen_range(0..max_num);
             let block = self.chain.read().get_block_by_number(number).unwrap();
             assert!(block.is_some());
             // get block and try to use it.

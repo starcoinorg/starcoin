@@ -4,7 +4,7 @@
 use crate::account_config::genesis_address;
 use crate::event::EventHandle;
 use crate::gas_schedule::{
-    AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
+    AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits, InternalGasUnits,
 };
 use crate::move_resource::MoveResource;
 use crate::on_chain_config::DaoConfig;
@@ -859,11 +859,11 @@ static LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
 
 pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
-        global_memory_per_byte_cost: GasUnits::new(4),
-        global_memory_per_byte_write_cost: GasUnits::new(9),
-        min_transaction_gas_units: GasUnits::new(600),
+        global_memory_per_byte_cost: InternalGasUnits::new(4),
+        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
+        min_transaction_gas_units: InternalGasUnits::new(600),
         large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: GasUnits::new(8),
+        intrinsic_gas_per_byte: InternalGasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(1),
         max_price_per_gas_unit: GasPrice::new(10_000),
@@ -875,11 +875,11 @@ pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
 
 pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
-        global_memory_per_byte_cost: GasUnits::new(4),
-        global_memory_per_byte_write_cost: GasUnits::new(9),
-        min_transaction_gas_units: GasUnits::new(600),
+        global_memory_per_byte_cost: InternalGasUnits::new(4),
+        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
+        min_transaction_gas_units: InternalGasUnits::new(600),
         large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: GasUnits::new(8),
+        intrinsic_gas_per_byte: InternalGasUnits::new(8),
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),

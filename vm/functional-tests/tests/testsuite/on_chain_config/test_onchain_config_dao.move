@@ -132,7 +132,7 @@ script {
         assert(state == 6, (state as u64));
         OnChainConfigDao::execute<STC, TransactionPublishOption::TransactionPublishOption>({{alice}}, 0);
         assert(!TransactionPublishOption::is_module_allowed({{genesis}}), 401);
-        assert(TransactionPublishOption::is_script_allowed({{genesis}},&x"010"), 402);
+        assert(TransactionPublishOption::is_script_allowed({{genesis}},&x"0010"), 402);
     }
 }
 // check: EXECUTED
