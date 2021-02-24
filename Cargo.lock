@@ -1064,6 +1064,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
+name = "camino"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "176c40258709f5883ce0f352f30b2065c64112843b33e3e318e1c1cc22960979"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cargo-platform"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1905,7 +1914,24 @@ checksum = "6f862ffb07525089b200b5bd75d2be5a35eebb529cf1118511827a3929358b21"
 dependencies = [
  "cfg-if 1.0.0",
  "globset",
- "guppy",
+ "guppy 0.7.2",
+ "itertools 0.10.0",
+ "once_cell",
+ "petgraph",
+ "rayon",
+ "serde",
+ "toml",
+]
+
+[[package]]
+name = "determinator"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ec6ed6a28572d35f1c9d512fe0381b6bd83bf45e273b60b9c1df883234645c"
+dependencies = [
+ "camino",
+ "globset",
+ "guppy 0.8.0",
  "itertools 0.10.0",
  "once_cell",
  "petgraph",
@@ -2914,7 +2940,7 @@ checksum = "bf1c6ce38a18b386305494e4b38a137b2c1a48f368cce1e65e8efbf4dbeeb6f8"
 dependencies = [
  "cargo_metadata",
  "fixedbitset",
- "guppy-summaries",
+ "guppy-summaries 0.3.2",
  "indexmap",
  "itertools 0.10.0",
  "nested",
@@ -2926,7 +2952,31 @@ dependencies = [
  "serde",
  "serde_json",
  "supercow",
- "target-spec",
+ "target-spec 0.6.1",
+]
+
+[[package]]
+name = "guppy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec4cbddce827d660864974dc3dc62a1c810e813d17e518cc5830716b977cd110"
+dependencies = [
+ "camino",
+ "cargo_metadata",
+ "fixedbitset",
+ "guppy-summaries 0.4.0",
+ "indexmap",
+ "itertools 0.10.0",
+ "nested",
+ "once_cell",
+ "pathdiff 0.2.0",
+ "petgraph",
+ "rayon",
+ "semver 0.11.0",
+ "serde",
+ "serde_json",
+ "supercow",
+ "target-spec 0.7.0",
 ]
 
 [[package]]
@@ -2935,6 +2985,20 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "811b7332020d2a53cfe64049a52fd46d0761082b12d8b6b8f2c5b702f8bb2a24"
 dependencies = [
+ "cfg-if 1.0.0",
+ "diffus",
+ "semver 0.11.0",
+ "serde",
+ "toml",
+]
+
+[[package]]
+name = "guppy-summaries"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c526b51262ef5ed4de421ee6679bf0927a20310d5cc048abe89464b710a2a299"
+dependencies = [
+ "camino",
  "cfg-if 1.0.0",
  "diffus",
  "semver 0.11.0",
@@ -2991,7 +3055,7 @@ dependencies = [
  "atomicwrites",
  "cfg-if 1.0.0",
  "diffy",
- "guppy",
+ "guppy 0.7.2",
  "pathdiff 0.2.0",
  "rayon",
  "serde",
@@ -8812,11 +8876,11 @@ dependencies = [
  "anyhow",
  "chrono",
  "colored-diff",
- "determinator",
+ "determinator 0.3.0",
  "diem-workspace-hack",
  "env_logger 0.8.3",
  "globset",
- "guppy",
+ "guppy 0.7.2",
  "indexmap",
  "indoc",
  "log 0.4.14",
@@ -9084,6 +9148,16 @@ name = "target-spec"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39920b3286e8e9585b3ba77becb3e682888f63b2be5326cd16264d8ad292d78e"
+dependencies = [
+ "cfg-expr",
+ "serde",
+]
+
+[[package]]
+name = "target-spec"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac395241acf0f3d224dd2b07b334994adf6f37c904d1826867332ab8c6ddedbf"
 dependencies = [
  "cfg-expr",
  "serde",
@@ -10476,10 +10550,10 @@ dependencies = [
  "anyhow",
  "chrono",
  "colored-diff",
- "determinator",
+ "determinator 0.2.1",
  "env_logger 0.8.3",
  "globset",
- "guppy",
+ "guppy 0.7.2",
  "hakari",
  "indexmap",
  "indoc",
@@ -10499,8 +10573,8 @@ name = "x-core"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=8c4da62a52f4a30533e2deebfc33cfdbdef6c52f#8c4da62a52f4a30533e2deebfc33cfdbdef6c52f"
 dependencies = [
- "determinator",
- "guppy",
+ "determinator 0.2.1",
+ "guppy 0.7.2",
  "hakari",
  "hex",
  "indoc",
@@ -10516,7 +10590,7 @@ name = "x-lint"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=8c4da62a52f4a30533e2deebfc33cfdbdef6c52f#8c4da62a52f4a30533e2deebfc33cfdbdef6c52f"
 dependencies = [
- "guppy",
+ "guppy 0.7.2",
  "hakari",
  "once_cell",
  "serde",
