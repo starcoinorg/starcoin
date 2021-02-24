@@ -16,11 +16,12 @@ use starcoin_types::block::{BlockSummary, EpochUncleSummary, ExecutedBlock, Uncl
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::transaction::BlockTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
-    transaction::{Transaction, TransactionInfo},
+    transaction::Transaction,
 };
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::sync::Arc;
@@ -132,7 +133,10 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 self.inner.get_transaction(hash)?.map(Box::new),
             )),
             ChainRequest::GetTransactionBlock(txn_id) => {
-                let block_id = self.inner.get_transaction_block_hash(txn_id)?;
+                let block_id = self
+                    .inner
+                    .get_transaction_info(txn_id)?
+                    .map(|info| info.block_id());
                 let block = match block_id {
                     Some(id) => self.inner.get_block_by_hash(id)?,
                     None => None,
@@ -169,16 +173,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 let event_infos = if events.is_empty() {
                     vec![]
                 } else {
-                    let block_hash = self
-                        .inner
-                        .get_transaction_block_hash(txn_hash)?
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("cannot find txn block of txn {}", txn_hash)
-                        })?;
-                    let block = self
-                        .inner
-                        .get_block_by_hash(block_hash)?
-                        .ok_or_else(|| anyhow::anyhow!("cannot find block {}", block_hash))?;
+                    let block_hash = txn_info.block_id();
+                    let block = self.inner.get_block_by_hash(block_hash)?.ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "cannot find block {} which include the txn {}",
+                            block_hash,
+                            txn_hash
+                        )
+                    })?;
                     let index = block
                         .transactions()
                         .iter()
@@ -327,15 +329,15 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
         self.storage.get_transaction(txn_hash)
     }
-    fn get_transaction_block_hash(&self, txn_hash: HashValue) -> Result<Option<HashValue>> {
-        self.storage.get_txn_block(txn_hash)
-    }
 
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
+    fn get_transaction_info(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<BlockTransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
     }
 
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<BlockTransactionInfo>, Error> {
         self.storage.get_block_transaction_infos(block_id)
     }
 
@@ -343,7 +345,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<TransactionInfo>, Error> {
+    ) -> Result<Option<BlockTransactionInfo>, Error> {
         self.storage
             .get_transaction_info_by_block_and_index(block_id, idx)
     }

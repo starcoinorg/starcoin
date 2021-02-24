@@ -5,7 +5,6 @@ use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
-    TRANSACTION_BLOCK_PREFIX_NAME,
 };
 use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
@@ -64,12 +63,6 @@ define_storage!(
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME
 );
 define_storage!(
-    TransactionBlockStorage,
-    HashValue,
-    HashValue,
-    TRANSACTION_BLOCK_PREFIX_NAME
-);
-define_storage!(
     FailedBlockStorage,
     HashValue,
     FailedBlock,
@@ -82,7 +75,6 @@ pub struct BlockStorage {
     header_store: BlockHeaderStorage,
     body_store: BlockBodyStorage,
     block_txns_store: BlockTransactionsStorage,
-    txn_block_store: TransactionBlockStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
     failed_block_storage: FailedBlockStorage,
 }
@@ -134,7 +126,6 @@ impl BlockStorage {
             header_store: BlockHeaderStorage::new(instance.clone()),
             body_store: BlockBodyStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
-            txn_block_store: TransactionBlockStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
             failed_block_storage: FailedBlockStorage::new(instance),
         }
@@ -203,26 +194,18 @@ impl BlockStorage {
         }
     }
 
-    /// get the block id which contains the given `tnx_id`
-    pub fn get_transaction_block(&self, txn_id: HashValue) -> Result<Option<HashValue>> {
-        self.txn_block_store.get(txn_id)
-    }
-
     /// get txn info ids for `block_id`.
     /// return None, if block_id not exists.
     pub fn get_transaction_info_ids(&self, block_id: HashValue) -> Result<Option<Vec<HashValue>>> {
         self.block_txn_infos_store.get(block_id)
     }
 
-    pub fn put_transactions(
+    pub fn put_transaction_ids(
         &self,
         block_id: HashValue,
         transactions: Vec<HashValue>,
     ) -> Result<()> {
-        self.block_txns_store.put(block_id, transactions.clone())?;
-        // add a reverse mapping
-        let write_batch = transactions.into_iter().map(|t| (t, block_id)).collect();
-        self.txn_block_store.put_all(write_batch)
+        self.block_txns_store.put(block_id, transactions)
     }
 
     pub fn put_transaction_infos(

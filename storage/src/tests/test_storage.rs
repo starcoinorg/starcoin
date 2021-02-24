@@ -7,13 +7,13 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
 use crate::{
-    Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    BlockTransactionInfoStore, Storage, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     VEC_PREFIX_NAME,
 };
 use anyhow::Result;
 use crypto::HashValue;
 use starcoin_config::RocksdbConfig;
-use starcoin_types::transaction::TransactionInfo;
+use starcoin_types::transaction::{BlockTransactionInfo, TransactionInfo};
 use starcoin_types::vm_error::KeptVMStatus;
 
 #[test]
@@ -69,12 +69,15 @@ fn test_storage() {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
     ))
     .unwrap();
-    let transaction_info1 = TransactionInfo::new(
+    let transaction_info1 = BlockTransactionInfo::new(
         HashValue::random(),
-        HashValue::zero(),
-        vec![].as_slice(),
-        0,
-        KeptVMStatus::Executed,
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
     );
     let id = transaction_info1.id();
     storage
@@ -96,12 +99,15 @@ fn test_two_level_storage() {
     let db_storage = instance.db().unwrap();
     let storage = Storage::new(instance).unwrap();
 
-    let transaction_info1 = TransactionInfo::new(
+    let transaction_info1 = BlockTransactionInfo::new(
         HashValue::random(),
-        HashValue::zero(),
-        vec![].as_slice(),
-        0,
-        KeptVMStatus::Executed,
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
     );
     let id = transaction_info1.id();
     storage
@@ -116,14 +122,14 @@ fn test_two_level_storage() {
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap()
         .unwrap();
-    let transation_info3 = TransactionInfo::decode_value(&value3).unwrap();
+    let transation_info3 = BlockTransactionInfo::decode_value(&value3).unwrap();
     assert_eq!(transation_info3, transaction_info1);
     // // verify db storage
     let value4 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap()
         .unwrap();
-    let transaction_info4 = TransactionInfo::decode_value(&value4).unwrap();
+    let transaction_info4 = BlockTransactionInfo::decode_value(&value4).unwrap();
     assert_eq!(transaction_info4, transaction_info1);
     // // test remove
     storage.transaction_info_storage.remove(id).unwrap();
@@ -144,12 +150,15 @@ fn test_two_level_storage() {
 fn test_two_level_storage_read_through() -> Result<()> {
     let tmpdir = starcoin_config::temp_path();
 
-    let transaction_info1 = TransactionInfo::new(
+    let transaction_info1 = BlockTransactionInfo::new(
         HashValue::random(),
-        HashValue::zero(),
-        vec![].as_slice(),
-        0,
-        KeptVMStatus::Executed,
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
     );
     let id = transaction_info1.id();
 
@@ -177,7 +186,8 @@ fn test_two_level_storage_read_through() -> Result<()> {
         .cache()
         .unwrap()
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
-    let transaction_info3 = TransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
+    let transaction_info3 =
+        BlockTransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
     Ok(())
 }
