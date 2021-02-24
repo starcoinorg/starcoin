@@ -8880,7 +8880,7 @@ dependencies = [
  "diem-workspace-hack",
  "env_logger 0.8.3",
  "globset",
- "guppy 0.7.2",
+ "guppy 0.8.0",
  "indexmap",
  "indoc",
  "log 0.4.14",
