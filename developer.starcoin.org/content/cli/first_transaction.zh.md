@@ -1,6 +1,6 @@
 ---
 title: 第一笔链上交易
-weight: 7
+weight: 3
 ---
 
 

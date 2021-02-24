@@ -1,6 +1,6 @@
 ---
 title: First Transaction
-weight: 7
+weight: 3
 ---
 
 This article guides you on how to execute your first transaction on the starcoin blockchain.

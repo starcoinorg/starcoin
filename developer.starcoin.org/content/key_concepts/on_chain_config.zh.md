@@ -6,6 +6,8 @@ weight: 18
 
 OnChainConfig主要实现不用重启链的情况下，可以更新链上的一些配置。在 Starcoin 中，可以通过标准库中的DAO实现来修改链上的参数。
 
+<!--more-->
+
 下面主要介绍OnChainConfig的功能以及使用方式。
 
 ## OnChainConfig可修改的配置：

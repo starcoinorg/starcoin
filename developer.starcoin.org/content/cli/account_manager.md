@@ -1,9 +1,11 @@
 ---
 title: Account management
-weight: 20
+weight: 2
 ---
 
 The Starcoin node has a built-in decentralized wallet that allows users to manage their accounts through account api and commands.
+
+<!--more-->
 
 When the node starts, a default account is automatically created with an empty password. The default can be changed via account commands. The following commands require a connection to the console, see [Using the starcoin console](./console). 1.
 

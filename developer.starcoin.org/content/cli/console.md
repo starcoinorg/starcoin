@@ -1,9 +1,11 @@
 ---
 title: Using the starcoin console
-weight: 6
+weight: 1
 ---
 
 There are two ways to use starcoin's console, one is to enter the console at the same time as the node starts.
+
+<!--more-->
 
 The following command will start a dev node and enter the console:
 

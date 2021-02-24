@@ -9,7 +9,7 @@ This article guides you on how to compile and deploy a Move contract to the star
 Move is a new programming language developed to provide a safe and programmable foundation for the [Libra Blockchain](https://github.com/libra/libra).Starcoin Blockchain also support Move language to write smart contract.
 
 
-First start a dev network as described in [Run/Join Network](./runnetwork), and get some coins, say `1000000000`.
+First start a dev network as described in [Run/Join Network](../setup/runnetwork), and get some coins, say `1000000000`.
 
 Then, let contracting!
 

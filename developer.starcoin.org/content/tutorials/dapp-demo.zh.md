@@ -5,9 +5,11 @@ title: DAPP 开发例子演示
 
 本文以一个 defi 挖矿的例子介绍如何在 starcoin 上开发 DApp。
 
+<!--more-->
+
 ## 准备工作
 
-- 本地启动一个 dev 节点。可参考 [运行网络](./runnetwork.zh.md) 章节。
+- 本地启动一个 dev 节点。可参考 [运行网络](../setup/runnetwork) 章节。
 - 到 [starcoin wallet](https://github.com/starcoinorg/starcoin_wallet_flutter/releases) 页面下载 Starcoin 钱包。
 - clone https://github.com/starcoinorg/rewarding-dapp  到本地。
 

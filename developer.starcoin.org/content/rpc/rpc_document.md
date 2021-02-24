@@ -1,5 +1,5 @@
 ---
-title: Starcoin RPC document
+title: JSON RPC API schema
 ---
 
 * [account](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/starcoinorg/starcoin/master/docs/rpc/account.json)
