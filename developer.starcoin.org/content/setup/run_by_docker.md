@@ -3,6 +3,10 @@ title: Run by docker
 weight: 5
 ---
 
+Run staroin node by docker.
+
+<!--more-->
+
 1. Pull docker image
 
 ```shell
@@ -31,4 +35,4 @@ docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ st
 docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/proxima/starcoin.ipc console
 ```
 
-More detail about run a network node see [Run/Join Network](./runcustomnetwork).
+More detail about run a network node see [Run/Join Network](./runnetwork).

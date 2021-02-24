@@ -1,6 +1,6 @@
 ---
 title: Mint
-weight: 11
+weight: 4
 ---
 
 `starcoin_miner` Command line tools are used to remotely connect to starcoin nodes and provide mining capabilities.

@@ -1,9 +1,11 @@
 ---
 title: 使用 starcoin 控制台 
-weight: 6
+weight: 1
 ---
 
 使用 starcoin 的控制台有两种方式，一种是节点启动时同时进入控制台。
+
+<!--more-->
 
 以下命令会启动一个 dev 节点并进入控制台:
 

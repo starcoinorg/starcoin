@@ -7,7 +7,7 @@ This is a example for How to define user custom Token on starcoin blockchain.
 
 <!--more-->
 
-First, start a dev network as described in [Run/Join Network](./runnetwork), and get some coins, say `1000000000`.
+First, start a dev network as described in [Run/Join Network](../setup/runnetwork), and get some coins, say `1000000000`.
 
 In this document, I will use `aa5d01819bb5b6c5fece4eef943fde9c`, the default account address of my dev network, to represent the person who issues and send the new token. And I also created another account `353c411064ee39efaf2f3d115c55166a` and transfer some STC to it. The account will be used to receive the token.
 

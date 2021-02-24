@@ -18,7 +18,7 @@ FLAGS:
 
 OPTIONS:
 - --seed 指定 seed
-- -n,--net 网络名 ,可以是 dev/halley/proxima/main 其中一个，本地测试网络使用 dev。如果想自定义网络请参看[运行自定义网络](./runcustomnetwork)
+- -n,--net 网络名 ,可以是 dev/halley/proxima/main 其中一个，本地测试网络使用 dev。如果想自定义网络请参看[运行自定义网络](../tutorials/runcustomnetwork)
 
 
 SUBCOMMAND:

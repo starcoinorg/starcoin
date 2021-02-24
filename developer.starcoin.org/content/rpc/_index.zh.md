@@ -1,5 +1,6 @@
 ---
-title: Starcoin RPC
+title: RPC
+weight: 7
 ---
 
 Starcoin RPC 文档

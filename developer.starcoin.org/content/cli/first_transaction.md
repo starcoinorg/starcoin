@@ -1,37 +1,34 @@
 ---
-title: 第一笔链上交易
-weight: 7
+title: First Transaction
+weight: 3
 ---
 
-
-这篇文章指导你如何在 starcoin 区块链上执行自己的第一笔交易。
-在这之前，建议你先阅读 tech 相关的文章，对 starcoin 的基本概念有一定了解。
-
+This article guides you on how to execute your first transaction on the starcoin blockchain.
+Before that, I recommend you read tech-related articles to get some idea of the basic concepts of starcoin.
 <!--more-->
 
-## 前提
+## Prerequisite
 
-假设你已经在本地跑起来一个 starcoin dev 节点。
+Let's say you've run up a starcoin dev node locally.
 
+## A few steps to submit a transaction
 
-## 提交交易的几个步骤
+- Start the CLI console and connect to the starcoin node，detail document at [Use starcoin console](./console).
+- Create two accounts: Alice,Bob，detail step see [Account manager](./account_manager).
+- Mint money into Alice's account.
+- Submit transfer transaction: Alice send money to Bob.
 
-- 启动 starcoin 控制台，并连接到 starcoin 节点，详细步骤请查阅[使用 strcoin 控制台](./console)。
-- 创建两个账户，Alice,Bob, 详细步骤请查阅[账号管理](./account_manager)。
-- 给 Alice 账户挖钱。
-- 提交转账交易：Alice 给 Bob 打钱。
+### Create an account
 
+After connecting to the node, let's first create two accounts. Here we assume that both accounts have been created successfully, Alice is the default account with the address 0x1d8133a0c1a07366de459fb08d28d2a6 and Bob's address is 0xbfbed907d7ba364e1445b971f9182949.
 
-### 创建账户
+### Use Faucet to top up your account
 
-连接到节点后，我们先来创建两个账户。这里我们假设两个账号已经创建成功，Alice 是默认账号，的地址是 0x1d8133a0c1a07366de459fb08d28d2a6， Bob 的地址是 0xbfbed907d7ba364e1445b971f9182949。
+ In dev environment, faucet can be used to mint accounts. faucet only exists in dev and test net to make it easier for developers developing and testing dapps.
 
-### 使用 Faucet 给账户充钱
+ Let's do it!.
 
- Dev 环境下，可以利用 faucet 给账户充钱。faucet 只在 dev 和 test net 中存在，以便于开发者做开发和测试。
- 下面我们就通过 console 给 Alice 充钱。
-
-``` bash
+ ``` bash
 starcoin% dev get_coin -v 5000000
 +-----------------+------------------------------------------------------------------+
 | gas_unit_price  | 1                                                                |
@@ -46,11 +43,10 @@ starcoin% dev get_coin -v 5000000
 +-----------------+------------------------------------------------------------------+
 ```
 
+`dev get_coin` will mint some coins the default account, and if the account does not exist on the chain, it will creates the account first and then transfers a specified (with `-v`) number of coins to the account.
+The output of the command is the transaction data  issued by the FAUCET account (address `0000000000000000000000000A550C18`).
 
-`dev get_coin` 会往默认账户中充钱，如果链上不存在这个账户，它会先创建这个账户，然后再往该账户转入 `-v` 指定数量的 coin。
- 命令输出的是以 faucet 账户（地址是 `0000000000000000000000000a550c18` ）发出的交易信息。
-
-等待几秒钟，然后再查看账户信息。
+Wait a few seconds and then check your account information again.
 
 ```bash
 starcoin% account show 1d8133a0c1a07366de459fb08d28d2a6
@@ -69,26 +65,28 @@ starcoin% account show 1d8133a0c1a07366de459fb08d28d2a6
 +--------------------+------------------------------------------------------------------+
 ```
 
-可以看到 `balances` 和 `sequence_number` 有数据了。
-
-### 提交交易 - 转账
+Now, `balances` and `sequence_number` is filled.
 
 
-首先需要解锁 Alice 的账户，授权 node 使用 alice 的私钥对交易签名。
 
-``` bash
+### Submit Transaction
+
+First you need to unlock Alice's account and authorize node to sign the transaction using Alice's private key.
+
+```` bash
 account unlock -p my-pass 1d8133a0c1a07366de459fb08d28d2a6
-```
-其中 `-p my-pass` 是创建账户时传入的密码。
+````
 
-账户解锁后，执行以下命令：
+where `-p my-pass` is the password that was needed when creating the account.
+
+Once the account is unlocked, execute the following command.
 
 ```bash
-starcoin% txn transfer -f 1d8133a0c1a07366de459fb08d28d2a6 -t bfbed907d7ba364e1445b971f9182949 -k 7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d -v 10000
+starcoin% account transfer -s 0x1d8133a0c1a07366de459fb08d28d2a6 -r 0xbfbed907d7ba364e1445b971f9182949 -k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d -v 10000
 +-----------------+------------------------------------------------------------------+
 | gas_unit_price  | 1                                                                |
 +-----------------+------------------------------------------------------------------+
-| id              | 44433463c38aacd31731fba1a38d3a38f9a14c0281a264634e470c8f25bd557d |
+| id              | 0x44433463c38aacd31731fba1a38d3a38f9a14c0281a264634e470c8f25bd557d |
 +-----------------+------------------------------------------------------------------+
 | max_gas_amount  | 1000000                                                          |
 +-----------------+------------------------------------------------------------------+
@@ -98,28 +96,28 @@ starcoin% txn transfer -f 1d8133a0c1a07366de459fb08d28d2a6 -t bfbed907d7ba364e14
 +-----------------+------------------------------------------------------------------+
 ```
 
-其中：
+- `-f 0x1d8133a0c1a07366de459fb08d28d2a6`: is Alice's account address.
+- `-t 0xbfbed907d7ba364e1445b971f9182949`: is Bob's account address.
+- `-k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`: is the public key of Bob.
 
-- `-f 1d8133a0c1a07366de459fb08d28d2a6`: 是 Alice 的账户地址。
-- `-t bfbed907d7ba364e1445b971f9182949`：是 Bob 的账户地址。
-- `-k 7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`：是 Bob 的公钥。
-
-> 如果，Bob 的账户在链上还不存在，需要提供他的公钥，转账交易会自动在链上创建 Bob 的账户。
+> If, Bob's account does not yet exist on the chain, then his public key should be provided, the transfer transaction will automatically create Bob's account on the chain.
 
 
-此时，交易已经被提交到链上。还需要等待几秒（dev 环境出块时间比较短），让交易上链。然后再查看 Bob 的账户信息：
+At this point, the transaction has been submitted to the chain.
+You still need to wait a few seconds (in the dev environment, maybe longer in test env) to let the transaction included the chain.
+Then check Bob's account information again:.
 
 
 ``` bash
-starcoin% account show bfbed907d7ba364e1445b971f9182949
+starcoin% account show 0xbfbed907d7ba364e1445b971f9182949
 +--------------------+------------------------------------------------------------------+
-| account.address    | bfbed907d7ba364e1445b971f9182949                                 |
+| account.address    | 0xbfbed907d7ba364e1445b971f9182949                                 |
 +--------------------+------------------------------------------------------------------+
 | account.is_default | false                                                            |
 +--------------------+------------------------------------------------------------------+
-| account.public_key | d80234b11619e62a62fac048b2b79a9eec1727b476155e1f8fe19c89c7443076 |
+| account.public_key | 0xd80234b11619e62a62fac048b2b79a9eec1727b476155e1f8fe19c89c7443076 |
 +--------------------+------------------------------------------------------------------+
-| auth_key_prefix    | 7c87272c7fc2f5586a0770d1d718f14f                                 |
+| auth_key_prefix    | 0x7c87272c7fc2f5586a0770d1d718f14f                                 |
 +--------------------+------------------------------------------------------------------+
 | balances.STC       | 10000                                                            |
 +--------------------+------------------------------------------------------------------+
@@ -127,8 +125,5 @@ starcoin% account show bfbed907d7ba364e1445b971f9182949
 +--------------------+------------------------------------------------------------------+
 ```
 
-可以发现：Bob 账户已经有钱了。
-
-
-至此，你已经成功完成了一笔链上转账！
+Bob has the money now!
 

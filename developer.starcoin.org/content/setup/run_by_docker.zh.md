@@ -3,6 +3,10 @@ title: 通过 docker 运行
 weight: 5
 ---
 
+通过 Docker 运行 starcoin 节点。
+
+<!--more-->
+
 1. 拉取 Docker 镜像
 
 ```shell
@@ -31,4 +35,4 @@ docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ st
 docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/proxima/starcoin.ipc console
 ```
 
-更多参数以及网络说明请参看 [运行以及加入网络](./runcustomnetwork).
+更多参数以及网络说明请参看 [运行以及加入网络](./runnetwork).
