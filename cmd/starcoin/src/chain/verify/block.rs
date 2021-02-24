@@ -87,7 +87,7 @@ impl CommandAction for VerifyBlockCommand {
 
         // difficulty
         let mut random = rand::thread_rng();
-        let index: u64 = random.gen_range(start, end);
+        let index: u64 = random.gen_range(start..end);
         let mut block_diff_vec = VecDeque::new();
         let min = if index > difficulty_window {
             index - difficulty_window

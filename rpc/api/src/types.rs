@@ -59,7 +59,8 @@ pub struct AnnotatedMoveStructView {
 impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     fn from(origin: AnnotatedMoveStruct) -> Self {
         Self {
-            is_resource: origin.is_resource,
+            // Todo: migrate to ability
+            is_resource: origin.abilities.has_key(),
             type_: StrView(origin.type_),
             value: origin
                 .value

@@ -238,7 +238,7 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 
 
-<pre><code><b>pragma</b> verify;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict;
 <b>pragma</b> aborts_if_is_partial;
 </code></pre>

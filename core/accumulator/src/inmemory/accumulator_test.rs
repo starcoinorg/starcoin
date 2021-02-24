@@ -8,6 +8,7 @@ use crate::tree::AccumulatorTree;
 use crate::tree_store::mock::MockAccumulatorStore;
 use crate::LeafCount;
 use proptest::{collection::vec, prelude::*};
+use rand::Rng;
 use starcoin_crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -109,7 +110,8 @@ fn test_accumulator_append() {
 
 #[test]
 fn test_tree_and_inmemory_compare() {
-    let leaf_count = rand::thread_rng().gen_range(100, 200);
+    let mut rng = rand::thread_rng();
+    let leaf_count = rng.gen_range(100..200);
     let leaves = create_leaves(0..leaf_count);
     let mut accumulator = InMemoryAccumulator::default();
     accumulator = accumulator.append(leaves.as_slice());

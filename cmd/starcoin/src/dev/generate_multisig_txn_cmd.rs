@@ -6,6 +6,7 @@ use crate::mutlisig_transaction::MultisigTransaction;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
+use short_hex_str::AsShortHexStr;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;

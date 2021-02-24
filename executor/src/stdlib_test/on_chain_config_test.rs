@@ -12,7 +12,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::gas_schedule::{GasAlgebra, GasUnits};
+use starcoin_vm_types::gas_schedule::{GasAlgebra, InternalGasUnits};
 use starcoin_vm_types::on_chain_config::{
     consensus_config_type_tag, vm_config_type_tag, ConsensusConfig, OnChainConfig, VMConfig,
     CONSENSUS_CONFIG_IDENTIFIER,
@@ -210,11 +210,11 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     vm_config
         .gas_schedule
         .gas_constants
-        .global_memory_per_byte_cost = GasUnits::new(8);
+        .global_memory_per_byte_cost = InternalGasUnits::new(8);
     vm_config
         .gas_schedule
         .gas_constants
-        .global_memory_per_byte_write_cost = GasUnits::new(12);
+        .global_memory_per_byte_write_cost = InternalGasUnits::new(12);
     let vote_script = vote_vm_config_script(&net, vm_config);
 
     let chain_state = dao_vote_test(

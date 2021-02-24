@@ -6,6 +6,7 @@ use crate::mutlisig_transaction::MultisigTransaction;
 use crate::StarcoinOpt;
 use anyhow::{ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use short_hex_str::AsShortHexStr;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::transaction;
 use starcoin_vm_types::account_address::AccountAddress;

@@ -45,7 +45,7 @@ script {
 }
 
 // check: ABORTED
-// check: 23
+// check: 26119
 
 //! new-transaction
 script {
@@ -63,7 +63,7 @@ script {
     }
 }
 // check: ABORTED
-// check: 24
+// check: 26369
 
 //! new-transaction
 script {

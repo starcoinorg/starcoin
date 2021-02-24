@@ -195,7 +195,7 @@ issue a proposal to update config of ConfigT goved by TokenT
 
 
 
-<pre><code><b>pragma</b> verify;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict;
 <b>pragma</b> aborts_if_is_partial;
 </code></pre>

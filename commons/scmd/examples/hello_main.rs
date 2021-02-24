@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use rand::distributions::Alphanumeric;
+use rand::rngs::OsRng;
 use rand::Rng;
 use scmd::{CmdContext, Command, CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
@@ -35,11 +36,19 @@ struct User {
 
 impl User {
     pub fn random(index: usize) -> Self {
-        let mut rng = rand::thread_rng();
-        let name: String = rng.sample_iter(&Alphanumeric).take(10).collect();
+        let mut rng = OsRng;
+        let name: String = rng
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
         let age: u32 = rng.gen();
-        let city = rng.sample_iter(&Alphanumeric).take(5).collect();
-        let zip = rng.gen_range(10000, 99999);
+        let city = rng
+            .sample_iter(&Alphanumeric)
+            .take(5)
+            .map(char::from)
+            .collect();
+        let zip = rng.gen_range(10000..99999);
         let address = Address { city, zip };
         Self {
             index,
