@@ -17,6 +17,7 @@ pub(crate) fn prepare_doc_string(doc: &str) -> String {
     loop {
         let doc2 = doc.replace("  ", " ");
         if doc == doc2 {
+            doc.push('\n');
             return doc;
         }
         doc = doc2;
