@@ -1,6 +1,6 @@
 ---
 title: 技术
-weight: 15
+weight: 6
 ---
 
 一些关于 starcoin 的技术文档。
