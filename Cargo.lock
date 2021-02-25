@@ -886,7 +886,7 @@ dependencies = [
  "async-trait",
  "bytecode",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "diem-types",
  "diem-workspace-hack",
  "futures 0.3.12",
@@ -996,7 +996,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "diem-types",
  "diem-workspace-hack",
  "move-core-types",
@@ -1288,6 +1288,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "600c3317d4705222ff820139aaa76a3a208024ffc41f894da565a4c3b949d4c9"
 dependencies = [
  "codespan",
+ "termcolor",
+ "unicode-width",
+]
+
+[[package]]
+name = "codespan-reporting"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3538270d33cc669650c4b093848450d380def10c331d38c768e34cac80576e6e"
+dependencies = [
  "termcolor",
  "unicode-width",
 ]
@@ -2228,7 +2238,7 @@ dependencies = [
  "anyhow",
  "bytecode",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "diem-workspace-hack",
  "itertools 0.10.0",
  "log 0.4.14",
@@ -3551,7 +3561,7 @@ dependencies = [
  "anyhow",
  "bytecode-source-map",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "diem-types",
  "diem-workspace-hack",
  "ir-to-bytecode-syntax",
@@ -4617,7 +4627,7 @@ dependencies = [
  "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "diem-temppath",
  "diem-types",
  "diem-workspace-hack",
@@ -4653,7 +4663,7 @@ dependencies = [
  "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.8.0",
  "diem-types",
  "diem-workspace-hack",
  "itertools 0.10.0",
@@ -4680,7 +4690,7 @@ dependencies = [
  "bytecode-source-map",
  "clap 2.33.3",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "datatest-stable",
  "diem-temppath",
  "diem-workspace-hack",
