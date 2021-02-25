@@ -24,7 +24,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1be241f88f3b1e7e9a3fbe3b5a8a0f6915b5a1d7ee0d9a248d3376d01068cc60"
 dependencies = [
- "actix-rt",
+ "actix-rt 1.1.1",
  "actix_derive",
  "bitflags",
  "bytes 0.5.6",
@@ -54,18 +54,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-macros"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbcb2b608f0accc2f5bcf3dd872194ce13d94ee45b571487035864cf966b04ef"
+dependencies = [
+ "quote 1.0.9",
+ "syn 1.0.60",
+]
+
+[[package]]
 name = "actix-rt"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "143fcc2912e0d1de2bcf4e2f720d2a60c28652ab4179685a1ee159e0fb3db227"
 dependencies = [
- "actix-macros",
+ "actix-macros 0.1.3",
  "actix-threadpool",
  "copyless",
  "futures-channel",
  "futures-util",
  "smallvec 1.6.1",
  "tokio 0.2.25",
+]
+
+[[package]]
+name = "actix-rt"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b4e57bc1a3915e71526d128baf4323700bd1580bc676239e2298a4c5b001f18"
+dependencies = [
+ "actix-macros 0.2.0",
+ "futures-core",
+ "tokio 1.2.0",
 ]
 
 [[package]]
@@ -7962,7 +7983,7 @@ name = "starcoin-miner-client"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.1.0",
  "anyhow",
  "async-std",
  "byteorder",
@@ -8147,7 +8168,7 @@ name = "starcoin-node"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.1.0",
  "anyhow",
  "async-std",
  "async-trait",
@@ -8317,7 +8338,7 @@ name = "starcoin-rpc-client"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.1.0",
  "anyhow",
  "async-std",
  "bcs-ext",
@@ -8375,7 +8396,7 @@ name = "starcoin-rpc-server"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.1.0",
  "anyhow",
  "api-limiter",
  "bcs-ext",
@@ -8445,7 +8466,7 @@ name = "starcoin-service-registry"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.1.0",
  "anyhow",
  "async-std",
  "async-trait",
@@ -8927,7 +8948,7 @@ name = "stest"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.1.0",
  "anyhow",
  "futures 0.3.12",
  "log 0.4.14",
@@ -8942,7 +8963,7 @@ name = "stest-macro"
 version = "1.0.0-alpha.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 1.1.1",
  "darling 0.10.2",
  "proc-macro2 1.0.24",
  "quote 1.0.9",
