@@ -1,9 +1,10 @@
 ---
 title: Getting started
 weight: 2
+bookCollapseSection: true
 ---
 
-Starcoin Basics
+Getting started
 
 <!--more-->
 

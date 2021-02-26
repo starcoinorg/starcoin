@@ -1,6 +1,7 @@
 ---
 title: 技术
 weight: 6
+bookCollapseSection: true
 ---
 
 一些关于 starcoin 的技术文档。

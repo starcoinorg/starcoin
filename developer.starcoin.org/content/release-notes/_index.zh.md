@@ -1,10 +1,10 @@
 ---
-title: 从这里开始
-weight: 2
+title: 版本记录
+weight: 7
 bookCollapseSection: true
 ---
 
-从这里开始
+Starcoin 版本记录
 
 <!--more-->
 
