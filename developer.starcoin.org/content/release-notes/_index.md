@@ -1,10 +1,10 @@
 ---
-title: 从这里开始
-weight: 2
+title: Release Notes
+weight: 999
 bookCollapseSection: true
 ---
 
-从这里开始
+Starcoin Release Notes
 
 <!--more-->
 
