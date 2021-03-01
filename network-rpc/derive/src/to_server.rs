@@ -72,6 +72,7 @@ pub fn generate_to_delegate(method: &TraitItemMethod) -> TokenStream {
             Box::pin(async move{
                 let method = &(Self::#method_ident as #method_sig);
                 let params = from_bytes::<#param_type>(&params).map_err(|e|NetRpcError::client_err(e))?;
+                debug!("[network-rpc] from {:?}, method: {:?}, params: {:?}", peer_id, stringify!(method), params);
                 match method(&base, peer_id, params).await{
                     Ok(r) => Ok(bcs_ext::to_bytes(&r)?),
                     Err(e) => Err(e)
