@@ -799,6 +799,16 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn network_call_peer(
+        &self,
+        peer_id: String,
+        rpc_method: String,
+        message: StrView<Vec<u8>>,
+    ) -> anyhow::Result<StrView<Vec<u8>>> {
+        self.call_rpc_blocking(|inner| inner.network_client.call_peer(peer_id, rpc_method, message))
+            .map_err(map_err)
+    }
+
     pub fn call_raw_api(&self, api: &str, params: Params) -> anyhow::Result<Value> {
         self.call_rpc_blocking(|inner| inner.raw_client.call_method(api, params))
             .map_err(map_err)

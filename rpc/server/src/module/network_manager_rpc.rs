@@ -5,8 +5,10 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use network_p2p_types::network_state::NetworkState;
+use network_rpc_core::RawRpcClient;
 use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
+use starcoin_rpc_api::types::StrView;
 use starcoin_rpc_api::FutureResult;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use std::str::FromStr;
@@ -52,6 +54,24 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
     fn add_peer(&self, peer: String) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move { service.add_peer(peer) }.map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn call_peer(
+        &self,
+        peer_id: String,
+        rpc_method: String,
+        message: StrView<Vec<u8>>,
+    ) -> FutureResult<StrView<Vec<u8>>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let peer_id = PeerId::from_str(peer_id.as_str())?;
+            let response = service
+                .send_raw_request(peer_id, rpc_method, message.0)
+                .await?;
+            Ok(StrView(response))
+        }
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 }
