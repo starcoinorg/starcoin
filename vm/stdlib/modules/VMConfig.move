@@ -1,4 +1,5 @@
 address 0x1 {
+/// `VMConfig` keep track of VM related configuration, like gas schedule.
 module VMConfig {
     use 0x1::Config;
     use 0x1::Signer;
@@ -9,29 +10,30 @@ module VMConfig {
         pragma aborts_if_is_strict;
     }
 
-    // The struct to hold all config data needed to operate the VM.
-    // * gas_schedule: Cost of running the VM.
+    /// The struct to hold all config data needed to operate the VM.
+    /// * gas_schedule: Cost of running the VM.
     struct VMConfig {
         gas_schedule: GasSchedule,
     }
 
-    // The gas schedule keeps two separate schedules for the gas:
-    // * The instruction_schedule: This holds the gas for each bytecode instruction.
-    // * The native_schedule: This holds the gas for used (per-byte operated over) for each native
-    //   function.
-    // A couple notes:
-    // 1. In the case that an instruction is deleted from the bytecode, that part of the cost schedule
-    //    still needs to remain the same; once a slot in the table is taken by an instruction, that is its
-    //    slot for the rest of time (since that instruction could already exist in a module on-chain).
-    // 2. The initialization of the module will publish the instruction table to the genesis
-    //    address, and will preload the vector with the gas schedule for instructions. The VM will then
-    //    load this into memory at the startup of each block.
+    /// The gas schedule keeps two separate schedules for the gas:
+    /// * The instruction_schedule: This holds the gas for each bytecode instruction.
+    /// * The native_schedule: This holds the gas for used (per-byte operated over) for each native
+    ///   function.
+    /// A couple notes:
+    /// 1. In the case that an instruction is deleted from the bytecode, that part of the cost schedule
+    ///    still needs to remain the same; once a slot in the table is taken by an instruction, that is its
+    ///    slot for the rest of time (since that instruction could already exist in a module on-chain).
+    /// 2. The initialization of the module will publish the instruction table to the genesis
+    ///    address, and will preload the vector with the gas schedule for instructions. The VM will then
+    ///    load this into memory at the startup of each block.
     struct GasSchedule {
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
         gas_constants: GasConstants,
     }
 
+    /// The gas constants contains all kind of constants used in gas calculation.
     struct GasConstants {
         /// The cost per-byte written to global storage.
         global_memory_per_byte_cost: u64,
@@ -52,11 +54,15 @@ module VMConfig {
         min_price_per_gas_unit: u64,
         /// The maximum gas unit price that a transaction can be submitted with.
         max_price_per_gas_unit: u64,
+        /// The max transaction size in bytes that a transaction can have.
         max_transaction_size_in_bytes: u64,
+        /// gas unit scaling factor.
         gas_unit_scaling_factor: u64,
+        /// default account size.
         default_account_size: u64,
     }
 
+    /// Create a new vm config, mainly used in DAO.
     public fun new_vm_config(
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
@@ -90,7 +96,7 @@ module VMConfig {
         }
     }
 
-    // Initialize the table under the genesis account
+    /// Initialize the table under the genesis account
     public fun initialize(
         account: &signer,
         instruction_schedule: vector<u8>,

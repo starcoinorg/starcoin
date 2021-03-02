@@ -1,8 +1,8 @@
-// Move representation of the authenticator types
-// - Ed25519 (single-sig)
-// - MultiEd25519 (K-of-N multisig)
 
 address 0x1 {
+/// Move representation of the authenticator types
+/// - Ed25519 (single-sig)
+/// - MultiEd25519 (K-of-N multisig)
 module Authenticator {
     use 0x1::Hash;
     use 0x1::BCS;
@@ -19,11 +19,11 @@ module Authenticator {
     const ED25519_SCHEME_ID: u8 = 0;
     const MULTI_ED25519_SCHEME_ID: u8 = 1;
 
-    // A multi-ed25519 public key
+    /// A multi-ed25519 public key
     struct MultiEd25519PublicKey {
-        // vector of ed25519 public keys
+        /// vector of ed25519 public keys
         public_keys: vector<vector<u8>>,
-        // approval threshold
+        /// approval threshold
         threshold: u8,
     }
 
@@ -69,7 +69,7 @@ module Authenticator {
         aborts_if Vector::length(public_keys) > 32;
     }
 
-    // Compute an authentication key for the ed25519 public key `public_key`
+    /// Compute an authentication key for the ed25519 public key `public_key`
     public fun ed25519_authentication_key(public_key: vector<u8>): vector<u8> {
         Vector::push_back(&mut public_key, ED25519_SCHEME_ID);
         Hash::sha3_256(public_key)
@@ -110,7 +110,7 @@ module Authenticator {
     /// does not matter for the verification of callers.
     spec define spec_derived_address(authentication_key: vector<u8>): address;
 
-    // Compute a multied25519 account authentication key for the policy `k`
+    /// Compute a multied25519 account authentication key for the policy `k`
     public fun multi_ed25519_authentication_key(k: &MultiEd25519PublicKey): vector<u8> {
         let public_keys = &k.public_keys;
         let len = Vector::length(public_keys);
@@ -133,7 +133,7 @@ module Authenticator {
         aborts_if false;
     }
 
-    // Return the public keys involved in the multisig policy `k`
+    /// Return the public keys involved in the multisig policy `k`
     public fun public_keys(k: &MultiEd25519PublicKey): &vector<vector<u8>> {
         &k.public_keys
     }
@@ -142,7 +142,7 @@ module Authenticator {
         aborts_if false;
     }
 
-    // Return the threshold for the multisig policy `k`
+    /// Return the threshold for the multisig policy `k`
     public fun threshold(k: &MultiEd25519PublicKey): u8 {
         *&k.threshold
     }

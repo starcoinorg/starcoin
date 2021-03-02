@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// The module provide block rewarding calculation logic.
 module BlockReward {
     use 0x1::Timestamp;
     use 0x1::Token;
@@ -19,17 +19,25 @@ module BlockReward {
         pragma aborts_if_is_strict = true;
     }
 
+    /// Queue of rewards distributed to miners.
     resource struct RewardQueue {
+        /// How many block rewards has been handled.
         reward_number: u64,
+        /// informations about the reward distribution.
         infos: vector<RewardInfo>,
         /// event handle used to emit block reward event.
         reward_events: Event::EventHandle<Self::BlockRewardEvent>,
     }
 
+    /// Reward info of miners.
     resource struct RewardInfo {
+        /// number of the block miner minted.
         number: u64,
+        /// how many stc rewards.
         reward: u128,
+        /// miner who mint the block.
         miner: address,
+        /// store the gas fee that users consumed.
         gas_fees: Token::Token<STC>,
     }
 
@@ -51,6 +59,7 @@ module BlockReward {
     const EMINER_EXIST: u64 = 104;
     const EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
+    /// Initialize the module, should be called in genesis.
     public fun initialize(account: &signer, reward_delay: u64) {
         Timestamp::assert_genesis();
         CoreAddresses::assert_genesis_address(account);
@@ -72,6 +81,7 @@ module BlockReward {
         ensures exists<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
     }
 
+    /// Process the given block rewards.
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
                                     current_author: address, auth_key_vec: vector<u8>,
                                     previous_block_gas_fees: Token::Token<STC>) acquires RewardQueue {

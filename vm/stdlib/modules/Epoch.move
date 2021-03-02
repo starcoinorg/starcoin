@@ -1,4 +1,5 @@
 address 0x1 {
+/// The module provde epoch functionality for starcoin.    
 module Epoch {
     use 0x1::Config;
     use 0x1::Signer;
@@ -15,6 +16,7 @@ module Epoch {
         pragma aborts_if_is_strict;
     }
 
+    /// Current epoch info.
     resource struct Epoch {
         number: u64,
         start_time: u64,
@@ -30,6 +32,7 @@ module Epoch {
         new_epoch_events: Event::EventHandle<NewEpochEvent>,
     }
 
+    /// New epoch event.
     struct NewEpochEvent {
         number: u64,
         start_time: u64,
@@ -40,6 +43,7 @@ module Epoch {
         previous_epoch_total_reward: u128,
     }
 
+    /// Epoch data.
     resource struct EpochData {
         uncles: u64,
         total_reward: u128,
@@ -53,6 +57,7 @@ module Epoch {
     const EUNREACHABLE: u64 = 19;
     const EINVALID_UNCLES_COUNT: u64 = 101;
 
+    /// Initialization of the module.
     public fun initialize(
         account: &signer,
     ) {
@@ -90,6 +95,7 @@ module Epoch {
         aborts_if exists<EpochData>(Signer::spec_address_of(account));
     }
 
+    /// compute next block time_target.
     public fun compute_next_block_time_target(config: &ConsensusConfig, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
         let total_time = now_milli_second - epoch_start_time;
         let blocks = end_block_number - start_block_number;
@@ -118,6 +124,7 @@ module Epoch {
         pragma verify = false;
     }
 
+    /// adjust_epoch try to advance to next epoch if current epoch ends.
     public fun adjust_epoch(account: &signer, block_number: u64, timestamp: u64, uncles: u64, parent_gas_used:u64): u128
     acquires Epoch, EpochData {
         CoreAddresses::assert_genesis_address(account);
@@ -187,6 +194,7 @@ module Epoch {
         pragma verify = false; //mul_div() timeout
     }
 
+    /// Compute block's gas limit of next epoch.
     public fun compute_gas_limit(config: &ConsensusConfig, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128) : Option::Option<u64> {
         let epoch_block_count = (ConsensusConfig::epoch_block_count(config) as u128);
         let gas_limit_threshold = (last_epoch_total_gas >= Math::mul_div((last_epoch_block_gas_limit as u128) * epoch_block_count, (80 as u128), (HUNDRED as u128)));
@@ -265,6 +273,7 @@ module Epoch {
         aborts_if false;
     }
 
+    /// Get start time of current epoch 
     public fun start_time(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.start_time
@@ -274,6 +283,7 @@ module Epoch {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get uncles number of current epoch
     public fun uncles(): u64 acquires EpochData {
         let epoch_data = borrow_global<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         epoch_data.uncles
@@ -283,6 +293,7 @@ module Epoch {
         aborts_if !exists<EpochData>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get total gas of current epoch
     public fun total_gas(): u128 acquires EpochData {
         let epoch_data = borrow_global<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         epoch_data.total_gas
@@ -292,6 +303,7 @@ module Epoch {
         aborts_if !exists<EpochData>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get block's gas_limit of current epoch
     public fun block_gas_limit(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.block_gas_limit
@@ -301,6 +313,7 @@ module Epoch {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get start block's number of current epoch
     public fun start_block_number(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.start_block_number
@@ -310,6 +323,7 @@ module Epoch {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get end block's number of current epoch
     public fun end_block_number(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.end_block_number
@@ -319,6 +333,7 @@ module Epoch {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get current epoch number
     public fun number(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.number
@@ -328,6 +343,7 @@ module Epoch {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Get current block time target
     public fun block_time_target(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.block_time_target

@@ -1,4 +1,7 @@
 address 0x1 {
+/// `TransactionManager` manages:
+/// 1. prologue and epilogue of transactions.
+/// 2. prologue of blocks.
 module TransactionManager {
     use 0x1::TransactionTimeout;
     use 0x1::Signer;
@@ -31,11 +34,11 @@ module TransactionManager {
     const EPROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
 
 
-    // The prologue is invoked at the beginning of every transaction
-    // It verifies:
-    // - The account's auth key matches the transaction's public key
-    // - That the account has enough balance to pay for all of the gas
-    // - That the sequence number matches the transaction's sequence key
+    /// The prologue is invoked at the beginning of every transaction
+    /// It verifies:
+    /// - The account's auth key matches the transaction's public key
+    /// - That the account has enough balance to pay for all of the gas
+    /// - That the sequence number matches the transaction's sequence key
     public fun prologue<TokenType>(
         account: &signer,
         txn_sender: address,
@@ -115,8 +118,8 @@ module TransactionManager {
         include PackageTxnManager::CheckPackageTxnAbortsIfWithType{is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
     }
 
-    // The epilogue is invoked at the end of transactions.
-    // It collects gas and bumps the sequence number
+    /// The epilogue is invoked at the end of transactions.
+    /// It collects gas and bumps the sequence number
     public fun epilogue<TokenType>(
         account: &signer,
         txn_sender: address,
@@ -165,8 +168,8 @@ module TransactionManager {
         };
     }
 
-    // Set the metadata for the current block.
-    // The runtime always runs this before executing the transactions in a block.
+    /// Set the metadata for the current block and distribute transaction fees and block rewards.
+    /// The runtime always runs this before executing the transactions in a block.
     public fun block_prologue(
         account: &signer,
         parent_hash: vector<u8>,

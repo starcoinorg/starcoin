@@ -1,4 +1,5 @@
 address 0x1 {
+/// The module provides a general implmentation of configuration for onchain contracts.    
 module Config {
     use 0x1::Event;
     use 0x1::Signer;
@@ -10,20 +11,21 @@ module Config {
         pragma aborts_if_is_strict;
     }
 
-    // A generic singleton resource that holds a value of a specific type.
+    /// A generic singleton resource that holds a value of a specific type.
     resource struct Config<ConfigValue: copyable> { payload: ConfigValue }
 
-    // Accounts with this privilege can modify config of type ConfigValue under account_address
+    /// Accounts with this privilege can modify config of type ConfigValue under account_address
     resource struct ModifyConfigCapability<ConfigValue: copyable> {
         account_address: address,
         events: Event::EventHandle<ConfigChangeEvent<ConfigValue>>,
     }
 
-    // A holder for ModifyConfigCapability, for extract and restore ModifyConfigCapability.
+    /// A holder for ModifyConfigCapability, for extract and restore ModifyConfigCapability.
     resource struct ModifyConfigCapabilityHolder<ConfigValue: copyable> {
         cap: Option<ModifyConfigCapability<ConfigValue>>,
     }
 
+    /// Event emitted when config value is changed.
     struct ConfigChangeEvent<ConfigValue: copyable>{
         account_address: address,
         value: ConfigValue,
@@ -39,7 +41,7 @@ module Config {
         }
     }
 
-    // Get a copy of `ConfigValue` value stored under `addr`.
+    /// Get a copy of `ConfigValue` value stored under `addr`.
     public fun get_by_address<ConfigValue: copyable>(addr: address): ConfigValue acquires Config {
         assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(ECONFIG_VALUE_DOES_NOT_EXIST));
         *&borrow_global<Config<ConfigValue>>(addr).payload
@@ -49,7 +51,7 @@ module Config {
         aborts_if !exists<Config<ConfigValue>>(addr);
         ensures exists<Config<ConfigValue>>(addr);
     }
-
+    /// Check whether the config of `ConfigValue` type exists under `addr`.
     public fun config_exist_by_address<ConfigValue: copyable>(addr: address): bool {
         exists<Config<ConfigValue>>(addr)
     }
@@ -58,7 +60,7 @@ module Config {
         aborts_if false;
     }
 
-    // Set a config item to a new value with capability stored under signer
+    /// Set a config item to a new value with capability stored under signer
     public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config,ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);
         assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
@@ -82,7 +84,7 @@ module Config {
         }
     }
 
-    // Set a config item to a new value with cap.
+    /// Set a config item to a new value with cap.
     public fun set_with_capability<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, payload: ConfigValue) acquires Config{
         let addr = cap.account_address;
         assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(ECONFIG_VALUE_DOES_NOT_EXIST));
@@ -96,8 +98,8 @@ module Config {
         ensures exists<Config<ConfigValue>>(cap.account_address);
     }
 
-    // Publish a new config item. The caller will use the returned ModifyConfigCapability to specify the access control
-    // policy for who can modify the config.
+    /// Publish a new config item. The caller will use the returned ModifyConfigCapability to specify the access control
+    /// policy for who can modify the config.
     public fun publish_new_config_with_capability<ConfigValue: copyable>(
         account: &signer,
         payload: ConfigValue,
@@ -113,7 +115,7 @@ module Config {
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
-    // Publish a new config item under account address.
+    /// Publish a new config item under account address.
     public fun publish_new_config<ConfigValue: copyable>(account: &signer, payload: ConfigValue) {
         move_to(account, Config<ConfigValue>{ payload });
         let cap = ModifyConfigCapability<ConfigValue> {account_address: Signer::address_of(account), events: Event::new_event_handle<ConfigChangeEvent<ConfigValue>>(account)};
@@ -152,7 +154,7 @@ module Config {
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
-    // Extract account's ModifyConfigCapability for ConfigValue type
+    /// Extract account's ModifyConfigCapability for ConfigValue type
     public fun extract_modify_config_capability<ConfigValue: copyable>(account: &signer): ModifyConfigCapability<ConfigValue> acquires ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
@@ -170,7 +172,7 @@ module Config {
         ensures Option::spec_is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
     }
 
-    // Restore account's ModifyConfigCapability
+    /// Restore account's ModifyConfigCapability
     public fun restore_modify_config_capability<ConfigValue: copyable>(cap: ModifyConfigCapability<ConfigValue>) acquires ModifyConfigCapabilityHolder{
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
         Option::fill(&mut cap_holder.cap, cap);
@@ -183,6 +185,7 @@ module Config {
         ensures Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
     }
 
+    /// Destroy the given ModifyConfigCapability
     public fun destroy_modify_config_capability<ConfigValue: copyable>(cap: ModifyConfigCapability<ConfigValue>) {
         let ModifyConfigCapability{account_address:_, events} = cap;
         Event::destroy_handle(events)
@@ -192,6 +195,7 @@ module Config {
         aborts_if false;
     }
 
+    /// Return the address of the given ModifyConfigCapability
     public fun account_address<ConfigValue: copyable>(cap: &ModifyConfigCapability<ConfigValue>): address {
         cap.account_address
     }
@@ -199,7 +203,7 @@ module Config {
         aborts_if false;
     }
 
-    // Emit a config change event.
+    /// Emit a config change event.
     fun emit_config_change_event<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, value: ConfigValue) {
         Event::emit_event<ConfigChangeEvent<ConfigValue>>(
             &mut cap.events,
