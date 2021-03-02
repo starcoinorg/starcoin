@@ -23,12 +23,17 @@ module Dao {
     const EXECUTABLE: u8 = 6;
     const EXTRACTED: u8 = 7;
 
+    /// global DAO info of the specified token type `Token`.
     resource struct DaoGlobalInfo<Token> {
+        /// next proposal id.
         next_proposal_id: u64,
+        /// proposal creating event.
         proposal_create_event: Event::EventHandle<ProposalCreatedEvent>,
+        /// voting event.
         vote_changed_event: Event::EventHandle<VoteChangedEvent>,
     }
 
+    /// Configuration of the `Token`'s DAO.
     struct DaoConfig<TokenT: copyable> {
         /// after proposal created, how long use should wait before he can vote.
         voting_delay: u64,
@@ -51,40 +56,59 @@ module Dao {
 
     /// emitted when proposal created.
     struct ProposalCreatedEvent {
+        /// the proposal id.
         proposal_id: u64,
+        /// proposer is the user who create the proposal.
         proposer: address,
     }
 
     /// emitted when user vote/revoke_vote.
     struct VoteChangedEvent {
+        /// the proposal id.
         proposal_id: u64,
+        /// the voter.
         voter: address,
+        /// creator of the proposal.
         proposer: address,
+        /// agree or againest.
         agree: bool,
-        /// latest vote of the voter.
+        /// latest vote count of the voter.
         vote: u128,
     }
 
     /// Proposal data struct.
     resource struct Proposal<Token, Action> {
+        /// id of the proposal
         id: u64,
+        /// creator of the proposal
         proposer: address,
+        /// when voting begins.
         start_time: u64,
+        /// when voting ends.
         end_time: u64,
+        /// count of votes for agree.
         for_votes: u128,
+        /// count of votes for againest.
         against_votes: u128,
-        // executable after this time.
+        /// executable after this time.
         eta: u64,
+        /// after how long, the agreed proposal can be executed.
         action_delay: u64,
+        /// how many votes to reach to make the proposal pass.
         quorum_votes: u128,
+        /// proposal action.
         action: Option::Option<Action>,
     }
 
     /// User vote info.
     resource struct Vote<TokenT> {
+        /// vote for the proposal under the `proposer`.
         proposer: address,
+        /// proposal id.
         id: u64,
+        /// how many tokens to stake.
         stake: Token::Token<TokenT>,
+        /// vote for or vote againest.
         agree: bool,
     }
 
@@ -703,6 +727,7 @@ module Dao {
         }
     }
 
+    /// Get the proposal state.
     public fun proposal_state<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
@@ -815,6 +840,8 @@ module Dao {
     //// Helper functions
 
     //// Query functions
+
+    /// get default voting delay of the DAO.
     public fun voting_delay<TokenT: copyable>(): u64 {
         get_config<TokenT>().voting_delay
     }
@@ -823,6 +850,7 @@ module Dao {
         aborts_if false;
     }
 
+    /// get the default voting period of the DAO.
     public fun voting_period<TokenT: copyable>(): u64 {
         get_config<TokenT>().voting_period
     }
@@ -850,6 +878,7 @@ module Dao {
         supply * spec_dao_config<TokenT>().voting_quorum_rate / 100
     }
 
+    /// Get the quorum rate in percent.
     public fun voting_quorum_rate<TokenT: copyable>(): u8 {
         get_config<TokenT>().voting_quorum_rate
     }
@@ -859,6 +888,7 @@ module Dao {
         ensures result == global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload.voting_quorum_rate;
     }
 
+    /// Get the min_action_delay of the DAO.
     public fun min_action_delay<TokenT: copyable>(): u64 {
         get_config<TokenT>().min_action_delay
     }
