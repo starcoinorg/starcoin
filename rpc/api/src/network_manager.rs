@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as NetworkManagerClient;
+use crate::types::StrView;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use network_p2p_types::network_state::NetworkState;
@@ -20,4 +21,13 @@ pub trait NetworkManagerApi {
 
     #[rpc(name = "network_manager.add_peer")]
     fn add_peer(&self, peer: String) -> FutureResult<()>;
+
+    /// Call peer's network rpc method.
+    #[rpc(name = "network_manager.call")]
+    fn call_peer(
+        &self,
+        peer_id: String,
+        rpc_method: String,
+        message: StrView<Vec<u8>>,
+    ) -> FutureResult<StrView<Vec<u8>>>;
 }
