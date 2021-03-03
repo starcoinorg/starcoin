@@ -3,6 +3,7 @@
 
 # Module `0x1::Vector`
 
+A variable-sized container that can hold both unrestricted types and resources.
 
 
 -  [Constants](#@Constants_0)
@@ -60,6 +61,7 @@
 
 ## Function `empty`
 
+Create an empty vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_empty">empty</a>&lt;Element&gt;(): vector&lt;Element&gt;
@@ -82,6 +84,7 @@
 
 ## Function `length`
 
+Return the length of the vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_length">length</a>&lt;Element&gt;(v: &vector&lt;Element&gt;): u64
@@ -104,6 +107,7 @@
 
 ## Function `borrow`
 
+Acquire an immutable reference to the ith element of the vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_borrow">borrow</a>&lt;Element&gt;(v: &vector&lt;Element&gt;, i: u64): &Element
@@ -126,6 +130,7 @@
 
 ## Function `push_back`
 
+Add an element to the end of the vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_push_back">push_back</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, e: Element)
@@ -148,6 +153,7 @@
 
 ## Function `borrow_mut`
 
+Get mutable reference to the ith element in the vector, abort if out of bound.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_borrow_mut">borrow_mut</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, idx: u64): &<b>mut</b> Element
@@ -170,6 +176,7 @@
 
 ## Function `pop_back`
 
+Pop an element from the end of vector, abort if the vector is empty.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;): Element
@@ -192,6 +199,7 @@
 
 ## Function `destroy_empty`
 
+Destroy the vector, abort if not empty.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_destroy_empty">destroy_empty</a>&lt;Element&gt;(v: vector&lt;Element&gt;)
@@ -214,6 +222,7 @@
 
 ## Function `swap`
 
+Swaps the elements at the i'th and j'th indices in the vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_swap">swap</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64, j: u64)
@@ -236,6 +245,7 @@
 
 ## Function `singleton`
 
+Return an vector of size one containing <code>e</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_singleton">singleton</a>&lt;Element&gt;(e: Element): vector&lt;Element&gt;
@@ -262,6 +272,7 @@
 
 ## Function `reverse`
 
+Reverses the order of the elements in the vector in place.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_reverse">reverse</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;)
@@ -295,6 +306,7 @@
 
 ## Function `append`
 
+Moves all of the elements of the <code>other</code> vector into the <code>lhs</code> vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_append">append</a>&lt;Element&gt;(lhs: &<b>mut</b> vector&lt;Element&gt;, other: vector&lt;Element&gt;)
@@ -321,6 +333,7 @@
 
 ## Function `is_empty`
 
+Return true if the vector has no elements
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_is_empty">is_empty</a>&lt;Element&gt;(v: &vector&lt;Element&gt;): bool
@@ -345,6 +358,7 @@
 
 ## Function `contains`
 
+Return true if <code>e</code> is in the vector <code>v</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_contains">contains</a>&lt;Element&gt;(v: &vector&lt;Element&gt;, e: &Element): bool
@@ -375,6 +389,8 @@
 
 ## Function `index_of`
 
+Return (true, i) if <code>e</code> is in the vector <code>v</code> at index <code>i</code>.
+Otherwise returns (false, 0).
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_index_of">index_of</a>&lt;Element&gt;(v: &vector&lt;Element&gt;, e: &Element): (bool, u64)
@@ -405,6 +421,8 @@
 
 ## Function `remove`
 
+Remove the <code>i</code>th element E of the vector, shifting all subsequent elements
+It is O(n) and preserves ordering
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_remove">remove</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element
@@ -435,6 +453,9 @@
 
 ## Function `swap_remove`
 
+Remove the <code>i</code>th element E of the vector by swapping it with the last element,
+and then popping it off
+It is O(1), but does not preserve ordering
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_swap_remove">swap_remove</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element
@@ -461,6 +482,7 @@
 
 ## Function `split`
 
+Split a vector into sub-vectors of size sub_len,
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;

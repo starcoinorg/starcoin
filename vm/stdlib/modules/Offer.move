@@ -59,7 +59,7 @@ module Offer {
 
     spec fun exists_at {aborts_if false;}
 
-    /// Returns the address of the `Offered` type stored at `offer_address.
+    /// Returns the address of the `Offered` type stored at `offer_address`.
     /// Fails if no such `Offer` exists.
     public fun address_of<Offered>(offer_address: address): address acquires Offer {
         borrow_global<Offer<Offered>>(offer_address).for

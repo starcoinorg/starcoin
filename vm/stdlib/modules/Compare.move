@@ -18,7 +18,7 @@ module Compare {
     /// Returns either `EQUAL` (0u8), `LESS_THAN` (1u8), or `GREATER_THAN` (2u8).
     /// This function is designed to compare BCS (Starcoin Canonical Serialization)-encoded values
     /// (i.e., vectors produced by `BCS::to_bytes`). A typical client will call
-    /// `Compare::cmp_bcs_bytes(BCS::to_bytes(&t1), BCS::to_bytes(&t2)). The comparison provides the
+    /// `Compare::cmp_bcs_bytes(BCS::to_bytes(&t1), BCS::to_bytes(&t2))`. The comparison provides the
     /// following guarantees w.r.t the original values t1 and t2:
     /// - `cmp_bcs_bytes(bcs_ext(t1), bcs_ext(t2)) == LESS_THAN` iff `cmp_bcs_bytes(t2, t1) == GREATER_THAN`
     /// - `Compare::cmp<T>(t1, t2) == EQUAL` iff `t1 == t2` and (similarly)

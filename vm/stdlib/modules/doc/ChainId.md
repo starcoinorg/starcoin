@@ -3,6 +3,7 @@
 
 # Module `0x1::ChainId`
 
+The module provides chain id information.
 
 
 -  [Resource `ChainId`](#0x1_ChainId_ChainId)
@@ -23,6 +24,7 @@
 
 ## Resource `ChainId`
 
+chain id data structure.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="ChainId.md#0x1_ChainId">ChainId</a>
@@ -39,7 +41,7 @@
 <code>id: u8</code>
 </dt>
 <dd>
-
+ real id.
 </dd>
 </dl>
 

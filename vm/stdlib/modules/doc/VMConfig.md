@@ -3,6 +3,7 @@
 
 # Module `0x1::VMConfig`
 
+<code><a href="VMConfig.md#0x1_VMConfig">VMConfig</a></code> keep track of VM related configuration, like gas schedule.
 
 
 -  [Struct `VMConfig`](#0x1_VMConfig_VMConfig)
@@ -24,6 +25,8 @@
 
 ## Struct `VMConfig`
 
+The struct to hold all config data needed to operate the VM.
+* gas_schedule: Cost of running the VM.
 
 
 <pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig">VMConfig</a>
@@ -51,6 +54,17 @@
 
 ## Struct `GasSchedule`
 
+The gas schedule keeps two separate schedules for the gas:
+* The instruction_schedule: This holds the gas for each bytecode instruction.
+* The native_schedule: This holds the gas for used (per-byte operated over) for each native
+function.
+A couple notes:
+1. In the case that an instruction is deleted from the bytecode, that part of the cost schedule
+still needs to remain the same; once a slot in the table is taken by an instruction, that is its
+slot for the rest of time (since that instruction could already exist in a module on-chain).
+2. The initialization of the module will publish the instruction table to the genesis
+address, and will preload the vector with the gas schedule for instructions. The VM will then
+load this into memory at the startup of each block.
 
 
 <pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasSchedule">GasSchedule</a>
@@ -90,6 +104,7 @@
 
 ## Struct `GasConstants`
 
+The gas constants contains all kind of constants used in gas calculation.
 
 
 <pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a>
@@ -157,19 +172,19 @@
 <code>max_transaction_size_in_bytes: u64</code>
 </dt>
 <dd>
-
+ The max transaction size in bytes that a transaction can have.
 </dd>
 <dt>
 <code>gas_unit_scaling_factor: u64</code>
 </dt>
 <dd>
-
+ gas unit scaling factor.
 </dd>
 <dt>
 <code>default_account_size: u64</code>
 </dt>
 <dd>
-
+ default account size.
 </dd>
 </dl>
 
@@ -180,6 +195,7 @@
 
 ## Function `new_vm_config`
 
+Create a new vm config, mainly used in DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_new_vm_config">new_vm_config</a>(instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64): <a href="VMConfig.md#0x1_VMConfig_VMConfig">VMConfig::VMConfig</a>
@@ -233,6 +249,7 @@
 
 ## Function `initialize`
 
+Initialize the table under the genesis account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_initialize">initialize</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)

@@ -186,6 +186,7 @@ Every account has a Account::Account resource
 
 ## Resource `Balance`
 
+A resource that holds the tokens stored in this account
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;
@@ -213,6 +214,9 @@ Every account has a Account::Account resource
 
 ## Resource `WithdrawCapability`
 
+The holder of WithdrawCapability for account_address can withdraw Token from
+account_address/Account::Account/balance.
+There is at most one WithdrawCapability in existence for a given address.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>
@@ -240,6 +244,9 @@ Every account has a Account::Account resource
 
 ## Resource `KeyRotationCapability`
 
+The holder of KeyRotationCapability for account_address can rotate the authentication key for
+account_address (i.e., write to account_address/Account::Account/authentication_key).
+There is at most one KeyRotationCapability in existence for a given address.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a>
@@ -284,19 +291,19 @@ Message for balance withdraw event.
 <code>amount: u128</code>
 </dt>
 <dd>
-
+ The amount of Token<TokenType> sent
 </dd>
 <dt>
 <code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
-
+ The code symbol for the token that was sent
 </dd>
 <dt>
 <code>metadata: vector&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ Metadata associated with the withdraw
 </dd>
 </dl>
 
@@ -324,19 +331,19 @@ Message for balance deposit event.
 <code>amount: u128</code>
 </dt>
 <dd>
-
+ The amount of Token<TokenType> sent
 </dd>
 <dt>
 <code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
-
+ The code symbol for the token that was sent
 </dd>
 <dt>
 <code>metadata: vector&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ Metadata associated with the deposit
 </dd>
 </dl>
 
@@ -515,6 +522,8 @@ Message for accept token events
 
 ## Function `create_genesis_account`
 
+Create an genesis account at <code>new_account_address</code> and return signer.
+Genesis authentication_key is zero bytes.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_genesis_account">create_genesis_account</a>(new_account_address: address): signer
@@ -544,6 +553,7 @@ Message for accept token events
 
 ## Function `release_genesis_signer`
 
+Release genesis account signer
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer)
@@ -568,6 +578,10 @@ Message for accept token events
 
 ## Function `create_account`
 
+Creates a new account at <code>fresh_address</code> with a balance of zero and public
+key <code>public_key_vec</code> | <code>fresh_address</code>.
+Creating an account at address 0x1 will cause runtime failure as it is a
+reserved address for the MoveVM.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address
@@ -690,6 +704,7 @@ Message for accept token events
 
 ## Function `deposit_to_self`
 
+Deposits the <code>to_deposit</code> token into the self's account balance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
@@ -811,6 +826,7 @@ Helper to deposit <code>amount</code> to the given account balance
 
 ## Function `withdraw_from_balance`
 
+Helper to withdraw <code>amount</code> from the given account balance and return the withdrawn Token<TokenType>
 
 
 <pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -835,6 +851,7 @@ Helper to deposit <code>amount</code> to the given account balance
 
 ## Function `withdraw`
 
+Withdraw <code>amount</code> Token<TokenType> from the account balance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -860,6 +877,7 @@ Helper to deposit <code>amount</code> to the given account balance
 
 ## Function `withdraw_with_metadata`
 
+Withdraw <code>amount</code> tokens from <code>signer</code> with given <code>metadata</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -948,6 +966,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `extract_withdraw_capability`
 
+Return a unique capability granting permission to withdraw from the sender's account balance.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_extract_withdraw_capability">extract_withdraw_capability</a>(sender: &signer): <a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>
@@ -978,6 +997,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `restore_withdraw_capability`
 
+Return the withdraw capability to the account it originally came from
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_restore_withdraw_capability">restore_withdraw_capability</a>(cap: <a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>)
@@ -1068,6 +1088,8 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `pay_from_capability`
 
+Withdraws <code>amount</code> Token<TokenType> using the passed in WithdrawCapability, and deposits it
+into the <code>payee</code>'s account balance. Creates the <code>payee</code> account if it doesn't exist.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
@@ -1102,6 +1124,9 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `pay_from_with_metadata`
 
+Withdraw <code>amount</code> Token<TokenType> from the transaction sender's
+account balance and send the token to the <code>payee</code> address with the
+attached <code>metadata</code> Creates the <code>payee</code> account if it does not exist
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
@@ -1136,6 +1161,9 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `pay_from`
 
+Withdraw <code>amount</code> Token<TokenType> from the transaction sender's
+account balance  and send the token to the <code>payee</code> address
+Creates the <code>payee</code> account if it does not exist
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128)
@@ -1164,6 +1192,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `rotate_authentication_key`
 
+Rotate the authentication key for the account under cap.account_address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_rotate_authentication_key">rotate_authentication_key</a>(cap: &<a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>, new_authentication_key: vector&lt;u8&gt;)
@@ -1194,6 +1223,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `extract_key_rotation_capability`
 
+Return a unique capability granting permission to rotate the sender's authentication key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(account: &signer): <a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>
@@ -1223,6 +1253,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `restore_key_rotation_capability`
 
+Return the key rotation capability to the account it originally came from
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_restore_key_rotation_capability">restore_key_rotation_capability</a>(cap: <a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>)
@@ -1249,6 +1280,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `balance_for`
 
+Helper to return the u128 value of the <code>balance</code> for <code>account</code>
 
 
 <pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;): u128
@@ -1273,6 +1305,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `balance`
 
+Return the current TokenType balance of the account at <code>addr</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(addr: address): u128
@@ -1297,6 +1330,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `accept_token`
 
+Add a balance of <code><a href="Token.md#0x1_Token">Token</a></code> type to the sending account.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer)
@@ -1331,6 +1365,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `is_accepts_token`
 
+Return whether the account at <code>addr</code> accepts <code><a href="Token.md#0x1_Token">Token</a></code> type tokens
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(addr: address): bool
@@ -1355,6 +1390,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `sequence_number_for_account`
 
+Helper to return the sequence number field for given <code>account</code>
 
 
 <pre><code><b>fun</b> <a href="Account.md#0x1_Account_sequence_number_for_account">sequence_number_for_account</a>(account: &<a href="Account.md#0x1_Account_Account">Account::Account</a>): u64
@@ -1379,6 +1415,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `sequence_number`
 
+Return the current sequence number at <code>addr</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_sequence_number">sequence_number</a>(addr: address): u64
@@ -1403,6 +1440,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `authentication_key`
 
+Return the authentication key for this account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_authentication_key">authentication_key</a>(addr: address): vector&lt;u8&gt;
@@ -1427,6 +1465,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `delegated_key_rotation_capability`
 
+Return true if the account at <code>addr</code> has delegated its key rotation capability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(addr: address): bool
@@ -1452,6 +1491,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `delegated_withdraw_capability`
 
+Return true if the account at <code>addr</code> has delegated its withdraw capability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(addr: address): bool
@@ -1477,6 +1517,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `withdraw_capability_address`
 
+Return a reference to the address associated with the given withdraw capability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_capability_address">withdraw_capability_address</a>(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>): &address
@@ -1501,6 +1542,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `key_rotation_capability_address`
 
+Return a reference to the address associated with the given key rotation capability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_key_rotation_capability_address">key_rotation_capability_address</a>(cap: &<a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>): &address
@@ -1525,6 +1567,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `exists_at`
 
+Checks if an account exists at <code>check_addr</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_exists_at">exists_at</a>(check_addr: address): bool
@@ -1549,6 +1592,11 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `txn_prologue`
 
+The prologue is invoked at the beginning of every transaction
+It verifies:
+- The account's auth key matches the transaction's public key
+- That the account has enough balance to pay for all of the gas
+- That the sequence number matches the transaction's sequence key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
@@ -1618,6 +1666,8 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 ## Function `txn_epilogue`
 
+The epilogue is invoked at the end of transactions.
+It collects gas and bumps the sequence number
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)

@@ -3,6 +3,7 @@
 
 # Module `0x1::Debug`
 
+The module provide debug print for Move.
 
 
 -  [Function `print`](#0x1_Debug_print)
@@ -18,6 +19,7 @@
 
 ## Function `print`
 
+Print data of Type <code>T</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print">print</a>&lt;T&gt;(x: &T)
@@ -40,6 +42,7 @@
 
 ## Function `print_stack_trace`
 
+Print current stack.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print_stack_trace">print_stack_trace</a>()

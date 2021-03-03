@@ -3,6 +3,7 @@
 
 # Module `0x1::Token`
 
+Token implementation of Starcoin.
 
 
 -  [Resource `Token`](#0x1_Token_Token)
@@ -203,6 +204,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 ## Resource `FixedTimeMintKey`
 
+A fixed time mint key which can mint token until global time > end_time
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;
@@ -236,6 +238,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 ## Resource `LinearTimeMintKey`
 
+A linear time mint key which can mint token in a period by time-based linear release.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;
@@ -281,6 +284,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 ## Resource `BurnCapability`
 
+A burn capability allows tokens of type <code>TokenType</code> to be burned.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;
@@ -308,6 +312,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 ## Struct `MintEvent`
 
+Event emitted when token minted.
 
 
 <pre><code><b>struct</b> <a href="Token.md#0x1_Token_MintEvent">MintEvent</a>
@@ -341,6 +346,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 ## Struct `BurnEvent`
 
+Event emitted when token burned.
 
 
 <pre><code><b>struct</b> <a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a>
@@ -374,6 +380,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 ## Resource `TokenInfo`
 
+Token information.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;
@@ -579,6 +586,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 ## Function `remove_mint_capability`
 
+Remove mint capability from <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;
@@ -604,6 +612,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 ## Function `add_mint_capability`
 
+Add mint capability to <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
@@ -628,6 +637,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 ## Function `destroy_mint_capability`
 
+Destroy the given mint capability.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
@@ -652,6 +662,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 ## Function `remove_burn_capability`
 
+remove the token burn capability from <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;
@@ -677,6 +688,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 ## Function `add_burn_capability`
 
+Add token burn capability to <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
@@ -701,6 +713,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 ## Function `destroy_burn_capability`
 
+Destroy the given burn capability.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
@@ -821,6 +834,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `issue_fixed_mint_key`
 
+Issue a <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code> with given <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
@@ -853,6 +867,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `issue_linear_mint_key`
 
+Issue a <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code> with given <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
@@ -886,6 +901,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `mint_with_fixed_key`
 
+Mint tokens with given <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -913,6 +929,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `mint_with_linear_key`
 
+Mint tokens with given <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -941,6 +958,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `split_linear_key`
 
+Split the given <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
@@ -977,6 +995,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `split_fixed_key`
 
+Split the given <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
@@ -1006,6 +1025,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `mint_amount_of_linear_key`
 
+Returns the amount of the LinearTimeMintKey can mint now.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): u128
@@ -1036,6 +1056,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `mint_amount_of_fixed_key`
 
+Returns the mint amount of the FixedTimeMintKey.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): u128
@@ -1065,6 +1086,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `end_time_of_key`
 
+Return the end time of the given <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_end_time_of_key">end_time_of_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): u64
@@ -1089,6 +1111,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `destroy_empty_key`
 
+Destory a empty <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
@@ -1114,6 +1137,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `is_empty_key`
 
+Check if the given <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code> is empty.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_empty_key">is_empty_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): bool
@@ -1138,6 +1162,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `burn`
 
+Burn some tokens of <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
@@ -1166,6 +1191,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 ## Function `burn_with_capability`
 
+Burn tokens with the given <code><a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)

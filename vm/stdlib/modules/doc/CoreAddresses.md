@@ -3,6 +3,7 @@
 
 # Module `0x1::CoreAddresses`
 
+The module provide addresses used in stdlib.
 
 
 -  [Constants](#@Constants_0)
@@ -63,6 +64,7 @@ The address of the genesis
 
 ## Function `assert_genesis_address`
 
+Assert signer is genesis.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">assert_genesis_address</a>(account: &signer)

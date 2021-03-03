@@ -3,6 +3,7 @@
 
 # Module `0x1::OnChainConfigDao`
 
+OnChainConfigDao is a DAO proposal for modify onchain configuration.
 
 
 -  [Resource `WrappedConfigModifyCapability`](#0x1_OnChainConfigDao_WrappedConfigModifyCapability)
@@ -30,6 +31,7 @@
 
 ## Resource `WrappedConfigModifyCapability`
 
+A wrapper of <code><a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigT&gt;</code>.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_WrappedConfigModifyCapability">WrappedConfigModifyCapability</a>&lt;TokenT, ConfigT: <b>copyable</b>&gt;
@@ -57,6 +59,7 @@
 
 ## Struct `OnChainConfigUpdate`
 
+request of updating configuration.
 
 
 <pre><code><b>struct</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_OnChainConfigUpdate">OnChainConfigUpdate</a>&lt;ConfigT: <b>copyable</b>&gt;
@@ -98,6 +101,8 @@
 
 ## Function `plugin`
 
+Plugin method of the module.
+Should be called by token issuer.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT, ConfigT: <b>copyable</b>&gt;(signer: &signer)
@@ -159,6 +164,9 @@ issue a proposal to update config of ConfigT goved by TokenT
 
 ## Function `execute`
 
+Once the proposal is agreed, anyone can call the method to make the proposal happen.
+Caller need to make sure that the proposal of <code>proposal_id</code> under <code>proposal_address</code> is
+the kind of this proposal module.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
