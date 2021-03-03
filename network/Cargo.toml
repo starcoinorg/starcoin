@@ -54,7 +54,7 @@ starcoin-network-rpc = { path = "../network-rpc" }
 network-rpc-core = { path = "../network-rpc/core" }
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-storage = { path = "../storage" }
-once_cell = "1.7.0"
+once_cell = "1.7.2"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
