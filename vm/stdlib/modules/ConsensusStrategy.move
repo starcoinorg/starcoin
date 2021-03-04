@@ -8,6 +8,7 @@ module ConsensusStrategy {
 
     /// ConsensusStrategy data.
     struct ConsensusStrategy {
+        /// Value of strategy
         value: u8
     }
 

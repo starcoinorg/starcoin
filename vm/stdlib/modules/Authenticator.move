@@ -85,7 +85,7 @@ module Authenticator {
     /// does not matter for the verification of callers.
     spec define spec_ed25519_authentication_key(public_key: vector<u8>): vector<u8>;
 
-    //convert authentication key to address
+    /// convert authentication key to address
     public fun derived_address(authentication_key: vector<u8>): address {
         assert(Vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH, Errors::invalid_argument(EWRONG_AUTHENTICATION_KEY_LENGTH));
         let address_bytes = Vector::empty<u8>();

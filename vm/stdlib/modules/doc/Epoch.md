@@ -3,7 +3,7 @@
 
 # Module `0x1::Epoch`
 
-The module provde epoch functionality for starcoin.
+The module provide epoch functionality for starcoin.
 
 
 -  [Resource `Epoch`](#0x1_Epoch_Epoch)
@@ -77,73 +77,73 @@ Current epoch info.
 <code>number: u64</code>
 </dt>
 <dd>
-
+ Number of current epoch
 </dd>
 <dt>
 <code>start_time: u64</code>
 </dt>
 <dd>
-
+ Start time of current epoch
 </dd>
 <dt>
 <code>start_block_number: u64</code>
 </dt>
 <dd>
-
+ Start block's number of current epoch
 </dd>
 <dt>
 <code>end_block_number: u64</code>
 </dt>
 <dd>
-
+ End block's number of current epoch
 </dd>
 <dt>
 <code>block_time_target: u64</code>
 </dt>
 <dd>
-
+ Average target time to calculate a block's difficulty in current epoch
 </dd>
 <dt>
 <code>reward_per_block: u128</code>
 </dt>
 <dd>
-
+ Rewards per block in current epoch
 </dd>
 <dt>
 <code>reward_per_uncle_percent: u64</code>
 </dt>
 <dd>
-
+ Percentage of <code>reward_per_block</code> to reward a uncle block in current epoch
 </dd>
 <dt>
 <code>block_difficulty_window: u64</code>
 </dt>
 <dd>
-
+ How many ancestor blocks which use to calculate next block's difficulty in current epoch
 </dd>
 <dt>
 <code>max_uncles_per_block: u64</code>
 </dt>
 <dd>
-
+ Maximum number of uncle block per block in current epoch
 </dd>
 <dt>
 <code>block_gas_limit: u64</code>
 </dt>
 <dd>
-
+ Maximum gases per block in current epoch
 </dd>
 <dt>
 <code>strategy: u8</code>
 </dt>
 <dd>
-
+ Strategy to calculate difficulty in current epoch
 </dd>
 <dt>
 <code>new_epoch_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Epoch.md#0x1_Epoch_NewEpochEvent">Epoch::NewEpochEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ Switch Epoch Event
 </dd>
 </dl>
 
@@ -171,43 +171,43 @@ New epoch event.
 <code>number: u64</code>
 </dt>
 <dd>
-
+ Epoch::number
 </dd>
 <dt>
 <code>start_time: u64</code>
 </dt>
 <dd>
-
+ Epoch::start_time
 </dd>
 <dt>
 <code>start_block_number: u64</code>
 </dt>
 <dd>
-
+ Epoch::start_block_number
 </dd>
 <dt>
 <code>end_block_number: u64</code>
 </dt>
 <dd>
-
+ Epoch::end_block_number
 </dd>
 <dt>
 <code>block_time_target: u64</code>
 </dt>
 <dd>
-
+ Epoch::block_time_target
 </dd>
 <dt>
 <code>reward_per_block: u128</code>
 </dt>
 <dd>
-
+ Epoch::reward_per_block
 </dd>
 <dt>
 <code>previous_epoch_total_reward: u128</code>
 </dt>
 <dd>
-
+ Total rewards during previous epoch
 </dd>
 </dl>
 
@@ -235,19 +235,19 @@ Epoch data.
 <code>uncles: u64</code>
 </dt>
 <dd>
-
+ Up to now, Number of uncle block during current epoch
 </dd>
 <dt>
 <code>total_reward: u128</code>
 </dt>
 <dd>
-
+ Up to now, Total rewards during current epoch
 </dd>
 <dt>
 <code>total_gas: u128</code>
 </dt>
 <dd>
-
+ Up to now, Total gases during current epoch
 </dd>
 </dl>
 

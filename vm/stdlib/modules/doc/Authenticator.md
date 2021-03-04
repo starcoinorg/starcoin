@@ -223,6 +223,7 @@ Compute an authentication key for the ed25519 public key <code>public_key</code>
 
 ## Function `derived_address`
 
+convert authentication key to address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;): address

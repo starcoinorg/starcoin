@@ -15,16 +15,27 @@ module ConsensusConfig {
 
     /// consensus configurations.
     struct ConsensusConfig {
+        /// Uncle block rate per epoch
         uncle_rate_target: u64,
+        /// Average target time to calculate a block's difficulty
         base_block_time_target: u64,
+        /// Rewards per block
         base_reward_per_block: u128,
+        /// Percentage of `base_reward_per_block` to reward a uncle block
         base_reward_per_uncle_percent: u64,
+        /// Blocks each epoch
         epoch_block_count: u64,
+        /// How many ancestor blocks which use to calculate next block's difficulty
         base_block_difficulty_window: u64,
+        /// Minimum target time to calculate a block's difficulty
         min_block_time_target: u64,
+        /// Maximum target time to calculate a block's difficulty
         max_block_time_target: u64,
+        /// Maximum number of uncle block per block
         base_max_uncles_per_block: u64,
+        /// Maximum gases per block
         base_block_gas_limit: u64,
+        /// Strategy to calculate difficulty
         strategy: u8,
     }
 
