@@ -10,7 +10,7 @@ module Authenticator {
     use 0x1::Errors;
 
     spec module {
-        pragma verify = false; // break after enabling v2 compilation scheme
+        pragma verify;
         pragma aborts_if_is_strict;
     }
 
