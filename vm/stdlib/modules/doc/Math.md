@@ -3,6 +3,7 @@
 
 # Module `0x1::Math`
 
+The module provide some improved math calculations.
 
 
 -  [Constants](#@Constants_0)
@@ -48,6 +49,7 @@
 
 ## Function `u64_max`
 
+u64::MAX
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_u64_max">u64_max</a>(): u64
@@ -72,6 +74,7 @@
 
 ## Function `u128_max`
 
+u128::MAX
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_u128_max">u128_max</a>(): u128
@@ -96,6 +99,7 @@
 
 ## Function `sqrt`
 
+babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sqrt">sqrt</a>(y: u128): u64
@@ -134,6 +138,7 @@
 
 ## Function `pow`
 
+calculate the <code>y</code> pow of <code>x</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
@@ -168,6 +173,8 @@
 
 ## Function `mul_div`
 
+https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
+calculate x * y /z with as little loss of precision as possible and avoid overflow
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_mul_div">mul_div</a>(x: u128, y: u128, z: u128): u128

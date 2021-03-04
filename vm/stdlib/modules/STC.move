@@ -1,4 +1,6 @@
 address 0x1 {
+/// STC is the token of Starcoin blockchain.
+/// It uses apis defined in the `Token` module.
 module STC {
     use 0x1::Token::{Self, Token};
     use 0x1::Dao;
@@ -17,15 +19,18 @@ module STC {
         pragma aborts_if_is_strict = true;
     }
 
+    /// STC token marker.
     struct STC { }
 
     /// precision of STC token.
     const PRECISION: u8 = 9;
 
+    /// Burn capability of STC.
     resource struct SharedBurnCapability {
         cap: Token::BurnCapability<STC>,
     }
 
+    /// STC initialization.
     public fun initialize(
         account: &signer,
         voting_delay: u64,
@@ -69,6 +74,8 @@ module STC {
     spec fun is_stc {
     }
 
+    /// Burn STC tokens.
+    /// It can be called by anyone.
     public fun burn(token: Token<STC>) acquires SharedBurnCapability {
         let cap = borrow_global<SharedBurnCapability>(token_address());
         Token::burn_with_capability(&cap.cap, token);
@@ -79,6 +86,7 @@ module STC {
         aborts_if !exists<SharedBurnCapability>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
 
+    /// Return STC token address.
     public fun token_address(): address {
         Token::token_address<STC>()
     }

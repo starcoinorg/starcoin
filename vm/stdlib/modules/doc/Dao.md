@@ -90,6 +90,7 @@
 
 ## Resource `DaoGlobalInfo`
 
+global DAO info of the specified token type <code><a href="Token.md#0x1_Token">Token</a></code>.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
@@ -106,19 +107,19 @@
 <code>next_proposal_id: u64</code>
 </dt>
 <dd>
-
+ next proposal id.
 </dd>
 <dt>
 <code>proposal_create_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_ProposalCreatedEvent">Dao::ProposalCreatedEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ proposal creating event.
 </dd>
 <dt>
 <code>vote_changed_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_VoteChangedEvent">Dao::VoteChangedEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ voting event.
 </dd>
 </dl>
 
@@ -129,6 +130,7 @@
 
 ## Struct `DaoConfig`
 
+Configuration of the <code><a href="Token.md#0x1_Token">Token</a></code>'s DAO.
 
 
 <pre><code><b>struct</b> <a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT: <b>copyable</b>&gt;
@@ -193,13 +195,13 @@ emitted when proposal created.
 <code>proposal_id: u64</code>
 </dt>
 <dd>
-
+ the proposal id.
 </dd>
 <dt>
 <code>proposer: address</code>
 </dt>
 <dd>
-
+ proposer is the user who create the proposal.
 </dd>
 </dl>
 
@@ -227,31 +229,31 @@ emitted when user vote/revoke_vote.
 <code>proposal_id: u64</code>
 </dt>
 <dd>
-
+ the proposal id.
 </dd>
 <dt>
 <code>voter: address</code>
 </dt>
 <dd>
-
+ the voter.
 </dd>
 <dt>
 <code>proposer: address</code>
 </dt>
 <dd>
-
+ creator of the proposal.
 </dd>
 <dt>
 <code>agree: bool</code>
 </dt>
 <dd>
-
+ agree or againest.
 </dd>
 <dt>
 <code>vote: u128</code>
 </dt>
 <dd>
- latest vote of the voter.
+ latest vote count of the voter.
 </dd>
 </dl>
 
@@ -279,61 +281,61 @@ Proposal data struct.
 <code>id: u64</code>
 </dt>
 <dd>
-
+ id of the proposal
 </dd>
 <dt>
 <code>proposer: address</code>
 </dt>
 <dd>
-
+ creator of the proposal
 </dd>
 <dt>
 <code>start_time: u64</code>
 </dt>
 <dd>
-
+ when voting begins.
 </dd>
 <dt>
 <code>end_time: u64</code>
 </dt>
 <dd>
-
+ when voting ends.
 </dd>
 <dt>
 <code>for_votes: u128</code>
 </dt>
 <dd>
-
+ count of votes for agree.
 </dd>
 <dt>
 <code>against_votes: u128</code>
 </dt>
 <dd>
-
+ count of votes for againest.
 </dd>
 <dt>
 <code>eta: u64</code>
 </dt>
 <dd>
-
+ executable after this time.
 </dd>
 <dt>
 <code>action_delay: u64</code>
 </dt>
 <dd>
-
+ after how long, the agreed proposal can be executed.
 </dd>
 <dt>
 <code>quorum_votes: u128</code>
 </dt>
 <dd>
-
+ how many votes to reach to make the proposal pass.
 </dd>
 <dt>
 <code>action: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;Action&gt;</code>
 </dt>
 <dd>
-
+ proposal action.
 </dd>
 </dl>
 
@@ -361,25 +363,25 @@ User vote info.
 <code>proposer: address</code>
 </dt>
 <dd>
-
+ vote for the proposal under the <code>proposer</code>.
 </dd>
 <dt>
 <code>id: u64</code>
 </dt>
 <dd>
-
+ proposal id.
 </dd>
 <dt>
 <code>stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;</code>
 </dt>
 <dd>
-
+ how many tokens to stake.
 </dd>
 <dt>
 <code>agree: bool</code>
 </dt>
 <dd>
-
+ vote for or vote againest.
 </dd>
 </dl>
 
@@ -1168,6 +1170,7 @@ check whether a proposal exists in <code>proposer_address</code> with id <code>p
 
 ## Function `proposal_state`
 
+Get the proposal state.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64): u8
@@ -1333,6 +1336,7 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
 
 ## Function `voting_delay`
 
+get default voting delay of the DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_delay">voting_delay</a>&lt;TokenT: <b>copyable</b>&gt;(): u64
@@ -1357,6 +1361,7 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
 
 ## Function `voting_period`
 
+get the default voting period of the DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_period">voting_period</a>&lt;TokenT: <b>copyable</b>&gt;(): u64
@@ -1409,6 +1414,7 @@ Quorum votes to make proposal pass.
 
 ## Function `voting_quorum_rate`
 
+Get the quorum rate in percent.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT: <b>copyable</b>&gt;(): u8
@@ -1433,6 +1439,7 @@ Quorum votes to make proposal pass.
 
 ## Function `min_action_delay`
 
+Get the min_action_delay of the DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT: <b>copyable</b>&gt;(): u64

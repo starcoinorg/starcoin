@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// The module provide configuration for block reward.
 module RewardConfig {
     use 0x1::Timestamp;
     use 0x1::Signer;
@@ -11,12 +11,15 @@ module RewardConfig {
         pragma aborts_if_is_strict = true;
     }
 
+    /// Reward configuration
     struct RewardConfig {
+        /// how many blocks delay reward distribution.
         reward_delay: u64,
     }
 
     const EINVALID_ARGUMENT: u64 = 18;
 
+    /// Module initialization.
     public fun initialize(account: &signer, reward_delay: u64) {
         Timestamp::assert_genesis();
         CoreAddresses::assert_genesis_address(account);
@@ -35,12 +38,14 @@ module RewardConfig {
         include Config::PublishNewConfigEnsures<RewardConfig>;
     }
 
+    /// Create a new reward config mainly used in DAO.
     public fun new_reward_config(reward_delay: u64) : RewardConfig {
         RewardConfig {reward_delay: reward_delay}
     }
 
     spec fun new_reward_config {}
 
+    /// Get reward configuration.
     public fun get_reward_config(): RewardConfig {
         Config::get_by_address<RewardConfig>(CoreAddresses::GENESIS_ADDRESS())
     }
@@ -53,6 +58,7 @@ module RewardConfig {
         aborts_if !exists<Config::Config<RewardConfig>>(CoreAddresses::GENESIS_ADDRESS());
     }
 
+    /// Get reward delay.
     public fun reward_delay() :u64 {
         let reward_config = get_reward_config();
         reward_config.reward_delay

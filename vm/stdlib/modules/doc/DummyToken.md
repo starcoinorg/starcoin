@@ -3,6 +3,7 @@
 
 # Module `0x1::DummyToken`
 
+The module provide a dummy token implementation.
 
 
 -  [Struct `DummyToken`](#0x1_DummyToken_DummyToken)
@@ -26,6 +27,7 @@
 
 ## Struct `DummyToken`
 
+The DummyToken type.
 
 
 <pre><code><b>struct</b> <a href="DummyToken.md#0x1_DummyToken">DummyToken</a>
@@ -53,6 +55,7 @@
 
 ## Resource `SharedBurnCapability`
 
+Burn capability of the token.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="DummyToken.md#0x1_DummyToken_SharedBurnCapability">SharedBurnCapability</a>
@@ -80,6 +83,7 @@
 
 ## Resource `SharedMintCapability`
 
+Mint capability of the token.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a>
@@ -130,6 +134,7 @@
 
 ## Function `initialize`
 
+Initialization of the module.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_initialize">initialize</a>(account: &signer)
@@ -188,6 +193,7 @@ Returns true if <code>TokenType</code> is <code><a href="DummyToken.md#0x1_Dummy
 
 ## Function `burn`
 
+Burn the given token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_burn">burn</a>(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="DummyToken.md#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a>&gt;)
@@ -240,6 +246,7 @@ Anyone can mint DummyToken, amount should < 10000
 
 ## Function `token_address`
 
+Return the token address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_token_address">token_address</a>(): address

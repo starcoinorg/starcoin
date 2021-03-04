@@ -3,6 +3,7 @@
 
 # Module `0x1::Version`
 
+<code><a href="Version.md#0x1_Version">Version</a></code> tracks version of something, like current VM version.
 
 
 -  [Struct `Version`](#0x1_Version_Version)
@@ -23,6 +24,7 @@
 
 ## Struct `Version`
 
+Version.
 
 
 <pre><code><b>struct</b> <a href="Version.md#0x1_Version">Version</a>
@@ -39,7 +41,7 @@
 <code>major: u64</code>
 </dt>
 <dd>
-
+ major number.
 </dd>
 </dl>
 
@@ -64,6 +66,7 @@
 
 ## Function `new_version`
 
+Create a new version.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_new_version">new_version</a>(major: u64): <a href="Version.md#0x1_Version_Version">Version::Version</a>
@@ -88,6 +91,7 @@
 
 ## Function `get`
 
+Get version under <code>addr</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_get">get</a>(addr: address): u64

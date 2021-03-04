@@ -27,6 +27,8 @@
 
 ## Resource `EventHandleGenerator`
 
+A resource representing the counter used to generate uniqueness under each account. There won't be destructor for
+this resource to guarantee the uniqueness of the generated handle.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>
@@ -43,7 +45,7 @@
 <code>counter: u64</code>
 </dt>
 <dd>
-
+ A monotonically increasing counter
 </dd>
 <dt>
 <code>addr: address</code>
@@ -60,6 +62,9 @@
 
 ## Resource `EventHandle`
 
+A handle for an event such that:
+1. Other modules can emit events to this handle.
+2. Storage can use this handle to prove the total number of events that happened in the past.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T: <b>copyable</b>&gt;
@@ -76,13 +81,13 @@
 <code>counter: u64</code>
 </dt>
 <dd>
-
+ Total number of events emitted to this event stream.
 </dd>
 <dt>
 <code>guid: vector&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ A globally unique ID for this event stream.
 </dd>
 </dl>
 
@@ -93,6 +98,7 @@
 
 ## Function `publish_generator`
 
+Create an event generator under address of <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_publish_generator">publish_generator</a>(account: &signer)
@@ -148,6 +154,7 @@
 
 ## Function `new_event_handle`
 
+Use EventHandleGenerator to generate a unique event handle for <code>sig</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_new_event_handle">new_event_handle</a>&lt;T: <b>copyable</b>&gt;(account: &signer): <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;T&gt;
@@ -176,6 +183,8 @@
 
 ## Function `emit_event`
 
+Emit an event with payload <code>msg</code> by using handle's key and counter. Will change the payload from vector<u8> to a
+generic type parameter once we have generics.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_emit_event">emit_event</a>&lt;T: <b>copyable</b>&gt;(handle_ref: &<b>mut</b> <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;T&gt;, msg: T)
@@ -203,6 +212,8 @@
 
 ## Function `write_to_event_store`
 
+Native procedure that writes to the actual event stream in Event store
+This will replace the "native" portion of EmitEvent bytecode
 
 
 <pre><code><b>fun</b> <a href="Event.md#0x1_Event_write_to_event_store">write_to_event_store</a>&lt;T: <b>copyable</b>&gt;(guid: vector&lt;u8&gt;, count: u64, msg: T)

@@ -1,8 +1,5 @@
 address 0x1 {
-
-/**
-This module defines the Option type and its methods to represent and handle an optional value.
-*/
+/// This module defines the Option type and its methods to represent and handle an optional value.
 module Option {
     use 0x1::Vector;
 

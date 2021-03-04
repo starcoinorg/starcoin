@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// The module provide operations for FixedPoint32.
 module FixedPoint32 {
 
     use 0x1::Errors;
@@ -9,9 +9,9 @@ module FixedPoint32 {
         pragma aborts_if_is_strict;
     }
 
-    // Define a fixed-point numeric type with 32 fractional bits.
-    // This is just a u64 integer but it is wrapped in a struct to
-    // make a unique type.
+    /// Define a fixed-point numeric type with 32 fractional bits.
+    /// This is just a u64 integer but it is wrapped in a struct to
+    /// make a unique type.
     struct FixedPoint32 { value: u64 }
 
     const MAX_U64: u128 = 18446744073709551615;
@@ -55,9 +55,9 @@ module FixedPoint32 {
         ensures result == spec_multiply_u64(val, multiplier);
     }
 
-    // Divide a u64 integer by a fixed-point number, truncating any
-    // fractional part of the quotient. This will abort if the divisor
-    // is zero or if the quotient overflows.
+    /// Divide a u64 integer by a fixed-point number, truncating any
+    /// fractional part of the quotient. This will abort if the divisor
+    /// is zero or if the quotient overflows.
     public fun divide_u64(val: u64, divisor: FixedPoint32): u64 {
         // Check for division by zero.
         assert(divisor.value != 0, Errors::invalid_argument(EDIVISION_BY_ZERO));
@@ -78,11 +78,11 @@ module FixedPoint32 {
         ensures result == spec_divide_u64(val, divisor);
     }
 
-    // Create a fixed-point value from a rational number specified by its
-    // numerator and denominator. This function is for convenience; it is also
-    // perfectly fine to create a fixed-point value by directly specifying the
-    // raw value. This will abort if the denominator is zero or if the ratio is
-    // not in the range 2^-32 .. 2^32-1.
+    /// Create a fixed-point value from a rational number specified by its
+    /// numerator and denominator. This function is for convenience; it is also
+    /// perfectly fine to create a fixed-point value by directly specifying the
+    /// raw value. This will abort if the denominator is zero or if the ratio is
+    /// not in the range 2^-32 .. 2^32-1.
     public fun create_from_rational(numerator: u64, denominator: u64): FixedPoint32 {
         // If the denominator is zero, this will abort.
         // Scale the numerator to have 64 fractional bits and the denominator
@@ -105,13 +105,14 @@ module FixedPoint32 {
         ensures result == spec_create_from_rational(numerator, denominator);
     }
 
+    /// create a fixedpoint 32  from u64.
     public fun create_from_raw_value(value: u64): FixedPoint32 {
         FixedPoint32 { value }
     }
 
-    // Accessor for the raw u64 value. Other less common operations, such as
-    // adding or subtracting FixedPoint32 values, can be done using the raw
-    // values directly.
+    /// Accessor for the raw u64 value. Other less common operations, such as
+    /// adding or subtracting FixedPoint32 values, can be done using the raw
+    /// values directly.
     public fun get_raw_value(num: FixedPoint32): u64 {
         num.value
     }

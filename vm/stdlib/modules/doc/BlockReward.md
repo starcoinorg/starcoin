@@ -3,6 +3,7 @@
 
 # Module `0x1::BlockReward`
 
+The module provide block rewarding calculation logic.
 
 
 -  [Resource `RewardQueue`](#0x1_BlockReward_RewardQueue)
@@ -33,6 +34,7 @@
 
 ## Resource `RewardQueue`
 
+Queue of rewards distributed to miners.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>
@@ -49,13 +51,13 @@
 <code>reward_number: u64</code>
 </dt>
 <dd>
-
+ How many block rewards has been handled.
 </dd>
 <dt>
 <code>infos: vector&lt;<a href="BlockReward.md#0x1_BlockReward_RewardInfo">BlockReward::RewardInfo</a>&gt;</code>
 </dt>
 <dd>
-
+ informations about the reward distribution.
 </dd>
 <dt>
 <code>reward_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockReward::BlockRewardEvent</a>&gt;</code>
@@ -72,6 +74,7 @@
 
 ## Resource `RewardInfo`
 
+Reward info of miners.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a>
@@ -88,25 +91,25 @@
 <code>number: u64</code>
 </dt>
 <dd>
-
+ number of the block miner minted.
 </dd>
 <dt>
 <code>reward: u128</code>
 </dt>
 <dd>
-
+ how many stc rewards.
 </dd>
 <dt>
 <code>miner: address</code>
 </dt>
 <dd>
-
+ miner who mint the block.
 </dd>
 <dt>
 <code>gas_fees: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;</code>
 </dt>
 <dd>
-
+ store the gas fee that users consumed.
 </dd>
 </dl>
 
@@ -213,6 +216,7 @@ block reward event
 
 ## Function `initialize`
 
+Initialize the module, should be called in genesis.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_initialize">initialize</a>(account: &signer, reward_delay: u64)
@@ -245,6 +249,7 @@ block reward event
 
 ## Function `process_block_reward`
 
+Process the given block rewards.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;, previous_block_gas_fees: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;)

@@ -3,7 +3,6 @@
 
 # Module `0x1::Option`
 
-
 This module defines the Option type and its methods to represent and handle an optional value.
 
 

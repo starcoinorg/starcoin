@@ -1,4 +1,5 @@
 address 0x1 {
+/// MintDaoProposal is a dao proposal for mint extra tokens.
 module MintDaoProposal {
     use 0x1::Token;
     use 0x1::Signer;
@@ -12,17 +13,23 @@ module MintDaoProposal {
         pragma aborts_if_is_partial;
     }
 
+    /// A wrapper of Token MintCapability.
     resource struct WrappedMintCapability<TokenType> {
         cap: Token::MintCapability<TokenType>,
     }
 
+    /// MintToken request.
     struct MintToken {
+        /// the receiver of minted tokens.
         receiver: address,
+        /// how many tokens to mint.
         amount: u128,
     }
 
     const ERR_NOT_AUTHORIZED: u64 = 401;
 
+    /// Plugin method of the module.
+    /// Should be called by token issuer.
     public fun plugin<TokenT>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
@@ -41,6 +48,7 @@ module MintDaoProposal {
     }
 
 
+    /// Entrypoint for the proposal.
     public fun propose_mint_to<TokenT: copyable>(signer: &signer, receiver: address, amount: u128, exec_delay: u64) {
         Dao::propose<TokenT, MintToken>(
             signer,
@@ -63,6 +71,7 @@ module MintDaoProposal {
         aborts_if exists<Dao::Proposal<TokenT, MintToken>>(sender);
     }
 
+    /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
     public fun execute_mint_proposal<TokenT: copyable>(
         proposer_address: address,
         proposal_id: u64,

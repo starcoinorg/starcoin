@@ -1,4 +1,5 @@
 address 0x1 {
+/// UpgradeModuleDaoProposal is a proposal moudle used to upgrade contract codes under a token.
 module UpgradeModuleDaoProposal {
     use 0x1::PackageTxnManager;
     use 0x1::Token;
@@ -17,11 +18,12 @@ module UpgradeModuleDaoProposal {
     const ERR_NOT_AUTHORIZED: u64 = 401;
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
 
+    /// A wrapper of `PackageTxnManager::UpgradePlanCapability`.
     resource struct UpgradeModuleCapability<TokenT> {
         cap: PackageTxnManager::UpgradePlanCapability,
     }
 
-    // const UPGRADE_DELAY: u64 = 200;
+    /// request of upgrading module contract code.
     struct UpgradeModule {
         module_address: address,
         package_hash: vector<u8>,
@@ -77,6 +79,7 @@ module UpgradeModuleDaoProposal {
         include AbortIfUnableUpgrade<TokenT>;
     }
 
+    /// Once the proposal is agreed, anyone can call this method to generate the upgrading plan.
     public fun submit_module_upgrade_plan<TokenT: copyable>(
         proposer_address: address,
         proposal_id: u64,

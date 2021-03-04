@@ -1,5 +1,6 @@
 address 0x1 {
-
+/// The module implements onchain timestamp oracle.
+/// Timestamp is updated on each block. It always steps forward, and never come backward.
 module Timestamp {
     use 0x1::CoreAddresses;
     use 0x1::Signer;

@@ -3,6 +3,7 @@
 
 # Module `0x1::Epoch`
 
+The module provde epoch functionality for starcoin.
 
 
 -  [Resource `Epoch`](#0x1_Epoch_Epoch)
@@ -59,6 +60,7 @@
 
 ## Resource `Epoch`
 
+Current epoch info.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Epoch.md#0x1_Epoch">Epoch</a>
@@ -152,6 +154,7 @@
 
 ## Struct `NewEpochEvent`
 
+New epoch event.
 
 
 <pre><code><b>struct</b> <a href="Epoch.md#0x1_Epoch_NewEpochEvent">NewEpochEvent</a>
@@ -215,6 +218,7 @@
 
 ## Resource `EpochData`
 
+Epoch data.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Epoch.md#0x1_Epoch_EpochData">EpochData</a>
@@ -304,6 +308,7 @@
 
 ## Function `initialize`
 
+Initialization of the module.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_initialize">initialize</a>(account: &signer)
@@ -351,6 +356,7 @@
 
 ## Function `compute_next_block_time_target`
 
+compute next block time_target.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
@@ -395,6 +401,7 @@
 
 ## Function `adjust_epoch`
 
+adjust_epoch try to advance to next epoch if current epoch ends.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, timestamp: u64, uncles: u64, parent_gas_used: u64): u128
@@ -490,6 +497,7 @@
 
 ## Function `compute_gas_limit`
 
+Compute block's gas limit of next epoch.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_gas_limit">compute_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128): <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;
@@ -629,6 +637,7 @@
 
 ## Function `start_time`
 
+Get start time of current epoch
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_start_time">start_time</a>(): u64
@@ -654,6 +663,7 @@
 
 ## Function `uncles`
 
+Get uncles number of current epoch
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_uncles">uncles</a>(): u64
@@ -679,6 +689,7 @@
 
 ## Function `total_gas`
 
+Get total gas of current epoch
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_total_gas">total_gas</a>(): u128
@@ -704,6 +715,7 @@
 
 ## Function `block_gas_limit`
 
+Get block's gas_limit of current epoch
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_block_gas_limit">block_gas_limit</a>(): u64
@@ -729,6 +741,7 @@
 
 ## Function `start_block_number`
 
+Get start block's number of current epoch
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_start_block_number">start_block_number</a>(): u64
@@ -754,6 +767,7 @@
 
 ## Function `end_block_number`
 
+Get end block's number of current epoch
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_end_block_number">end_block_number</a>(): u64
@@ -779,6 +793,7 @@
 
 ## Function `number`
 
+Get current epoch number
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_number">number</a>(): u64
@@ -804,6 +819,7 @@
 
 ## Function `block_time_target`
 
+Get current block time target
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_block_time_target">block_time_target</a>(): u64

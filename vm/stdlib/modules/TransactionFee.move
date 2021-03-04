@@ -1,5 +1,6 @@
 address 0x1 {
-
+/// `TransactionFee` collect gas fees used by transactions in blocks temporarily.
+/// Then they are distributed in `TransactionManager`.
 module TransactionFee {
     use 0x1::Token::{Self, Token};
     use 0x1::CoreAddresses;

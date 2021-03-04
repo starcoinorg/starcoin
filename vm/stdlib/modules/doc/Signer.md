@@ -3,6 +3,7 @@
 
 # Module `0x1::Signer`
 
+Provide access methods for Signer.
 
 
 -  [Function `borrow_address`](#0x1_Signer_borrow_address)
@@ -19,6 +20,13 @@
 
 ## Function `borrow_address`
 
+Borrows the address of the signer
+Conceptually, you can think of the <code>signer</code> as being a resource struct wrapper around an
+address
+```
+resource struct Signer { addr: address }
+```
+<code>borrow_address</code> borrows this inner field
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Signer.md#0x1_Signer_borrow_address">borrow_address</a>(s: &signer): &address
@@ -41,6 +49,7 @@
 
 ## Function `address_of`
 
+Copies the address of the signer
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Signer.md#0x1_Signer_address_of">address_of</a>(s: &signer): address

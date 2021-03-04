@@ -3,6 +3,9 @@
 
 # Module `0x1::SharedEd25519PublicKey`
 
+Each address that holds a <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> resource can rotate the public key stored in
+this resource, but the account's authentication key will be updated in lockstep. This ensures
+that the two keys always stay in sync.
 
 
 -  [Resource `SharedEd25519PublicKey`](#0x1_SharedEd25519PublicKey_SharedEd25519PublicKey)
@@ -33,6 +36,8 @@
 
 ## Resource `SharedEd25519PublicKey`
 
+A resource that forces the account associated with <code>rotation_cap</code> to use a ed25519
+authentication key derived from <code>key</code>
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a>
@@ -49,13 +54,13 @@
 <code>key: vector&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ 32 byte ed25519 public key
 </dd>
 <dt>
 <code>rotation_cap: <a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a></code>
 </dt>
 <dd>
-
+ rotation capability for an account whose authentication key is always derived from <code>key</code>
 </dd>
 </dl>
 
@@ -80,6 +85,11 @@
 
 ## Function `publish`
 
+(1) Rotate the authentication key of the sender to <code>key</code>
+(2) Publish a resource containing a 32-byte ed25519 public key and the rotation capability
+of the sender under the <code>account</code>'s address.
+Aborts if the sender already has a <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> resource.
+Aborts if the length of <code>new_public_key</code> is not 32.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;)
@@ -142,6 +152,12 @@
 
 ## Function `rotate_key`
 
+(1) rotate the public key stored <code>account</code>'s <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> resource to
+<code>new_public_key</code>
+(2) rotate the authentication key using the capability stored in the <code>account</code>'s
+<code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> to a new value derived from <code>new_public_key</code>
+Aborts if the sender does not have a <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> resource.
+Aborts if the length of <code>new_public_key</code> is not 32.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_rotate_key">rotate_key</a>(account: &signer, new_public_key: vector&lt;u8&gt;)
@@ -166,6 +182,8 @@
 
 ## Function `key`
 
+Return the public key stored under <code>addr</code>.
+Aborts if <code>addr</code> does not hold a <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> resource.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_key">key</a>(addr: address): vector&lt;u8&gt;
@@ -190,6 +208,7 @@
 
 ## Function `exists_at`
 
+Returns true if <code>addr</code> holds a <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code> resource.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_exists_at">exists_at</a>(addr: address): bool

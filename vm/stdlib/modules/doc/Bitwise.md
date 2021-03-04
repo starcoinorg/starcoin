@@ -3,6 +3,7 @@
 
 # Module `0x1::BitOperators`
 
+Functions for bit operations.
 
 
 -  [Function `and`](#0x1_BitOperators_and)
@@ -22,6 +23,7 @@
 
 ## Function `and`
 
+bit and: x & y
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Bitwise.md#0x1_BitOperators_and">and</a>(x: u64, y: u64): u64
@@ -46,6 +48,7 @@
 
 ## Function `or`
 
+bit or: x | y
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Bitwise.md#0x1_BitOperators_or">or</a>(x: u64, y: u64): u64
@@ -70,6 +73,7 @@
 
 ## Function `xor`
 
+bit xor: x ^ y
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Bitwise.md#0x1_BitOperators_xor">xor</a>(x: u64, y: u64): u64
@@ -94,6 +98,7 @@
 
 ## Function `not`
 
+bit not: !x
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Bitwise.md#0x1_BitOperators_not">not</a>(x: u64): u64
@@ -118,6 +123,7 @@
 
 ## Function `lshift`
 
+left shift n bits.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Bitwise.md#0x1_BitOperators_lshift">lshift</a>(x: u64, n: u8): u64
@@ -142,6 +148,7 @@
 
 ## Function `rshift`
 
+right shift n bits.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Bitwise.md#0x1_BitOperators_rshift">rshift</a>(x: u64, n: u8): u64

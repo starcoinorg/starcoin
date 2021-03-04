@@ -10,18 +10,22 @@ module Box {
         pragma aborts_if_is_strict = true;
     }
 
+    /// Box struct.
     resource struct Box<T>{
+        /// thing in the box.
         thing:vector<T>,
     }
 
     const EBOX_NOT_EXIST: u64 = 101;
 
+    /// check the box exists in `addr`
     public fun exists_at<T>(addr: address): bool{
         exists<Box<T>>(addr)
     }
 
     spec fun exists_at {aborts_if false;}
 
+    /// get how many things in the box.
     public fun length<T>(addr: address): u64 acquires Box{
         if (exists_at<T>(addr)) {
             let box = borrow_global<Box<T>>(addr);
@@ -33,7 +37,7 @@ module Box {
 
     spec fun length {aborts_if false;}
 
-    // Put thing to account's box last position.
+    /// Put thing to account's box last position.
     public fun put<T>(account: &signer, thing: T) acquires Box{
         let addr = Signer::address_of(account);
         if (exists_at<T>(addr)) {
@@ -46,6 +50,7 @@ module Box {
 
     spec fun put {aborts_if false;}
 
+    /// Put things to account's box last position.
     public fun put_all<T>(account: &signer, thing: vector<T>) acquires Box{
         let addr = Signer::address_of(account);
         if (exists_at<T>(addr)) {
@@ -58,7 +63,7 @@ module Box {
 
     spec fun put_all {aborts_if false;}
 
-    // Take last thing from account's box
+    /// Take last thing from account's box
     public fun take<T>(account: &signer): T acquires Box{
         let addr = Signer::address_of(account);
         assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
@@ -76,6 +81,7 @@ module Box {
         aborts_if len(global<Box<T>>(Signer::address_of(account)).thing) == 0;
     }
 
+    /// Take all things from account's box
     public fun take_all<T>(account: &signer): vector<T> acquires Box{
         let addr = Signer::address_of(account);
         assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
