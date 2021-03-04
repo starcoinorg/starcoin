@@ -1,4 +1,5 @@
 address 0x1 {
+/// The module provide addresses used in stdlib.    
 module CoreAddresses {
     use 0x1::Signer;
     use 0x1::Errors;
@@ -22,6 +23,7 @@ module CoreAddresses {
         }
     }
 
+    /// Assert signer is genesis.
     public fun assert_genesis_address(account: &signer) {
         assert(Signer::address_of(account) == GENESIS_ADDRESS(), Errors::requires_address(ENOT_GENESIS_ACCOUNT))
     }

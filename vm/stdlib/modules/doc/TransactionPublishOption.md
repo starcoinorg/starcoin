@@ -3,6 +3,9 @@
 
 # Module `0x1::TransactionPublishOption`
 
+<code><a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a></code> provide an option to limit:
+- which scripts are allowed to run.
+- whether user can publish custom modules on chain.
 
 
 -  [Struct `TransactionPublishOption`](#0x1_TransactionPublishOption_TransactionPublishOption)
@@ -122,6 +125,7 @@ The script hash has an invalid length
 
 ## Function `initialize`
 
+Module initialization.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, merged_script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool)
@@ -159,6 +163,7 @@ The script hash has an invalid length
 
 ## Function `new_transaction_publish_option`
 
+Create a new option. Mainly used in DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>
@@ -203,6 +208,7 @@ The script hash has an invalid length
 
 ## Function `is_script_allowed`
 
+Check if sender can execute script with <code>hash</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address, hash: &vector&lt;u8&gt;): bool
@@ -229,6 +235,7 @@ The script hash has an invalid length
 
 ## Function `is_module_allowed`
 
+Check if a sender can publish a module
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_module_allowed">is_module_allowed</a>(account: address): bool

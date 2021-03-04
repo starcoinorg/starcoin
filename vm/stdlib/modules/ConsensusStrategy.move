@@ -1,11 +1,14 @@
 address 0x1 {
+/// The module provides the information of current consensus strategy.    
 module ConsensusStrategy {
     use 0x1::CoreAddresses;
     use 0x1::Timestamp;
     use 0x1::Signer;
     use 0x1::Config;
 
+    /// ConsensusStrategy data.
     struct ConsensusStrategy {
+        /// Value of strategy
         value: u8
     }
 

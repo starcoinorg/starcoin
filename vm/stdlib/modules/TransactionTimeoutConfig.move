@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// Onchain configuration for timeout setting of transaction.
 module TransactionTimeoutConfig {
     use 0x1::Timestamp;
     use 0x1::CoreAddresses;
@@ -11,10 +11,13 @@ module TransactionTimeoutConfig {
         pragma aborts_if_is_strict = true;
     }
 
+    /// config structs.
     struct TransactionTimeoutConfig {
+        /// timeout in second.
         duration_seconds: u64,
     }
 
+    /// Initialize function. Should only be called in genesis.
     public fun initialize(account: &signer, duration_seconds: u64) {
         Timestamp::assert_genesis();
         CoreAddresses::assert_genesis_address(account);
@@ -32,6 +35,7 @@ module TransactionTimeoutConfig {
         include Config::PublishNewConfigEnsures<TransactionTimeoutConfig>;
     }
 
+    /// Create a new timeout config used in dao proposal.
     public fun new_transaction_timeout_config(duration_seconds: u64) : TransactionTimeoutConfig {
         TransactionTimeoutConfig {duration_seconds: duration_seconds}
     }
@@ -40,6 +44,7 @@ module TransactionTimeoutConfig {
         aborts_if false;
     }
 
+    /// Get current timeout config.
     public fun get_transaction_timeout_config(): TransactionTimeoutConfig {
         Config::get_by_address<TransactionTimeoutConfig>(CoreAddresses::GENESIS_ADDRESS())
     }
@@ -50,6 +55,7 @@ module TransactionTimeoutConfig {
         };
     }
 
+    /// Get current txn timeout in seconds.
     public fun duration_seconds() :u64 {
         let config = get_transaction_timeout_config();
         config.duration_seconds

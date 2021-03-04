@@ -19,7 +19,7 @@ rand_core = { version = "0.6.2", default-features = false }
 async-std = { version = "1.9.0", features = ["unstable"] }
 byteorder = "1.4.2"
 rust-argon2 = "0.8"
-hex = { version = "0.4.2", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 starcoin-logger = { path = "../commons/logger"}
 starcoin-state-api = { path = "../state/api" }
 starcoin-statedb = { path = "../state/statedb" }

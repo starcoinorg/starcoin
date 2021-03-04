@@ -3,6 +3,9 @@
 
 # Module `0x1::TransactionManager`
 
+<code><a href="TransactionManager.md#0x1_TransactionManager">TransactionManager</a></code> manages:
+1. prologue and epilogue of transactions.
+2. prologue of blocks.
 
 
 -  [Constants](#@Constants_0)
@@ -106,6 +109,11 @@
 
 ## Function `prologue`
 
+The prologue is invoked at the beginning of every transaction
+It verifies:
+- The account's auth key matches the transaction's public key
+- That the account has enough balance to pay for all of the gas
+- That the sequence number matches the transaction's sequence key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, txn_expiration_time: u64, chain_id: u8, txn_payload_type: u8, txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address)
@@ -180,6 +188,8 @@
 
 ## Function `epilogue`
 
+The epilogue is invoked at the end of transactions.
+It collects gas and bumps the sequence number
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_epilogue">epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address, success: bool)
@@ -232,6 +242,8 @@
 
 ## Function `block_prologue`
 
+Set the metadata for the current block and distribute transaction fees and block rewards.
+The runtime always runs this before executing the transactions in a block.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, auth_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64, chain_id: u8, parent_gas_used: u64)

@@ -1,4 +1,5 @@
 address 0x1 {
+/// The module provide configuration of consensus parameters.
 module ConsensusConfig {
     use 0x1::Config;
     use 0x1::Signer;
@@ -12,22 +13,35 @@ module ConsensusConfig {
         pragma aborts_if_is_strict;
     }
 
+    /// consensus configurations.
     struct ConsensusConfig {
+        /// Uncle block rate per epoch
         uncle_rate_target: u64,
+        /// Average target time to calculate a block's difficulty
         base_block_time_target: u64,
+        /// Rewards per block
         base_reward_per_block: u128,
+        /// Percentage of `base_reward_per_block` to reward a uncle block
         base_reward_per_uncle_percent: u64,
+        /// Blocks each epoch
         epoch_block_count: u64,
+        /// How many ancestor blocks which use to calculate next block's difficulty
         base_block_difficulty_window: u64,
+        /// Minimum target time to calculate a block's difficulty
         min_block_time_target: u64,
+        /// Maximum target time to calculate a block's difficulty
         max_block_time_target: u64,
+        /// Maximum number of uncle block per block
         base_max_uncles_per_block: u64,
+        /// Maximum gases per block
         base_block_gas_limit: u64,
+        /// Strategy to calculate difficulty
         strategy: u8,
     }
 
     const EINVALID_ARGUMENT: u64 = 18;
 
+    /// Initialization of the module.
     public fun initialize(
         account: &signer,
         uncle_rate_target: u64,
@@ -78,6 +92,7 @@ module ConsensusConfig {
         include Config::PublishNewConfigEnsures<ConsensusConfig>;
     }
 
+    /// Create a new consensus config mainly used in DAO.
     public fun new_consensus_config(uncle_rate_target: u64,
                                     base_block_time_target: u64,
                                     base_reward_per_block: u128,
@@ -123,6 +138,7 @@ module ConsensusConfig {
         aborts_if max_block_time_target < min_block_time_target;
     }
 
+    /// Get config data.
     public fun get_config(): ConsensusConfig {
         Config::get_by_address<ConsensusConfig>(CoreAddresses::GENESIS_ADDRESS())
     }
@@ -135,50 +151,61 @@ module ConsensusConfig {
         global<Config::Config<ConsensusConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).payload
     }
 
+    /// Get uncle_rate_target
     public fun uncle_rate_target(config: &ConsensusConfig): u64 {
         config.uncle_rate_target
     }
-    
+    /// Get base_block_time_target
     public fun base_block_time_target(config: &ConsensusConfig): u64 {
         config.base_block_time_target
     }
 
+    /// Get base_reward_per_block
     public fun base_reward_per_block(config: &ConsensusConfig): u128 {
         config.base_reward_per_block
     }
     
+    /// Get epoch_block_count
     public fun epoch_block_count(config: &ConsensusConfig): u64 {
         config.epoch_block_count
     }
 
+    /// Get base_block_difficulty_window
     public fun base_block_difficulty_window(config: &ConsensusConfig): u64 {
         config.base_block_difficulty_window
     }
 
+    /// Get base_reward_per_uncle_percent
     public fun base_reward_per_uncle_percent(config: &ConsensusConfig): u64 {
         config.base_reward_per_uncle_percent
     }
 
+    /// Get min_block_time_target
     public fun min_block_time_target(config: &ConsensusConfig): u64 {
         config.min_block_time_target
     }
 
+    /// Get max_block_time_target
     public fun max_block_time_target(config: &ConsensusConfig): u64 {
         config.max_block_time_target
     }
 
+    /// Get base_max_uncles_per_block
     public fun base_max_uncles_per_block(config: &ConsensusConfig): u64 {
         config.base_max_uncles_per_block
     }
 
+    /// Get base_block_gas_limit
     public fun base_block_gas_limit(config: &ConsensusConfig): u64 {
         config.base_block_gas_limit
     }
 
+    /// Get strategy
     public fun strategy(config: &ConsensusConfig): u8 {
         config.strategy
     }
 
+    /// Compute block reward given the `new_epoch_block_time_target`.
     public fun compute_reward_per_block(new_epoch_block_time_target: u64): u128 {
         let config = get_config();
         do_compute_reward_per_block(&config, new_epoch_block_time_target)
@@ -189,6 +216,7 @@ module ConsensusConfig {
         include Math::MulDivAbortsIf{x: spec_get_config().base_reward_per_block, y: new_epoch_block_time_target, z: spec_get_config().base_block_time_target};
     }
 
+    /// Compute block reward given the `new_epoch_block_time_target`, and the consensus config.
     public fun do_compute_reward_per_block(config: &ConsensusConfig, new_epoch_block_time_target: u64): u128 {
         Math::mul_div(config.base_reward_per_block, (new_epoch_block_time_target as u128), (config.base_block_time_target as u128))
     }

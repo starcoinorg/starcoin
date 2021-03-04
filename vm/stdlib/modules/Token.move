@@ -1,4 +1,5 @@
 address 0x1 {
+/// Token implementation of Starcoin.
 module Token {
     use 0x1::Event;
     use 0x1::Signer;
@@ -30,15 +31,17 @@ module Token {
     /// A minting capability allows tokens of type `TokenType` to be minted
     resource struct MintCapability<TokenType> { }
 
-    // A fixed time mint key which can mint token until global time > end_time
+    /// A fixed time mint key which can mint token until global time > end_time
     resource struct FixedTimeMintKey<TokenType> { total: u128, end_time: u64 }
 
-    // A linear time mint key which can mint token in a period by time-based linear release.
+    /// A linear time mint key which can mint token in a period by time-based linear release.
     resource struct LinearTimeMintKey<TokenType> { total: u128, minted: u128, start_time: u64, period: u64 }
 
+    /// A burn capability allows tokens of type `TokenType` to be burned.
     resource struct BurnCapability<TokenType> { }
 
 
+    /// Event emitted when token minted.
     struct MintEvent {
         /// funds added to the system
         amount: u128,
@@ -46,6 +49,7 @@ module Token {
         token_code: TokenCode,
     }
 
+    /// Event emitted when token burned.
     struct BurnEvent {
         /// funds removed from the system
         amount: u128,
@@ -53,6 +57,7 @@ module Token {
         token_code: TokenCode,
     }
 
+    /// Token information.
     resource struct TokenInfo<TokenType> {
         /// The total value for the token represented by
         /// `TokenType`. Mutable.
@@ -130,6 +135,7 @@ module Token {
         ensures exists<TokenInfo<TokenType>>(Signer::spec_address_of(account));
     }
 
+    /// Remove mint capability from `signer`.
     public fun remove_mint_capability<TokenType>(signer: &signer): MintCapability<TokenType>
     acquires MintCapability {
         move_from<MintCapability<TokenType>>(Signer::address_of(signer))
@@ -140,6 +146,7 @@ module Token {
         ensures !exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
     }
 
+    /// Add mint capability to `signer`.
     public fun add_mint_capability<TokenType>(signer: &signer, cap: MintCapability<TokenType>) {
         move_to(signer, cap)
     }
@@ -149,6 +156,7 @@ module Token {
         ensures exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
     }
 
+    /// Destroy the given mint capability.
     public fun destroy_mint_capability<TokenType>(cap: MintCapability<TokenType>) {
         let MintCapability<TokenType> { } = cap;
     }
@@ -156,6 +164,7 @@ module Token {
     spec fun destroy_mint_capability {
     }
 
+    /// remove the token burn capability from `signer`.
     public fun remove_burn_capability<TokenType>(signer: &signer): BurnCapability<TokenType>
     acquires BurnCapability {
         move_from<BurnCapability<TokenType>>(Signer::address_of(signer))
@@ -166,6 +175,7 @@ module Token {
         ensures !exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
     }
 
+    /// Add token burn capability to `signer`.
     public fun add_burn_capability<TokenType>(signer: &signer, cap: BurnCapability<TokenType>) {
         move_to(signer, cap)
     }
@@ -175,6 +185,7 @@ module Token {
         ensures exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
     }
 
+    /// Destroy the given burn capability.
     public fun destroy_burn_capability<TokenType>(cap: BurnCapability<TokenType>) {
         let BurnCapability<TokenType> { } = cap;
     }
@@ -234,6 +245,7 @@ module Token {
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
     }
 
+    /// Issue a `FixedTimeMintKey` with given `MintCapability`.
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                      amount: u128, period: u64): FixedTimeMintKey<TokenType>{
         assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
@@ -253,6 +265,7 @@ module Token {
         aborts_if Timestamp::spec_now_seconds() + period > MAX_U64;
     }
 
+    /// Issue a `LinearTimeMintKey` with given `MintCapability`.
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                                 amount: u128, period: u64): LinearTimeMintKey<TokenType>{
         assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
@@ -272,6 +285,7 @@ module Token {
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Mint tokens with given `FixedTimeMintKey`.
     public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_fixed_key(&key);
         assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
@@ -286,6 +300,7 @@ module Token {
         aborts_if spec_abstract_total_value<TokenType>() + key.total > MAX_U128;
     }
 
+    /// Mint tokens with given `LinearTimeMintKey`.
     public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_linear_key(key);
         assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
@@ -298,6 +313,7 @@ module Token {
         pragma verify = false; //timeout, fix later
     }
 
+    /// Split the given `LinearTimeMintKey`.
     public fun split_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
         let token = Self::mint_with_linear_key(key);
         assert(!Self::is_empty_key(key), Errors::invalid_state(EEMPTY_KEY));
@@ -318,6 +334,7 @@ module Token {
         pragma verify = false; //timeout, fix later
     }
 
+    /// Split the given `FixedTimeMintKey`.
     public fun split_fixed_key<TokenType>(key: &mut FixedTimeMintKey<TokenType>, amount: u128): FixedTimeMintKey<TokenType> {
         assert(key.total >= amount, Errors::invalid_state(ESPLIT));
         key.total = key.total - amount;
@@ -331,7 +348,7 @@ module Token {
         aborts_if key.total < amount;
     }
 
-    // Returns the amount of the LinearTimeMintKey can mint now.
+    /// Returns the amount of the LinearTimeMintKey can mint now.
     public fun mint_amount_of_linear_key<TokenType>(key: &LinearTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         let elapsed_time = now - key.start_time;
@@ -350,7 +367,7 @@ module Token {
         aborts_if [abstract] Timestamp::spec_now_seconds() - key.start_time < key.period && Math::spec_mul_div() < key.minted;
     }
 
-    // Returns the mint amount of the FixedTimeMintKey.
+    /// Returns the mint amount of the FixedTimeMintKey.
     public fun mint_amount_of_fixed_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         if (now >= key.end_time) {
@@ -372,10 +389,12 @@ module Token {
         }
     }
 
+    /// Return the end time of the given `FixedTimeMintKey`.
     public fun end_time_of_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u64 {
         key.end_time
     }
 
+    /// Destory a empty `LinearTimeMintKey`.
     public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time: _, period: _ } = key;
         assert(total == minted, Errors::invalid_argument(EDESTROY_KEY_NOT_EMPTY));
@@ -385,6 +404,7 @@ module Token {
         aborts_if key.total != key.minted;
     }
 
+    /// Check if the given `LinearTimeMintKey` is empty.
     public fun is_empty_key<TokenType>(key: &LinearTimeMintKey<TokenType>) : bool {
         key.total == key.minted
     }
@@ -393,6 +413,7 @@ module Token {
         aborts_if false;
     }
 
+    /// Burn some tokens of `signer`.
     public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
     acquires TokenInfo, BurnCapability {
         burn_with_capability(
@@ -406,6 +427,7 @@ module Token {
         aborts_if !exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
     }
 
+    /// Burn tokens with the given `BurnCapability`.
     public fun burn_with_capability<TokenType>(
         _capability: &BurnCapability<TokenType>,
         tokens: Token<TokenType>,

@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// The module provide some improved math calculations.
 module Math {
     spec module {
         pragma verify;
@@ -9,15 +9,17 @@ module Math {
     const U64_MAX:u64 = 18446744073709551615;
     const U128_MAX:u128 = 340282366920938463463374607431768211455;
 
+    /// u64::MAX
     public fun u64_max(): u64 {
         U64_MAX
     }
 
+    /// u128::MAX
     public fun u128_max(): u128 {
         U128_MAX
     }
 
-    // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
+    /// babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
     public fun sqrt(y: u128): u64 {
         if (y < 4) {
             if (y == 0) {
@@ -47,6 +49,7 @@ module Math {
     /// does not matter for the verification of callers.
     spec define spec_sqrt(): u128;
 
+    /// calculate the `y` pow of `x`.
     public fun pow(x: u64, y: u64): u128 {
         let result = 1u128;
         let z = y;
@@ -72,8 +75,8 @@ module Math {
     /// does not matter for the verification of callers.
     spec define spec_pow(): u128;
 
-    //https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
-    // calculate x * y /z with as little loss of precision as possible and avoid overflow
+    /// https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
+    /// calculate x * y /z with as little loss of precision as possible and avoid overflow
     public fun mul_div(x: u128, y: u128, z: u128): u128 {
         if ( y  == z ) {
             return x

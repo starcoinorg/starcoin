@@ -3,6 +3,7 @@
 
 # Module `0x1::Block`
 
+Block module provide metadata for generated blocks.
 
 
 -  [Resource `BlockMetadata`](#0x1_Block_BlockMetadata)
@@ -33,6 +34,7 @@
 
 ## Resource `BlockMetadata`
 
+Block metadata struct.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>
@@ -49,31 +51,31 @@
 <code>number: u64</code>
 </dt>
 <dd>
-
+ number of the current block
 </dd>
 <dt>
 <code>parent_hash: vector&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ Hash of the parent block.
 </dd>
 <dt>
 <code>author: address</code>
 </dt>
 <dd>
-
+ Author of the current block.
 </dd>
 <dt>
 <code>uncles: u64</code>
 </dt>
 <dd>
-
+ number of uncles.
 </dd>
 <dt>
 <code>new_block_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Block.md#0x1_Block_NewBlockEvent">Block::NewBlockEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ Handle of events when new blocks are emitted
 </dd>
 </dl>
 
@@ -84,6 +86,7 @@
 
 ## Struct `NewBlockEvent`
 
+Events emitted when new block generated.
 
 
 <pre><code><b>struct</b> <a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a>
@@ -143,6 +146,7 @@
 
 ## Function `initialize`
 
+This can only be invoked by the GENESIS_ACCOUNT at genesis
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_initialize">initialize</a>(account: &signer, parent_hash: vector&lt;u8&gt;)
@@ -178,6 +182,7 @@
 
 ## Function `get_current_block_number`
 
+Get the current block number
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_get_current_block_number">get_current_block_number</a>(): u64
@@ -202,6 +207,7 @@
 
 ## Function `get_parent_hash`
 
+Get the hash of the parent block.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_get_parent_hash">get_parent_hash</a>(): vector&lt;u8&gt;
@@ -226,6 +232,7 @@
 
 ## Function `get_current_author`
 
+Gets the address of the author of the current block
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_get_current_author">get_current_author</a>(): address
@@ -250,6 +257,7 @@
 
 ## Function `process_block_metadata`
 
+Call at block prologue
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64)

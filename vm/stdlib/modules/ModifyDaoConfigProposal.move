@@ -1,4 +1,5 @@
 address 0x1 {
+/// A proposal module which is used to modify Token's DAO configuration.
 module ModifyDaoConfigProposal {
     // use 0x1::Config;
     use 0x1::Token;
@@ -14,6 +15,7 @@ module ModifyDaoConfigProposal {
         pragma aborts_if_is_partial;
     }
 
+    /// A wrapper of `Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>`.
     resource struct DaoConfigModifyCapability<TokenT: copyable> {
         cap: Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>,
     }
@@ -24,12 +26,18 @@ module ModifyDaoConfigProposal {
     /// a proposal action to update dao config.
     /// if any field is `0`, that means the proposal want to update.
     struct DaoConfigUpdate {
+        /// new voting delay setting.
         voting_delay: u64,
+        /// new voting period setting.
         voting_period: u64,
+        /// new voting quorum rate setting.
         voting_quorum_rate: u8,
+        /// new min action delay setting.
         min_action_delay: u64,
     }
 
+    /// Plugin method of the module.
+    /// Should be called by token issuer.
     public fun plugin<TokenT: copyable>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
@@ -53,6 +61,7 @@ module ModifyDaoConfigProposal {
         ensures exists<DaoConfigModifyCapability<TokenT>>(sender);
     }
 
+    /// Entrypoint for the proposal.
     public fun propose<TokenT: copyable>(
         signer: &signer,
         voting_delay: u64,
@@ -86,7 +95,7 @@ module ModifyDaoConfigProposal {
         aborts_if exists<Dao::Proposal<TokenT, DaoConfigUpdate>>(sender);
 
     }
-
+    /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
     public fun execute<TokenT: copyable>(proposer_address: address, proposal_id: u64)
     acquires DaoConfigModifyCapability {
         let DaoConfigUpdate {

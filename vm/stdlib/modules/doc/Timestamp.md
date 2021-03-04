@@ -3,6 +3,8 @@
 
 # Module `0x1::Timestamp`
 
+The module implements onchain timestamp oracle.
+Timestamp is updated on each block. It always steps forward, and never come backward.
 
 
 -  [Resource `CurrentTimeMilliseconds`](#0x1_Timestamp_CurrentTimeMilliseconds)

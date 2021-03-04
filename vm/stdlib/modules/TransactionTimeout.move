@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// A module used to check expiration time of transactions.
 module TransactionTimeout {
   use 0x1::CoreAddresses;
   use 0x1::Timestamp;
@@ -21,6 +21,7 @@ module TransactionTimeout {
       }
   }
 
+  /// Check whether the given timestamp is valid for transactions.
   public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool {
     let current_block_time = Timestamp::now_seconds();
     let block_number = Block::get_current_block_number();

@@ -27,7 +27,7 @@ rand = "0.8.3"
 rand_core = { version = "0.6.2", default-features = false }
 byteorder = "1.4.2"
 futures-timer = "3.0"
-hex = { version = "0.4.2", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 thiserror = "1.0"
 structopt = "0.3.21"
 indicatif = "0.15"

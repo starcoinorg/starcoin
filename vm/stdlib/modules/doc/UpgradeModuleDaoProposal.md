@@ -3,6 +3,7 @@
 
 # Module `0x1::UpgradeModuleDaoProposal`
 
+UpgradeModuleDaoProposal is a proposal moudle used to upgrade contract codes under a token.
 
 
 -  [Resource `UpgradeModuleCapability`](#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability)
@@ -30,6 +31,7 @@
 
 ## Resource `UpgradeModuleCapability`
 
+A wrapper of <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a></code>.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;
@@ -57,6 +59,7 @@
 
 ## Struct `UpgradeModule`
 
+request of upgrading module contract code.
 
 
 <pre><code><b>struct</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>
@@ -196,6 +199,7 @@ propose a module upgrade, called by proposer.
 
 ## Function `submit_module_upgrade_plan`
 
+Once the proposal is agreed, anyone can call this method to generate the upgrading plan.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
