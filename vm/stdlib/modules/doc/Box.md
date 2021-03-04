@@ -3,6 +3,7 @@
 
 # Module `0x1::Box`
 
+Provider a account based vector for save resource.
 
 
 -  [Resource `Box`](#0x1_Box_Box)

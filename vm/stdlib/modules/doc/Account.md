@@ -3,6 +3,7 @@
 
 # Module `0x1::Account`
 
+The module for the account resource that governs every account
 
 
 -  [Resource `Account`](#0x1_Account_Account)

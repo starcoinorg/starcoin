@@ -42,7 +42,7 @@ ConsensusStrategy data.
 <code>value: u8</code>
 </dt>
 <dd>
-
+ Value of strategy
 </dd>
 </dl>
 

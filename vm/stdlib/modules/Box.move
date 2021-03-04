@@ -1,5 +1,5 @@
 address 0x1 {
-// Provider a account based vector for save resource.
+/// Provider a account based vector for save resource.
 module Box {
     use 0x1::Signer;
     use 0x1::Errors;
