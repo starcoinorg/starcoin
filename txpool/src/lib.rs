@@ -39,7 +39,7 @@ mod tx_pool_service_impl;
 #[derive(Clone)]
 pub struct TxPoolActorService {
     inner: Inner,
-    next_propagation_ready: Arc<AtomicBool>,
+    new_txs_received: Arc<AtomicBool>,
     sync_status: Option<SyncStatus>,
 }
 
@@ -57,7 +57,7 @@ impl TxPoolActorService {
         Self {
             inner,
             sync_status: None,
-            next_propagation_ready: Arc::new(AtomicBool::new(true)),
+            new_txs_received: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -114,19 +114,19 @@ impl ServiceFactory<Self> for TxPoolActorService {
 }
 impl TxPoolActorService {
     fn try_propagate_txns(&self, ctx: &mut ServiceContext<Self>) {
-        if self.next_propagation_ready.load(Ordering::Relaxed) {
+        // only propagate when new txns enter pool.
+        if self.new_txs_received.load(Ordering::Relaxed) {
             match self.transactions_to_propagate() {
                 Err(e) => {
                     log::error!("txpool: fail to get txn to propagate, err: {}", &e)
                 }
                 Ok(txs) if !txs.is_empty() => {
                     if self
-                        .next_propagation_ready
-                        .compare_exchange(true, false, Ordering::AcqRel, Ordering::Relaxed)
+                        .new_txs_received
+                        .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
                         .unwrap_or_else(|x| x)
                     {
-                        let request =
-                            PropagateTransactions::new(txs, self.next_propagation_ready.clone());
+                        let request = PropagateTransactions::new(txs);
                         ctx.broadcast(request);
                     }
                 }
@@ -164,7 +164,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
 
 /// Listen to txn status, and propagate to remote peers if necessary.
 impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
-    fn handle_event(&mut self, item: TxnStatusFullEvent, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, item: TxnStatusFullEvent, _ctx: &mut ServiceContext<Self>) {
         // do metrics.
         {
             let status = self.inner.pool_status().status;
@@ -180,25 +180,24 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
             TXPOOL_STATUS_GAUGE_VEC
                 .with_label_values(&["count"])
                 .set(txn_count as i64);
-
-            for (_, s) in item.iter() {
-                match *s {
-                    TxStatus::Added => {
-                        TXPOOL_TXNS_GAUGE.inc();
-                    }
-                    TxStatus::Rejected => {}
-                    _ => {
-                        TXPOOL_TXNS_GAUGE.dec();
-                    }
+        }
+        let mut has_new_txns = false;
+        for (_, s) in item.iter() {
+            match *s {
+                TxStatus::Added => {
+                    TXPOOL_TXNS_GAUGE.inc();
+                    has_new_txns = true;
                 }
-
-                if *s != TxStatus::Added {
-                    continue;
+                TxStatus::Rejected => {}
+                _ => {
+                    TXPOOL_TXNS_GAUGE.dec();
                 }
             }
         }
-        //TODO direct send broadcast message to network.
-        self.try_propagate_txns(ctx);
+        if has_new_txns {
+            // notify txn-broadcaster.
+            self.new_txs_received.store(true, Ordering::Relaxed);
+        }
     }
 }
 
