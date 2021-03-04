@@ -123,7 +123,7 @@ impl TxPoolActorService {
                 Ok(txs) if !txs.is_empty() => {
                     if self
                         .new_txs_received
-                        .compare_exchange(true, false, Ordering::AcqRel, Ordering::Relaxed)
+                        .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
                         .unwrap_or_else(|x| x)
                     {
                         let request = PropagateTransactions::new(txs);
@@ -196,7 +196,7 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
         }
         if has_new_txns {
             // notify txn-broadcaster.
-            self.new_txs_received.store(true, Ordering::AcqRel);
+            self.new_txs_received.store(true, Ordering::Relaxed);
         }
     }
 }
