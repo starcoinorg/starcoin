@@ -1,9 +1,10 @@
 address 0x1 {
-/// The module provde epoch functionality for starcoin.    
+/// The module provide epoch functionality for starcoin.
 module Epoch {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+
     use 0x1::Event;
     use 0x1::Errors;
     use 0x1::Timestamp;
@@ -18,35 +19,57 @@ module Epoch {
 
     /// Current epoch info.
     resource struct Epoch {
+        /// Number of current epoch
         number: u64,
+        /// Start time of current epoch
         start_time: u64,
+        /// Start block's number of current epoch
         start_block_number: u64,
+        /// End block's number of current epoch
         end_block_number: u64,
+        /// Average target time to calculate a block's difficulty in current epoch
         block_time_target: u64,
+        /// Rewards per block in current epoch
         reward_per_block: u128,
+        /// Percentage of `reward_per_block` to reward a uncle block in current epoch
         reward_per_uncle_percent: u64,
+        /// How many ancestor blocks which use to calculate next block's difficulty in current epoch
         block_difficulty_window: u64,
+        /// Maximum number of uncle block per block in current epoch
         max_uncles_per_block: u64,
+        /// Maximum gases per block in current epoch
         block_gas_limit: u64,
+        /// Strategy to calculate difficulty in current epoch
         strategy: u8,
+        /// Switch Epoch Event
         new_epoch_events: Event::EventHandle<NewEpochEvent>,
     }
 
     /// New epoch event.
     struct NewEpochEvent {
+        /// Epoch::number
         number: u64,
+        /// Epoch::start_time
         start_time: u64,
+        /// Epoch::start_block_number
         start_block_number: u64,
+        /// Epoch::end_block_number
         end_block_number: u64,
+        /// Epoch::block_time_target
         block_time_target: u64,
+        /// Epoch::reward_per_block
         reward_per_block: u128,
+        /// Total rewards during previous epoch
         previous_epoch_total_reward: u128,
     }
 
     /// Epoch data.
     resource struct EpochData {
+        /// Up to now, Number of uncle block during current epoch
         uncles: u64,
+        /// Up to now, Total rewards during current epoch
         total_reward: u128,
+        /// Up to now, Total gases during current epoch
         total_gas: u128,
     }
 

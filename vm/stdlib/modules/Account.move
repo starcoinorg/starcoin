@@ -1,6 +1,6 @@
 address 0x1 {
 
-// The module for the account resource that governs every account
+/// The module for the account resource that governs every account
 module Account {
     use 0x1::Authenticator;
     use 0x1::Event;

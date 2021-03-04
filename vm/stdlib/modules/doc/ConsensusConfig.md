@@ -62,67 +62,67 @@ consensus configurations.
 <code>uncle_rate_target: u64</code>
 </dt>
 <dd>
-
+ Uncle block rate per epoch
 </dd>
 <dt>
 <code>base_block_time_target: u64</code>
 </dt>
 <dd>
-
+ Average target time to calculate a block's difficulty
 </dd>
 <dt>
 <code>base_reward_per_block: u128</code>
 </dt>
 <dd>
-
+ Rewards per block
 </dd>
 <dt>
 <code>base_reward_per_uncle_percent: u64</code>
 </dt>
 <dd>
-
+ Percentage of <code>base_reward_per_block</code> to reward a uncle block
 </dd>
 <dt>
 <code>epoch_block_count: u64</code>
 </dt>
 <dd>
-
+ Blocks each epoch
 </dd>
 <dt>
 <code>base_block_difficulty_window: u64</code>
 </dt>
 <dd>
-
+ How many ancestor blocks which use to calculate next block's difficulty
 </dd>
 <dt>
 <code>min_block_time_target: u64</code>
 </dt>
 <dd>
-
+ Minimum target time to calculate a block's difficulty
 </dd>
 <dt>
 <code>max_block_time_target: u64</code>
 </dt>
 <dd>
-
+ Maximum target time to calculate a block's difficulty
 </dd>
 <dt>
 <code>base_max_uncles_per_block: u64</code>
 </dt>
 <dd>
-
+ Maximum number of uncle block per block
 </dd>
 <dt>
 <code>base_block_gas_limit: u64</code>
 </dt>
 <dd>
-
+ Maximum gases per block
 </dd>
 <dt>
 <code>strategy: u8</code>
 </dt>
 <dd>
-
+ Strategy to calculate difficulty
 </dd>
 </dl>
 
