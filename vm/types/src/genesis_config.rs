@@ -268,8 +268,6 @@ impl BuiltinNetworkID {
     pub fn boot_nodes_domain(self) -> String {
         match self {
             BuiltinNetworkID::Test | BuiltinNetworkID::Dev => "localhost".to_string(),
-            BuiltinNetworkID::Halley => "halley1.seed.starcoin.org".to_string(),
-            BuiltinNetworkID::Proxima => "proxima1.seed.starcoin.org".to_string(),
             _ => format!("{}.seed.starcoin.org", self),
         }
     }
