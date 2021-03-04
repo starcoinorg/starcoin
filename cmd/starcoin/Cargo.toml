@@ -36,7 +36,7 @@ starcoin-vm-types = {path = "../../vm/types"}
 starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
-hex = { version = "0.4.2", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 starcoin-move-compiler = { path = "../../vm/compiler"}
 starcoin-dev= {path = "../../vm/dev"}
 starcoin-txpool-api = { path = "../../txpool/api" }
