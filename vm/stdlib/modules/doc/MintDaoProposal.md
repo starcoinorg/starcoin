@@ -3,6 +3,7 @@
 
 # Module `0x1::MintDaoProposal`
 
+MintDaoProposal is a dao proposal for mint extra tokens.
 
 
 -  [Resource `WrappedMintCapability`](#0x1_MintDaoProposal_WrappedMintCapability)
@@ -30,6 +31,7 @@
 
 ## Resource `WrappedMintCapability`
 
+A wrapper of Token MintCapability.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenType&gt;
@@ -57,6 +59,7 @@
 
 ## Struct `MintToken`
 
+MintToken request.
 
 
 <pre><code><b>struct</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>
@@ -73,13 +76,13 @@
 <code>receiver: address</code>
 </dt>
 <dd>
-
+ the receiver of minted tokens.
 </dd>
 <dt>
 <code>amount: u128</code>
 </dt>
 <dd>
-
+ how many tokens to mint.
 </dd>
 </dl>
 
@@ -104,6 +107,8 @@
 
 ## Function `plugin`
 
+Plugin method of the module.
+Should be called by token issuer.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer)
@@ -131,6 +136,7 @@
 
 ## Function `propose_mint_to`
 
+Entrypoint for the proposal.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_propose_mint_to">propose_mint_to</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, exec_delay: u64)
@@ -159,6 +165,7 @@
 
 ## Function `execute_mint_proposal`
 
+Once the proposal is agreed, anyone can call the method to make the proposal happen.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)

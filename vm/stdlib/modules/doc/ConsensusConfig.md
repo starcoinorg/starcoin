@@ -3,6 +3,7 @@
 
 # Module `0x1::ConsensusConfig`
 
+The module provide configuration of consensus parameters.
 
 
 -  [Struct `ConsensusConfig`](#0x1_ConsensusConfig_ConsensusConfig)
@@ -44,6 +45,7 @@
 
 ## Struct `ConsensusConfig`
 
+consensus configurations.
 
 
 <pre><code><b>struct</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>
@@ -145,6 +147,7 @@
 
 ## Function `initialize`
 
+Initialization of the module.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_initialize">initialize</a>(account: &signer, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8)
@@ -200,6 +203,7 @@
 
 ## Function `new_consensus_config`
 
+Create a new consensus config mainly used in DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8): <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>
@@ -255,6 +259,7 @@
 
 ## Function `get_config`
 
+Get config data.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_get_config">get_config</a>(): <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>
@@ -279,6 +284,7 @@
 
 ## Function `uncle_rate_target`
 
+Get uncle_rate_target
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_uncle_rate_target">uncle_rate_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -303,6 +309,7 @@
 
 ## Function `base_block_time_target`
 
+Get base_block_time_target
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_block_time_target">base_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -327,6 +334,7 @@
 
 ## Function `base_reward_per_block`
 
+Get base_reward_per_block
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_reward_per_block">base_reward_per_block</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u128
@@ -351,6 +359,7 @@
 
 ## Function `epoch_block_count`
 
+Get epoch_block_count
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_block_count">epoch_block_count</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -375,6 +384,7 @@
 
 ## Function `base_block_difficulty_window`
 
+Get base_block_difficulty_window
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_block_difficulty_window">base_block_difficulty_window</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -399,6 +409,7 @@
 
 ## Function `base_reward_per_uncle_percent`
 
+Get base_reward_per_uncle_percent
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_reward_per_uncle_percent">base_reward_per_uncle_percent</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -423,6 +434,7 @@
 
 ## Function `min_block_time_target`
 
+Get min_block_time_target
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_min_block_time_target">min_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -447,6 +459,7 @@
 
 ## Function `max_block_time_target`
 
+Get max_block_time_target
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_max_block_time_target">max_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -471,6 +484,7 @@
 
 ## Function `base_max_uncles_per_block`
 
+Get base_max_uncles_per_block
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_max_uncles_per_block">base_max_uncles_per_block</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -495,6 +509,7 @@
 
 ## Function `base_block_gas_limit`
 
+Get base_block_gas_limit
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_block_gas_limit">base_block_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u64
@@ -519,6 +534,7 @@
 
 ## Function `strategy`
 
+Get strategy
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_strategy">strategy</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u8
@@ -543,6 +559,7 @@
 
 ## Function `compute_reward_per_block`
 
+Compute block reward given the <code>new_epoch_block_time_target</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_compute_reward_per_block">compute_reward_per_block</a>(new_epoch_block_time_target: u64): u128
@@ -568,6 +585,7 @@
 
 ## Function `do_compute_reward_per_block`
 
+Compute block reward given the <code>new_epoch_block_time_target</code>, and the consensus config.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_do_compute_reward_per_block">do_compute_reward_per_block</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, new_epoch_block_time_target: u64): u128

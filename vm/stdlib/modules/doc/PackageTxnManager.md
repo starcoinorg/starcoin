@@ -3,6 +3,7 @@
 
 # Module `0x1::PackageTxnManager`
 
+The module provides strategies for module upgrading.
 
 
 -  [Struct `UpgradePlan`](#0x1_PackageTxnManager_UpgradePlan)
@@ -63,6 +64,7 @@
 
 ## Struct `UpgradePlan`
 
+module upgrade plan
 
 
 <pre><code><b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>
@@ -102,6 +104,7 @@
 
 ## Resource `UpgradePlanCapability`
 
+The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>
@@ -129,6 +132,7 @@
 
 ## Resource `ModuleUpgradeStrategy`
 
+module upgrade strategy
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>
@@ -145,7 +149,10 @@
 <code>strategy: u8</code>
 </dt>
 <dd>
-
+ 0 arbitrary
+ 1 two phase upgrade
+ 2 only new module
+ 3 freeze
 </dd>
 </dl>
 
@@ -156,6 +163,7 @@
 
 ## Resource `TwoPhaseUpgrade`
 
+data of two phase upgrade strategy.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>
@@ -201,6 +209,7 @@
 
 ## Struct `TwoPhaseUpgradeConfig`
 
+config of two phase upgrade strategy.
 
 
 <pre><code><b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgradeConfig">TwoPhaseUpgradeConfig</a>
@@ -228,6 +237,7 @@
 
 ## Struct `UpgradeEvent`
 
+module upgrade event.
 
 
 <pre><code><b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradeEvent">UpgradeEvent</a>
@@ -380,6 +390,7 @@
 
 ## Function `get_strategy_arbitrary`
 
+arbitary stragegy
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_arbitrary">get_strategy_arbitrary</a>(): u8
@@ -402,6 +413,7 @@
 
 ## Function `get_strategy_two_phase`
 
+two phase stragegy
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_two_phase">get_strategy_two_phase</a>(): u8
@@ -424,6 +436,7 @@
 
 ## Function `get_strategy_new_module`
 
+new module strategy
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_new_module">get_strategy_new_module</a>(): u8
@@ -446,6 +459,7 @@
 
 ## Function `get_strategy_freeze`
 
+freezed strategy
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_freeze">get_strategy_freeze</a>(): u8
@@ -468,6 +482,7 @@
 
 ## Function `get_default_min_time_limit`
 
+default min time limit
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_default_min_time_limit">get_default_min_time_limit</a>(): u64
@@ -490,6 +505,7 @@
 
 ## Function `update_module_upgrade_strategy`
 
+Update account's ModuleUpgradeStrategy
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(account: &signer, strategy: u8, min_time: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;)
@@ -545,6 +561,7 @@
 
 ## Function `account_address`
 
+Get account address of UpgradePlanCapability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_account_address">account_address</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>): address
@@ -569,6 +586,7 @@
 
 ## Function `destroy_upgrade_plan_cap`
 
+destroy the given UpgradePlanCapability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_destroy_upgrade_plan_cap">destroy_upgrade_plan_cap</a>(cap: <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)
@@ -593,6 +611,7 @@
 
 ## Function `extract_submit_upgrade_plan_cap`
 
+extract out UpgradePlanCapability from <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap">extract_submit_upgrade_plan_cap</a>(account: &signer): <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>
@@ -619,6 +638,7 @@
 
 ## Function `submit_upgrade_plan`
 
+upgrade plan can override
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version: u64)
@@ -645,6 +665,7 @@
 
 ## Function `submit_upgrade_plan_with_cap`
 
+Submit a new upgrade plan.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64)
@@ -673,6 +694,7 @@
 
 ## Function `cancel_upgrade_plan`
 
+Cancel a module upgrade plan.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan">cancel_upgrade_plan</a>(account: &signer)
@@ -699,6 +721,7 @@
 
 ## Function `cancel_upgrade_plan_with_cap`
 
+Cancel a module upgrade plan with given cap.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap">cancel_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)
@@ -727,6 +750,7 @@
 
 ## Function `get_module_upgrade_strategy`
 
+Get module upgrade strategy of an module address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(module_address: address): u8
@@ -755,6 +779,7 @@
 
 ## Function `get_upgrade_plan`
 
+Get module upgrade plan of an address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_upgrade_plan">get_upgrade_plan</a>(module_address: address): <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">PackageTxnManager::UpgradePlan</a>&gt;
@@ -783,6 +808,7 @@
 
 ## Function `check_package_txn`
 
+Check againest on the given package data.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(package_address: address, package_hash: vector&lt;u8&gt;)
@@ -853,6 +879,7 @@
 
 ## Function `package_txn_prologue`
 
+Prologue of package transaction.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, package_address: address, package_hash: vector&lt;u8&gt;)

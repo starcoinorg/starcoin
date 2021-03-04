@@ -35,6 +35,7 @@
 
 ## Resource `Box`
 
+Box struct.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Box.md#0x1_Box">Box</a>&lt;T&gt;
@@ -51,7 +52,7 @@
 <code>thing: vector&lt;T&gt;</code>
 </dt>
 <dd>
-
+ thing in the box.
 </dd>
 </dl>
 
@@ -76,6 +77,7 @@
 
 ## Function `exists_at`
 
+check the box exists in <code>addr</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr: address): bool
@@ -100,6 +102,7 @@
 
 ## Function `length`
 
+get how many things in the box.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_length">length</a>&lt;T&gt;(addr: address): u64
@@ -129,6 +132,7 @@
 
 ## Function `put`
 
+Put thing to account's box last position.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_put">put</a>&lt;T&gt;(account: &signer, thing: T)
@@ -159,6 +163,7 @@
 
 ## Function `put_all`
 
+Put things to account's box last position.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_put_all">put_all</a>&lt;T&gt;(account: &signer, thing: vector&lt;T&gt;)
@@ -189,6 +194,7 @@
 
 ## Function `take`
 
+Take last thing from account's box
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take">take</a>&lt;T&gt;(account: &signer): T
@@ -220,6 +226,7 @@
 
 ## Function `take_all`
 
+Take all things from account's box
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take_all">take_all</a>&lt;T&gt;(account: &signer): vector&lt;T&gt;

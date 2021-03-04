@@ -3,6 +3,7 @@
 
 # Module `0x1::RewardConfig`
 
+The module provide configuration for block reward.
 
 
 -  [Struct `RewardConfig`](#0x1_RewardConfig_RewardConfig)
@@ -29,6 +30,7 @@
 
 ## Struct `RewardConfig`
 
+Reward configuration
 
 
 <pre><code><b>struct</b> <a href="RewardConfig.md#0x1_RewardConfig">RewardConfig</a>
@@ -45,7 +47,7 @@
 <code>reward_delay: u64</code>
 </dt>
 <dd>
-
+ how many blocks delay reward distribution.
 </dd>
 </dl>
 
@@ -70,6 +72,7 @@
 
 ## Function `initialize`
 
+Module initialization.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_initialize">initialize</a>(account: &signer, reward_delay: u64)
@@ -100,6 +103,7 @@
 
 ## Function `new_reward_config`
 
+Create a new reward config mainly used in DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_new_reward_config">new_reward_config</a>(reward_delay: u64): <a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>
@@ -124,6 +128,7 @@
 
 ## Function `get_reward_config`
 
+Get reward configuration.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_get_reward_config">get_reward_config</a>(): <a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>
@@ -148,6 +153,7 @@
 
 ## Function `reward_delay`
 
+Get reward delay.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_reward_delay">reward_delay</a>(): u64

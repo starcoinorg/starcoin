@@ -3,6 +3,9 @@
 
 # Module `0x1::Authenticator`
 
+Move representation of the authenticator types
+- Ed25519 (single-sig)
+- MultiEd25519 (K-of-N multisig)
 
 
 -  [Struct `MultiEd25519PublicKey`](#0x1_Authenticator_MultiEd25519PublicKey)
@@ -34,6 +37,7 @@
 
 ## Struct `MultiEd25519PublicKey`
 
+A multi-ed25519 public key
 
 
 <pre><code><b>struct</b> <a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a>
@@ -50,13 +54,13 @@
 <code>public_keys: vector&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
-
+ vector of ed25519 public keys
 </dd>
 <dt>
 <code>threshold: u8</code>
 </dt>
 <dd>
-
+ approval threshold
 </dd>
 </dl>
 
@@ -193,6 +197,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
 
 ## Function `ed25519_authentication_key`
 
+Compute an authentication key for the ed25519 public key <code>public_key</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;
@@ -252,6 +257,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
 
 ## Function `multi_ed25519_authentication_key`
 
+Compute a multied25519 account authentication key for the policy <code>k</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_multi_ed25519_authentication_key">multi_ed25519_authentication_key</a>(k: &<a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>): vector&lt;u8&gt;
@@ -290,6 +296,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
 
 ## Function `public_keys`
 
+Return the public keys involved in the multisig policy <code>k</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_public_keys">public_keys</a>(k: &<a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>): &vector&lt;vector&lt;u8&gt;&gt;
@@ -314,6 +321,7 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
 
 ## Function `threshold`
 
+Return the threshold for the multisig policy <code>k</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_threshold">threshold</a>(k: &<a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>): u8

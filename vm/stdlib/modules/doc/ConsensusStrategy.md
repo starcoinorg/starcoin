@@ -3,6 +3,7 @@
 
 # Module `0x1::ConsensusStrategy`
 
+The module provides the information of current consensus strategy.
 
 
 -  [Struct `ConsensusStrategy`](#0x1_ConsensusStrategy_ConsensusStrategy)
@@ -24,6 +25,7 @@
 
 ## Struct `ConsensusStrategy`
 
+ConsensusStrategy data.
 
 
 <pre><code><b>struct</b> <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a>

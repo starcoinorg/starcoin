@@ -1,4 +1,7 @@
 address 0x1 {
+/// `TransactionPublishOption` provide an option to limit:
+/// - which scripts are allowed to run.
+/// - whether user can publish custom modules on chain.
 module TransactionPublishOption {
     use 0x1::Vector;
     use 0x1::Config;
@@ -45,6 +48,7 @@ module TransactionPublishOption {
         module_publishing_allowed: bool,
     }
 
+    /// Module initialization.
     public fun initialize(
         account: &signer,
         merged_script_allow_list: vector<u8>,
@@ -69,6 +73,7 @@ module TransactionPublishOption {
         include Config::PublishNewConfigEnsures<TransactionPublishOption>;
     }
 
+    /// Create a new option. Mainly used in DAO.
     public fun new_transaction_publish_option(
         script_allow_list: vector<u8>,
         module_publishing_allowed: bool,
@@ -97,7 +102,7 @@ module TransactionPublishOption {
         aborts_if false;
     }
 
-    // Check if sender can execute script with `hash`
+    /// Check if sender can execute script with `hash`
     public fun is_script_allowed(account: address, hash: &vector<u8>): bool {
         let publish_option = Config::get_by_address<TransactionPublishOption>(account);
         Vector::is_empty(&publish_option.script_allow_list) ||
@@ -110,7 +115,7 @@ module TransactionPublishOption {
         };
     }
 
-    // Check if a sender can publish a module
+    /// Check if a sender can publish a module
     public fun is_module_allowed(account: address): bool {
         let publish_option = Config::get_by_address<TransactionPublishOption>(account);
         publish_option.module_publishing_allowed

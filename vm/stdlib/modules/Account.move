@@ -51,41 +51,41 @@ module Account {
         sequence_number: u64,
     }
 
-    // A resource that holds the tokens stored in this account
+    /// A resource that holds the tokens stored in this account
     resource struct Balance<TokenType> {
         token: Token<TokenType>,
     }
 
-    // The holder of WithdrawCapability for account_address can withdraw Token from
-    // account_address/Account::Account/balance.
-    // There is at most one WithdrawCapability in existence for a given address.
+    /// The holder of WithdrawCapability for account_address can withdraw Token from
+    /// account_address/Account::Account/balance.
+    /// There is at most one WithdrawCapability in existence for a given address.
     resource struct WithdrawCapability {
         account_address: address,
     }
 
-    // The holder of KeyRotationCapability for account_address can rotate the authentication key for
-    // account_address (i.e., write to account_address/Account::Account/authentication_key).
-    // There is at most one KeyRotationCapability in existence for a given address.
+    /// The holder of KeyRotationCapability for account_address can rotate the authentication key for
+    /// account_address (i.e., write to account_address/Account::Account/authentication_key).
+    /// There is at most one KeyRotationCapability in existence for a given address.
     resource struct KeyRotationCapability {
         account_address: address,
     }
 
     /// Message for balance withdraw event.
     struct WithdrawEvent {
-        // The amount of Token<TokenType> sent
+        /// The amount of Token<TokenType> sent
         amount: u128,
-        // The code symbol for the token that was sent
+        /// The code symbol for the token that was sent
         token_code: Token::TokenCode,
-        // Metadata associated with the withdraw
+        /// Metadata associated with the withdraw
         metadata: vector<u8>,
     }
     /// Message for balance deposit event.
     struct DepositEvent {
-        // The amount of Token<TokenType> sent
+        /// The amount of Token<TokenType> sent
         amount: u128,
-        // The code symbol for the token that was sent
+        /// The code symbol for the token that was sent
         token_code: Token::TokenCode,
-        // Metadata associated with the deposit
+        /// Metadata associated with the deposit
         metadata: vector<u8>,
     }
 
@@ -114,8 +114,8 @@ module Account {
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
-    // Create an genesis account at `new_account_address` and return signer.
-    // Genesis authentication_key is zero bytes.
+    /// Create an genesis account at `new_account_address` and return signer.
+    /// Genesis authentication_key is zero bytes.
     public fun create_genesis_account(
         new_account_address: address,
     ) :signer {
@@ -131,7 +131,7 @@ module Account {
         aborts_if exists<Account>(new_account_address);
     }
 
-    // Release genesis account signer
+    /// Release genesis account signer
     public fun release_genesis_signer(genesis_account: signer){
         destroy_signer(genesis_account);
     }
@@ -140,10 +140,10 @@ module Account {
         aborts_if false;
     }
 
-    // Creates a new account at `fresh_address` with a balance of zero and public
-    // key `public_key_vec` | `fresh_address`.
-    // Creating an account at address 0x1 will cause runtime failure as it is a
-    // reserved address for the MoveVM.
+    /// Creates a new account at `fresh_address` with a balance of zero and public
+    /// key `public_key_vec` | `fresh_address`.
+    /// Creating an account at address 0x1 will cause runtime failure as it is a
+    /// reserved address for the MoveVM.
     public fun create_account<TokenType>(authentication_key: vector<u8>): address acquires Account {
         let new_address = Authenticator::derived_address(copy authentication_key);
         // assert(new_address == fresh_address, Errors::invalid_argument(EADDRESS_PUBLIC_KEY_INCONSISTENT));
@@ -205,7 +205,7 @@ module Account {
     native fun create_signer(addr: address): signer;
     native fun destroy_signer(sig: signer);
 
-    // Deposits the `to_deposit` token into the self's account balance
+    /// Deposits the `to_deposit` token into the self's account balance
     public fun deposit_to_self<TokenType>(account: &signer, to_deposit: Token<TokenType>)
     acquires Account, Balance {
         let account_address = Signer::address_of(account);
@@ -283,7 +283,7 @@ module Account {
 
 
 
-    // Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
+    /// Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
     fun withdraw_from_balance<TokenType>(balance: &mut Balance<TokenType>, amount: u128): Token<TokenType>{
         Token::withdraw(&mut balance.token, amount)
     }
@@ -292,7 +292,7 @@ module Account {
         aborts_if balance.token.value < amount;
     }
 
-    // Withdraw `amount` Token<TokenType> from the account balance
+    /// Withdraw `amount` Token<TokenType> from the account balance
     public fun withdraw<TokenType>(account: &signer, amount: u128): Token<TokenType>
     acquires Account, Balance {
         withdraw_with_metadata<TokenType>(account, amount, x"")
@@ -305,6 +305,7 @@ module Account {
     }
 
 
+    /// Withdraw `amount` tokens from `signer` with given `metadata`.
     public fun withdraw_with_metadata<TokenType>(account: &signer, amount: u128, metadata: vector<u8>): Token<TokenType>
     acquires Account, Balance {
         let sender_addr = Signer::address_of(account);
@@ -357,7 +358,7 @@ module Account {
     }
 
 
-    // Return a unique capability granting permission to withdraw from the sender's account balance.
+    /// Return a unique capability granting permission to withdraw from the sender's account balance.
     public fun extract_withdraw_capability(
         sender: &signer
     ): WithdrawCapability acquires Account {
@@ -373,7 +374,7 @@ module Account {
         aborts_if Option::spec_is_none(global<Account>( Signer::spec_address_of(sender)).withdrawal_capability);
     }
 
-     // Return the withdraw capability to the account it originally came from
+     /// Return the withdraw capability to the account it originally came from
      public fun restore_withdraw_capability(cap: WithdrawCapability)
         acquires Account {
             let account = borrow_global_mut<Account>(cap.account_address);
@@ -416,8 +417,8 @@ module Account {
     }
 
 
-    // Withdraws `amount` Token<TokenType> using the passed in WithdrawCapability, and deposits it
-    // into the `payee`'s account balance. Creates the `payee` account if it doesn't exist.
+    /// Withdraws `amount` Token<TokenType> using the passed in WithdrawCapability, and deposits it
+    /// into the `payee`'s account balance. Creates the `payee` account if it doesn't exist.
     public fun pay_from_capability<TokenType>(
         cap: &WithdrawCapability,
         payee: address,
@@ -444,9 +445,9 @@ module Account {
         aborts_if cap.account_address != payee && global<Balance<TokenType>>(payee).token.value + amount > MAX_U128;
     }
 
-    // Withdraw `amount` Token<TokenType> from the transaction sender's
-    // account balance and send the token to the `payee` address with the
-    // attached `metadata` Creates the `payee` account if it does not exist
+    /// Withdraw `amount` Token<TokenType> from the transaction sender's
+    /// account balance and send the token to the `payee` address with the
+    /// attached `metadata` Creates the `payee` account if it does not exist
     public fun pay_from_with_metadata<TokenType>(
         account: &signer,
         payee: address,
@@ -486,9 +487,9 @@ module Account {
     }
 
 
-    // Withdraw `amount` Token<TokenType> from the transaction sender's
-    // account balance  and send the token to the `payee` address
-    // Creates the `payee` account if it does not exist
+    /// Withdraw `amount` Token<TokenType> from the transaction sender's
+    /// account balance  and send the token to the `payee` address
+    /// Creates the `payee` account if it does not exist
     public fun pay_from<TokenType>(
         account: &signer,
         payee: address,
@@ -510,7 +511,7 @@ module Account {
         aborts_if Signer::spec_address_of(account) != payee && global<Balance<TokenType>>(payee).token.value + amount > max_u128();
     }
 
-    // Rotate the authentication key for the account under cap.account_address
+    /// Rotate the authentication key for the account under cap.account_address
     public fun rotate_authentication_key(
         cap: &KeyRotationCapability,
         new_authentication_key: vector<u8>,
@@ -532,7 +533,7 @@ module Account {
         }
     }
 
-    // Return a unique capability granting permission to rotate the sender's authentication key
+    /// Return a unique capability granting permission to rotate the sender's authentication key
     public fun extract_key_rotation_capability(account: &signer): KeyRotationCapability
     acquires Account {
         let account_address = Signer::address_of(account);
@@ -547,7 +548,7 @@ module Account {
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).key_rotation_capability);
     }
 
-    // Return the key rotation capability to the account it originally came from
+    /// Return the key rotation capability to the account it originally came from
     public fun restore_key_rotation_capability(cap: KeyRotationCapability)
     acquires Account {
         let account = borrow_global_mut<Account>(cap.account_address);
@@ -559,7 +560,7 @@ module Account {
         aborts_if !exists<Account>(cap.account_address);
     }
 
-    // Helper to return the u128 value of the `balance` for `account`
+    /// Helper to return the u128 value of the `balance` for `account`
     fun balance_for<TokenType>(balance: &Balance<TokenType>): u128 {
         Token::value<TokenType>(&balance.token)
     }
@@ -568,7 +569,7 @@ module Account {
         aborts_if false;
     }
 
-    // Return the current TokenType balance of the account at `addr`.
+    /// Return the current TokenType balance of the account at `addr`.
     public fun balance<TokenType>(addr: address): u128 acquires Balance {
         balance_for(borrow_global<Balance<TokenType>>(addr))
     }
@@ -577,7 +578,7 @@ module Account {
         aborts_if !exists<Balance<TokenType>>(addr);
     }
 
-    // Add a balance of `Token` type to the sending account.
+    /// Add a balance of `Token` type to the sending account.
     public fun accept_token<TokenType>(account: &signer) acquires Account {
         move_to(account, Balance<TokenType>{ token: Token::zero<TokenType>() });
         let token_code = Token::token_code<TokenType>();
@@ -598,7 +599,7 @@ module Account {
 
     }
 
-    // Return whether the account at `addr` accepts `Token` type tokens
+    /// Return whether the account at `addr` accepts `Token` type tokens
     public fun is_accepts_token<TokenType>(addr: address): bool {
         exists<Balance<TokenType>>(addr)
     }
@@ -607,7 +608,7 @@ module Account {
         aborts_if false;
     }
 
-    // Helper to return the sequence number field for given `account`
+    /// Helper to return the sequence number field for given `account`
     fun sequence_number_for_account(account: &Account): u64 {
         account.sequence_number
     }
@@ -616,7 +617,7 @@ module Account {
         aborts_if false;
     }
 
-    // Return the current sequence number at `addr`
+    /// Return the current sequence number at `addr`
     public fun sequence_number(addr: address): u64 acquires Account {
         sequence_number_for_account(borrow_global<Account>(addr))
     }
@@ -625,7 +626,7 @@ module Account {
         aborts_if !exists<Account>(addr);
     }
 
-    // Return the authentication key for this account
+    /// Return the authentication key for this account
     public fun authentication_key(addr: address): vector<u8> acquires Account {
         *&borrow_global<Account>(addr).authentication_key
     }
@@ -634,7 +635,7 @@ module Account {
         aborts_if !exists<Account>(addr);
     }
 
-    // Return true if the account at `addr` has delegated its key rotation capability
+    /// Return true if the account at `addr` has delegated its key rotation capability
     public fun delegated_key_rotation_capability(addr: address): bool
     acquires Account {
         Option::is_none(&borrow_global<Account>(addr).key_rotation_capability)
@@ -644,7 +645,7 @@ module Account {
         aborts_if !exists<Account>(addr);
     }
 
-    // Return true if the account at `addr` has delegated its withdraw capability
+    /// Return true if the account at `addr` has delegated its withdraw capability
     public fun delegated_withdraw_capability(addr: address): bool
     acquires Account {
         Option::is_none(&borrow_global<Account>(addr).withdrawal_capability)
@@ -654,7 +655,7 @@ module Account {
         aborts_if !exists<Account>(addr);
     }
 
-    // Return a reference to the address associated with the given withdraw capability
+    /// Return a reference to the address associated with the given withdraw capability
     public fun withdraw_capability_address(cap: &WithdrawCapability): &address {
         &cap.account_address
     }
@@ -663,7 +664,7 @@ module Account {
         aborts_if false;
     }
 
-    // Return a reference to the address associated with the given key rotation capability
+    /// Return a reference to the address associated with the given key rotation capability
     public fun key_rotation_capability_address(cap: &KeyRotationCapability): &address {
         &cap.account_address
     }
@@ -672,7 +673,7 @@ module Account {
         aborts_if false;
     }
 
-    // Checks if an account exists at `check_addr`
+    /// Checks if an account exists at `check_addr`
     public fun exists_at(check_addr: address): bool {
         exists<Account>(check_addr)
     }
@@ -681,11 +682,11 @@ module Account {
         aborts_if false;
     }
 
-    // The prologue is invoked at the beginning of every transaction
-    // It verifies:
-    // - The account's auth key matches the transaction's public key
-    // - That the account has enough balance to pay for all of the gas
-    // - That the sequence number matches the transaction's sequence key
+    /// The prologue is invoked at the beginning of every transaction
+    /// It verifies:
+    /// - The account's auth key matches the transaction's public key
+    /// - That the account has enough balance to pay for all of the gas
+    /// - That the sequence number matches the transaction's sequence key
     public fun txn_prologue<TokenType>(
         account: &signer,
         txn_sender: address,
@@ -749,8 +750,8 @@ module Account {
         aborts_if txn_sequence_number != global<Account>(txn_sender).sequence_number;
     }
 
-    // The epilogue is invoked at the end of transactions.
-    // It collects gas and bumps the sequence number
+    /// The epilogue is invoked at the end of transactions.
+    /// It collects gas and bumps the sequence number
     public fun txn_epilogue<TokenType>(
         account: &signer,
         txn_sender: address,

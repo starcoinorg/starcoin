@@ -3,6 +3,9 @@
 
 # Module `0x1::BCS`
 
+Utility for converting a Move value to its binary representation in BCS (Diem Canonical
+Serialization). BCS is the binary encoding for Move resources and other non-module values
+published on-chain.
 
 
 -  [Function `to_bytes`](#0x1_BCS_to_bytes)
@@ -18,6 +21,7 @@
 
 ## Function `to_bytes`
 
+Return the binary representation of <code>v</code> in BCS (Starcoin Canonical Serialization) format
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="BCS.md#0x1_BCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;
@@ -40,6 +44,7 @@
 
 ## Function `to_address`
 
+Return the address of key bytes
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="BCS.md#0x1_BCS_to_address">to_address</a>(key_bytes: vector&lt;u8&gt;): address

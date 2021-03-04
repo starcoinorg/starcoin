@@ -3,6 +3,8 @@
 
 # Module `0x1::STC`
 
+STC is the token of Starcoin blockchain.
+It uses apis defined in the <code><a href="Token.md#0x1_Token">Token</a></code> module.
 
 
 -  [Struct `STC`](#0x1_STC_STC)
@@ -38,6 +40,7 @@
 
 ## Struct `STC`
 
+STC token marker.
 
 
 <pre><code><b>struct</b> <a href="STC.md#0x1_STC">STC</a>
@@ -65,6 +68,7 @@
 
 ## Resource `SharedBurnCapability`
 
+Burn capability of STC.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>
@@ -107,6 +111,7 @@ precision of STC token.
 
 ## Function `initialize`
 
+STC initialization.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
@@ -183,6 +188,8 @@ Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC
 
 ## Function `burn`
 
+Burn STC tokens.
+It can be called by anyone.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_burn">burn</a>(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;)
@@ -208,6 +215,7 @@ Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC
 
 ## Function `token_address`
 
+Return STC token address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_token_address">token_address</a>(): address

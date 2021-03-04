@@ -3,6 +3,7 @@
 
 # Module `0x1::Hash`
 
+The module provide sha-hash functionality for Move.
 
 
 -  [Function `sha2_256`](#0x1_Hash_sha2_256)

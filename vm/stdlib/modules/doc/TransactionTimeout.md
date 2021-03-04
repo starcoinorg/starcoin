@@ -3,6 +3,7 @@
 
 # Module `0x1::TransactionTimeout`
 
+A module used to check expiration time of transactions.
 
 
 -  [Function `is_valid_transaction_timestamp`](#0x1_TransactionTimeout_is_valid_transaction_timestamp)
@@ -21,6 +22,7 @@
 
 ## Function `is_valid_transaction_timestamp`
 
+Check whether the given timestamp is valid for transactions.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">is_valid_transaction_timestamp</a>(txn_timestamp: u64): bool

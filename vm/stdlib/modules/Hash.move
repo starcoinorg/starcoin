@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// The module provide sha-hash functionality for Move.
 module Hash {
     spec module {
         pragma verify;

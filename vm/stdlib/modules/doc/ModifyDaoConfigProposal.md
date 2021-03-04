@@ -3,6 +3,7 @@
 
 # Module `0x1::ModifyDaoConfigProposal`
 
+A proposal module which is used to modify Token's DAO configuration.
 
 
 -  [Resource `DaoConfigModifyCapability`](#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability)
@@ -30,6 +31,7 @@
 
 ## Resource `DaoConfigModifyCapability`
 
+A wrapper of <code><a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;</code>.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT: <b>copyable</b>&gt;
@@ -75,25 +77,25 @@ if any field is <code>0</code>, that means the proposal want to update.
 <code>voting_delay: u64</code>
 </dt>
 <dd>
-
+ new voting delay setting.
 </dd>
 <dt>
 <code>voting_period: u64</code>
 </dt>
 <dd>
-
+ new voting period setting.
 </dd>
 <dt>
 <code>voting_quorum_rate: u8</code>
 </dt>
 <dd>
-
+ new voting quorum rate setting.
 </dd>
 <dt>
 <code>min_action_delay: u64</code>
 </dt>
 <dd>
-
+ new min action delay setting.
 </dd>
 </dl>
 
@@ -127,6 +129,8 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 ## Function `plugin`
 
+Plugin method of the module.
+Should be called by token issuer.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer)
@@ -158,6 +162,7 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 ## Function `propose`
 
+Entrypoint for the proposal.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
@@ -196,6 +201,7 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 ## Function `execute`
 
+Once the proposal is agreed, anyone can call the method to make the proposal happen.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_execute">execute</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
