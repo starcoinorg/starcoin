@@ -26,11 +26,11 @@ starcoin-statedb = { path = "../state/statedb" }
 starcoin-vm-types = { path = "../vm/types" }
 sha3 = { version = "0.9.1" }
 cryptonight-rs = { path = "cryptonight-rs" }
-proptest = { version = "0.10.1", default-features = false, optional = true }
+proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 
 [dev-dependencies]
-proptest = "0.10.1"
+proptest = "1.0.0"
 proptest-derive = { version = "0.3.0" }
 stest = { path = "../commons/stest" }
 
