@@ -23,7 +23,7 @@ parking_lot = "0.11.1"
 [dev-dependencies]
 rand = "0.8.3"
 rand_core = { version = "0.6.2", default-features = false }
-proptest = "0.10.1"
+proptest = "1.0.0"
 proptest-derive = "0.3.0"
 
 [features]

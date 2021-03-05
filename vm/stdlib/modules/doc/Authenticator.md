@@ -349,7 +349,7 @@ Return the threshold for the multisig policy <code>k</code>
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>pragma</b> verify;
 <b>pragma</b> aborts_if_is_strict;
 </code></pre>
 

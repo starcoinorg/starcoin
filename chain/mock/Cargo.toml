@@ -35,7 +35,7 @@ starcoin-open-block = { path = "../open-block" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-network-rpc-api = { path = "../../network-rpc/api" }
 starcoin-network = { path = "../../network" }
-proptest = { version = "0.10.1", default-features = false, optional = true }
+proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 starcoin-account-api = { path = "../../account/api" }
 starcoin-account-lib = { path = "../../account/lib" }
@@ -43,7 +43,7 @@ starcoin-genesis = { path = "../../core/genesis" }
 starcoin-chain = { path = "../../chain" }
 
 [dev-dependencies]
-proptest = "0.10.1"
+proptest = "1.0.0"
 proptest-derive = { version = "0.3.0" }
 
 [features]

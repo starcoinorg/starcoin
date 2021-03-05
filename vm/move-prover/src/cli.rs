@@ -50,6 +50,8 @@ pub struct Options {
     pub run_abigen: bool,
     /// Whether to run the error map generator instead of the prover.
     pub run_errmapgen: bool,
+    /// Whether to run the read write set analysis instead of the prover
+    pub run_read_write_set: bool,
     /// An account address to use if none is specified in the source.
     pub account_address: String,
     /// The paths to the Move sources.
@@ -61,6 +63,8 @@ pub struct Options {
     pub prover: ProverOptions,
     /// Options for the prover backend.
     pub backend: BoogieOptions,
+    /// Whether to use the v2 invariant scheme.
+    pub inv_v2: bool,
     /// Options for the documentation generator.
     pub docgen: DocgenOptions,
     /// Options for the ABI generator.
@@ -81,12 +85,14 @@ impl Default for Options {
             run_docgen: false,
             run_abigen: false,
             run_errmapgen: false,
+            run_read_write_set: false,
             account_address: "0x234567".to_string(),
             verbosity_level: LevelFilter::Info,
             move_sources: vec![],
             move_deps: vec![],
             prover: ProverOptions::default(),
             backend: BoogieOptions::default(),
+            inv_v2: false,
             docgen: DocgenOptions::default(),
             abigen: AbigenOptions::default(),
             errmapgen: ErrmapOptions::default(),
@@ -195,6 +201,11 @@ impl Options {
                     .help("whether to use the old v1 translation and backend")
             )
             .arg(
+                Arg::with_name("inv_v2")
+                    .long("inv_v2")
+                    .help("whether to use the new v2 invariant processing (with disabled invariants)")
+            )
+            .arg(
                 Arg::with_name("negative")
                     .long("negative")
                     .help("run negative verification checks")
@@ -256,6 +267,11 @@ impl Options {
                 Arg::with_name("packedtypesgen")
                     .long("packedtypesgen")
                     .help("run the packed types generator instead of the prover.")
+            )
+            .arg(
+                Arg::with_name("read-write-set")
+                    .long("read-write-set")
+                    .help("run the read/write set analysis instead of the prover.")
             )
             .arg(
                 Arg::with_name("verify")
@@ -340,10 +356,14 @@ impl Options {
                     .long("use-cvc4")
                     .help("use cvc4 solver instead of z3")
             ).arg(
-                Arg::with_name("experimental_pipeline")
-                    .long("experimental_pipeline")
-                    .short("e")
-                    .help("whether to run experimental pipeline")
+            Arg::with_name("experimental_pipeline")
+                .long("experimental_pipeline")
+                .short("e")
+                .help("whether to run experimental pipeline")
+            ).arg(
+                Arg::with_name("exp_mut_param")
+                    .long("exp-mut-param")
+                    .help("exp_mut_param experiment")
         )
             .after_help("More options available via `--config file` or `--config-str str`. \
             Use `--print-config` to see format and current values. \
@@ -426,6 +446,9 @@ impl Options {
         if matches.is_present("errmapgen") {
             options.run_errmapgen = true;
         }
+        if matches.is_present("read-write-set") {
+            options.run_read_write_set = true;
+        }
         if matches.is_present("warn") {
             options.prover.report_warnings = true;
         }
@@ -453,8 +476,8 @@ impl Options {
         if matches.is_present("keep") {
             options.backend.keep_artifacts = true;
         }
-        if matches.is_present("negative") {
-            options.prover.negative_checks = true;
+        if matches.is_present("inv_v2") {
+            options.inv_v2 = true;
         }
         if matches.is_present("seed") {
             options.backend.random_seed = matches.value_of("seed").unwrap().parse::<usize>()?;

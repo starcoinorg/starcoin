@@ -642,26 +642,30 @@ procedure {:inline 1} $Modifies(m: $Memory, type_args: $TypeValueArray, addr: in
 // Representation of EventStore that consists of event streams. The map `streams` takes GUIDs (with type of $Value),
 // and returns sequences of messages (with type of $ValueArray).
 type {:datatype} $EventStore;
-function {:constructor} $EventStore(streams: [$Value]$ValueMultiset): $EventStore;
+function {:constructor} $EventStore(counter: int, streams: [$Value]$ValueMultiset): $EventStore;
 
 function {:inline} $EventStore__is_well_formed(es: $EventStore): bool {
     true
 }
 
 function {:inline} $EventStore__is_empty(es: $EventStore): bool {
+    (counter#$EventStore(es) == 0) &&
     (forall guid: $Value ::
         (var stream := streams#$EventStore(es)[guid];
         $IsEmptyValueMultiset(stream)))
 }
 
+// This function returns (es1 - es2). This function assumes that es2 is a subset of es1.
 function {:inline} $EventStore__subtract(es1: $EventStore, es2: $EventStore): $EventStore {
-    $EventStore((lambda guid: $Value ::
+    $EventStore(counter#$EventStore(es1)-counter#$EventStore(es2),
+        (lambda guid: $Value ::
         $SubtractValueMultiset(
             streams#$EventStore(es1)[guid],
             streams#$EventStore(es2)[guid])))
 }
 
 function {:inline} $EventStore__is_subset(es1: $EventStore, es2: $EventStore): bool {
+    (counter#$EventStore(es1) <= counter#$EventStore(es2)) &&
     (forall guid: $Value ::
         $IsSubsetValueMultiset(
             streams#$EventStore(es1)[guid],
@@ -678,7 +682,7 @@ axiom $EventStore__is_empty($EmptyEventStore);
 function {:inline} $ExtendEventStore(es: $EventStore, guid: $Value, msg: $Value): $EventStore {
     (var stream := streams#$EventStore(es)[guid];
     (var stream_new := $ExtendValueMultiset(stream, msg);
-    $EventStore(streams#$EventStore(es)[guid := stream_new])))
+    $EventStore(counter#$EventStore(es)+1, streams#$EventStore(es)[guid := stream_new])))
 }
 
 function {:inline} $CondExtendEventStore(es: $EventStore, guid: $Value, msg: $Value, cond: $Value): $EventStore {
@@ -758,9 +762,13 @@ function {:inline} $UpdateFieldRaw(val: $ValueArray, field: $FieldName, new_valu
 }
 
 
-// Dereferences a reference.
+// Dereferences a mutation.
 function {:inline} $Dereference(ref: $Mutation): $Value {
     v#$Mutation(ref)
+}
+
+function {:inline} $UpdateMutation(m: $Mutation, v: $Value): $Mutation {
+    $Mutation(l#$Mutation(m), p#$Mutation(m), v)
 }
 
 // ============================================================================================
@@ -873,7 +881,7 @@ procedure {:inline 1} $CopyOrMoveValue(local: $Value) returns (dst: $Value)
     dst := local;
 }
 
-procedure {:inline 1} $WritebackToGlobal(m: $Memory, src: $Mutation) returns (m': $Memory)
+procedure {:inline 1} $WritebackToGlobalWeak(m: $Memory, src: $Mutation) returns (m': $Memory)
 {
     var l: $Location;
     var ta: $TypeValueArray;
@@ -891,7 +899,7 @@ procedure {:inline 1} $WritebackToGlobal(m: $Memory, src: $Mutation) returns (m'
     }
 }
 
-procedure {:inline 1} $WritebackToValue(src: $Mutation, idx: int, vdst: $Value) returns (vdst': $Value)
+procedure {:inline 1} $WritebackToValueWeak(src: $Mutation, idx: int, vdst: $Value) returns (vdst': $Value)
 {
     if (l#$Mutation(src) == $Local(idx)) {
         vdst' := $UpdateValue(p#$Mutation(src), 0, vdst, v#$Mutation(src));
@@ -900,7 +908,7 @@ procedure {:inline 1} $WritebackToValue(src: $Mutation, idx: int, vdst: $Value) 
     }
 }
 
-procedure {:inline 1} $WritebackToReference(src: $Mutation, dst: $Mutation) returns (dst': $Mutation)
+procedure {:inline 1} $WritebackToReferenceWeak(src: $Mutation, dst: $Mutation) returns (dst': $Mutation)
 {
     var srcPath, dstPath: $Path;
 
@@ -911,6 +919,67 @@ procedure {:inline 1} $WritebackToReference(src: $Mutation, dst: $Mutation) retu
                     l#$Mutation(dst),
                     dstPath,
                     $UpdateValue(srcPath, size#$Path(dstPath), v#$Mutation(dst), v#$Mutation(src)));
+    } else {
+        dst' := dst;
+    }
+}
+
+procedure {:inline 1} $WritebackToGlobalStrong(m: $Memory, src: $Mutation) returns (m': $Memory)
+{
+    var l: $Location;
+    var ta: $TypeValueArray;
+    var a: int;
+    var v: $Value;
+
+    l := l#$Mutation(src);
+    if (is#$Global(l)) {
+        ta := ts#$Global(l);
+        a := a#$Global(l);
+        v := v#$Mutation(src);
+        m' := $Memory(domain#$Memory(m), contents#$Memory(m)[ta, a := v]);
+    } else {
+        m' := m;
+    }
+}
+
+procedure {:inline 1} $WritebackToValueStrong(src: $Mutation, idx: int, vdst: $Value) returns (vdst': $Value)
+{
+    if (l#$Mutation(src) == $Local(idx)) {
+        vdst' := v#$Mutation(src);
+    } else {
+        vdst' := vdst;
+    }
+}
+
+procedure {:inline 1} $WritebackToReferenceStrongEmp(src: $Mutation, dst: $Mutation) returns (dst': $Mutation)
+{
+    var srcPath, dstPath: $Path;
+
+    srcPath := p#$Mutation(src);
+    dstPath := p#$Mutation(dst);
+    if (l#$Mutation(dst) == l#$Mutation(src) && size#$Path(dstPath) <= size#$Path(srcPath) && $IsPathPrefix(dstPath, srcPath)) {
+        dst' := $Mutation(
+                    l#$Mutation(dst),
+                    dstPath,
+                    v#$Mutation(dst));
+    } else {
+        dst' := dst;
+    }
+}
+
+procedure {:inline 1} $WritebackToReferenceStrongOff(src: $Mutation, dst: $Mutation, edge: $FieldName)
+returns (dst': $Mutation)
+{
+    var srcPath, dstPath: $Path;
+
+    srcPath := p#$Mutation(src);
+    dstPath := p#$Mutation(dst);
+    if (l#$Mutation(dst) == l#$Mutation(src)) {
+        dst' := $Mutation(
+                    l#$Mutation(dst),
+                    dstPath,
+                    $Vector($UpdateValueArray(v#$Vector(v#$Mutation(dst)), edge, v#$Mutation(src)))
+                    );
     } else {
         dst' := dst;
     }
@@ -1212,17 +1281,21 @@ procedure {:inline 1} $Vector_is_empty(ta: $TypeValue, v: $Value) returns (b: $V
     b := $Boolean($vlen(v) == 0);
 }
 
-procedure {:inline 1} $Vector_push_back(ta: $TypeValue, v: $Value, val: $Value) returns (v': $Value) {
+procedure {:inline 1} $Vector_push_back(ta: $TypeValue, m: $Mutation, val: $Value) returns (m': $Mutation) {
+    var v: $Value;
+    v := $Dereference(m);
     assume is#$Vector(v);
-    v' := $push_back_vector(v, val);
+    m' := $UpdateMutation(m, $push_back_vector(v, val));
 }
 
 function {:inline 1} $Vector_$push_back(ta: $TypeValue, v: $Value, val: $Value): $Value {
     $push_back_vector(v, val)
 }
 
-procedure {:inline 1} $Vector_pop_back(ta: $TypeValue, v: $Value) returns (e: $Value, v': $Value) {
+procedure {:inline 1} $Vector_pop_back(ta: $TypeValue, m: $Mutation) returns (e: $Value, m': $Mutation) {
+    var v: $Value;
     var len: int;
+    v := $Dereference(m);
     assume is#$Vector(v);
     len := $vlen(v);
     if (len == 0) {
@@ -1230,22 +1303,26 @@ procedure {:inline 1} $Vector_pop_back(ta: $TypeValue, v: $Value) returns (e: $V
         return;
     }
     e := $select_vector(v, len-1);
-    v' := $pop_back_vector(v);
+    m' := $UpdateMutation(m, $pop_back_vector(v));
 }
 
 function {:inline 1} $Vector_$pop_back(ta: $TypeValue, v: $Value): $Value {
     $select_vector(v, $vlen(v)-1)
 }
 
-procedure {:inline 1} $Vector_append(ta: $TypeValue, v: $Value, other: $Value) returns (v': $Value) {
+procedure {:inline 1} $Vector_append(ta: $TypeValue, m: $Mutation, other: $Value) returns (m': $Mutation) {
+    var v: $Value;
+    v := $Dereference(m);
     assume is#$Vector(v);
     assume is#$Vector(other);
-    v' := $append_vector(v, other);
+    m' := $UpdateMutation(m, $append_vector(v, other));
 }
 
-procedure {:inline 1} $Vector_reverse(ta: $TypeValue, v: $Value) returns (v': $Value) {
+procedure {:inline 1} $Vector_reverse(ta: $TypeValue, m: $Mutation) returns (m': $Mutation) {
+    var v: $Value;
+    v := $Dereference(m);
     assume is#$Vector(v);
-    v' := $reverse_vector(v);
+    m' := $UpdateMutation(m, $reverse_vector(v));
 }
 
 procedure {:inline 1} $Vector_length(ta: $TypeValue, v: $Value) returns (l: $Value) {
@@ -1274,19 +1351,26 @@ function {:inline 1} $Vector_$borrow(ta: $TypeValue, v: $Value, i: $Value): $Val
     $select_vector(v, i#$Integer(i))
 }
 
-procedure {:inline 1} $Vector_borrow_mut(ta: $TypeValue, v: $Value, index: $Value) returns (dst: $Mutation, v': $Value)
+procedure {:inline 1} $Vector_borrow_mut(ta: $TypeValue, m: $Mutation, index: $Value) returns (dst: $Mutation, m': $Mutation)
 {{backend.type_requires}} is#$Integer(index);
 {
     var i_ind: int;
+    var v: $Value;
+    var p: $Path;
+    var size: int;
 
+    v := $Dereference(m);
     i_ind := i#$Integer(index);
     assume is#$Vector(v);
     if (i_ind < 0 || i_ind >= $vlen(v)) {
         call $ExecFailureAbort();
         return;
     }
-    dst := $Mutation($Local(0), $Path(p#$Path($EmptyPath)[0 := i_ind], 1), $select_vector(v, i_ind));
-    v' := v;
+    p := p#$Mutation(m);
+    size := size#$Path(p);
+    p := $Path(p#$Path(p)[size := i_ind], size+1);
+    dst := $Mutation(l#$Mutation(m), p, $select_vector(v, i_ind));
+    m' := m;
 }
 
 function {:inline 1} $Vector_$borrow_mut(ta: $TypeValue, v: $Value, i: $Value): $Value {
@@ -1299,11 +1383,13 @@ procedure {:inline 1} $Vector_destroy_empty(ta: $TypeValue, v: $Value) {
     }
 }
 
-procedure {:inline 1} $Vector_swap(ta: $TypeValue, v: $Value, i: $Value, j: $Value) returns (v': $Value)
+procedure {:inline 1} $Vector_swap(ta: $TypeValue, m: $Mutation, i: $Value, j: $Value) returns (m': $Mutation)
 {{backend.type_requires}} is#$Integer(i) && is#$Integer(j);
 {
+    var v: $Value;
     var i_ind: int;
     var j_ind: int;
+    v := $Dereference(m);
     assume is#$Vector(v);
     i_ind := i#$Integer(i);
     j_ind := i#$Integer(j);
@@ -1311,17 +1397,20 @@ procedure {:inline 1} $Vector_swap(ta: $TypeValue, v: $Value, i: $Value, j: $Val
         call $ExecFailureAbort();
         return;
     }
-    v' := $swap_vector(v, i_ind, j_ind);
+    m' := $UpdateMutation(m, $swap_vector(v, i_ind, j_ind));
 }
 
 function {:inline 1} $Vector_$swap(ta: $TypeValue, v: $Value, i: $Value, j: $Value): $Value {
     $swap_vector(v, i#$Integer(i), i#$Integer(j))
 }
 
-procedure {:inline 1} $Vector_remove(ta: $TypeValue, v: $Value, i: $Value) returns (e: $Value, v': $Value)
+procedure {:inline 1} $Vector_remove(ta: $TypeValue, m: $Mutation, i: $Value) returns (e: $Value, m': $Mutation)
 {{backend.type_requires}} is#$Integer(i);
 {
     var i_ind: int;
+    var v: $Value;
+
+    v := $Dereference(m);
 
     assume is#$Vector(v);
     i_ind := i#$Integer(i);
@@ -1330,15 +1419,17 @@ procedure {:inline 1} $Vector_remove(ta: $TypeValue, v: $Value, i: $Value) retur
         return;
     }
     e := $select_vector(v, i_ind);
-    v' := $remove_vector(v, i_ind);
+    m' := $UpdateMutation(m, $remove_vector(v, i_ind));
 }
 
-procedure {:inline 1} $Vector_swap_remove(ta: $TypeValue, v: $Value, i: $Value) returns (e: $Value, v': $Value)
+procedure {:inline 1} $Vector_swap_remove(ta: $TypeValue, m: $Mutation, i: $Value) returns (e: $Value, m': $Mutation)
 {{backend.type_requires}} is#$Integer(i);
 {
     var i_ind: int;
     var len: int;
+    var v: $Value;
 
+    v := $Dereference(m);
     assume is#$Vector(v);
     i_ind := i#$Integer(i);
     len := $vlen(v);
@@ -1347,7 +1438,7 @@ procedure {:inline 1} $Vector_swap_remove(ta: $TypeValue, v: $Value, i: $Value) 
         return;
     }
     e := $select_vector(v, i_ind);
-    v' := $pop_back_vector($swap_vector(v, i_ind, len-1));
+    m' := $UpdateMutation(m, $pop_back_vector($swap_vector(v, i_ind, len-1)));
 }
 
 procedure {:inline 1} $Vector_contains(ta: $TypeValue, v: $Value, e: $Value) returns (res: $Value)  {
@@ -1576,12 +1667,13 @@ procedure {:inline 1} $Event_publish_generator(account: $Value) {
 
 // This boogie procedure is the model of `emit_event`. This model abstracts away the `counter` behavior, thus not
 // mutating (or increasing) `counter`.
-procedure {:inline 1} $Event_emit_event(t: $TypeValue, handler: $Value, msg: $Value) returns (res: $Value) {
+
+procedure {:inline 1} $Event_emit_event(t: $TypeValue, handler: $Mutation, msg: $Value) returns (res: $Mutation) {
     var guid: $Value;
     // TODO: The literal `1` is used as the field name here although `$Event_EventHandle_guid` is the right one to use.
     // It's because `$Event_EventHandle_guid` is not available until the Event module is translated, and we know that
     // $Event_EventHandle_guid == 1 once it is translated.
-    guid := $SelectField(handler, 1);
+    guid := $SelectField($Dereference(handler), 1);
     call $Event_write_to_event_store(t, guid, $Integer(0), msg);
     res := handler;
 }
