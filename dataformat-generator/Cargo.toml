@@ -21,3 +21,4 @@ starcoin-crypto = {path = "../commons/crypto" }
 anyhow = "1.0"
 serde = "1.0.123"
 serde_yaml = "0.8"
+bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }

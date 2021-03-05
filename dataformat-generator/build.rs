@@ -2,7 +2,10 @@ use anyhow::Result;
 use serde_reflection::{Error, Samples, Tracer, TracerConfig};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::multi_ed25519::MultiEd25519PrivateKey;
-use starcoin_crypto::{HashValue, PrivateKey, SigningKey, Uniform};
+use starcoin_crypto::{
+    hash::{CryptoHash, CryptoHasher},
+    HashValue, PrivateKey, SigningKey, Uniform,
+};
 // use starcoin_rpc_api::types::pubsub::Kind;
 use starcoin_types::access_path::{AccessPath, DataPath, DataType};
 use starcoin_types::account_address::AccountAddress;
@@ -22,6 +25,15 @@ fn main() {
     generate().unwrap();
 }
 
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, CryptoHasher, CryptoHash)]
+struct DummyObj(Vec<u8>);
+
+impl Default for DummyObj {
+    fn default() -> Self {
+        DummyObj(vec![0; 32])
+    }
+}
+
 fn generate() -> Result<(), Error> {
     let mut tracer = Tracer::new(TracerConfig::default());
     let mut samples = Samples::new();
@@ -32,7 +44,7 @@ fn generate() -> Result<(), Error> {
         let pri_key = Ed25519PrivateKey::generate_for_testing();
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
-        tracer.trace_value(&mut samples, &pri_key.sign(&AccountAddress::random()))?;
+        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default()))?;
 
         tracer.trace_value::<AuthenticationKey>(
             &mut samples,
@@ -43,7 +55,7 @@ fn generate() -> Result<(), Error> {
         let pri_key = MultiEd25519PrivateKey::generate_for_testing();
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
-        tracer.trace_value(&mut samples, &pri_key.sign(&AccountAddress::random()))?;
+        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default()))?;
     }
 
     tracer.trace_type::<BlockMetadata>(&samples)?;
