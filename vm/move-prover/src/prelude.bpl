@@ -674,6 +674,10 @@ function {:inline} $EventStore__is_subset(es1: $EventStore, es2: $EventStore): b
     )
 }
 
+procedure {:inline 1} $EventStore__diverge(es: $EventStore) returns (es': $EventStore) {
+    assume $EventStore__is_subset(es, es');
+}
+
 function {:builtin "MapConst"} $ConstEventStoreContent(s: $ValueMultiset): [$Value]$ValueMultiset;
 
 const $EmptyEventStore: $EventStore;
@@ -769,6 +773,11 @@ function {:inline} $Dereference(ref: $Mutation): $Value {
 
 function {:inline} $UpdateMutation(m: $Mutation, v: $Value): $Mutation {
     $Mutation(l#$Mutation(m), p#$Mutation(m), v)
+}
+
+procedure {:inline 1} $HavocMutation(m: $Mutation) returns (m': $Mutation) {
+  var v': $Value;
+  m' := $Mutation(l#$Mutation(m), p#$Mutation(m), v');
 }
 
 // ============================================================================================
