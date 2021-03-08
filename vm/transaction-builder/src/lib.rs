@@ -14,6 +14,7 @@ use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use starcoin_vm_types::on_chain_config::VMPublishingOption;
 use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -23,7 +24,7 @@ use starcoin_vm_types::transaction::{
 };
 pub use stdlib::init_scripts::{compiled_init_script, InitScript};
 pub use stdlib::transaction_scripts::compiled_transaction_script;
-pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
+pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript, VersionedStdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -351,10 +352,12 @@ pub fn build_stdlib_package(
         let association_auth_key =
             AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        // for test
-        // let initial_script_allow_list =
-        //     VersionedStdlibScript::new(net.stdlib_version()).whitelist();
-        let initial_script_allow_list = genesis_config.publishing_option.allowed_script();
+        let initial_script_allow_list = match genesis_config.publishing_option {
+            VMPublishingOption::WhiteList => {
+                VersionedStdlibScript::new(net.stdlib_version()).whitelist()
+            }
+            _ => Vec::new(),
+        };
 
         let mut merged_script_allow_list: Vec<u8> = Vec::new();
         for i in 0..initial_script_allow_list.len() {

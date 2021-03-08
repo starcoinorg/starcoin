@@ -1068,7 +1068,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::CustomScripts,
+        publishing_option: VMPublishingOption::WhiteList,
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -1127,7 +1127,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::CustomScripts,
+        publishing_option: VMPublishingOption::WhiteList,
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -1177,7 +1177,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: VMPublishingOption::WhiteList,
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
