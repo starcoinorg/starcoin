@@ -22,7 +22,7 @@ chrono = "0.4.19"
 globset = "0.4.6"
 regex = "1.4.3"
 rayon = "1.5.0"
-indexmap = "1.6.1"
+indexmap = "1.6.2"
 x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="da7a2d8f2d91223a0c891561812757029b613686" }
 x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="da7a2d8f2d91223a0c891561812757029b613686" }
 diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="da7a2d8f2d91223a0c891561812757029b613686" }
