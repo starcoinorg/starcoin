@@ -7,6 +7,7 @@ use actix::{Addr, System};
 use anyhow::anyhow;
 use futures::channel::oneshot;
 use futures::{TryStream, TryStreamExt};
+use futures_timer::Delay;
 use jsonrpc_client_transports::RawClient;
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_api::PeerStrategy;
@@ -584,9 +585,20 @@ impl RpcClient {
     pub fn chain_get_transaction_info(
         &self,
         txn_hash: HashValue,
+        wait: bool,
     ) -> anyhow::Result<Option<TransactionInfoView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction_info(txn_hash))
-            .map_err(map_err)
+        self.call_rpc_blocking(|inner| async move {
+            let mut ct = 0;
+            loop {
+                let txn_info = inner.chain_client.get_transaction_info(txn_hash).await?;
+                ct += 1;
+                if !wait || txn_info.is_some() || ct >= 3 {
+                    return Ok(txn_info);
+                }
+                Delay::new(Duration::from_secs(1)).await;
+            }
+        })
+        .map_err(map_err)
     }
 
     pub fn chain_get_events_by_txn_hash(

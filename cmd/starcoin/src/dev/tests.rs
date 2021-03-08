@@ -128,7 +128,7 @@ fn create_default_account(
     assert!(block.transactions().contains(&transfer_txn));
     let transfer_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(transfer_txn_id)
+        .chain_get_transaction_info(transfer_txn_id, false)
         .unwrap()
         .unwrap();
     assert_eq!(transfer_txn_info.status, TransactionVMStatus::Executed);
@@ -189,7 +189,7 @@ fn test_upgrade_module() {
     assert!(block.transactions().contains(&proposal_txn));
     let proposal_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(proposal_txn_id)
+        .chain_get_transaction_info(proposal_txn_id, false)
         .unwrap()
         .unwrap();
     info!("txn status : {:?}", proposal_txn_info);
@@ -243,7 +243,7 @@ fn test_upgrade_module() {
     assert!(block.transactions().contains(&vote_txn));
     let vote_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(vote_txn_id)
+        .chain_get_transaction_info(vote_txn_id, false)
         .unwrap()
         .unwrap();
     assert_eq!(vote_txn_info.status, TransactionVMStatus::Executed);
@@ -275,7 +275,7 @@ fn test_upgrade_module() {
     assert!(block.transactions().contains(&queue_txn));
     let queue_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(queue_txn_id)
+        .chain_get_transaction_info(queue_txn_id, false)
         .unwrap()
         .unwrap();
     info!("queue txn info : {:?}", queue_txn_info);
@@ -308,7 +308,7 @@ fn test_upgrade_module() {
     assert!(block.transactions().contains(&plan_txn));
     let plan_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(plan_txn_id)
+        .chain_get_transaction_info(plan_txn_id, false)
         .unwrap()
         .unwrap();
     assert_eq!(plan_txn_info.status, TransactionVMStatus::Executed);
@@ -333,7 +333,7 @@ fn test_upgrade_module() {
     assert!(block.transactions().contains(&package_txn));
     let package_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(package_txn_id)
+        .chain_get_transaction_info(package_txn_id, false)
         .unwrap()
         .unwrap();
     assert_eq!(package_txn_info.status, TransactionVMStatus::Executed);
@@ -413,7 +413,7 @@ fn test_only_new_module() {
     assert!(block.transactions().contains(&only_new_module_strategy_txn));
     let only_new_module_strategy_txn_info = cli_state
         .client()
-        .chain_get_transaction_info(only_new_module_strategy_txn_id)
+        .chain_get_transaction_info(only_new_module_strategy_txn_id, false)
         .unwrap()
         .unwrap();
     assert_eq!(
@@ -451,7 +451,7 @@ fn test_only_new_module() {
     assert!(block.transactions().contains(&package_txn_1));
     let package_txn_info_1 = cli_state
         .client()
-        .chain_get_transaction_info(package_txn_id_1)
+        .chain_get_transaction_info(package_txn_id_1, false)
         .unwrap()
         .unwrap();
     assert_eq!(package_txn_info_1.status, TransactionVMStatus::Executed);
