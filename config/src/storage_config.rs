@@ -56,7 +56,7 @@ impl Default for RocksdbConfig {
 }
 
 static DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
-pub const DEFAULT_CACHE_SIZE: usize = 65535;
+pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
