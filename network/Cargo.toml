@@ -35,7 +35,7 @@ rand = "0.8.3"
 parking_lot = "0.11.1"
 lru = "0.6.5"
 
-serde = { version = "1.0.123", features = ["derive"] }
+serde = { version = "1.0.124", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 slog = { version = "2.5.2", features = ["nested-values"] }
 slog_derive = "0.2.0"

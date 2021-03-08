@@ -17,7 +17,7 @@ proc-macro-crate = "0.1.4"
 
 futures = "0.3.12"
 anyhow = "1.0.38"
-serde = { version = "1.0.123", features = ["derive"] }
+serde = { version = "1.0.124", features = ["derive"] }
 
 starcoin-types = {path = "../../types"}
 starcoin-logger = {path = "../../commons/logger"}
