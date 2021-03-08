@@ -28,7 +28,7 @@ pub fn init_or_load_data_dir(
         bail!("Please set data_dir option.")
     }
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
+        CacheStorage::new_with_capacity(config.storage.cache_size()),
         DBStorage::new(config.storage.dir(), config.storage.rocksdb_config())?,
     ))?);
     let (chain_info, _genesis) =

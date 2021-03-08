@@ -56,6 +56,7 @@ impl Default for RocksdbConfig {
 }
 
 static DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
+pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
@@ -71,6 +72,10 @@ pub struct StorageConfig {
         help = "rocksdb max total WAL sizes"
     )]
     pub max_total_wal_size: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "cache-sizes", long, help = "cache sizes")]
+    pub cache_size: Option<usize>,
 
     #[serde(skip)]
     #[structopt(skip)]
@@ -95,6 +100,9 @@ impl StorageConfig {
                 .unwrap_or(default.max_total_wal_size),
         }
     }
+    pub fn cache_size(&self) -> usize {
+        self.cache_size.unwrap_or(DEFAULT_CACHE_SIZE)
+    }
 }
 
 impl ConfigModule for StorageConfig {
@@ -105,6 +113,9 @@ impl ConfigModule for StorageConfig {
         }
         if opt.storage.max_total_wal_size.is_some() {
             self.max_total_wal_size = opt.storage.max_total_wal_size;
+        }
+        if opt.storage.cache_size.is_some() {
+            self.cache_size = opt.storage.cache_size;
         }
         Ok(())
     }
