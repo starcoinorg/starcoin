@@ -61,7 +61,7 @@ pub use starcoin_vm_types::genesis_config::{
     StdlibVersion, DEV_CONFIG, HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
 };
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
-pub use storage_config::{RocksdbConfig, StorageConfig};
+pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
 pub static CRATE_VERSION: &str = crate_version!();

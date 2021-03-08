@@ -181,7 +181,7 @@ impl NodeService {
 
         let bus = registry.service_ref::<BusService>().await?;
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new(),
+            CacheStorage::new_with_capacity(config.storage.cache_size()),
             DBStorage::new(config.storage.dir(), config.storage.rocksdb_config())?,
         ))?);
         registry.put_shared(storage.clone()).await?;
