@@ -474,15 +474,18 @@ pub struct BlockView {
     pub uncles: Vec<BlockHeaderView>,
 }
 
-impl TryFrom<Block> for BlockView {
-    type Error = anyhow::Error;
-
-    fn try_from(block: Block) -> Result<Self, Self::Error> {
+impl BlockView {
+    pub fn try_from_block(block: Block, thin: bool) -> Result<Self, anyhow::Error> {
         let (header, body) = block.into_inner();
         let BlockBody {
             transactions,
             uncles,
         } = body;
+        let txns_view = if thin {
+            BlockTransactionsView::Hashes(transactions.into_iter().map(|t| t.id()).collect())
+        } else {
+            transactions.try_into()?
+        };
         Ok(BlockView {
             header: header.into(),
             uncles: uncles
@@ -490,8 +493,16 @@ impl TryFrom<Block> for BlockView {
                 .into_iter()
                 .map(|h| h.into())
                 .collect(),
-            body: transactions.try_into()?,
+            body: txns_view,
         })
+    }
+}
+
+impl TryFrom<Block> for BlockView {
+    type Error = anyhow::Error;
+
+    fn try_from(block: Block) -> Result<Self, Self::Error> {
+        Self::try_from_block(block, false)
     }
 }
 
