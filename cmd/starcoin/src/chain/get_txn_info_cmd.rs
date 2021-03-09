@@ -39,7 +39,7 @@ impl CommandAction for GetTransactionInfoCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         match &opt.txn_hash {
-            Some(txn_hash) => Ok(client.chain_get_transaction_info(*txn_hash, true)?),
+            Some(txn_hash) => Ok(client.chain_get_transaction_info(*txn_hash)?),
             None => {
                 let block_hash = opt.block_hash.expect("block-hash exists");
                 let idx = opt.idx.expect("idx exists");

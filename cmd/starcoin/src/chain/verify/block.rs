@@ -124,7 +124,7 @@ impl CommandAction for VerifyBlockCommand {
         let mut total_gas = 0u64;
         for txn in txn_vec {
             let gas = client
-                .chain_get_transaction_info(txn, true)
+                .chain_get_transaction_info(txn)
                 .unwrap()
                 .unwrap()
                 .gas_used

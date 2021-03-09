@@ -112,13 +112,18 @@ impl CliState {
         txn_hash: HashValue,
     ) -> Result<(ThinHeadBlock, Option<TransactionInfoView>)> {
         let block = self.client.watch_txn(txn_hash, Some(self.watch_timeout))?;
-        let txn_status = self.client.chain_get_transaction_info(txn_hash, true)?;
+
+        let mut txn_info = self.client.chain_get_transaction_info(txn_hash)?;
+        std::thread::sleep(Duration::from_secs(1));
+        if txn_info.is_none() {
+            txn_info = self.client.chain_get_transaction_info(txn_hash)?;
+        }
         println!(
-            "txn mined in block height: {}, hash: {:#x}, txn status: {:?}",
-            block.header.number, block.header.block_hash, txn_status
+            "txn mined in block height: {}, hash: {:#x}, txn info: {:?}",
+            block.header.number, block.header.block_hash, txn_info
         );
 
-        Ok((block, txn_status))
+        Ok((block, txn_info))
     }
 
     pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
