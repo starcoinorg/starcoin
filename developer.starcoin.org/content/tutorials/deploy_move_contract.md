@@ -1,6 +1,6 @@
 ---
 title: Deploy Move Contract
-weight: 8
+weight: 2
 ---
 
 This article guides you on how to compile and deploy a Move contract to the starcoin blockchain.
