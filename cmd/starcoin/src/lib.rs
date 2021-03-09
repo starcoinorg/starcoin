@@ -76,6 +76,7 @@ pub fn add_command(
                     .subcommand(node::network::KnownPeersCommand)
                     .subcommand(node::network::GetAddressCommand)
                     .subcommand(node::network::AddPeerCommand)
+                    .subcommand(node::network::CallPeerCommand)
             ),
         )
         .command(

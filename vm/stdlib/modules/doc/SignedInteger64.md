@@ -3,6 +3,7 @@
 
 # Module `0x1::SignedInteger64`
 
+Implementation of i64.
 
 
 -  [Struct `SignedInteger64`](#0x1_SignedInteger64_SignedInteger64)
@@ -31,6 +32,7 @@
 
 ## Struct `SignedInteger64`
 
+Define a signed integer type with two 32 bits.
 
 
 <pre><code><b>struct</b> <a href="SignedInteger64.md#0x1_SignedInteger64">SignedInteger64</a>
@@ -64,6 +66,7 @@
 
 ## Function `multiply_u64`
 
+Multiply a u64 integer by a signed integer number.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_multiply_u64">multiply_u64</a>(num: u64, multiplier: <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
@@ -89,6 +92,7 @@
 
 ## Function `divide_u64`
 
+Divide a u64 integer by a signed integer number.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_divide_u64">divide_u64</a>(num: u64, divisor: <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
@@ -114,6 +118,7 @@
 
 ## Function `sub_u64`
 
+Sub: <code>num - minus</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_sub_u64">sub_u64</a>(num: u64, minus: <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
@@ -149,6 +154,7 @@
 
 ## Function `add_u64`
 
+Add: <code>num + addend</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_add_u64">add_u64</a>(num: u64, addend: <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
@@ -184,6 +190,7 @@
 
 ## Function `create_from_raw_value`
 
+Create a signed integer value from a unsigned integer
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_create_from_raw_value">create_from_raw_value</a>(value: u64, is_negative: bool): <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
@@ -208,6 +215,7 @@
 
 ## Function `get_value`
 
+Get value part of i64 ignore sign part.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_get_value">get_value</a>(num: <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): u64
@@ -232,6 +240,7 @@
 
 ## Function `is_negative`
 
+Check if the given num is negative.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="SignedInteger64.md#0x1_SignedInteger64_is_negative">is_negative</a>(num: <a href="SignedInteger64.md#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): bool

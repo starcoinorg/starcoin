@@ -3,6 +3,7 @@
 
 # Module `0x1::TransactionTimeoutConfig`
 
+Onchain configuration for timeout setting of transaction.
 
 
 -  [Struct `TransactionTimeoutConfig`](#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig)
@@ -28,6 +29,7 @@
 
 ## Struct `TransactionTimeoutConfig`
 
+config structs.
 
 
 <pre><code><b>struct</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">TransactionTimeoutConfig</a>
@@ -44,7 +46,7 @@
 <code>duration_seconds: u64</code>
 </dt>
 <dd>
-
+ timeout in second.
 </dd>
 </dl>
 
@@ -55,6 +57,7 @@
 
 ## Function `initialize`
 
+Initialize function. Should only be called in genesis.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_initialize">initialize</a>(account: &signer, duration_seconds: u64)
@@ -85,6 +88,7 @@
 
 ## Function `new_transaction_timeout_config`
 
+Create a new timeout config used in dao proposal.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_new_transaction_timeout_config">new_transaction_timeout_config</a>(duration_seconds: u64): <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig">TransactionTimeoutConfig::TransactionTimeoutConfig</a>
@@ -109,6 +113,7 @@
 
 ## Function `get_transaction_timeout_config`
 
+Get current timeout config.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_get_transaction_timeout_config">get_transaction_timeout_config</a>(): <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig">TransactionTimeoutConfig::TransactionTimeoutConfig</a>
@@ -133,6 +138,7 @@
 
 ## Function `duration_seconds`
 
+Get current txn timeout in seconds.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_duration_seconds">duration_seconds</a>(): u64

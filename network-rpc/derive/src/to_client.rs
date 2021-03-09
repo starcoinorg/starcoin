@@ -35,21 +35,34 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                             };
 
                             let peer_id = #peer_id_indent;
-                            debug!("Network rpc call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
+                            debug!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
                             let rpc_path = stringify!(#name).to_string();
-                            match self.request(peer_id, rpc_path, input_arg_serialized).await{
+                            let result = self.request(peer_id, rpc_path, input_arg_serialized).await;
+                            match result {
                                 Ok(result) => {
-                                    match from_bytes::<network_rpc_core::Result::<Vec<u8>>>(&result){
+                                    let result = from_bytes::<network_rpc_core::Result::<Vec<u8>>>(&result);
+                                    match result {
                                         Ok(r) => match r{
                                             Ok(v) => {
-                                                from_bytes::<#returns>(&v)
+                                                let result = from_bytes::<#returns>(&v);
+                                                debug!("[network-rpc] response : {:?} ", result); 
+                                                result
                                             },
-                                            Err(e) => Err(e.into()),
+                                            Err(e) => {
+                                                debug!("[network-rpc] response error: {:?} ", e); 
+                                                Err(e.into())
+                                            },
                                         },
-                                        Err(e) => Err(e),
+                                        Err(e) => {
+                                            debug!("[network-rpc] response error: {:?} ", e); 
+                                            Err(e)
+                                        },
                                     }
                                 },
-                                Err(e) => Err(e)
+                                Err(e) => {
+                                     debug!("[network-rpc] response error: {:?} ", e);
+                                    Err(e)
+                                }
                             }
                             }.boxed()}
                 })

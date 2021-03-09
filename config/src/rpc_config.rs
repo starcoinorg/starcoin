@@ -24,7 +24,7 @@ const DEFAULT_TCP_PORT: u16 = 9860;
 const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
 // UNSPECIFIED is 0.0.0.0
 const DEFAULT_RPC_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
-const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 128;
+const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 32;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct HttpConfiguration {

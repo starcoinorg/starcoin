@@ -1,4 +1,5 @@
 address 0x1 {
+/// OnChainConfigDao is a DAO proposal for modify onchain configuration.
 module OnChainConfigDao {
     use 0x1::Token;
     use 0x1::Signer;
@@ -12,17 +13,20 @@ module OnChainConfigDao {
         pragma aborts_if_is_partial;
     }
 
-    // use 0x1::CoreAddresses;
+    /// A wrapper of `Config::ModifyConfigCapability<ConfigT>`.
     resource struct WrappedConfigModifyCapability<TokenT, ConfigT: copyable> {
         cap: Config::ModifyConfigCapability<ConfigT>,
     }
 
+    /// request of updating configuration.
     struct OnChainConfigUpdate<ConfigT: copyable> {
         value: ConfigT,
     }
 
     const ERR_NOT_AUTHORIZED: u64 = 401;
 
+    /// Plugin method of the module.
+    /// Should be called by token issuer.
     public fun plugin<TokenT, ConfigT: copyable>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
@@ -67,6 +71,9 @@ module OnChainConfigDao {
         aborts_if exists<Dao::Proposal<TokenT, OnChainConfigUpdate<ConfigT>>>(sender);
     }
 
+    /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
+    /// Caller need to make sure that the proposal of `proposal_id` under `proposal_address` is
+    /// the kind of this proposal module.
     public fun execute<TokenT: copyable, ConfigT: copyable>(
         proposer_address: address,
         proposal_id: u64,

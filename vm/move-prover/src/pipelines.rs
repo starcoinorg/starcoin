@@ -3,33 +3,33 @@
 
 #![forbid(unsafe_code)]
 
+use crate::cli::Options;
 use bytecode::{
     borrow_analysis::BorrowAnalysisProcessor, clean_and_optimize::CleanAndOptimizeProcessor,
-    eliminate_imm_refs::EliminateImmRefsProcessor, eliminate_mut_refs::EliminateMutRefsProcessor,
+    eliminate_imm_refs::EliminateImmRefsProcessor,
     function_target_pipeline::FunctionTargetProcessor, livevar_analysis::LiveVarAnalysisProcessor,
-    memory_instrumentation::MemoryInstrumentationProcessor,
-    reaching_def_analysis::ReachingDefProcessor, usage_analysis::UsageProcessor,
-    verification_analysis::VerificationAnalysisProcessor,
+    loop_analysis::LoopAnalysisProcessor, memory_instrumentation::MemoryInstrumentationProcessor,
+    mut_ref_instrumentation::MutRefInstrumenter, reaching_def_analysis::ReachingDefProcessor,
+    usage_analysis::UsageProcessor, verification_analysis::VerificationAnalysisProcessor,
 };
 
 /// Allows client to decide between one of two pipelines for ease of benchmarking
-pub fn pipelines(experimental_pipeline: bool) -> Vec<Box<dyn FunctionTargetProcessor + 'static>> {
-    let vec: Vec<Box<dyn FunctionTargetProcessor + 'static>> = if !experimental_pipeline {
+pub fn pipelines(options: &Options) -> Vec<Box<dyn FunctionTargetProcessor>> {
+    if !options.experimental_pipeline {
         vec![
             EliminateImmRefsProcessor::new(),
-            EliminateMutRefsProcessor::new(),
+            MutRefInstrumenter::new(),
             ReachingDefProcessor::new(),
             LiveVarAnalysisProcessor::new(),
-            BorrowAnalysisProcessor::new(),
+            BorrowAnalysisProcessor::new(options.strong_edges),
             MemoryInstrumentationProcessor::new(),
             CleanAndOptimizeProcessor::new(),
             UsageProcessor::new(),
             VerificationAnalysisProcessor::new(),
+            LoopAnalysisProcessor::new(),
         ]
-    }
-    // Enter your pipeline here
-    else {
+    } else {
+        // Enter your pipeline here
         panic!("No experimental pipeline set");
-    };
-    vec
+    }
 }

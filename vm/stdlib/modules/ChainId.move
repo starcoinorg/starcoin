@@ -1,4 +1,5 @@
 address 0x1 {
+/// The module provides chain id information.
 module ChainId {
     use 0x1::CoreAddresses;
     use 0x1::Timestamp;
@@ -9,7 +10,9 @@ module ChainId {
         pragma aborts_if_is_strict;
     }
 
+    /// chain id data structure.
     resource struct ChainId {
+        /// real id.
         id: u8
     }
 

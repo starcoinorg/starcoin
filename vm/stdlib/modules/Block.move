@@ -1,5 +1,5 @@
 address 0x1 {
-
+/// Block module provide metadata for generated blocks.
 module Block {
     use 0x1::Event;
     use 0x1::Timestamp;
@@ -12,18 +12,21 @@ module Block {
         pragma aborts_if_is_strict = true;
     }
 
-     resource struct BlockMetadata {
-          // number of the current block
-          number: u64,
-          // Hash of the parent block.
-          parent_hash: vector<u8>,
-          // Author of the current block.
-          author: address,
-          uncles: u64,
-          // Handle where events with the time of new blocks are emitted
-          new_block_events: Event::EventHandle<Self::NewBlockEvent>,
+    /// Block metadata struct.
+    resource struct BlockMetadata {
+        /// number of the current block
+        number: u64,
+        /// Hash of the parent block.
+        parent_hash: vector<u8>,
+        /// Author of the current block.
+        author: address,
+        /// number of uncles.
+        uncles: u64,
+        /// Handle of events when new blocks are emitted
+        new_block_events: Event::EventHandle<Self::NewBlockEvent>,
     }
 
+    /// Events emitted when new block generated.
     struct NewBlockEvent {
         number: u64,
         author: address,
@@ -33,7 +36,7 @@ module Block {
 
     const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
-    // This can only be invoked by the GENESIS_ACCOUNT at genesis
+    /// This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
         Timestamp::assert_genesis();
         CoreAddresses::assert_genesis_address(account);
@@ -55,7 +58,7 @@ module Block {
         aborts_if exists<BlockMetadata>(Signer::spec_address_of(account));
     }
 
-    // Get the current block number
+    /// Get the current block number
     public fun get_current_block_number(): u64 acquires BlockMetadata {
       borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number
     }
@@ -64,7 +67,7 @@ module Block {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
-    // Get the hash of the parent block.
+    /// Get the hash of the parent block.
     public fun get_parent_hash(): vector<u8> acquires BlockMetadata {
       *&borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).parent_hash
     }
@@ -73,7 +76,7 @@ module Block {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
-    // Gets the address of the author of the current block
+    /// Gets the address of the author of the current block
     public fun get_current_author(): address acquires BlockMetadata {
       borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).author
     }
@@ -82,7 +85,7 @@ module Block {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
-    // Call at block prologue
+    /// Call at block prologue
     public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64, number:u64) acquires BlockMetadata{
         CoreAddresses::assert_genesis_address(account);
 

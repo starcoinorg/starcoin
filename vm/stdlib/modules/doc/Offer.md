@@ -29,6 +29,7 @@
 
 ## Resource `Offer`
 
+A wrapper around value <code>offered</code> that can be claimed by the address stored in <code>for</code> when after lock time.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt;
@@ -71,6 +72,7 @@
 
 <a name="0x1_Offer_EOFFER_DNE_FOR_ACCOUNT"></a>
 
+An offer of the specified type for the account does not match
 
 
 <pre><code><b>const</b> <a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a>: u64 = 101;
@@ -80,6 +82,7 @@
 
 <a name="0x1_Offer_EOFFER_NOT_UNLOCKED"></a>
 
+Offer is not unlocked yet.
 
 
 <pre><code><b>const</b> <a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a>: u64 = 102;
@@ -91,6 +94,8 @@
 
 ## Function `create`
 
+Publish a value of type <code>Offered</code> under the sender's account. The value can be claimed by
+either the <code>for</code> address or the transaction sender.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_create">create</a>&lt;Offered&gt;(account: &signer, offered: Offered, for: address, lock_period: u64)
@@ -117,6 +122,10 @@
 
 ## Function `redeem`
 
+Claim the value of type <code>Offered</code> published at <code>offer_address</code>.
+Only succeeds if the sender is the intended recipient stored in <code>for</code> or the original
+publisher <code>offer_address</code>, and now >= time_lock
+Also fails if no such value exists.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(account: &signer, offer_address: address): Offered
@@ -146,6 +155,7 @@
 
 ## Function `exists_at`
 
+Returns true if an offer of type <code>Offered</code> exists at <code>offer_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_exists_at">exists_at</a>&lt;Offered&gt;(offer_address: address): bool
@@ -170,6 +180,8 @@
 
 ## Function `address_of`
 
+Returns the address of the <code>Offered</code> type stored at <code>offer_address</code>.
+Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_address_of">address_of</a>&lt;Offered&gt;(offer_address: address): address

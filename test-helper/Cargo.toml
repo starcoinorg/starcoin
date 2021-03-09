@@ -13,8 +13,8 @@ backtrace = "0.3.55"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3.12"
 futures-timer = "3.0"
-hex= "0.4.2"
-serde = { version = "1.0.123" }
+hex= "0.4.3"
+serde = { version = "1.0.124" }
 serde_json = "1.0"
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-config = { path = "../config" }
@@ -55,7 +55,7 @@ starcoin-statedb = {path = "../state/statedb"}
 starcoin-move-compiler = { path = "../vm/compiler"}
 rand = "0.8.3"
 network-api = { path = "../network/api" }
-async-trait = "0.1.42"
+async-trait = "0.1.47"
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }

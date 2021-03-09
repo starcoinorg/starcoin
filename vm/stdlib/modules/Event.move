@@ -5,24 +5,25 @@ module Event {
     use 0x1::Signer;
     use 0x1::Vector;
 
-    // A resource representing the counter used to generate uniqueness under each account. There won't be destructor for
-    // this resource to guarantee the uniqueness of the generated handle.
+    /// A resource representing the counter used to generate uniqueness under each account. There won't be destructor for
+    /// this resource to guarantee the uniqueness of the generated handle.
     resource struct EventHandleGenerator {
-        // A monotonically increasing counter
+        /// A monotonically increasing counter
         counter: u64,
         addr: address,
     }
 
-    // A handle for an event such that:
-    // 1. Other modules can emit events to this handle.
-    // 2. Storage can use this handle to prove the total number of events that happened in the past.
+    /// A handle for an event such that:
+    /// 1. Other modules can emit events to this handle.
+    /// 2. Storage can use this handle to prove the total number of events that happened in the past.
     resource struct EventHandle<T: copyable> {
-        // Total number of events emitted to this event stream.
+        /// Total number of events emitted to this event stream.
         counter: u64,
-        // A globally unique ID for this event stream.
+        /// A globally unique ID for this event stream.
         guid: vector<u8>,
     }
 
+    /// Create an event generator under address of `signer`.
     public fun publish_generator(account: &signer) {
         move_to(account, EventHandleGenerator{ counter: 0, addr: Signer::address_of(account) })
     }
@@ -43,7 +44,7 @@ module Event {
         count_bytes
     }
 
-    // Use EventHandleGenerator to generate a unique event handle for `sig`
+    /// Use EventHandleGenerator to generate a unique event handle for `sig`
     public fun new_event_handle<T: copyable>(account: &signer): EventHandle<T>
     acquires EventHandleGenerator {
         EventHandle<T> {
@@ -52,8 +53,8 @@ module Event {
         }
     }
 
-    // Emit an event with payload `msg` by using handle's key and counter. Will change the payload from vector<u8> to a
-    // generic type parameter once we have generics.
+    /// Emit an event with payload `msg` by using handle's key and counter. Will change the payload from vector<u8> to a
+    /// generic type parameter once we have generics.
     public fun emit_event<T: copyable>(handle_ref: &mut EventHandle<T>, msg: T) {
         let guid = *&handle_ref.guid;
 
@@ -61,8 +62,8 @@ module Event {
         handle_ref.counter = handle_ref.counter + 1;
     }
 
-    // Native procedure that writes to the actual event stream in Event store
-    // This will replace the "native" portion of EmitEvent bytecode
+    /// Native procedure that writes to the actual event stream in Event store
+    /// This will replace the "native" portion of EmitEvent bytecode
     native fun write_to_event_store<T: copyable>(guid: vector<u8>, count: u64, msg: T);
 
     // Destroy a unique handle.

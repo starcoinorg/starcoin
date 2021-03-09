@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.38"
 rand = "0.8.3"
-serde = { version = "1.0.123" }
+serde = { version = "1.0.124" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.5.0"
 tokio = { version = "0.2", features = ["full"] }
@@ -36,7 +36,7 @@ starcoin-vm-types = {path = "../../vm/types"}
 starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 starcoin-transaction-builder = {path = "../../vm/transaction-builder"}
 forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
-hex = { version = "0.4.2", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 starcoin-move-compiler = { path = "../../vm/compiler"}
 starcoin-dev= {path = "../../vm/dev"}
 starcoin-txpool-api = { path = "../../txpool/api" }
@@ -44,9 +44,10 @@ starcoin-genesis = { path = "../../core/genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="8c4da62a52f4a30533e2deebfc33cfdbdef6c52f" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="da7a2d8f2d91223a0c891561812757029b613686" }
 network-api = {path = "../../network/api", package="network-api"}
-short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="8c4da62a52f4a30533e2deebfc33cfdbdef6c52f" }
+starcoin-network-rpc-api = {path = "../../network-rpc/api"}
+short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="da7a2d8f2d91223a0c891561812757029b613686" }
 
 
 [dev-dependencies]

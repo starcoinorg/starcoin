@@ -3,6 +3,8 @@
 
 # Module `0x1::TransactionFee`
 
+<code><a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a></code> collect gas fees used by transactions in blocks temporarily.
+Then they are distributed in <code><a href="TransactionManager.md#0x1_TransactionManager">TransactionManager</a></code>.
 
 
 -  [Resource `TransactionFee`](#0x1_TransactionFee_TransactionFee)

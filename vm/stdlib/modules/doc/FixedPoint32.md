@@ -3,6 +3,7 @@
 
 # Module `0x1::FixedPoint32`
 
+The module provide operations for FixedPoint32.
 
 
 -  [Struct `FixedPoint32`](#0x1_FixedPoint32_FixedPoint32)
@@ -27,6 +28,9 @@
 
 ## Struct `FixedPoint32`
 
+Define a fixed-point numeric type with 32 fractional bits.
+This is just a u64 integer but it is wrapped in a struct to
+make a unique type.
 
 
 <pre><code><b>struct</b> <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>
@@ -154,6 +158,9 @@ overflows.
 
 ## Function `divide_u64`
 
+Divide a u64 integer by a fixed-point number, truncating any
+fractional part of the quotient. This will abort if the divisor
+is zero or if the quotient overflows.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_divide_u64">divide_u64</a>(val: u64, divisor: <a href="FixedPoint32.md#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>): u64
@@ -188,6 +195,11 @@ overflows.
 
 ## Function `create_from_rational`
 
+Create a fixed-point value from a rational number specified by its
+numerator and denominator. This function is for convenience; it is also
+perfectly fine to create a fixed-point value by directly specifying the
+raw value. This will abort if the denominator is zero or if the ratio is
+not in the range 2^-32 .. 2^32-1.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_create_from_rational">create_from_rational</a>(numerator: u64, denominator: u64): <a href="FixedPoint32.md#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>
@@ -224,6 +236,7 @@ overflows.
 
 ## Function `create_from_raw_value`
 
+create a fixedpoint 32  from u64.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_create_from_raw_value">create_from_raw_value</a>(value: u64): <a href="FixedPoint32.md#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>
@@ -248,6 +261,9 @@ overflows.
 
 ## Function `get_raw_value`
 
+Accessor for the raw u64 value. Other less common operations, such as
+adding or subtracting FixedPoint32 values, can be done using the raw
+values directly.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_get_raw_value">get_raw_value</a>(num: <a href="FixedPoint32.md#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>): u64

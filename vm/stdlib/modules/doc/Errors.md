@@ -194,6 +194,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `invalid_state`
 
+Create an error of invalid_state
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_invalid_state">invalid_state</a>(reason: u64): u64
@@ -216,6 +217,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `requires_address`
 
+Create an error of <code>requires_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_requires_address">requires_address</a>(reason: u64): u64
@@ -238,6 +240,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `requires_role`
 
+Create an error of <code>requires_role</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_requires_role">requires_role</a>(reason: u64): u64
@@ -260,6 +263,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `requires_capability`
 
+Create an error of <code>requires_capability</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_requires_capability">requires_capability</a>(reason: u64): u64
@@ -282,6 +286,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `not_published`
 
+Create an error of <code>not_published</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_not_published">not_published</a>(reason: u64): u64
@@ -304,6 +309,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `already_published`
 
+Create an error of <code>already_published</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_already_published">already_published</a>(reason: u64): u64
@@ -326,6 +332,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `invalid_argument`
 
+Create an error of <code>invalid_argument</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_invalid_argument">invalid_argument</a>(reason: u64): u64
@@ -348,6 +355,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `limit_exceeded`
 
+Create an error of <code>limit_exceeded</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_limit_exceeded">limit_exceeded</a>(reason: u64): u64
@@ -370,6 +378,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `internal`
 
+Create an error of <code>internal</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_internal">internal</a>(reason: u64): u64
@@ -392,6 +401,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `custom`
 
+Create an error of <code>custom</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_custom">custom</a>(reason: u64): u64

@@ -9,7 +9,6 @@ use starcoin_types::{
     account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
 };
 use std::fmt::Debug;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub type TxnStatusFullEvent = Arc<[(HashValue, transaction::TxStatus)]>;
@@ -73,29 +72,14 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
 #[derive(Clone, Debug)]
 pub struct PropagateTransactions {
     txns: Vec<SignedUserTransaction>,
-    next_propagation_ready: Arc<AtomicBool>,
 }
 
 impl PropagateTransactions {
-    pub fn new(txns: Vec<SignedUserTransaction>, next_propagation_ready: Arc<AtomicBool>) -> Self {
-        Self {
-            txns,
-            next_propagation_ready,
-        }
+    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+        Self { txns }
     }
 
     pub fn transaction_to_propagate(&self) -> Vec<SignedUserTransaction> {
         self.txns.clone()
-    }
-}
-
-// when the request is dropped, (no matter the request is handled or cancelled),
-// we make next propagation ready.
-impl Drop for PropagateTransactions {
-    fn drop(&mut self) {
-        let _ = self
-            .next_propagation_ready
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Relaxed)
-            .unwrap_or_else(|x| x);
     }
 }

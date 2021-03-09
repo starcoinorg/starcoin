@@ -485,6 +485,7 @@ impl StarcoinVM {
                 ]),
                 cost_strategy,
             )
+            .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)
     }
 
@@ -531,6 +532,7 @@ impl StarcoinVM {
                 ]),
                 cost_strategy,
             )
+            .map(|_return_vals| ())
             .or_else(convert_normal_success_epilogue_error)
     }
 
@@ -578,6 +580,7 @@ impl StarcoinVM {
                 args,
                 &mut cost_strategy,
             )
+            .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
         BLOCK_UNCLES.observe(uncles as f64);
         Ok(get_transaction_output(
