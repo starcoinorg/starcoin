@@ -7,9 +7,7 @@ use crate::storage::{CacheObject, InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
 use parking_lot::Mutex;
-
-const LRU_CACHE_DEFAULT_SIZE: usize = 65535;
-
+use starcoin_config::DEFAULT_CACHE_SIZE;
 pub struct CacheStorage {
     cache: Mutex<LruCache<Vec<u8>, CacheObject>>,
 }
@@ -17,7 +15,7 @@ pub struct CacheStorage {
 impl CacheStorage {
     pub fn new() -> Self {
         CacheStorage {
-            cache: Mutex::new(LruCache::new(LRU_CACHE_DEFAULT_SIZE)),
+            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
         }
     }
     pub fn new_with_capacity(size: usize) -> Self {
