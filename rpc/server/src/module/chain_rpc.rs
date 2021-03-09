@@ -124,7 +124,7 @@ where
 
             Ok(block
                 .into_iter()
-                .map(TryInto::try_into)
+                .map(|blk| BlockView::try_from_block(blk, true))
                 .collect::<Result<Vec<_>, _>>()?)
         }
         .map_err(map_err);
