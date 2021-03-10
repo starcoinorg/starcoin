@@ -203,7 +203,7 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             debug!("Miner has mint job so just ignore this event.");
             return;
         }
-        if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
+        if self.client_subscribers_num == 0 && self.config.miner.disable_miner_client() {
             debug!("No miner client connected, ignore GenerateBlockEvent.");
             return;
         }
