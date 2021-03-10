@@ -254,29 +254,26 @@ impl RequestResponsesBehaviour {
         request: Vec<u8>,
         pending_response: oneshot::Sender<Result<Vec<u8>, RequestFailure>>,
     ) {
+        info!(
+            "[network] send request target: {}, request len:{}",
+            target,
+            request.len()
+        );
         if let Some((protocol, _)) = self.protocols.get_mut(protocol_name) {
-            if protocol.is_connected(target) {
-                let request_id = protocol.send_request(target, request);
-                self.pending_requests.insert(
-                    (protocol_name.to_string().into(), request_id).into(),
-                    (Instant::now(), pending_response),
-                );
-            } else if pending_response
-                .send(Err(RequestFailure::NotConnected))
-                .is_err()
-            {
-                log::debug!(
-                    target: "sub-libp2p",
-                    "Not connected to peer {:?}. At the same time local \
-                     node is no longer interested in the result.",
-                    target,
-                );
-            };
+            let request_id = protocol.send_request(target, request);
+            self.pending_requests.insert(
+                (protocol_name.to_string().into(), request_id).into(),
+                (Instant::now(), pending_response),
+            );
+            info!(
+                "[network] send request with id: {}, target: {}",
+                request_id, target
+            );
         } else if pending_response
             .send(Err(RequestFailure::UnknownProtocol))
             .is_err()
         {
-            log::debug!(
+            log::error!(
                 target: "sub-libp2p",
                 "Unknown protocol {:?}. At the same time local \
                  node is no longer interested in the result.",

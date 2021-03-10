@@ -1028,6 +1028,7 @@ impl NetworkBehaviour for GenericProto {
     ) {
         debug!(target: "sub-libp2p", "Libp2p => Connection ({:?},{:?}) to {} closed.",
                conn, endpoint, peer_id);
+
         match self.peers.get_mut(peer_id) {
             Some(PeerState::Disabled { open, .. })
             | Some(PeerState::DisabledPendingEnable { open, .. })
@@ -1073,8 +1074,8 @@ impl NetworkBehaviour for GenericProto {
             // This is a serious bug either in this state machine or in libp2p.
             {
                 error!(target: "sub-libp2p",
-                       "`inject_disconnected` called for unknown peer {}",
-                       peer_id)
+                           "`inject_disconnected` called for unknown peer {}",
+                           peer_id)
             }
 
             Some(PeerState::Disabled {
@@ -1250,13 +1251,13 @@ impl NetworkBehaviour for GenericProto {
                             debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", source);
                             debug!(target: "sub-libp2p", "PSM <= Dropped({:?})", source);
                             self.peerset.dropped(source);
+
                             self.events
                                 .push_back(NetworkBehaviourAction::NotifyHandler {
                                     peer_id: source,
                                     handler: NotifyHandler::Any,
                                     event: NotifsHandlerIn::Disable,
                                 });
-
                             let last = open.is_empty();
                             let new_notifications_sink =
                                 open.iter().next().and_then(|(_, sink)| {
@@ -1266,12 +1267,16 @@ impl NetworkBehaviour for GenericProto {
                                         None
                                     }
                                 });
-
                             *entry.into_mut() = PeerState::Disabled {
                                 open,
                                 banned_until: None,
                             };
-
+                            let event = GenericProtoOut::CustomProtocolClosed {
+                                peer_id: source,
+                                reason: Cow::from("Droped invalid substream"),
+                            };
+                            self.events
+                                .push_back(NetworkBehaviourAction::GenerateEvent(event));
                             (last, new_notifications_sink)
                         }
                         PeerState::Disabled {
@@ -1343,8 +1348,8 @@ impl NetworkBehaviour for GenericProto {
                         }
                         state => {
                             error!(target: "sub-libp2p",
-                               "Unexpected state in the custom protos handler: {:?}",
-                               state);
+                                   "Unexpected state in the custom protos handler: {:?}",
+                                   state);
                             return;
                         }
                     };

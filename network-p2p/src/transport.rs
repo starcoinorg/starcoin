@@ -122,7 +122,6 @@ pub fn build_transport(
         let mut mplex_config = mplex::MplexConfig::new();
         mplex_config.set_max_buffer_behaviour(mplex::MaxBufferBehaviour::Block);
         mplex_config.set_max_buffer_size(usize::MAX);
-
         let mut yamux_config = libp2p::yamux::YamuxConfig::default();
         // Enable proper flow-control: window updates are only sent when
         // buffered data has been consumed.
