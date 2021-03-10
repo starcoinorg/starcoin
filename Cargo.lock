@@ -8280,6 +8280,7 @@ dependencies = [
  "async-std",
  "bcs-ext",
  "futures 0.3.12",
+ "futures-timer",
  "hex",
  "jsonrpc-client-transports",
  "jsonrpc-core",
