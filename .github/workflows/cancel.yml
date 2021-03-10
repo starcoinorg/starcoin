@@ -1,5 +1,8 @@
 name: Cancel
-on: [push]
+on:
+  push:
+  pull_request:
+    types: [closed]
 jobs:
   cancel:
     name: 'Cancel Previous Runs'
@@ -13,4 +16,5 @@ jobs:
           # 1098916: codecov
           # 4555449: benchmark_pr
           workflow_id: 511061,1098916,4555449
-          access_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ignore_sha: true
+          access_token: ${{ github.token }}
