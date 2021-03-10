@@ -1,9 +1,9 @@
 ---
-id: dapp-demo-show
 title: DAPP 开发例子演示
+weight: 3
 ---
 
-本文以一个 defi 挖矿的例子介绍如何在 starcoin 上开发 DApp。
+本文以一个 DeFi 挖矿的例子介绍如何在 starcoin 上开发 DApp。
 
 <!--more-->
 

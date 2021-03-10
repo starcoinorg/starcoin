@@ -1,6 +1,6 @@
 ---
 title: User Defined Token
-weight: 9
+weight: 1
 ---
 
 This is a example for How to define user custom Token on starcoin blockchain.
