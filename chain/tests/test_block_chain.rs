@@ -8,6 +8,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
@@ -15,7 +16,6 @@ use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventKey;
-use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::sync::Arc;
 

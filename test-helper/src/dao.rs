@@ -6,6 +6,7 @@ use crate::executor::{
 };
 use crate::Account;
 use anyhow::Result;
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{encode_create_account_script, execute_readonly_function};
 use starcoin_state_api::StateView;
@@ -13,7 +14,6 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{association_address, genesis_address, stc_type_tag};
 use starcoin_types::block_metadata::BlockMetadata;
-use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{Script, TransactionArgument, TransactionPayload};

@@ -10,6 +10,7 @@ use crate::tasks::{
 };
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
+use config::{BuiltinNetworkID, ChainNetwork};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
@@ -30,7 +31,6 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
-use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator};

@@ -5,7 +5,10 @@ use crate::block_connector::{
     create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
 };
 use anyhow::Result;
-use config::NodeConfig;
+use config::{
+    BuiltinNetworkID, ChainNetwork, GenesisBlockParameter, GenesisBlockParameterConfig, NodeConfig,
+    TEST_CONFIG,
+};
 use consensus::Consensus;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
@@ -16,10 +19,7 @@ use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
-use starcoin_vm_types::genesis_config::{
-    BuiltinNetworkID, ChainId, ChainNetwork, ConsensusStrategy, GenesisBlockParameter,
-    GenesisBlockParameterConfig, TEST_CONFIG,
-};
+use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::time::{duration_since_epoch, TimeServiceType};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;

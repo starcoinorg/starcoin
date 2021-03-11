@@ -6,6 +6,7 @@ use crate::tasks::{
 };
 use anyhow::{format_err, Result};
 use async_std::task::JoinHandle;
+use config::ChainNetwork;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
@@ -20,7 +21,6 @@ use starcoin_crypto::HashValue;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
-use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
 

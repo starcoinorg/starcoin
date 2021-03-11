@@ -3,12 +3,13 @@
 
 use crate::cli_state::CliState;
 use anyhow::{format_err, Result};
+use starcoin_config::ChainNetwork;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::on_chain_config::DaoConfig;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionPayload};
-use starcoin_vm_types::{genesis_config::ChainNetwork, on_chain_config::DaoConfig};
 
 pub fn sign_txn_with_account_by_rpc_client(
     cli_state: &CliState,

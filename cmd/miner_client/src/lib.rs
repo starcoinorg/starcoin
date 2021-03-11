@@ -12,12 +12,10 @@ use dyn_clone::DynClone;
 use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender};
 use futures::stream::BoxStream;
 use starcoin_config::TimeService;
-use starcoin_types::system_events::MintBlockEvent;
-use std::sync::Arc;
-
-pub use starcoin_config::ConsensusStrategy;
 use starcoin_types::block::BlockHeaderExtra;
-pub use starcoin_types::U256;
+use starcoin_types::U256;
+use starcoin_types::{genesis_config::ConsensusStrategy, system_events::MintBlockEvent};
+use std::sync::Arc;
 
 pub trait JobClient: Send + Unpin + Sync + Clone {
     fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>>;

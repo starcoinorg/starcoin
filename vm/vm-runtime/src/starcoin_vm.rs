@@ -11,6 +11,7 @@ use anyhow::{format_err, Error, Result};
 use crypto::HashValue;
 use move_vm_runtime::data_cache::RemoteCache;
 use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
+use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
 use starcoin_move_compiler::check_module_compat;
 use starcoin_types::account_config::access_path_for_module_upgrade_strategy;
@@ -33,7 +34,6 @@ use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::on_chain_config::INITIAL_GAS_SCHEDULE;
 use starcoin_vm_types::transaction::{
     DryRunTransaction, Module, Package, Script, TransactionPayloadType,
 };

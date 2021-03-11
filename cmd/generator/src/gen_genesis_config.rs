@@ -5,10 +5,10 @@ use crate::cli_state::CliState;
 use anyhow::{bail, ensure, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
+use starcoin_config::ChainNetworkID;
 use starcoin_config::{BaseConfig, StarcoinOpt};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_types::genesis_config::ChainNetworkID;
 use std::path::PathBuf;
 use structopt::StructOpt;
 

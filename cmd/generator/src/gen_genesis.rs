@@ -7,10 +7,10 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
+use starcoin_config::ChainNetworkID;
 use starcoin_config::StarcoinOpt;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::genesis_config::ChainNetworkID;
 use std::path::PathBuf;
 use structopt::StructOpt;
 

@@ -9,6 +9,7 @@ use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_account_service::AccountService;
+use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
@@ -17,7 +18,6 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};

@@ -7550,6 +7550,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-system",
  "starcoin-types",
+ "starcoin-uint",
  "starcoin-vm-types",
  "structopt 0.3.21",
  "thiserror",

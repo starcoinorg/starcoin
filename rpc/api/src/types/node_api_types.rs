@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::genesis_config::ChainNetworkID;
+use starcoin_config::ChainNetworkID;
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
