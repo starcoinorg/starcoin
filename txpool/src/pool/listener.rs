@@ -61,6 +61,52 @@ impl tx_pool::Listener<Transaction> for Logger {
     }
 }
 
+/// Transaction status logger.
+#[derive(Default, Debug)]
+pub struct StatusLogger;
+impl StatusLogger {
+    fn log_status(tx: &Arc<Transaction>, status: TxStatus) {
+        debug!(
+            target: "tx-status",
+            "[tx-status] hash: {hash}, status: {status}",
+            hash = tx.hash(),
+            status = status
+        );
+    }
+}
+impl tx_pool::Listener<Transaction> for StatusLogger {
+    fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
+        Self::log_status(tx, TxStatus::Added);
+        if let Some(old) = old {
+            Self::log_status(old, TxStatus::Dropped);
+        }
+    }
+
+    fn rejected<H: fmt::Debug + fmt::LowerHex>(
+        &mut self,
+        tx: &Arc<Transaction>,
+        _reason: &tx_pool::Error<H>,
+    ) {
+        Self::log_status(tx, TxStatus::Rejected);
+    }
+
+    fn dropped(&mut self, tx: &Arc<Transaction>, _new: Option<&Transaction>) {
+        Self::log_status(tx, TxStatus::Dropped);
+    }
+
+    fn invalid(&mut self, tx: &Arc<Transaction>) {
+        Self::log_status(tx, TxStatus::Invalid);
+    }
+
+    fn canceled(&mut self, tx: &Arc<Transaction>) {
+        Self::log_status(tx, TxStatus::Canceled);
+    }
+
+    fn culled(&mut self, tx: &Arc<Transaction>) {
+        Self::log_status(tx, TxStatus::Culled);
+    }
+}
+
 /// Transactions pool notifier
 #[derive(Default)]
 pub struct TransactionsPoolNotifier {
