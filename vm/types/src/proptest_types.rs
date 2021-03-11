@@ -4,7 +4,8 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::EventHandle;
-use crate::genesis_config::{BuiltinNetworkID, ChainId, ChainNetwork};
+use crate::genesis_config::ChainId;
+use crate::time::{MockTimeService, TimeService};
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
@@ -12,7 +13,7 @@ use crate::transaction::{
 };
 use crate::transaction_argument::TransactionArgument;
 use crate::{account_address, account_config};
-use anyhow::{bail, Result};
+use anyhow::Result;
 use move_core_types::language_storage::TypeTag;
 use proptest::collection::SizeRange;
 use proptest::sample::Index as PropIndex;
@@ -141,7 +142,8 @@ impl AccountInfo {
 pub struct AccountInfoUniverse {
     accounts: Vec<AccountInfo>,
     epoch: u64,
-    net: ChainNetwork,
+    chain_id: ChainId,
+    time_service: Arc<dyn TimeService>,
 }
 
 impl AccountInfoUniverse {
@@ -150,32 +152,24 @@ impl AccountInfoUniverse {
             .into_iter()
             .map(|(private_key, public_key)| AccountInfo::new(private_key, public_key))
             .collect();
-        let net = ChainNetwork::new_test();
+        let time_service = MockTimeService::new();
         Self {
             accounts,
             epoch,
-            net,
+            chain_id: ChainId::test(),
+            time_service: Arc::new(time_service),
         }
     }
 
     pub fn default() -> Result<Self> {
-        // association account
-        if let (Some(private_key), public_key) =
-            &BuiltinNetworkID::Test.genesis_config().association_key_pair
-        {
-            let account = AccountInfo::new_multi(
-                account_config::association_address(),
-                private_key.clone(),
-                public_key.clone(),
-            );
-            Ok(Self {
-                accounts: vec![account],
-                epoch: 0,
-                net: ChainNetwork::new_test(),
-            })
-        } else {
-            bail!("association private_key not config at dev network.")
-        }
+        let (private_key, public_key) = starcoin_crypto::ed25519::genesis_key_pair();
+        let account = AccountInfo::new(private_key, public_key);
+        Ok(Self {
+            accounts: vec![account],
+            epoch: 0,
+            chain_id: ChainId::test(),
+            time_service: Arc::new(MockTimeService::new()),
+        })
     }
 
     fn get_account_info(&self, account_index: Index) -> &AccountInfo {
@@ -196,8 +190,12 @@ impl AccountInfoUniverse {
         epoch
     }
 
-    pub fn net(&self) -> &ChainNetwork {
-        &self.net
+    pub fn time_service(&self) -> &dyn TimeService {
+        self.time_service.as_ref()
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
     }
 }
 
@@ -337,15 +335,11 @@ impl SignatureCheckedTransaction {
                     ),
                 )
             })
-            .prop_flat_map(|(_keypair, raw_txn)| {
-                prop_oneof![Just(
-                    BuiltinNetworkID::Test
-                        .genesis_config()
-                        .sign_with_association(raw_txn)
-                        .expect("signing should always work")
-                        .check_signature()
-                        .unwrap()
-                ),]
+            .prop_flat_map(|(keypair, raw_txn)| {
+                let sign_txn = raw_txn
+                    .sign(&keypair.private_key, keypair.public_key.clone())
+                    .unwrap();
+                prop_oneof![Just(sign_txn),]
             })
     }
 }

@@ -6,12 +6,12 @@ use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
+use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 

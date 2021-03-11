@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::Account;
+use starcoin_config::ChainNetwork;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config;
-use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::transaction::SignedUserTransaction;
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;

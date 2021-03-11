@@ -5,13 +5,13 @@ use crypto::HashValue;
 use logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_config::NodeConfig;
+use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_executor::{block_execute, DEFAULT_EXPIRATION_TIME};
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
 use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::genesis_config::{ChainNetwork, StdlibVersion};
+use starcoin_types::genesis_config::StdlibVersion;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
@@ -98,7 +98,7 @@ fn txn_transfer(
     gens: Vec<(Index, SignatureCheckedTransactionGen)>,
 ) -> Vec<Transaction> {
     let mut temp_index: Option<Index> = None;
-    let expired = universe.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
+    let expired = universe.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
         .map(|(index, gen)| {
             if temp_index.is_none() {
@@ -145,15 +145,14 @@ prop_compose! {
             t
         };
     let p_header = parent_header.clone();
-    let net = account.net();
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
-        net.time_service().now_millis(),
+        account.time_service().now_millis(),
         p_header.author(),
         p_header.author_auth_key(),
         0,
         p_header.number() + 1,
-        net.chain_id(),
+        account.chain_id(),
         p_header.gas_used(),
     );
     txns.insert(0, Transaction::BlockMetadata(block_metadata));

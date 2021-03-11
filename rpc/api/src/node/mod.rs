@@ -7,7 +7,8 @@ use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::genesis_config::{ChainNetworkID, ConsensusStrategy};
+use starcoin_config::ChainNetworkID;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

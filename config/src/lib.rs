@@ -28,6 +28,7 @@ mod account_vault_config;
 mod api_config;
 mod api_quota;
 mod available_port;
+mod genesis_config;
 mod helper;
 mod logger_config;
 mod metrics_config;
@@ -46,6 +47,12 @@ pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
 pub use diem_temppath::TempPath;
+pub use genesis_config::{
+    BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
+    FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
+    GenesisConfig, DEFAULT_GAS_CONSTANTS, DEV_CONFIG, HALLEY_CONFIG, INITIAL_GAS_SCHEDULE,
+    MAIN_CONFIG, PROXIMA_CONFIG, TEST_CONFIG, TEST_GAS_SCHEDULE,
+};
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
@@ -55,11 +62,6 @@ pub use rpc_config::{
     WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
-use starcoin_vm_types::genesis_config::FutureBlockParameterResolver;
-pub use starcoin_vm_types::genesis_config::{
-    BuiltinNetworkID, ChainNetwork, ChainNetworkID, ConsensusStrategy, GenesisConfig,
-    StdlibVersion, DEV_CONFIG, HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
-};
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;

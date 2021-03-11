@@ -27,8 +27,10 @@ num_cpus = "1.10"
 parking_lot = "0.11.1"
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
+starcoin-uint = { path = "../types/uint" }
 network-p2p-types = { path = "../network-p2p/types"}
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
 diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="da7a2d8f2d91223a0c891561812757029b613686" }
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
+stdlib = { path = "../vm/stdlib"}

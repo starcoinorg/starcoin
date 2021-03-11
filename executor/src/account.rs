@@ -6,6 +6,7 @@
 use crate::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey};
 use starcoin_config::genesis_key_pair;
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
@@ -20,7 +21,7 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork, StdlibVersion};
+use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{

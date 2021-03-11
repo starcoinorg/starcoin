@@ -4,7 +4,7 @@
 use anyhow::Result;
 use consensus::Consensus;
 use starcoin_chain::BlockChain;
-use starcoin_config::NodeConfig;
+use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter};
@@ -13,7 +13,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block::Block;
-use starcoin_types::genesis_config::{ChainId, ChainNetwork};
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::{
     Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };

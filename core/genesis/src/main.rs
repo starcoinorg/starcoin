@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use starcoin_config::BuiltinNetworkID;
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::{Genesis, GenesisOpt, GENESIS_GENERATED_DIR};
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::genesis_config::BuiltinNetworkID;
 use std::path::Path;
 use structopt::StructOpt;
 

@@ -3,10 +3,8 @@
 
 //! This file contains the starting gas schedule published at genesis.
 
-use crate::gas_schedule::{CostTable, GasCost};
-use crate::genesis_config::{DEFAULT_GAS_CONSTANTS, TEST_GAS_CONSTANTS};
+use crate::gas_schedule::{CostTable, GasConstants, GasCost};
 use move_vm_types::gas_schedule::NativeCostIndex as N;
-use once_cell::sync::Lazy;
 use vm::{
     file_format::{
         Bytecode, ConstantPoolIndex, FieldHandleIndex, FieldInstantiationIndex,
@@ -176,26 +174,12 @@ fn initial_native_table() -> Vec<GasCost> {
     native_table
 }
 
-pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
+pub fn init_cost_table(gas_constants: GasConstants) -> CostTable {
     let instruction_table = initial_instruction_table();
     let native_table = initial_native_table();
-
-    let gas_constants = DEFAULT_GAS_CONSTANTS.clone();
     CostTable {
         instruction_table,
         native_table,
         gas_constants,
     }
-});
-
-pub static TEST_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
-    let instruction_table = initial_instruction_table();
-    let native_table = initial_native_table();
-
-    let gas_constants = TEST_GAS_CONSTANTS.clone();
-    CostTable {
-        instruction_table,
-        native_table,
-        gas_constants,
-    }
-});
+}

@@ -3,13 +3,13 @@
 
 use anyhow::{bail, format_err, Result};
 use starcoin_config::ChainNetworkID;
+use starcoin_config::{
+    BuiltinNetworkID, FutureBlockParameter, FutureBlockParameterResolver, GenesisBlockParameter,
+};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{Params, RpcClient};
 use starcoin_types::block::BlockNumber;
-use starcoin_types::genesis_config::{
-    BuiltinNetworkID, FutureBlockParameter, FutureBlockParameterResolver, GenesisBlockParameter,
-};
 use starcoin_types::U256;
 use std::fmt::Write;
 use std::time::Duration;
@@ -215,7 +215,6 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_types::genesis_config::BuiltinNetworkID;
 
     #[ignore]
     #[stest::test]

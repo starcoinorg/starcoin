@@ -9,7 +9,9 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
-use starcoin_config::{genesis_key_pair, ChainNetwork};
+use starcoin_config::{
+    genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
+};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -20,7 +22,6 @@ use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetworkID, GenesisBlockParameter};
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };

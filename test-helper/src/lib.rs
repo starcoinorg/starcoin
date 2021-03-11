@@ -7,6 +7,7 @@ pub mod dummy_network_service;
 pub mod executor;
 pub mod network;
 pub mod node;
+pub mod protest;
 pub mod txn;
 pub mod txpool;
 

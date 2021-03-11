@@ -10,6 +10,7 @@ use crate::{
 use mirai_annotations::checked_verify;
 use once_cell::sync::Lazy;
 use starcoin_account_api::AccountPrivateKey;
+use starcoin_config::DEFAULT_GAS_CONSTANTS;
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -22,7 +23,6 @@ use starcoin_types::{
 };
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::genesis_config::DEFAULT_GAS_CONSTANTS;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, dependencies},
