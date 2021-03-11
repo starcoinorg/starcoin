@@ -7552,6 +7552,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-uint",
  "starcoin-vm-types",
+ "stdlib",
  "structopt 0.3.21",
  "thiserror",
  "toml",

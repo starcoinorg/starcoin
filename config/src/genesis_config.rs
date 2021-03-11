@@ -37,6 +37,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
+use stdlib::transaction_scripts::VersionedStdlibScript;
 
 #[derive(
     Clone,
@@ -1012,6 +1013,9 @@ pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new)
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
+    let stdlib_version = StdlibVersion::Latest;
+    let versioned_script = VersionedStdlibScript::new(stdlib_version);
+    let publishing_option = VMPublishingOption::Locked(versioned_script.whitelist());
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
             //TODO conform init parameter.
@@ -1028,7 +1032,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option,
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -1045,7 +1049,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (None, association_public_key),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version,
         dao_config: DaoConfig {
             voting_delay: 60 * 60 * 1000,           // 1h
             voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
