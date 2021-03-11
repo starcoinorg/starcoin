@@ -72,6 +72,17 @@ impl Default for StdlibVersion {
     }
 }
 
+impl FromStr for StdlibVersion {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "latest" => Ok(StdlibVersion::Latest),
+            s => Ok(Self::new(s.parse()?)),
+        }
+    }
+}
+
 #[derive(
     Clone,
     Copy,

@@ -7,15 +7,14 @@ use include_dir::{include_dir, Dir};
 use log::LevelFilter;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
-pub use starcoin_config::StdlibVersion;
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::{
     compiled_unit::CompiledUnit, move_compile_and_report, shared::Address,
 };
 use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::BuiltinNetworkID;
-use std::collections::HashSet;
+pub use starcoin_vm_types::genesis_config::StdlibVersion;
+use std::str::FromStr;
 use std::{
     collections::{BTreeMap, HashMap},
     fs::{self, File},
@@ -69,11 +68,13 @@ const COMPILED_TRANSACTION_SCRIPTS_DIR: &str = "compiled/latest/transaction_scri
 pub const LATEST_VERSION: &str = "latest";
 
 static CHAIN_NETWORK_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
-    let versions: HashSet<StdlibVersion> = BuiltinNetworkID::networks()
+    COMPILED_MOVE_CODE_DIR
+        .dirs()
         .iter()
-        .map(|net| net.genesis_config().stdlib_version)
-        .collect();
-    versions.into_iter().collect()
+        .map(|dir| {
+            StdlibVersion::from_str(dir.path().file_name().unwrap().to_str().unwrap()).unwrap()
+        })
+        .collect()
 });
 
 static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<CompiledModule>>> =
@@ -108,6 +109,8 @@ static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<C
         }
         map
     });
+
+pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub enum StdlibType {
