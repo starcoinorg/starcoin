@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::transaction_scripts::CompiledBytes;
-use crate::{CHAIN_NETWORK_STDLIB_VERSIONS, COMPILED_MOVE_CODE_DIR, INIT_SCRIPTS};
+use crate::{
+    StdlibVersion, CHAIN_NETWORK_STDLIB_VERSIONS, COMPILED_MOVE_CODE_DIR, INIT_SCRIPTS,
+    SCRIPT_HASH_LENGTH,
+};
 use anyhow::anyhow;
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
 use std::collections::HashMap;
 use std::{fmt, path::PathBuf};
 

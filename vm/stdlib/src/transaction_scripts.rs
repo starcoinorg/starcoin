@@ -7,12 +7,13 @@
 //! `Stdlib` script enum will be modified to reflect changes in the on-chain whitelist as time goes
 //! on.
 
-use crate::{CHAIN_NETWORK_STDLIB_VERSIONS, COMPILED_MOVE_CODE_DIR, TRANSACTION_SCRIPTS};
+use crate::{
+    StdlibVersion, CHAIN_NETWORK_STDLIB_VERSIONS, COMPILED_MOVE_CODE_DIR, SCRIPT_HASH_LENGTH,
+    TRANSACTION_SCRIPTS,
+};
 use anyhow::{anyhow, bail};
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::{fmt, path::PathBuf};
