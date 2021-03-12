@@ -7,7 +7,7 @@ module MyToken {
     use 0x1::Token;
     use 0x1::Signer;
 
-    struct MyToken { }
+    struct MyToken has copy, drop, store { }
 
     public fun init(account: &signer, precision: u8) {
         assert(Signer::address_of(account) == {{alice}}, 8000);

@@ -11,7 +11,7 @@ module Example {
         R { x: _ } = r;
     }
 
-    resource struct R { x: bool }
+    struct R has key, store { x: bool }
 
     public fun save(account: &signer, r: R){
         move_to(account, r);

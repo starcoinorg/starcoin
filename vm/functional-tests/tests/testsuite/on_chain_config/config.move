@@ -7,11 +7,11 @@ module MyConfig{
     use 0x1::Config;
     use 0x1::Signer;
 
-    struct MyConfig{
+    struct MyConfig has copy, drop, store {
         version: u64,
     }
 
-    resource struct CapHolder{
+    struct CapHolder has key, store {
         cap: Config::ModifyConfigCapability<MyConfig>,
     }
 

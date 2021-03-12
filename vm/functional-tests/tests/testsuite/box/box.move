@@ -2,7 +2,7 @@
 //! account: alice, 100000 0x1::STC::STC
 
 module TestR {
-    resource struct TestR{id: u64}
+    struct TestR has key, store {id: u64}
 
     public fun new(id: u64): TestR{
         TestR{

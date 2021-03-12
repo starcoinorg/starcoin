@@ -37,7 +37,7 @@ module TokenSwapHelper {
 //! new-transaction
 //! sender: admin
 module LiquidityToken {
-    struct LiquidityToken<X, Y> {}
+    struct LiquidityToken<X, Y> has copy, drop, store {}
 }
 // check: EXECUTED
 
@@ -51,14 +51,14 @@ module TokenSwap {
 
     // Liquidity Token
     // TODO: token should be generic on <X, Y>
-    // resource struct T {
+    // struct T {
     // }
-    resource struct LiquidityTokenCapability<X, Y> {
+    struct LiquidityTokenCapability<X, Y> has key, store {
         mint: Token::MintCapability<LiquidityToken<X, Y>>,
         burn: Token::BurnCapability<LiquidityToken<X, Y>>,
     }
 
-    resource struct TokenPair<X, Y> {
+    struct TokenPair<X, Y> has key, store {
         token_x_reserve: Token::Token<X>,
         token_y_reserve: Token::Token<Y>,
         last_block_timestamp: u64,
@@ -73,14 +73,14 @@ module TokenSwap {
 
 
     // for now, only admin can register token pair
-    public fun register_swap_pair<X, Y>(signer: &signer) {
+    public fun register_swap_pair<X: store, Y: store>(signer: &signer) {
         assert_admin(signer);
         let token_pair = make_token_pair<X, Y>();
         move_to(signer, token_pair);
         register_liquidity_token<X, Y>(signer);
     }
 
-    fun register_liquidity_token<X, Y>(signer: &signer) {
+    fun register_liquidity_token<X: store, Y: store>(signer: &signer) {
         assert_admin(signer);
 
         Token::register_token<LiquidityToken<X, Y>>(signer, 3);
@@ -93,7 +93,7 @@ module TokenSwap {
         });
     }
 
-    fun make_token_pair<X, Y>(): TokenPair<X, Y> {
+    fun make_token_pair<X: store, Y: store>(): TokenPair<X, Y> {
         // TODO: assert X, Y is token
         TokenPair<X, Y> {
             token_x_reserve: Token::zero<X>(),
@@ -107,7 +107,7 @@ module TokenSwap {
 
     /// Liquidity Provider's methods
 
-    public fun mint<X, Y>(x: Token::Token<X>, y: Token::Token<Y>): Token::Token<LiquidityToken<X, Y>>
+    public fun mint<X: store, Y: store>(x: Token::Token<X>, y: Token::Token<Y>): Token::Token<LiquidityToken<X, Y>>
     acquires TokenPair, LiquidityTokenCapability {
         let total_supply: u128 = Token::market_cap<LiquidityToken<X, Y>>();
         let x_value = Token::value<X>(&x);
@@ -142,7 +142,7 @@ module TokenSwap {
         mint_token
     }
 
-    public fun burn<X, Y>(to_burn: Token::Token<LiquidityToken<X, Y>>): (Token::Token<X>, Token::Token<Y>)
+    public fun burn<X: store, Y: store>(to_burn: Token::Token<LiquidityToken<X, Y>>): (Token::Token<X>, Token::Token<Y>)
     acquires TokenPair, LiquidityTokenCapability {
         let to_burn_value = (Token::value(&to_burn) as u128);
 
@@ -163,7 +163,7 @@ module TokenSwap {
         (x_token, y_token)
     }
 
-    fun burn_liquidity<X, Y>(to_burn: Token::Token<LiquidityToken<X, Y>>)
+    fun burn_liquidity<X: store, Y: store>(to_burn: Token::Token<LiquidityToken<X, Y>>)
     acquires LiquidityTokenCapability {
         let liquidity_cap = borrow_global<LiquidityTokenCapability<X, Y>>(admin_address());
         Token::burn_with_capability<LiquidityToken<X, Y>>(&liquidity_cap.burn, to_burn);
@@ -171,14 +171,14 @@ module TokenSwap {
 
     /// User methods
 
-    public fun get_reserves<X, Y>(): (u128, u128) acquires TokenPair {
+    public fun get_reserves<X: store, Y: store>(): (u128, u128) acquires TokenPair {
         let token_pair = borrow_global<TokenPair<X, Y>>(admin_address());
         let x_reserve = Token::value(&token_pair.token_x_reserve);
         let y_reserve = Token::value(&token_pair.token_y_reserve);
         (x_reserve, y_reserve)
     }
 
-    public fun swap<X, Y>(x_in: Token::Token<X>, y_out: u128, y_in: Token::Token<Y>, x_out: u128): (Token::Token<X>, Token::Token<Y>)
+    public fun swap<X: store, Y: store>(x_in: Token::Token<X>, y_out: u128, y_in: Token::Token<Y>, x_out: u128): (Token::Token<X>, Token::Token<Y>)
     acquires TokenPair {
         let x_in_value = Token::value(&x_in);
         let y_in_value = Token::value(&y_in);
@@ -215,7 +215,7 @@ module TokenSwap {
 //! new-transaction
 //! sender: admin
 module Token1 {
-    struct Token1 {}
+    struct Token1 has copy, drop, store {}
 }
 // check: EXECUTED
 

@@ -8,7 +8,7 @@
 module M {
     use 0x1::Signer;
 
-    resource struct Cup {
+    struct Cup has key, store {
         a: u64,
     }
     public fun new(): Cup {

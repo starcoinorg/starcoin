@@ -6,12 +6,12 @@ module BigVectorTest {
     use 0x1::Vector;
     use 0x1::Signer;
 
-    resource struct Element<T> {
+    struct Element<T> has key, store {
         addr: address,
         value: T
     }
 
-    resource struct BigVector<T> {
+    struct BigVector<T> has key, store {
         vec: vector<Element<T>>
     }
 
