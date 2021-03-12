@@ -53,6 +53,7 @@ use crate::{
     config::{parse_addr, parse_str_addr, NonReservedPeerMode},
     transport,
 };
+use async_std::future;
 use futures::channel::oneshot::Canceled;
 use futures::{
     channel::{mpsc, oneshot},
@@ -75,6 +76,7 @@ use starcoin_metrics::{Histogram, HistogramVec};
 use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
+use std::time::Duration;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -716,13 +718,13 @@ impl NetworkService {
             request,
             pending_response: tx,
         });
-
-        match rx.await {
-            Ok(v) => v,
+        match future::timeout(Duration::from_secs(5), rx).await {
+            Ok(Ok(v)) => v,
             // The channel can only be closed if the network worker no longer exists. If the
             // network worker no longer exists, then all connections to `target` are necessarily
             // closed, and we legitimately report this situation as a "ConnectionClosed".
             Err(_) => Err(RequestFailure::Network(OutboundFailure::ConnectionClosed)),
+            Ok(Err(_)) => Err(RequestFailure::Network(OutboundFailure::Timeout)),
         }
     }
 
