@@ -45,6 +45,7 @@ network-p2p-types = {path = "./types"}
 prometheus = "0.12.0"
 ip_network = "0.3.4"
 bs58 = "0.3.1"
+async-std = "1.9.0"
 
 
 [dependencies.libp2p]
