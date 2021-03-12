@@ -4,7 +4,7 @@ script {
     use 0x1::Vector;
     use 0x1::BCS;
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 101;
-    fun peer_to_peer_batch<TokenType>(account: &signer, payeees: vector<u8>, payee_auth_keys: vector<u8>, amount: u128) {
+    fun peer_to_peer_batch<TokenType: store>(account: &signer, payeees: vector<u8>, payee_auth_keys: vector<u8>, amount: u128) {
         let payee_bytes_vec = Vector::split<u8>(&payeees, 16);
         let auth_key_bytes_vec = Vector::split<u8>(&payee_auth_keys, 32);
         let len = Vector::length(&payee_bytes_vec);

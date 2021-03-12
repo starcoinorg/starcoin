@@ -15,14 +15,14 @@ address 0x1 {
             pragma aborts_if_is_strict = true;
         }
         /// module upgrade plan
-        struct UpgradePlan {
+        struct UpgradePlan has copy, drop, store {
             package_hash: vector<u8>,
             active_after_time: u64,
             version: u64,
         }
 
         /// The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
-        resource struct UpgradePlanCapability{
+        struct UpgradePlanCapability has key, store {
             account_address: address,
         }
 
@@ -52,7 +52,7 @@ address 0x1 {
         const EUNKNOWN_STRATEGY: u64 = 108;
 
         /// module upgrade strategy
-        resource struct ModuleUpgradeStrategy {
+        struct ModuleUpgradeStrategy has key, store {
             /// 0 arbitrary
             /// 1 two phase upgrade
             /// 2 only new module
@@ -61,7 +61,7 @@ address 0x1 {
         }
 
         /// data of two phase upgrade strategy.
-        resource struct TwoPhaseUpgrade {
+        struct TwoPhaseUpgrade has key, store {
             config: TwoPhaseUpgradeConfig,
             plan: Option<UpgradePlan>,
             version_cap: Config::ModifyConfigCapability<Version::Version>,
@@ -69,12 +69,12 @@ address 0x1 {
         }
 
         /// config of two phase upgrade strategy.
-        struct TwoPhaseUpgradeConfig {
+        struct TwoPhaseUpgradeConfig has copy, drop, store {
             min_time_limit: u64,
         }
 
         /// module upgrade event.
-        struct UpgradeEvent {
+        struct UpgradeEvent has copy, drop, store {
             package_address: address,
             package_hash: vector<u8>,
             version: u64,

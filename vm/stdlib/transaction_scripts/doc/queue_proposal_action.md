@@ -22,7 +22,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="queue_proposal_action.md#queue_proposal_action">queue_proposal_action</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="queue_proposal_action.md#queue_proposal_action">queue_proposal_action</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store, Action: <b>copy</b> + drop + store&gt;(
     _signer: &signer,
     proposer_address: address,
     proposal_id: u64,

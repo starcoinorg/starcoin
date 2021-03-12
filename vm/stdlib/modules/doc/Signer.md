@@ -24,7 +24,7 @@ Borrows the address of the signer
 Conceptually, you can think of the <code>signer</code> as being a resource struct wrapper around an
 address
 ```
-resource struct Signer { addr: address }
+resource struct Signer has key, store { addr: address }
 ```
 <code>borrow_address</code> borrows this inner field
 

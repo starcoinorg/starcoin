@@ -73,7 +73,7 @@ Create an empty vector.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_empty">empty</a>&lt;Element&gt;(): vector&lt;Element&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_empty">empty</a>&lt;Element: store&gt;(): vector&lt;Element&gt;;
 </code></pre>
 
 
@@ -96,7 +96,7 @@ Return the length of the vector.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_length">length</a>&lt;Element&gt;(v: &vector&lt;Element&gt;): u64;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_length">length</a>&lt;Element: store&gt;(v: &vector&lt;Element&gt;): u64;
 </code></pre>
 
 
@@ -119,7 +119,7 @@ Acquire an immutable reference to the ith element of the vector.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_borrow">borrow</a>&lt;Element&gt;(v: &vector&lt;Element&gt;, i: u64): &Element;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_borrow">borrow</a>&lt;Element: store&gt;(v: &vector&lt;Element&gt;, i: u64): &Element;
 </code></pre>
 
 
@@ -142,7 +142,7 @@ Add an element to the end of the vector.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_push_back">push_back</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, e: Element);
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_push_back">push_back</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;, e: Element);
 </code></pre>
 
 
@@ -165,7 +165,7 @@ Get mutable reference to the ith element in the vector, abort if out of bound.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_borrow_mut">borrow_mut</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, idx: u64): &<b>mut</b> Element;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_borrow_mut">borrow_mut</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;, idx: u64): &<b>mut</b> Element;
 </code></pre>
 
 
@@ -188,7 +188,7 @@ Pop an element from the end of vector, abort if the vector is empty.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;): Element;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;): Element;
 </code></pre>
 
 
@@ -211,7 +211,7 @@ Destroy the vector, abort if not empty.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_destroy_empty">destroy_empty</a>&lt;Element&gt;(v: vector&lt;Element&gt;);
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_destroy_empty">destroy_empty</a>&lt;Element: store&gt;(v: vector&lt;Element&gt;);
 </code></pre>
 
 
@@ -234,7 +234,7 @@ Swaps the elements at the i'th and j'th indices in the vector.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_swap">swap</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64, j: u64);
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_swap">swap</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64, j: u64);
 </code></pre>
 
 
@@ -257,7 +257,7 @@ Return an vector of size one containing <code>e</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_singleton">singleton</a>&lt;Element&gt;(e: Element): vector&lt;Element&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_singleton">singleton</a>&lt;Element: store&gt;(e: Element): vector&lt;Element&gt; {
     <b>let</b> v = <a href="Vector.md#0x1_Vector_empty">empty</a>();
     <a href="Vector.md#0x1_Vector_push_back">push_back</a>(&<b>mut</b> v, e);
     v
@@ -284,7 +284,7 @@ Reverses the order of the elements in the vector in place.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_reverse">reverse</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_reverse">reverse</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;) {
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v);
     <b>if</b> (len == 0) <b>return</b> ();
 
@@ -318,7 +318,7 @@ Moves all of the elements of the <code>other</code> vector into the <code>lhs</c
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_append">append</a>&lt;Element&gt;(lhs: &<b>mut</b> vector&lt;Element&gt;, other: vector&lt;Element&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_append">append</a>&lt;Element: store&gt;(lhs: &<b>mut</b> vector&lt;Element&gt;, other: vector&lt;Element&gt;) {
     <a href="Vector.md#0x1_Vector_reverse">reverse</a>(&<b>mut</b> other);
     <b>while</b> (!<a href="Vector.md#0x1_Vector_is_empty">is_empty</a>(&other)) <a href="Vector.md#0x1_Vector_push_back">push_back</a>(lhs, <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>(&<b>mut</b> other));
     <a href="Vector.md#0x1_Vector_destroy_empty">destroy_empty</a>(other);
@@ -345,7 +345,7 @@ Return true if the vector has no elements
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_is_empty">is_empty</a>&lt;Element&gt;(v: &vector&lt;Element&gt;): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_is_empty">is_empty</a>&lt;Element: store&gt;(v: &vector&lt;Element&gt;): bool {
     <a href="Vector.md#0x1_Vector_length">length</a>(v) == 0
 }
 </code></pre>
@@ -370,7 +370,7 @@ Return true if <code>e</code> is in the vector <code>v</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_contains">contains</a>&lt;Element&gt;(v: &vector&lt;Element&gt;, e: &Element): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_contains">contains</a>&lt;Element: store&gt;(v: &vector&lt;Element&gt;, e: &Element): bool {
     <b>let</b> i = 0;
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v);
     <b>while</b> (i &lt; len) {
@@ -402,7 +402,7 @@ Otherwise returns (false, 0).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_index_of">index_of</a>&lt;Element&gt;(v: &vector&lt;Element&gt;, e: &Element): (bool, u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_index_of">index_of</a>&lt;Element: store&gt;(v: &vector&lt;Element&gt;, e: &Element): (bool, u64) {
     <b>let</b> i = 0;
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v);
     <b>while</b> (i &lt; len) {
@@ -434,7 +434,7 @@ It is O(n) and preserves ordering
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_remove">remove</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_remove">remove</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element {
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v);
     // i out of bounds; <b>abort</b>
     <b>if</b> (i &gt;= len) <b>abort</b> <a href="Vector.md#0x1_Vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>;
@@ -467,7 +467,7 @@ It is O(1), but does not preserve ordering
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_swap_remove">swap_remove</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_swap_remove">swap_remove</a>&lt;Element: store&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element {
     <b>let</b> last_idx = <a href="Vector.md#0x1_Vector_length">length</a>(v) - 1;
     <a href="Vector.md#0x1_Vector_swap">swap</a>(v, i, last_idx);
     <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>(v)
@@ -494,7 +494,7 @@ Split a vector into sub-vectors of size sub_len,
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copy</b> + drop + store&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt; {
     <b>let</b> result = <a href="Vector.md#0x1_Vector_empty">empty</a>&lt;vector&lt;Element&gt;&gt;();
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v) / sub_len;
 

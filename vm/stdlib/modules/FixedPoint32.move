@@ -12,7 +12,7 @@ module FixedPoint32 {
     /// Define a fixed-point numeric type with 32 fractional bits.
     /// This is just a u64 integer but it is wrapped in a struct to
     /// make a unique type.
-    struct FixedPoint32 { value: u64 }
+    struct FixedPoint32 has copy, drop, store { value: u64 }
 
     const MAX_U64: u128 = 18446744073709551615;
 

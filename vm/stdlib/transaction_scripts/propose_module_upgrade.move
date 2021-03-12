@@ -1,7 +1,7 @@
 script {
     use 0x1::UpgradeModuleDaoProposal;
 
-    fun propose_module_upgrade<Token: copyable>(
+    fun propose_module_upgrade<Token: copy + drop + store>(
         signer: &signer,
         module_address: address,
         package_hash: vector<u8>,

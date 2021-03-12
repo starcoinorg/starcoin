@@ -11,7 +11,7 @@ module ChainId {
     }
 
     /// chain id data structure.
-    resource struct ChainId {
+    struct ChainId has key, store {
         /// real id.
         id: u8
     }

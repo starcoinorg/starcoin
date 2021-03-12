@@ -14,12 +14,12 @@ module Token {
 
     /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
-    resource struct Token<TokenType> {
+    struct Token<TokenType> has key, store {
         value: u128,
     }
 
     /// Token Code which identify a unique Token.
-    struct TokenCode {
+    struct TokenCode has copy, drop, store {
         /// address who define the module contains the Token Type.
         addr: address,
         /// module which contains the Token Type.
@@ -29,20 +29,20 @@ module Token {
     }
 
     /// A minting capability allows tokens of type `TokenType` to be minted
-    resource struct MintCapability<TokenType> { }
+    struct MintCapability<TokenType> has key, store { }
 
     /// A fixed time mint key which can mint token until global time > end_time
-    resource struct FixedTimeMintKey<TokenType> { total: u128, end_time: u64 }
+    struct FixedTimeMintKey<TokenType> has key, store { total: u128, end_time: u64 }
 
     /// A linear time mint key which can mint token in a period by time-based linear release.
-    resource struct LinearTimeMintKey<TokenType> { total: u128, minted: u128, start_time: u64, period: u64 }
+    struct LinearTimeMintKey<TokenType> has key, store { total: u128, minted: u128, start_time: u64, period: u64 }
 
     /// A burn capability allows tokens of type `TokenType` to be burned.
-    resource struct BurnCapability<TokenType> { }
+    struct BurnCapability<TokenType> has key, store { }
 
 
     /// Event emitted when token minted.
-    struct MintEvent {
+    struct MintEvent has copy, drop, store {
         /// funds added to the system
         amount: u128,
         /// full info of Token.
@@ -50,7 +50,7 @@ module Token {
     }
 
     /// Event emitted when token burned.
-    struct BurnEvent {
+    struct BurnEvent has copy, drop, store {
         /// funds removed from the system
         amount: u128,
         /// full info of Token
@@ -58,7 +58,7 @@ module Token {
     }
 
     /// Token information.
-    resource struct TokenInfo<TokenType> {
+    struct TokenInfo<TokenType> has key, store {
         /// The total value for the token represented by
         /// `TokenType`. Mutable.
         total_value: u128,
@@ -92,7 +92,7 @@ module Token {
     const MAX_PRECISION: u8 = 38;
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
-    public fun register_token<TokenType>(
+    public fun register_token<TokenType: store>(
         account: &signer,
         precision: u8,
     ) {
@@ -136,7 +136,7 @@ module Token {
     }
 
     /// Remove mint capability from `signer`.
-    public fun remove_mint_capability<TokenType>(signer: &signer): MintCapability<TokenType>
+    public fun remove_mint_capability<TokenType: store>(signer: &signer): MintCapability<TokenType>
     acquires MintCapability {
         move_from<MintCapability<TokenType>>(Signer::address_of(signer))
     }
@@ -147,7 +147,7 @@ module Token {
     }
 
     /// Add mint capability to `signer`.
-    public fun add_mint_capability<TokenType>(signer: &signer, cap: MintCapability<TokenType>) {
+    public fun add_mint_capability<TokenType: store>(signer: &signer, cap: MintCapability<TokenType>) {
         move_to(signer, cap)
     }
 
@@ -157,7 +157,7 @@ module Token {
     }
 
     /// Destroy the given mint capability.
-    public fun destroy_mint_capability<TokenType>(cap: MintCapability<TokenType>) {
+    public fun destroy_mint_capability<TokenType: store>(cap: MintCapability<TokenType>) {
         let MintCapability<TokenType> { } = cap;
     }
 
@@ -165,7 +165,7 @@ module Token {
     }
 
     /// remove the token burn capability from `signer`.
-    public fun remove_burn_capability<TokenType>(signer: &signer): BurnCapability<TokenType>
+    public fun remove_burn_capability<TokenType: store>(signer: &signer): BurnCapability<TokenType>
     acquires BurnCapability {
         move_from<BurnCapability<TokenType>>(Signer::address_of(signer))
     }
@@ -176,7 +176,7 @@ module Token {
     }
 
     /// Add token burn capability to `signer`.
-    public fun add_burn_capability<TokenType>(signer: &signer, cap: BurnCapability<TokenType>) {
+    public fun add_burn_capability<TokenType: store>(signer: &signer, cap: BurnCapability<TokenType>) {
         move_to(signer, cap)
     }
 
@@ -186,7 +186,7 @@ module Token {
     }
 
     /// Destroy the given burn capability.
-    public fun destroy_burn_capability<TokenType>(cap: BurnCapability<TokenType>) {
+    public fun destroy_burn_capability<TokenType: store>(cap: BurnCapability<TokenType>) {
         let BurnCapability<TokenType> { } = cap;
     }
 
@@ -195,7 +195,7 @@ module Token {
 
     /// Return `amount` tokens.
     /// Fails if the sender does not have a published MintCapability.
-    public fun mint<TokenType>(account: &signer, amount: u128): Token<TokenType>
+    public fun mint<TokenType: store>(account: &signer, amount: u128): Token<TokenType>
     acquires TokenInfo, MintCapability {
         mint_with_capability(
             borrow_global<MintCapability<TokenType>>(Signer::address_of(account)),
@@ -212,7 +212,7 @@ module Token {
     /// The caller must have a reference to a MintCapability.
     /// Only the Association account can acquire such a reference, and it can do so only via
     /// `borrow_sender_mint_capability`
-    public fun mint_with_capability<TokenType>(
+    public fun mint_with_capability<TokenType: store>(
         _capability: &MintCapability<TokenType>,
         amount: u128,
     ): Token<TokenType> acquires TokenInfo {
@@ -225,7 +225,7 @@ module Token {
                 old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
     }
 
-    fun do_mint<TokenType>(amount: u128): Token<TokenType> acquires TokenInfo {
+    fun do_mint<TokenType: store>(amount: u128): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         let (token_address, module_name, token_name) = name_of_token<TokenType>();
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
@@ -246,7 +246,7 @@ module Token {
     }
 
     /// Issue a `FixedTimeMintKey` with given `MintCapability`.
-    public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
+    public fun issue_fixed_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
                                      amount: u128, period: u64): FixedTimeMintKey<TokenType>{
         assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
@@ -266,7 +266,7 @@ module Token {
     }
 
     /// Issue a `LinearTimeMintKey` with given `MintCapability`.
-    public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
+    public fun issue_linear_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
                                                 amount: u128, period: u64): LinearTimeMintKey<TokenType>{
         assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
@@ -286,7 +286,7 @@ module Token {
     }
 
     /// Mint tokens with given `FixedTimeMintKey`.
-    public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
+    public fun mint_with_fixed_key<TokenType: store>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_fixed_key(&key);
         assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
         let FixedTimeMintKey { total, end_time:_} = key;
@@ -301,7 +301,7 @@ module Token {
     }
 
     /// Mint tokens with given `LinearTimeMintKey`.
-    public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
+    public fun mint_with_linear_key<TokenType: store>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_linear_key(key);
         assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
         let token = do_mint(amount);
@@ -314,7 +314,7 @@ module Token {
     }
 
     /// Split the given `LinearTimeMintKey`.
-    public fun split_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
+    public fun split_linear_key<TokenType: store>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
         let token = Self::mint_with_linear_key(key);
         assert(!Self::is_empty_key(key), Errors::invalid_state(EEMPTY_KEY));
         assert((key.minted + amount) <= key.total, Errors::invalid_state(ESPLIT));
@@ -335,7 +335,7 @@ module Token {
     }
 
     /// Split the given `FixedTimeMintKey`.
-    public fun split_fixed_key<TokenType>(key: &mut FixedTimeMintKey<TokenType>, amount: u128): FixedTimeMintKey<TokenType> {
+    public fun split_fixed_key<TokenType: store>(key: &mut FixedTimeMintKey<TokenType>, amount: u128): FixedTimeMintKey<TokenType> {
         assert(key.total >= amount, Errors::invalid_state(ESPLIT));
         key.total = key.total - amount;
         FixedTimeMintKey{
@@ -349,7 +349,7 @@ module Token {
     }
 
     /// Returns the amount of the LinearTimeMintKey can mint now.
-    public fun mint_amount_of_linear_key<TokenType>(key: &LinearTimeMintKey<TokenType>): u128 {
+    public fun mint_amount_of_linear_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         let elapsed_time = now - key.start_time;
         if (elapsed_time >= key.period) {
@@ -368,7 +368,7 @@ module Token {
     }
 
     /// Returns the mint amount of the FixedTimeMintKey.
-    public fun mint_amount_of_fixed_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u128 {
+    public fun mint_amount_of_fixed_key<TokenType: store>(key: &FixedTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         if (now >= key.end_time) {
             key.total
@@ -390,12 +390,12 @@ module Token {
     }
 
     /// Return the end time of the given `FixedTimeMintKey`.
-    public fun end_time_of_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u64 {
+    public fun end_time_of_key<TokenType: store>(key: &FixedTimeMintKey<TokenType>): u64 {
         key.end_time
     }
 
     /// Destory a empty `LinearTimeMintKey`.
-    public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
+    public fun destroy_empty_key<TokenType: store>(key: LinearTimeMintKey<TokenType>) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time: _, period: _ } = key;
         assert(total == minted, Errors::invalid_argument(EDESTROY_KEY_NOT_EMPTY));
     }
@@ -405,7 +405,7 @@ module Token {
     }
 
     /// Check if the given `LinearTimeMintKey` is empty.
-    public fun is_empty_key<TokenType>(key: &LinearTimeMintKey<TokenType>) : bool {
+    public fun is_empty_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>) : bool {
         key.total == key.minted
     }
 
@@ -414,7 +414,7 @@ module Token {
     }
 
     /// Burn some tokens of `signer`.
-    public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
+    public fun burn<TokenType: store>(account: &signer, tokens: Token<TokenType>)
     acquires TokenInfo, BurnCapability {
         burn_with_capability(
             borrow_global<BurnCapability<TokenType>>(Signer::address_of(account)),
@@ -428,7 +428,7 @@ module Token {
     }
 
     /// Burn tokens with the given `BurnCapability`.
-    public fun burn_with_capability<TokenType>(
+    public fun burn_with_capability<TokenType: store>(
         _capability: &BurnCapability<TokenType>,
         tokens: Token<TokenType>,
     ) acquires TokenInfo {
@@ -452,7 +452,7 @@ module Token {
     }
 
     /// Create a new Token::Token<TokenType> with a value of 0
-    public fun zero<TokenType>(): Token<TokenType> {
+    public fun zero<TokenType: store>(): Token<TokenType> {
         Token<TokenType> { value: 0 }
     }
 
@@ -461,7 +461,7 @@ module Token {
 
 
     /// Public accessor for the value of a token
-    public fun value<TokenType>(token: &Token<TokenType>): u128 {
+    public fun value<TokenType: store>(token: &Token<TokenType>): u128 {
         token.value
     }
 
@@ -470,7 +470,7 @@ module Token {
     }
 
     /// Splits the given token into two and returns them both
-    public fun split<TokenType>(
+    public fun split<TokenType: store>(
         token: Token<TokenType>,
         value: u128,
     ): (Token<TokenType>, Token<TokenType>) {
@@ -487,7 +487,7 @@ module Token {
     /// The original token will have value = original value - `value`
     /// The new token will have a value = `value`
     /// Fails if the tokens value is less than `value`
-    public fun withdraw<TokenType>(
+    public fun withdraw<TokenType: store>(
         token: &mut Token<TokenType>,
         value: u128,
     ): Token<TokenType> {
@@ -505,7 +505,7 @@ module Token {
 
     /// Merges two tokens of the same token and returns a new token whose
     /// value is equal to the sum of the two inputs
-    public fun join<TokenType>(
+    public fun join<TokenType: store>(
         token1: Token<TokenType>,
         token2: Token<TokenType>,
     ): Token<TokenType> {
@@ -522,7 +522,7 @@ module Token {
     /// "Merges" the two tokens
     /// The token passed in by reference will have a value equal to the sum of the two tokens
     /// The `check` token is consumed in the process
-    public fun deposit<TokenType>(token: &mut Token<TokenType>, check: Token<TokenType>) {
+    public fun deposit<TokenType: store>(token: &mut Token<TokenType>, check: Token<TokenType>) {
         let Token { value } = check;
         token.value = token.value + value;
     }
@@ -536,7 +536,7 @@ module Token {
     /// Fails if the value is non-zero
     /// The amount of Token in the system is a tightly controlled property,
     /// so you cannot "burn" any non-zero amount of Token
-    public fun destroy_zero<TokenType>(token: Token<TokenType>) {
+    public fun destroy_zero<TokenType: store>(token: Token<TokenType>) {
         let Token { value } = token;
         assert(value == 0, Errors::invalid_state(EDESTROY_TOKEN_NON_ZERO))
     }
@@ -546,7 +546,7 @@ module Token {
     }
 
     /// Returns the scaling_factor for the `TokenType` token.
-    public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
+    public fun scaling_factor<TokenType: store>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
@@ -556,7 +556,7 @@ module Token {
     }
 
     /// Return the total amount of token of type `TokenType`.
-    public fun market_cap<TokenType>(): u128 acquires TokenInfo {
+    public fun market_cap<TokenType: store>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).total_value
     }
@@ -566,7 +566,7 @@ module Token {
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.
-    public fun is_registered_in<TokenType>(token_address: address): bool {
+    public fun is_registered_in<TokenType: store>(token_address: address): bool {
         exists<TokenInfo<TokenType>>(token_address)
     }
 
@@ -575,7 +575,7 @@ module Token {
     }
 
     /// Return true if the type `TokenType1` is same with `TokenType2`
-    public fun is_same_token<TokenType1, TokenType2>(): bool {
+    public fun is_same_token<TokenType1: store, TokenType2: store>(): bool {
         return token_code<TokenType1>() == token_code<TokenType2>()
     }
 
@@ -584,7 +584,7 @@ module Token {
     }
 
     /// Return the TokenType's address
-    public fun token_address<TokenType>(): address {
+    public fun token_address<TokenType: store>(): address {
         let (addr, _, _) = name_of<TokenType>();
         addr
     }
@@ -600,7 +600,7 @@ module Token {
 }
 
     /// Return the token code for the registered token.
-    public fun token_code<TokenType>(): TokenCode {
+    public fun token_code<TokenType: store>(): TokenCode {
         let (addr, module_name, name) = name_of<TokenType>();
         TokenCode {
             addr,
@@ -620,14 +620,14 @@ module Token {
     spec define spec_token_code<TokenType>(): TokenCode;
 
     /// Return Token's module address, module name, and type name of `TokenType`.
-    native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);
+    native fun name_of<TokenType: store>(): (address, vector<u8>, vector<u8>);
 
     spec fun name_of {
         pragma opaque = true;
         aborts_if false;
     }
 
-    fun name_of_token<TokenType>(): (address, vector<u8>, vector<u8>) {
+    fun name_of_token<TokenType: store>(): (address, vector<u8>, vector<u8>) {
         name_of<TokenType>()
     }
 

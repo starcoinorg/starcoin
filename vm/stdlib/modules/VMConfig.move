@@ -12,7 +12,7 @@ module VMConfig {
 
     /// The struct to hold all config data needed to operate the VM.
     /// * gas_schedule: Cost of running the VM.
-    struct VMConfig {
+    struct VMConfig has copy, drop, store {
         gas_schedule: GasSchedule,
     }
 
@@ -27,14 +27,14 @@ module VMConfig {
     /// 2. The initialization of the module will publish the instruction table to the genesis
     ///    address, and will preload the vector with the gas schedule for instructions. The VM will then
     ///    load this into memory at the startup of each block.
-    struct GasSchedule {
+    struct GasSchedule has copy, drop, store {
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
         gas_constants: GasConstants,
     }
 
     /// The gas constants contains all kind of constants used in gas calculation.
-    struct GasConstants {
+    struct GasConstants has copy, drop, store {
         /// The cost per-byte written to global storage.
         global_memory_per_byte_cost: u64,
         /// The cost per-byte written to storage.

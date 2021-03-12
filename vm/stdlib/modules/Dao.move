@@ -24,7 +24,7 @@ module Dao {
     const EXTRACTED: u8 = 7;
 
     /// global DAO info of the specified token type `Token`.
-    resource struct DaoGlobalInfo<Token> {
+    struct DaoGlobalInfo<Token> has key, store {
         /// next proposal id.
         next_proposal_id: u64,
         /// proposal creating event.
@@ -34,7 +34,7 @@ module Dao {
     }
 
     /// Configuration of the `Token`'s DAO.
-    struct DaoConfig<TokenT: copyable> {
+    struct DaoConfig<TokenT: copy + drop + store> has copy, drop, store {
         /// after proposal created, how long use should wait before he can vote.
         voting_delay: u64,
         /// how long the voting window is.
@@ -55,7 +55,7 @@ module Dao {
     }
 
     /// emitted when proposal created.
-    struct ProposalCreatedEvent {
+    struct ProposalCreatedEvent has copy, drop, store {
         /// the proposal id.
         proposal_id: u64,
         /// proposer is the user who create the proposal.
@@ -63,7 +63,7 @@ module Dao {
     }
 
     /// emitted when user vote/revoke_vote.
-    struct VoteChangedEvent {
+    struct VoteChangedEvent has copy, drop, store {
         /// the proposal id.
         proposal_id: u64,
         /// the voter.
@@ -77,7 +77,7 @@ module Dao {
     }
 
     /// Proposal data struct.
-    resource struct Proposal<Token, Action> {
+    struct Proposal<Token, Action> has key, store {
         /// id of the proposal
         id: u64,
         /// creator of the proposal
@@ -101,7 +101,7 @@ module Dao {
     }
 
     /// User vote info.
-    resource struct Vote<TokenT> {
+    struct Vote<TokenT> has key, store {
         /// vote for the proposal under the `proposer`.
         proposer: address,
         /// proposal id.
@@ -126,7 +126,7 @@ module Dao {
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
     /// can optin this module by call this `register function`.
-    public fun plugin<TokenT: copyable>(
+    public fun plugin<TokenT: copy + drop + store>(
         signer: &signer,
         voting_delay: u64,
         voting_period: u64,
@@ -164,7 +164,7 @@ module Dao {
         aborts_if exists<Config::ModifyConfigCapabilityHolder<DaoConfig<TokenT>>>(sender);
     }
 
-    spec schema RequirePluginDao<TokenT: copyable> {
+    spec schema RequirePluginDao<TokenT: copy + drop + store> {
         let token_addr = Token::SPEC_TOKEN_TEST_ADDRESS();
         aborts_if !exists<DaoGlobalInfo<TokenT>>(token_addr);
         aborts_if !exists<Config::Config<DaoConfig<TokenT>>>(token_addr);
@@ -200,7 +200,7 @@ module Dao {
     }
 
     /// create a dao config
-    public fun new_dao_config<TokenT: copyable>(
+    public fun new_dao_config<TokenT: copy + drop + store>(
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
@@ -223,7 +223,7 @@ module Dao {
     /// propose a proposal.
     /// `action`: the actual action to execute.
     /// `action_delay`: the delay to execute after the proposal is agreed
-    public fun propose<TokenT: copyable, ActionT: copyable>(
+    public fun propose<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         signer: &signer,
         action: ActionT,
         action_delay: u64,
@@ -279,7 +279,7 @@ module Dao {
     /// User can only vote once, then the stake is locked,
     /// which can only be unstaked by user after the proposal is expired, or cancelled, or executed.
     /// So think twice before casting vote.
-    public fun cast_vote<TokenT: copyable, ActionT: copyable>(
+    public fun cast_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -359,7 +359,7 @@ module Dao {
         ensures !vote_exists ==> global<Vote<TokenT>>(sender).stake.value == stake.value;
     }
 
-    fun _cast_vote<TokenT: copyable, ActionT: copyable>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
+    fun _cast_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
         let stake_value = Token::value(&stake);
         Token::deposit(&mut vote.stake, stake);
         if (vote.agree) {
@@ -381,7 +381,7 @@ module Dao {
 
 
     /// Let user change their vote during the voting time.
-    public fun change_vote<TokenT: copyable, ActionT: copyable>(
+    public fun change_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -445,7 +445,7 @@ module Dao {
         ensures vote.agree != agree ==> vote.agree == agree;
     }
 
-    fun _flip_vote<TokenT: copyable, ActionT: copyable>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
+    fun _flip_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
         my_vote.agree = !my_vote.agree;
         let total_voted = Token::value(&my_vote.stake);
         if (my_vote.agree) {
@@ -472,7 +472,7 @@ module Dao {
     }
 
     /// Revoke some voting powers from vote on `proposal_id` of `proposer_address`.
-    public fun revoke_vote<TokenT: copyable, ActionT: copyable>(
+    public fun revoke_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -532,7 +532,7 @@ module Dao {
         ensures result.value == voting_power;
     }
 
-    fun _revoke_vote<TokenT: copyable, ActionT: copyable>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
+    fun _revoke_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
         spec {
             assume vote.stake.value >= to_revoke;
         };
@@ -564,7 +564,7 @@ module Dao {
     }
 
     /// Retrieve back my staked token voted for a proposal.
-    public fun unstake_votes<TokenT: copyable, ActionT: copyable>(
+    public fun unstake_votes<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -608,7 +608,7 @@ module Dao {
 
 
     /// queue agreed proposal to execute.
-    public fun queue_proposal_action<TokenT: copyable, ActionT: copyable>(
+    public fun queue_proposal_action<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -630,7 +630,7 @@ module Dao {
     }
 
     /// extract proposal action to execute.
-    public fun extract_proposal_action<TokenT: copyable, ActionT: copyable>(
+    public fun extract_proposal_action<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): ActionT acquires Proposal {
@@ -653,7 +653,7 @@ module Dao {
 
 
     /// remove terminated proposal from proposer
-    public fun destroy_terminated_proposal<TokenT: copyable, ActionT: copyable>(
+    public fun destroy_terminated_proposal<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -699,7 +699,7 @@ module Dao {
     }
 
     /// check whether a proposal exists in `proposer_address` with id `proposal_id`.
-    public fun proposal_exists<TokenT: copyable, ActionT: copyable>(
+    public fun proposal_exists<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): bool acquires Proposal {
@@ -715,7 +715,7 @@ module Dao {
                     result;
     }
 
-    spec define spec_proposal_exists<TokenT: copyable, ActionT: copyable>(
+    spec define spec_proposal_exists<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): bool {
@@ -728,7 +728,7 @@ module Dao {
     }
 
     /// Get the proposal state.
-    public fun proposal_state<TokenT: copyable, ActionT: copyable>(
+    public fun proposal_state<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): u8 acquires Proposal {
@@ -763,7 +763,7 @@ module Dao {
         aborts_if proposal.id != proposal_id;
     }
 
-    fun _proposal_state<TokenT: copyable, ActionT: copyable>(
+    fun _proposal_state<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposal: &Proposal<TokenT, ActionT>,
         current_time: u64,
     ): u8 {
@@ -793,7 +793,7 @@ module Dao {
 
     /// get proposal's information.
     /// return: (id, start_time, end_time, for_votes, against_votes).
-    public fun proposal_info<TokenT: copyable, ActionT: copyable>(
+    public fun proposal_info<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
     ): (u64, u64, u64, u128, u128) acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
@@ -805,7 +805,7 @@ module Dao {
     }
 
     /// Get voter's vote info on proposal with `proposal_id` of `proposer_address`.
-    public fun vote_of<TokenT: copyable>(
+    public fun vote_of<TokenT: copy + drop + store>(
         voter: address,
         proposer_address: address,
         proposal_id: u64,
@@ -822,7 +822,7 @@ module Dao {
         include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
     }
 
-    fun generate_next_proposal_id<TokenT>(): u64 acquires DaoGlobalInfo {
+    fun generate_next_proposal_id<TokenT: store>(): u64 acquires DaoGlobalInfo {
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         let proposal_id = gov_info.next_proposal_id;
         gov_info.next_proposal_id = proposal_id + 1;
@@ -842,7 +842,7 @@ module Dao {
     //// Query functions
 
     /// get default voting delay of the DAO.
-    public fun voting_delay<TokenT: copyable>(): u64 {
+    public fun voting_delay<TokenT: copy + drop + store>(): u64 {
         get_config<TokenT>().voting_delay
     }
 
@@ -851,7 +851,7 @@ module Dao {
     }
 
     /// get the default voting period of the DAO.
-    public fun voting_period<TokenT: copyable>(): u64 {
+    public fun voting_period<TokenT: copy + drop + store>(): u64 {
         get_config<TokenT>().voting_period
     }
 
@@ -860,7 +860,7 @@ module Dao {
     }
 
     /// Quorum votes to make proposal pass.
-    public fun quorum_votes<TokenT: copyable>(): u128 {
+    public fun quorum_votes<TokenT: copy + drop + store>(): u128 {
         let supply = Token::market_cap<TokenT>();
         let rate = voting_quorum_rate<TokenT>();
         let rate = (rate as u128);
@@ -873,13 +873,13 @@ module Dao {
         include CheckQuorumVotes<TokenT>;
     }
 
-    spec define spec_quorum_votes<TokenT: copyable>(): u128 {
+    spec define spec_quorum_votes<TokenT: copy + drop + store>(): u128 {
         let supply = Token::spec_abstract_total_value<TokenT>();
         supply * spec_dao_config<TokenT>().voting_quorum_rate / 100
     }
 
     /// Get the quorum rate in percent.
-    public fun voting_quorum_rate<TokenT: copyable>(): u8 {
+    public fun voting_quorum_rate<TokenT: copy + drop + store>(): u8 {
         get_config<TokenT>().voting_quorum_rate
     }
 
@@ -889,7 +889,7 @@ module Dao {
     }
 
     /// Get the min_action_delay of the DAO.
-    public fun min_action_delay<TokenT: copyable>(): u64 {
+    public fun min_action_delay<TokenT: copy + drop + store>(): u64 {
         get_config<TokenT>().min_action_delay
     }
 
@@ -898,7 +898,7 @@ module Dao {
         ensures result == spec_dao_config<TokenT>().min_action_delay;
     }
 
-    fun get_config<TokenT: copyable>(): DaoConfig<TokenT> {
+    fun get_config<TokenT: copy + drop + store>(): DaoConfig<TokenT> {
         let token_issuer = Token::token_address<TokenT>();
         Config::get_by_address<DaoConfig<TokenT>>(token_issuer)
     }
@@ -909,7 +909,7 @@ module Dao {
     }
 
     spec module {
-        define spec_dao_config<TokenT: copyable>(): DaoConfig<TokenT> {
+        define spec_dao_config<TokenT: copy + drop + store>(): DaoConfig<TokenT> {
             global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload
         }
     }
@@ -922,7 +922,7 @@ module Dao {
 
     /// update function, modify dao config.
     /// if any param is 0, it means no change to that param.
-    public fun modify_dao_config<TokenT: copyable>(
+    public fun modify_dao_config<TokenT: copy + drop + store>(
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         voting_delay: u64,
         voting_period: u64,
@@ -953,7 +953,7 @@ module Dao {
     }
 
     /// set voting delay
-    public fun set_voting_delay<TokenT: copyable>(
+    public fun set_voting_delay<TokenT: copy + drop + store>(
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
@@ -970,7 +970,7 @@ module Dao {
     }
 
     /// set voting period
-    public fun set_voting_period<TokenT: copyable>(
+    public fun set_voting_period<TokenT: copy + drop + store>(
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
@@ -987,7 +987,7 @@ module Dao {
     }
 
     /// set voting quorum rate
-    public fun set_voting_quorum_rate<TokenT: copyable>(
+    public fun set_voting_quorum_rate<TokenT: copy + drop + store>(
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u8,
     ) {
@@ -1004,7 +1004,7 @@ module Dao {
     }
 
     /// set min action delay
-    public fun set_min_action_delay<TokenT: copyable>(
+    public fun set_min_action_delay<TokenT: copy + drop + store>(
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {

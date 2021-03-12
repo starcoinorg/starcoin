@@ -20,13 +20,13 @@ module STC {
     }
 
     /// STC token marker.
-    struct STC { }
+    struct STC has copy, drop, store { }
 
     /// precision of STC token.
     const PRECISION: u8 = 9;
 
     /// Burn capability of STC.
-    resource struct SharedBurnCapability {
+    struct SharedBurnCapability has key, store {
         cap: Token::BurnCapability<STC>,
     }
 
@@ -67,7 +67,7 @@ module STC {
     }
 
     /// Returns true if `TokenType` is `STC::STC`
-    public fun is_stc<TokenType>(): bool {
+    public fun is_stc<TokenType: store>(): bool {
         Token::is_same_token<STC, TokenType>()
     }
 

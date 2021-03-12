@@ -4,7 +4,7 @@ script {
     use 0x1::Account;
     use 0x1::Offer;
 
-    fun mint_and_split_by_linear_key<Token>(
+    fun mint_and_split_by_linear_key<Token: store>(
         signer: &signer,
         for_address: address,
         amount: u128,

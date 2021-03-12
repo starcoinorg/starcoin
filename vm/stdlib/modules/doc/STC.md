@@ -175,7 +175,7 @@ Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_is_stc">is_stc</a>&lt;TokenType&gt;(): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_is_stc">is_stc</a>&lt;TokenType: store&gt;(): bool {
     <a href="Token.md#0x1_Token_is_same_token">Token::is_same_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>, TokenType&gt;()
 }
 </code></pre>

@@ -20,7 +20,7 @@ module BlockReward {
     }
 
     /// Queue of rewards distributed to miners.
-    resource struct RewardQueue {
+    struct RewardQueue has key, store {
         /// How many block rewards has been handled.
         reward_number: u64,
         /// informations about the reward distribution.
@@ -30,7 +30,7 @@ module BlockReward {
     }
 
     /// Reward info of miners.
-    resource struct RewardInfo {
+    struct RewardInfo has key, store {
         /// number of the block miner minted.
         number: u64,
         /// how many stc rewards.
@@ -42,7 +42,7 @@ module BlockReward {
     }
 
     /// block reward event
-    struct BlockRewardEvent {
+    struct BlockRewardEvent has copy, drop, store {
         /// block number
         block_number: u64,
         /// STC reward.

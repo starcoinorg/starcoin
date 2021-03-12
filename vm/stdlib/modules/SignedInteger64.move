@@ -3,7 +3,7 @@ address 0x1 {
 module SignedInteger64 {
 
     /// Define a signed integer type with two 32 bits.
-    struct SignedInteger64 {
+    struct SignedInteger64 has copy, drop, store {
         value: u64,
         is_negative: bool,
     }

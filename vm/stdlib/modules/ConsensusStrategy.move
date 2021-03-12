@@ -7,7 +7,7 @@ module ConsensusStrategy {
     use 0x1::Config;
 
     /// ConsensusStrategy data.
-    struct ConsensusStrategy {
+    struct ConsensusStrategy has copy, drop, store {
         /// Value of strategy
         value: u8
     }

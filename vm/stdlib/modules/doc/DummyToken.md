@@ -180,7 +180,7 @@ Returns true if <code>TokenType</code> is <code><a href="DummyToken.md#0x1_Dummy
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_is_dummy_token">is_dummy_token</a>&lt;TokenType&gt;(): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_is_dummy_token">is_dummy_token</a>&lt;TokenType: store&gt;(): bool {
     <a href="Token.md#0x1_Token_is_same_token">Token::is_same_token</a>&lt;<a href="DummyToken.md#0x1_DummyToken">DummyToken</a>, TokenType&gt;()
 }
 </code></pre>

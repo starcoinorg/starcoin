@@ -39,7 +39,7 @@ module TransactionManager {
     /// - The account's auth key matches the transaction's public key
     /// - That the account has enough balance to pay for all of the gas
     /// - That the sequence number matches the transaction's sequence key
-    public fun prologue<TokenType>(
+    public fun prologue<TokenType: store>(
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,
@@ -120,7 +120,7 @@ module TransactionManager {
 
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
-    public fun epilogue<TokenType>(
+    public fun epilogue<TokenType: store>(
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,

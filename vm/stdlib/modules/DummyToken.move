@@ -5,7 +5,7 @@ module DummyToken {
     use 0x1::Errors;
 
     /// The DummyToken type.
-    struct DummyToken { }
+    struct DummyToken has copy, drop, store { }
 
 
     const EMINT_TOO_MUCH:u64 = 101;
@@ -13,12 +13,12 @@ module DummyToken {
     const PRECISION: u8 = 3;
 
     /// Burn capability of the token.
-    resource struct SharedBurnCapability{
+    struct SharedBurnCapability has key, store {
         cap: Token::BurnCapability<DummyToken>,
     }
 
     /// Mint capability of the token.
-    resource struct SharedMintCapability{
+    struct SharedMintCapability has key, store {
         cap: Token::MintCapability<DummyToken>,
     }
 
@@ -37,7 +37,7 @@ module DummyToken {
     }
 
     /// Returns true if `TokenType` is `DummyToken::DummyToken`
-    public fun is_dummy_token<TokenType>(): bool {
+    public fun is_dummy_token<TokenType: store>(): bool {
         Token::is_same_token<DummyToken, TokenType>()
     }
 

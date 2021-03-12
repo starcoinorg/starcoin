@@ -40,7 +40,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="peer_to_peer_batch.md#peer_to_peer_batch">peer_to_peer_batch</a>&lt;TokenType&gt;(account: &signer, payeees: vector&lt;u8&gt;, payee_auth_keys: vector&lt;u8&gt;, amount: u128) {
+<pre><code><b>fun</b> <a href="peer_to_peer_batch.md#peer_to_peer_batch">peer_to_peer_batch</a>&lt;TokenType: store&gt;(account: &signer, payeees: vector&lt;u8&gt;, payee_auth_keys: vector&lt;u8&gt;, amount: u128) {
     <b>let</b> payee_bytes_vec = <a href="../../modules/doc/Vector.md#0x1_Vector_split">Vector::split</a>&lt;u8&gt;(&payeees, 16);
     <b>let</b> auth_key_bytes_vec = <a href="../../modules/doc/Vector.md#0x1_Vector_split">Vector::split</a>&lt;u8&gt;(&payee_auth_keys, 32);
     <b>let</b> len = <a href="../../modules/doc/Vector.md#0x1_Vector_length">Vector::length</a>(&payee_bytes_vec);

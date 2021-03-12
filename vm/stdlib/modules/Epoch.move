@@ -18,7 +18,7 @@ module Epoch {
     }
 
     /// Current epoch info.
-    resource struct Epoch {
+    struct Epoch has key, store {
         /// Number of current epoch
         number: u64,
         /// Start time of current epoch
@@ -46,7 +46,7 @@ module Epoch {
     }
 
     /// New epoch event.
-    struct NewEpochEvent {
+    struct NewEpochEvent has copy, drop, store {
         /// Epoch::number
         number: u64,
         /// Epoch::start_time
@@ -64,7 +64,7 @@ module Epoch {
     }
 
     /// Epoch data.
-    resource struct EpochData {
+    struct EpochData has key, store {
         /// Up to now, Number of uncle block during current epoch
         uncles: u64,
         /// Up to now, Total rewards during current epoch

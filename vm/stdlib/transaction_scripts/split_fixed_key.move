@@ -3,7 +3,7 @@ script {
     use 0x1::Box;
     use 0x1::Offer;
 
-    fun split_fixed_key<Token>(
+    fun split_fixed_key<Token: store>(
         signer: &signer,
         for_address: address,
         amount: u128,
