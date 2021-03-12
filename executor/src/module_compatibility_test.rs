@@ -67,13 +67,13 @@ module_compatibility_test!(
     duplicate_module,
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
         public fun f() { return }
     }
     ",
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
         public fun f() { return }
     }
     ",
@@ -89,7 +89,7 @@ module_compatibility_test!(
     ",
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
     }
     ",
     Executed
@@ -115,12 +115,12 @@ module_compatibility_test!(
     layout_incompatible_module_with_new_field,
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
     }
     ",
     "
     module M {
-        resource struct T { f: u64, g: bool }
+        struct T has key,store { f: u64, g: bool }
     }
     ",
     MiscellaneousError
@@ -130,12 +130,12 @@ module_compatibility_test!(
     layout_incompatible_module_with_changed_field,
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
     }
     ",
     "
     module M {
-        resource struct T { f: bool }
+        struct T has key,store { f: bool }
     }
     ",
     MiscellaneousError
@@ -145,12 +145,12 @@ module_compatibility_test!(
     layout_incompatible_module_with_removed_field,
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
     }
     ",
     "
     module M {
-        resource struct T {}
+        struct T has key,store {}
     }
     ",
     MiscellaneousError
@@ -160,7 +160,7 @@ module_compatibility_test!(
     layout_incompatible_module_with_removed_struct,
     "
     module M {
-        resource struct T { f: u64 }
+        struct T has key,store { f: u64 }
     }
     ",
     "

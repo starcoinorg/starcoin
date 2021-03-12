@@ -106,6 +106,7 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
 }
 
 #[test]
+#[ignore]
 fn test_that_rust_code_compiles() {
     let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
