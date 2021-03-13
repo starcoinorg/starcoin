@@ -2,7 +2,7 @@ module MyToken {
      use 0x1::Token;
      use 0x1::Account;
 
-     struct MyToken { }
+     struct MyToken has copy, drop, store { }
 
      public fun init(account: &signer) {
          Token::register_token<MyToken>(account, 3);

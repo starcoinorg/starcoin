@@ -1,7 +1,7 @@
 module MyCounter {
      use 0x1::Signer;
 
-     resource struct T {
+     struct T has key, store {
         value:u64,
      }
      public fun init(account: &signer){
