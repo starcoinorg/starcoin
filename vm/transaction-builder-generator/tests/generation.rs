@@ -51,6 +51,14 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
     let source_path = stdlib_dir_path.join("__init__.py");
 
     let mut source = std::fs::File::create(&source_path).unwrap();
+    let abis = abis
+        .iter()
+        .cloned()
+        .filter_map(|abi| match abi {
+            ScriptABI::TransactionScript(abi) => Some(abi),
+            ScriptABI::ScriptFunction(_) => None,
+        })
+        .collect::<Vec<_>>();
     buildgen::python3::output(&mut source, &abis).unwrap();
 
     std::fs::copy(
@@ -106,7 +114,6 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
 }
 
 #[test]
-#[ignore]
 fn test_that_rust_code_compiles() {
     let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
@@ -148,6 +155,14 @@ test = false
     std::fs::create_dir(stdlib_dir_path.join("src")).unwrap();
     let source_path = stdlib_dir_path.join("src/lib.rs");
     let mut source = std::fs::File::create(&source_path).unwrap();
+    let abis = abis
+        .iter()
+        .cloned()
+        .filter_map(|abi| match abi {
+            ScriptABI::TransactionScript(abi) => Some(abi),
+            ScriptABI::ScriptFunction(_) => None,
+        })
+        .collect::<Vec<_>>();
     buildgen::rust::output(&mut source, &abis, /* local types */ false).unwrap();
 
     std::fs::copy(
