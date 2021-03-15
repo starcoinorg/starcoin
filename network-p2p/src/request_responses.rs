@@ -547,6 +547,10 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 },
                             ..
                         } => {
+                            let response_log = response
+                                .as_ref()
+                                .map(|r| (true, r.len()))
+                                .unwrap_or((false, 0));
                             let (started, delivered) = match self
                                 .pending_requests
                                 .remove(&(protocol.clone(), request_id).into())
@@ -567,7 +571,11 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                     continue;
                                 }
                             };
-
+                            //TODO record access log
+                            info!(
+                                "[network] receive response from {} request id: {}, duration:{:?}, response: {:?}",
+                                peer, request_id, started.elapsed(), response_log
+                            );
                             let out = Event::RequestFinished {
                                 peer,
                                 protocol: protocol.clone(),
@@ -613,6 +621,11 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                     continue;
                                 }
                             };
+                            //TODO record access log
+                            info!(
+                                "[network] receive response from {} request id: {}, duration:{:?}, response network error: {:?}",
+                                peer, request_id, started.elapsed(), error
+                            );
 
                             let out = Event::RequestFinished {
                                 peer,

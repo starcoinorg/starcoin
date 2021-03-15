@@ -128,7 +128,7 @@ pub trait RawRpcServer {
 }
 
 pub trait RawRpcClient {
-    /// peer_id: the target PeerID send request to, if peer_id is absent, auto select a peer_id.
+    /// peer_id: the target PeerID send request to.
     /// RawRpcClient's result Vec<u8> is Result<Vec<u8>, NetRpcError>'s bytes.
     fn send_raw_request(
         &self,
