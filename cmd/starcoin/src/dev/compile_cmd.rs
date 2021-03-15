@@ -6,6 +6,7 @@ use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_config::temp_path;
 use starcoin_move_compiler::{compile_source_string_no_report, errors};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
@@ -66,7 +67,15 @@ impl CommandAction for CompileCommand {
         if ext != starcoin_move_compiler::MOVE_EXTENSION {
             bail!("Only support compile *.move file.")
         }
-        let mut deps = stdlib::stdlib_files();
+
+        let temp_path = temp_path();
+        let mut deps = vec![];
+        for dep in stdlib::STDLIB_DIR.files() {
+            let path = temp_path.path().join(dep.path());
+            std::fs::write(path, dep.contents())?;
+            deps.push(path.display().to_string());
+        }
+
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
         let (sources, compile_result) = compile_source_string_no_report(
