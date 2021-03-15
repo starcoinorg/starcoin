@@ -9,7 +9,6 @@ description = "Starcoin metrics"
 
 [dependencies]
 anyhow = "1.0.38"
-ctrlc = { version = "3.1.8", features = ["termination"] }
 futures = "0.3.12"
 hyper = "0.13.9"
 starcoin-logger = { path = "../logger" }
