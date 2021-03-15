@@ -96,7 +96,7 @@ impl SyncScoreMetrics {
     pub fn update_metrics(&self, peer: PeerId, time: u32, score: i64) {
         self.peer_sync_total_score
             .with_label_values(&[&format!("peer-{:?}", peer)])
-            .inc_by(score);
+            .inc_by(score as u64);
         self.peer_sync_total_time
             .with_label_values(&[&format!("peer-{:?}", peer)])
             .inc_by(time as u64);
