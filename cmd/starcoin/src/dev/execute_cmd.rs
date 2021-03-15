@@ -6,6 +6,7 @@ use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_config::temp_path;
 use starcoin_dev::playground;
 use starcoin_move_compiler::{
     compile_source_string_no_report, errors, load_bytecode_file, CompiledUnit, MOVE_EXTENSION,
@@ -22,6 +23,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
+use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -134,7 +136,8 @@ impl CommandAction for ExecuteCommand {
                 .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
                 .unwrap_or_else(|| "");
             if ext == MOVE_EXTENSION {
-                let mut deps = stdlib::stdlib_files();
+                let temp_path = temp_path();
+                let mut deps = restore_stdlib_in_dir(temp_path.path())?;
                 // add extra deps
                 deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
                 let (sources, compile_result) = compile_source_string_no_report(
