@@ -5,7 +5,7 @@ use crate::Account;
 use crate::Genesis;
 use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
-use starcoin_config::{ChainNetwork, GenesisConfig};
+use starcoin_config::{temp_path, ChainNetwork, GenesisConfig};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::{AccountStateReader, ChainState, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
@@ -23,7 +23,7 @@ use starcoin_types::{
     transaction::TransactionStatus,
 };
 use starcoin_vm_types::values::VMValueCast;
-use stdlib::stdlib_files;
+use stdlib::restore_stdlib_in_dir;
 
 //TODO warp to A MockTxnExecutor
 
@@ -99,7 +99,9 @@ pub fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u12
 }
 
 pub fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
-    let stdlib_files = stdlib_files();
+    let temp_dir = temp_path();
+    let stdlib_files =
+        restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
     let compiled_result =
         starcoin_move_compiler::compile_source_string_no_report(code, &stdlib_files, address)
             .expect("compile fail")
@@ -109,7 +111,9 @@ pub fn compile_module_with_address(address: AccountAddress, code: &str) -> Modul
 }
 #[allow(unused)]
 pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
-    let stdlib_files = stdlib_files();
+    let temp_dir = temp_path();
+    let stdlib_files =
+        restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
     let compile_unit = starcoin_move_compiler::compile_source_string_no_report(
         code.as_ref(),
         &stdlib_files,

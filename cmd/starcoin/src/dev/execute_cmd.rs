@@ -23,6 +23,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
+use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -136,12 +137,7 @@ impl CommandAction for ExecuteCommand {
                 .unwrap_or_else(|| "");
             if ext == MOVE_EXTENSION {
                 let temp_path = temp_path();
-                let mut deps = vec![];
-                for dep in stdlib::STDLIB_DIR.files() {
-                    let path = temp_path.path().join(dep.path());
-                    std::fs::write(path, dep.contents())?;
-                    deps.push(path.display().to_string());
-                }
+                let mut deps = restore_stdlib_in_dir(temp_path.path())?;
                 // add extra deps
                 deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
                 let (sources, compile_result) = compile_source_string_no_report(

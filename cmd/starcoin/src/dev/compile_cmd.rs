@@ -12,6 +12,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -69,12 +70,7 @@ impl CommandAction for CompileCommand {
         }
 
         let temp_path = temp_path();
-        let mut deps = vec![];
-        for dep in stdlib::STDLIB_DIR.files() {
-            let path = temp_path.path().join(dep.path());
-            std::fs::write(path, dep.contents())?;
-            deps.push(path.display().to_string());
-        }
+        let mut deps = restore_stdlib_in_dir(temp_path.path())?;
 
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());

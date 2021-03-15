@@ -187,7 +187,17 @@ pub fn filter_mv_files(dir_iter: impl Iterator<Item = PathBuf>) -> impl Iterator
     filter_files(dir_iter, COMPILED_EXTENSION.to_string())
 }
 
-pub fn stdlib_files() -> Vec<String> {
+pub fn restore_stdlib_in_dir(dir: &Path) -> anyhow::Result<Vec<String>> {
+    let mut deps = vec![];
+    for dep in STDLIB_DIR.files() {
+        let path = dir.join(dep.path());
+        std::fs::write(path.as_path(), dep.contents())?;
+        deps.push(path.display().to_string());
+    }
+    Ok(deps)
+}
+
+pub(crate) fn stdlib_files() -> Vec<String> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push(STD_LIB_DIR);
     let dirfiles = datatest_stable::utils::iterate_directory(&path);
