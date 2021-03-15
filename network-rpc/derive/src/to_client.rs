@@ -33,11 +33,10 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                 Ok(arg_ser) => arg_ser,
                                 Err(e) => {return Err(anyhow::anyhow!("Failed to encode rpc input argument: {:?}", e).into())}
                             };
-
                             let peer_id = #peer_id_indent;
-                            debug!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
                             let rpc_path = stringify!(#name).to_string();
-                            let result = self.request(peer_id, rpc_path, input_arg_serialized).await;
+                            debug!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", rpc_path, peer_id, #user_arg_indent);
+                            let result = self.request(peer_id.clone(), rpc_path, input_arg_serialized).await;
                             match result {
                                 Ok(result) => {
                                     let result = from_bytes::<network_rpc_core::Result::<Vec<u8>>>(&result);
@@ -45,22 +44,22 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                         Ok(r) => match r{
                                             Ok(v) => {
                                                 let result = from_bytes::<#returns>(&v);
-                                                debug!("[network-rpc] response : {:?} ", result); 
+                                                debug!("[network-rpc] {} response : {:?} ", peer_id, result); 
                                                 result
                                             },
                                             Err(e) => {
-                                                debug!("[network-rpc] response error: {:?} ", e); 
+                                                debug!("[network-rpc] {} response error: {:?} ", peer_id, e); 
                                                 Err(e.into())
                                             },
                                         },
                                         Err(e) => {
-                                            debug!("[network-rpc] response error: {:?} ", e); 
+                                            debug!("[network-rpc] {} response error: {:?} ", peer_id, e); 
                                             Err(e)
                                         },
                                     }
                                 },
                                 Err(e) => {
-                                     debug!("[network-rpc] response error: {:?} ", e);
+                                     debug!("[network-rpc] {} response error: {:?} ", peer_id, e);
                                     Err(e)
                                 }
                             }
