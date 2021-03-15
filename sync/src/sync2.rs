@@ -279,6 +279,7 @@ impl ActorService for SyncService2 {
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        self.cancel_task();
         ctx.unsubscribe::<SystemStarted>();
         ctx.unsubscribe::<PeerEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
