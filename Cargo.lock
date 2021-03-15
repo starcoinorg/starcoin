@@ -4612,7 +4612,7 @@ dependencies = [
  "serde_json",
  "shell-words",
  "simplelog",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "toml",
  "vm",
 ]
@@ -7239,7 +7239,7 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tempfile",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7288,7 +7288,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "stest",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7329,7 +7329,7 @@ dependencies = [
  "stest",
  "test-helper",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7476,7 +7476,7 @@ dependencies = [
  "stest",
  "structopt 0.3.21",
  "test-helper",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7686,7 +7686,7 @@ dependencies = [
  "starcoin-types",
  "structopt 0.3.21",
  "tiny_http",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "tokio-executor 0.2.0-alpha.6",
 ]
 
@@ -7792,7 +7792,7 @@ dependencies = [
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-types",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7820,7 +7820,7 @@ dependencies = [
  "psutil",
  "serde_json",
  "starcoin-logger",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7868,7 +7868,7 @@ dependencies = [
  "stest",
  "test-helper",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7908,7 +7908,7 @@ dependencies = [
  "stest",
  "structopt 0.3.21",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -7982,7 +7982,7 @@ dependencies = [
  "stest",
  "tempfile",
  "test-helper",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "yamux 0.9.0",
  "zeroize",
 ]
@@ -8032,7 +8032,7 @@ dependencies = [
  "starcoin-vm-types",
  "stest",
  "test-helper",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -8106,7 +8106,7 @@ dependencies = [
  "stest",
  "thiserror",
  "timeout-join-handler",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -8267,7 +8267,7 @@ dependencies = [
  "stest",
  "test-helper",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -8353,7 +8353,7 @@ dependencies = [
  "stest",
  "test-helper",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -8538,7 +8538,7 @@ dependencies = [
  "stream-task",
  "test-helper",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -8614,7 +8614,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "structopt 0.3.21",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -8850,7 +8850,7 @@ dependencies = [
  "starcoin-logger",
  "stest-macro",
  "timeout-join-handler",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]
@@ -9189,7 +9189,7 @@ dependencies = [
  "stdlib",
  "stest",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
 ]
 
 [[package]]

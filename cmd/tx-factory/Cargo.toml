@@ -15,7 +15,7 @@ anyhow = "1.0.38"
 structopt = "0.3.21"
 ctrlc = { version = "3.1", features = ["termination"] }
 futures = "0.3.12"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.3", features = ["full"] }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
 starcoin-crypto = {path = "../../commons/crypto"}
