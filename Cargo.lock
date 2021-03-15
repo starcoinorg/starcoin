@@ -1064,9 +1064,9 @@ checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
 name = "camino"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd065703998b183ed0b348a22555691373a9345a1431141e5778b48bb17e4703"
+checksum = "2fb25ad5c4211e3c7abded8f00b480e6d1608845dcf14157e9e81d5432e9ac16"
 dependencies = [
  "serde",
 ]
@@ -1086,6 +1086,20 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7714a157da7991e23d90686b9524b9e12e0407a108647f52e9328f4b3d51ac7f"
 dependencies = [
+ "cargo-platform",
+ "semver 0.11.0",
+ "semver-parser 0.10.2",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "081e3f0755c1f380c2d010481b6fa2e02973586d5f2b24eebb7a2a1d98b143d8"
+dependencies = [
+ "camino",
  "cargo-platform",
  "semver 0.11.0",
  "semver-parser 0.10.2",
@@ -1911,7 +1925,24 @@ checksum = "33ec6ed6a28572d35f1c9d512fe0381b6bd83bf45e273b60b9c1df883234645c"
 dependencies = [
  "camino",
  "globset",
- "guppy",
+ "guppy 0.8.0",
+ "itertools 0.10.0",
+ "once_cell",
+ "petgraph",
+ "rayon",
+ "serde",
+ "toml",
+]
+
+[[package]]
+name = "determinator"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7109a871b855b23d2b08d8e0cef5c005b9946b5bd4c77cc24e040a7b65717fb9"
+dependencies = [
+ "camino",
+ "globset",
+ "guppy 0.9.0",
  "itertools 0.10.0",
  "once_cell",
  "petgraph",
@@ -2898,7 +2929,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec4cbddce827d660864974dc3dc62a1c810e813d17e518cc5830716b977cd110"
 dependencies = [
  "camino",
- "cargo_metadata",
+ "cargo_metadata 0.12.3",
+ "fixedbitset",
+ "guppy-summaries",
+ "indexmap",
+ "itertools 0.10.0",
+ "nested",
+ "once_cell",
+ "pathdiff 0.2.0",
+ "petgraph",
+ "rayon",
+ "semver 0.11.0",
+ "serde",
+ "serde_json",
+ "supercow",
+ "target-spec",
+]
+
+[[package]]
+name = "guppy"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fa0124762cfff525d695e75a173dc65dda372227a9daf949a1e24235e1b8632"
+dependencies = [
+ "camino",
+ "cargo_metadata 0.13.1",
  "fixedbitset",
  "guppy-summaries",
  "indexmap",
@@ -2978,7 +3033,7 @@ dependencies = [
  "camino",
  "cfg-if 1.0.0",
  "diffy",
- "guppy",
+ "guppy 0.8.0",
  "pathdiff 0.2.0",
  "rayon",
  "serde",
@@ -8792,11 +8847,11 @@ dependencies = [
  "anyhow",
  "chrono",
  "colored-diff",
- "determinator",
+ "determinator 0.4.0",
  "diem-workspace-hack",
  "env_logger 0.8.3",
  "globset",
- "guppy",
+ "guppy 0.8.0",
  "indexmap",
  "indoc",
  "log 0.4.14",
@@ -10456,10 +10511,10 @@ dependencies = [
  "camino",
  "chrono",
  "colored-diff",
- "determinator",
+ "determinator 0.3.0",
  "env_logger 0.8.3",
  "globset",
- "guppy",
+ "guppy 0.8.0",
  "hakari",
  "indexmap",
  "indoc",
@@ -10480,8 +10535,8 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=35b83099823d040a310a52f96622ab5e97aed0f5#35b83099823d040a310a52f96622ab5e97aed0f5"
 dependencies = [
  "camino",
- "determinator",
- "guppy",
+ "determinator 0.3.0",
+ "guppy 0.8.0",
  "hakari",
  "hex",
  "indoc",
@@ -10498,7 +10553,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=35b83099823d040a310a52f96622ab5e97aed0f5#35b83099823d040a310a52f96622ab5e97aed0f5"
 dependencies = [
  "camino",
- "guppy",
+ "guppy 0.8.0",
  "hakari",
  "once_cell",
  "serde",
