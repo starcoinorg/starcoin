@@ -12,7 +12,7 @@ module RewardConfig {
     }
 
     /// Reward configuration
-    struct RewardConfig {
+    struct RewardConfig has copy, drop, store {
         /// how many blocks delay reward distribution.
         reward_delay: u64,
     }

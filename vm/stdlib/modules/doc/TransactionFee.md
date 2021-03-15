@@ -104,7 +104,7 @@ publishing a wrapper of the <code>Preburn&lt;TokenType&gt;</code> resource under
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(
+<pre><code><b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType: store&gt;(
     account: &signer,
 ) {
     move_to(
@@ -136,7 +136,7 @@ Deposit <code>token</code> into the transaction fees bucket
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) <b>acquires</b> <a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) <b>acquires</b> <a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a> {
     <b>let</b> txn_fees = borrow_global_mut&lt;<a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(
         <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()
     );
@@ -166,7 +166,7 @@ underlying fiat.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType: store&gt;(
     account: &signer,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a> {
     <b>let</b> fee_address =  <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>();

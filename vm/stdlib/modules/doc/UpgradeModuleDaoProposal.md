@@ -143,7 +143,7 @@ If this goverment can upgrade module, call this to register capability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_plugin">plugin</a>&lt;TokenT: store&gt;(
     signer: &signer,
     cap: <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>,
 ) {
@@ -173,7 +173,7 @@ propose a module upgrade, called by proposer.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     module_address: address,
     package_hash: vector&lt;u8&gt;,
@@ -211,7 +211,7 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;TokenT: <b>copyable</b>&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {

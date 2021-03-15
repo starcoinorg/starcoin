@@ -21,7 +21,7 @@ module Account {
     }
 
     /// Every account has a Account::Account resource
-    resource struct Account {
+    struct Account has key, store {
         /// The current authentication key.
         /// This can be different than the key used to create the account
         authentication_key: vector<u8>,
@@ -52,26 +52,26 @@ module Account {
     }
 
     /// A resource that holds the tokens stored in this account
-    resource struct Balance<TokenType> {
+    struct Balance<TokenType> has key, store {
         token: Token<TokenType>,
     }
 
     /// The holder of WithdrawCapability for account_address can withdraw Token from
     /// account_address/Account::Account/balance.
     /// There is at most one WithdrawCapability in existence for a given address.
-    resource struct WithdrawCapability {
+    struct WithdrawCapability has key, store {
         account_address: address,
     }
 
     /// The holder of KeyRotationCapability for account_address can rotate the authentication key for
     /// account_address (i.e., write to account_address/Account::Account/authentication_key).
     /// There is at most one KeyRotationCapability in existence for a given address.
-    resource struct KeyRotationCapability {
+    struct KeyRotationCapability has key, store {
         account_address: address,
     }
 
     /// Message for balance withdraw event.
-    struct WithdrawEvent {
+    struct WithdrawEvent has copy, drop, store {
         /// The amount of Token<TokenType> sent
         amount: u128,
         /// The code symbol for the token that was sent
@@ -80,7 +80,7 @@ module Account {
         metadata: vector<u8>,
     }
     /// Message for balance deposit event.
-    struct DepositEvent {
+    struct DepositEvent has copy, drop, store {
         /// The amount of Token<TokenType> sent
         amount: u128,
         /// The code symbol for the token that was sent
@@ -90,7 +90,7 @@ module Account {
     }
 
     /// Message for accept token events
-    struct AcceptTokenEvent {
+    struct AcceptTokenEvent has copy, drop, store {
         token_code: Token::TokenCode,
     }
 
@@ -144,7 +144,7 @@ module Account {
     /// key `public_key_vec` | `fresh_address`.
     /// Creating an account at address 0x1 will cause runtime failure as it is a
     /// reserved address for the MoveVM.
-    public fun create_account<TokenType>(authentication_key: vector<u8>): address acquires Account {
+    public fun create_account<TokenType: store>(authentication_key: vector<u8>): address acquires Account {
         let new_address = Authenticator::derived_address(copy authentication_key);
         // assert(new_address == fresh_address, Errors::invalid_argument(EADDRESS_PUBLIC_KEY_INCONSISTENT));
         let new_account = create_signer(new_address);
@@ -206,7 +206,7 @@ module Account {
     native fun destroy_signer(sig: signer);
 
     /// Deposits the `to_deposit` token into the self's account balance
-    public fun deposit_to_self<TokenType>(account: &signer, to_deposit: Token<TokenType>)
+    public fun deposit_to_self<TokenType: store>(account: &signer, to_deposit: Token<TokenType>)
     acquires Account, Balance {
         let account_address = Signer::address_of(account);
         if (!is_accepts_token<TokenType>(account_address)){
@@ -225,7 +225,7 @@ module Account {
 
     /// Deposits the `to_deposit` token into the `receiver`'s account balance with the no metadata
     /// It's a reverse operation of `withdraw`.
-    public fun deposit<TokenType>(
+    public fun deposit<TokenType: store>(
         receiver: address,
         to_deposit: Token<TokenType>,
     ) acquires Account, Balance {
@@ -238,7 +238,7 @@ module Account {
 
     /// Deposits the `to_deposit` token into the `receiver`'s account balance with the attached `metadata`
     /// It's a reverse operation of `withdraw_with_metadata`.
-    public fun deposit_with_metadata<TokenType>(
+    public fun deposit_with_metadata<TokenType: store>(
         receiver: address,
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
@@ -273,7 +273,7 @@ module Account {
     }
 
     /// Helper to deposit `amount` to the given account balance
-    fun deposit_to_balance<TokenType>(balance: &mut Balance<TokenType>, token: Token::Token<TokenType>) {
+    fun deposit_to_balance<TokenType: store>(balance: &mut Balance<TokenType>, token: Token::Token<TokenType>) {
         Token::deposit(&mut balance.token, token)
     }
 
@@ -284,7 +284,7 @@ module Account {
 
 
     /// Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
-    fun withdraw_from_balance<TokenType>(balance: &mut Balance<TokenType>, amount: u128): Token<TokenType>{
+    fun withdraw_from_balance<TokenType: store>(balance: &mut Balance<TokenType>, amount: u128): Token<TokenType>{
         Token::withdraw(&mut balance.token, amount)
     }
 
@@ -293,7 +293,7 @@ module Account {
     }
 
     /// Withdraw `amount` Token<TokenType> from the account balance
-    public fun withdraw<TokenType>(account: &signer, amount: u128): Token<TokenType>
+    public fun withdraw<TokenType: store>(account: &signer, amount: u128): Token<TokenType>
     acquires Account, Balance {
         withdraw_with_metadata<TokenType>(account, amount, x"")
     }
@@ -306,7 +306,7 @@ module Account {
 
 
     /// Withdraw `amount` tokens from `signer` with given `metadata`.
-    public fun withdraw_with_metadata<TokenType>(account: &signer, amount: u128, metadata: vector<u8>): Token<TokenType>
+    public fun withdraw_with_metadata<TokenType: store>(account: &signer, amount: u128, metadata: vector<u8>): Token<TokenType>
     acquires Account, Balance {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
@@ -330,7 +330,7 @@ module Account {
     }
 
     /// Withdraw `amount` Token<TokenType> from the account under cap.account_address with no metadata
-    public fun withdraw_with_capability<TokenType>(
+    public fun withdraw_with_capability<TokenType: store>(
         cap: &WithdrawCapability, amount: u128
     ): Token<TokenType> acquires Balance, Account {
         withdraw_with_capability_and_metadata<TokenType>(cap, amount, x"")
@@ -343,7 +343,7 @@ module Account {
     }
 
     /// Withdraw `amount` Token<TokenType> from the account under cap.account_address with metadata
-    public fun withdraw_with_capability_and_metadata<TokenType>(
+    public fun withdraw_with_capability_and_metadata<TokenType: store>(
         cap: &WithdrawCapability, amount: u128, metadata: vector<u8>
     ): Token<TokenType> acquires Balance, Account {
         let balance = borrow_global_mut<Balance<TokenType>>(cap.account_address);
@@ -386,7 +386,7 @@ module Account {
         aborts_if !exists<Account>(cap.account_address);
     }
 
-    fun emit_account_withdraw_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
+    fun emit_account_withdraw_event<TokenType: store>(account: address, amount: u128, metadata: vector<u8>)
     acquires Account {
         // emit withdraw event
         let account = borrow_global_mut<Account>(account);
@@ -401,7 +401,7 @@ module Account {
         aborts_if !exists<Account>(account);
     }
 
-    fun emit_account_deposit_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
+    fun emit_account_deposit_event<TokenType: store>(account: address, amount: u128, metadata: vector<u8>)
     acquires Account {
         // emit withdraw event
         let account = borrow_global_mut<Account>(account);
@@ -419,7 +419,7 @@ module Account {
 
     /// Withdraws `amount` Token<TokenType> using the passed in WithdrawCapability, and deposits it
     /// into the `payee`'s account balance. Creates the `payee` account if it doesn't exist.
-    public fun pay_from_capability<TokenType>(
+    public fun pay_from_capability<TokenType: store>(
         cap: &WithdrawCapability,
         payee: address,
         amount: u128,
@@ -448,7 +448,7 @@ module Account {
     /// Withdraw `amount` Token<TokenType> from the transaction sender's
     /// account balance and send the token to the `payee` address with the
     /// attached `metadata` Creates the `payee` account if it does not exist
-    public fun pay_from_with_metadata<TokenType>(
+    public fun pay_from_with_metadata<TokenType: store>(
         account: &signer,
         payee: address,
         amount: u128,
@@ -490,7 +490,7 @@ module Account {
     /// Withdraw `amount` Token<TokenType> from the transaction sender's
     /// account balance  and send the token to the `payee` address
     /// Creates the `payee` account if it does not exist
-    public fun pay_from<TokenType>(
+    public fun pay_from<TokenType: store>(
         account: &signer,
         payee: address,
         amount: u128
@@ -561,7 +561,7 @@ module Account {
     }
 
     /// Helper to return the u128 value of the `balance` for `account`
-    fun balance_for<TokenType>(balance: &Balance<TokenType>): u128 {
+    fun balance_for<TokenType: store>(balance: &Balance<TokenType>): u128 {
         Token::value<TokenType>(&balance.token)
     }
 
@@ -570,7 +570,7 @@ module Account {
     }
 
     /// Return the current TokenType balance of the account at `addr`.
-    public fun balance<TokenType>(addr: address): u128 acquires Balance {
+    public fun balance<TokenType: store>(addr: address): u128 acquires Balance {
         balance_for(borrow_global<Balance<TokenType>>(addr))
     }
 
@@ -579,7 +579,7 @@ module Account {
     }
 
     /// Add a balance of `Token` type to the sending account.
-    public fun accept_token<TokenType>(account: &signer) acquires Account {
+    public fun accept_token<TokenType: store>(account: &signer) acquires Account {
         move_to(account, Balance<TokenType>{ token: Token::zero<TokenType>() });
         let token_code = Token::token_code<TokenType>();
         // Load the sender's account
@@ -600,7 +600,7 @@ module Account {
     }
 
     /// Return whether the account at `addr` accepts `Token` type tokens
-    public fun is_accepts_token<TokenType>(addr: address): bool {
+    public fun is_accepts_token<TokenType: store>(addr: address): bool {
         exists<Balance<TokenType>>(addr)
     }
 
@@ -687,7 +687,7 @@ module Account {
     /// - The account's auth key matches the transaction's public key
     /// - That the account has enough balance to pay for all of the gas
     /// - That the sequence number matches the transaction's sequence key
-    public fun txn_prologue<TokenType>(
+    public fun txn_prologue<TokenType: store>(
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,
@@ -752,7 +752,7 @@ module Account {
 
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
-    public fun txn_epilogue<TokenType>(
+    public fun txn_epilogue<TokenType: store>(
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,

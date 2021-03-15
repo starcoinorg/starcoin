@@ -38,7 +38,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="peer_to_peer_with_metadata.md#peer_to_peer_with_metadata">peer_to_peer_with_metadata</a>&lt;TokenType&gt;(
+<pre><code><b>fun</b> <a href="peer_to_peer_with_metadata.md#peer_to_peer_with_metadata">peer_to_peer_with_metadata</a>&lt;TokenType: store&gt;(
     account: &signer,
     payee: address,
     payee_auth_key: vector&lt;u8&gt;,

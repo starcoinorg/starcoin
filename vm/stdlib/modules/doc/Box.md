@@ -90,7 +90,7 @@ check the box exists in <code>addr</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr: address): bool{
+<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T: store&gt;(addr: address): bool{
     <b>exists</b>&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr)
 }
 </code></pre>
@@ -115,7 +115,7 @@ get how many things in the box.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_length">length</a>&lt;T&gt;(addr: address): u64 <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_length">length</a>&lt;T: store&gt;(addr: address): u64 <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>if</b> (<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr)) {
         <b>let</b> box = borrow_global&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
         <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&box.thing)
@@ -145,7 +145,7 @@ Put thing to account's box last position.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_put">put</a>&lt;T&gt;(account: &signer, thing: T) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_put">put</a>&lt;T: store&gt;(account: &signer, thing: T) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>if</b> (<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr)) {
         <b>let</b> box = borrow_global_mut&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
@@ -176,7 +176,7 @@ Put things to account's box last position.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_put_all">put_all</a>&lt;T&gt;(account: &signer, thing: vector&lt;T&gt;) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_put_all">put_all</a>&lt;T: store&gt;(account: &signer, thing: vector&lt;T&gt;) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>if</b> (<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr)) {
         <b>let</b> box = borrow_global_mut&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
@@ -207,7 +207,7 @@ Take last thing from account's box
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take">take</a>&lt;T&gt;(account: &signer): T <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take">take</a>&lt;T: store&gt;(account: &signer): T <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>assert</b>(<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>));
     <b>let</b> box = borrow_global_mut&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
@@ -239,7 +239,7 @@ Take all things from account's box
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take_all">take_all</a>&lt;T&gt;(account: &signer): vector&lt;T&gt; <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take_all">take_all</a>&lt;T: store&gt;(account: &signer): vector&lt;T&gt; <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>assert</b>(<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>));
     <b>let</b> <a href="Box.md#0x1_Box">Box</a>{ thing } = move_from&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
@@ -266,7 +266,7 @@ Take all things from account's box
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destroy_empty">destroy_empty</a>&lt;T&gt;(addr: address) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destroy_empty">destroy_empty</a>&lt;T: store&gt;(addr: address) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> <a href="Box.md#0x1_Box">Box</a>{ thing } = move_from&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
     <a href="Vector.md#0x1_Vector_destroy_empty">Vector::destroy_empty</a>(thing);
 }

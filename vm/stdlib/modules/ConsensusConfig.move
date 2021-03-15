@@ -14,7 +14,7 @@ module ConsensusConfig {
     }
 
     /// consensus configurations.
-    struct ConsensusConfig {
+    struct ConsensusConfig has copy, drop, store {
         /// Uncle block rate per epoch
         uncle_rate_target: u64,
         /// Average target time to calculate a block's difficulty

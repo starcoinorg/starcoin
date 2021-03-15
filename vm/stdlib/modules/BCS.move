@@ -8,7 +8,7 @@ module BCS {
         pragma aborts_if_is_strict;
     }
     /// Return the binary representation of `v` in BCS (Starcoin Canonical Serialization) format
-    native public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8>;
+    native public fun to_bytes<MoveValue: store>(v: &MoveValue): vector<u8>;
 
     /// Return the address of key bytes
     native public fun to_address(key_bytes: vector<u8>): address;

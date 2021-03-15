@@ -30,11 +30,11 @@ fn test_readonly_function_call() -> Result<()> {
     let module_source = r#"
         module A {
 
-        struct S {
+        struct S has copy,drop,store {
             f1: u64,
         }
 
-        resource struct R {
+        struct R has key,store {
             f1: u64,
         }
 

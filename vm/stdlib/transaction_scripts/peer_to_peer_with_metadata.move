@@ -2,7 +2,7 @@ script {
 use 0x1::Account;
 use 0x1::Errors;
 const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 101;
-fun peer_to_peer_with_metadata<TokenType>(
+fun peer_to_peer_with_metadata<TokenType: store>(
     account: &signer,
     payee: address,
     payee_auth_key: vector<u8>,

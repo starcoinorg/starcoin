@@ -207,7 +207,7 @@ Get a copy of <code>ConfigValue</code> value stored under <code>addr</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): ConfigValue <b>acquires</b> <a href="Config.md#0x1_Config">Config</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(addr: address): ConfigValue <b>acquires</b> <a href="Config.md#0x1_Config">Config</a> {
     <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Config.md#0x1_Config_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>));
     *&borrow_global&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
 }
@@ -233,7 +233,7 @@ Check whether the config of <code>ConfigValue</code> type exists under <code>add
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_config_exist_by_address">config_exist_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_config_exist_by_address">config_exist_by_address</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(addr: address): bool {
     <b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr)
 }
 </code></pre>
@@ -258,7 +258,7 @@ Set a config item to a new value with capability stored under signer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set">set</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>,<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set">set</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(account: &signer, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>,<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> signer_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address);
@@ -287,7 +287,7 @@ Set a config item to a new value with cap.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set_with_capability">set_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set_with_capability">set_with_capability</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>{
     <b>let</b> addr = cap.account_address;
     <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Config.md#0x1_Config_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>));
     <b>let</b> config = borrow_global_mut&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
@@ -317,7 +317,7 @@ policy for who can modify the config.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_publish_new_config_with_capability">publish_new_config_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_publish_new_config_with_capability">publish_new_config_with_capability</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(
     account: &signer,
     payload: ConfigValue,
 ): <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt; <b>acquires</b> <a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
@@ -346,7 +346,7 @@ Publish a new config item under account address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_publish_new_config">publish_new_config</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue) {
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_publish_new_config">publish_new_config</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(account: &signer, payload: ConfigValue) {
     move_to(account, <a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;{ payload });
     <b>let</b> cap = <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt; {account_address: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Config.md#0x1_Config_ConfigChangeEvent">ConfigChangeEvent</a>&lt;ConfigValue&gt;&gt;(account)};
     move_to(account, <a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{cap: <a href="Option.md#0x1_Option_some">Option::some</a>(cap)});
@@ -373,7 +373,7 @@ Extract account's ModifyConfigCapability for ConfigValue type
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_extract_modify_config_capability">extract_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt; <b>acquires</b> <a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_extract_modify_config_capability">extract_modify_config_capability</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(account: &signer): <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt; <b>acquires</b> <a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> signer_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> cap_holder.cap)
@@ -400,7 +400,7 @@ Restore account's ModifyConfigCapability
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_restore_modify_config_capability">restore_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) <b>acquires</b> <a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_restore_modify_config_capability">restore_modify_config_capability</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) <b>acquires</b> <a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(cap.account_address);
     <a href="Option.md#0x1_Option_fill">Option::fill</a>(&<b>mut</b> cap_holder.cap, cap);
 }
@@ -426,7 +426,7 @@ Destroy the given ModifyConfigCapability
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destroy_modify_config_capability">destroy_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destroy_modify_config_capability">destroy_modify_config_capability</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) {
     <b>let</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>{account_address:_, events} = cap;
     <a href="Event.md#0x1_Event_destroy_handle">Event::destroy_handle</a>(events)
 }
@@ -452,7 +452,7 @@ Return the address of the given ModifyConfigCapability
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_account_address">account_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;): address {
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_account_address">account_address</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(cap: &<a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;): address {
     cap.account_address
 }
 </code></pre>
@@ -477,7 +477,7 @@ Emit a config change event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Config.md#0x1_Config_emit_config_change_event">emit_config_change_event</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, value: ConfigValue) {
+<pre><code><b>fun</b> <a href="Config.md#0x1_Config_emit_config_change_event">emit_config_change_event</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, value: ConfigValue) {
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Config.md#0x1_Config_ConfigChangeEvent">ConfigChangeEvent</a>&lt;ConfigValue&gt;&gt;(
         &<b>mut</b> cap.events,
         <a href="Config.md#0x1_Config_ConfigChangeEvent">ConfigChangeEvent</a> {

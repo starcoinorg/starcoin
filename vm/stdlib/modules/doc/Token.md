@@ -556,7 +556,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType: store&gt;(
     account: &signer,
     precision: u8,
 ) {
@@ -598,7 +598,7 @@ Remove mint capability from <code>signer</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType: store&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="Token.md#0x1_Token_MintCapability">MintCapability</a> {
     move_from&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))
 }
@@ -624,7 +624,7 @@ Add mint capability to <code>signer</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType: store&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;) {
     move_to(signer, cap)
 }
 </code></pre>
@@ -649,7 +649,7 @@ Destroy the given mint capability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType: store&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; { } = cap;
 }
 </code></pre>
@@ -674,7 +674,7 @@ remove the token burn capability from <code>signer</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType: store&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a> {
     move_from&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))
 }
@@ -700,7 +700,7 @@ Add token burn capability to <code>signer</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType: store&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;) {
     move_to(signer, cap)
 }
 </code></pre>
@@ -725,7 +725,7 @@ Destroy the given burn capability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType: store&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; { } = cap;
 }
 </code></pre>
@@ -751,7 +751,7 @@ Fails if the sender does not have a published MintCapability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint">mint</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint">mint</a>&lt;TokenType: store&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>, <a href="Token.md#0x1_Token_MintCapability">MintCapability</a> {
     <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>(
         borrow_global&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
@@ -783,7 +783,7 @@ Only the Association account can acquire such a reference, and it can do so only
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType: store&gt;(
     _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
     amount: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
@@ -810,7 +810,7 @@ Only the Association account can acquire such a reference, and it can do so only
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType: store&gt;(amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     // <b>update</b> market cap <b>resource</b> <b>to</b> reflect minting
     <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;();
     <b>let</b> info = borrow_global_mut&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address);
@@ -846,7 +846,7 @@ Issue a <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType: store&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
                                  amount: u128, period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
     <b>assert</b>(period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
@@ -879,7 +879,7 @@ Issue a <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType: store&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
                                             amount: u128, period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
     <b>assert</b>(period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
@@ -913,7 +913,7 @@ Mint tokens with given <code><a href="Token.md#0x1_Token_FixedTimeMintKey">Fixed
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType: store&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>(&key);
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_AMOUNT_EQUAL_ZERO">EMINT_AMOUNT_EQUAL_ZERO</a>));
     <b>let</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a> { total, end_time:_} = key;
@@ -941,7 +941,7 @@ Mint tokens with given <code><a href="Token.md#0x1_Token_LinearTimeMintKey">Line
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType: store&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>(key);
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_AMOUNT_EQUAL_ZERO">EMINT_AMOUNT_EQUAL_ZERO</a>));
     <b>let</b> token = <a href="Token.md#0x1_Token_do_mint">do_mint</a>(amount);
@@ -970,7 +970,7 @@ Split the given <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType: store&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token = <a href="Token.md#0x1_Token_mint_with_linear_key">Self::mint_with_linear_key</a>(key);
     <b>assert</b>(!<a href="Token.md#0x1_Token_is_empty_key">Self::is_empty_key</a>(key), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EEMPTY_KEY">EEMPTY_KEY</a>));
     <b>assert</b>((key.minted + amount) &lt;= key.total, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>));
@@ -1007,7 +1007,7 @@ Split the given <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMin
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType: store&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt; {
     <b>assert</b>(key.total &gt;= amount, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>));
     key.total = key.total - amount;
     <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
@@ -1037,7 +1037,7 @@ Returns the amount of the LinearTimeMintKey can mint now.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType: store&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): u128 {
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> elapsed_time = now - key.start_time;
     <b>if</b> (elapsed_time &gt;= key.period) {
@@ -1068,7 +1068,7 @@ Returns the mint amount of the FixedTimeMintKey.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>&lt;TokenType: store&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u128 {
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>if</b> (now &gt;= key.end_time) {
         key.total
@@ -1098,7 +1098,7 @@ Return the end time of the given <code><a href="Token.md#0x1_Token_FixedTimeMint
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_end_time_of_key">end_time_of_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_end_time_of_key">end_time_of_key</a>&lt;TokenType: store&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u64 {
     key.end_time
 }
 </code></pre>
@@ -1123,7 +1123,7 @@ Destory a empty <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType: store&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; { total, minted, start_time: _, period: _ } = key;
     <b>assert</b>(total == minted, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>));
 }
@@ -1149,7 +1149,7 @@ Check if the given <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_empty_key">is_empty_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) : bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_empty_key">is_empty_key</a>&lt;TokenType: store&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) : bool {
     key.total == key.minted
 }
 </code></pre>
@@ -1174,7 +1174,7 @@ Burn some tokens of <code>signer</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType: store&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>, <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a> {
     <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>(
         borrow_global&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
@@ -1203,7 +1203,7 @@ Burn tokens with the given <code><a href="Token.md#0x1_Token_BurnCapability">Bur
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType: store&gt;(
     _capability: &<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;,
     tokens: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
 ) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
@@ -1241,7 +1241,7 @@ Create a new Token::Token<TokenType> with a value of 0
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_zero">zero</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_zero">zero</a>&lt;TokenType: store&gt;(): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
     <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: 0 }
 }
 </code></pre>
@@ -1266,7 +1266,7 @@ Public accessor for the value of a token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType: store&gt;(token: &<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;): u128 {
     token.value
 }
 </code></pre>
@@ -1291,7 +1291,7 @@ Splits the given token into two and returns them both
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType: store&gt;(
     token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     value: u128,
 ): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
@@ -1323,7 +1323,7 @@ Fails if the tokens value is less than <code>value</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType: store&gt;(
     token: &<b>mut</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     value: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
@@ -1355,7 +1355,7 @@ value is equal to the sum of the two inputs
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_join">join</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_join">join</a>&lt;TokenType: store&gt;(
     token1: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     token2: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
@@ -1386,7 +1386,7 @@ The <code>check</code> token is consumed in the process
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_deposit">deposit</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, check: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_deposit">deposit</a>&lt;TokenType: store&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, check: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token">Token</a> { value } = check;
     token.value = token.value + value;
 }
@@ -1415,7 +1415,7 @@ so you cannot "burn" any non-zero amount of Token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token">Token</a> { value } = token;
     <b>assert</b>(value == 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EDESTROY_TOKEN_NON_ZERO">EDESTROY_TOKEN_NON_ZERO</a>))
 }
@@ -1441,7 +1441,7 @@ Returns the scaling_factor for the <code>TokenType</code> token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType: store&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).scaling_factor
 }
@@ -1467,7 +1467,7 @@ Return the total amount of token of type <code>TokenType</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType: store&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).total_value
 }
@@ -1493,7 +1493,7 @@ Return true if the type <code>TokenType</code> is a registered in <code>token_ad
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType&gt;(token_address: address): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType: store&gt;(token_address: address): bool {
     <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address)
 }
 </code></pre>
@@ -1518,7 +1518,7 @@ Return true if the type <code>TokenType1</code> is same with <code>TokenType2</c
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1, TokenType2&gt;(): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1: store, TokenType2: store&gt;(): bool {
     <b>return</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType1&gt;() == <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType2&gt;()
 }
 </code></pre>
@@ -1543,7 +1543,7 @@ Return the TokenType's address
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;(): address {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType: store&gt;(): address {
     <b>let</b> (addr, _, _) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
     addr
 }
@@ -1569,7 +1569,7 @@ Return the token code for the registered token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType: store&gt;(): <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> {
     <b>let</b> (addr, module_name, name) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
     <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> {
         addr,
@@ -1599,7 +1599,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>fun</b> <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;);
+<pre><code><b>native</b> <b>fun</b> <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType: store&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;);
 </code></pre>
 
 
@@ -1621,7 +1621,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;) {
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType: store&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;) {
     <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;()
 }
 </code></pre>

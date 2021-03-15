@@ -17,13 +17,13 @@ module TokenLockPool {
     }
 
     // A global pool for lock token.
-    resource struct TokenPool<TokenType> { token: Token<TokenType> }
+    struct TokenPool<TokenType> has key, store { token: Token<TokenType> }
 
     // A fixed time lock key which can withdraw locked token until global time > end time
-    resource struct FixedTimeLockKey<TokenType> { total: u128, end_time: u64 }
+    struct FixedTimeLockKey<TokenType> has key, store { total: u128, end_time: u64 }
 
     // A linear time lock key which can withdraw locked token in a period by time-based linear release.
-    resource struct LinearTimeLockKey<TokenType> { total: u128, taked: u128, start_time: u64, period: u64 }
+    struct LinearTimeLockKey<TokenType> has key, store { total: u128, taked: u128, start_time: u64, period: u64 }
 
     const EINVALID_ARGUMENT: u64 = 18;
     // The key which to destroy is not empty.
@@ -48,7 +48,7 @@ module TokenLockPool {
     }
 
     // Create a LinearTimeLock by token and period in seconds.
-    public fun create_linear_lock<TokenType>(token: Token<TokenType>, period: u64): LinearTimeLockKey<TokenType> acquires TokenPool {
+    public fun create_linear_lock<TokenType: store>(token: Token<TokenType>, period: u64): LinearTimeLockKey<TokenType> acquires TokenPool {
         assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let start_time = Timestamp::now_seconds();
         let total = Token::value(&token);
@@ -70,7 +70,7 @@ module TokenLockPool {
     }
 
     // Create a FixedTimeLock by token and period in seconds.
-    public fun create_fixed_lock<TokenType>(token: Token<TokenType>, period: u64): FixedTimeLockKey<TokenType> acquires TokenPool {
+    public fun create_fixed_lock<TokenType: store>(token: Token<TokenType>, period: u64): FixedTimeLockKey<TokenType> acquires TokenPool {
         assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let now = Timestamp::now_seconds();
         let total = Token::value(&token);
@@ -92,7 +92,7 @@ module TokenLockPool {
     }
 
     // Unlock token with LinearTimeLockKey
-    public fun unlock_with_linear_key<TokenType>(key: &mut LinearTimeLockKey<TokenType>): Token<TokenType> acquires TokenPool {
+    public fun unlock_with_linear_key<TokenType: store>(key: &mut LinearTimeLockKey<TokenType>): Token<TokenType> acquires TokenPool {
         let amount = unlocked_amount_of_linear_key(key);
         assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED));
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
@@ -111,7 +111,7 @@ module TokenLockPool {
     }
 
     // Unlock token with FixedTimeLockKey
-    public fun unlock_with_fixed_key<TokenType>(key: FixedTimeLockKey<TokenType>): Token<TokenType>  acquires TokenPool {
+    public fun unlock_with_fixed_key<TokenType: store>(key: FixedTimeLockKey<TokenType>): Token<TokenType>  acquires TokenPool {
         let amount = unlocked_amount_of_fixed_key(&key);
         assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED));
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
@@ -129,7 +129,7 @@ module TokenLockPool {
 
     // Returns the unlocked amount of the LinearTimeLockKey.
     // It represent how much Token in the TokenLockPool can bean withdraw by the key now.
-    public fun unlocked_amount_of_linear_key<TokenType>(key: &LinearTimeLockKey<TokenType>): u128 {
+    public fun unlocked_amount_of_linear_key<TokenType: store>(key: &LinearTimeLockKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         let elapsed_time = now - key.start_time;
         if (elapsed_time >= key.period) {
@@ -146,7 +146,7 @@ module TokenLockPool {
     }
 
     // Returns the unlocked amount of the FixedTimeLockKey.
-    public fun unlocked_amount_of_fixed_key<TokenType>(key: &FixedTimeLockKey<TokenType>): u128 {
+    public fun unlocked_amount_of_fixed_key<TokenType: store>(key: &FixedTimeLockKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         if (now >= key.end_time) {
             key.total
@@ -159,13 +159,13 @@ module TokenLockPool {
         include Timestamp::AbortsIfTimestampNotExists;
     }
 
-    public fun end_time_of<TokenType>(key: &FixedTimeLockKey<TokenType>): u64 {
+    public fun end_time_of<TokenType: store>(key: &FixedTimeLockKey<TokenType>): u64 {
         key.end_time
     }
 
     spec fun end_time_of {aborts_if false;}
 
-    public fun destroy_empty<TokenType>(key: LinearTimeLockKey<TokenType>) {
+    public fun destroy_empty<TokenType: store>(key: LinearTimeLockKey<TokenType>) {
         let LinearTimeLockKey<TokenType> { total, taked, start_time: _, period: _ } = key;
         assert(total == taked, Errors::invalid_state(EDESTROY_KEY_NOT_EMPTY));
     }

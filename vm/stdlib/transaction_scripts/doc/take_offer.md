@@ -25,7 +25,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered&gt;(
+<pre><code><b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered: store&gt;(
     signer: &signer,
     offer_address: address,
 ) {

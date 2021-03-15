@@ -26,7 +26,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="split_fixed_key.md#split_fixed_key">split_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(
+<pre><code><b>fun</b> <a href="split_fixed_key.md#split_fixed_key">split_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: store&gt;(
     signer: &signer,
     for_address: address,
     amount: u128,

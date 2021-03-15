@@ -3,7 +3,7 @@ script {
     use 0x1::Box;
     use 0x1::Account;
 
-    fun mint_token_by_linear_key<Token>(
+    fun mint_token_by_linear_key<Token: store>(
         signer: &signer,
     ) {
         // 1. take key: LinearTimeMintKey<Token>

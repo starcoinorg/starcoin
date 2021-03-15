@@ -10,18 +10,18 @@ module SortedLinkedList {
     use 0x1::BCS;
     use 0x1::Signer;
 
-    resource struct Node<T> {
+    struct Node<T> has key, store {
         prev: address, //account address where the previous node is stored (head if no previous node exists)
         next: address, //account address where the next node is stored (head if no next node exists)
         head: address, //account address where current list's head is stored -- whoever stores head is the owner of the whole list
         key: T
     }
 
-    public fun node_exists<T: copyable>(node_address: address): bool {
+    public fun node_exists<T: copy + drop + store>(node_address: address): bool {
         exists<Node<T>>(node_address)
     }
 
-    public fun get_key_of_node<T: copyable>(node_address: address): T acquires Node {
+    public fun get_key_of_node<T: copy + drop + store>(node_address: address): T acquires Node {
         assert(exists<Node<T>>(node_address), 1);
 
         let node = borrow_global<Node<T>>(node_address);
@@ -29,7 +29,7 @@ module SortedLinkedList {
     }
 
     //checks whether this address is the head of a list -- fails if there is no node here
-    public fun is_head_node<T: copyable>(current_node_address: address): bool acquires Node {
+    public fun is_head_node<T: copy + drop + store>(current_node_address: address): bool acquires Node {
 		//check that a node exists
 		assert(exists<Node<T>>(current_node_address), 2);
 
@@ -42,7 +42,7 @@ module SortedLinkedList {
     }
 
     //creates a new list whose head is at txn_sender (is owned by the caller)
-    public fun create_new_list<T: copyable>(account: &signer, key: T) {
+    public fun create_new_list<T: copy + drop + store>(account: &signer, key: T) {
         let sender = Signer::address_of(account);
 
         //make sure no node/list is already stored in this account
@@ -58,7 +58,7 @@ module SortedLinkedList {
     }
 
     //adds a node that is stored in txn_sender's account and whose location in the list is right after prev_node_address
-    public fun add_node<T: copyable>(account: &signer, key: T, prev_node_address: address) acquires Node {
+    public fun add_node<T: copy + drop + store>(account: &signer, key: T, prev_node_address: address) acquires Node {
         let sender_address = Signer::address_of(account);
 
         //make sure no node is already stored in this account
@@ -106,7 +106,7 @@ module SortedLinkedList {
     }
 
     //private function used for removing a non-head node -- does not check permissions
-    fun remove_node<T: copyable>(node_address: address) acquires Node {
+    fun remove_node<T: copy + drop + store>(node_address: address) acquires Node {
         //make sure the node exists
         assert(exists<Node<T>>(node_address), 8);
 
@@ -127,7 +127,7 @@ module SortedLinkedList {
         let Node<T> { prev: _, next: _, head: _, key: _ } = move_from<Node<T>>(node_address);
     }
 
-    public fun remove_node_by_list_owner<T: copyable>(account: &signer, node_address: address) acquires Node {
+    public fun remove_node_by_list_owner<T: copy + drop + store>(account: &signer, node_address: address) acquires Node {
         //make sure the node exists
         assert(exists<Node<T>>(node_address), 9);
 
@@ -144,7 +144,7 @@ module SortedLinkedList {
     }
 
     //removes the current non-head node -- fails if the passed node is the head of a list
-    public fun remove_node_by_node_owner<T: copyable>(account: &signer) acquires Node {
+    public fun remove_node_by_node_owner<T: copy + drop + store>(account: &signer) acquires Node {
         let sender_address = Signer::address_of(account);
 
         //make sure a node exists
@@ -159,7 +159,7 @@ module SortedLinkedList {
 
     //can only called by the list owner (head) -- removes the list if it is empty,
     //fails if it is non-empty or if no list is owned by the caller
-    public fun remove_list<T: copyable>(account: &signer) acquires Node {
+    public fun remove_list<T: copy + drop + store>(account: &signer) acquires Node {
         let sender_address = Signer::address_of(account);
 
         //fail if the caller does not own a list
@@ -178,7 +178,7 @@ module SortedLinkedList {
         let Node<T> { prev: _, next: _, head: _, key: _ } = move_from<Node<T>>(sender_address);
     }
 
-    public fun find<T: copyable>(key: T, head_address: address): (bool, address) acquires Node {
+    public fun find<T: copy + drop + store>(key: T, head_address: address): (bool, address) acquires Node {
         assert(Self::is_head_node<T>(head_address), 18);
 
         let key_bcs_bytes = BCS::to_bytes(&key);
@@ -202,7 +202,7 @@ module SortedLinkedList {
         return (false, *&head_node.prev)
     }
 
-    public fun empty_node<T: copyable>(account: &signer, key: T) {
+    public fun empty_node<T: copy + drop + store>(account: &signer, key: T) {
         let sender = Signer::address_of(account);
 
         //make sure no node/list is already stored in this account
@@ -217,7 +217,7 @@ module SortedLinkedList {
         move_to<Node<T>>(account, empty);
     }
 
-    public fun move_node_to<T: copyable>(account: &signer, receiver: address) acquires Node {
+    public fun move_node_to<T: copy + drop + store>(account: &signer, receiver: address) acquires Node {
         let sender_address = Signer::address_of(account);
         //make sure the node exists
         assert(exists<Node<T>>(sender_address), 20);
@@ -260,28 +260,28 @@ module NonFungibleToken {
     use 0x1::Signer;
     use 0x1::Vector;
 
-    resource struct LimitedMeta {
+    struct LimitedMeta has key, store {
         limited: bool,
         total: u64,
     }
 
-    resource struct NonFungibleToken<Token> {
+    struct NonFungibleToken<Token> has key, store {
         token: Option<Token>
     }
 
-    resource struct TokenLock<Token> {
+    struct TokenLock<Token> has key, store {
     }
 
-    fun lock<Token>(account: &signer) {
+    fun lock<Token: store>(account: &signer) {
         move_to<TokenLock<Token>>(account, TokenLock<Token>{});
     }
 
-    fun unlock<Token>(account: &signer) acquires TokenLock {
+    fun unlock<Token: store>(account: &signer) acquires TokenLock {
         let sender = Signer::address_of(account);
         let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
     }
 
-    public fun initialize<Token>(account: &signer, limited: bool, total: u64) {
+    public fun initialize<Token: store>(account: &signer, limited: bool, total: u64) {
         let sender = Signer::address_of(account);
         assert(sender == {{nftservice}}, 8000);
 
@@ -293,7 +293,7 @@ module NonFungibleToken {
         SortedLinkedList::create_new_list<vector<u8>>(account, Vector::empty());
     }
 
-    public fun preemptive<Token>(account: &signer, nft_service_address: address, token_id: vector<u8>, token: Token):Option<Token> {
+    public fun preemptive<Token: store>(account: &signer, nft_service_address: address, token_id: vector<u8>, token: Token):Option<Token> {
         let (exist, location) = Self::find(copy token_id, nft_service_address);
         if (exist) return Option::some(token);
 
@@ -302,14 +302,14 @@ module NonFungibleToken {
         Option::none() //preemptive success
     }
 
-    public fun accept_token<Token>(account: &signer) {
+    public fun accept_token<Token: store>(account: &signer) {
         let sender = Signer::address_of(account);
         assert(!exists<NonFungibleToken<Token>>(sender), 8001);
         SortedLinkedList::empty_node<vector<u8>>(account, Vector::empty());
         move_to<NonFungibleToken<Token>>(account, NonFungibleToken<Token>{token: Option::none()});
     }
 
-    public fun safe_transfer<Token: copyable>(account: &signer, _nft_service_address: address, token_id: vector<u8>, receiver: address) acquires NonFungibleToken {
+    public fun safe_transfer<Token: copy + drop + store>(account: &signer, _nft_service_address: address, token_id: vector<u8>, receiver: address) acquires NonFungibleToken {
         let sender = Signer::address_of(account);
         assert(exists<NonFungibleToken<Token>>(receiver), 8002);
         assert(Option::is_none(&borrow_global<NonFungibleToken<Token>>(receiver).token), 8005);
@@ -330,7 +330,7 @@ module NonFungibleToken {
         SortedLinkedList::find<vector<u8>>(token_id, head_address)
     }
 
-    public fun get_nft<Token>(account: &signer): NonFungibleToken<Token> acquires NonFungibleToken {
+    public fun get_nft<Token: store>(account: &signer): NonFungibleToken<Token> acquires NonFungibleToken {
         let sender = Signer::address_of(account);
         assert(exists<NonFungibleToken<Token>>(sender), 8006);
         assert(!exists<TokenLock<Token>>(sender), 8007);
@@ -338,7 +338,7 @@ module NonFungibleToken {
         move_from<NonFungibleToken<Token>>(sender)
     }
     
-    public fun put_nft<Token>(account: &signer, nft: NonFungibleToken<Token>) acquires TokenLock {
+    public fun put_nft<Token: store>(account: &signer, nft: NonFungibleToken<Token>) acquires TokenLock {
         let sender = Signer::address_of(account);
         assert(exists<TokenLock<Token>>(sender), 8008);
         Self::unlock<Token>(account);
@@ -349,7 +349,7 @@ module NonFungibleToken {
 //! new-transaction
 //! sender: nftservice
 module TestNft {
-    struct TestNft {}
+    struct TestNft has copy, drop, store {}
     public fun new_test_nft(): TestNft {
         TestNft{}
     }
@@ -364,7 +364,7 @@ module MoveNft {
     use {{nftservice}}::TestNft::TestNft;
     use 0x1::Signer;
 
-    resource struct MoveNft {
+    struct MoveNft has key, store {
         nft: NonFungibleToken<TestNft>
     }
 

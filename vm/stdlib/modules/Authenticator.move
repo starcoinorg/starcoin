@@ -20,7 +20,7 @@ module Authenticator {
     const MULTI_ED25519_SCHEME_ID: u8 = 1;
 
     /// A multi-ed25519 public key
-    struct MultiEd25519PublicKey {
+    struct MultiEd25519PublicKey has copy, drop, store {
         /// vector of ed25519 public keys
         public_keys: vector<vector<u8>>,
         /// approval threshold

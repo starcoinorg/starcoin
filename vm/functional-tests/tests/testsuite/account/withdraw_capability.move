@@ -6,7 +6,7 @@
 module SillyColdWallet {
     use 0x1::Account;
 
-    resource struct T {
+    struct T has key, store {
         cap: Account::WithdrawCapability,
         owner: address,
     }

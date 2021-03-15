@@ -6,7 +6,7 @@
 module M {
     use 0x1::Signer;
 
-    resource struct M {
+    struct M has key, store {
         value: u64,
     }
 

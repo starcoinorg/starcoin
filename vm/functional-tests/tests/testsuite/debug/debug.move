@@ -4,9 +4,9 @@ module M {
     use 0x1::Debug;
     use 0x1::Vector;
 
-    struct Foo { x: bool }
-    struct Bar { x: u128, y: Foo, z: bool }
-    struct Box<T> { x: T }
+    struct Foo has copy, drop, store { x: bool }
+    struct Bar has copy, drop, store { x: u128, y: Foo, z: bool }
+    struct Box<T> has copy, drop, store { x: T }
 
     public fun test() {
         let x: u64;

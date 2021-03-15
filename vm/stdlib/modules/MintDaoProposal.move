@@ -14,12 +14,12 @@ module MintDaoProposal {
     }
 
     /// A wrapper of Token MintCapability.
-    resource struct WrappedMintCapability<TokenType> {
+    struct WrappedMintCapability<TokenType> has key, store {
         cap: Token::MintCapability<TokenType>,
     }
 
     /// MintToken request.
-    struct MintToken {
+    struct MintToken has copy, drop, store {
         /// the receiver of minted tokens.
         receiver: address,
         /// how many tokens to mint.
@@ -30,7 +30,7 @@ module MintDaoProposal {
 
     /// Plugin method of the module.
     /// Should be called by token issuer.
-    public fun plugin<TokenT>(signer: &signer) {
+    public fun plugin<TokenT: store>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let mint_cap = Token::remove_mint_capability<TokenT>(signer);
@@ -49,7 +49,7 @@ module MintDaoProposal {
 
 
     /// Entrypoint for the proposal.
-    public fun propose_mint_to<TokenT: copyable>(signer: &signer, receiver: address, amount: u128, exec_delay: u64) {
+    public fun propose_mint_to<TokenT: copy + drop + store>(signer: &signer, receiver: address, amount: u128, exec_delay: u64) {
         Dao::propose<TokenT, MintToken>(
             signer,
             MintToken { receiver, amount },
@@ -72,7 +72,7 @@ module MintDaoProposal {
     }
 
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
-    public fun execute_mint_proposal<TokenT: copyable>(
+    public fun execute_mint_proposal<TokenT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires WrappedMintCapability {

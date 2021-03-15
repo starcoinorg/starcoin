@@ -105,7 +105,7 @@ Plugin method of the module.
 Should be called by token issuer.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT, ConfigT: <b>copyable</b>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(signer: &signer)
 </code></pre>
 
 
@@ -114,7 +114,7 @@ Should be called by token issuer.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT, ConfigT: <b>copyable</b>&gt;(signer: &signer) {
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copy</b> + drop + store, ConfigT: <b>copy</b> + drop + store&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="OnChainConfigDao.md#0x1_OnChainConfigDao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> config_modify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;ConfigT&gt;(signer);
@@ -143,7 +143,7 @@ issue a proposal to update config of ConfigT goved by TokenT
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">propose_update</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">propose_update</a>&lt;TokenT: <b>copy</b> + drop + store, ConfigT: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     new_config: ConfigT,
     exec_delay: u64,
@@ -178,7 +178,7 @@ the kind of this proposal module.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copy</b> + drop + store, ConfigT: <b>copy</b> + drop + store&gt;(
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_WrappedConfigModifyCapability">WrappedConfigModifyCapability</a> {
@@ -215,7 +215,7 @@ the kind of this proposal module.
 ### Function `plugin`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT, ConfigT: <b>copyable</b>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(signer: &signer)
 </code></pre>
 
 

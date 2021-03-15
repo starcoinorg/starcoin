@@ -19,19 +19,19 @@ module UpgradeModuleDaoProposal {
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
 
     /// A wrapper of `PackageTxnManager::UpgradePlanCapability`.
-    resource struct UpgradeModuleCapability<TokenT> {
+    struct UpgradeModuleCapability<TokenT> has key, store {
         cap: PackageTxnManager::UpgradePlanCapability,
     }
 
     /// request of upgrading module contract code.
-    struct UpgradeModule {
+    struct UpgradeModule has copy, drop, store {
         module_address: address,
         package_hash: vector<u8>,
         version: u64,
     }
 
     /// If this goverment can upgrade module, call this to register capability.
-    public fun plugin<TokenT>(
+    public fun plugin<TokenT: store>(
         signer: &signer,
         cap: PackageTxnManager::UpgradePlanCapability,
     ) {
@@ -57,7 +57,7 @@ module UpgradeModuleDaoProposal {
     }
 
     /// propose a module upgrade, called by proposer.
-    public fun propose_module_upgrade<TokenT: copyable>(
+    public fun propose_module_upgrade<TokenT: copy + drop + store>(
         signer: &signer,
         module_address: address,
         package_hash: vector<u8>,
@@ -80,7 +80,7 @@ module UpgradeModuleDaoProposal {
     }
 
     /// Once the proposal is agreed, anyone can call this method to generate the upgrading plan.
-    public fun submit_module_upgrade_plan<TokenT: copyable>(
+    public fun submit_module_upgrade_plan<TokenT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires UpgradeModuleCapability {

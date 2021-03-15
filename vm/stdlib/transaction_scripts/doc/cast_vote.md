@@ -24,7 +24,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="cast_vote.md#cast_vote">cast_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="cast_vote.md#cast_vote">cast_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store, ActionT: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     proposer_address: address,
     proposal_id: u64,

@@ -125,7 +125,7 @@ It verifies:
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType: store&gt;(
     account: &signer,
     txn_sender: address,
     txn_sequence_number: u64,
@@ -201,7 +201,7 @@ It collects gas and bumps the sequence number
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_epilogue">epilogue</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_epilogue">epilogue</a>&lt;TokenType: store&gt;(
     account: &signer,
     txn_sender: address,
     txn_sequence_number: u64,

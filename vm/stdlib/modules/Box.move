@@ -11,7 +11,7 @@ module Box {
     }
 
     /// Box struct.
-    resource struct Box<T>{
+    struct Box<T> has key, store {
         /// thing in the box.
         thing:vector<T>,
     }
@@ -19,14 +19,14 @@ module Box {
     const EBOX_NOT_EXIST: u64 = 101;
 
     /// check the box exists in `addr`
-    public fun exists_at<T>(addr: address): bool{
+    public fun exists_at<T: store>(addr: address): bool{
         exists<Box<T>>(addr)
     }
 
     spec fun exists_at {aborts_if false;}
 
     /// get how many things in the box.
-    public fun length<T>(addr: address): u64 acquires Box{
+    public fun length<T: store>(addr: address): u64 acquires Box{
         if (exists_at<T>(addr)) {
             let box = borrow_global<Box<T>>(addr);
             Vector::length(&box.thing)
@@ -38,7 +38,7 @@ module Box {
     spec fun length {aborts_if false;}
 
     /// Put thing to account's box last position.
-    public fun put<T>(account: &signer, thing: T) acquires Box{
+    public fun put<T: store>(account: &signer, thing: T) acquires Box{
         let addr = Signer::address_of(account);
         if (exists_at<T>(addr)) {
             let box = borrow_global_mut<Box<T>>(addr);
@@ -51,7 +51,7 @@ module Box {
     spec fun put {aborts_if false;}
 
     /// Put things to account's box last position.
-    public fun put_all<T>(account: &signer, thing: vector<T>) acquires Box{
+    public fun put_all<T: store>(account: &signer, thing: vector<T>) acquires Box{
         let addr = Signer::address_of(account);
         if (exists_at<T>(addr)) {
             let box = borrow_global_mut<Box<T>>(addr);
@@ -64,7 +64,7 @@ module Box {
     spec fun put_all {aborts_if false;}
 
     /// Take last thing from account's box
-    public fun take<T>(account: &signer): T acquires Box{
+    public fun take<T: store>(account: &signer): T acquires Box{
         let addr = Signer::address_of(account);
         assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
         let box = borrow_global_mut<Box<T>>(addr);
@@ -82,7 +82,7 @@ module Box {
     }
 
     /// Take all things from account's box
-    public fun take_all<T>(account: &signer): vector<T> acquires Box{
+    public fun take_all<T: store>(account: &signer): vector<T> acquires Box{
         let addr = Signer::address_of(account);
         assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
         let Box{ thing } = move_from<Box<T>>(addr);
@@ -93,7 +93,7 @@ module Box {
         aborts_if !exists_at<T>(Signer::address_of(account));
     }
 
-    fun destroy_empty<T>(addr: address) acquires Box{
+    fun destroy_empty<T: store>(addr: address) acquires Box{
         let Box{ thing } = move_from<Box<T>>(addr);
         Vector::destroy_empty(thing);
     }

@@ -26,7 +26,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="mint_token_by_fixed_key.md#mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(
+<pre><code><b>fun</b> <a href="mint_token_by_fixed_key.md#mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: store&gt;(
     signer: &signer,
 ) {
     // 1. take key: FixedTimeMintKey&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;

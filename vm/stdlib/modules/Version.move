@@ -11,7 +11,7 @@ module Version {
     }
 
     /// Version.
-    struct Version {
+    struct Version has copy, drop, store {
         /// major number.
         major: u64,
     }

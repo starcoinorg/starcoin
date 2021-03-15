@@ -4,7 +4,7 @@
 //! sender: alice
 
 module A {
-    resource struct Coin {
+    struct Coin has key, store {
         u: u64,
     }
 
@@ -29,7 +29,7 @@ module A {
 module Tester {
     use {{alice}}::A;
 
-    resource struct Pair { x: A::Coin, y: A::Coin }
+    struct Pair has key, store { x: A::Coin, y: A::Coin }
 
     public fun test(account: &signer) {
         move_to<Pair>(account, Pair { x: A::new(), y: A::new() });

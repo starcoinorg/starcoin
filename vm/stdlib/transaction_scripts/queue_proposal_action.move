@@ -1,7 +1,7 @@
 script {
     use 0x1::Dao;
 
-    fun queue_proposal_action<Token: copyable, Action: copyable>(
+    fun queue_proposal_action<Token: copy + drop + store, Action: copy + drop + store>(
         _signer: &signer,
         proposer_address: address,
         proposal_id: u64,

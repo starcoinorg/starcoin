@@ -5,6 +5,7 @@ use std::process::Command;
 use tempfile::tempdir;
 
 #[test]
+#[ignore]
 fn test_that_installed_rust_code_compiles() {
     let dir = tempdir().unwrap();
 

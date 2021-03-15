@@ -33,7 +33,7 @@ Return the binary representation of <code>v</code> in BCS (Starcoin Canonical Se
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="BCS.md#0x1_BCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="BCS.md#0x1_BCS_to_bytes">to_bytes</a>&lt;MoveValue: store&gt;(v: &MoveValue): vector&lt;u8&gt;;
 </code></pre>
 
 

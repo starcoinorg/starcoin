@@ -22,7 +22,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="propose_modify_dao_config.md#propose_modify_dao_config">propose_modify_dao_config</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="propose_modify_dao_config.md#propose_modify_dao_config">propose_modify_dao_config</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     voting_delay: u64,
     voting_period: u64,

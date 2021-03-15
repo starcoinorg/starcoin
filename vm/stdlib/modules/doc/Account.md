@@ -594,7 +594,7 @@ reserved address for the MoveVM.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType: store&gt;(authentication_key: vector&lt;u8&gt;): address <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<b>copy</b> authentication_key);
     // <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>));
     <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_address);
@@ -717,7 +717,7 @@ Deposits the <code>to_deposit</code> token into the self's account balance
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType: store&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>if</b> (!<a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(account_address)){
@@ -748,7 +748,7 @@ It's a reverse operation of <code>withdraw</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType: store&gt;(
     receiver: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
@@ -777,7 +777,7 @@ It's a reverse operation of <code>withdraw_with_metadata</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType: store&gt;(
     receiver: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     metadata: vector&lt;u8&gt;,
@@ -814,7 +814,7 @@ Helper to deposit <code>amount</code> to the given account balance
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;) {
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType: store&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;) {
     <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> balance.token, token)
 }
 </code></pre>
@@ -839,7 +839,7 @@ Helper to withdraw <code>amount</code> from the given account balance and return
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;{
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType: store&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;{
     <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> balance.token, amount)
 }
 </code></pre>
@@ -864,7 +864,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account balance
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType: store&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account, amount, x"")
 }
@@ -890,7 +890,7 @@ Withdraw <code>amount</code> tokens from <code>signer</code> with given <code>me
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType: store&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> sender_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(sender_addr);
@@ -923,7 +923,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType: store&gt;(
     cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>, amount: u128
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account">Account</a> {
     <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap, amount, x"")
@@ -950,7 +950,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType: store&gt;(
     cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
@@ -1036,7 +1036,7 @@ Return the withdraw capability to the account it originally came from
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType: store&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     // emit withdraw event
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
@@ -1068,7 +1068,7 @@ Return the withdraw capability to the account it originally came from
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType: store&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     // emit withdraw event
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
@@ -1102,7 +1102,7 @@ into the <code>payee</code>'s account balance. Creates the <code>payee</code> ac
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType: store&gt;(
     cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>,
     payee: address,
     amount: u128,
@@ -1139,7 +1139,7 @@ attached <code>metadata</code> Creates the <code>payee</code> account if it does
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType: store&gt;(
     account: &signer,
     payee: address,
     amount: u128,
@@ -1176,7 +1176,7 @@ Creates the <code>payee</code> account if it does not exist
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType: store&gt;(
     account: &signer,
     payee: address,
     amount: u128
@@ -1293,7 +1293,7 @@ Helper to return the u128 value of the <code>balance</code> for <code>account</c
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;): u128 {
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType: store&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;): u128 {
     <a href="Token.md#0x1_Token_value">Token::value</a>&lt;TokenType&gt;(&balance.token)
 }
 </code></pre>
@@ -1318,7 +1318,7 @@ Return the current TokenType balance of the account at <code>addr</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(addr: address): u128 <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType: store&gt;(addr: address): u128 <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <a href="Account.md#0x1_Account_balance_for">balance_for</a>(borrow_global&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr))
 }
 </code></pre>
@@ -1343,7 +1343,7 @@ Add a balance of <code><a href="Token.md#0x1_Token">Token</a></code> type to the
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType: store&gt;(account: &signer) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     move_to(account, <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;{ token: <a href="Token.md#0x1_Token_zero">Token::zero</a>&lt;TokenType&gt;() });
     <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
     // Load the sender's account
@@ -1378,7 +1378,7 @@ Return whether the account at <code>addr</code> accepts <code><a href="Token.md#
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(addr: address): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool {
     <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr)
 }
 </code></pre>
@@ -1609,7 +1609,7 @@ It verifies:
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType: store&gt;(
     account: &signer,
     txn_sender: address,
     txn_sequence_number: u64,
@@ -1680,7 +1680,7 @@ It collects gas and bumps the sequence number
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType: store&gt;(
     account: &signer,
     txn_sender: address,
     txn_sequence_number: u64,

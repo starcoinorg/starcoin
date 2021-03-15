@@ -12,7 +12,7 @@ module TransactionTimeoutConfig {
     }
 
     /// config structs.
-    struct TransactionTimeoutConfig {
+    struct TransactionTimeoutConfig has copy, drop, store {
         /// timeout in second.
         duration_seconds: u64,
     }

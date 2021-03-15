@@ -1,6 +1,6 @@
 script {
     use 0x1::ModifyDaoConfigProposal;
-    fun propose_modify_dao_config<Token: copyable>(
+    fun propose_modify_dao_config<Token: copy + drop + store>(
         signer: &signer,
         voting_delay: u64,
         voting_period: u64,

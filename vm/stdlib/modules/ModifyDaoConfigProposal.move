@@ -16,7 +16,7 @@ module ModifyDaoConfigProposal {
     }
 
     /// A wrapper of `Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>`.
-    resource struct DaoConfigModifyCapability<TokenT: copyable> {
+    struct DaoConfigModifyCapability<TokenT: copy + drop + store> has key, store {
         cap: Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>,
     }
 
@@ -25,7 +25,7 @@ module ModifyDaoConfigProposal {
 
     /// a proposal action to update dao config.
     /// if any field is `0`, that means the proposal want to update.
-    struct DaoConfigUpdate {
+    struct DaoConfigUpdate has copy, drop, store {
         /// new voting delay setting.
         voting_delay: u64,
         /// new voting period setting.
@@ -38,7 +38,7 @@ module ModifyDaoConfigProposal {
 
     /// Plugin method of the module.
     /// Should be called by token issuer.
-    public fun plugin<TokenT: copyable>(signer: &signer) {
+    public fun plugin<TokenT: copy + drop + store>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let dao_config_modify_cap = Config::extract_modify_config_capability<
@@ -62,7 +62,7 @@ module ModifyDaoConfigProposal {
     }
 
     /// Entrypoint for the proposal.
-    public fun propose<TokenT: copyable>(
+    public fun propose<TokenT: copy + drop + store>(
         signer: &signer,
         voting_delay: u64,
         voting_period: u64,
@@ -96,7 +96,7 @@ module ModifyDaoConfigProposal {
 
     }
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
-    public fun execute<TokenT: copyable>(proposer_address: address, proposal_id: u64)
+    public fun execute<TokenT: copy + drop + store>(proposer_address: address, proposal_id: u64)
     acquires DaoConfigModifyCapability {
         let DaoConfigUpdate {
             voting_delay,

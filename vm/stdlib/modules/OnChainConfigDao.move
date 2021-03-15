@@ -14,12 +14,12 @@ module OnChainConfigDao {
     }
 
     /// A wrapper of `Config::ModifyConfigCapability<ConfigT>`.
-    resource struct WrappedConfigModifyCapability<TokenT, ConfigT: copyable> {
+    struct WrappedConfigModifyCapability<TokenT, ConfigT: copy + drop + store> has key, store {
         cap: Config::ModifyConfigCapability<ConfigT>,
     }
 
     /// request of updating configuration.
-    struct OnChainConfigUpdate<ConfigT: copyable> {
+    struct OnChainConfigUpdate<ConfigT: copy + drop + store> has copy, drop, store {
         value: ConfigT,
     }
 
@@ -27,7 +27,7 @@ module OnChainConfigDao {
 
     /// Plugin method of the module.
     /// Should be called by token issuer.
-    public fun plugin<TokenT, ConfigT: copyable>(signer: &signer) {
+    public fun plugin<TokenT: copy + drop + store, ConfigT: copy + drop + store>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let config_modify_cap = Config::extract_modify_config_capability<ConfigT>(signer);
@@ -44,7 +44,7 @@ module OnChainConfigDao {
     }
 
     /// issue a proposal to update config of ConfigT goved by TokenT
-    public fun propose_update<TokenT: copyable, ConfigT: copyable>(
+    public fun propose_update<TokenT: copy + drop + store, ConfigT: copy + drop + store>(
         signer: &signer,
         new_config: ConfigT,
         exec_delay: u64,
@@ -74,7 +74,7 @@ module OnChainConfigDao {
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
     /// Caller need to make sure that the proposal of `proposal_id` under `proposal_address` is
     /// the kind of this proposal module.
-    public fun execute<TokenT: copyable, ConfigT: copyable>(
+    public fun execute<TokenT: copy + drop + store, ConfigT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires WrappedConfigModifyCapability {

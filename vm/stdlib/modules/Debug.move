@@ -7,7 +7,7 @@ module Debug {
     }
 
     /// Print data of Type `T`.
-    native public fun print<T>(x: &T);
+    native public fun print<T: store>(x: &T);
 
     /// Print current stack.
     native public fun print_stack_trace();

@@ -142,7 +142,7 @@ Should be called by token issuer.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer) {
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> dao_config_modify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
@@ -174,7 +174,7 @@ Entrypoint for the proposal.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     voting_delay: u64,
     voting_period: u64,
@@ -213,7 +213,7 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_execute">execute</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_execute">execute</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(proposer_address: address, proposal_id: u64)
 <b>acquires</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a> {
     <b>let</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,

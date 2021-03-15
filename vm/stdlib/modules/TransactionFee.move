@@ -15,7 +15,7 @@ module TransactionFee {
 
     /// The `TransactionFee` resource holds a preburn resource for each
     /// fiat `TokenType` that can be collected as a transaction fee.
-    resource struct TransactionFee<TokenType> {
+    struct TransactionFee<TokenType> has key, store {
         fee: Token<TokenType>,
     }
 
@@ -38,7 +38,7 @@ module TransactionFee {
     }
 
     /// publishing a wrapper of the `Preburn<TokenType>` resource under `fee_account`
-    fun add_txn_fee_token<TokenType>(
+    fun add_txn_fee_token<TokenType: store>(
         account: &signer,
     ) {
         move_to(
@@ -54,7 +54,7 @@ module TransactionFee {
     }
 
     /// Deposit `token` into the transaction fees bucket
-    public fun pay_fee<TokenType>(token: Token<TokenType>) acquires TransactionFee {
+    public fun pay_fee<TokenType: store>(token: Token<TokenType>) acquires TransactionFee {
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(
             CoreAddresses::GENESIS_ADDRESS()
         );
@@ -69,7 +69,7 @@ module TransactionFee {
     /// Distribute the transaction fees collected in the `TokenType` token.
     /// If the `TokenType` is STC, it unpacks the token and preburns the
     /// underlying fiat.
-    public fun distribute_transaction_fees<TokenType>(
+    public fun distribute_transaction_fees<TokenType: store>(
         account: &signer,
     ): Token<TokenType> acquires TransactionFee {
         let fee_address =  CoreAddresses::GENESIS_ADDRESS();

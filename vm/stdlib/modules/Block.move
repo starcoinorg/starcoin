@@ -13,7 +13,7 @@ module Block {
     }
 
     /// Block metadata struct.
-    resource struct BlockMetadata {
+    struct BlockMetadata has key, store {
         /// number of the current block
         number: u64,
         /// Hash of the parent block.
@@ -27,7 +27,7 @@ module Block {
     }
 
     /// Events emitted when new block generated.
-    struct NewBlockEvent {
+    struct NewBlockEvent has copy, drop, store {
         number: u64,
         author: address,
         timestamp: u64,

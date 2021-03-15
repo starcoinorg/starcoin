@@ -31,7 +31,7 @@ Print data of Type <code>T</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print">print</a>&lt;T&gt;(x: &T);
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print">print</a>&lt;T: store&gt;(x: &T);
 </code></pre>
 
 

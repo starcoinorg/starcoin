@@ -22,7 +22,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="propose_module_upgrade.md#propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="propose_module_upgrade.md#propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     module_address: address,
     package_hash: vector&lt;u8&gt;,

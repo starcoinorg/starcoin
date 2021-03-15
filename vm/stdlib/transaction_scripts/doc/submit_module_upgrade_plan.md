@@ -22,7 +22,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="submit_module_upgrade_plan.md#submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="submit_module_upgrade_plan.md#submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
     _signer: &signer,
     proposer_address: address,
     proposal_id: u64,

@@ -10,7 +10,7 @@ module Offer {
     }
 
     /// A wrapper around value `offered` that can be claimed by the address stored in `for` when after lock time.
-    resource struct Offer<Offered> { offered: Offered, for: address, time_lock: u64 }
+    struct Offer<Offered> has key, store { offered: Offered, for: address, time_lock: u64 }
 
     /// An offer of the specified type for the account does not match
     const EOFFER_DNE_FOR_ACCOUNT: u64 = 101;
@@ -20,7 +20,7 @@ module Offer {
 
     /// Publish a value of type `Offered` under the sender's account. The value can be claimed by
     /// either the `for` address or the transaction sender.
-    public fun create<Offered>(account: &signer, offered: Offered, for: address, lock_period: u64) {
+    public fun create<Offered: store>(account: &signer, offered: Offered, for: address, lock_period: u64) {
         let time_lock = Timestamp::now_seconds() + lock_period;
         //TODO should support multi Offer?
         move_to(account, Offer<Offered> { offered, for, time_lock });
@@ -36,7 +36,7 @@ module Offer {
     /// Only succeeds if the sender is the intended recipient stored in `for` or the original
     /// publisher `offer_address`, and now >= time_lock
     /// Also fails if no such value exists.
-    public fun redeem<Offered>(account: &signer, offer_address: address): Offered acquires Offer {
+    public fun redeem<Offered: store>(account: &signer, offer_address: address): Offered acquires Offer {
         let Offer<Offered> { offered, for, time_lock } = move_from<Offer<Offered>>(offer_address);
         let sender = Signer::address_of(account);
         let now = Timestamp::now_seconds();
@@ -53,7 +53,7 @@ module Offer {
     }
 
     /// Returns true if an offer of type `Offered` exists at `offer_address`.
-    public fun exists_at<Offered>(offer_address: address): bool {
+    public fun exists_at<Offered: store>(offer_address: address): bool {
         exists<Offer<Offered>>(offer_address)
     }
 
@@ -61,7 +61,7 @@ module Offer {
 
     /// Returns the address of the `Offered` type stored at `offer_address`.
     /// Fails if no such `Offer` exists.
-    public fun address_of<Offered>(offer_address: address): address acquires Offer {
+    public fun address_of<Offered: store>(offer_address: address): address acquires Offer {
         borrow_global<Offer<Offered>>(offer_address).for
     }
 

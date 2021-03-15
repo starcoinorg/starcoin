@@ -38,7 +38,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="peer_to_peer.md#peer_to_peer">peer_to_peer</a>&lt;TokenType&gt;(account: &signer, payee: address, payee_auth_key: vector&lt;u8&gt;, amount: u128) {
+<pre><code><b>fun</b> <a href="peer_to_peer.md#peer_to_peer">peer_to_peer</a>&lt;TokenType: store&gt;(account: &signer, payee: address, payee_auth_key: vector&lt;u8&gt;, amount: u128) {
   <b>if</b> (!<a href="../../modules/doc/Account.md#0x1_Account_exists_at">Account::exists_at</a>(payee)) {
     <b>let</b> created_address = <a href="../../modules/doc/Account.md#0x1_Account_create_account">Account::create_account</a>&lt;TokenType&gt;(payee_auth_key);
     <b>assert</b>(payee == created_address, <a href="../../modules/doc/Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="peer_to_peer.md#peer_to_peer_EADDRESS_AND_AUTH_KEY_MISMATCH">EADDRESS_AND_AUTH_KEY_MISMATCH</a>));

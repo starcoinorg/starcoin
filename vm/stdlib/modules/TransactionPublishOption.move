@@ -40,7 +40,7 @@ module TransactionPublishOption {
     /// 2. No module publishing, custom scripts are allowed.
     /// 3. Both module publishing and custom scripts are allowed.
     /// We represent these as the following resource.
-    struct TransactionPublishOption {
+    struct TransactionPublishOption has copy, drop, store {
         // Only script hashes in the following list can be executed. If the vector is empty, no
         // limitation would be enforced.
         script_allow_list: vector<vector<u8>>,
