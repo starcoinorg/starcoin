@@ -27,7 +27,10 @@ use types::{account_address::AccountAddress as Address, transaction};
 
 type Listener = (
     LocalTransactionsList,
-    (listener::TransactionsPoolNotifier, listener::Logger),
+    (
+        listener::TransactionsPoolNotifier,
+        (listener::Logger, listener::StatusLogger),
+    ),
 );
 type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::SeqNumberAndGasPrice, Listener>;
 
