@@ -37,7 +37,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                             let peer_id = #peer_id_indent;
                             debug!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
                             let rpc_path = stringify!(#name).to_string();
-                            let result = self.request(peer_id, rpc_path, input_arg_serialized).await;
+                            let result = self.request(peer_id.clone(), rpc_path, input_arg_serialized).await;
                             match result {
                                 Ok(result) => {
                                     let result = from_bytes::<network_rpc_core::Result::<Vec<u8>>>(&result);
@@ -49,8 +49,9 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                                 result
                                             },
                                             Err(e) => {
-                                                debug!("[network-rpc] response error: {:?} ", e); 
-                                                Err(e.into())
+                                                debug!("[network-rpc] response error: {:?} ", e);
+                                                let rpc_error_wrap: network_rpc_core::NetRpcErrorWrap = (peer_id, e).into();
+                                                Err(rpc_error_wrap.into())
                                             },
                                         },
                                         Err(e) => {

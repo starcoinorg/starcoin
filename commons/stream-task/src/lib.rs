@@ -15,6 +15,7 @@ mod task_stream;
 pub use collector::{CollectorState, CounterCollector, TaskResultCollector};
 pub use event::{TaskEventCounter, TaskEventCounterHandle, TaskEventHandle, TaskProgressReport};
 pub use generator::{AndThenGenerator, Generator, TaskFuture, TaskGenerator, TaskHandle};
+pub use task_stream::{CustomErrorHandle, DefaultCustomErrorHandle};
 
 #[derive(Error, Debug)]
 pub enum TaskError {

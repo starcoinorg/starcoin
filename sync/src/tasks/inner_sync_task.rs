@@ -12,7 +12,9 @@ use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
 use starcoin_types::time::TimeService;
 use std::sync::Arc;
-use stream_task::{Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle};
+use stream_task::{
+    CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle,
+};
 
 /// Split the full target to sub target
 pub async fn sub_target<F>(
@@ -90,6 +92,7 @@ where
     event_handle: Arc<dyn TaskEventHandle>,
     time_service: Arc<dyn TimeService>,
     peer_provider: N,
+    custom_error_handle: Arc<dyn CustomErrorHandle>,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -107,6 +110,7 @@ where
         event_handle: Arc<dyn TaskEventHandle>,
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
+        custom_error_handle: Arc<dyn CustomErrorHandle>,
     ) -> Self {
         Self {
             ancestor,
@@ -117,6 +121,7 @@ where
             event_handle,
             time_service,
             peer_provider,
+            custom_error_handle,
         }
     }
 
@@ -161,6 +166,7 @@ where
                 self.target.block_info.block_accumulator_info.clone(),
             ),
             self.event_handle.clone(),
+            self.custom_error_handle.clone(),
         )
         .and_then(move |(ancestor, accumulator), event_handle| {
             let check_local_store =
@@ -191,6 +197,7 @@ where
                 delay_milliseconds_on_error,
                 block_collector,
                 event_handle,
+                self.custom_error_handle.clone(),
             ))
         })
         .generate();

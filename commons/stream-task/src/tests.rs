@@ -139,7 +139,13 @@ async fn test_task_stream() {
     let config = MockTestConfig::new_with_max(max);
     let mock_state = MockTaskState::new(config);
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let task = FutureTaskStream::new(mock_state, 0, 0, event_handle);
+    let task = FutureTaskStream::new(
+        mock_state,
+        0,
+        0,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    );
     let results = task.buffered(10).collect::<Vec<_>>().await;
     assert_eq!(results.len() as u64, max);
 }
@@ -157,6 +163,7 @@ async fn test_counter_collector() {
         0,
         CounterCollector::new(),
         event_handle,
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate()
     .await;
@@ -178,6 +185,7 @@ async fn test_stream_task_batch() {
             0,
             CounterCollector::new(),
             event_handle,
+            Arc::new(DefaultCustomErrorHandle),
         )
         .generate()
         .await;
@@ -192,9 +200,17 @@ async fn test_vec_collector() {
     let config = MockTestConfig::new_with_max(max);
     let mock_state = MockTaskState::new(config);
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let result = TaskGenerator::new(mock_state, 10, 0, 0, vec![], event_handle)
-        .generate()
-        .await;
+    let result = TaskGenerator::new(
+        mock_state,
+        10,
+        0,
+        0,
+        vec![],
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await;
     //println!("{:?}", result);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len() as u64, max);
@@ -215,6 +231,7 @@ async fn test_task_cancel() {
         0,
         CounterCollector::new_with_counter(counter.clone()),
         event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate();
     let (fut, task_handle) = fut.with_handle();
@@ -253,6 +270,7 @@ async fn test_task_retry() {
         1,
         CounterCollector::new(),
         event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate();
     let counter = fut.await.unwrap();
@@ -278,6 +296,7 @@ async fn test_task_retry_fail() {
         1,
         CounterCollector::new_with_counter(counter.clone()),
         event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate();
     let result = fut.await;
@@ -307,6 +326,7 @@ async fn test_collector_error() {
             Err(format_err!("collect error for: {:?}", item))
         },
         event_handle,
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate()
     .await;
@@ -332,6 +352,7 @@ async fn test_break_error() {
         1,
         CounterCollector::new_with_counter(counter.clone()),
         event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate();
     let result = fut.await;
@@ -361,6 +382,7 @@ async fn test_collect_enough() {
         0,
         CounterCollector::new_with_max(collector_max),
         event_handle,
+        Arc::new(DefaultCustomErrorHandle),
     )
     .generate()
     .await;

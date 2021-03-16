@@ -10,6 +10,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
 use network_api::{PeerProvider, PeerSelector};
+use network_rpc_core::{NetRpcErrorWrap, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::BlockChain;
@@ -24,7 +25,8 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::time::Instant;
 use stream_task::{
-    Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
+    CustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator,
+    TaskHandle,
 };
 use traits::ChainReader;
 
@@ -288,6 +290,52 @@ impl BlockConnectedEventHandle for UnboundedSender<BlockConnectedEvent> {
     }
 }
 
+pub struct ExtSyncTaskErrorHandle<F>
+where
+    F: SyncFetcher + 'static,
+{
+    fetcher: Arc<F>,
+}
+
+impl<F> ExtSyncTaskErrorHandle<F>
+where
+    F: SyncFetcher + 'static,
+{
+    fn new(fetcher: Arc<F>) -> Self {
+        Self { fetcher }
+    }
+}
+
+impl<F> CustomErrorHandle for ExtSyncTaskErrorHandle<F>
+where
+    F: SyncFetcher + 'static,
+{
+    fn handle(&self, error: Error) {
+        match error.downcast::<NetRpcErrorWrap>() {
+            Ok(err) => {
+                if let Some(peer_id) = &err.peer_id {
+                    match &err.error.error_code() {
+                        RpcErrorCode::Forbidden
+                        | RpcErrorCode::MethodNotFound
+                        | RpcErrorCode::ServerUnavailable
+                        | RpcErrorCode::Unknown
+                        | RpcErrorCode::InternalError => {
+                            let peers = self.fetcher.peer_selector().remove_peer(peer_id);
+                            debug!("[sync]sync task, peer len {}", peers);
+                        }
+                        _ => {
+                            debug!("[sync]sync task err: {:?}", err);
+                        }
+                    }
+                }
+            }
+            Err(err) => {
+                debug!("[sync]Sync task err: {:?}", err);
+            }
+        }
+    }
+}
+
 mod accumulator_sync_task;
 mod block_sync_task;
 mod find_ancestor_task;
@@ -343,6 +391,7 @@ where
     let delay_milliseconds_on_error = 100;
     //only keep the best peer for find ancestor.
     fetcher.peer_selector().retain(target.peers.as_slice());
+    let ext_error_handle = Arc::new(ExtSyncTaskErrorHandle::new(fetcher.clone()));
 
     let sync_task = TaskGenerator::new(
         FindAncestorTask::new(
@@ -359,6 +408,7 @@ where
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         ))),
         event_handle.clone(),
+        ext_error_handle.clone(),
     )
     .generate();
     let (fut, _) = sync_task.with_handle();
@@ -402,6 +452,7 @@ where
                 event_handle_clone.clone(),
                 time_service.clone(),
                 peer_provider.clone(),
+                ext_error_handle.clone(),
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner
