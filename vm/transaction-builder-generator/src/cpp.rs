@@ -3,7 +3,9 @@
 
 use crate::common::type_not_allowed;
 use move_core_types::language_storage::TypeTag;
-use starcoin_vm_types::transaction::{ArgumentABI, ScriptABI, TypeArgumentABI};
+use starcoin_vm_types::transaction::{
+    ArgumentABI, ScriptABI, TransactionScriptABI, TypeArgumentABI,
+};
 
 use std::{
     io::{Result, Write},
@@ -11,7 +13,11 @@ use std::{
 };
 
 /// Output a header-only library providing C++ transaction builders for the given ABIs.
-pub fn output(out: &mut dyn Write, abis: &[ScriptABI], namespace: Option<&str>) -> Result<()> {
+pub fn output(
+    out: &mut dyn Write,
+    abis: &[TransactionScriptABI],
+    namespace: Option<&str>,
+) -> Result<()> {
     output_preamble(out)?;
     output_open_namespace(out, namespace)?;
     output_using_namespaces(out)?;
@@ -24,7 +30,7 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], namespace: Option<&str>) 
 /// Output the headers of a library providing C++ transaction builders for the given ABIs.
 pub fn output_library_header(
     out: &mut dyn Write,
-    abis: &[ScriptABI],
+    abis: &[TransactionScriptABI],
     namespace: Option<&str>,
 ) -> Result<()> {
     output_preamble(out)?;
@@ -39,7 +45,7 @@ pub fn output_library_header(
 /// Output the function definitions of a library providing C++ transaction builders for the given ABIs.
 pub fn output_library_body(
     out: &mut dyn Write,
-    abis: &[ScriptABI],
+    abis: &[TransactionScriptABI],
     library_name: &str,
     namespace: Option<&str>,
 ) -> Result<()> {
@@ -87,7 +93,7 @@ fn output_close_namespace(out: &mut dyn std::io::Write, namespace: Option<&str>)
     Ok(())
 }
 
-fn output_builder_declaration(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
+fn output_builder_declaration(out: &mut dyn Write, abi: &TransactionScriptABI) -> Result<()> {
     write!(out, "\n{}", quote_doc(abi.doc()))?;
     writeln!(
         out,
@@ -103,7 +109,11 @@ fn output_builder_declaration(out: &mut dyn Write, abi: &ScriptABI) -> Result<()
     Ok(())
 }
 
-fn output_builder_definition(out: &mut dyn Write, abi: &ScriptABI, inlined: bool) -> Result<()> {
+fn output_builder_definition(
+    out: &mut dyn Write,
+    abi: &TransactionScriptABI,
+    inlined: bool,
+) -> Result<()> {
     if inlined {
         write!(out, "\n{}", quote_doc(abi.doc()))?;
     }
@@ -235,10 +245,18 @@ impl crate::SourceInstaller for Installer {
         std::fs::create_dir_all(dir_path)?;
         let header_path = dir_path.join(name.to_string() + ".hpp");
         let mut header = std::fs::File::create(&header_path)?;
-        output_library_header(&mut header, abis, Some(name))?;
+        let abis = abis
+            .iter()
+            .cloned()
+            .filter_map(|abi| match abi {
+                ScriptABI::TransactionScript(abi) => Some(abi),
+                ScriptABI::ScriptFunction(_) => None,
+            })
+            .collect::<Vec<_>>();
+        output_library_header(&mut header, &abis, Some(name))?;
         let body_path = dir_path.join(name.to_string() + ".cpp");
         let mut body = std::fs::File::create(&body_path)?;
-        output_library_body(&mut body, abis, name, Some(name))?;
+        output_library_body(&mut body, &abis, name, Some(name))?;
         Ok(())
     }
 }

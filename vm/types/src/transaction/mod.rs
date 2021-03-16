@@ -34,7 +34,9 @@ pub use error::Error as TransactionError;
 pub use module::Module;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
-pub use script::{ArgumentABI, Script, ScriptABI, TypeArgumentABI};
+pub use script::{
+    ArgumentABI, Script, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
+};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,

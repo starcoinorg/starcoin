@@ -3,7 +3,9 @@
 
 use crate::common::type_not_allowed;
 use move_core_types::language_storage::TypeTag;
-use starcoin_vm_types::transaction::{ArgumentABI, ScriptABI, TypeArgumentABI};
+use starcoin_vm_types::transaction::{
+    ArgumentABI, ScriptABI, TransactionScriptABI, TypeArgumentABI,
+};
 
 use std::{
     io::{Result, Write},
@@ -11,7 +13,7 @@ use std::{
 };
 
 /// Output transaction builders in Python for the given ABIs.
-pub fn output(out: &mut dyn Write, abis: &[ScriptABI]) -> Result<()> {
+pub fn output(out: &mut dyn Write, abis: &[TransactionScriptABI]) -> Result<()> {
     output_preamble(out, None, None)?;
     for abi in abis {
         output_builder(out, abi)?;
@@ -21,7 +23,7 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI]) -> Result<()> {
 
 fn output_with_optional_packages(
     out: &mut dyn Write,
-    abis: &[ScriptABI],
+    abis: &[TransactionScriptABI],
     serde_package_name: Option<String>,
     diem_package_name: Option<String>,
 ) -> Result<()> {
@@ -62,7 +64,7 @@ fn output_preamble(
     )
 }
 
-fn output_builder(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
+fn output_builder(out: &mut dyn Write, abi: &TransactionScriptABI) -> Result<()> {
     writeln!(
         out,
         "\ndef encode_{}_script({}) -> Script:",
@@ -212,9 +214,17 @@ impl crate::SourceInstaller for Installer {
         abis: &[ScriptABI],
     ) -> std::result::Result<(), Self::Error> {
         let mut file = self.open_module_init_file(name)?;
+        let abis = abis
+            .iter()
+            .cloned()
+            .filter_map(|abi| match abi {
+                ScriptABI::TransactionScript(abi) => Some(abi),
+                ScriptABI::ScriptFunction(_) => None,
+            })
+            .collect::<Vec<_>>();
         output_with_optional_packages(
             &mut file,
-            abis,
+            &abis,
             self.serde_package_name.clone(),
             self.diem_package_name.clone(),
         )?;
