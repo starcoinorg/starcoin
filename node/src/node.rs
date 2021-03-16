@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::MetricsActorService;
 use crate::network_service_factory::NetworkServiceFactory;
 use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
@@ -255,6 +256,10 @@ impl NodeService {
 
         registry.register::<GenerateBlockEventPacemaker>().await?;
 
+        // start metrics push service
+        if config.metrics.push_config.is_config() {
+            registry.register::<MetricsActorService>().await?;
+        }
         // wait for service init.
         Delay::new(Duration::from_millis(1000)).await;
 

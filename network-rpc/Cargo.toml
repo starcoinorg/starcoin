@@ -24,7 +24,7 @@ network-rpc-core = { path = "core"}
 config = {path = "../config", package="starcoin-config"}
 starcoin-logger = {path = "../commons/logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-prometheus = "0.10"
+prometheus = "0.12.0"
 network-api = { path="../network/api" }
 bcs-ext = { path = "../commons/bcs_ext", package = "bcs-ext" }
 starcoin-types = { path = "../types", package = "starcoin-types" }

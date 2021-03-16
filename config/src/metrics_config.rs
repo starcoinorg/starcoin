@@ -12,6 +12,45 @@ use structopt::StructOpt;
 
 pub static DEFAULT_METRIC_SERVER_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
+pub static DEFAULT_METRIC_PUSH_AUTH_PASSWORD: &str = "";
+
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[serde(deny_unknown_fields)]
+pub struct PushParameterConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "push-server-url", long)]
+    /// Metrics push server url
+    pub push_server_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "auth-username", long)]
+    /// Metrics push server auth username
+    pub auth_username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "auth-password", long)]
+    /// Metrics push server auth password
+    pub auth_password: Option<String>,
+    #[structopt(name = "push-interval", long, default_value = "5")]
+    pub interval: u64,
+}
+impl PushParameterConfig {
+    pub fn is_config(&self) -> bool {
+        self.push_server_url.is_some()
+    }
+    pub fn push_server_url(&self) -> String {
+        self.push_server_url.clone().unwrap()
+    }
+    pub fn interval(&self) -> u64 {
+        self.interval
+    }
+    pub fn auth_username(&self) -> Option<String> {
+        self.auth_username.clone()
+    }
+    pub fn auth_password(&self) -> String {
+        self.auth_password
+            .clone()
+            .unwrap_or_else(|| DEFAULT_METRIC_PUSH_AUTH_PASSWORD.to_owned())
+    }
+}
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
@@ -20,6 +59,11 @@ pub struct MetricsConfig {
     #[structopt(name = "disable-metrics", long, help = "disable metrics")]
     /// disable the metrics server, this flag support both cli and config.
     pub disable_metrics: Option<bool>,
+
+    #[serde(default)]
+    #[structopt(flatten)]
+    /// Metrics push server parameter
+    pub push_config: PushParameterConfig,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "metrics-address", long)]
@@ -83,6 +127,9 @@ impl ConfigModule for MetricsConfig {
         }
         if opt.metrics.port.is_some() {
             self.port = opt.metrics.port;
+        }
+        if opt.metrics.push_config.is_config() {
+            self.push_config = opt.metrics.push_config.clone();
         }
         self.generate_address();
         Ok(())

@@ -55,7 +55,7 @@ impl BroadcastScoreMetrics {
     pub fn report_new(&self, peer: PeerId, score: i64) {
         self.peer_broadcast_score
             .with_label_values(&[&format!("peer-{:?}", peer)])
-            .inc_by(score);
+            .inc_by(score as u64);
         self.peer_broadcast_total_new_count
             .with_label_values(&[&format!("peer-{:?}", peer)])
             .inc();
@@ -64,7 +64,7 @@ impl BroadcastScoreMetrics {
     pub fn report_old(&self, peer: PeerId, score: i64) {
         self.peer_broadcast_score
             .with_label_values(&[&format!("peer-{:?}", peer)])
-            .inc_by(score);
+            .inc_by(score as u64);
         self.peer_broadcast_total_old_count
             .with_label_values(&[&format!("peer-{:?}", peer)])
             .inc();
