@@ -3,7 +3,9 @@
 
 use crate::common::type_not_allowed;
 use move_core_types::language_storage::TypeTag;
-use starcoin_vm_types::transaction::{ArgumentABI, ScriptABI, TypeArgumentABI};
+use starcoin_vm_types::transaction::{
+    ArgumentABI, ScriptABI, TransactionScriptABI, TypeArgumentABI,
+};
 
 use std::{
     io::{Result, Write},
@@ -13,7 +15,7 @@ use std::{
 /// Output transaction builders in Rust for the given ABIs.
 /// If `local_types` is true, we generate a file suitable for the Diem codebase itself
 /// rather than using serde-generated, standalone definitions.
-pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Result<()> {
+pub fn output(out: &mut dyn Write, abis: &[TransactionScriptABI], local_types: bool) -> Result<()> {
     output_preamble(out, local_types)?;
     for abi in abis {
         output_builder(out, abi, local_types)?;
@@ -44,7 +46,11 @@ use serde_bytes::ByteBuf;
     writeln!(out, "{}", preamble)
 }
 
-fn output_builder(out: &mut dyn Write, abi: &ScriptABI, local_types: bool) -> Result<()> {
+fn output_builder(
+    out: &mut dyn Write,
+    abi: &TransactionScriptABI,
+    local_types: bool,
+) -> Result<()> {
     write!(out, "\n{}", quote_doc(abi.doc()))?;
     writeln!(
         out,
@@ -220,7 +226,15 @@ starcoin-types = {{ path = "../starcoin-types", version = "{}" }}
         std::fs::create_dir(dir_path.join("src"))?;
         let source_path = dir_path.join("src/lib.rs");
         let mut source = std::fs::File::create(&source_path)?;
-        output(&mut source, abis, /* local_types */ false)?;
+        let abis = abis
+            .iter()
+            .cloned()
+            .filter_map(|abi| match abi {
+                ScriptABI::TransactionScript(abi) => Some(abi),
+                ScriptABI::ScriptFunction(_) => None,
+            })
+            .collect::<Vec<_>>();
+        output(&mut source, &abis, /* local_types */ false)?;
         Ok(())
     }
 }

@@ -3,7 +3,9 @@
 
 use crate::common::type_not_allowed;
 use move_core_types::language_storage::TypeTag;
-use starcoin_vm_types::transaction::{ArgumentABI, ScriptABI, TypeArgumentABI};
+use starcoin_vm_types::transaction::{
+    ArgumentABI, ScriptABI, TransactionScriptABI, TypeArgumentABI,
+};
 
 use std::{
     io::{Result, Write},
@@ -13,7 +15,7 @@ use std::{
 /// Output transaction builders in Java for the given ABIs.
 pub fn output(
     out: &mut dyn Write,
-    abis: &[ScriptABI],
+    abis: &[TransactionScriptABI],
     package: Option<&str>,
     class_name: &str,
 ) -> Result<()> {
@@ -47,7 +49,7 @@ import com.facebook.serde.Bytes;
     Ok(())
 }
 
-fn output_builder(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
+fn output_builder(out: &mut dyn Write, abi: &TransactionScriptABI) -> Result<()> {
     writeln!(
         out,
         "\n{}public static Script encode_{}_script({}) {{",
@@ -186,7 +188,15 @@ impl crate::SourceInstaller for Installer {
         std::fs::create_dir_all(&dir_path)?;
 
         let mut file = std::fs::File::create(dir_path.join(class_name.clone() + ".java"))?;
-        output(&mut file, abis, package_name.as_deref(), &class_name)?;
+        let abis = abis
+            .iter()
+            .cloned()
+            .filter_map(|abi| match abi {
+                ScriptABI::TransactionScript(abi) => Some(abi),
+                ScriptABI::ScriptFunction(_) => None,
+            })
+            .collect::<Vec<_>>();
+        output(&mut file, &abis, package_name.as_deref(), &class_name)?;
         Ok(())
     }
 }

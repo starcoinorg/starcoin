@@ -104,6 +104,12 @@ KeyRotationCapabilityResource:
 Module:
   STRUCT:
     - code: BYTES
+ModuleId:
+  STRUCT:
+    - address:
+        TYPENAME: AccountAddress
+    - name:
+        TYPENAME: Identifier
 MultiEd25519PrivateKey:
   NEWTYPESTRUCT: BYTES
 MultiEd25519PublicKey:
@@ -143,10 +149,21 @@ Script:
         SEQ:
           TYPENAME: TransactionArgument
 ScriptABI:
+  ENUM:
+    0:
+      TransactionScript:
+        NEWTYPE:
+          TYPENAME: TransactionScriptABI
+    1:
+      ScriptFunction:
+        NEWTYPE:
+          TYPENAME: ScriptFunctionABI
+ScriptFunctionABI:
   STRUCT:
     - name: STR
+    - module_name:
+        TYPENAME: ModuleId
     - doc: STR
-    - code: BYTES
     - ty_args:
         SEQ:
           TYPENAME: TypeArgumentABI
@@ -227,6 +244,17 @@ TransactionPayload:
       Package:
         NEWTYPE:
           TYPENAME: Package
+TransactionScriptABI:
+  STRUCT:
+    - name: STR
+    - doc: STR
+    - code: BYTES
+    - ty_args:
+        SEQ:
+          TYPENAME: TypeArgumentABI
+    - args:
+        SEQ:
+          TYPENAME: ArgumentABI
 TypeArgumentABI:
   STRUCT:
     - name: STR

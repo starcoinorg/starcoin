@@ -9,6 +9,7 @@
 
 use serde_generate as serdegen;
 use serde_reflection::Registry;
+use starcoin_vm_types::transaction::ScriptABI;
 use std::path::PathBuf;
 use structopt::{clap::arg_enum, StructOpt};
 use transaction_builder_generator as buildgen;
@@ -67,7 +68,16 @@ struct Options {
 
 fn main() {
     let options = Options::from_args();
-    let abis = buildgen::read_abis(options.abi_directory).expect("Failed to read ABI in directory");
+    let script_abis =
+        buildgen::read_abis(options.abi_directory).expect("Failed to read ABI in directory");
+    let abis = script_abis
+        .iter()
+        .cloned()
+        .filter_map(|abi| match abi {
+            ScriptABI::TransactionScript(abi) => Some(abi),
+            ScriptABI::ScriptFunction(_) => None,
+        })
+        .collect::<Vec<_>>();
 
     let install_dir = match options.target_source_dir {
         None => {
@@ -167,7 +177,7 @@ fn main() {
 
     if let Some(name) = options.module_name {
         installer
-            .install_transaction_builders(&name, &abis)
+            .install_transaction_builders(&name, &script_abis[..])
             .unwrap();
     }
 }
