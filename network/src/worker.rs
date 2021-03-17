@@ -65,7 +65,7 @@ pub fn build_network_worker(
                     name: protocol_name,
                     max_request_size: MAX_REQUEST_SIZE,
                     max_response_size: MAX_RESPONSE_SIZE,
-                    request_timeout: Duration::from_secs(15),
+                    request_timeout: Duration::from_secs(30),
                     inbound_queue: Some(sender),
                 }
             })
