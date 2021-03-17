@@ -19,7 +19,7 @@ module UpgradeModuleDaoProposal {
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
 
     /// A wrapper of `PackageTxnManager::UpgradePlanCapability`.
-    struct UpgradeModuleCapability<TokenT> has key, store {
+    struct UpgradeModuleCapability<TokenT> has key {
         cap: PackageTxnManager::UpgradePlanCapability,
     }
 

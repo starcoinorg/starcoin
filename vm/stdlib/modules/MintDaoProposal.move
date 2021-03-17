@@ -14,7 +14,7 @@ module MintDaoProposal {
     }
 
     /// A wrapper of Token MintCapability.
-    struct WrappedMintCapability<TokenType> has key, store {
+    struct WrappedMintCapability<TokenType> has key {
         cap: Token::MintCapability<TokenType>,
     }
 

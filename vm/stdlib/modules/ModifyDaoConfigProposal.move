@@ -16,7 +16,7 @@ module ModifyDaoConfigProposal {
     }
 
     /// A wrapper of `Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>`.
-    struct DaoConfigModifyCapability<TokenT: copy + drop + store> has key, store {
+    struct DaoConfigModifyCapability<TokenT: copy + drop + store> has key {
         cap: Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>,
     }
 

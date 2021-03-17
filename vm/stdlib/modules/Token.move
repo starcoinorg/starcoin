@@ -58,7 +58,7 @@ module Token {
     }
 
     /// Token information.
-    struct TokenInfo<TokenType> has key, store {
+    struct TokenInfo<TokenType> has key {
         /// The total value for the token represented by
         /// `TokenType`. Mutable.
         total_value: u128,
