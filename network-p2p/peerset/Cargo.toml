@@ -8,23 +8,18 @@ authors = ["Parity Technologies <admin@parity.io>", "Starcoin Core Dev <dev@star
 edition = "2018"
 repository = "https://github.com/paritytech/substrate/"
 documentation = "https://docs.rs/sc-peerset"
-readme = "README.md"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+
 [dependencies]
 futures = "0.3.12"
+libp2p = { version = "0.35.1", default-features = false }
+sp-utils = { path = "../../commons/utils" }
 log = "0.4.14"
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-libp2p = { version = "0.35.1", default-features = false }
-sp-utils = {path = "../../commons/utils"}
 wasm-timer = "0.2"
 
 [dev-dependencies]
 rand = "0.8.3"
-
-
-
-
-

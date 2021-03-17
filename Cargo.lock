@@ -2657,18 +2657,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "futures_codec"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0a73299e4718f5452e45980fc1d6957a070abe308d3700b63b8673f47e1c2b3"
-dependencies = [
- "bytes 0.5.6",
- "futures 0.3.12",
- "memchr",
- "pin-project 0.4.27",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4752,7 +4740,6 @@ dependencies = [
  "fnv",
  "futures 0.3.12",
  "futures-timer",
- "futures_codec",
  "hex",
  "ip_network",
  "libp2p",
@@ -4787,7 +4774,7 @@ name = "network-p2p-types"
 version = "1.0.0-alpha.1"
 dependencies = [
  "bitflags",
- "bytes 0.5.6",
+ "bytes 1.0.1",
  "derive_more",
  "libp2p",
  "rand 0.8.3",
@@ -7669,7 +7656,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "bitflags",
- "bytes 0.5.6",
+ "bytes 1.0.1",
  "derive_more",
  "fnv",
  "futures 0.3.12",
@@ -7712,7 +7699,7 @@ dependencies = [
  "anyhow",
  "api-limiter",
  "bcs-ext",
- "bytes 0.5.6",
+ "bytes 1.0.1",
  "futures 0.3.12",
  "futures-timer",
  "hex",
@@ -8400,7 +8387,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "byteorder",
- "bytes 0.5.6",
+ "bytes 1.0.1",
  "forkable-jellyfish-merkle",
  "futures 0.3.12",
  "hex",

@@ -1,9 +1,6 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 // This file is part of Substrate.
 
-// Copyright (C) 2017-2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2017-2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -23,8 +20,7 @@
 //!
 //! **Warning**: These APIs are not stable.
 
-use crate::Multiaddr;
-use libp2p::core::ConnectedPoint;
+use libp2p::{core::ConnectedPoint, Multiaddr};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -37,6 +33,7 @@ use std::{
 ///
 /// **Warning**: This API is not stable.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkState {
     /// PeerId of the local node.
     pub peer_id: String,
@@ -54,6 +51,21 @@ pub struct NetworkState {
 
 /// Part of the `NetworkState` struct. Unstable.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Peer {
+    /// How we are connected to the node.
+    pub endpoint: PeerEndpoint,
+    /// Node information, as provided by the node itself. Can be empty if not known yet.
+    pub version_string: Option<String>,
+    /// Latest ping duration with this node.
+    pub latest_ping_time: Option<Duration>,
+    /// List of addresses known for this node.
+    pub known_addresses: HashSet<Multiaddr>,
+}
+
+/// Part of the `NetworkState` struct. Unstable.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NotConnectedPeer {
     /// List of addresses known for this node.
     pub known_addresses: HashSet<Multiaddr>,
@@ -65,25 +77,7 @@ pub struct NotConnectedPeer {
 
 /// Part of the `NetworkState` struct. Unstable.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Peer {
-    /// How we are connected to the node.
-    pub endpoint: PeerEndpoint,
-    /// Node information, as provided by the node itself. Can be empty if not known yet.
-    pub version_string: Option<String>,
-    /// Latest ping duration with this node.
-    pub latest_ping_time: Option<Duration>,
-    /// If true, the peer is "enabled", which means that we try to open Substrate-related protocols
-    /// with this peer. If false, we stick to Kademlia and/or other network-only protocols.
-    pub enabled: bool,
-    /// If true, the peer is "open", which means that we have a Substrate-related protocol
-    /// with this peer.
-    pub open: bool,
-    /// List of addresses known for this node.
-    pub known_addresses: HashSet<Multiaddr>,
-}
-
-/// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum PeerEndpoint {
     /// We are dialing the given address.
     Dialing(Multiaddr),

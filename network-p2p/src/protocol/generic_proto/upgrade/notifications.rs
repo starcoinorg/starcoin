@@ -1,19 +1,22 @@
-// Copyright 2019-2020 Parity Technologies (UK) Ltd.
 // This file is part of Substrate.
 
-// Substrate is free software: you can redistribute it and/or modify
+// Copyright (C) 2019-2021 Parity Technologies (UK) Ltd.
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Substrate is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use asynchronous_codec::Framed;
 /// Notifications protocol.
 ///
 /// The Substrate notifications protocol consists in the following:
@@ -35,12 +38,11 @@
 ///
 use bytes::BytesMut;
 use futures::prelude::*;
-use futures_codec::Framed;
 use libp2p::core::{upgrade, InboundUpgrade, OutboundUpgrade, UpgradeInfo};
 use log::error;
 use std::{
     borrow::Cow,
-    convert::Infallible,
+    convert::{Infallible, TryFrom as _},
     io, iter, mem,
     pin::Pin,
     task::{Context, Poll},
@@ -48,7 +50,7 @@ use std::{
 use unsigned_varint::codec::UviBytes;
 
 /// Maximum allowed size of the two handshake messages, in bytes.
-pub const MAX_HANDSHAKE_SIZE: usize = 2048;
+const MAX_HANDSHAKE_SIZE: usize = 1024;
 
 /// Upgrade that accepts a substream, sends back a status message, then becomes a unidirectional
 /// stream of messages.
@@ -56,6 +58,8 @@ pub const MAX_HANDSHAKE_SIZE: usize = 2048;
 pub struct NotificationsIn {
     /// Protocol name to use when negotiating the substream.
     protocol_name: Cow<'static, str>,
+    /// Maximum allowed size for a single notification.
+    max_notification_size: u64,
 }
 
 /// Upgrade that opens a substream, waits for the remote to accept by sending back a status
@@ -66,6 +70,8 @@ pub struct NotificationsOut {
     protocol_name: Cow<'static, str>,
     /// Message to send when we start the handshake.
     initial_message: Vec<u8>,
+    /// Maximum allowed size for a single notification.
+    max_notification_size: u64,
 }
 
 /// A substream for incoming notification messages.
@@ -105,15 +111,11 @@ pub struct NotificationsOutSubstream<TSubstream> {
 
 impl NotificationsIn {
     /// Builds a new potential upgrade.
-    pub fn new(protocol_name: impl Into<Cow<'static, str>>) -> Self {
+    pub fn new(protocol_name: impl Into<Cow<'static, str>>, max_notification_size: u64) -> Self {
         NotificationsIn {
             protocol_name: protocol_name.into(),
+            max_notification_size,
         }
-    }
-
-    /// Returns the name of the protocol that we accept.
-    pub fn protocol_name(&self) -> &Cow<'static, str> {
-        &self.protocol_name
     }
 }
 
@@ -153,8 +155,13 @@ where
                 socket.read_exact(&mut initial_message).await?;
             }
 
+            let mut codec = UviBytes::default();
+            codec.set_max_len(
+                usize::try_from(self.max_notification_size).unwrap_or(usize::max_value()),
+            );
+
             let substream = NotificationsInSubstream {
-                socket: Framed::new(socket, UviBytes::default()),
+                socket: Framed::new(socket, codec),
                 handshake: NotificationsInSubstreamHandshake::NotSent,
             };
 
@@ -310,6 +317,7 @@ impl NotificationsOut {
     pub fn new(
         protocol_name: impl Into<Cow<'static, str>>,
         initial_message: impl Into<Vec<u8>>,
+        max_notification_size: u64,
     ) -> Self {
         let initial_message = initial_message.into();
         if initial_message.len() > MAX_HANDSHAKE_SIZE {
@@ -319,6 +327,7 @@ impl NotificationsOut {
         NotificationsOut {
             protocol_name: protocol_name.into(),
             initial_message,
+            max_notification_size,
         }
     }
 }
@@ -362,10 +371,15 @@ where
                 socket.read_exact(&mut handshake).await?;
             }
 
+            let mut codec = UviBytes::default();
+            codec.set_max_len(
+                usize::try_from(self.max_notification_size).unwrap_or(usize::max_value()),
+            );
+
             Ok((
                 handshake,
                 NotificationsOutSubstream {
-                    socket: Framed::new(socket, UviBytes::default()),
+                    socket: Framed::new(socket, codec),
                 },
             ))
         })
@@ -461,7 +475,7 @@ mod tests {
                 .unwrap();
             let (handshake, mut substream) = upgrade::apply_outbound(
                 socket,
-                NotificationsOut::new(PROTO_NAME, &b"initial message"[..]),
+                NotificationsOut::new(PROTO_NAME, &b"initial message"[..], 1024 * 1024),
                 upgrade::Version::V1,
             )
             .await
@@ -479,7 +493,7 @@ mod tests {
 
             let (socket, _) = listener.accept().await.unwrap();
             let (initial_message, mut substream) =
-                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME))
+                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME, 1024 * 1024))
                     .await
                     .unwrap();
 
@@ -506,7 +520,7 @@ mod tests {
                 .unwrap();
             let (handshake, mut substream) = upgrade::apply_outbound(
                 socket,
-                NotificationsOut::new(PROTO_NAME, vec![]),
+                NotificationsOut::new(PROTO_NAME, vec![], 1024 * 1024),
                 upgrade::Version::V1,
             )
             .await
@@ -524,7 +538,7 @@ mod tests {
 
             let (socket, _) = listener.accept().await.unwrap();
             let (initial_message, mut substream) =
-                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME))
+                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME, 1024 * 1024))
                     .await
                     .unwrap();
 
@@ -549,7 +563,7 @@ mod tests {
                 .unwrap();
             let outcome = upgrade::apply_outbound(
                 socket,
-                NotificationsOut::new(PROTO_NAME, &b"hello"[..]),
+                NotificationsOut::new(PROTO_NAME, &b"hello"[..], 1024 * 1024),
                 upgrade::Version::V1,
             )
             .await;
@@ -568,7 +582,7 @@ mod tests {
 
             let (socket, _) = listener.accept().await.unwrap();
             let (initial_msg, substream) =
-                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME))
+                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME, 1024 * 1024))
                     .await
                     .unwrap();
 
@@ -593,7 +607,11 @@ mod tests {
             let ret = upgrade::apply_outbound(
                 socket,
                 // We check that an initial message that is too large gets refused.
-                NotificationsOut::new(PROTO_NAME, (0..32768).map(|_| 0).collect::<Vec<_>>()),
+                NotificationsOut::new(
+                    PROTO_NAME,
+                    (0..32768).map(|_| 0).collect::<Vec<_>>(),
+                    1024 * 1024,
+                ),
                 upgrade::Version::V1,
             )
             .await;
@@ -607,7 +625,8 @@ mod tests {
                 .unwrap();
 
             let (socket, _) = listener.accept().await.unwrap();
-            let ret = upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME)).await;
+            let ret =
+                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME, 1024 * 1024)).await;
             assert!(ret.is_err());
         });
 
@@ -625,7 +644,7 @@ mod tests {
                 .unwrap();
             let ret = upgrade::apply_outbound(
                 socket,
-                NotificationsOut::new(PROTO_NAME, &b"initial message"[..]),
+                NotificationsOut::new(PROTO_NAME, &b"initial message"[..], 1024 * 1024),
                 upgrade::Version::V1,
             )
             .await;
@@ -640,7 +659,7 @@ mod tests {
 
             let (socket, _) = listener.accept().await.unwrap();
             let (initial_message, mut substream) =
-                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME))
+                upgrade::apply_inbound(socket, NotificationsIn::new(PROTO_NAME, 1024 * 1024))
                     .await
                     .unwrap();
             assert_eq!(initial_message, b"initial message");

@@ -17,7 +17,7 @@
 use crate::discovery::DiscoveryConfig;
 use crate::protocol::generic_proto::NotificationsSink;
 use crate::protocol::{CustomMessageOutcome, Protocol};
-use crate::request_responses::{RequestFailure, ResponseFailure};
+use crate::request_responses::{Event, IfDisconnected, RequestFailure, ResponseFailure};
 use crate::{
     discovery::DiscoveryBehaviour, discovery::DiscoveryOut, peer_info, protocol::event::DhtEvent,
     request_responses, DiscoveryNetBehaviour, ProtocolId,
@@ -64,6 +64,8 @@ pub enum BehaviourOut {
     NotificationStreamOpened {
         /// Node we opened the substream with.
         remote: PeerId,
+        /// The concerned protocol. Each protocol uses a different substream.
+        protocol: Cow<'static, str>,
         /// Object that permits sending notifications to the peer.
         notifications_sink: NotificationsSink,
         info: Box<ChainInfo>,
@@ -77,6 +79,7 @@ pub enum BehaviourOut {
     NotificationStreamReplaced {
         /// Id of the peer we are connected to.
         remote: PeerId,
+        protocol: Cow<'static, str>,
         /// Replacement for the previous [`NotificationsSink`].
         notifications_sink: NotificationsSink,
     },
@@ -86,13 +89,13 @@ pub enum BehaviourOut {
     NotificationStreamClosed {
         /// Node we closed the substream with.
         remote: PeerId,
+        protocol: Cow<'static, str>,
     },
 
     /// Messages have been received on one or more notifications protocols.
     NotificationsReceived {
         remote: PeerId,
-        protocol: Cow<'static, str>,
-        messages: Vec<Bytes>,
+        messages: Vec<(Cow<'static, str>, Bytes)>,
     },
 
     /// We have received a request from a peer and answered it.
@@ -222,33 +225,10 @@ impl Behaviour {
         protocol: &str,
         request: Vec<u8>,
         pending_response: oneshot::Sender<Result<Vec<u8>, RequestFailure>>,
+        connect: IfDisconnected,
     ) {
         self.request_responses
-            .send_request(target, protocol, request, pending_response)
-    }
-
-    /// Registers a new notifications protocol.
-    ///
-    /// Please call `event_stream` before registering a protocol, otherwise you may miss events
-    /// about the protocol that you have registered.
-    ///
-    /// You are very strongly encouraged to call this method very early on. Any connection open
-    /// will retain the protocols that were registered then, and not any new one.
-    pub fn register_notifications_protocol(&mut self, protocol_name: impl Into<Cow<'static, str>>) {
-        let protocol = protocol_name.into();
-        let list = self
-            .protocol
-            .register_notifications_protocol(protocol.clone());
-
-        for (remote, notifications_sink, info) in list {
-            //let role = reported_roles_to_observed_role(&self.role, remote, roles);
-            self.events
-                .push_back(BehaviourOut::NotificationStreamOpened {
-                    remote: *remote,
-                    notifications_sink: notifications_sink.clone(),
-                    info: Box::new(info.clone()),
-                });
-        }
+            .send_request(target, protocol, request, pending_response, connect)
     }
 
     /// Returns a shared reference to the user protocol.
@@ -273,39 +253,36 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
         match event {
             CustomMessageOutcome::NotificationStreamOpened {
                 remote,
+                protocol,
                 notifications_sink,
                 info,
             } => {
                 self.events
                     .push_back(BehaviourOut::NotificationStreamOpened {
                         remote,
+                        protocol,
                         notifications_sink,
                         info,
                     });
             }
-            CustomMessageOutcome::NotificationStreamClosed { remote } => {
+            CustomMessageOutcome::NotificationStreamClosed { remote, protocol } => {
                 self.events
-                    .push_back(BehaviourOut::NotificationStreamClosed { remote });
+                    .push_back(BehaviourOut::NotificationStreamClosed { remote, protocol });
             }
-            CustomMessageOutcome::NotificationsReceived {
-                remote,
-                protocol,
-                messages,
-            } => {
-                self.events.push_back(BehaviourOut::NotificationsReceived {
-                    remote,
-                    protocol,
-                    messages,
-                });
+            CustomMessageOutcome::NotificationsReceived { remote, messages } => {
+                self.events
+                    .push_back(BehaviourOut::NotificationsReceived { remote, messages });
             }
             CustomMessageOutcome::None => {}
             CustomMessageOutcome::NotificationStreamReplaced {
                 remote,
+                protocol,
                 notifications_sink,
             } => {
                 self.events
                     .push_back(BehaviourOut::NotificationStreamReplaced {
                         remote,
+                        protocol,
                         notifications_sink,
                     });
             }
@@ -340,6 +317,11 @@ impl NetworkBehaviourEventProcess<request_responses::Event> for Behaviour {
                     duration,
                     result,
                 });
+            }
+            Event::ReputationChanges { peer, changes } => {
+                for change in changes {
+                    self.protocol.report_peer(peer, change);
+                }
             }
         }
     }

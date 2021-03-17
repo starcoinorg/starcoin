@@ -207,30 +207,30 @@ struct Metrics {
 impl Metrics {
     fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         Ok(Self {
-			events_total: register(UIntCounterVec::new(
-				Opts::new(
-					"sub_libp2p_out_events_events_total",
-					"Number of broadcast network events that have been sent or received across all \
-					 channels"
-				),
-				&["event_name", "action", "name"]
-			)?, registry)?,
-			notifications_sizes: register(UIntCounterVec::new(
-				Opts::new(
-					"sub_libp2p_out_events_notifications_sizes",
-					"Size of notification events that have been sent or received across all \
-					 channels"
-				),
-				&["protocol", "action", "name"]
-			)?, registry)?,
-			num_channels: register(UIntGaugeVec::new(
-				Opts::new(
-					"sub_libp2p_out_events_num_channels",
-					"Number of internal active channels that broadcast network events",
-				),
-				&["name"]
-			)?, registry)?,
-		})
+            events_total: register(UIntCounterVec::new(
+                Opts::new(
+                    "sub_libp2p_out_events_events_total",
+                    "Number of broadcast network events that have been sent or received across all \
+					 channels",
+                ),
+                &["event_name", "action", "name"],
+            )?, registry)?,
+            notifications_sizes: register(UIntCounterVec::new(
+                Opts::new(
+                    "sub_libp2p_out_events_notifications_sizes",
+                    "Size of notification events that have been sent or received across all \
+					 channels",
+                ),
+                &["protocol", "action", "name"],
+            )?, registry)?,
+            num_channels: register(UIntGaugeVec::new(
+                Opts::new(
+                    "sub_libp2p_out_events_num_channels",
+                    "Number of internal active channels that broadcast network events",
+                ),
+                &["name"],
+            )?, registry)?,
+        })
     }
 
     fn event_in(&self, event: &Event, num: u64, name: &str) {
@@ -250,12 +250,8 @@ impl Metrics {
                     .with_label_values(&[&format!("notif-closed-{:?}", remote), "sent", name])
                     .inc_by(num);
             }
-            Event::NotificationsReceived {
-                protocol: protocol_name,
-                messages,
-                ..
-            } => {
-                for message in messages {
+            Event::NotificationsReceived { messages, .. } => {
+                for (protocol_name, message) in messages {
                     self.events_total
                         .with_label_values(&[&format!("notif-{:?}", protocol_name), "sent", name])
                         .inc_by(num);
@@ -286,15 +282,17 @@ impl Metrics {
                     .with_label_values(&[&format!("notif-closed-{:?}", remote), "received", name])
                     .inc();
             }
-            Event::NotificationsReceived {
-                protocol, messages, ..
-            } => {
-                for message in messages {
+            Event::NotificationsReceived { messages, .. } => {
+                for (protocol_name, message) in messages {
                     self.events_total
-                        .with_label_values(&[&format!("notif-{:?}", protocol), "received", name])
+                        .with_label_values(&[
+                            &format!("notif-{:?}", protocol_name),
+                            "received",
+                            name,
+                        ])
                         .inc();
                     self.notifications_sizes
-                        .with_label_values(&[&protocol, "received", name])
+                        .with_label_values(&[&protocol_name, "received", name])
                         .inc_by(u64::try_from(message.len()).unwrap_or(u64::max_value()));
                 }
             }

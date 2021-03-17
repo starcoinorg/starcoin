@@ -10,7 +10,7 @@ use futures::{FutureExt, TryFutureExt};
 use network_api::messages::NotificationMessage;
 use network_api::{NetworkService, PeerProvider, ReputationChange};
 use network_p2p_types::network_state::NetworkState;
-use network_p2p_types::Multiaddr;
+use network_p2p_types::{IfDisconnected, Multiaddr};
 use network_rpc_core::RawRpcClient;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::PeerId;
@@ -62,7 +62,12 @@ impl RawRpcClient for NetworkServiceRef {
     ) -> BoxFuture<Result<Vec<u8>>> {
         let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);
         self.network_service
-            .request(peer_id.into(), protocol, message)
+            .request(
+                peer_id.into(),
+                protocol,
+                message,
+                IfDisconnected::ImmediateError,
+            )
             .map_err(|e| e.into())
             .boxed()
     }

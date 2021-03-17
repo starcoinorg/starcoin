@@ -118,24 +118,20 @@ impl EventHandler<Self, Event> for NetworkActorService {
             Event::Dht(_) => {
                 debug!("ignore dht event");
             }
-            Event::NotificationStreamOpened { remote, info } => {
+            Event::NotificationStreamOpened { remote, info, .. } => {
                 debug!("Connected peer {:?}", remote);
                 let peer_event = PeerEvent::Open(remote.clone().into(), info.clone());
                 self.inner.on_peer_connected(remote.into(), *info);
                 ctx.broadcast(peer_event);
             }
-            Event::NotificationStreamClosed { remote } => {
+            Event::NotificationStreamClosed { remote, .. } => {
                 debug!("Close peer {:?}", remote);
                 let peer_event = PeerEvent::Close(remote.clone().into());
                 self.inner.on_peer_disconnected(remote.into());
                 ctx.broadcast(peer_event);
             }
-            Event::NotificationsReceived {
-                remote,
-                protocol,
-                messages,
-            } => {
-                for message in messages {
+            Event::NotificationsReceived { remote, messages } => {
+                for (protocol, message) in messages {
                     if let Err(e) = self.inner.handle_network_message(
                         remote.clone().into(),
                         protocol.clone(),
@@ -235,6 +231,7 @@ impl ServiceHandler<Self, GetSelfPeer> for NetworkActorService {
         self.inner.self_peer.get_peer_info().clone()
     }
 }
+
 // max peers is 100(in: 25 + out:75), so blocks lru + txn lru max memory usage about is:
 // (100 +1 ) * ( LRU_CACHE_SIZE * 32) *2 = 64M
 const LRU_CACHE_SIZE: usize = 10240;

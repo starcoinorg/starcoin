@@ -5,7 +5,7 @@ use anyhow::{format_err, Result};
 use futures_timer::Delay;
 use network_api::messages::PeerMessage;
 use network_api::{MultiaddrWithPeerId, PeerMessageHandler};
-use network_p2p_types::ProtocolRequest;
+use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -87,7 +87,13 @@ impl MockHandler<NetworkRpcService> for MockRpcHandler {
         let req = msg.downcast::<ProtocolRequest>().unwrap();
         debug!("MockRpcHandler handle request: {:?}", req);
         let resp = (self.rpc_fn)(req.protocol, req.request.peer.into(), req.request.payload);
-        req.request.pending_response.send(resp).unwrap();
+        req.request
+            .pending_response
+            .send(OutgoingResponse {
+                result: Ok(resp),
+                reputation_changes: vec![],
+            })
+            .unwrap();
     }
 }
 

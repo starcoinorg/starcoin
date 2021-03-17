@@ -95,6 +95,7 @@ pub fn build_network_worker(
     // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix
     let protocol_id = ProtocolId::from(format!("chain/{}", chain_info.chain_id()).as_str());
     debug!("Init network worker with config: {:?}", config);
+
     let worker = NetworkWorker::new(Params::new(
         config,
         protocol_id,

@@ -1,6 +1,6 @@
 // This file is part of Substrate.
 
-// Copyright (C) 2018-2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2018-2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,10 @@ use futures::prelude::*;
 use libp2p::PeerId;
 use rand::distributions::{Distribution, Uniform, WeightedIndex};
 use rand::seq::IteratorRandom;
-use sc_peerset::{IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange};
-use std::{collections::HashMap, collections::HashSet, iter, pin::Pin, task::Poll};
+use sc_peerset::{
+    DropReason, IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange, SetConfig, SetId,
+};
+use std::{collections::HashMap, collections::HashSet, pin::Pin, task::Poll};
 
 #[test]
 fn run() {
@@ -40,27 +42,28 @@ fn test_once() {
     let mut reserved_nodes = HashSet::<PeerId>::new();
 
     let (mut peerset, peerset_handle) = Peerset::from_config(PeersetConfig {
-        bootnodes: (0..Uniform::new_inclusive(0, 4).sample(&mut rng))
-            .map(|_| {
-                let id = PeerId::random();
-                known_nodes.insert(id);
-                id
-            })
-            .collect(),
-        priority_groups: {
-            let nodes = (0..Uniform::new_inclusive(0, 2).sample(&mut rng))
+        sets: vec![SetConfig {
+            bootnodes: (0..Uniform::new_inclusive(0, 4).sample(&mut rng))
                 .map(|_| {
                     let id = PeerId::random();
                     known_nodes.insert(id);
-                    reserved_nodes.insert(id);
                     id
                 })
-                .collect();
-            vec![("foo".to_string(), nodes)]
-        },
-        reserved_only: Uniform::new_inclusive(0, 10).sample(&mut rng) == 0,
-        in_peers: Uniform::new_inclusive(0, 25).sample(&mut rng),
-        out_peers: Uniform::new_inclusive(0, 25).sample(&mut rng),
+                .collect(),
+            reserved_nodes: {
+                (0..Uniform::new_inclusive(0, 2).sample(&mut rng))
+                    .map(|_| {
+                        let id = PeerId::random();
+                        known_nodes.insert(id);
+                        reserved_nodes.insert(id);
+                        id
+                    })
+                    .collect()
+            },
+            in_peers: Uniform::new_inclusive(0, 25).sample(&mut rng),
+            out_peers: Uniform::new_inclusive(0, 25).sample(&mut rng),
+            reserved_only: Uniform::new_inclusive(0, 10).sample(&mut rng) == 0,
+        }],
     });
 
     futures::executor::block_on(futures::future::poll_fn(move |cx| {
@@ -84,18 +87,18 @@ fn test_once() {
             {
                 // If we generate 0, poll the peerset.
                 0 => match Stream::poll_next(Pin::new(&mut peerset), cx) {
-                    Poll::Ready(Some(Message::Connect(id))) => {
+                    Poll::Ready(Some(Message::Connect { peer_id, .. })) => {
                         if let Some(id) = incoming_nodes
                             .iter()
-                            .find(|(_, v)| **v == id)
+                            .find(|(_, v)| **v == peer_id)
                             .map(|(&id, _)| id)
                         {
                             incoming_nodes.remove(&id);
                         }
-                        assert!(connected_nodes.insert(id));
+                        assert!(connected_nodes.insert(peer_id));
                     }
-                    Poll::Ready(Some(Message::Drop(id))) => {
-                        connected_nodes.remove(&id);
+                    Poll::Ready(Some(Message::Drop { peer_id, .. })) => {
+                        connected_nodes.remove(&peer_id);
                     }
                     Poll::Ready(Some(Message::Accept(n))) => {
                         assert!(connected_nodes.insert(incoming_nodes.remove(&n).unwrap()))
@@ -111,7 +114,7 @@ fn test_once() {
                 1 => {
                     let new_id = PeerId::random();
                     known_nodes.insert(new_id);
-                    peerset.discovered(iter::once(new_id));
+                    peerset.add_to_peers_set(SetId::from(0), new_id);
                 }
 
                 // If we generate 2, adjust a random reputation.
@@ -127,7 +130,7 @@ fn test_once() {
                 3 => {
                     if let Some(id) = connected_nodes.iter().choose(&mut rng).cloned() {
                         connected_nodes.remove(&id);
-                        peerset.dropped(id);
+                        peerset.dropped(SetId::from(0), id, DropReason::Unknown);
                     }
                 }
 
@@ -141,15 +144,15 @@ fn test_once() {
                         })
                         .choose(&mut rng)
                     {
-                        peerset.incoming(*id, next_incoming_id);
+                        peerset.incoming(SetId::from(0), *id, next_incoming_id);
                         incoming_nodes.insert(next_incoming_id, *id);
                         next_incoming_id.0 += 1;
                     }
                 }
 
                 // 5 and 6 are the reserved-only mode.
-                5 => peerset_handle.set_reserved_only(true),
-                6 => peerset_handle.set_reserved_only(false),
+                5 => peerset_handle.set_reserved_only(SetId::from(0), true),
+                6 => peerset_handle.set_reserved_only(SetId::from(0), false),
 
                 // 7 and 8 are about switching a random node in or out of reserved mode.
                 7 => {
@@ -158,14 +161,14 @@ fn test_once() {
                         .filter(|n| !reserved_nodes.contains(*n))
                         .choose(&mut rng)
                     {
-                        peerset_handle.add_reserved_peer(*id);
+                        peerset_handle.add_reserved_peer(SetId::from(0), *id);
                         reserved_nodes.insert(*id);
                     }
                 }
                 8 => {
                     if let Some(id) = reserved_nodes.iter().choose(&mut rng).cloned() {
                         reserved_nodes.remove(&id);
-                        peerset_handle.remove_reserved_peer(id);
+                        peerset_handle.remove_reserved_peer(SetId::from(0), id);
                     }
                 }
 
