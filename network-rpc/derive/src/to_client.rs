@@ -50,8 +50,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                             },
                                             Err(e) => {
                                                 debug!("[network-rpc] response error: {:?} ", e);
-                                                let rpc_error_wrap: network_rpc_core::NetRpcErrorWrap = (peer_id, e).into();
-                                                Err(rpc_error_wrap.into())
+                                                let error = Err(e.into());
+                                                error.with_context(|| peer_id)
                                             },
                                         },
                                         Err(e) => {
@@ -88,6 +88,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         use network_rpc_core::{RawRpcClient, PeerId};
         use std::sync::Arc;
         use network_rpc_core::NetRpcError;
+        use anyhow::Context;
 
         #get_rpc_info_method
 

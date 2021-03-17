@@ -10,7 +10,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
 use network_api::{PeerProvider, PeerSelector};
-use network_rpc_core::{NetRpcErrorWrap, RpcErrorCode};
+use network_rpc_core::{NetRpcErrorWrap, RpcErrorCode, NetRpcError};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::BlockChain;
@@ -311,20 +311,21 @@ where
     F: SyncFetcher + 'static,
 {
     fn handle(&self, error: Error) {
-        match error.downcast::<NetRpcErrorWrap>() {
-            Ok(err) => {
-                if let Some(peer_id) = &err.peer_id {
-                    match &err.error.error_code() {
+        match error.downcast::<NetRpcError>() {
+            Ok(prc_error) => {
+                let peer_str = prc_error.to_string();
+                if let Ok(peer_id) = PeerId::from_str(&peer_str) {
+                    match &prc_error.error_code() {
                         RpcErrorCode::Forbidden
                         | RpcErrorCode::MethodNotFound
                         | RpcErrorCode::ServerUnavailable
                         | RpcErrorCode::Unknown
                         | RpcErrorCode::InternalError => {
-                            let peers = self.fetcher.peer_selector().remove_peer(peer_id);
+                            let peers = self.fetcher.peer_selector().remove_peer(&peer_id);
                             debug!("[sync]sync task, peer len {}", peers);
                         }
                         _ => {
-                            debug!("[sync]sync task err: {:?}", err);
+                            debug!("[sync]sync task err: {:?}", prc_error);
                         }
                     }
                 }
@@ -350,6 +351,7 @@ use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use std::str::FromStr;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,

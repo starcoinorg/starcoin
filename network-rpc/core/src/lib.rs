@@ -48,44 +48,44 @@ pub enum RpcErrorCode {
     Unknown = 1000,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct NetRpcErrorWrap {
-    pub peer_id: Option<PeerId>,
-    pub error: NetRpcError,
-}
-
-impl From<(PeerId, NetRpcError)> for NetRpcErrorWrap {
-    fn from(data: (PeerId, NetRpcError)) -> Self {
-        Self {
-            peer_id: Some(data.0),
-            error: data.1,
-        }
-    }
-}
-
-impl std::error::Error for NetRpcErrorWrap {}
-
-impl std::fmt::Display for NetRpcErrorWrap {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "Network Rpc Error, peer :{:?} , error: {:?}",
-            self.peer_id, self.error
-        )
-    }
-}
-
-impl From<anyhow::Error> for NetRpcErrorWrap {
-    fn from(any_err: anyhow::Error) -> Self {
-        match any_err.downcast::<NetRpcErrorWrap>() {
-            Ok(rpc_err) => rpc_err,
-            Err(any_err) => Self {
-                peer_id: None,
-                error: NetRpcError::new(RpcErrorCode::InternalError, any_err.to_string()),
-            },
-        }
-    }
-}
+// #[derive(Debug, PartialEq, Clone)]
+// pub struct NetRpcErrorWrap {
+//     pub peer_id: Option<PeerId>,
+//     pub error: NetRpcError,
+// }
+//
+// impl From<(PeerId, NetRpcError)> for NetRpcErrorWrap {
+//     fn from(data: (PeerId, NetRpcError)) -> Self {
+//         Self {
+//             peer_id: Some(data.0),
+//             error: data.1,
+//         }
+//     }
+// }
+//
+// impl std::error::Error for NetRpcErrorWrap {}
+//
+// impl std::fmt::Display for NetRpcErrorWrap {
+//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         write!(
+//             f,
+//             "Network Rpc Error, peer :{:?} , error: {:?}",
+//             self.peer_id, self.error
+//         )
+//     }
+// }
+//
+// impl From<anyhow::Error> for NetRpcErrorWrap {
+//     fn from(any_err: anyhow::Error) -> Self {
+//         match any_err.downcast::<NetRpcErrorWrap>() {
+//             Ok(rpc_err) => rpc_err,
+//             Err(any_err) => Self {
+//                 peer_id: None,
+//                 error: NetRpcError::new(RpcErrorCode::InternalError, any_err.to_string()),
+//             },
+//         }
+//     }
+// }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

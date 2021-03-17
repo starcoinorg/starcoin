@@ -4,7 +4,7 @@
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Result, Context};
 use async_std::task::JoinHandle;
 use config::ChainNetwork;
 use futures::channel::mpsc::UnboundedReceiver;
@@ -12,7 +12,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
 use network_api::{PeerInfo, PeerSelector, PeerStrategy};
-use network_rpc_core::{NetRpcError, NetRpcErrorWrap, RpcErrorCode};
+use network_rpc_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
@@ -79,9 +79,9 @@ impl ErrorMocker {
                             RpcErrorCode::MethodNotFound,
                             "MethodNotFound".to_string(),
                         );
-                        let rpc_error_wrap: NetRpcErrorWrap =
-                            (self.peer_id.clone(), rpc_error).into();
-                        Err(rpc_error_wrap.into())
+                        let error = Err(rpc_error.into());
+                        error.with_context(peer_id);
+                        error
                     }
                 };
             }
