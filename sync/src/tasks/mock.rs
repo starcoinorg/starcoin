@@ -4,7 +4,7 @@
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
-use anyhow::{format_err, Result, Context};
+use anyhow::{format_err, Context, Result};
 use async_std::task::JoinHandle;
 use config::ChainNetwork;
 use futures::channel::mpsc::UnboundedReceiver;
@@ -79,9 +79,8 @@ impl ErrorMocker {
                             RpcErrorCode::MethodNotFound,
                             "MethodNotFound".to_string(),
                         );
-                        let error = Err(rpc_error.into());
-                        error.with_context(peer_id);
-                        error
+                        let error = Err(rpc_error);
+                        error.with_context(|| self.peer_id.clone())
                     }
                 };
             }

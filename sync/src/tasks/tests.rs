@@ -9,6 +9,7 @@ use crate::tasks::{
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask,
 };
 use crate::verified_rpc_client::RpcVerifyError;
+use anyhow::Context;
 use anyhow::{format_err, Result};
 use config::{BuiltinNetworkID, ChainNetwork};
 use futures::channel::mpsc::unbounded;
@@ -37,7 +38,6 @@ use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
 };
 use test_helper::DummyNetworkService;
-use anyhow::{Context};
 
 #[stest::test]
 pub async fn test_full_sync_new_node() -> Result<()> {
@@ -852,7 +852,7 @@ async fn test_block_sync_with_local() -> Result<()> {
 }
 
 #[stest::test(timeout = 120)]
-async fn test_api_rate_limit_err() -> Result<()> {
+async fn test_net_rpc_err() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new_with_strategy(net1, ErrorStrategy::MethodNotFound, 50)?;
     node1.produce_block(10)?;

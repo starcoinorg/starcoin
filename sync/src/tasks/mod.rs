@@ -10,7 +10,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
 use network_api::{PeerProvider, PeerSelector};
-use network_rpc_core::{NetRpcErrorWrap, RpcErrorCode, NetRpcError};
+use network_rpc_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::BlockChain;
@@ -311,27 +311,23 @@ where
     F: SyncFetcher + 'static,
 {
     fn handle(&self, error: Error) {
-        match error.downcast::<NetRpcError>() {
-            Ok(prc_error) => {
-                let peer_str = prc_error.to_string();
-                if let Ok(peer_id) = PeerId::from_str(&peer_str) {
-                    match &prc_error.error_code() {
-                        RpcErrorCode::Forbidden
-                        | RpcErrorCode::MethodNotFound
-                        | RpcErrorCode::ServerUnavailable
-                        | RpcErrorCode::Unknown
-                        | RpcErrorCode::InternalError => {
-                            let peers = self.fetcher.peer_selector().remove_peer(&peer_id);
-                            debug!("[sync]sync task, peer len {}", peers);
-                        }
-                        _ => {
-                            debug!("[sync]sync task err: {:?}", prc_error);
-                        }
+        let peer_str = error.to_string();
+        debug!("[sync]sync task peer_str: {:?}", peer_str);
+        if let Ok(peer_id) = PeerId::from_str(&peer_str) {
+            if let Ok(prc_error) = error.downcast::<NetRpcError>() {
+                match &prc_error.error_code() {
+                    RpcErrorCode::Forbidden
+                    | RpcErrorCode::MethodNotFound
+                    | RpcErrorCode::ServerUnavailable
+                    | RpcErrorCode::Unknown
+                    | RpcErrorCode::InternalError => {
+                        let peers = self.fetcher.peer_selector().remove_peer(&peer_id);
+                        debug!("[sync]sync task, peer len {}", peers);
+                    }
+                    _ => {
+                        debug!("[sync]sync task err: {:?}", prc_error);
                     }
                 }
-            }
-            Err(err) => {
-                debug!("[sync]Sync task err: {:?}", err);
             }
         }
     }
