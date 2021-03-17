@@ -22,11 +22,11 @@ log = "0.4.14"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "35b83099823d040a310a52f96622ab5e97aed0f5" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "35b83099823d040a310a52f96622ab5e97aed0f5" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "35b83099823d040a310a52f96622ab5e97aed0f5" }
-vm = { git = "https://github.com/starcoinorg/diem", rev = "35b83099823d040a310a52f96622ab5e97aed0f5"}
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "35b83099823d040a310a52f96622ab5e97aed0f5" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "f10ee5691669ba01508837fcd3babc303713342c" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "f10ee5691669ba01508837fcd3babc303713342c" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "f10ee5691669ba01508837fcd3babc303713342c" }
+vm = { git = "https://github.com/starcoinorg/diem", rev = "f10ee5691669ba01508837fcd3babc303713342c"}
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "f10ee5691669ba01508837fcd3babc303713342c" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -39,7 +39,7 @@ forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { git = "https://github.com/starcoinorg/diem", rev = "35b83099823d040a310a52f96622ab5e97aed0f5", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/diem", rev = "f10ee5691669ba01508837fcd3babc303713342c", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
