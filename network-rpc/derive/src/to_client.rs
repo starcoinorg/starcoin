@@ -50,8 +50,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                             },
                                             Err(e) => {
                                                 debug!("[network-rpc] response error: {:?} ", e);
-                                                let error = Err(e.into());
-                                                error.with_context(|| peer_id)
+                                                let error = e.into();
+                                                Err(error.with_context(|| peer_id))
                                             },
                                         },
                                         Err(e) => {
