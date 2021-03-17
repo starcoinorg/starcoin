@@ -46,7 +46,7 @@ module Epoch {
     }
 
     /// New epoch event.
-    struct NewEpochEvent has copy, drop, store {
+    struct NewEpochEvent has drop, store {
         /// Epoch::number
         number: u64,
         /// Epoch::start_time

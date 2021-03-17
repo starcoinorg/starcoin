@@ -26,7 +26,7 @@ module Config {
     }
 
     /// Event emitted when config value is changed.
-    struct ConfigChangeEvent<ConfigValue: copy + drop + store> has copy, drop, store {
+    struct ConfigChangeEvent<ConfigValue: copy + drop + store> has drop, store {
         account_address: address,
         value: ConfigValue,
     }

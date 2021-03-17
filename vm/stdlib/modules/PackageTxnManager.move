@@ -74,7 +74,7 @@ address 0x1 {
         }
 
         /// module upgrade event.
-        struct UpgradeEvent has copy, drop, store {
+        struct UpgradeEvent has drop, store {
             package_address: address,
             package_hash: vector<u8>,
             version: u64,

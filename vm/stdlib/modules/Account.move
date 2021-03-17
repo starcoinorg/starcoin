@@ -71,7 +71,7 @@ module Account {
     }
 
     /// Message for balance withdraw event.
-    struct WithdrawEvent has copy, drop, store {
+    struct WithdrawEvent has drop, store {
         /// The amount of Token<TokenType> sent
         amount: u128,
         /// The code symbol for the token that was sent
@@ -80,7 +80,7 @@ module Account {
         metadata: vector<u8>,
     }
     /// Message for balance deposit event.
-    struct DepositEvent has copy, drop, store {
+    struct DepositEvent has drop, store {
         /// The amount of Token<TokenType> sent
         amount: u128,
         /// The code symbol for the token that was sent
@@ -90,7 +90,7 @@ module Account {
     }
 
     /// Message for accept token events
-    struct AcceptTokenEvent has copy, drop, store {
+    struct AcceptTokenEvent has drop, store {
         token_code: Token::TokenCode,
     }
 

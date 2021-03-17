@@ -42,7 +42,7 @@ module Token {
 
 
     /// Event emitted when token minted.
-    struct MintEvent has copy, drop, store {
+    struct MintEvent has drop, store {
         /// funds added to the system
         amount: u128,
         /// full info of Token.
@@ -50,7 +50,7 @@ module Token {
     }
 
     /// Event emitted when token burned.
-    struct BurnEvent has copy, drop, store {
+    struct BurnEvent has drop, store {
         /// funds removed from the system
         amount: u128,
         /// full info of Token

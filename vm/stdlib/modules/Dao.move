@@ -55,7 +55,7 @@ module Dao {
     }
 
     /// emitted when proposal created.
-    struct ProposalCreatedEvent has copy, drop, store {
+    struct ProposalCreatedEvent has drop, store {
         /// the proposal id.
         proposal_id: u64,
         /// proposer is the user who create the proposal.
@@ -63,7 +63,7 @@ module Dao {
     }
 
     /// emitted when user vote/revoke_vote.
-    struct VoteChangedEvent has copy, drop, store {
+    struct VoteChangedEvent has drop, store {
         /// the proposal id.
         proposal_id: u64,
         /// the voter.
