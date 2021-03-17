@@ -71,18 +71,21 @@ impl TxPoolActorService {
     fn transactions_to_propagate(&self) -> Result<Vec<SignedUserTransaction>> {
         let statedb = self.inner.get_chain_reader();
         let reader = AccountStateReader::new(&statedb);
-        let block_gas_limit = reader.get_epoch()?.block_gas_limit();
-        // TODO: fetch from a gas constants
-        let min_tx_gas = 200;
 
-        let max_len = std::cmp::max(
-            MIN_TXN_TO_PROPAGATE,
-            (block_gas_limit / min_tx_gas * PROPAGATE_FOR_BLOCKS) as usize,
-        );
+        // TODO: fetch from a gas constants
+        //TODO optimize broadcast txn by hash, then calculate max length by block gas limit
+        // currently use a small size for reduce broadcast message size.
+        // let block_gas_limit = reader.get_epoch()?.block_gas_limit();
+        //let min_tx_gas = 200;
+        // let max_len = std::cmp::max(
+        //     MIN_TXN_TO_PROPAGATE,
+        //     (block_gas_limit / min_tx_gas * PROPAGATE_FOR_BLOCKS) as usize,
+        // );
+        let max_len = 100;
         let current_timestamp = reader.get_timestamp()?.seconds();
         Ok(self
             .inner
-            .get_pending(max_len as u64, current_timestamp)
+            .get_pending(max_len, current_timestamp)
             .into_iter()
             .map(|t| t.signed().clone())
             .collect())
