@@ -351,7 +351,7 @@ where
             10,
             fetcher.clone(),
         ),
-        3,
+        2,
         max_retry_times,
         delay_milliseconds_on_error,
         AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
@@ -407,7 +407,7 @@ where
             let (block_chain, _) = inner
                 .do_sync(
                     current_block_info.clone(),
-                    5,
+                    2,
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
