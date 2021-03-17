@@ -37,6 +37,7 @@ use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
 };
 use test_helper::DummyNetworkService;
+use anyhow::{Context};
 
 #[stest::test]
 pub async fn test_full_sync_new_node() -> Result<()> {
@@ -888,5 +889,18 @@ async fn test_api_rate_limit_err() -> Result<()> {
 
     let sync_result = sync_join_handle.await?;
     assert!(sync_result.is_err());
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_err_context() -> Result<()> {
+    let peer_id = PeerId::random();
+    let result = std::fs::read("FileNotExist").with_context(|| peer_id.clone());
+    if let Err(error) = result {
+        debug!("peer: {:?}", error);
+        assert_eq!(peer_id.to_string(), error.to_string());
+        let err = error.downcast::<std::io::Error>().unwrap();
+        debug!("err{:?}", err);
+    }
     Ok(())
 }
