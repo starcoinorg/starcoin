@@ -299,7 +299,7 @@ module Dao {
             assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
             assert(my_vote.agree == agree, Errors::invalid_state(ERR_VOTE_STATE_MISMATCH));
 
-            _cast_vote(proposal, my_vote, stake);
+            do_cast_vote(proposal, my_vote, stake);
             Token::value(&my_vote.stake)
         } else {
             let my_vote = Vote<TokenT> {
@@ -308,7 +308,7 @@ module Dao {
                 stake: Token::zero(),
                 agree,
             };
-            _cast_vote(proposal, &mut my_vote, stake);
+            do_cast_vote(proposal, &mut my_vote, stake);
             let total_voted = Token::value(&my_vote.stake);
             move_to(signer, my_vote);
             total_voted
@@ -359,7 +359,7 @@ module Dao {
         ensures !vote_exists ==> global<Vote<TokenT>>(sender).stake.value == stake.value;
     }
 
-    fun _cast_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
+    fun do_cast_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
         let stake_value = Token::value(&stake);
         Token::deposit(&mut vote.stake, stake);
         if (vote.agree) {
@@ -369,7 +369,7 @@ module Dao {
         };
     }
 
-    spec fun _cast_vote {
+    spec fun do_cast_vote {
         pragma addition_overflow_unchecked = true;
         aborts_if vote.stake.value + stake.value > MAX_U128;
         ensures vote.stake.value == old(vote).stake.value + stake.value;
@@ -402,7 +402,7 @@ module Dao {
 
         // flip the vote
         if (my_vote.agree != agree) {
-            let total_voted = _flip_vote(my_vote, proposal);
+            let total_voted = do_flip_vote(my_vote, proposal);
             // emit event
             let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
             Event::emit_event(
@@ -445,7 +445,7 @@ module Dao {
         ensures vote.agree != agree ==> vote.agree == agree;
     }
 
-    fun _flip_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
+    fun do_flip_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
         my_vote.agree = !my_vote.agree;
         let total_voted = Token::value(&my_vote.stake);
         if (my_vote.agree) {
@@ -466,7 +466,7 @@ module Dao {
         aborts_if !my_vote.agree && proposal.for_votes + my_vote.stake.value > MAX_U128;
     }
 
-    spec fun _flip_vote {
+    spec fun do_flip_vote {
         include CheckFlipVote<TokenT, ActionT>;
         ensures my_vote.agree == !old(my_vote).agree;
     }
@@ -493,7 +493,7 @@ module Dao {
             assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
         };
         // revoke vote on proposal
-        let reverted_stake =_revoke_vote(proposal, my_vote, voting_power);
+        let reverted_stake =do_revoke_vote(proposal, my_vote, voting_power);
         // emit vote changed event
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         Event::emit_event(
@@ -532,7 +532,7 @@ module Dao {
         ensures result.value == voting_power;
     }
 
-    fun _revoke_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
+    fun do_revoke_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
         spec {
             assume vote.stake.value >= to_revoke;
         };
@@ -556,7 +556,7 @@ module Dao {
         aborts_if !vote.agree && proposal.against_votes < to_revoke;
     }
 
-    spec fun _revoke_vote {
+    spec fun do_revoke_vote {
         include CheckRevokeVote<TokenT, ActionT>;
         ensures vote.agree ==> old(proposal).for_votes == proposal.for_votes + to_revoke;
         ensures !vote.agree ==> old(proposal).against_votes == proposal.against_votes + to_revoke;
@@ -691,7 +691,7 @@ module Dao {
         aborts_if proposal.id != proposal_id;
         include AbortIfTimestampNotExist;
         let current_time = Timestamp::spec_now_millseconds();
-        let state = _proposal_state(proposal, current_time);
+        let state = do_proposal_state(proposal, current_time);
         aborts_if (forall s in expected_states : s != state);
         aborts_if state == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
         aborts_if state == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
@@ -735,7 +735,7 @@ module Dao {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let current_time = Timestamp::now_milliseconds();
-        _proposal_state(proposal, current_time)
+        do_proposal_state(proposal, current_time)
     }
 
     spec schema CheckProposalStates<TokenT, ActionT> {
@@ -749,7 +749,7 @@ module Dao {
 
         include AbortIfTimestampNotExist;
         let current_time = Timestamp::spec_now_millseconds();
-        let state = _proposal_state(proposal, current_time);
+        let state = do_proposal_state(proposal, current_time);
         aborts_if (forall s in expected_states : s != state);
     }
 
@@ -763,7 +763,7 @@ module Dao {
         aborts_if proposal.id != proposal_id;
     }
 
-    fun _proposal_state<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    fun do_proposal_state<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposal: &Proposal<TokenT, ActionT>,
         current_time: u64,
     ): u8 {
