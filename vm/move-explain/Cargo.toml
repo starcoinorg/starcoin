@@ -12,9 +12,9 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.21"
 stdlib = { package="stdlib", path = "../stdlib"}
-diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="89f4269a16706a5ed747bf6ca76d12d9e52a3cae" }
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="89f4269a16706a5ed747bf6ca76d12d9e52a3cae" }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "89f4269a16706a5ed747bf6ca76d12d9e52a3cae" }
+diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b" }
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 
 [features]
