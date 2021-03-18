@@ -3,7 +3,7 @@
 
 use crate::collector::{FutureTaskSink, SinkError};
 use crate::task_stream::FutureTaskStream;
-use crate::{TaskError, TaskEventHandle, TaskResultCollector, TaskState};
+use crate::{CustomErrorHandle, TaskError, TaskEventHandle, TaskResultCollector, TaskState};
 use anyhow::Result;
 use futures::task::{Context, Poll};
 use futures::{
@@ -103,6 +103,7 @@ where
     delay_milliseconds: u64,
     collector: C,
     event_handle: Arc<dyn TaskEventHandle>,
+    custom_error_handle: Arc<dyn CustomErrorHandle>,
 }
 
 impl<S, C> TaskGenerator<S, C>
@@ -117,6 +118,7 @@ where
         delay_milliseconds_on_error: u64,
         collector: C,
         event_handle: Arc<dyn TaskEventHandle>,
+        custom_error_handle: Arc<dyn CustomErrorHandle>,
     ) -> Self {
         Self {
             init_state,
@@ -125,6 +127,7 @@ where
             delay_milliseconds: delay_milliseconds_on_error,
             collector,
             event_handle,
+            custom_error_handle,
         }
     }
 }
@@ -148,6 +151,7 @@ where
                 self.max_retry_times,
                 self.delay_milliseconds,
                 event_handle.clone(),
+                self.custom_error_handle,
             );
             let mut buffered_stream = stream
                 .buffered(self.buffer_size)

@@ -4,7 +4,7 @@
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Context, Result};
 use async_std::task::JoinHandle;
 use config::ChainNetwork;
 use futures::channel::mpsc::UnboundedReceiver;
@@ -12,6 +12,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
 use network_api::{PeerInfo, PeerSelector, PeerStrategy};
+use network_rpc_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
@@ -23,6 +24,71 @@ use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use std::sync::Arc;
 use std::time::Duration;
+
+pub enum ErrorStrategy {
+    _RateLimitErr,
+    Timeout(u64),
+    RandomErr,
+    MethodNotFound,
+}
+
+impl Default for ErrorStrategy {
+    fn default() -> Self {
+        ErrorStrategy::RandomErr
+    }
+}
+
+pub struct ErrorMocker {
+    strategy: ErrorStrategy,
+    pub random_error_percent: u32,
+    pub peer_id: PeerId,
+}
+
+impl ErrorMocker {
+    pub fn new(strategy: ErrorStrategy, error_percent: u32, peer_id: PeerId) -> Self {
+        Self {
+            strategy,
+            random_error_percent: error_percent,
+            peer_id,
+        }
+    }
+
+    async fn delay(delay_milliseconds: u64) {
+        if delay_milliseconds > 0 {
+            Delay::new(Duration::from_millis(delay_milliseconds)).await
+        }
+    }
+
+    pub async fn random_err(&self) -> Result<()> {
+        if self.random_error_percent > 0 {
+            let rnd = rand::thread_rng().gen_range(0..100);
+            if rnd <= self.random_error_percent {
+                return match &self.strategy {
+                    ErrorStrategy::RandomErr => Err(format_err!("Random error {}", rnd)),
+                    ErrorStrategy::Timeout(delay_milliseconds) => {
+                        Self::delay(*delay_milliseconds).await;
+                        Err(format_err!("Timeout error {}", rnd))
+                    }
+                    ErrorStrategy::_RateLimitErr => Err(NetRpcError::new(
+                        RpcErrorCode::RateLimited,
+                        "RateLimit".to_string(),
+                    )
+                    .into()),
+                    ErrorStrategy::MethodNotFound => {
+                        let rpc_error = NetRpcError::new(
+                            RpcErrorCode::MethodNotFound,
+                            "MethodNotFound".to_string(),
+                        );
+                        let error = Err(rpc_error);
+                        error.with_context(|| self.peer_id.clone())
+                    }
+                };
+            }
+        }
+
+        Ok(())
+    }
+}
 
 #[derive(Clone)]
 pub struct MockBlockIdFetcher {
@@ -66,8 +132,8 @@ impl BlockIdFetcher for MockBlockIdFetcher {
 pub struct SyncNodeMocker {
     pub peer_id: PeerId,
     pub chain_mocker: MockChain,
-    pub delay_milliseconds: u64,
-    pub random_error_percent: u32,
+    pub err_mocker: ErrorMocker,
+    peer_selector: PeerSelector,
 }
 
 impl SyncNodeMocker {
@@ -76,11 +142,25 @@ impl SyncNodeMocker {
         delay_milliseconds: u64,
         random_error_percent: u32,
     ) -> Result<Self> {
-        Ok(Self {
-            peer_id: PeerId::random(),
-            chain_mocker: MockChain::new(net)?,
-            delay_milliseconds,
+        Self::new_with_strategy(
+            net,
+            ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
+        )
+    }
+
+    pub fn new_with_strategy(
+        net: ChainNetwork,
+        error_strategy: ErrorStrategy,
+        random_error_percent: u32,
+    ) -> Result<Self> {
+        let peer_info = PeerInfo::random();
+
+        Ok(Self {
+            peer_id: peer_info.peer_id(),
+            chain_mocker: MockChain::new(net)?,
+            err_mocker: ErrorMocker::new(error_strategy, random_error_percent, peer_info.peer_id()),
+            peer_selector: PeerSelector::new(vec![peer_info], PeerStrategy::default()),
         })
     }
 
@@ -109,31 +189,12 @@ impl SyncNodeMocker {
         })
     }
 
-    pub fn self_peer_info(&self) -> PeerInfo {
-        PeerInfo::new(self.peer_id.clone(), self.chain().info())
-    }
-
     pub fn chain(&self) -> &BlockChain {
         self.chain_mocker.head()
     }
 
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
         self.chain_mocker.produce_and_apply_times(times)
-    }
-
-    async fn delay(&self) {
-        if self.delay_milliseconds > 0 {
-            Delay::new(Duration::from_millis(self.delay_milliseconds)).await
-        }
-    }
-    fn random_err(&self) -> Result<()> {
-        if self.random_error_percent > 0 {
-            let rnd = rand::thread_rng().gen_range(0..100);
-            if rnd <= self.random_error_percent {
-                return Err(format_err!("Random error {}", rnd));
-            }
-        }
-        Ok(())
     }
 
     pub fn select_head(&mut self, block: Block) -> Result<()> {
@@ -154,11 +215,17 @@ impl SyncNodeMocker {
         };
         async_std::task::spawn(fut)
     }
+
+    pub fn select_a_peer(&self) -> Result<PeerId> {
+        self.peer_selector
+            .select_peer()
+            .ok_or_else(|| format_err!("No peers for send request."))
+    }
 }
 
 impl PeerOperator for SyncNodeMocker {
     fn peer_selector(&self) -> PeerSelector {
-        PeerSelector::new(vec![self.self_peer_info()], PeerStrategy::default())
+        self.peer_selector.clone()
     }
 }
 
@@ -172,8 +239,8 @@ impl BlockIdFetcher for SyncNodeMocker {
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         let result = self.chain().get_block_ids(start_number, reverse, max_size);
         async move {
-            self.delay().await;
-            self.random_err()?;
+            let _ = self.select_a_peer()?;
+            self.err_mocker.random_err().await?;
             result
         }
         .boxed()
@@ -196,8 +263,8 @@ impl BlockFetcher for SyncNodeMocker {
             })
             .collect();
         async move {
-            self.delay().await;
-            self.random_err()?;
+            let _ = self.select_a_peer()?;
+            self.err_mocker.random_err().await?;
             result
         }
         .boxed()
@@ -215,8 +282,8 @@ impl BlockInfoFetcher for SyncNodeMocker {
             result.push(self.chain().get_block_info(Some(hash)).unwrap());
         });
         async move {
-            self.delay().await;
-            self.random_err()?;
+            let _ = self.select_a_peer()?;
+            self.err_mocker.random_err().await?;
             Ok(result)
         }
         .boxed()

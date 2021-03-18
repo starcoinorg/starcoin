@@ -37,20 +37,20 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                             let peer_id = #peer_id_indent;
                             debug!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
                             let rpc_path = stringify!(#name).to_string();
-                            let result = self.request(peer_id, rpc_path, input_arg_serialized).await;
+                            let result = self.request(peer_id.clone(), rpc_path, input_arg_serialized).await;
                             match result {
                                 Ok(result) => {
                                     let result = from_bytes::<network_rpc_core::Result::<Vec<u8>>>(&result);
                                     match result {
-                                        Ok(r) => match r{
+                                        Ok(r) => match r {
                                             Ok(v) => {
                                                 let result = from_bytes::<#returns>(&v);
                                                 debug!("[network-rpc] response : {:?} ", result); 
                                                 result
                                             },
                                             Err(e) => {
-                                                debug!("[network-rpc] response error: {:?} ", e); 
-                                                Err(e.into())
+                                                debug!("[network-rpc] response error: {:?} ", e);
+                                                Err(e).with_context(|| peer_id)
                                             },
                                         },
                                         Err(e) => {
@@ -87,6 +87,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         use network_rpc_core::{RawRpcClient, PeerId};
         use std::sync::Arc;
         use network_rpc_core::NetRpcError;
+        use anyhow::Context;
 
         #get_rpc_info_method
 

@@ -15,11 +15,22 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
+pub trait CustomErrorHandle: Send + Sync {
+    fn handle(&self, error: Error) {
+        debug!("default custom error handle: {:?}", error);
+    }
+}
+
+pub struct DefaultCustomErrorHandle;
+
+impl CustomErrorHandle for DefaultCustomErrorHandle {}
+
 #[derive(Clone)]
 pub struct TaskErrorHandle {
     event_handle: Arc<dyn TaskEventHandle>,
     max_retry_times: u64,
     delay_milliseconds: u64,
+    custom_error_handle: Arc<dyn CustomErrorHandle>,
 }
 
 impl TaskErrorHandle {
@@ -27,11 +38,13 @@ impl TaskErrorHandle {
         event_handle: Arc<dyn TaskEventHandle>,
         max_retry_times: u64,
         delay_milliseconds: u64,
+        custom_error_handle: Arc<dyn CustomErrorHandle>,
     ) -> Self {
         Self {
             event_handle,
             max_retry_times,
             delay_milliseconds,
+            custom_error_handle,
         }
     }
 }
@@ -53,16 +66,19 @@ impl ErrorHandler<anyhow::Error> for TaskErrorHandle {
                 }
                 TaskError::Canceled => RetryPolicy::ForwardError(TaskError::Canceled),
             },
-            Err(e) => {
-                debug!("Task error: {:?}, attempt: {}", e, attempt);
+            Err(err) => {
+                debug!("Task error: {:?}, attempt: {}", err, attempt);
                 if attempt as u64 > self.max_retry_times {
-                    RetryPolicy::ForwardError(TaskError::RetryLimitReached(attempt, e))
-                } else if self.delay_milliseconds == 0 {
-                    RetryPolicy::Repeat
+                    RetryPolicy::ForwardError(TaskError::RetryLimitReached(attempt, err))
                 } else {
-                    RetryPolicy::WaitRetry(Duration::from_millis(
-                        self.delay_milliseconds * attempt as u64,
-                    ))
+                    self.custom_error_handle.handle(err);
+                    if self.delay_milliseconds == 0 {
+                        RetryPolicy::Repeat
+                    } else {
+                        RetryPolicy::WaitRetry(Duration::from_millis(
+                            self.delay_milliseconds * attempt as u64,
+                        ))
+                    }
                 }
             }
         }
@@ -82,6 +98,7 @@ where
     max_retry_times: u64,
     delay_milliseconds: u64,
     event_handle: Arc<dyn TaskEventHandle>,
+    custom_error_handle: Arc<dyn CustomErrorHandle>,
 }
 
 impl<S> FutureTaskStream<S>
@@ -93,12 +110,14 @@ where
         max_retry_times: u64,
         delay_milliseconds: u64,
         event_handle: Arc<dyn TaskEventHandle>,
+        custom_error_handle: Arc<dyn CustomErrorHandle>,
     ) -> Self {
         Self {
             state: Some(state),
             max_retry_times,
             delay_milliseconds,
             event_handle,
+            custom_error_handle,
         }
     }
 }
@@ -118,6 +137,7 @@ where
                     this.event_handle.clone(),
                     *this.max_retry_times,
                     *this.delay_milliseconds,
+                    this.custom_error_handle.clone(),
                 );
                 let state_to_factory = state.clone();
 

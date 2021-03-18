@@ -3,12 +3,13 @@
 
 #![allow(clippy::integer_arithmetic)]
 use crate::tasks::block_sync_task::SyncBlockData;
-use crate::tasks::mock::{MockBlockIdFetcher, SyncNodeMocker};
+use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask,
 };
 use crate::verified_rpc_client::RpcVerifyError;
+use anyhow::Context;
 use anyhow::{format_err, Result};
 use config::{BuiltinNetworkID, ChainNetwork};
 use futures::channel::mpsc::unbounded;
@@ -33,7 +34,9 @@ use starcoin_types::{
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator};
+use stream_task::{
+    DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
+};
 use test_helper::DummyNetworkService;
 
 #[stest::test]
@@ -489,8 +492,16 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
     let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
     let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let sync_task =
-        TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let sync_task = TaskGenerator::new(
+        task_state,
+        5,
+        3,
+        1,
+        collector,
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
     let info2 = sync_task.await?.1.get_info();
     assert_eq!(info1, info2);
     let report = event_handle.get_reports().pop().unwrap();
@@ -517,7 +528,16 @@ pub async fn test_find_ancestor_same_number() -> Result<()> {
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let collector = AncestorCollector::new(accumulator2.clone());
-    let task = TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let task = TaskGenerator::new(
+        task_state,
+        5,
+        3,
+        1,
+        collector,
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
     let ancestor = task.await?;
     assert_eq!(ancestor.number, info0.num_leaves - 1);
     let report = event_handle.get_reports().pop().unwrap();
@@ -548,7 +568,16 @@ pub async fn test_find_ancestor_block_number_behind() -> Result<()> {
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let collector = AncestorCollector::new(accumulator2.clone());
-    let task = TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let task = TaskGenerator::new(
+        task_state,
+        5,
+        3,
+        1,
+        collector,
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
     let ancestor = task.await?;
     assert_eq!(ancestor.number, info0.num_leaves - 1);
     let report = event_handle.get_reports().pop().unwrap();
@@ -588,7 +617,16 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let collector = AncestorCollector::new(accumulator2.clone());
-    let task = TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+    let task = TaskGenerator::new(
+        task_state,
+        5,
+        3,
+        1,
+        collector,
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
     let ancestor = task.await?;
     assert_eq!(ancestor.number, info0.num_leaves - 1);
     let report = event_handle.get_reports().pop().unwrap();
@@ -707,8 +745,16 @@ async fn block_sync_task_test(total_blocks: u64, ancestor_number: u64) -> Result
         3,
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let sync_task =
-        TaskGenerator::new(block_sync_state, 5, 3, 1, vec![], event_handle.clone()).generate();
+    let sync_task = TaskGenerator::new(
+        block_sync_state,
+        5,
+        3,
+        1,
+        vec![],
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
     let result = sync_task.await?;
     assert!(!result.is_empty(), "task result is empty.");
     let last_block_number = result
@@ -767,8 +813,16 @@ async fn test_block_sync_with_local() -> Result<()> {
     );
     let block_sync_state = BlockSyncTask::new(accumulator, ancestor, fetcher, true, local_store, 3);
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let sync_task =
-        TaskGenerator::new(block_sync_state, 5, 3, 1, vec![], event_handle.clone()).generate();
+    let sync_task = TaskGenerator::new(
+        block_sync_state,
+        5,
+        3,
+        1,
+        vec![],
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
     let result = sync_task.await?;
     let last_block_number = result
         .iter()
@@ -794,5 +848,59 @@ async fn test_block_sync_with_local() -> Result<()> {
 
     let report = event_handle.get_reports().pop().unwrap();
     debug!("report: {}", report);
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_net_rpc_err() -> Result<()> {
+    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let mut node1 = SyncNodeMocker::new_with_strategy(net1, ErrorStrategy::MethodNotFound, 50)?;
+    node1.produce_block(10)?;
+
+    let arc_node1 = Arc::new(node1);
+
+    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+
+    let node2 = SyncNodeMocker::new_with_strategy(net2.clone(), ErrorStrategy::MethodNotFound, 50)?;
+
+    let target = arc_node1.sync_target();
+
+    let current_block_header = node2.chain().current_header();
+
+    let storage = node2.chain().get_storage();
+    let (sender, receiver) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
+        current_block_header.id(),
+        target.clone(),
+        false,
+        net2.time_service(),
+        storage.clone(),
+        sender,
+        arc_node1.clone(),
+        sender_2,
+        DummyNetworkService::default(),
+        15,
+    )?;
+    let _join_handle = node2.process_block_connect_event(receiver).await;
+    let sync_join_handle = tokio::task::spawn(sync_task);
+
+    Delay::new(Duration::from_millis(100)).await;
+
+    let sync_result = sync_join_handle.await?;
+    assert!(sync_result.is_err());
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_err_context() -> Result<()> {
+    let peer_id = PeerId::random();
+    let result = std::fs::read("FileNotExist").with_context(|| peer_id.clone());
+    if let Err(error) = result {
+        debug!("peer: {:?}", error);
+        assert_eq!(peer_id.to_string(), error.to_string());
+        let err = error.downcast::<std::io::Error>().unwrap();
+        debug!("err{:?}", err);
+    }
     Ok(())
 }

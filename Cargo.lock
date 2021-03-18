@@ -8510,6 +8510,7 @@ dependencies = [
  "hex",
  "itertools 0.10.0",
  "network-api",
+ "network-rpc-core",
  "once_cell",
  "parking_lot 0.11.1",
  "pin-project 1.0.5",

@@ -270,6 +270,21 @@ impl PeerSelector {
         self.total_score.store(score, Ordering::SeqCst);
     }
 
+    pub fn remove_peer(&self, peer: &PeerId) -> usize {
+        let mut lock = self.details.lock();
+        for (index, p) in lock.iter().enumerate() {
+            if &p.peer_id() == peer {
+                let detail = lock.remove(index);
+                let score = self.total_score.load(Ordering::SeqCst);
+                self.total_score
+                    .store(score.saturating_sub(detail.score()), Ordering::SeqCst);
+                break;
+            }
+        }
+
+        lock.len()
+    }
+
     pub fn select_peer(&self) -> Option<PeerId> {
         let avg_score = self
             .total_score
