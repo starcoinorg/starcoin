@@ -27,4 +27,6 @@ pub mod module_compatibility_test;
 #[cfg(test)]
 pub mod readonly_function_call_test;
 #[cfg(test)]
+pub mod script_function_test;
+#[cfg(test)]
 pub mod stdlib_test;

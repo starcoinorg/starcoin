@@ -8,7 +8,6 @@ use crate::account_config::{genesis_address, STC_TOKEN_CODE_STR};
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
-use crate::transaction::script::ScriptFunction;
 use crate::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
@@ -36,7 +35,8 @@ pub use module::Module;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 pub use script::{
-    ArgumentABI, Script, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
+    ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
+    TypeArgumentABI,
 };
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 pub use transaction_argument::{
