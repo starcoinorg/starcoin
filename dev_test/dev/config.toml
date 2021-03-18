@@ -1,0 +1,27 @@
+[logger]
+[metrics.push_config]
+interval = 0
+
+[miner]
+
+[network]
+node_name = "knowing-air-3416"
+
+[network.network_rpc_quotas]
+[rpc.api_quotas]
+
+[rpc.http]
+
+[rpc.ipc]
+
+[rpc.tcp]
+
+[rpc.ws]
+
+[storage]
+
+[sync]
+
+[tx_pool]
+
+[vault]
