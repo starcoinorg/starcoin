@@ -1083,19 +1083,6 @@ dependencies = [
 
 [[package]]
 name = "cargo_metadata"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7714a157da7991e23d90686b9524b9e12e0407a108647f52e9328f4b3d51ac7f"
-dependencies = [
- "cargo-platform",
- "semver 0.11.0",
- "semver-parser 0.10.2",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "cargo_metadata"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "081e3f0755c1f380c2d010481b6fa2e02973586d5f2b24eebb7a2a1d98b143d8"
@@ -1926,7 +1913,7 @@ checksum = "7109a871b855b23d2b08d8e0cef5c005b9946b5bd4c77cc24e040a7b65717fb9"
 dependencies = [
  "camino",
  "globset",
- "guppy 0.9.0",
+ "guppy",
  "itertools 0.10.0",
  "once_cell",
  "petgraph",
@@ -2908,35 +2895,12 @@ dependencies = [
 
 [[package]]
 name = "guppy"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec4cbddce827d660864974dc3dc62a1c810e813d17e518cc5830716b977cd110"
-dependencies = [
- "camino",
- "cargo_metadata 0.12.3",
- "fixedbitset",
- "guppy-summaries",
- "indexmap",
- "itertools 0.10.0",
- "nested",
- "once_cell",
- "pathdiff 0.2.0",
- "petgraph",
- "semver 0.11.0",
- "serde",
- "serde_json",
- "supercow",
- "target-spec",
-]
-
-[[package]]
-name = "guppy"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa0124762cfff525d695e75a173dc65dda372227a9daf949a1e24235e1b8632"
 dependencies = [
  "camino",
- "cargo_metadata 0.13.1",
+ "cargo_metadata",
  "fixedbitset",
  "guppy-summaries",
  "indexmap",
@@ -3016,7 +2980,7 @@ dependencies = [
  "camino",
  "cfg-if 1.0.0",
  "diffy",
- "guppy 0.9.0",
+ "guppy",
  "pathdiff 0.2.0",
  "rayon",
  "serde",
@@ -8810,7 +8774,7 @@ dependencies = [
  "diem-workspace-hack",
  "env_logger 0.8.3",
  "globset",
- "guppy 0.8.0",
+ "guppy",
  "indexmap",
  "indoc",
  "log 0.4.14",
@@ -10463,7 +10427,7 @@ dependencies = [
  "determinator",
  "env_logger 0.8.3",
  "globset",
- "guppy 0.9.0",
+ "guppy",
  "hakari",
  "indexmap",
  "indoc",
@@ -10485,7 +10449,7 @@ source = "git+https://github.com/starcoinorg/diem?rev=f10ee5691669ba01508837fcd3
 dependencies = [
  "camino",
  "determinator",
- "guppy 0.9.0",
+ "guppy",
  "hakari",
  "hex",
  "indoc",
@@ -10502,7 +10466,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=f10ee5691669ba01508837fcd3babc303713342c#f10ee5691669ba01508837fcd3babc303713342c"
 dependencies = [
  "camino",
- "guppy 0.9.0",
+ "guppy",
  "hakari",
  "once_cell",
  "serde",
