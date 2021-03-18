@@ -157,6 +157,7 @@ impl From<RawUserTransaction> for TransactionRequest {
                 request.script = s.map(Into::into);
                 request.modules = m.into_iter().map(|m| StrView(m.into())).collect();
             }
+            TransactionPayload::ScriptFunction(_) => {}
         }
         request
     }

@@ -158,6 +158,18 @@ ScriptABI:
       ScriptFunction:
         NEWTYPE:
           TYPENAME: ScriptFunctionABI
+ScriptFunction:
+  STRUCT:
+    - module:
+        TYPENAME: ModuleId
+    - function:
+        TYPENAME: Identifier
+    - ty_args:
+        SEQ:
+          TYPENAME: TypeTag
+    - args:
+        SEQ:
+          TYPENAME: TransactionArgument
 ScriptFunctionABI:
   STRUCT:
     - name: STR
@@ -244,6 +256,10 @@ TransactionPayload:
       Package:
         NEWTYPE:
           TYPENAME: Package
+    2:
+      ScriptFunction:
+        NEWTYPE:
+          TYPENAME: ScriptFunction
 TransactionScriptABI:
   STRUCT:
     - name: STR

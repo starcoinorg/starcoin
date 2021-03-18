@@ -8,6 +8,7 @@ use crate::account_config::{genesis_address, STC_TOKEN_CODE_STR};
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
+use crate::transaction::script::ScriptFunction;
 use crate::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
@@ -156,6 +157,30 @@ impl RawUserTransaction {
         }
     }
 
+    /// Create a new `RawTransaction` with a script function.
+    ///
+    /// A script transaction contains only code to execute. No publishing is allowed in scripts.
+    pub fn new_script_function(
+        sender: AccountAddress,
+        sequence_number: u64,
+        script_function: ScriptFunction,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+    ) -> Self {
+        RawUserTransaction {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::ScriptFunction(script_function),
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+        }
+    }
+
     /// Create a new `RawUserTransaction` with a module to publish.
     ///
     /// A module transaction is the only way to publish code. Only one module per transaction
@@ -284,6 +309,8 @@ pub enum TransactionPayload {
     Script(Script),
     /// A transaction that publish or update module code by a package.
     Package(Package),
+    /// A transaction that executes an existing script function published on-chain.
+    ScriptFunction(ScriptFunction),
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -291,6 +318,7 @@ pub enum TransactionPayload {
 pub enum TransactionPayloadType {
     Script = 0,
     Package = 1,
+    ScriptFunction = 2,
 }
 
 impl TransactionPayload {
@@ -298,6 +326,7 @@ impl TransactionPayload {
         match self {
             TransactionPayload::Script(_) => TransactionPayloadType::Script,
             TransactionPayload::Package(_) => TransactionPayloadType::Package,
+            TransactionPayload::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
         }
     }
 }

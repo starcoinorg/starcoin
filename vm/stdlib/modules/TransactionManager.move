@@ -26,6 +26,7 @@ module TransactionManager {
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
+    const TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION: u8 = 2;
 
     const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
     const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
@@ -91,6 +92,7 @@ module TransactionManager {
                 Errors::invalid_argument(EPROLOGUE_SCRIPT_NOT_ALLOWED),
             );
         };
+        // do nothing for TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION
     }
 
     spec fun prologue {
