@@ -37,6 +37,6 @@ impl Consensus for ArgonConsensus {
             ..Default::default()
         };
         let output = argon2::hash_raw(&mix_hash, &mix_hash, &config)?;
-        HashValue::from_slice(output.as_slice())
+        Ok(HashValue::from_slice(output.as_slice())?)
     }
 }

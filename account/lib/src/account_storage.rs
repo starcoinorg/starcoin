@@ -127,7 +127,9 @@ impl KeyCodec for AccountAddressWrapper {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, Error> {
-        AccountAddress::try_from(data).map(AccountAddressWrapper)
+        AccountAddress::try_from(data)
+            .map(AccountAddressWrapper)
+            .map_err(anyhow::Error::new)
     }
 }
 
