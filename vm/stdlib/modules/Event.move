@@ -1,38 +1,48 @@
 address 0x1 {
 
+/// The Event module defines an `EventHandleGenerator` that is used to create
+/// `EventHandle`s with unique GUIDs. It contains a counter for the number
+/// of `EventHandle`s it generates. An `EventHandle` is used to count the number of
+/// events emitted to a handle and emit events to the event store.
 module Event {
+    use 0x1::Errors;
     use 0x1::BCS;
     use 0x1::Signer;
     use 0x1::Vector;
 
     /// A resource representing the counter used to generate uniqueness under each account. There won't be destructor for
     /// this resource to guarantee the uniqueness of the generated handle.
-    struct EventHandleGenerator has key, store {
-        /// A monotonically increasing counter
-        counter: u64,
-        addr: address,
+    struct EventHandleGenerator has key {
+    // A monotonically increasing counter
+    counter: u64,
+    addr: address,
     }
 
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
     /// 2. Storage can use this handle to prove the total number of events that happened in the past.
-    struct EventHandle<T: copy + drop + store> has key, store {
-        /// Total number of events emitted to this event stream.
-        counter: u64,
-        /// A globally unique ID for this event stream.
-        guid: vector<u8>,
+    struct EventHandle<T: drop + store> has store {
+    /// Total number of events emitted to this event stream.
+    counter: u64,
+    /// A globally unique ID for this event stream.
+    guid: vector<u8>,
     }
 
-    /// Create an event generator under address of `signer`.
+    /// The event generator resource was in an invalid state
+    const EEVENT_GENERATOR: u64 = 0;
+
+    /// Publishs a new event handle generator.
     public fun publish_generator(account: &signer) {
-        move_to(account, EventHandleGenerator{ counter: 0, addr: Signer::address_of(account) })
+        let addr = Signer::address_of(account);
+        assert(!exists<EventHandleGenerator>(addr), Errors::already_published(EEVENT_GENERATOR));
+        move_to(account, EventHandleGenerator{ counter: 0, addr })
     }
 
-    // Derive a fresh unique id by using sender's EventHandleGenerator. The generated vector<u8> is indeed unique because it
-    // was derived from the hash(sender's EventHandleGenerator || sender_address). This module guarantees that the
-    // EventHandleGenerator is only going to be monotonically increased and there's no way to revert it or destroy it. Thus
-    // such counter is going to give distinct value for each of the new event stream under each sender. And since we
-    // hash it with the sender's address, the result is guaranteed to be globally unique.
+    /// Derive a fresh unique id by using sender's EventHandleGenerator. The generated vector<u8> is indeed unique because it
+    /// was derived from the hash(sender's EventHandleGenerator || sender_address). This module guarantees that the
+    /// EventHandleGenerator is only going to be monotonically increased and there's no way to revert it or destroy it. Thus
+    /// such counter is going to give distinct value for each of the new event stream under each sender. And since we
+    /// hash it with the sender's address, the result is guaranteed to be globally unique.
     fun fresh_guid(counter: &mut EventHandleGenerator): vector<u8> {
         let sender_bytes = BCS::to_bytes(&counter.addr);
         let count_bytes = BCS::to_bytes(&counter.counter);
@@ -45,17 +55,18 @@ module Event {
     }
 
     /// Use EventHandleGenerator to generate a unique event handle for `sig`
-    public fun new_event_handle<T: copy + drop + store>(account: &signer): EventHandle<T>
+    public fun new_event_handle<T: drop + store>(account: &signer): EventHandle<T>
     acquires EventHandleGenerator {
+        let addr = Signer::address_of(account);
+        assert(exists<EventHandleGenerator>(addr), Errors::not_published(EEVENT_GENERATOR));
         EventHandle<T> {
             counter: 0,
-            guid: fresh_guid(borrow_global_mut<EventHandleGenerator>(Signer::address_of(account)))
+            guid: fresh_guid(borrow_global_mut<EventHandleGenerator>(addr))
         }
     }
 
-    /// Emit an event with payload `msg` by using handle's key and counter. Will change the payload from vector<u8> to a
-    /// generic type parameter once we have generics.
-    public fun emit_event<T: copy + drop + store>(handle_ref: &mut EventHandle<T>, msg: T) {
+    /// Emit an event with payload `msg` by using `handle_ref`'s key and counter.
+    public fun emit_event<T: drop + store>(handle_ref: &mut EventHandle<T>, msg: T) {
         let guid = *&handle_ref.guid;
 
         write_to_event_store<T>(guid, handle_ref.counter, msg);
@@ -64,32 +75,19 @@ module Event {
 
     /// Native procedure that writes to the actual event stream in Event store
     /// This will replace the "native" portion of EmitEvent bytecode
-    native fun write_to_event_store<T: copy + drop + store>(guid: vector<u8>, count: u64, msg: T);
+    native fun write_to_event_store<T: drop + store>(guid: vector<u8>, count: u64, msg: T);
 
-    // Destroy a unique handle.
-    public fun destroy_handle<T: copy + drop + store>(handle: EventHandle<T>) {
+    /// Destroy a unique handle.
+    public fun destroy_handle<T: drop + store>(handle: EventHandle<T>) {
         EventHandle<T> { counter: _, guid: _ } = handle;
     }
 
     // ****************** SPECIFICATIONS *******************
+    spec module {} // switch documentation context to module
 
     spec module {
         /// Functions of the event module are mocked out using the intrinsic
-        /// pragma. They are implemented in the prover's prelude as no-ops.
-        ///
-        /// Functionality in this module uses GUIDs created from serialization of
-        /// addresses and integers. These constructs are difficult to treat by the
-        /// verifier and the verification problem propagates up to callers of
-        /// those functions. Since events cannot be observed by Move programs,
-        /// mocking out functions of this module does not have effect on other
-        /// verification result.
-        ///
-        /// A specification of the functions is nevertheless included in the
-        /// comments of this module and it has been verified.
-        ///
-        /// > TODO(wrwg): We may want to have support by the Move prover to
-        /// > mock out functions for callers but still have them verified
-        /// > standalone.
+        /// pragma. They are implemented in the prover's prelude.
         pragma intrinsic = true;
     }
 }

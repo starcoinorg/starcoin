@@ -14,7 +14,7 @@ module OnChainConfigDao {
     }
 
     /// A wrapper of `Config::ModifyConfigCapability<ConfigT>`.
-    struct WrappedConfigModifyCapability<TokenT, ConfigT: copy + drop + store> has key, store {
+    struct WrappedConfigModifyCapability<TokenT, ConfigT: copy + drop + store> has key {
         cap: Config::ModifyConfigCapability<ConfigT>,
     }
 

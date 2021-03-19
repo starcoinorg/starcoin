@@ -6,7 +6,7 @@
 Token implementation of Starcoin.
 
 
--  [Resource `Token`](#0x1_Token_Token)
+-  [Struct `Token`](#0x1_Token_Token)
 -  [Struct `TokenCode`](#0x1_Token_TokenCode)
 -  [Resource `MintCapability`](#0x1_Token_MintCapability)
 -  [Resource `FixedTimeMintKey`](#0x1_Token_FixedTimeMintKey)
@@ -105,13 +105,13 @@ Token implementation of Starcoin.
 
 <a name="0x1_Token_Token"></a>
 
-## Resource `Token`
+## Struct `Token`
 
 The token has a <code>TokenType</code> color that tells us what token the
 <code>value</code> inside represents.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
 </code></pre>
 
 

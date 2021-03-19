@@ -14,7 +14,7 @@ module MintDaoProposal {
     }
 
     /// A wrapper of Token MintCapability.
-    struct WrappedMintCapability<TokenType> has key, store {
+    struct WrappedMintCapability<TokenType> has key {
         cap: Token::MintCapability<TokenType>,
     }
 
@@ -91,7 +91,7 @@ module MintDaoProposal {
         let expected_states = singleton_vector(6);
         include Dao::CheckProposalStates<TokenT, MintToken>{expected_states};
         let proposal = global<Dao::Proposal<TokenT, MintToken>>(proposer_address);
-        aborts_if Option::spec_is_none(proposal.action);
+        aborts_if Option::is_none(proposal.action);
         aborts_if !exists<WrappedMintCapability<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
 }

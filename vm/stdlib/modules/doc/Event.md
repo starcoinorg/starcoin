@@ -3,20 +3,26 @@
 
 # Module `0x1::Event`
 
+The Event module defines an <code><a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a></code> that is used to create
+<code><a href="Event.md#0x1_Event_EventHandle">EventHandle</a></code>s with unique GUIDs. It contains a counter for the number
+of <code><a href="Event.md#0x1_Event_EventHandle">EventHandle</a></code>s it generates. An <code><a href="Event.md#0x1_Event_EventHandle">EventHandle</a></code> is used to count the number of
+events emitted to a handle and emit events to the event store.
 
 
 -  [Resource `EventHandleGenerator`](#0x1_Event_EventHandleGenerator)
--  [Resource `EventHandle`](#0x1_Event_EventHandle)
+-  [Struct `EventHandle`](#0x1_Event_EventHandle)
+-  [Constants](#@Constants_0)
 -  [Function `publish_generator`](#0x1_Event_publish_generator)
 -  [Function `fresh_guid`](#0x1_Event_fresh_guid)
 -  [Function `new_event_handle`](#0x1_Event_new_event_handle)
 -  [Function `emit_event`](#0x1_Event_emit_event)
 -  [Function `write_to_event_store`](#0x1_Event_write_to_event_store)
 -  [Function `destroy_handle`](#0x1_Event_destroy_handle)
--  [Specification](#@Specification_0)
+-  [Specification](#@Specification_1)
 
 
 <pre><code><b>use</b> <a href="BCS.md#0x1_BCS">0x1::BCS</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
@@ -45,7 +51,7 @@ this resource to guarantee the uniqueness of the generated handle.
 <code>counter: u64</code>
 </dt>
 <dd>
- A monotonically increasing counter
+
 </dd>
 <dt>
 <code>addr: address</code>
@@ -60,14 +66,14 @@ this resource to guarantee the uniqueness of the generated handle.
 
 <a name="0x1_Event_EventHandle"></a>
 
-## Resource `EventHandle`
+## Struct `EventHandle`
 
 A handle for an event such that:
 1. Other modules can emit events to this handle.
 2. Storage can use this handle to prove the total number of events that happened in the past.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T: <b>copyable</b>&gt;
+<pre><code><b>struct</b> <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T: <b>copyable</b>&gt;
 </code></pre>
 
 
@@ -94,11 +100,26 @@ A handle for an event such that:
 
 </details>
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_Event_EEVENT_GENERATOR"></a>
+
+The event generator resource was in an invalid state
+
+
+<pre><code><b>const</b> <a href="Event.md#0x1_Event_EEVENT_GENERATOR">EEVENT_GENERATOR</a>: u64 = 0;
+</code></pre>
+
+
+
 <a name="0x1_Event_publish_generator"></a>
 
 ## Function `publish_generator`
 
-Create an event generator under address of <code>signer</code>.
+Publishs a new event handle generator.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_publish_generator">publish_generator</a>(account: &signer)
@@ -111,7 +132,9 @@ Create an event generator under address of <code>signer</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_publish_generator">publish_generator</a>(account: &signer) {
-    move_to(account, <a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>{ counter: 0, addr: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) })
+    <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
+    <b>assert</b>(!<b>exists</b>&lt;<a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>&gt;(addr), <a href="Errors.md#0x1_Errors_already_published">Errors::already_published</a>(<a href="Event.md#0x1_Event_EEVENT_GENERATOR">EEVENT_GENERATOR</a>));
+    move_to(account, <a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>{ counter: 0, addr })
 }
 </code></pre>
 
@@ -123,6 +146,11 @@ Create an event generator under address of <code>signer</code>.
 
 ## Function `fresh_guid`
 
+Derive a fresh unique id by using sender's EventHandleGenerator. The generated vector<u8> is indeed unique because it
+was derived from the hash(sender's EventHandleGenerator || sender_address). This module guarantees that the
+EventHandleGenerator is only going to be monotonically increased and there's no way to revert it or destroy it. Thus
+such counter is going to give distinct value for each of the new event stream under each sender. And since we
+hash it with the sender's address, the result is guaranteed to be globally unique.
 
 
 <pre><code><b>fun</b> <a href="Event.md#0x1_Event_fresh_guid">fresh_guid</a>(counter: &<b>mut</b> <a href="Event.md#0x1_Event_EventHandleGenerator">Event::EventHandleGenerator</a>): vector&lt;u8&gt;
@@ -166,11 +194,13 @@ Use EventHandleGenerator to generate a unique event handle for <code>sig</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_new_event_handle">new_event_handle</a>&lt;T: <b>copy</b> + drop + store&gt;(account: &signer): <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_new_event_handle">new_event_handle</a>&lt;T: drop + store&gt;(account: &signer): <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt;
 <b>acquires</b> <a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a> {
+    <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
+    <b>assert</b>(<b>exists</b>&lt;<a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>&gt;(addr), <a href="Errors.md#0x1_Errors_not_published">Errors::not_published</a>(<a href="Event.md#0x1_Event_EEVENT_GENERATOR">EEVENT_GENERATOR</a>));
     <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt; {
         counter: 0,
-        guid: <a href="Event.md#0x1_Event_fresh_guid">fresh_guid</a>(borrow_global_mut&lt;<a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)))
+        guid: <a href="Event.md#0x1_Event_fresh_guid">fresh_guid</a>(borrow_global_mut&lt;<a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>&gt;(addr))
     }
 }
 </code></pre>
@@ -183,8 +213,7 @@ Use EventHandleGenerator to generate a unique event handle for <code>sig</code>
 
 ## Function `emit_event`
 
-Emit an event with payload <code>msg</code> by using handle's key and counter. Will change the payload from vector<u8> to a
-generic type parameter once we have generics.
+Emit an event with payload <code>msg</code> by using <code>handle_ref</code>'s key and counter.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_emit_event">emit_event</a>&lt;T: <b>copyable</b>&gt;(handle_ref: &<b>mut</b> <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;T&gt;, msg: T)
@@ -196,7 +225,7 @@ generic type parameter once we have generics.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_emit_event">emit_event</a>&lt;T: <b>copy</b> + drop + store&gt;(handle_ref: &<b>mut</b> <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt;, msg: T) {
+<pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_emit_event">emit_event</a>&lt;T: drop + store&gt;(handle_ref: &<b>mut</b> <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt;, msg: T) {
     <b>let</b> guid = *&handle_ref.guid;
 
     <a href="Event.md#0x1_Event_write_to_event_store">write_to_event_store</a>&lt;T&gt;(guid, handle_ref.counter, msg);
@@ -225,7 +254,7 @@ This will replace the "native" portion of EmitEvent bytecode
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>fun</b> <a href="Event.md#0x1_Event_write_to_event_store">write_to_event_store</a>&lt;T: <b>copy</b> + drop + store&gt;(guid: vector&lt;u8&gt;, count: u64, msg: T);
+<pre><code><b>native</b> <b>fun</b> <a href="Event.md#0x1_Event_write_to_event_store">write_to_event_store</a>&lt;T: drop + store&gt;(guid: vector&lt;u8&gt;, count: u64, msg: T);
 </code></pre>
 
 
@@ -236,6 +265,7 @@ This will replace the "native" portion of EmitEvent bytecode
 
 ## Function `destroy_handle`
 
+Destroy a unique handle.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_destroy_handle">destroy_handle</a>&lt;T: <b>copyable</b>&gt;(handle: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;T&gt;)
@@ -247,7 +277,7 @@ This will replace the "native" portion of EmitEvent bytecode
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_destroy_handle">destroy_handle</a>&lt;T: <b>copy</b> + drop + store&gt;(handle: <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Event.md#0x1_Event_destroy_handle">destroy_handle</a>&lt;T: drop + store&gt;(handle: <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt;) {
     <a href="Event.md#0x1_Event_EventHandle">EventHandle</a>&lt;T&gt; { counter: _, guid: _ } = handle;
 }
 </code></pre>
@@ -256,27 +286,14 @@ This will replace the "native" portion of EmitEvent bytecode
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
+
 Functions of the event module are mocked out using the intrinsic
-pragma. They are implemented in the prover's prelude as no-ops.
-
-Functionality in this module uses GUIDs created from serialization of
-addresses and integers. These constructs are difficult to treat by the
-verifier and the verification problem propagates up to callers of
-those functions. Since events cannot be observed by Move programs,
-mocking out functions of this module does not have effect on other
-verification result.
-
-A specification of the functions is nevertheless included in the
-comments of this module and it has been verified.
-
-> TODO(wrwg): We may want to have support by the Move prover to
-> mock out functions for callers but still have them verified
-> standalone.
+pragma. They are implemented in the prover's prelude.
 
 
 <pre><code><b>pragma</b> intrinsic = <b>true</b>;

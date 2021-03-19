@@ -10,7 +10,7 @@ module Offer {
     }
 
     /// A wrapper around value `offered` that can be claimed by the address stored in `for` when after lock time.
-    struct Offer<Offered> has key, store { offered: Offered, for: address, time_lock: u64 }
+    struct Offer<Offered> has key { offered: Offered, for: address, time_lock: u64 }
 
     /// An offer of the specified type for the account does not match
     const EOFFER_DNE_FOR_ACCOUNT: u64 = 101;

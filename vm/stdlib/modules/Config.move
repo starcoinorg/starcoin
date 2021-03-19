@@ -12,10 +12,10 @@ module Config {
     }
 
     /// A generic singleton resource that holds a value of a specific type.
-    struct Config<ConfigValue: copy + drop + store> has key, store { payload: ConfigValue }
+    struct Config<ConfigValue: copy + drop + store> has key { payload: ConfigValue }
 
     /// Accounts with this privilege can modify config of type ConfigValue under account_address
-    struct ModifyConfigCapability<ConfigValue: copy + drop + store> has key, store {
+    struct ModifyConfigCapability<ConfigValue: copy + drop + store> has store {
         account_address: address,
         events: Event::EventHandle<ConfigChangeEvent<ConfigValue>>,
     }
@@ -26,7 +26,7 @@ module Config {
     }
 
     /// Event emitted when config value is changed.
-    struct ConfigChangeEvent<ConfigValue: copy + drop + store> has copy, drop, store {
+    struct ConfigChangeEvent<ConfigValue: copy + drop + store> has drop, store {
         account_address: address,
         value: ConfigValue,
     }
@@ -73,8 +73,8 @@ module Config {
         pragma verify = false;
 
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        aborts_if !Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account)));
-        aborts_if !exists<Config<ConfigValue>>(Option::spec_get<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account))).account_address);
+        aborts_if !Option::is_some<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account)));
+        aborts_if !exists<Config<ConfigValue>>(Option::borrow<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account))).account_address);
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
@@ -163,13 +163,13 @@ module Config {
     spec schema AbortsIfCapNotExist<ConfigValue> {
         account: address;
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(account);
-        aborts_if Option::spec_is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(account).cap);
+        aborts_if Option::is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(account).cap);
     }
 
     spec fun extract_modify_config_capability {
         include AbortsIfCapNotExist<ConfigValue>{account: Signer::spec_address_of(account)};
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        ensures Option::spec_is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
+        ensures Option::is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
     }
 
     /// Restore account's ModifyConfigCapability
@@ -180,9 +180,9 @@ module Config {
 
     spec fun restore_modify_config_capability {
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
-        aborts_if Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
+        aborts_if Option::is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
-        ensures Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
+        ensures Option::is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
     }
 
     /// Destroy the given ModifyConfigCapability

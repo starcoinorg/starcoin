@@ -64,5 +64,5 @@ stdlib_script::unstake_vote
 //! args: {{alice}}, 0
 stdlib_script::execute_modify_dao_config_proposal
 // check: gas_used
-// check: 149564
+// check: 163472
 // check: "Keep(EXECUTED)"
