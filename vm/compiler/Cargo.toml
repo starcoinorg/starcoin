@@ -11,8 +11,8 @@ anyhow = "1.0.38"
 once_cell = "1.7.2"
 tempfile = "3.1.0"
 regex = { version = "1.4.3", default-features = false, features = ["std", "perf"] }
-move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="f10ee5691669ba01508837fcd3babc303713342c" }
-move-lang-test-utils = { package="move-lang-test-utils", git = "https://github.com/starcoinorg/diem", rev="f10ee5691669ba01508837fcd3babc303713342c" }
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+move-lang-test-utils = { package="move-lang-test-utils", git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}
 starcoin-logger = { path = "../../commons/logger"}
