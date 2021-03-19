@@ -17,7 +17,6 @@ serde = "1.0.124"
 serde_json = "~1"
 starcoin-crypto = {path = "../../commons/crypto" }
 starcoin-types = {path= "../../types" }
-starcoin-rpc-client = { path= "../../rpc/client" }
 starcoin-rpc-api = {path = "../../rpc/api" }
 starcoin-logger = {path = "../../commons/logger"}
 jsonrpc-core-client="~17"

@@ -11,9 +11,6 @@ build = "build.rs"
 
 [build-dependencies]
 
-#serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
-#serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
-serde-generate = "~0.17"
 serde-reflection = "~0.3"
 starcoin-types = { path = "../types" }
 starcoin-crypto = {path = "../commons/crypto" }
