@@ -6,7 +6,7 @@ module MyToken {
 
      public fun init(account: &signer) {
          Token::register_token<MyToken>(account, 3);
-         Account::accept_token<MyToken>(account);
+         Account::do_accept_token<MyToken>(account);
      }
 
      public fun mint(account: &signer, amount: u128) {

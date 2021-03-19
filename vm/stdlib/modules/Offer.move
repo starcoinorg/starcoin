@@ -3,6 +3,7 @@ module Offer {
     use 0x1::Timestamp;
     use 0x1::Signer;
     use 0x1::Errors;
+    use 0x1::Box;
 
     spec module {
         pragma verify = true;
@@ -66,5 +67,17 @@ module Offer {
     }
 
     spec fun address_of {aborts_if !exists<Offer<Offered>>(offer_address);}
+
+    public(script) fun take_offer<Offered: store>(
+        signer: &signer,
+        offer_address: address,
+    ) acquires Offer {
+        let offered = redeem<Offered>(signer, offer_address);
+        Box::put(signer, offered);
+    }
+
+    spec fun take_offer {
+        pragma verify = false;
+    }
 }
 }

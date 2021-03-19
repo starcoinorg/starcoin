@@ -39,7 +39,7 @@ script {
     use 0x1::Account;
     fun main(account: &signer) {
         let rot_cap = Account::extract_key_rotation_capability(account);
-        Account::rotate_authentication_key(&rot_cap, x"123abc");
+        Account::rotate_authentication_key_with_capability(&rot_cap, x"123abc");
         Account::restore_key_rotation_capability(rot_cap);
     }
 }

@@ -11,14 +11,17 @@
 -  [Function `redeem`](#0x1_Offer_redeem)
 -  [Function `exists_at`](#0x1_Offer_exists_at)
 -  [Function `address_of`](#0x1_Offer_address_of)
+-  [Function `take_offer`](#0x1_Offer_take_offer)
 -  [Specification](#@Specification_1)
     -  [Function `create`](#@Specification_1_create)
     -  [Function `redeem`](#@Specification_1_redeem)
     -  [Function `exists_at`](#@Specification_1_exists_at)
     -  [Function `address_of`](#@Specification_1_address_of)
+    -  [Function `take_offer`](#@Specification_1_take_offer)
 
 
-<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<pre><code><b>use</b> <a href="Box.md#0x1_Box">0x1::Box</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 </code></pre>
@@ -202,6 +205,34 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 </details>
 
+<a name="0x1_Offer_take_offer"></a>
+
+## Function `take_offer`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: &signer, offer_address: address)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered: store&gt;(
+    signer: &signer,
+    offer_address: address,
+) <b>acquires</b> <a href="Offer.md#0x1_Offer">Offer</a> {
+    <b>let</b> offered = <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(signer, offer_address);
+    <a href="Box.md#0x1_Box_put">Box::put</a>(signer, offered);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="@Specification_1"></a>
 
 ## Specification
@@ -279,4 +310,20 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt;&gt;(offer_address);
+</code></pre>
+
+
+
+<a name="@Specification_1_take_offer"></a>
+
+### Function `take_offer`
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: &signer, offer_address: address)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>

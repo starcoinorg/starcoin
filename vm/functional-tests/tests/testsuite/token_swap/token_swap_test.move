@@ -244,7 +244,7 @@ script{
 use {{admin}}::Token1;
 use 0x1::Account;
 fun main(signer: &signer) {
-    Account::accept_token<Token1::Token1>(signer);
+    Account::do_accept_token<Token1::Token1>(signer);
 }
 }
 // check: EXECUTED
@@ -275,7 +275,7 @@ script{
 
 
     fun main(signer: &signer) {
-        Account::accept_token<LiquidityToken<STC::STC, Token1::Token1>>(signer);
+        Account::do_accept_token<LiquidityToken<STC::STC, Token1::Token1>>(signer);
         // STC/Token1 = 1:10
         let stc_amount = 1000000;
         let token1_amount = 10000000;
@@ -301,7 +301,7 @@ script {
     use 0x1::Account;
     use 0x1::Token;
     fun main(signer: &signer) {
-        Account::accept_token<Token1::Token1>(signer);
+        Account::do_accept_token<Token1::Token1>(signer);
 
         let stc_amount = 100000;
         let stc = Account::withdraw<STC::STC>(signer, stc_amount);

@@ -1024,7 +1024,7 @@ Retrieve back my staked token voted for a proposal.
 queue agreed proposal to execute.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -1033,7 +1033,7 @@ queue agreed proposal to execute.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copy</b> + drop + store, ActionT: <b>copy</b> + drop + store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copy</b> + drop + store, ActionT: <b>copy</b> + drop + store&gt;(
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
@@ -1093,7 +1093,7 @@ extract proposal action to execute.
 remove terminated proposal from proposer
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -1102,7 +1102,7 @@ remove terminated proposal from proposer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copy</b> + drop + store, ActionT: <b>copy</b> + drop + store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copy</b> + drop + store, ActionT: <b>copy</b> + drop + store&gt;(
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
@@ -2067,7 +2067,7 @@ set min action delay
 ### Function `queue_proposal_action`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -2112,7 +2112,7 @@ set min action delay
 ### Function `destroy_terminated_proposal`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 

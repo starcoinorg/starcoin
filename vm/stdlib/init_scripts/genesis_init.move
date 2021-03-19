@@ -140,9 +140,9 @@ script {
         // stc should be initialized after genesis_account's module upgrade strategy set.
         {
             STC::initialize(&genesis_account, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
-            Account::accept_token<STC>(&genesis_account);
+            Account::do_accept_token<STC>(&genesis_account);
             DummyToken::initialize(&genesis_account);
-            Account::accept_token<STC>(&association);
+            Account::do_accept_token<STC>(&association);
         };
         if (pre_mine_amount > 0) {
             let stc = Token::mint<STC>(&genesis_account, pre_mine_amount);
@@ -157,11 +157,11 @@ script {
         // only dev network set genesis auth key.
         if (!Vector::is_empty(&genesis_auth_key)) {
             let genesis_rotate_key_cap = Account::extract_key_rotation_capability(&genesis_account);
-            Account::rotate_authentication_key(&genesis_rotate_key_cap, genesis_auth_key);
+            Account::rotate_authentication_key_with_capability(&genesis_rotate_key_cap, genesis_auth_key);
             Account::restore_key_rotation_capability(genesis_rotate_key_cap);
         };
         let assoc_rotate_key_cap = Account::extract_key_rotation_capability(&association);
-        Account::rotate_authentication_key(&assoc_rotate_key_cap, association_auth_key);
+        Account::rotate_authentication_key_with_capability(&assoc_rotate_key_cap, association_auth_key);
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
         //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
         Timestamp::set_time_has_started(&genesis_account);
