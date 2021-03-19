@@ -34,6 +34,6 @@ impl Consensus for KeccakConsensus {
     ) -> Result<HashValue> {
         let mix_hash = set_header_nonce(mining_hash, nonce, extra);
         let pow_hash = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice());
-        HashValue::from_slice(pow_hash.as_slice())
+        Ok(HashValue::from_slice(pow_hash.as_slice())?)
     }
 }
