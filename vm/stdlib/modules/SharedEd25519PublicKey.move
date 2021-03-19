@@ -16,7 +16,7 @@ module SharedEd25519PublicKey {
 
     /// A resource that forces the account associated with `rotation_cap` to use a ed25519
     /// authentication key derived from `key`
-    struct SharedEd25519PublicKey has key, store {
+    struct SharedEd25519PublicKey has key {
         /// 32 byte ed25519 public key
         key: vector<u8>,
         /// rotation capability for an account whose authentication key is always derived from `key`
@@ -41,9 +41,9 @@ module SharedEd25519PublicKey {
 
     spec fun publish {
         aborts_if !exists<Account::Account>(Signer::spec_address_of(account));
-        aborts_if 0x1::Option::spec_is_none(global<Account::Account>(Signer::spec_address_of(account)).key_rotation_capability);
+        aborts_if 0x1::Option::is_none(global<Account::Account>(Signer::spec_address_of(account)).key_rotation_capability);
         aborts_if !exists<Account::Account>(
-                  0x1::Option::spec_get<Account::KeyRotationCapability>(
+                  0x1::Option::borrow<Account::KeyRotationCapability>(
                       global<Account::Account>(Signer::spec_address_of(account))
                       .key_rotation_capability
                   ).account_address);

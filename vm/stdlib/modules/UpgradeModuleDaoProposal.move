@@ -19,7 +19,7 @@ module UpgradeModuleDaoProposal {
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
 
     /// A wrapper of `PackageTxnManager::UpgradePlanCapability`.
-    struct UpgradeModuleCapability<TokenT> has key, store {
+    struct UpgradeModuleCapability<TokenT> has key {
         cap: PackageTxnManager::UpgradePlanCapability,
     }
 
@@ -101,7 +101,7 @@ module UpgradeModuleDaoProposal {
         let expected_states = singleton_vector(6);
         include Dao::CheckProposalStates<TokenT, UpgradeModule>{expected_states};
         let proposal = global<Dao::Proposal<TokenT, UpgradeModule>>(proposer_address);
-        aborts_if Option::spec_is_none(proposal.action);
+        aborts_if Option::is_none(proposal.action);
         let action = proposal.action.vec[0];
         include AbortIfUnableUpgrade<TokenT>{module_address: action.module_address};
     }

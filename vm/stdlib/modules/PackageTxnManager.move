@@ -61,7 +61,7 @@ address 0x1 {
         }
 
         /// data of two phase upgrade strategy.
-        struct TwoPhaseUpgrade has key, store {
+        struct TwoPhaseUpgrade has key {
             config: TwoPhaseUpgradeConfig,
             plan: Option<UpgradePlan>,
             version_cap: Config::ModifyConfigCapability<Version::Version>,
@@ -74,7 +74,7 @@ address 0x1 {
         }
 
         /// module upgrade event.
-        struct UpgradeEvent has copy, drop, store {
+        struct UpgradeEvent has drop, store {
             package_address: address,
             package_hash: vector<u8>,
             version: u64,
@@ -124,7 +124,7 @@ address 0x1 {
             aborts_if strategy == 1 && exists<UpgradePlanCapability>(Signer::address_of(account));
             aborts_if strategy == 1 && !exists<Config::ModifyConfigCapabilityHolder<Version::Version>>(Signer::address_of(account));
             let holder = global<Config::ModifyConfigCapabilityHolder<Version::Version>>(Signer::address_of(account));
-            aborts_if strategy == 1 && Option::spec_is_none<Config::ModifyConfigCapability<Version::Version>>(holder.cap);
+            aborts_if strategy == 1 && Option::is_none<Config::ModifyConfigCapability<Version::Version>>(holder.cap);
             aborts_if strategy == 1 && exists<TwoPhaseUpgrade>(Signer::address_of(account));
 
             aborts_if exists<ModuleUpgradeStrategy>(Signer::address_of(account)) && global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy == 1
@@ -168,7 +168,7 @@ address 0x1 {
         spec fun submit_upgrade_plan {
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
             include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
-            ensures Option::spec_is_some(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
+            ensures Option::is_some(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
         }
 
         /// Submit a new upgrade plan.
@@ -182,7 +182,7 @@ address 0x1 {
 
         spec fun submit_upgrade_plan_with_cap {
             include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address};
-            ensures Option::spec_is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
+            ensures Option::is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
 
         spec schema SubmitUpgradePlanWithCapAbortsIf {
@@ -204,7 +204,7 @@ address 0x1 {
         spec fun cancel_upgrade_plan {
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
             include CancelUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
-            ensures Option::spec_is_none(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
+            ensures Option::is_none(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
         }
 
         /// Cancel a module upgrade plan with given cap.
@@ -218,7 +218,7 @@ address 0x1 {
 
         spec fun cancel_upgrade_plan_with_cap {
             include CancelUpgradePlanWithCapAbortsIf{account: cap.account_address};
-            ensures Option::spec_is_none(global<TwoPhaseUpgrade>(cap.account_address).plan);
+            ensures Option::is_none(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
 
         spec schema CancelUpgradePlanWithCapAbortsIf {
@@ -226,7 +226,7 @@ address 0x1 {
             aborts_if !exists<ModuleUpgradeStrategy>(account);
             aborts_if global<ModuleUpgradeStrategy>(account).strategy != 1;
             aborts_if !exists<TwoPhaseUpgrade>(account);
-            aborts_if !Option::spec_is_some(global<TwoPhaseUpgrade>(account).plan);
+            aborts_if !Option::is_some(global<TwoPhaseUpgrade>(account).plan);
         }
 
         /// Get module upgrade strategy of an module address.
@@ -297,10 +297,10 @@ address 0x1 {
             package_address: address;
             package_hash: vector<u8>;
             aborts_if spec_get_module_upgrade_strategy(package_address) == 3;
-            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_is_none(spec_get_upgrade_plan(package_address));
-            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::is_none(spec_get_upgrade_plan(package_address));
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::borrow(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_time > Timestamp::now_milliseconds();
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::borrow(spec_get_upgrade_plan(package_address)).active_after_time > Timestamp::now_milliseconds();
         }
 
         spec schema CheckPackageTxnAbortsIfWithType {
@@ -309,10 +309,10 @@ address 0x1 {
             package_address: address;
             package_hash: vector<u8>;
             aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 3;
-            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_is_none(spec_get_upgrade_plan(package_address));
-            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
+            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::is_none(spec_get_upgrade_plan(package_address));
+            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::borrow(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
             aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_time > Timestamp::now_milliseconds();
+            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::borrow(spec_get_upgrade_plan(package_address)).active_after_time > Timestamp::now_milliseconds();
         }
 
         fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
@@ -331,7 +331,7 @@ address 0x1 {
         spec fun finish_upgrade_plan {
             aborts_if !exists<TwoPhaseUpgrade>(package_address);
             let tpu = global<TwoPhaseUpgrade>(package_address);
-            aborts_if Option::spec_is_some(tpu.plan) && !exists<Config::Config<Version::Version>>(tpu.version_cap.account_address);
+            aborts_if Option::is_some(tpu.plan) && !exists<Config::Config<Version::Version>>(tpu.version_cap.account_address);
         }
 
         /// Prologue of package transaction.
@@ -370,7 +370,7 @@ address 0x1 {
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1
                 && success && !exists<TwoPhaseUpgrade>(package_address);
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1
-                && success && Option::spec_is_some(global<TwoPhaseUpgrade>(package_address).plan)
+                && success && Option::is_some(global<TwoPhaseUpgrade>(package_address).plan)
                 && !exists<Config::Config<Version::Version>>(global<TwoPhaseUpgrade>(package_address).version_cap.account_address);
         }
 

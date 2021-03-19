@@ -11,7 +11,7 @@ module Box {
     }
 
     /// Box struct.
-    struct Box<T> has key, store {
+    struct Box<T> has key {
         /// thing in the box.
         thing:vector<T>,
     }

@@ -16,7 +16,7 @@ module ModifyDaoConfigProposal {
     }
 
     /// A wrapper of `Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>`.
-    struct DaoConfigModifyCapability<TokenT: copy + drop + store> has key, store {
+    struct DaoConfigModifyCapability<TokenT: copy + drop + store> has key {
         cap: Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>,
     }
 
@@ -55,8 +55,8 @@ module ModifyDaoConfigProposal {
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
         include Config::AbortsIfCapNotExist<Dao::DaoConfig<TokenT>>{account: sender};
         let config_cap = Config::spec_cap<Dao::DaoConfig<TokenT>>(sender);
-        aborts_if Option::spec_is_none(config_cap);
-        aborts_if Option::spec_get(config_cap).account_address != sender;
+        aborts_if Option::is_none(config_cap);
+        aborts_if Option::borrow(config_cap).account_address != sender;
         aborts_if exists<DaoConfigModifyCapability<TokenT>>(sender);
         ensures exists<DaoConfigModifyCapability<TokenT>>(sender);
     }

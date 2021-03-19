@@ -63,5 +63,5 @@ stdlib_script::unstake_vote
 //! args: 0
 stdlib_script::execute_on_chain_config_proposal
 // check: gas_used
-// check: 97770
+// check: 111678
 // check: "Keep(EXECUTED)"

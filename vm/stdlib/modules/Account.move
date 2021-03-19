@@ -21,7 +21,7 @@ module Account {
     }
 
     /// Every account has a Account::Account resource
-    struct Account has key, store {
+    struct Account has key {
         /// The current authentication key.
         /// This can be different than the key used to create the account
         authentication_key: vector<u8>,
@@ -52,26 +52,26 @@ module Account {
     }
 
     /// A resource that holds the tokens stored in this account
-    struct Balance<TokenType> has key, store {
+    struct Balance<TokenType> has key {
         token: Token<TokenType>,
     }
 
     /// The holder of WithdrawCapability for account_address can withdraw Token from
     /// account_address/Account::Account/balance.
     /// There is at most one WithdrawCapability in existence for a given address.
-    struct WithdrawCapability has key, store {
+    struct WithdrawCapability has store {
         account_address: address,
     }
 
     /// The holder of KeyRotationCapability for account_address can rotate the authentication key for
     /// account_address (i.e., write to account_address/Account::Account/authentication_key).
     /// There is at most one KeyRotationCapability in existence for a given address.
-    struct KeyRotationCapability has key, store {
+    struct KeyRotationCapability has store {
         account_address: address,
     }
 
     /// Message for balance withdraw event.
-    struct WithdrawEvent has copy, drop, store {
+    struct WithdrawEvent has drop, store {
         /// The amount of Token<TokenType> sent
         amount: u128,
         /// The code symbol for the token that was sent
@@ -80,7 +80,7 @@ module Account {
         metadata: vector<u8>,
     }
     /// Message for balance deposit event.
-    struct DepositEvent has copy, drop, store {
+    struct DepositEvent has drop, store {
         /// The amount of Token<TokenType> sent
         amount: u128,
         /// The code symbol for the token that was sent
@@ -90,7 +90,7 @@ module Account {
     }
 
     /// Message for accept token events
-    struct AcceptTokenEvent has copy, drop, store {
+    struct AcceptTokenEvent has drop, store {
         token_code: Token::TokenCode,
     }
 
@@ -301,7 +301,7 @@ module Account {
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
-        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
+        aborts_if Option::is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
     }
 
 
@@ -322,7 +322,7 @@ module Account {
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
-        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
+        aborts_if Option::is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
     }
 
     spec define spec_withdraw<TokenType>(account: signer, amount: u128): Token<TokenType> {
@@ -371,7 +371,7 @@ module Account {
 
     spec fun extract_withdraw_capability {
         aborts_if !exists<Account>(Signer::address_of(sender));
-        aborts_if Option::spec_is_none(global<Account>( Signer::spec_address_of(sender)).withdrawal_capability);
+        aborts_if Option::is_none(global<Account>( Signer::spec_address_of(sender)).withdrawal_capability);
     }
 
      /// Return the withdraw capability to the account it originally came from
@@ -382,7 +382,7 @@ module Account {
      }
 
     spec fun restore_withdraw_capability {
-        aborts_if Option::spec_is_some(global<Account>(cap.account_address).withdrawal_capability);
+        aborts_if Option::is_some(global<Account>(cap.account_address).withdrawal_capability);
         aborts_if !exists<Account>(cap.account_address);
     }
 
@@ -467,7 +467,7 @@ module Account {
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
-        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
+        aborts_if Option::is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
         // condition for deposit_with_metadata()
         aborts_if amount == 0;
         aborts_if !exists<Account>(payee);
@@ -503,7 +503,7 @@ module Account {
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
         aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
-        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
+        aborts_if Option::is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
         // condition for deposit_with_metadata()
         aborts_if amount == 0;
         aborts_if !exists<Account>(payee);
@@ -545,7 +545,7 @@ module Account {
 
     spec fun extract_key_rotation_capability {
         aborts_if !exists<Account>(Signer::address_of(account));
-        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).key_rotation_capability);
+        aborts_if Option::is_none(global<Account>(Signer::spec_address_of(account)).key_rotation_capability);
     }
 
     /// Return the key rotation capability to the account it originally came from
@@ -556,7 +556,7 @@ module Account {
     }
 
     spec fun restore_key_rotation_capability {
-        aborts_if Option::spec_is_some(global<Account>(cap.account_address).key_rotation_capability);
+        aborts_if Option::is_some(global<Account>(cap.account_address).key_rotation_capability);
         aborts_if !exists<Account>(cap.account_address);
     }
 

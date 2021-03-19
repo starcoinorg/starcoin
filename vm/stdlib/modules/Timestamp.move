@@ -13,13 +13,13 @@ module Timestamp {
 
 
     // A singleton resource holding the current Unix time in milliseconds
-    struct CurrentTimeMilliseconds has key, store {
+    struct CurrentTimeMilliseconds has key {
         milliseconds: u64,
     }
 
     /// A singleton resource used to determine whether time has started. This
     /// is called at the end of genesis.
-    struct TimeHasStarted has key, store {}
+    struct TimeHasStarted has key {}
 
     /// Conversion factor between seconds and milliseconds
     const MILLI_CONVERSION_FACTOR: u64 = 1000;

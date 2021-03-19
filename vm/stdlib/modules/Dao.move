@@ -24,7 +24,7 @@ module Dao {
     const EXTRACTED: u8 = 7;
 
     /// global DAO info of the specified token type `Token`.
-    struct DaoGlobalInfo<Token> has key, store {
+    struct DaoGlobalInfo<Token: store> has key {
         /// next proposal id.
         next_proposal_id: u64,
         /// proposal creating event.
@@ -55,7 +55,7 @@ module Dao {
     }
 
     /// emitted when proposal created.
-    struct ProposalCreatedEvent has copy, drop, store {
+    struct ProposalCreatedEvent has drop, store {
         /// the proposal id.
         proposal_id: u64,
         /// proposer is the user who create the proposal.
@@ -63,7 +63,7 @@ module Dao {
     }
 
     /// emitted when user vote/revoke_vote.
-    struct VoteChangedEvent has copy, drop, store {
+    struct VoteChangedEvent has drop, store {
         /// the proposal id.
         proposal_id: u64,
         /// the voter.
@@ -77,7 +77,7 @@ module Dao {
     }
 
     /// Proposal data struct.
-    struct Proposal<Token, Action> has key, store {
+    struct Proposal<Token: store, Action: store> has key {
         /// id of the proposal
         id: u64,
         /// creator of the proposal
@@ -101,7 +101,7 @@ module Dao {
     }
 
     /// User vote info.
-    struct Vote<TokenT> has key, store {
+    struct Vote<TokenT: store> has key {
         /// vote for the proposal under the `proposer`.
         proposer: address,
         /// proposal id.
@@ -648,7 +648,7 @@ module Dao {
         let expected_states = singleton_vector(EXECUTABLE);
         include CheckProposalStates<TokenT, ActionT>{expected_states};
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
-        ensures Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        ensures Option::is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
     }
 
 
@@ -693,8 +693,8 @@ module Dao {
         let current_time = Timestamp::spec_now_millseconds();
         let state = do_proposal_state(proposal, current_time);
         aborts_if (forall s in expected_states : s != state);
-        aborts_if state == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
-        aborts_if state == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if state == DEFEATED && Option::is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if state == EXTRACTED && Option::is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
     }
 

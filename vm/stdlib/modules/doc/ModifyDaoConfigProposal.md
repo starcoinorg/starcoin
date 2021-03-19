@@ -269,8 +269,8 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 <b>include</b> <a href="Config.md#0x1_Config_AbortsIfCapNotExist">Config::AbortsIfCapNotExist</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;{account: sender};
 <a name="0x1_ModifyDaoConfigProposal_config_cap$4"></a>
 <b>let</b> config_cap = <a href="Config.md#0x1_Config_spec_cap">Config::spec_cap</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;(sender);
-<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(config_cap);
-<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(config_cap).account_address != sender;
+<b>aborts_if</b> <a href="Option.md#0x1_Option_is_none">Option::is_none</a>(config_cap);
+<b>aborts_if</b> <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(config_cap).account_address != sender;
 <b>aborts_if</b> <b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(sender);
 <b>ensures</b> <b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(sender);
 </code></pre>

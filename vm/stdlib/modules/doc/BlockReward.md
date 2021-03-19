@@ -7,7 +7,7 @@ The module provide block rewarding calculation logic.
 
 
 -  [Resource `RewardQueue`](#0x1_BlockReward_RewardQueue)
--  [Resource `RewardInfo`](#0x1_BlockReward_RewardInfo)
+-  [Struct `RewardInfo`](#0x1_BlockReward_RewardInfo)
 -  [Struct `BlockRewardEvent`](#0x1_BlockReward_BlockRewardEvent)
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_BlockReward_initialize)
@@ -72,12 +72,12 @@ Queue of rewards distributed to miners.
 
 <a name="0x1_BlockReward_RewardInfo"></a>
 
-## Resource `RewardInfo`
+## Struct `RewardInfo`
 
 Reward info of miners.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a>
+<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a>
 </code></pre>
 
 

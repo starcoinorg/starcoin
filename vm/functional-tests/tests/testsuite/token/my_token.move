@@ -22,6 +22,21 @@ module MyToken {
 // check: EXECUTED
 
 //! new-transaction
+//! sender: bob
+module HideToken {
+    use {{alice}}::MyToken::MyToken;
+    use 0x1::Token::Token;
+
+    struct Box has key, store { t: Token<MyToken>,}
+
+    public fun hide(account: &signer, token: Token<MyToken>) {
+        let b = Box { t: token };
+        move_to<Box>(account, b);
+    }
+}
+
+
+//! new-transaction
 //! sender: alice
 script {
 use {{alice}}::MyToken::{MyToken, Self};
@@ -60,3 +75,40 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
+
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Account;
+    use {{alice}}::MyToken::MyToken;
+
+    fun main(account: &signer) {
+        Account::accept_token<MyToken>(account);
+    }
+}
+
+
+//! new-transaction
+//! sender: alice
+
+script {
+    use 0x1::Account;
+    use {{alice}}::MyToken::MyToken;
+
+    fun main(account: &signer) {
+        Account::pay_from<MyToken>(account, {{bob}}, 10);
+    }
+}
+
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Account;
+    use {{alice}}::MyToken::MyToken;
+    use {{bob}}::HideToken;
+
+    fun main(account: &signer) {
+        let token = Account::withdraw<MyToken>(account, 10);
+        HideToken::hide(account, token);
+    }
+}

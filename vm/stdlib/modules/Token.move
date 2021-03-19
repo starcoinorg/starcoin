@@ -14,7 +14,7 @@ module Token {
 
     /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
-    struct Token<TokenType> has key, store {
+    struct Token<TokenType> has store {
         value: u128,
     }
 
@@ -42,7 +42,7 @@ module Token {
 
 
     /// Event emitted when token minted.
-    struct MintEvent has copy, drop, store {
+    struct MintEvent has drop, store {
         /// funds added to the system
         amount: u128,
         /// full info of Token.
@@ -50,7 +50,7 @@ module Token {
     }
 
     /// Event emitted when token burned.
-    struct BurnEvent has copy, drop, store {
+    struct BurnEvent has drop, store {
         /// funds removed from the system
         amount: u128,
         /// full info of Token
@@ -58,7 +58,7 @@ module Token {
     }
 
     /// Token information.
-    struct TokenInfo<TokenType> has key, store {
+    struct TokenInfo<TokenType> has key {
         /// The total value for the token represented by
         /// `TokenType`. Mutable.
         total_value: u128,
