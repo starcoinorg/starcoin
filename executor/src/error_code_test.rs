@@ -198,7 +198,7 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::Script(encode_transfer_script_by_token_code(
+        TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
             StdlibVersion::Latest,
             receiver,
             recipient_auth_key,

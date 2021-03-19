@@ -94,7 +94,7 @@ impl CommandAction for UpgradeModuleQueueCommand {
             opt.max_gas_amount,
             opt.gas_price,
             opt.expiration_time,
-            TransactionPayload::Script(module_upgrade_queue),
+            TransactionPayload::ScriptFunction(module_upgrade_queue),
         )?;
         let txn_hash = signed_txn.id();
         cli_state.client().submit_transaction(signed_txn)?;

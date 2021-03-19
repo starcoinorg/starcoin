@@ -112,7 +112,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
                 opt.max_gas_amount,
                 opt.gas_price,
                 opt.expiration_time,
-                TransactionPayload::Script(module_upgrade_proposal),
+                TransactionPayload::ScriptFunction(module_upgrade_proposal),
             )?;
             let txn_hash = signed_txn.crypto_hash();
             cli_state.client().submit_transaction(signed_txn)?;

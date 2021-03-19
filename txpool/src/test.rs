@@ -10,8 +10,8 @@ use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_executor::{
-    create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT,
+    create_signed_txn_with_association_account, encode_transfer_script_function,
+    DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
@@ -254,7 +254,7 @@ fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(
+        TransactionPayload::ScriptFunction(encode_transfer_script_function(
             config.net().stdlib_version(),
             account_address,
             Some(AuthenticationKey::ed25519(&public_key)),

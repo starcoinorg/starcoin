@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{encode_create_account_script, execute_readonly_function};
+use crate::{encode_create_account_script_function, execute_readonly_function};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
@@ -186,7 +186,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         )?;
     }
     //create user for txn verifier
-    let script = encode_create_account_script(
+    let script_function = encode_create_account_script_function(
         net.stdlib_version(),
         stc_type_tag(),
         bob.address(),
@@ -196,7 +196,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     association_execute(
         net.genesis_config(),
         &chain_state,
-        TransactionPayload::Script(script),
+        TransactionPayload::ScriptFunction(script_function),
     )?;
 
     //get gas_used
