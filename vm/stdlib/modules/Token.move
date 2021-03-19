@@ -14,7 +14,7 @@ module Token {
 
     /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
-    struct Token<TokenType> has key, store {
+    struct Token<TokenType> has store {
         value: u128,
     }
 

@@ -648,7 +648,7 @@ module Dao {
         let expected_states = singleton_vector(EXECUTABLE);
         include CheckProposalStates<TokenT, ActionT>{expected_states};
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
-        ensures Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        ensures Option::is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
     }
 
 
@@ -693,8 +693,8 @@ module Dao {
         let current_time = Timestamp::spec_now_millseconds();
         let state = do_proposal_state(proposal, current_time);
         aborts_if (forall s in expected_states : s != state);
-        aborts_if state == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
-        aborts_if state == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if state == DEFEATED && Option::is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if state == EXTRACTED && Option::is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
     }
 

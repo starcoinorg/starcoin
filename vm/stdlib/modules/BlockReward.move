@@ -30,7 +30,7 @@ module BlockReward {
     }
 
     /// Reward info of miners.
-    struct RewardInfo has key, store {
+    struct RewardInfo has store {
         /// number of the block miner minted.
         number: u64,
         /// how many stc rewards.

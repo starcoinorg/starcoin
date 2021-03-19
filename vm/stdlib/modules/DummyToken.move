@@ -13,7 +13,7 @@ module DummyToken {
     const PRECISION: u8 = 3;
 
     /// Burn capability of the token.
-    struct SharedBurnCapability has key, store {
+    struct SharedBurnCapability has key {
         cap: Token::BurnCapability<DummyToken>,
     }
 
