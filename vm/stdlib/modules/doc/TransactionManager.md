@@ -105,6 +105,15 @@
 
 
 
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION">TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION</a>: u8 = 2;
+</code></pre>
+
+
+
 <a name="0x1_TransactionManager_prologue"></a>
 
 ## Function `prologue`
@@ -177,6 +186,7 @@ It verifies:
             <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TransactionManager.md#0x1_TransactionManager_EPROLOGUE_SCRIPT_NOT_ALLOWED">EPROLOGUE_SCRIPT_NOT_ALLOWED</a>),
         );
     };
+    // do nothing for <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION">TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION</a>
 }
 </code></pre>
 

@@ -22,6 +22,7 @@ use std::str::FromStr;
 pub enum TransactionPayloadMetadata {
     Script(HashValue),
     Package(HashValue, AccountAddress),
+    ScriptFunction,
 }
 
 impl TransactionPayloadMetadata {
@@ -29,6 +30,7 @@ impl TransactionPayloadMetadata {
         match self {
             TransactionPayloadMetadata::Script(_) => TransactionPayloadType::Script,
             TransactionPayloadMetadata::Package(_, _) => TransactionPayloadType::Package,
+            TransactionPayloadMetadata::ScriptFunction => TransactionPayloadType::ScriptFunction,
         }
     }
 }
@@ -77,6 +79,7 @@ impl TransactionMetadata {
                     package.crypto_hash(),
                     package.package_address(),
                 ),
+                TransactionPayload::ScriptFunction(_) => TransactionPayloadMetadata::ScriptFunction,
             },
         })
     }

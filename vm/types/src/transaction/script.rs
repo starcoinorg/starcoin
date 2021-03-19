@@ -3,6 +3,7 @@
 
 use crate::transaction::transaction_argument::TransactionArgument;
 use bcs_ext::Sample;
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, TypeTag};
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
@@ -257,5 +258,46 @@ impl TypeArgumentABI {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+}
+
+/// Call a Move script function.
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ScriptFunction {
+    module: ModuleId,
+    function: Identifier,
+    ty_args: Vec<TypeTag>,
+    args: Vec<TransactionArgument>,
+}
+
+impl ScriptFunction {
+    pub fn new(
+        module: ModuleId,
+        function: Identifier,
+        ty_args: Vec<TypeTag>,
+        args: Vec<TransactionArgument>,
+    ) -> Self {
+        ScriptFunction {
+            module,
+            function,
+            ty_args,
+            args,
+        }
+    }
+
+    pub fn module(&self) -> &ModuleId {
+        &self.module
+    }
+
+    pub fn function(&self) -> &IdentStr {
+        &self.function
+    }
+
+    pub fn ty_args(&self) -> &[TypeTag] {
+        &self.ty_args
+    }
+
+    pub fn args(&self) -> &[TransactionArgument] {
+        &self.args
     }
 }

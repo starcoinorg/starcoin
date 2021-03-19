@@ -35,7 +35,8 @@ pub use module::Module;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 pub use script::{
-    ArgumentABI, Script, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
+    ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
+    TypeArgumentABI,
 };
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 pub use transaction_argument::{
@@ -148,6 +149,30 @@ impl RawUserTransaction {
             sender,
             sequence_number,
             payload: TransactionPayload::Script(script),
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+        }
+    }
+
+    /// Create a new `RawTransaction` with a script function.
+    ///
+    /// A script transaction contains only code to execute. No publishing is allowed in scripts.
+    pub fn new_script_function(
+        sender: AccountAddress,
+        sequence_number: u64,
+        script_function: ScriptFunction,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+    ) -> Self {
+        RawUserTransaction {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::ScriptFunction(script_function),
             max_gas_amount,
             gas_unit_price,
             gas_token_code: STC_TOKEN_CODE_STR.to_string(),
@@ -284,6 +309,8 @@ pub enum TransactionPayload {
     Script(Script),
     /// A transaction that publish or update module code by a package.
     Package(Package),
+    /// A transaction that executes an existing script function published on-chain.
+    ScriptFunction(ScriptFunction),
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -291,6 +318,7 @@ pub enum TransactionPayload {
 pub enum TransactionPayloadType {
     Script = 0,
     Package = 1,
+    ScriptFunction = 2,
 }
 
 impl TransactionPayload {
@@ -298,6 +326,7 @@ impl TransactionPayload {
         match self {
             TransactionPayload::Script(_) => TransactionPayloadType::Script,
             TransactionPayload::Package(_) => TransactionPayloadType::Package,
+            TransactionPayload::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
         }
     }
 }

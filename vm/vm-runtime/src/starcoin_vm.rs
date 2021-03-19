@@ -34,9 +34,7 @@ use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{
-    DryRunTransaction, Module, Package, Script, TransactionPayloadType,
-};
+use starcoin_vm_types::transaction::{DryRunTransaction, Module, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -219,6 +217,7 @@ impl StarcoinVM {
                 }
             }
             TransactionPayload::Script(_) => {}
+            TransactionPayload::ScriptFunction(_) => {}
         }
         self.run_prologue(&mut session, &mut cost_strategy, &txn_data)
     }
@@ -392,13 +391,13 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_script(
+    fn execute_script_or_script_function(
         &self,
         remote_cache: &StateViewCache<'_>,
         gas_schedule: &CostTable,
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
-        script: &Script,
+        payload: &TransactionPayload,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let mut session = self.move_vm.new_session(remote_cache);
 
@@ -417,15 +416,28 @@ impl StarcoinVM {
             cost_strategy
                 .charge_intrinsic_gas(txn_data.transaction_size())
                 .map_err(|e| e.into_vm_status())?;
-            session
-                .execute_script(
+            match payload {
+                TransactionPayload::Script(script) => session.execute_script(
                     script.code().to_vec(),
                     script.ty_args().to_vec(),
                     convert_txn_args(script.args()),
                     vec![txn_data.sender()],
                     cost_strategy,
-                )
-                .map_err(|e| e.into_vm_status())?;
+                ),
+                TransactionPayload::ScriptFunction(script_function) => session
+                    .execute_script_function(
+                        script_function.module(),
+                        script_function.function(),
+                        script_function.ty_args().to_vec(),
+                        convert_txn_args(script_function.args()),
+                        vec![txn_data.sender()],
+                        cost_strategy,
+                    ),
+                TransactionPayload::Package(_) => {
+                    return Err(VMStatus::Error(StatusCode::UNREACHABLE));
+                }
+            }
+            .map_err(|e| e.into_vm_status())?;
 
             charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
 
@@ -462,6 +474,11 @@ impl StarcoinVM {
             TransactionPayloadMetadata::Package(hash, package_address) => {
                 (TransactionPayloadType::Package, *hash, *package_address)
             }
+            TransactionPayloadMetadata::ScriptFunction => (
+                TransactionPayloadType::ScriptFunction,
+                HashValue::zero(),
+                AccountAddress::ZERO,
+            ),
         };
 
         // Run prologue by genesis account
@@ -511,6 +528,11 @@ impl StarcoinVM {
             TransactionPayloadMetadata::Package(hash, package_address) => {
                 (TransactionPayloadType::Package, *hash, *package_address)
             }
+            TransactionPayloadMetadata::ScriptFunction => (
+                TransactionPayloadType::ScriptFunction,
+                HashValue::zero(),
+                AccountAddress::ZERO,
+            ),
         };
         // Run epilogue by genesis account
         session
@@ -624,13 +646,15 @@ impl StarcoinVM {
         match signature_checked_txn {
             Ok(txn) => {
                 let result = match txn.payload() {
-                    TransactionPayload::Script(s) => self.execute_script(
-                        remote_cache,
-                        gas_schedule,
-                        &mut cost_strategy,
-                        &txn_data,
-                        s,
-                    ),
+                    payload @ TransactionPayload::Script(_)
+                    | payload @ TransactionPayload::ScriptFunction(_) => self
+                        .execute_script_or_script_function(
+                            remote_cache,
+                            gas_schedule,
+                            &mut cost_strategy,
+                            &txn_data,
+                            payload,
+                        ),
                     TransactionPayload::Package(p) => self.execute_package(
                         remote_cache,
                         gas_schedule,
@@ -699,13 +723,15 @@ impl StarcoinVM {
         };
         let mut cost_strategy = CostStrategy::system(gas_schedule, txn_data.max_gas_amount());
         let result = match txn.raw_txn.payload() {
-            TransactionPayload::Script(s) => self.execute_script(
-                &remote_cache,
-                gas_schedule,
-                &mut cost_strategy,
-                &txn_data,
-                s,
-            ),
+            payload @ TransactionPayload::Script(_)
+            | payload @ TransactionPayload::ScriptFunction(_) => self
+                .execute_script_or_script_function(
+                    &remote_cache,
+                    gas_schedule,
+                    &mut cost_strategy,
+                    &txn_data,
+                    payload,
+                ),
             TransactionPayload::Package(p) => self.execute_package(
                 &remote_cache,
                 gas_schedule,
