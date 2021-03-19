@@ -41,7 +41,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 1362208
+// check: 1400188
 
 //! new-transaction
 //! sender: alice
@@ -58,7 +58,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 563137
+// check: 592237
 //
 //! new-transaction
 //! sender: alice
@@ -173,4 +173,4 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 106964
+// check: 120872
