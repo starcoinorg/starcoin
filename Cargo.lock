@@ -661,6 +661,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-executor-benchmark",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-service-registry",
