@@ -12,6 +12,7 @@ futures = "0.3.12"
 async-trait = "0.1"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-crypto = { path = "../../commons/crypto" }
+stest = { path = "../../commons/stest" }
 starcoin-types = { path = "../../types" }
 starcoin-config = { path = "../../config" }
 starcoin-state-api = { path = "../api" }
