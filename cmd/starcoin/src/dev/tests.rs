@@ -224,7 +224,10 @@ fn test_upgrade_module() {
     args.push(arg_3);
     args.push(arg_4);
     let script_function = ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("DaoVote").unwrap()),
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("DaoVoteScripts").unwrap(),
+        ),
         Identifier::new("cast_vote").unwrap(),
         type_tags,
         args,
@@ -394,7 +397,7 @@ fn test_only_new_module() {
     let script_function = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgrade").unwrap(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
         Identifier::new("update_module_upgrade_strategy").unwrap(),
         Vec::new(),

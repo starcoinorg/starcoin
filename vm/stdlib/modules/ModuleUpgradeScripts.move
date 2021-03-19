@@ -1,11 +1,17 @@
 address 0x1 {
-module ModuleUpgrade {
+module ModuleUpgradeScripts {
     use 0x1::PackageTxnManager;
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::Version;
     use 0x1::Option;
     use 0x1::UpgradeModuleDaoProposal;
+
+    spec module {
+        pragma verify = false; // break after enabling v2 compilation scheme
+        pragma aborts_if_is_partial = false;
+        pragma aborts_if_is_strict = true;
+    }
 
     public(script) fun propose_module_upgrade<Token: copy + drop + store>(
         signer: &signer,

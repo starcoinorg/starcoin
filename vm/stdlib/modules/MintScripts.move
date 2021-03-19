@@ -1,5 +1,5 @@
 address 0x1 {
-module Mint {
+module MintScripts {
     use 0x1::Token;
     use 0x1::Box;
     use 0x1::Account;

@@ -1,14 +1,14 @@
 
-<a name="0x1_ModuleUpgrade"></a>
+<a name="0x1_ModuleUpgradeScripts"></a>
 
-# Module `0x1::ModuleUpgrade`
+# Module `0x1::ModuleUpgradeScripts`
 
 
 
--  [Function `propose_module_upgrade`](#0x1_ModuleUpgrade_propose_module_upgrade)
--  [Function `update_module_upgrade_strategy`](#0x1_ModuleUpgrade_update_module_upgrade_strategy)
--  [Function `submit_module_upgrade_plan`](#0x1_ModuleUpgrade_submit_module_upgrade_plan)
--  [Function `cancel_upgrade_plan`](#0x1_ModuleUpgrade_cancel_upgrade_plan)
+-  [Function `propose_module_upgrade`](#0x1_ModuleUpgradeScripts_propose_module_upgrade)
+-  [Function `update_module_upgrade_strategy`](#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy)
+-  [Function `submit_module_upgrade_plan`](#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan)
+-  [Function `cancel_upgrade_plan`](#0x1_ModuleUpgradeScripts_cancel_upgrade_plan)
 -  [Specification](#@Specification_0)
     -  [Function `cancel_upgrade_plan`](#@Specification_0_cancel_upgrade_plan)
 
@@ -23,13 +23,13 @@
 
 
 
-<a name="0x1_ModuleUpgrade_propose_module_upgrade"></a>
+<a name="0x1_ModuleUpgradeScripts_propose_module_upgrade"></a>
 
 ## Function `propose_module_upgrade`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -38,7 +38,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
     signer: &signer,
     module_address: address,
     package_hash: vector&lt;u8&gt;,
@@ -59,13 +59,13 @@
 
 </details>
 
-<a name="0x1_ModuleUpgrade_update_module_upgrade_strategy"></a>
+<a name="0x1_ModuleUpgradeScripts_update_module_upgrade_strategy"></a>
 
 ## Function `update_module_upgrade_strategy`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(signer: &signer, strategy: u8)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(signer: &signer, strategy: u8)
 </code></pre>
 
 
@@ -74,7 +74,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(
     signer: &signer,
     strategy: u8,
 ) {
@@ -98,13 +98,13 @@
 
 </details>
 
-<a name="0x1_ModuleUpgrade_submit_module_upgrade_plan"></a>
+<a name="0x1_ModuleUpgradeScripts_submit_module_upgrade_plan"></a>
 
 ## Function `submit_module_upgrade_plan`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -113,7 +113,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
     _signer: &signer,
     proposer_address: address,
     proposal_id: u64,
@@ -126,13 +126,13 @@
 
 </details>
 
-<a name="0x1_ModuleUpgrade_cancel_upgrade_plan"></a>
+<a name="0x1_ModuleUpgradeScripts_cancel_upgrade_plan"></a>
 
 ## Function `cancel_upgrade_plan`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: &signer)
 </code></pre>
 
 
@@ -141,7 +141,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_cancel_upgrade_plan">cancel_upgrade_plan</a>(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(
     signer: &signer,
 ) {
     <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan">PackageTxnManager::cancel_upgrade_plan</a>(signer);
@@ -157,12 +157,20 @@
 ## Specification
 
 
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
 <a name="@Specification_0_cancel_upgrade_plan"></a>
 
 ### Function `cancel_upgrade_plan`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgrade.md#0x1_ModuleUpgrade_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: &signer)
 </code></pre>
 
 

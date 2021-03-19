@@ -61,6 +61,7 @@ The module for the account resource that governs every account
     -  [Function `release_genesis_signer`](#@Specification_1_release_genesis_signer)
     -  [Function `create_account`](#@Specification_1_create_account)
     -  [Function `make_account`](#@Specification_1_make_account)
+    -  [Function `create_account_with_initial_amount`](#@Specification_1_create_account_with_initial_amount)
     -  [Function `deposit_to_self`](#@Specification_1_deposit_to_self)
     -  [Function `deposit`](#@Specification_1_deposit)
     -  [Function `deposit_with_metadata`](#@Specification_1_deposit_with_metadata)
@@ -84,6 +85,7 @@ The module for the account resource that governs every account
     -  [Function `balance_for`](#@Specification_1_balance_for)
     -  [Function `balance`](#@Specification_1_balance)
     -  [Function `do_accept_token`](#@Specification_1_do_accept_token)
+    -  [Function `accept_token`](#@Specification_1_accept_token)
     -  [Function `is_accepts_token`](#@Specification_1_is_accepts_token)
     -  [Function `sequence_number`](#@Specification_1_sequence_number)
     -  [Function `authentication_key`](#@Specification_1_authentication_key)
@@ -1896,6 +1898,22 @@ It collects gas and bumps the sequence number
 
 
 
+<a name="@Specification_1_create_account_with_initial_amount"></a>
+
+### Function `create_account_with_initial_amount`
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType&gt;(account: &signer, fresh_address: address, auth_key: vector&lt;u8&gt;, initial_amount: u128)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
 <a name="@Specification_1_deposit_to_self"></a>
 
 ### Function `deposit_to_self`
@@ -2360,6 +2378,22 @@ It collects gas and bumps the sequence number
 
 <pre><code><b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+</code></pre>
+
+
+
+<a name="@Specification_1_accept_token"></a>
+
+### Function `accept_token`
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 

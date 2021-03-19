@@ -214,6 +214,10 @@ module Account {
         };
     }
 
+    spec fun create_account_with_initial_amount {
+        pragma verify = false;
+    }
+
     /// Deposits the `to_deposit` token into the self's account balance
     public fun deposit_to_self<TokenType: store>(account: &signer, to_deposit: Token<TokenType>)
     acquires Account, Balance {
@@ -620,6 +624,10 @@ module Account {
 
     public(script) fun accept_token<TokenType: store>(account: &signer) acquires Account {
         do_accept_token<TokenType>(account);
+    }
+
+    spec fun accept_token {
+        pragma verify = false;
     }
 
     /// Return whether the account at `addr` accepts `Token` type tokens

@@ -119,7 +119,7 @@ fn build_cast_vote_txn(
     let vote_script_function = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgrade").unwrap(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
         Identifier::new("update_module_upgrade_strategy").unwrap(),
         vec![stc_type_tag(), action_type_tag],

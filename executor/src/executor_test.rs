@@ -117,7 +117,10 @@ fn test_gen_accounts() -> Result<()> {
         auth_key_vec.extend_from_slice(account.auth_key().to_vec().as_slice());
     });
     let script_function = ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Transfer").unwrap()),
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
         Identifier::new("peer_to_peer_batch").unwrap(),
         vec![stc_type_tag()],
         vec![
@@ -519,7 +522,10 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
 
     let sequence_number2 = get_sequence_number(*account1.address(), &chain_state);
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Transfer").unwrap()),
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
         Identifier::new("peer_to_peer").unwrap(),
         vec![],
         vec![],

@@ -1,6 +1,6 @@
 address 0x1 {
 
-module Transfer {
+module TransferScripts {
     use 0x1::Account;
     use 0x1::Errors;
     use 0x1::Vector;

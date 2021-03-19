@@ -94,7 +94,10 @@ pub fn build_batch_transfer_txn(
     }
 
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Transfer").unwrap()),
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
         Identifier::new("peer_to_peer_batch").unwrap(),
         vec![stc_type_tag()],
         vec![
@@ -260,7 +263,10 @@ pub fn encode_transfer_script_by_token_code(
     token_code: TokenCode,
 ) -> ScriptFunction {
     ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Transfer").unwrap()),
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
         Identifier::new("peer_to_peer").unwrap(),
         vec![token_code.into()],
         vec![
@@ -525,7 +531,7 @@ pub fn build_module_upgrade_proposal(
         ScriptFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("ModuleUpgrade").unwrap(),
+                Identifier::new("ModuleUpgradeScripts").unwrap(),
             ),
             Identifier::new("propose_module_upgrade").unwrap(),
             vec![stc_type_tag()],
@@ -547,7 +553,7 @@ pub fn build_module_upgrade_plan(
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgrade").unwrap(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
         Identifier::new("submit_module_upgrade_plan").unwrap(),
         vec![stc_type_tag()],

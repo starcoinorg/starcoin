@@ -241,7 +241,10 @@ fn execute_cast_vote(
     let voting_power = get_balance(*alice.address(), chain_state);
     println!("alice voting power: {}", voting_power);
     let script_function = ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("DaoVote").unwrap()),
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("DaoVoteScripts").unwrap(),
+        ),
         Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), dao_action_type_tag.clone()],
         vec![
@@ -276,7 +279,7 @@ pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> ScriptFunctio
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfig").unwrap(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
         ),
         Identifier::new("propose_update_consensus_config").unwrap(),
         vec![],
@@ -302,7 +305,7 @@ pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> ScriptFunc
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfig").unwrap(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
         ),
         Identifier::new("propose_update_reward_config").unwrap(),
         vec![],
@@ -318,7 +321,7 @@ pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> Sc
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfig").unwrap(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
         ),
         Identifier::new("propose_update_txn_timeout_config").unwrap(),
         vec![],
@@ -337,7 +340,7 @@ pub fn vote_txn_publish_option_script(
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfig").unwrap(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
         ),
         Identifier::new("propose_update_txn_publish_option").unwrap(),
         vec![],
@@ -355,7 +358,7 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> Script
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfig").unwrap(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
         ),
         Identifier::new("propose_update_vm_config").unwrap(),
         vec![],
@@ -391,7 +394,7 @@ pub fn execute_script_on_chain_config(
     ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfig").unwrap(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
         ),
         Identifier::new("execute_on_chain_config_proposal").unwrap(),
         vec![type_tag],

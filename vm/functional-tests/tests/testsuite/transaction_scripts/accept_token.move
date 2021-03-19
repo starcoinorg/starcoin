@@ -1,9 +1,15 @@
 //! account: alice
 
 //! sender: alice
-//! type-args: 0x1::DummyToken::DummyToken
-stdlib_script::accept_token
+script {
+    use 0x1::Account;
+    use 0x1::DummyToken::DummyToken;
+
+    fun main(account: &signer) {
+        Account::accept_token<DummyToken>(account);
+    }
+}
 
 // check: gas_used
-// check: 34788
+// check: 37192
 // check: EXECUTED

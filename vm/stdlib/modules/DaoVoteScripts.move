@@ -1,8 +1,14 @@
 address 0x1 {
-module DaoVote {
+module DaoVoteScripts {
     use 0x1::Dao;
     use 0x1::Account;
     use 0x1::Signer;
+
+    spec module {
+        pragma verify = false; // break after enabling v2 compilation scheme
+        pragma aborts_if_is_partial = false;
+        pragma aborts_if_is_strict = true;
+    }
 
     public ( script ) fun cast_vote<Token: copy + drop + store, ActionT: copy + drop + store>(
         signer: &signer,

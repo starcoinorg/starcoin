@@ -1,5 +1,5 @@
 address 0x1 {
-module OnChainConfig {
+module OnChainConfigScripts {
     use 0x1::ConsensusConfig;
     use 0x1::OnChainConfigDao;
     use 0x1::STC;

@@ -1,14 +1,14 @@
 
-<a name="0x1_Mint"></a>
+<a name="0x1_MintScripts"></a>
 
-# Module `0x1::Mint`
+# Module `0x1::MintScripts`
 
 
 
--  [Function `mint_and_split_by_linear_key`](#0x1_Mint_mint_and_split_by_linear_key)
--  [Function `mint_token_by_fixed_key`](#0x1_Mint_mint_token_by_fixed_key)
--  [Function `mint_token_by_linear_key`](#0x1_Mint_mint_token_by_linear_key)
--  [Function `split_fixed_key`](#0x1_Mint_split_fixed_key)
+-  [Function `mint_and_split_by_linear_key`](#0x1_MintScripts_mint_and_split_by_linear_key)
+-  [Function `mint_token_by_fixed_key`](#0x1_MintScripts_mint_token_by_fixed_key)
+-  [Function `mint_token_by_linear_key`](#0x1_MintScripts_mint_token_by_linear_key)
+-  [Function `split_fixed_key`](#0x1_MintScripts_split_fixed_key)
 -  [Specification](#@Specification_0)
     -  [Function `mint_and_split_by_linear_key`](#@Specification_0_mint_and_split_by_linear_key)
     -  [Function `mint_token_by_fixed_key`](#@Specification_0_mint_token_by_fixed_key)
@@ -24,13 +24,13 @@
 
 
 
-<a name="0x1_Mint_mint_and_split_by_linear_key"></a>
+<a name="0x1_MintScripts_mint_and_split_by_linear_key"></a>
 
 ## Function `mint_and_split_by_linear_key`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_and_split_by_linear_key">mint_and_split_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_and_split_by_linear_key">mint_and_split_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
 </code></pre>
 
 
@@ -39,7 +39,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_and_split_by_linear_key">mint_and_split_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_and_split_by_linear_key">mint_and_split_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
     signer: &signer,
     for_address: address,
     amount: u128,
@@ -70,13 +70,13 @@
 
 </details>
 
-<a name="0x1_Mint_mint_token_by_fixed_key"></a>
+<a name="0x1_MintScripts_mint_token_by_fixed_key"></a>
 
 ## Function `mint_token_by_fixed_key`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
 </code></pre>
 
 
@@ -85,7 +85,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
     signer: &signer,
 ) {
     // 1. take key: FixedTimeMintKey&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
@@ -103,13 +103,13 @@
 
 </details>
 
-<a name="0x1_Mint_mint_token_by_linear_key"></a>
+<a name="0x1_MintScripts_mint_token_by_linear_key"></a>
 
 ## Function `mint_token_by_linear_key`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
 </code></pre>
 
 
@@ -118,7 +118,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
     signer: &signer,
 ) {
     // 1. take key: LinearTimeMintKey&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
@@ -143,13 +143,13 @@
 
 </details>
 
-<a name="0x1_Mint_split_fixed_key"></a>
+<a name="0x1_MintScripts_split_fixed_key"></a>
 
 ## Function `split_fixed_key`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_split_fixed_key">split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_split_fixed_key">split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
 </code></pre>
 
 
@@ -158,7 +158,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_split_fixed_key">split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_split_fixed_key">split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>: store&gt;(
     signer: &signer,
     for_address: address,
     amount: u128,
@@ -192,7 +192,7 @@
 ### Function `mint_and_split_by_linear_key`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_and_split_by_linear_key">mint_and_split_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_and_split_by_linear_key">mint_and_split_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
 </code></pre>
 
 
@@ -208,7 +208,7 @@
 ### Function `mint_token_by_fixed_key`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
 </code></pre>
 
 
@@ -224,7 +224,7 @@
 ### Function `mint_token_by_linear_key`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
 </code></pre>
 
 
@@ -240,7 +240,7 @@
 ### Function `split_fixed_key`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Mint.md#0x1_Mint_split_fixed_key">split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="MintScripts.md#0x1_MintScripts_split_fixed_key">split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(signer: &signer, for_address: address, amount: u128, lock_period: u64)
 </code></pre>
 
 

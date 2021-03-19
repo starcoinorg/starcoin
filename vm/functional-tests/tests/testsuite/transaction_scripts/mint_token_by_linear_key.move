@@ -41,8 +41,14 @@ script {
 
 //! new-transaction
 //! sender: bob
-//! type-args: 0x1::STC::STC
-stdlib_script::mint_token_by_linear_key
+script {
+    use 0x1::MintScripts;
+    use 0x1::STC::STC;
+
+    fun main(account: &signer) {
+        MintScripts::mint_token_by_linear_key<STC>(account);
+    }
+}
 // check: gas_used
-// check: 173307
+// check: 175711
 // check: "Keep(EXECUTED)"

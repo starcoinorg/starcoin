@@ -663,7 +663,10 @@ pub fn peer_to_peer_txn(
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
         TransactionPayload::ScriptFunction(ScriptFunction::new(
-            ModuleId::new(core_code_address(), Identifier::new("Transfer").unwrap()),
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
             Identifier::new("peer_to_peer").unwrap(),
             vec![stc_type_tag()],
             args,

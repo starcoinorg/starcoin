@@ -46,9 +46,15 @@ script {
 
 //! new-transaction
 //! sender: bob
-//! type-args: 0x1::STC::STC
-stdlib_script::mint_token_by_fixed_key
+script {
+    use 0x1::MintScripts;
+    use 0x1::STC::STC;
+
+    fun main(account: &signer) {
+        MintScripts::mint_token_by_fixed_key<STC>(account);
+    }
+}
 // check: gas_used
-// check: 137473
+// check: 139877
 // check: "Keep(EXECUTED)"
 

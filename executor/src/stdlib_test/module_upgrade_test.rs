@@ -32,7 +32,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let vote_script_function = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgrade").unwrap(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
         Identifier::new("propose_module_upgrade").unwrap(),
         vec![stc_type_tag()],
@@ -46,7 +46,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let execute_script_function = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgrade").unwrap(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
         Identifier::new("submit_module_upgrade_plan").unwrap(),
         vec![stc_type_tag()],
