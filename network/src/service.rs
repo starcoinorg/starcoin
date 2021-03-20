@@ -118,8 +118,15 @@ impl EventHandler<Self, Event> for NetworkActorService {
             Event::Dht(_) => {
                 debug!("ignore dht event");
             }
-            Event::NotificationStreamOpened { remote, info, .. } => {
-                debug!("Connected peer {:?}", remote);
+            Event::NotificationStreamOpened {
+                remote,
+                info,
+                protocol,
+                ..
+            } => {
+                //TODO Refactor PeerEvent for handle protocol and substream.
+                // Currently, every notification stream open will trigger a PeerEvent, so it will trigger repeat event.
+                debug!("Connected peer {:?}, protocol: {}", remote, protocol);
                 let peer_event = PeerEvent::Open(remote.clone().into(), info.clone());
                 self.inner.on_peer_connected(remote.into(), *info);
                 ctx.broadcast(peer_event);
@@ -410,6 +417,10 @@ impl Inner {
     pub(crate) fn on_peer_connected(&mut self, peer_id: PeerId, chain_info: ChainInfo) {
         self.peers
             .entry(peer_id.clone())
+            .and_modify(|peer| {
+                peer.peer_info
+                    .update_chain_status(chain_info.status().clone());
+            })
             .or_insert_with(|| Peer::new(PeerInfo::new(peer_id, chain_info)));
     }
 
