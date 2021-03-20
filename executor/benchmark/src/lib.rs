@@ -6,7 +6,7 @@ use crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     HashValue, PrivateKey, Uniform,
 };
-use executor::{encode_create_account_script, encode_transfer_script};
+use executor::{encode_create_account_script_function, encode_transfer_script_function};
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
@@ -15,6 +15,7 @@ use starcoin_state_api::ChainState;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::ScriptFunction;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -24,7 +25,7 @@ use types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
-    transaction::{Script, Transaction, TransactionPayload},
+    transaction::{Transaction, TransactionPayload},
 };
 
 struct AccountData {
@@ -125,7 +126,7 @@ impl TransactionGenerator {
             for (j, account) in block.iter().enumerate() {
                 let txn = create_transaction(
                     self.sequence,
-                    encode_create_account_script(
+                    encode_create_account_script_function(
                         StdlibVersion::Latest,
                         stc::stc_type_tag(),
                         &account.address,
@@ -175,7 +176,7 @@ impl TransactionGenerator {
                 let receiver = &self.accounts[receiver_idx];
                 let txn = create_transaction(
                     self.sequence,
-                    encode_transfer_script(
+                    encode_transfer_script_function(
                         self.net.stdlib_version(),
                         receiver.address,
                         Some(AuthenticationKey::ed25519(&receiver.public_key)),
@@ -290,12 +291,12 @@ pub fn run_benchmark(
 
 fn create_transaction(
     sequence_number: u64,
-    program: Script,
+    program: ScriptFunction,
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> Transaction {
     let signed_txn = executor::create_signed_txn_with_association_account(
-        TransactionPayload::Script(program),
+        TransactionPayload::ScriptFunction(program),
         sequence_number,
         40_000_000,
         1,

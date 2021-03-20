@@ -62,7 +62,7 @@ module ModifyDaoConfigProposal {
     }
 
     /// Entrypoint for the proposal.
-    public fun propose<TokenT: copy + drop + store>(
+    public(script) fun propose<TokenT: copy + drop + store>(
         signer: &signer,
         voting_delay: u64,
         voting_period: u64,
@@ -96,7 +96,7 @@ module ModifyDaoConfigProposal {
 
     }
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
-    public fun execute<TokenT: copy + drop + store>(proposer_address: address, proposal_id: u64)
+    public(script) fun execute<TokenT: copy + drop + store>(proposer_address: address, proposal_id: u64)
     acquires DaoConfigModifyCapability {
         let DaoConfigUpdate {
             voting_delay,

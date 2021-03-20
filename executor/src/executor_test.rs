@@ -2,22 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use crate::{encode_create_account_script, Account};
+use crate::{encode_create_account_script_function, Account};
 use anyhow::anyhow;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_transaction_builder::{StdlibScript, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::{RawUserTransaction, Script, TransactionArgument};
+use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
@@ -25,7 +25,6 @@ use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
-use stdlib::transaction_scripts::compiled_transaction_script;
 use test_helper::executor::{
     account_execute, association_execute, blockmeta_execute, build_raw_txn, current_block_number,
     TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
@@ -36,6 +35,7 @@ use test_helper::executor::{
     prepare_genesis,
 };
 // use test_helper::Account;
+use starcoin_vm_types::account_config::core_code_address;
 use vm_runtime::starcoin_vm::StarcoinVM;
 
 #[derive(Default)]
@@ -116,9 +116,12 @@ fn test_gen_accounts() -> Result<()> {
         address_vec.extend_from_slice(account.address().to_vec().as_slice());
         auth_key_vec.extend_from_slice(account.auth_key().to_vec().as_slice());
     });
-    let script = Script::new(
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::PeerToPeerBatch)
-            .into_vec(),
+    let script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("peer_to_peer_batch").unwrap(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::U8Vector(address_vec),
@@ -129,7 +132,7 @@ fn test_gen_accounts() -> Result<()> {
     association_execute(
         net.genesis_config(),
         &chain_state,
-        TransactionPayload::Script(script),
+        TransactionPayload::ScriptFunction(script_function),
     )?;
     Ok(())
 }
@@ -140,7 +143,7 @@ fn test_txn_verify_err_case() -> Result<()> {
     let mut vm = StarcoinVM::new();
     let alice = Account::new();
     let bob = Account::new();
-    let script = encode_create_account_script(
+    let script_function = encode_create_account_script_function(
         net.stdlib_version(),
         stc_type_tag(),
         alice.address(),
@@ -150,7 +153,7 @@ fn test_txn_verify_err_case() -> Result<()> {
     let txn = RawUserTransaction::new_with_default_gas_token(
         *alice.address(),
         0,
-        TransactionPayload::Script(script),
+        TransactionPayload::ScriptFunction(script_function),
         10000000,
         1,
         1000 + 60 * 60,
@@ -176,7 +179,7 @@ fn test_package_txn() -> Result<()> {
 
     // create alice, bob accounts
     {
-        let script = encode_create_account_script(
+        let script_function = encode_create_account_script_function(
             net.stdlib_version(),
             stc_type_tag(),
             alice.address(),
@@ -186,10 +189,10 @@ fn test_package_txn() -> Result<()> {
         association_execute(
             net.genesis_config(),
             &chain_state,
-            TransactionPayload::Script(script),
+            TransactionPayload::ScriptFunction(script_function),
         )?;
 
-        let script = encode_create_account_script(
+        let script_function = encode_create_account_script_function(
             net.stdlib_version(),
             stc_type_tag(),
             bob.address(),
@@ -199,7 +202,7 @@ fn test_package_txn() -> Result<()> {
         association_execute(
             net.genesis_config(),
             &chain_state,
-            TransactionPayload::Script(script),
+            TransactionPayload::ScriptFunction(script_function),
         )?;
     }
 
@@ -518,11 +521,17 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
     let sequence_number2 = get_sequence_number(*account1.address(), &chain_state);
+    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("peer_to_peer").unwrap(),
+        vec![],
+        vec![],
+    ));
     let txn2 = Transaction::UserTransaction(account1.create_signed_txn_with_args(
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::PeerToPeer).into_vec(),
-        vec![],
-        //Do not pass any argument.
-        vec![],
+        payload,
         sequence_number2,
         DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
         1,                      // this is a default for gas

@@ -8,7 +8,7 @@ use crate::Account;
 use anyhow::Result;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
-use starcoin_executor::{encode_create_account_script, execute_readonly_function};
+use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::account_address::AccountAddress;
@@ -16,7 +16,10 @@ use starcoin_types::account_config::{association_address, genesis_address, stc_t
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{Script, TransactionArgument, TransactionPayload};
+use starcoin_types::transaction::{
+    Script, ScriptFunction, TransactionArgument, TransactionPayload,
+};
+use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -133,7 +136,7 @@ fn execute_create_account(
                 0,
             ),
         )?;
-        let script = encode_create_account_script(
+        let script_function = encode_create_account_script_function(
             net.stdlib_version(),
             stc_type_tag(),
             alice.address(),
@@ -143,10 +146,10 @@ fn execute_create_account(
         association_execute(
             net.genesis_config(),
             &chain_state,
-            TransactionPayload::Script(script),
+            TransactionPayload::ScriptFunction(script_function),
         )?;
 
-        let script = encode_create_account_script(
+        let script_function = encode_create_account_script_function(
             net.stdlib_version(),
             stc_type_tag(),
             bob.address(),
@@ -156,7 +159,7 @@ fn execute_create_account(
         association_execute(
             net.genesis_config(),
             &chain_state,
-            TransactionPayload::Script(script),
+            TransactionPayload::ScriptFunction(script_function),
         )?;
         Ok(())
     }
@@ -233,14 +236,16 @@ fn execute_cast_vote(
             0,
         ),
     )?;
-    let cast_script =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
     let proposer_address = *alice.address();
     let proposer_id = 0;
     let voting_power = get_balance(*alice.address(), chain_state);
     println!("alice voting power: {}", voting_power);
-    let script = Script::new(
-        cast_script,
+    let script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("DaoVoteScripts").unwrap(),
+        ),
+        Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), dao_action_type_tag.clone()],
         vec![
             TransactionArgument::Address(proposer_address),
@@ -250,7 +255,11 @@ fn execute_cast_vote(
         ],
     );
     // vote first.
-    account_execute(&alice, chain_state, TransactionPayload::Script(script))?;
+    account_execute(
+        &alice,
+        chain_state,
+        TransactionPayload::ScriptFunction(script_function),
+    )?;
     let quorum = quorum_vote(chain_state, stc_type_tag());
     println!("quorum: {}", quorum);
 
@@ -266,15 +275,13 @@ fn execute_cast_vote(
 }
 
 ///vote script consensus
-pub fn vote_script_consensus(net: &ChainNetwork, strategy: u8) -> Script {
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateConsensusConfig,
-    )
-    .into_vec();
-
-    Script::new(
-        script1,
+pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_consensus_config").unwrap(),
         vec![],
         vec![
             TransactionArgument::U64(80),
@@ -294,15 +301,13 @@ pub fn vote_script_consensus(net: &ChainNetwork, strategy: u8) -> Script {
 }
 
 ///reward on chain config script
-pub fn vote_reward_scripts(net: &ChainNetwork, reward_delay: u64) -> Script {
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateRewardConfig,
-    )
-    .into_vec();
-
-    Script::new(
-        script1,
+pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_reward_config").unwrap(),
         vec![],
         vec![
             TransactionArgument::U64(reward_delay),
@@ -312,14 +317,13 @@ pub fn vote_reward_scripts(net: &ChainNetwork, reward_delay: u64) -> Script {
 }
 
 /// vote txn publish option scripts
-pub fn vote_txn_timeout_script(net: &ChainNetwork, duration_seconds: u64) -> Script {
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateTxnTimeoutConfig,
-    )
-    .into_vec();
-    Script::new(
-        script1,
+pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_txn_timeout_config").unwrap(),
         vec![],
         vec![
             TransactionArgument::U64(duration_seconds),
@@ -329,17 +333,16 @@ pub fn vote_txn_timeout_script(net: &ChainNetwork, duration_seconds: u64) -> Scr
 }
 /// vote txn publish option scripts
 pub fn vote_txn_publish_option_script(
-    net: &ChainNetwork,
+    _net: &ChainNetwork,
     script_hash: HashValue,
     module_publishing_allowed: bool,
-) -> Script {
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateTxnPublishOption,
-    )
-    .into_vec();
-    Script::new(
-        script1,
+) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_txn_publish_option").unwrap(),
         vec![],
         vec![
             TransactionArgument::U8Vector(script_hash.to_vec()),
@@ -350,13 +353,14 @@ pub fn vote_txn_publish_option_script(
 }
 
 /// vote vm config scripts
-pub fn vote_vm_config_script(net: &ChainNetwork, vm_config: VMConfig) -> Script {
-    let script1 =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeUpdateVmConfig)
-            .into_vec();
+pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> ScriptFunction {
     let gas_constants = &vm_config.gas_schedule.gas_constants;
-    Script::new(
-        script1,
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_vm_config").unwrap(),
         vec![],
         vec![
             TransactionArgument::U8Vector(
@@ -383,18 +387,16 @@ pub fn vote_vm_config_script(net: &ChainNetwork, vm_config: VMConfig) -> Script 
 
 /// execute on chain config scripts
 pub fn execute_script_on_chain_config(
-    net: &ChainNetwork,
+    _net: &ChainNetwork,
     type_tag: TypeTag,
     proposal_id: u64,
-) -> Script {
-    let script2 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ExecuteOnChainConfigProposal,
-    )
-    .into_vec();
-
-    Script::new(
-        script2,
+) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("execute_on_chain_config_proposal").unwrap(),
         vec![type_tag],
         vec![TransactionArgument::U64(proposal_id)],
     )
@@ -412,9 +414,9 @@ pub fn dao_vote_test(
     alice: Account,
     chain_state: ChainStateDB,
     net: &ChainNetwork,
-    vote_script: Script,
+    vote_script: ScriptFunction,
     action_type_tag: TypeTag,
-    execute_script: Script,
+    execute_script: ScriptFunction,
 ) -> Result<ChainStateDB> {
     let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
@@ -452,7 +454,7 @@ pub fn dao_vote_test(
         account_execute(
             &alice,
             &chain_state,
-            TransactionPayload::Script(vote_script),
+            TransactionPayload::ScriptFunction(vote_script),
         )?;
         let state = proposal_state(
             &chain_state,
@@ -529,18 +531,20 @@ pub fn dao_vote_test(
         );
         assert_eq!(state, AGREED);
 
-        let script =
-            compiled_transaction_script(net.stdlib_version(), StdlibScript::QueueProposalAction)
-                .into_vec();
-        let script = Script::new(
-            script,
+        let script_function = ScriptFunction::new(
+            ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+            Identifier::new("queue_proposal_action").unwrap(),
             vec![stc_type_tag(), action_type_tag.clone()],
             vec![
                 TransactionArgument::Address(*alice.address()),
                 TransactionArgument::U64(0),
             ],
         );
-        account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
+        account_execute(
+            &alice,
+            &chain_state,
+            TransactionPayload::ScriptFunction(script_function),
+        )?;
         let state = proposal_state(
             &chain_state,
             stc_type_tag(),
@@ -579,7 +583,7 @@ pub fn dao_vote_test(
         account_execute(
             &alice,
             &chain_state,
-            TransactionPayload::Script(execute_script),
+            TransactionPayload::ScriptFunction(execute_script),
         )?;
     }
 

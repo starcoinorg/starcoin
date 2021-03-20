@@ -9,17 +9,18 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::account_config::{core_code_address, genesis_address};
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
-    TransactionArgument, TransactionPayload,
+    Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
+    Transaction, TransactionArgument, TransactionPayload,
 };
 pub use stdlib::init_scripts::{compiled_init_script, InitScript};
 pub use stdlib::transaction_scripts::compiled_transaction_script;
@@ -92,20 +93,24 @@ pub fn build_batch_transfer_txn(
         auth_key_vec.extend_from_slice(auth_key.to_vec().as_slice());
     }
 
-    let script = Script::new(
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::PeerToPeerBatch)
-            .into_vec(),
+    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("peer_to_peer_batch").unwrap(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::U8Vector(address_vec),
             TransactionArgument::U8Vector(auth_key_vec),
             TransactionArgument::U128(amount),
         ],
-    );
+    ));
+
     RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
-        TransactionPayload::Script(script),
+        payload,
         max_gas,
         gas_price,
         expiration_timestamp_secs,
@@ -174,7 +179,7 @@ pub fn raw_peer_to_peer_txn(
     RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
-        TransactionPayload::Script(encode_transfer_script_by_token_code(
+        TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
             //TODO should use latest?
             StdlibVersion::Latest,
             receiver,
@@ -198,15 +203,17 @@ pub fn raw_accept_token_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
+    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+        Identifier::new("accept_token").unwrap(),
+        vec![token_code.into()],
+        vec![],
+    ));
+
     RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
-        TransactionPayload::Script(Script::new(
-            compiled_transaction_script(StdlibVersion::Latest, StdlibScript::AcceptToken)
-                .into_vec(),
-            vec![token_code.into()],
-            vec![],
-        )),
+        payload,
         max_gas,
         gas_price,
         expiration_timestamp_secs,
@@ -214,15 +221,16 @@ pub fn raw_accept_token_txn(
     )
 }
 
-pub fn encode_create_account_script(
-    version: StdlibVersion,
+pub fn encode_create_account_script_function(
+    _version: StdlibVersion,
     token_type: TypeTag,
     account_address: &AccountAddress,
     auth_key: AuthenticationKey,
     initial_balance: u128,
-) -> Script {
-    Script::new(
-        compiled_transaction_script(version, StdlibScript::CreateAccount).into_vec(),
+) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+        Identifier::new("create_account_with_initial_amount").unwrap(),
         vec![token_type],
         vec![
             TransactionArgument::Address(*account_address),
@@ -232,12 +240,12 @@ pub fn encode_create_account_script(
     )
 }
 
-pub fn encode_transfer_script(
+pub fn encode_transfer_script_function(
     version: StdlibVersion,
     recipient: AccountAddress,
     recipient_auth_key: Option<AuthenticationKey>,
     amount: u128,
-) -> Script {
+) -> ScriptFunction {
     encode_transfer_script_by_token_code(
         version,
         recipient,
@@ -248,14 +256,18 @@ pub fn encode_transfer_script(
 }
 
 pub fn encode_transfer_script_by_token_code(
-    version: StdlibVersion,
+    _version: StdlibVersion,
     recipient: AccountAddress,
     recipient_auth_key: Option<AuthenticationKey>,
     amount: u128,
     token_code: TokenCode,
-) -> Script {
-    Script::new(
-        compiled_transaction_script(version, StdlibScript::PeerToPeer).into_vec(),
+) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("peer_to_peer").unwrap(),
         vec![token_code.into()],
         vec![
             TransactionArgument::Address(recipient),
@@ -276,7 +288,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(
+        TransactionPayload::ScriptFunction(encode_transfer_script_function(
             net.stdlib_version(),
             recipient,
             recipient_auth_key,
@@ -513,14 +525,15 @@ pub fn build_module_upgrade_proposal(
     package: &Package,
     version: u64,
     day: u64,
-) -> (Script, HashValue) {
-    let module_upgrade_proposal_script =
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::ProposeModuleUpgrade)
-            .into_vec();
+) -> (ScriptFunction, HashValue) {
     let package_hash = package.crypto_hash();
     (
-        Script::new(
-            module_upgrade_proposal_script,
+        ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("ModuleUpgradeScripts").unwrap(),
+            ),
+            Identifier::new("propose_module_upgrade").unwrap(),
             vec![stc_type_tag()],
             vec![
                 TransactionArgument::Address(package.package_address()),
@@ -533,12 +546,16 @@ pub fn build_module_upgrade_proposal(
     )
 }
 
-pub fn build_module_upgrade_plan(proposer_address: AccountAddress, proposal_id: u64) -> Script {
-    let module_upgrade_plan_script =
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::SubmitModuleUpgradePlan)
-            .into_vec();
-    Script::new(
-        module_upgrade_plan_script,
+pub fn build_module_upgrade_plan(
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("submit_module_upgrade_plan").unwrap(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::Address(proposer_address),
@@ -547,18 +564,20 @@ pub fn build_module_upgrade_plan(proposer_address: AccountAddress, proposal_id: 
     )
 }
 
-pub fn build_module_upgrade_queue(proposal_address: AccountAddress, proposal_id: u64) -> Script {
+pub fn build_module_upgrade_queue(
+    proposal_address: AccountAddress,
+    proposal_id: u64,
+) -> ScriptFunction {
     let upgrade_module = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
     });
-    let module_upgrade_queue_script =
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::QueueProposalAction)
-            .into_vec();
-    Script::new(
-        module_upgrade_queue_script,
+
+    ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+        Identifier::new("queue_proposal_action").unwrap(),
         vec![stc_type_tag(), upgrade_module],
         vec![
             TransactionArgument::Address(proposal_address),

@@ -4,12 +4,12 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_state_api::StateView;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::Script;
+use starcoin_types::transaction::ScriptFunction;
+use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::values::VMValueCast;
-use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 use test_helper::dao::dao_vote_test;
 use test_helper::executor::*;
 use test_helper::Account;
@@ -28,12 +28,13 @@ fn test_dao_upgrade_module() -> Result<()> {
     let module = compile_module_with_address(genesis_address(), TEST_MODULE);
     let package = Package::new_with_module(module)?;
     let package_hash = package.crypto_hash();
-    let script1 =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeModuleUpgrade)
-            .into_vec();
 
-    let vote_script = Script::new(
-        script1,
+    let vote_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("propose_module_upgrade").unwrap(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::Address(genesis_address()),
@@ -42,11 +43,12 @@ fn test_dao_upgrade_module() -> Result<()> {
             TransactionArgument::U64(0),
         ],
     );
-    let script2 =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::SubmitModuleUpgradePlan)
-            .into_vec();
-    let execute_script = Script::new(
-        script2,
+    let execute_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("submit_module_upgrade_plan").unwrap(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::Address(*alice.address()),
@@ -57,9 +59,9 @@ fn test_dao_upgrade_module() -> Result<()> {
         alice,
         chain_state,
         &net,
-        vote_script,
+        vote_script_function,
         dao_action_type_tag,
-        execute_script,
+        execute_script_function,
     )?;
     association_execute(
         net.genesis_config(),

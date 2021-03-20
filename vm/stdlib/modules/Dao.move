@@ -608,7 +608,7 @@ module Dao {
 
 
     /// queue agreed proposal to execute.
-    public fun queue_proposal_action<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public(script) fun queue_proposal_action<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -653,7 +653,7 @@ module Dao {
 
 
     /// remove terminated proposal from proposer
-    public fun destroy_terminated_proposal<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public(script) fun destroy_terminated_proposal<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {

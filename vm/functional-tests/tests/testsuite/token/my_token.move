@@ -50,7 +50,7 @@ fun main(account: &signer) {
     assert(market_cap == 0, 8001);
     assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
     // Create 'Balance<TokenType>' resource under sender account, and init with zero
-    Account::accept_token<MyToken>(account);
+    Account::do_accept_token<MyToken>(account);
 }
 }
 

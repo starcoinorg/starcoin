@@ -15,27 +15,28 @@ use starcoin_types::{
     account_address::AccountAddress,
     event::EventHandle,
     transaction::{
-        authenticator::AuthenticationKey, RawUserTransaction, Script, SignedUserTransaction,
-        TransactionArgument, TransactionPayload,
+        authenticator::AuthenticationKey, RawUserTransaction, ScriptFunction,
+        SignedUserTransaction, TransactionArgument, TransactionPayload,
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
+use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
+use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     account_config::{self, AccountResource, BalanceResource},
-    language_storage::{StructTag, TypeTag},
+    language_storage::StructTag,
     move_resource::MoveResource,
     values::{Struct, Value},
 };
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::sync::Arc;
-use stdlib::transaction_scripts::compiled_transaction_script;
-use stdlib::transaction_scripts::StdlibScript;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -157,9 +158,7 @@ impl Account {
     /// the sender.
     pub fn create_signed_txn_with_args(
         &self,
-        program: Vec<u8>,
-        ty_args: Vec<TypeTag>,
-        args: Vec<TransactionArgument>,
+        program: TransactionPayload,
         sequence_number: u64,
         max_gas_amount: u64,
         gas_unit_price: u64,
@@ -168,7 +167,7 @@ impl Account {
     ) -> SignedUserTransaction {
         self.create_signed_txn_impl(
             *self.address(),
-            TransactionPayload::Script(Script::new(program, ty_args, args)),
+            program,
             sequence_number,
             max_gas_amount,
             gas_unit_price,
@@ -663,9 +662,15 @@ pub fn peer_to_peer_txn(
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::PeerToPeer).into_vec(),
-        vec![stc_type_tag()],
-        args,
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer").unwrap(),
+            vec![stc_type_tag()],
+            args,
+        )),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
         1,                      // this is a default for gas
@@ -690,9 +695,9 @@ pub fn create_account_txn_sent_as_association(
     args.push(TransactionArgument::U128(initial_amount));
 
     create_signed_txn_with_association_account(
-        TransactionPayload::Script(Script::new(
-            compiled_transaction_script(StdlibVersion::Latest, StdlibScript::CreateAccount)
-                .into_vec(),
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+            Identifier::new("create_account_with_initial_amount").unwrap(),
             vec![stc_type_tag()],
             args,
         )),

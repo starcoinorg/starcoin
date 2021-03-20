@@ -33,7 +33,7 @@ script {
 
     fun main(account: &signer) {
         MyToken::init(account);
-        Account::accept_token<MyToken>(account);
+        Account::do_accept_token<MyToken>(account);
         let coin = Token::mint<MyToken>(account, 10000);
         Account::deposit_to_self<MyToken>(account, coin)
     }

@@ -9,9 +9,18 @@
 //! new-transaction
 //! sender: alice
 //! args: x"", false, 0
-stdlib_script::propose_update_txn_publish_option
+script {
+    use 0x1::OnChainConfigScripts;
+
+    fun main(account: &signer,
+             script_allow_list: vector<u8>,
+             module_publishing_allowed: bool,
+             exec_delay: u64) {
+        OnChainConfigScripts::propose_update_txn_publish_option(account, script_allow_list, module_publishing_allowed, exec_delay);
+    }
+}
 // check: gas_used
-// check: 181217
+// check: 187603
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -21,11 +30,29 @@ stdlib_script::propose_update_txn_publish_option
 
 //! new-transaction
 //! sender: bob
-//! type-args: 0x1::STC::STC, 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption>
 //! args: {{alice}}, 0, true, 3981420001000000u128
-stdlib_script::cast_vote
+script {
+    use 0x1::DaoVoteScripts;
+    use 0x1::STC::STC;
+    use 0x1::OnChainConfigDao::OnChainConfigUpdate;
+    use 0x1::TransactionPublishOption::TransactionPublishOption;
+
+    fun main(account: &signer,
+            proposer_address: address,
+            proposal_id: u64,
+            agree: bool,
+            votes: u128
+        ) {
+        DaoVoteScripts::cast_vote<STC, OnChainConfigUpdate<TransactionPublishOption>>(
+            account,
+            proposer_address,
+            proposal_id,
+            agree,
+            votes);
+    }
+}
 // check: gas_used
-// check: 170700
+// check: 176147
 // check: "Keep(EXECUTED)"
 
 
@@ -36,20 +63,49 @@ stdlib_script::cast_vote
 
 //! new-transaction
 //! sender: bob
-//! type-args: 0x1::STC::STC, 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption>
 //! args: {{alice}}, 0
-stdlib_script::queue_proposal_action
+script {
+    use 0x1::Dao;
+    use 0x1::STC::STC;
+    use 0x1::OnChainConfigDao::OnChainConfigUpdate;
+    use 0x1::TransactionPublishOption::TransactionPublishOption;
+
+    fun main(_account: &signer,
+            proposer_address: address,
+            proposal_id: u64,
+        ) {
+        Dao::queue_proposal_action<STC, OnChainConfigUpdate<TransactionPublishOption>>(
+            proposer_address,
+            proposal_id
+        );
+    }
+}
 // check: gas_used
 // check: 54457
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
 //! sender: bob
-//! type-args: 0x1::STC::STC, 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption>
 //! args: {{alice}}, 0
-stdlib_script::unstake_vote
+script {
+    use 0x1::DaoVoteScripts;
+    use 0x1::STC::STC;
+    use 0x1::OnChainConfigDao::OnChainConfigUpdate;
+    use 0x1::TransactionPublishOption::TransactionPublishOption;
+
+    fun main(account: &signer,
+            proposer_address: address,
+            proposal_id: u64,
+        ) {
+        DaoVoteScripts::unstake_vote<STC, OnChainConfigUpdate<TransactionPublishOption>>(
+            account,
+            proposer_address,
+            proposal_id
+        );
+    }
+}
 // check: gas_used
-// check: 114622
+// check: 118839
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -59,9 +115,18 @@ stdlib_script::unstake_vote
 
 //! new-transaction
 //! sender: alice
-//! type-args: 0x1::TransactionPublishOption::TransactionPublishOption
 //! args: 0
-stdlib_script::execute_on_chain_config_proposal
+script {
+    use 0x1::OnChainConfigScripts;
+    use 0x1::TransactionPublishOption::TransactionPublishOption;
+
+    fun main(account: &signer, proposal_id: u64) {
+        OnChainConfigScripts::execute_on_chain_config_proposal<TransactionPublishOption>(
+            account,
+            proposal_id
+        );
+    }
+}
 // check: gas_used
-// check: 111678
+// check: 114697
 // check: "Keep(EXECUTED)"

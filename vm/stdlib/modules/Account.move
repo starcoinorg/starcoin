@@ -111,6 +111,7 @@ module Account {
     const EMALFORMED_AUTHENTICATION_KEY: u64 = 102;
     const EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED: u64 = 103;
     const EADDRESS_PUBLIC_KEY_INCONSISTENT: u64 = 104;
+    const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -151,9 +152,9 @@ module Account {
         make_account(&new_account, authentication_key);
         // Make sure all account accept STC.
         if (!STC::is_stc<TokenType>()){
-            accept_token<STC>(&new_account);
+            do_accept_token<STC>(&new_account);
         };
-        accept_token<TokenType>(&new_account);
+        do_accept_token<TokenType>(&new_account);
         destroy_signer(new_account);
         new_address
     }
@@ -164,9 +165,9 @@ module Account {
         let fresh_address = Authenticator::spec_derived_address(authentication_key);
         //abort condition for make_account
         aborts_if exists<Account>(fresh_address);
-        //abort condition for accept_token<STC>
+        //abort condition for do_accept_token<STC>
         aborts_if Token::spec_token_code<TokenType>() != Token::spec_token_code<STC>() && exists<Balance<STC>>(fresh_address);
-        //abort condition for accept_token<TokenType>
+        //abort condition for do_accept_token<TokenType>
         aborts_if exists<Balance<TokenType>>(fresh_address);
         ensures exists_at(fresh_address);
         ensures exists<Balance<TokenType>>(fresh_address);
@@ -205,12 +206,24 @@ module Account {
     native fun create_signer(addr: address): signer;
     native fun destroy_signer(sig: signer);
 
+    public(script) fun create_account_with_initial_amount<TokenType: store>(account: &signer, fresh_address: address, auth_key: vector<u8>, initial_amount: u128) acquires Account, Balance {
+        let created_address = create_account<TokenType>(auth_key);
+        assert(fresh_address == created_address, Errors::invalid_argument(EADDRESS_AND_AUTH_KEY_MISMATCH));
+        if (initial_amount > 0) {
+            pay_from<TokenType>(account, fresh_address, initial_amount);
+        };
+    }
+
+    spec fun create_account_with_initial_amount {
+        pragma verify = false;
+    }
+
     /// Deposits the `to_deposit` token into the self's account balance
     public fun deposit_to_self<TokenType: store>(account: &signer, to_deposit: Token<TokenType>)
     acquires Account, Balance {
         let account_address = Signer::address_of(account);
         if (!is_accepts_token<TokenType>(account_address)){
-            accept_token<TokenType>(account);
+            do_accept_token<TokenType>(account);
         };
         deposit(account_address, to_deposit);
     }
@@ -512,7 +525,7 @@ module Account {
     }
 
     /// Rotate the authentication key for the account under cap.account_address
-    public fun rotate_authentication_key(
+    public fun rotate_authentication_key_with_capability(
         cap: &KeyRotationCapability,
         new_authentication_key: vector<u8>,
     ) acquires Account  {
@@ -522,13 +535,13 @@ module Account {
         sender_account_resource.authentication_key = new_authentication_key;
     }
 
-    spec fun rotate_authentication_key {
+    spec fun rotate_authentication_key_with_capability {
         aborts_if !exists<Account>(cap.account_address);
         aborts_if len(new_authentication_key) != 32;
         ensures global<Account>(cap.account_address).authentication_key == new_authentication_key;
     }
     spec module {
-        define spec_rotate_authentication_key(addr: address, new_authentication_key: vector<u8>): bool {
+        define spec_rotate_authentication_key_with_capability(addr: address, new_authentication_key: vector<u8>): bool {
             global<Account>(addr).authentication_key == new_authentication_key
         }
     }
@@ -560,6 +573,16 @@ module Account {
         aborts_if !exists<Account>(cap.account_address);
     }
 
+    public(script) fun rotate_authentication_key(account: &signer, new_key: vector<u8>) acquires Account {
+        let key_rotation_capability = extract_key_rotation_capability(account);
+        rotate_authentication_key_with_capability(&key_rotation_capability, new_key);
+        restore_key_rotation_capability(key_rotation_capability);
+    }
+
+    spec fun rotate_authentication_key {
+        pragma verify = false;
+    }
+
     /// Helper to return the u128 value of the `balance` for `account`
     fun balance_for<TokenType: store>(balance: &Balance<TokenType>): u128 {
         Token::value<TokenType>(&balance.token)
@@ -579,7 +602,7 @@ module Account {
     }
 
     /// Add a balance of `Token` type to the sending account.
-    public fun accept_token<TokenType: store>(account: &signer) acquires Account {
+    public fun do_accept_token<TokenType: store>(account: &signer) acquires Account {
         move_to(account, Balance<TokenType>{ token: Token::zero<TokenType>() });
         let token_code = Token::token_code<TokenType>();
         // Load the sender's account
@@ -593,10 +616,18 @@ module Account {
         );
     }
 
-    spec fun accept_token {
+    spec fun do_accept_token {
         aborts_if exists<Balance<TokenType>>(Signer::address_of(account));
         aborts_if !exists<Account>(Signer::address_of(account));
 
+    }
+
+    public(script) fun accept_token<TokenType: store>(account: &signer) acquires Account {
+        do_accept_token<TokenType>(account);
+    }
+
+    spec fun accept_token {
+        pragma verify = false;
     }
 
     /// Return whether the account at `addr` accepts `Token` type tokens

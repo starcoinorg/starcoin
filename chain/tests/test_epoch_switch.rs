@@ -8,20 +8,22 @@ use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter};
-use starcoin_transaction_builder::encode_create_account_script;
+use starcoin_transaction_builder::encode_create_account_script_function;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block::Block;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::{
-    Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
+    ScriptFunction, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
+use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::on_chain_config::{consensus_config_type_tag, GlobalTimeOnChain};
 use starcoin_vm_types::transaction::RawUserTransaction;
 use std::sync::Arc;
-use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 use test_helper::dao::{
     execute_script_on_chain_config, min_action_delay, on_chain_config_type_tag, proposal_state,
     quorum_vote, reward_config_type_tag, vote_reward_scripts, vote_script_consensus, voting_delay,
@@ -72,7 +74,7 @@ fn create_user_txn(
     pre_mint_amount: u128,
     expire_time: u64,
 ) -> Result<Vec<SignedUserTransaction>> {
-    let script = encode_create_account_script(
+    let script_function = encode_create_account_script_function(
         net.stdlib_version(),
         stc_type_tag(),
         alice.address(),
@@ -84,7 +86,7 @@ fn create_user_txn(
         .sign_with_association(build_transaction(
             address,
             seq_number,
-            TransactionPayload::Script(script),
+            TransactionPayload::ScriptFunction(script_function),
             expire_time + 60 * 60,
         ))?;
     Ok(vec![txn])
@@ -93,13 +95,13 @@ fn create_user_txn(
 fn build_create_vote_txn(
     alice: &Account,
     seq_number: u64,
-    vote_script: Script,
+    vote_script_function: ScriptFunction,
     expire_time: u64,
 ) -> SignedUserTransaction {
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::Script(vote_script),
+        TransactionPayload::ScriptFunction(vote_script_function),
         expire_time,
     ))
 }
@@ -109,15 +111,17 @@ fn build_cast_vote_txn(
     alice: &Account,
     action_type_tag: TypeTag,
     voting_power: u128,
-    net: &ChainNetwork,
+    _net: &ChainNetwork,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    let script =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
     let proposer_id = 0;
     println!("alice voting power: {}", voting_power);
-    let vote_script = Script::new(
-        script,
+    let vote_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("DaoVoteScripts").unwrap(),
+        ),
+        Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
             TransactionArgument::Address(*alice.address()),
@@ -129,7 +133,7 @@ fn build_cast_vote_txn(
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::Script(vote_script),
+        TransactionPayload::ScriptFunction(vote_script_function),
         expire_time,
     ))
 }
@@ -137,15 +141,13 @@ fn build_cast_vote_txn(
 fn build_queue_txn(
     seq_number: u64,
     alice: &Account,
-    net: &ChainNetwork,
+    _net: &ChainNetwork,
     action_type_tag: TypeTag,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    let script =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::QueueProposalAction)
-            .into_vec();
-    let script = Script::new(
-        script,
+    let script_function = ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+        Identifier::new("queue_proposal_action").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
             TransactionArgument::Address(*alice.address()),
@@ -155,7 +157,7 @@ fn build_queue_txn(
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::Script(script),
+        TransactionPayload::ScriptFunction(script_function),
         expire_time,
     ))
 }
@@ -163,13 +165,13 @@ fn build_queue_txn(
 fn build_execute_txn(
     seq_number: u64,
     alice: &Account,
-    execute_script: Script,
+    execute_script_function: ScriptFunction,
     expire_time: u64,
 ) -> SignedUserTransaction {
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::Script(execute_script),
+        TransactionPayload::ScriptFunction(execute_script_function),
         expire_time,
     ))
 }
@@ -178,9 +180,9 @@ pub fn modify_on_chain_config_by_dao_block(
     alice: Account,
     mut chain: BlockChain,
     net: &ChainNetwork,
-    vote_script: Script,
+    vote_script: ScriptFunction,
     action_type_tag: TypeTag,
-    execute_script: Script,
+    execute_script: ScriptFunction,
 ) -> Result<BlockChain> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;

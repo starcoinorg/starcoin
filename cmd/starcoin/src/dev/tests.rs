@@ -10,20 +10,23 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::{
     build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
 };
-use starcoin_types::transaction::{parse_transaction_argument, Script, TransactionArgument};
+use starcoin_types::transaction::{
+    parse_transaction_argument, ScriptFunction, TransactionArgument,
+};
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 use starcoin_vm_types::{
     account_config::{association_address, genesis_address, AccountResource},
-    genesis_config::StdlibVersion,
     transaction::Package,
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::sync::Arc;
 use std::{thread::sleep, time::Duration};
-use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 use test_helper::executor::compile_module_with_address;
 use test_helper::run_node_by_config;
 
@@ -174,7 +177,7 @@ fn test_upgrade_module() {
         1_000_000,
         1,
         3000,
-        TransactionPayload::Script(module_upgrade_proposal),
+        TransactionPayload::ScriptFunction(module_upgrade_proposal),
     )
     .unwrap();
 
@@ -206,8 +209,6 @@ fn test_upgrade_module() {
 
     // 3. vote
     let proposal_id = 0;
-    let vote_code =
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::CastVote).into_vec();
     let mut type_tags: Vec<TypeTag> = Vec::new();
     let stc = parse_type_tag("0x1::STC::STC").unwrap();
     let module = parse_type_tag("0x1::UpgradeModuleDaoProposal::UpgradeModule").unwrap();
@@ -222,10 +223,19 @@ fn test_upgrade_module() {
     args.push(arg_2);
     args.push(arg_3);
     args.push(arg_4);
-    let vote_raw_txn = RawUserTransaction::new_script(
+    let script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("DaoVoteScripts").unwrap(),
+        ),
+        Identifier::new("cast_vote").unwrap(),
+        type_tags,
+        args,
+    );
+    let vote_raw_txn = RawUserTransaction::new_script_function(
         default_account.address,
         0,
-        Script::new(vote_code, type_tags, args),
+        script_function,
         1_000_000,
         1,
         3_000 + config.net().time_service().now_secs(),
@@ -261,7 +271,7 @@ fn test_upgrade_module() {
         1_000_000,
         1,
         3_000,
-        TransactionPayload::Script(module_upgrade_queue),
+        TransactionPayload::ScriptFunction(module_upgrade_queue),
     )
     .unwrap();
     let queue_txn_id = queue_txn.id();
@@ -294,7 +304,7 @@ fn test_upgrade_module() {
         1_000_000,
         1,
         3_000,
-        TransactionPayload::Script(module_upgrade_plan),
+        TransactionPayload::ScriptFunction(module_upgrade_plan),
     )
     .unwrap();
     let plan_txn_id = plan_txn.id();
@@ -381,18 +391,22 @@ fn test_only_new_module() {
     let _ = create_default_account(&cli_state, &config, &node_handle);
 
     // 2. set only_new_module strategy
-    let only_new_module_strategy = compiled_transaction_script(
-        StdlibVersion::Latest,
-        StdlibScript::UpdateModuleUpgradeStrategy,
-    )
-    .into_vec();
     let mut args: Vec<TransactionArgument> = Vec::new();
     let arg = parse_transaction_argument(&format!("{}u8", 2)).unwrap();
     args.push(arg);
-    let only_new_module_strategy_raw_txn = RawUserTransaction::new_script(
+    let script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("update_module_upgrade_strategy").unwrap(),
+        Vec::new(),
+        args,
+    );
+    let only_new_module_strategy_raw_txn = RawUserTransaction::new_script_function(
         default_account.address,
         0,
-        Script::new(only_new_module_strategy, Vec::new(), args),
+        script_function,
         1_000_000,
         1,
         3_000 + config.net().time_service().now_secs(),

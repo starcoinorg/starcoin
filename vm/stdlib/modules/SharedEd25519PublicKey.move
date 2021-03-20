@@ -30,7 +30,7 @@ module SharedEd25519PublicKey {
     ///     of the sender under the `account`'s address.
     /// Aborts if the sender already has a `SharedEd25519PublicKey` resource.
     /// Aborts if the length of `new_public_key` is not 32.
-    public fun publish(account: &signer, key: vector<u8>) {
+    public(script) fun publish(account: &signer, key: vector<u8>) {
         let t = SharedEd25519PublicKey {
             key: x"",
             rotation_cap: Account::extract_key_rotation_capability(account)
@@ -58,7 +58,7 @@ module SharedEd25519PublicKey {
             Signature::ed25519_validate_pubkey(copy new_public_key),
             Errors::invalid_argument(EMALFORMED_PUBLIC_KEY)
         );
-        Account::rotate_authentication_key(
+        Account::rotate_authentication_key_with_capability(
             &shared_key.rotation_cap,
             Authenticator::ed25519_authentication_key(copy new_public_key)
         );
