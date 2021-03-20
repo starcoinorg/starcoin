@@ -20,7 +20,6 @@ jsonrpc-pubsub = "17.0.0"
 jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-rpc-middleware = { path = "../middleware" }
 starcoin-types = { path = "../../types"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
@@ -30,7 +29,6 @@ starcoin-config = { path = "../../config"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-vm-types = { path = "../../vm/types" }
-starcoin-consensus = { path = "../../consensus" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
 serde-helpers = {path = "../../commons/serde-helpers"}

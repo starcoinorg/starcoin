@@ -37,8 +37,6 @@ lru = "0.6.5"
 
 serde = { version = "1.0.124", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-slog = { version = "2.5.2", features = ["nested-values"] }
-slog_derive = "0.2.0"
 derive_more = "0.99.11"
 async-trait = "0.1.48"
 stest = { path = "../commons/stest" }
@@ -48,7 +46,6 @@ prometheus = "0.12.0"
 
 network-api = { package = "network-api", path = "../network/api" }
 starcoin-metrics = {path = "../commons/metrics"}
-starcoin-sync-api = { package = "starcoin-sync-api", path = "../sync/api" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-network-rpc = { path = "../network-rpc" }
 network-rpc-core = { path = "../network-rpc/core" }

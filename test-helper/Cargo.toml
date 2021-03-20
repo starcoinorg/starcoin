@@ -48,7 +48,6 @@ network-p2p-types = { path = "../network-p2p/types"}
 starcoin-dev = { path = "../vm/dev" }
 starcoin-node = { path = "../node" }
 starcoin-node-api = { path = "../node/api" }
-starcoin-functional-tests = { path = "../vm/functional-tests" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 stdlib = {path ="../vm/stdlib"}
 starcoin-statedb = {path = "../state/statedb"}

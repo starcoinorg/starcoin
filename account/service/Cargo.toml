@@ -10,7 +10,6 @@ edition = "2018"
 anyhow = "1.0.38"
 futures = "0.3.12"
 async-trait = "0.1"
-bstr = "0.2"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
@@ -19,7 +18,6 @@ starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-account-api = { path = "../api", features = ["mock"] }
 starcoin-account-lib = { path = "../lib" }
 starcoin-crypto = { path = "../../commons/crypto" }
-starcoin-txpool = { path = "../../txpool" }
 starcoin-chain-notify = { path = "../../chain/chain-notify" }
 
 
