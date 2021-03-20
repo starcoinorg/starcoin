@@ -119,9 +119,9 @@ fn build_cast_vote_txn(
     let vote_script_function = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
+            Identifier::new("DaoVoteScripts").unwrap(),
         ),
-        Identifier::new("update_module_upgrade_strategy").unwrap(),
+        Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
             TransactionArgument::Address(*alice.address()),
