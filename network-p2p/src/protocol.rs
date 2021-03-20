@@ -335,26 +335,13 @@ impl Protocol {
         boot_node_ids: Arc<HashSet<PeerId>>,
         notif_protocols: impl IntoIterator<Item = Cow<'static, str>>,
     ) -> errors::Result<(Protocol, sc_peerset::PeersetHandle)> {
-        //TODO:fix me
-        /*
-        let important_peers = {
-            let mut imp_p = HashSet::new();
-            for reserved in peerset_config.
-                .priority_groups
-                .iter()
-                .flat_map(|(_, l)| l.iter())
-            {
-                imp_p.insert(*reserved);
-            }
-            imp_p.shrink_to_fit();
-            imp_p
-        };
-        */
-        let important_peers = HashSet::new();
+        let mut important_peers = HashSet::new();
+        for reserved in &peerset_config.sets[0].reserved_nodes {
+            important_peers.insert(*reserved);
+        }
         let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
         let notif_protocols: Vec<Cow<'static, str>> = notif_protocols.into_iter().collect();
         let behaviour = {
-            // we use same handshake message for notif stream and legacy protocol
             let handshake_message =
                 Self::build_handshake_msg(notif_protocols.clone(), chain_info.clone());
 

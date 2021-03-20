@@ -71,7 +71,7 @@ fn build_nodes_one_proto() -> (
         //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
         notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![],
-        reserved_nodes: vec![config::MultiaddrWithPeerId {
+        boot_nodes: vec![config::MultiaddrWithPeerId {
             multiaddr: listen_addr,
             peer_id: node1.local_peer_id(),
         }],
@@ -104,11 +104,11 @@ fn lots_of_incoming_peers_works() {
         let (_dialing_node, event_stream) = build_test_full_node(config::NetworkConfiguration {
             notifications_protocols: vec![From::from(PROTOCOL_NAME)],
             listen_addresses: vec![],
-            reserved_nodes: vec![config::MultiaddrWithPeerId {
+            transport: config::TransportConfig::MemoryOnly,
+            boot_nodes: vec![config::MultiaddrWithPeerId {
                 multiaddr: listen_addr.clone(),
                 peer_id: main_node_peer_id,
             }],
-            transport: config::TransportConfig::MemoryOnly,
             ..config::NetworkConfiguration::new_local()
         });
 
@@ -117,7 +117,6 @@ fn lots_of_incoming_peers_works() {
             // actually need the timer. Using an Option would be technically cleaner, but it would
             // make the code below way more complicated.
             let mut timer = futures_timer::Delay::new(Duration::from_secs(3600 * 24 * 7)).fuse();
-
             let mut event_stream = event_stream.fuse();
             loop {
                 futures::select! {
@@ -267,7 +266,7 @@ fn ensure_boot_node_addresses_consistent_with_transport_not_memory() {
 #[should_panic(expected = "don't match the transport")]
 fn ensure_reserved_node_addresses_consistent_with_transport_memory() {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
-    let reserved_node = config::MultiaddrWithPeerId {
+    let boot_node = config::MultiaddrWithPeerId {
         multiaddr: config::build_multiaddr![Ip4([127, 0, 0, 1]), Tcp(0_u16)],
         peer_id: PeerId::random(),
     };
@@ -275,7 +274,7 @@ fn ensure_reserved_node_addresses_consistent_with_transport_memory() {
     let _ = build_test_full_node(config::NetworkConfiguration {
         listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
-        reserved_nodes: vec![reserved_node],
+        boot_nodes: vec![boot_node],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
 }
@@ -284,14 +283,14 @@ fn ensure_reserved_node_addresses_consistent_with_transport_memory() {
 #[should_panic(expected = "don't match the transport")]
 fn ensure_reserved_node_addresses_consistent_with_transport_not_memory() {
     let listen_addr = config::build_multiaddr![Ip4([127, 0, 0, 1]), Tcp(0_u16)];
-    let reserved_node = config::MultiaddrWithPeerId {
+    let boot_node = config::MultiaddrWithPeerId {
         multiaddr: config::build_multiaddr![Memory(rand::random::<u64>())],
         peer_id: PeerId::random(),
     };
 
     let _ = build_test_full_node(config::NetworkConfiguration {
         listen_addresses: vec![listen_addr],
-        reserved_nodes: vec![reserved_node],
+        boot_nodes: vec![boot_node],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
 }

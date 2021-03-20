@@ -196,12 +196,19 @@ impl NetworkWorker {
 
         let notif_protocols = params.network_config.notifications_protocols.clone();
         let mut sets_conf = Vec::with_capacity(notif_protocols.len());
+        let s: Vec<PeerId> = params
+            .network_config
+            .reserved_nodes
+            .iter()
+            .map(|n| n.peer_id)
+            .collect();
+
         for _ in 0..notif_protocols.len() {
             sets_conf.push(sc_peerset::SetConfig {
                 in_peers: params.network_config.in_peers,
                 out_peers: params.network_config.out_peers,
                 bootnodes: bootnodes.clone(),
-                reserved_nodes: HashSet::new(),
+                reserved_nodes: s.iter().cloned().collect(),
                 reserved_only: params.network_config.non_reserved_mode
                     == config::NonReservedPeerMode::Deny,
             });
