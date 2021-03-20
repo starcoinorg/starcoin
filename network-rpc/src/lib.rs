@@ -9,7 +9,7 @@ use config::NetworkRpcQuotaConfiguration;
 use config::NodeConfig;
 use config::QuotaDuration;
 
-use network_p2p_types::ProtocolRequest;
+use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use network_rpc_core::server::NetworkRpcServer;
 use network_rpc_core::{NetRpcError, RawRpcServer, RpcErrorCode};
 use starcoin_chain_service::ChainReaderService;
@@ -30,6 +30,7 @@ mod rpc;
 mod tests;
 
 struct QuotaWrapper(Quota);
+
 impl From<ApiQuotaConfig> for QuotaWrapper {
     fn from(c: ApiQuotaConfig) -> Self {
         let q = match c.duration {
@@ -116,8 +117,11 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
             };
 
             let resp = bcs_ext::to_bytes(&result).expect("NetRpc Result must encode success.");
-
-            if let Err(e) = msg.request.pending_response.send(resp) {
+            //TODO: update reputation_changes
+            if let Err(e) = msg.request.pending_response.send(OutgoingResponse {
+                result: Ok(resp),
+                reputation_changes: vec![],
+            }) {
                 //TODO change log level
                 warn!("Send response to rpc call failed:{:?}", e);
             }

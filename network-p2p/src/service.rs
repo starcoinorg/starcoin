@@ -42,17 +42,15 @@ use crate::network_state::{
 };
 use crate::protocol::event::Event;
 use crate::protocol::generic_proto::{NotificationsSink, Ready};
-use crate::protocol::Protocol;
+use crate::protocol::{Protocol, HARDCODED_PEERSETS_SYNC};
 use crate::request_responses::{InboundFailure, OutboundFailure, RequestFailure, ResponseFailure};
-use crate::Multiaddr;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     errors, out_events, DhtEvent,
 };
-use crate::{
-    config::{parse_addr, parse_str_addr, NonReservedPeerMode},
-    transport,
-};
+use crate::{config, Multiaddr};
+use crate::{config::parse_str_addr, transport};
+use async_std::future;
 use futures::channel::oneshot::Canceled;
 use futures::{
     channel::{mpsc, oneshot},
@@ -69,12 +67,14 @@ use libp2p::swarm::{
 };
 use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
+use network_p2p_types::IfDisconnected;
 use parking_lot::Mutex;
 use sc_peerset::{PeersetHandle, ReputationChange};
 use starcoin_metrics::{Histogram, HistogramVec};
 use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
+use std::time::Duration;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -111,9 +111,9 @@ pub struct NetworkService {
     /// Peerset manager (PSM); manages the reputation of nodes and indicates the network which
     /// nodes it should be connected to or not.
     peerset: PeersetHandle,
-    /// For each peer, an object that allows sending notifications to
+    /// For each peer and protocol combination, an object that allows sending notifications to
     /// that peer. Updated by the [`NetworkWorker`].
-    peers_notifications_sinks: Arc<Mutex<HashMap<PeerId, NotificationsSink>>>,
+    peers_notifications_sinks: Arc<Mutex<HashMap<(PeerId, Cow<'static, str>), NotificationsSink>>>,
     /// Channel that sends messages to the actual worker.
     to_worker: mpsc::UnboundedSender<ServiceToWorkerMsg>,
     /// Field extracted from the [`Metrics`] struct and necessary to report the
@@ -185,25 +185,6 @@ impl NetworkWorker {
                 Ok(())
             }
         })?;
-
-        let priority_groups = {
-            let mut reserved_nodes = HashSet::new();
-            for reserved in params.network_config.reserved_nodes.iter() {
-                reserved_nodes.insert(reserved.peer_id);
-                known_addresses.push((reserved.peer_id, reserved.multiaddr.clone()));
-            }
-
-            vec![("reserved".to_owned(), reserved_nodes)]
-        };
-
-        let peerset_config = sc_peerset::PeersetConfig {
-            in_peers: params.network_config.in_peers,
-            out_peers: params.network_config.out_peers,
-            bootnodes,
-            reserved_only: params.network_config.non_reserved_mode == NonReservedPeerMode::Deny,
-            priority_groups,
-        };
-
         // Private and public keys configuration.
         let local_identity = params.network_config.node_key.clone().into_keypair()?;
         let local_public = local_identity.public();
@@ -214,11 +195,28 @@ impl NetworkWorker {
         let is_major_syncing = Arc::new(AtomicBool::new(false));
 
         let notif_protocols = params.network_config.notifications_protocols.clone();
+        let mut sets_conf = Vec::with_capacity(notif_protocols.len());
+        let s: Vec<PeerId> = params
+            .network_config
+            .reserved_nodes
+            .iter()
+            .map(|n| n.peer_id)
+            .collect();
+
+        for _ in 0..notif_protocols.len() {
+            sets_conf.push(sc_peerset::SetConfig {
+                in_peers: params.network_config.in_peers,
+                out_peers: params.network_config.out_peers,
+                bootnodes: bootnodes.clone(),
+                reserved_nodes: s.iter().cloned().collect(),
+                reserved_only: params.network_config.non_reserved_mode
+                    == config::NonReservedPeerMode::Deny,
+            });
+        }
+        let peerset_config = sc_peerset::PeersetConfig { sets: sets_conf };
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
-            local_peer_id,
-            params.protocol_id.clone(),
             params.chain_info,
             boot_node_ids.clone(),
             notif_protocols,
@@ -399,8 +397,6 @@ impl NetworkWorker {
                     version_string: swarm.node(peer_id)
                         .and_then(|i| i.client_version().map(|s| s.to_owned())),
                     latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
-                    enabled: swarm.user_protocol().is_enabled(&peer_id),
-                    open: swarm.user_protocol().is_open(&peer_id),
                     known_addresses,
                 }))
             }).collect()
@@ -488,10 +484,15 @@ impl NetworkService {
         // `peers_notifications_sinks` mutex as soon as possible.
         let sink = {
             let peers_notifications_sinks = self.peers_notifications_sinks.lock();
-            if let Some(sink) = peers_notifications_sinks.get(&target) {
+            if let Some(sink) = peers_notifications_sinks.get(&(target, protocol_name.clone())) {
                 sink.clone()
             } else {
                 // Notification silently discarded, as documented.
+                log::debug!(
+                    target: "sub-libp2p",
+                    "Attempted to send notification on missing or closed substream: {}, {:?}",
+                    target, protocol_name,
+                );
                 return;
             }
         };
@@ -499,7 +500,7 @@ impl NetworkService {
         // Used later for the metrics report.
         let message_len = message.len();
 
-        sink.send_sync_notification(protocol_name.clone(), message);
+        sink.send_sync_notification(message);
 
         if let Some(notifications_sizes_metric) = self.notifications_sizes_metric.as_ref() {
             notifications_sizes_metric
@@ -584,7 +585,7 @@ impl NetworkService {
         // `peers_notifications_sinks` mutex as soon as possible.
         let sink = {
             let peers_notifications_sinks = self.peers_notifications_sinks.lock();
-            if let Some(sink) = peers_notifications_sinks.get(&target) {
+            if let Some(sink) = peers_notifications_sinks.get(&(target, protocol_name.clone())) {
                 sink.clone()
             } else {
                 return Err(NotificationSenderError::Closed);
@@ -708,6 +709,7 @@ impl NetworkService {
         target: PeerId,
         protocol: impl Into<Cow<'static, str>>,
         request: Vec<u8>,
+        connect: IfDisconnected,
     ) -> Result<Vec<u8>, RequestFailure> {
         let (tx, rx) = oneshot::channel();
         let _ = self.to_worker.unbounded_send(ServiceToWorkerMsg::Request {
@@ -715,14 +717,15 @@ impl NetworkService {
             protocol: protocol.into(),
             request,
             pending_response: tx,
+            connect,
         });
-
-        match rx.await {
-            Ok(v) => v,
+        match future::timeout(Duration::from_secs(5), rx).await {
+            Ok(Ok(v)) => v,
             // The channel can only be closed if the network worker no longer exists. If the
             // network worker no longer exists, then all connections to `target` are necessarily
             // closed, and we legitimately report this situation as a "ConnectionClosed".
             Err(_) => Err(RequestFailure::Network(OutboundFailure::ConnectionClosed)),
+            Ok(Err(_)) => Err(RequestFailure::Network(OutboundFailure::Timeout)),
         }
     }
 
@@ -735,10 +738,10 @@ impl NetworkService {
     /// Disconnect from a node as soon as possible.
     ///
     /// This triggers the same effects as if the connection had closed itself spontaneously.
-    pub fn disconnect_peer(&self, who: PeerId) {
+    pub fn disconnect_peer(&self, who: PeerId, protocol: impl Into<Cow<'static, str>>) {
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::DisconnectPeer(who));
+            .unbounded_send(ServiceToWorkerMsg::DisconnectPeer(who, protocol.into()));
     }
 
     /// Are we in the process of downloading the chain?
@@ -768,50 +771,31 @@ impl NetworkService {
 
     /// Connect to unreserved peers and allow unreserved peers to connect.
     pub fn accept_unreserved_peers(&self) {
-        self.peerset.set_reserved_only(false);
+        self.peerset
+            .set_reserved_only(HARDCODED_PEERSETS_SYNC, false);
     }
 
     /// Disconnect from unreserved peers and deny new unreserved peers to connect.
     pub fn deny_unreserved_peers(&self) {
-        self.peerset.set_reserved_only(true);
+        self.peerset
+            .set_reserved_only(HARDCODED_PEERSETS_SYNC, true);
     }
 
     /// Removes a `PeerId` from the list of reserved peers.
     pub fn remove_reserved_peer(&self, peer: PeerId) {
-        self.peerset.remove_reserved_peer(peer);
+        self.peerset
+            .remove_reserved_peer(HARDCODED_PEERSETS_SYNC, peer);
     }
 
     /// Adds a `PeerId` and its address as reserved. The string should encode the address
     /// and peer ID of the remote node.
     pub fn add_reserved_peer(&self, peer: String) -> Result<(), String> {
         let (peer_id, addr) = parse_str_addr(&peer).map_err(|e| format!("{:?}", e))?;
-        self.peerset.add_reserved_peer(peer_id);
+        self.peerset
+            .add_reserved_peer(HARDCODED_PEERSETS_SYNC, peer_id);
         let _ = self
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::AddKnownAddress(peer_id, addr));
-        Ok(())
-    }
-
-    /// Modify a peerset priority group.
-    pub fn set_priority_group(
-        &self,
-        group_id: String,
-        peers: HashSet<Multiaddr>,
-    ) -> Result<(), String> {
-        let peers = peers
-            .into_iter()
-            .map(|p| parse_addr(p).map_err(|e| format!("{:?}", e)))
-            .collect::<Result<Vec<(PeerId, Multiaddr)>, String>>()?;
-
-        let peer_ids = peers.iter().map(|(peer_id, _addr)| *peer_id).collect();
-        self.peerset.set_priority_group(group_id, peer_ids);
-
-        for (peer_id, addr) in peers.into_iter() {
-            let _ = self
-                .to_worker
-                .unbounded_send(ServiceToWorkerMsg::AddKnownAddress(peer_id, addr));
-        }
-
         Ok(())
     }
 
@@ -863,14 +847,12 @@ impl NotificationSender {
     /// Returns a future that resolves when the `NotificationSender` is ready to send a notification.
     pub async fn ready(&self) -> Result<NotificationSenderReady<'_>, NotificationSenderError> {
         Ok(NotificationSenderReady {
-            ready: match self
-                .sink
-                .reserve_notification(self.protocol_name.clone())
-                .await
-            {
+            ready: match self.sink.reserve_notification().await {
                 Ok(r) => r,
                 Err(()) => return Err(NotificationSenderError::Closed),
             },
+            peer_id: self.sink.peer_id(),
+            protocol_name: &self.protocol_name,
             notification_size_metric: self.notification_size_metric.clone(),
         })
     }
@@ -880,6 +862,12 @@ impl NotificationSender {
 #[must_use]
 pub struct NotificationSenderReady<'a> {
     ready: Ready<'a>,
+
+    /// Target of the notification.
+    peer_id: &'a PeerId,
+
+    /// Name of the protocol on the wire.
+    protocol_name: &'a Cow<'static, str>,
 
     /// Field extracted from the [`Metrics`] struct and necessary to report the
     /// notifications-related metrics.
@@ -894,6 +882,15 @@ impl<'a> NotificationSenderReady<'a> {
         if let Some(notification_size_metric) = &self.notification_size_metric {
             notification_size_metric.observe(notification.len() as f64);
         }
+
+        trace!(
+            target: "sub-libp2p",
+            "External API => Notification({:?}, {}, {} bytes)",
+            self.peer_id,
+            self.protocol_name,
+            notification.len()
+        );
+        trace!(target: "sub-libp2p", "Handler({:?}) <= Async notification", self.peer_id);
 
         self.ready
             .send(notification)
@@ -927,8 +924,9 @@ enum ServiceToWorkerMsg {
         protocol: Cow<'static, str>,
         request: Vec<u8>,
         pending_response: oneshot::Sender<Result<Vec<u8>, RequestFailure>>,
+        connect: IfDisconnected,
     },
-    DisconnectPeer(PeerId),
+    DisconnectPeer(PeerId, Cow<'static, str>),
     IsConnected(PeerId, oneshot::Sender<bool>),
     NetworkState(oneshot::Sender<NetworkState>),
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
@@ -955,7 +953,7 @@ pub struct NetworkWorker {
     boot_node_ids: Arc<HashSet<PeerId>>,
     /// For each peer, an object that allows sending notifications to
     /// that peer. Shared with the [`NetworkService`].
-    peers_notifications_sinks: Arc<Mutex<HashMap<PeerId, NotificationsSink>>>,
+    peers_notifications_sinks: Arc<Mutex<HashMap<(PeerId, Cow<'static, str>), NotificationsSink>>>,
 }
 
 impl Future for NetworkWorker {
@@ -986,16 +984,22 @@ impl Future for NetworkWorker {
                     protocol,
                     request,
                     pending_response,
+                    connect,
                 } => {
                     // Calling `send_request` can fail immediately in some circumstances.
                     // This is handled by sending back an error on the channel.
-                    this.network_service
-                        .send_request(&target, &protocol, request, pending_response)
+                    this.network_service.send_request(
+                        &target,
+                        &protocol,
+                        request,
+                        pending_response,
+                        connect,
+                    )
                 }
-                ServiceToWorkerMsg::DisconnectPeer(who) => this
+                ServiceToWorkerMsg::DisconnectPeer(who, protocol) => this
                     .network_service
                     .user_protocol_mut()
-                    .disconnect_peer(&who),
+                    .disconnect_peer(&who, &protocol),
                 ServiceToWorkerMsg::IsConnected(who, tx) => {
                     let _ = tx.send(this.is_open(&who));
                 }
@@ -1116,6 +1120,7 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamOpened {
                     remote,
+                    protocol,
                     notifications_sink,
                     info,
                 })) => {
@@ -1124,17 +1129,22 @@ impl Future for NetworkWorker {
                     }
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                        peers_notifications_sinks.insert(remote, notifications_sink);
+                        peers_notifications_sinks
+                            .insert((remote, protocol.clone()), notifications_sink);
                     }
-                    this.event_streams
-                        .send(Event::NotificationStreamOpened { remote, info });
+                    this.event_streams.send(Event::NotificationStreamOpened {
+                        remote,
+                        protocol,
+                        info,
+                    });
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamReplaced {
                     remote,
+                    protocol,
                     notifications_sink,
                 })) => {
                     let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                    if let Some(s) = peers_notifications_sinks.get_mut(&remote) {
+                    if let Some(s) = peers_notifications_sinks.get_mut(&(remote, protocol)) {
                         *s = notifications_sink;
                     } else {
                         log::error!(
@@ -1166,35 +1176,34 @@ impl Future for NetworkWorker {
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamClosed {
                     remote,
+                    protocol,
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
                         metrics.notifications_streams_closed_total.inc();
                     }
-                    this.event_streams
-                        .send(Event::NotificationStreamClosed { remote });
+                    this.event_streams.send(Event::NotificationStreamClosed {
+                        remote,
+                        protocol: protocol.clone(),
+                    });
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                        peers_notifications_sinks.remove(&remote);
+                        peers_notifications_sinks.remove(&(remote, protocol));
                     }
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationsReceived {
                     remote,
-                    protocol,
                     messages,
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
-                        for message in &messages {
+                        for (protocol, message) in &messages {
                             metrics
                                 .notifications_sizes
                                 .with_label_values(&["in", &protocol])
                                 .observe(message.len() as f64);
                         }
                     }
-                    this.event_streams.send(Event::NotificationsReceived {
-                        remote,
-                        protocol,
-                        messages,
-                    });
+                    this.event_streams
+                        .send(Event::NotificationsReceived { remote, messages });
                 }
 
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::Dht(event, duration))) => {

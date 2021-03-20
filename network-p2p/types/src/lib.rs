@@ -181,7 +181,7 @@ pub enum RequestFailure {
     /// The remote replied, but the local node is no longer interested in the response.
     Obsolete,
     /// Problem on the network.
-    #[display(fmt = "Problem on the network: {:?}", _0)]
+    #[display(fmt = "Problem on the network")]
     Network(#[error(ignore)] OutboundFailure),
 }
 
@@ -189,8 +189,20 @@ pub enum RequestFailure {
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum ResponseFailure {
     /// Problem on the network.
-    #[display(fmt = "Problem on the network: {:?}", _0)]
+    #[display(fmt = "Problem on the network")]
     Network(#[error(ignore)] InboundFailure),
+}
+
+/// Response for an incoming request to be send by a request protocol handler.
+#[derive(Debug)]
+pub struct OutgoingResponse {
+    /// The payload of the response.
+    ///
+    /// `Err(())` if none is available e.g. due an error while handling the request.
+    pub result: Result<Vec<u8>, ()>,
+    /// Reputation changes accrued while handling the request. To be applied to the reputation of
+    /// the peer sending the request.
+    pub reputation_changes: Vec<ReputationChange>,
 }
 
 /// A single request received by a peer on a request-response protocol.
@@ -203,14 +215,41 @@ pub struct IncomingRequest {
     /// [`ProtocolConfig::max_request_size`].
     pub payload: Vec<u8>,
 
-    /// Channel to send back the response to.
-    pub pending_response: oneshot::Sender<Vec<u8>>,
+    /// Channel to send back the response.
+    ///
+    /// There are two ways to indicate that handling the request failed:
+    ///
+    /// 1. Drop `pending_response` and thus not changing the reputation of the peer.
+    ///
+    /// 2. Sending an `Err(())` via `pending_response`, optionally including reputation changes for
+    /// the given peer.
+    pub pending_response: oneshot::Sender<OutgoingResponse>,
 }
 
 #[derive(Debug)]
 pub struct ProtocolRequest {
     pub protocol: Cow<'static, str>,
     pub request: IncomingRequest,
+}
+
+/// When sending a request, what to do on a disconnected recipient.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum IfDisconnected {
+    /// Try to connect to the peer.
+    TryConnect,
+    /// Just fail if the destination is not yet connected.
+    ImmediateError,
+}
+
+/// Convenience functions for `IfDisconnected`.
+impl IfDisconnected {
+    /// Shall we connect to a disconnected peer?
+    pub fn should_connect(self) -> bool {
+        match self {
+            Self::TryConnect => true,
+            Self::ImmediateError => false,
+        }
+    }
 }
 
 #[cfg(test)]

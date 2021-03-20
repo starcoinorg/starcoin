@@ -29,7 +29,9 @@ mod network_state;
 mod out_events;
 mod peer_info;
 //TODO change to private
+#[allow(clippy::result_unit_err)]
 pub mod protocol;
+#[allow(clippy::single_match)]
 mod request_responses;
 mod service;
 #[cfg(test)]

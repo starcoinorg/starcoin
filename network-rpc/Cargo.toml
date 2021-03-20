@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.38"
 futures = "0.3.12"
 hex = "0.4.3"
-bytes = "0.5.0"
+bytes = "1"
 serde = { version = "1.0.124", features = ["derive"] }
 serde_json = "1.0.59"
 tokio = { version = "0.2", features = ["full"] }
