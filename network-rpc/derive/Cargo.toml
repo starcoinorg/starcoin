@@ -13,11 +13,4 @@ proc-macro = true
 syn = { version = "1.0", features = ["full", "extra-traits", "visit", "fold"] }
 proc-macro2 = "1.0"
 quote = "1.0.9"
-proc-macro-crate = "1.0.0"
-
-futures = "0.3.12"
 anyhow = "1.0.38"
-serde = { version = "1.0.124", features = ["derive"] }
-
-starcoin-types = {path = "../../types"}
-starcoin-logger = {path = "../../commons/logger"}
