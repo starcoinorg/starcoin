@@ -19,5 +19,5 @@ network-rpc-derive = { path = "../derive" }
 bcs-ext = { path = "../../commons/bcs_ext", package = "bcs-ext" }
 starcoin-logger = {path = "../../commons/logger"}
 serde = { version = "1.0.124", features = ["derive"] }
-anyhow = "1.0.38"
+anyhow = "1.0.39"
 futures = "0.3.12"

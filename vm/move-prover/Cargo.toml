@@ -22,7 +22,7 @@ abigen = { git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929
 
 # external dependencies
 async-trait = "0.1.48"
-anyhow = "1.0.38"
+anyhow = "1.0.39"
 clap = "2.33.3"
 codespan = "0.8.0"
 codespan-reporting = "0.8.0"
