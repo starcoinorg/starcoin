@@ -53,11 +53,12 @@ where
                 .into_iter()
                 .map(|c| Module::new(c.0))
                 .collect();
-            let script = txn_request
+            let _script = txn_request
                 .script
                 .map(|script_data| build_script(stdlib_version, script_data))
                 .transpose()?;
-            TransactionPayload::Package(Package::new(modules, script)?)
+            //TODO support SciptFunction
+            TransactionPayload::Package(Package::new(modules, None)?)
         } else {
             let script = txn_request.script.ok_or_else(|| {
                 anyhow::anyhow!(

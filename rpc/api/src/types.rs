@@ -153,8 +153,9 @@ impl From<RawUserTransaction> for TransactionRequest {
                 request.script = Some(s.into());
             }
             TransactionPayload::Package(p) => {
-                let (_, m, s) = p.into_inner();
-                request.script = s.map(Into::into);
+                let (_, m, _s) = p.into_inner();
+                //TODO support ScriptFunction
+                //request.script = s.map(Into::into);
                 request.modules = m.into_iter().map(|m| StrView(m.into())).collect();
             }
             TransactionPayload::ScriptFunction(_) => {}
