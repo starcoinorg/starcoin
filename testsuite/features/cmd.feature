@@ -110,7 +110,7 @@ Feature: cmd integration test
     Then cmd: "account change-password @$.result@ -p hello"
     Then cmd: "account list"
     Then cmd: "account show"
-    Then cmd: "account execute-builtin --blocking --script empty_script -s @$.account.address@"
+#    Then cmd: "account execute-builtin --blocking --script empty_script -s @$.account.address@"
     Then cmd: "account accept_token 0x1::DummyToken::DummyToken"
     Then stop
 
