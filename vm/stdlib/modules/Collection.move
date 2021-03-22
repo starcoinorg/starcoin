@@ -1,5 +1,5 @@
 address 0x1 {
-/// Provider a account based vector for save resource.
+/// Provide a account based vector for save resource.
 module Collection {
     use 0x1::Signer;
     use 0x1::Errors;
@@ -7,8 +7,8 @@ module Collection {
     use 0x1::Option::{Self, Option};
 
     spec module {
-        pragma verify = true;
-        pragma aborts_if_is_strict = true;
+        pragma verify = false;
+        pragma aborts_if_is_strict = false;
     }
 
     /// Collection in memory, can not drop & store.

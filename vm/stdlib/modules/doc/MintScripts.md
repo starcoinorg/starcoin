@@ -17,7 +17,7 @@
 
 
 <pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
-<b>use</b> <a href="Box.md#0x1_Box">0x1::Box</a>;
+<b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
 <b>use</b> <a href="Offer.md#0x1_Offer">0x1::Offer</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
 </code></pre>
@@ -46,7 +46,7 @@
     lock_period: u64,
 ) {
     // 1. take key: LinearTimeMintKey&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
-    <b>let</b> mint_key = <a href="Box.md#0x1_Box_take">Box::take</a>&lt;<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
+    <b>let</b> mint_key = <a href="Collection.md#0x1_Collection_take">Collection::take</a>&lt;<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
 
     // 2. mint token
     <b>let</b> (tokens, new_mint_key) = <a href="Token.md#0x1_Token_split_linear_key">Token::split_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(&<b>mut</b> mint_key, amount);
@@ -58,7 +58,7 @@
     <b>if</b> (<a href="Token.md#0x1_Token_is_empty_key">Token::is_empty_key</a>(&mint_key)) {
         <a href="Token.md#0x1_Token_destroy_empty_key">Token::destroy_empty_key</a>(mint_key);
     } <b>else</b> {
-        <a href="Box.md#0x1_Box_put">Box::put</a>(signer, mint_key);
+        <a href="Collection.md#0x1_Collection_put">Collection::put</a>(signer, mint_key);
     };
 
     // 5. offer
@@ -89,7 +89,7 @@
     signer: &signer,
 ) {
     // 1. take key: FixedTimeMintKey&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
-    <b>let</b> mint_key = <a href="Box.md#0x1_Box_take">Box::take</a>&lt;<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
+    <b>let</b> mint_key = <a href="Collection.md#0x1_Collection_take">Collection::take</a>&lt;<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
 
     // 2. mint token
     <b>let</b> tokens = <a href="Token.md#0x1_Token_mint_with_fixed_key">Token::mint_with_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(mint_key);
@@ -122,7 +122,7 @@
     signer: &signer,
 ) {
     // 1. take key: LinearTimeMintKey&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
-    <b>let</b> mint_key = <a href="Box.md#0x1_Box_take">Box::take</a>&lt;<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
+    <b>let</b> mint_key = <a href="Collection.md#0x1_Collection_take">Collection::take</a>&lt;<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
 
     // 2. mint token
     <b>let</b> tokens = <a href="Token.md#0x1_Token_mint_with_linear_key">Token::mint_with_linear_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(&<b>mut</b> mint_key);
@@ -134,7 +134,7 @@
     <b>if</b> (<a href="Token.md#0x1_Token_is_empty_key">Token::is_empty_key</a>(&mint_key)) {
         <a href="Token.md#0x1_Token_destroy_empty_key">Token::destroy_empty_key</a>(mint_key);
     } <b>else</b> {
-        <a href="Box.md#0x1_Box_put">Box::put</a>(signer, mint_key);
+        <a href="Collection.md#0x1_Collection_put">Collection::put</a>(signer, mint_key);
     }
 }
 </code></pre>
@@ -165,13 +165,13 @@
     lock_period: u64,
 ) {
     // 1. take key: FixedTimeMintKey&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
-    <b>let</b> mint_key = <a href="Box.md#0x1_Box_take">Box::take</a>&lt;<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
+    <b>let</b> mint_key = <a href="Collection.md#0x1_Collection_take">Collection::take</a>&lt;<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
 
     // 2.
     <b>let</b> new_mint_key = <a href="Token.md#0x1_Token_split_fixed_key">Token::split_fixed_key</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(&<b>mut</b> mint_key, amount);
 
     // 3. put key
-    <a href="Box.md#0x1_Box_put">Box::put</a>(signer, mint_key);
+    <a href="Collection.md#0x1_Collection_put">Collection::put</a>(signer, mint_key);
 
     // 4. offer
     <a href="Offer.md#0x1_Offer_create">Offer::create</a>&lt;<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;&gt;(signer, new_mint_key, for_address, lock_period);

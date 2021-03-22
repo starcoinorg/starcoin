@@ -20,7 +20,7 @@
     -  [Function `take_offer`](#@Specification_1_take_offer)
 
 
-<pre><code><b>use</b> <a href="Box.md#0x1_Box">0x1::Box</a>;
+<pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
@@ -225,7 +225,7 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
     offer_address: address,
 ) <b>acquires</b> <a href="Offer.md#0x1_Offer">Offer</a> {
     <b>let</b> offered = <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(signer, offer_address);
-    <a href="Box.md#0x1_Box_put">Box::put</a>(signer, offered);
+    <a href="Collection.md#0x1_Collection_put">Collection::put</a>(signer, offered);
 }
 </code></pre>
 
