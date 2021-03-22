@@ -156,9 +156,11 @@ impl SyncService2 {
                 })?;
 
             let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
-            let target = rpc_client
-                .get_sync_target(current_block_info.get_total_difficulty())
-                .await?;
+            let target = VerifiedRpcClient::get_sync_target(
+                rpc_client.selector(),
+                current_block_info.get_total_difficulty(),
+            )
+            .await?;
             info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
             let (fut, task_handle, task_event_handle) = full_sync_task(

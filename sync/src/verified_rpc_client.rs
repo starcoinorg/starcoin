@@ -267,9 +267,11 @@ impl VerifiedRpcClient {
         Ok(resp)
     }
 
-    pub async fn get_sync_target(&self, difficulty: U256) -> Result<SyncTarget> {
-        let mut better_peers = self
-            .peer_selector
+    pub async fn get_sync_target(
+        peer_selector: &PeerSelector,
+        difficulty: U256,
+    ) -> Result<SyncTarget> {
+        let mut better_peers = peer_selector
             .betters(difficulty)
             .ok_or_else(|| format_err!("No better peer to request"))?;
 
