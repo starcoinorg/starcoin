@@ -5,10 +5,12 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::EventHandle;
 use crate::genesis_config::ChainId;
+use crate::identifier::Identifier;
+use crate::language_storage::ModuleId;
 use crate::time::{MockTimeService, TimeService};
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
-    Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
+    Module, Package, RawUserTransaction, Script, ScriptFunction, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
 use crate::transaction_argument::TransactionArgument;
@@ -432,6 +434,26 @@ impl Arbitrary for Script {
     }
 }
 
+impl Arbitrary for ScriptFunction {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        // XXX This should eventually be an actually valid program, maybe?
+        // The vector sizes are picked out of thin air.
+        (
+            any::<ModuleId>(),
+            any::<Identifier>(),
+            vec(any::<TypeTag>(), 0..4),
+            vec(any::<TransactionArgument>(), 0..10),
+        )
+            .prop_map(|(module, function, ty_args, args)| {
+                ScriptFunction::new(module, function, ty_args, args)
+            })
+            .boxed()
+    }
+}
+
 impl Arbitrary for Module {
     type Parameters = ();
     type Strategy = BoxedStrategy<Self>;
@@ -446,7 +468,7 @@ impl Arbitrary for Module {
 impl Package {
     fn strategy_impl(
         compiled_module_strategy: impl Strategy<Value = CompiledModule>,
-        script_strategy: impl Strategy<Value = Script>,
+        script_strategy: impl Strategy<Value = ScriptFunction>,
     ) -> impl Strategy<Value = Self> {
         (compiled_module_strategy, script_strategy).prop_map(|(compile_module, script)| {
             let mut vec_bytes: Vec<u8> = vec![];
@@ -465,7 +487,7 @@ impl Arbitrary for Package {
         Self::strategy_impl(
             CompiledModule::valid_strategy(20),
             // CompiledModuleStrategyGen::new(20).generate(),
-            any::<Script>(),
+            any::<ScriptFunction>(),
         )
         .boxed()
     }

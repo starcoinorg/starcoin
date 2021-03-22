@@ -125,7 +125,7 @@ Package:
           TYPENAME: Module
     - init_script:
         OPTION:
-          TYPENAME: Script
+          TYPENAME: ScriptFunction
 RawUserTransaction:
   STRUCT:
     - sender:

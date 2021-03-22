@@ -22,7 +22,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub mod init_scripts;
 pub mod transaction_scripts;
 
 pub const STD_LIB_DIR: &str = "modules";
@@ -32,7 +31,6 @@ pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
 
 pub const TRANSACTION_SCRIPTS: &str = "transaction_scripts";
 
-pub const INIT_SCRIPTS: &str = "init_scripts";
 /// The output path under which compiled files will be put
 pub const COMPILED_OUTPUT_PATH: &str = "compiled";
 /// The latest output path under which compiled files will be put
@@ -211,13 +209,6 @@ pub fn transaction_script_files() -> Vec<String> {
     filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
-pub fn init_script_files() -> Vec<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(INIT_SCRIPTS);
-    let dirfiles = datatest_stable::utils::iterate_directory(&path);
-    filter_move_files(dirfiles).collect::<Vec<_>>()
-}
-
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
     let (_, compiled_units) =
         move_compile_and_report(&stdlib_files(), &[], Some(Address::DIEM_CORE), None, false)
@@ -306,14 +297,6 @@ pub fn build_transaction_script_doc() {
             TRANSACTION_SCRIPTS_DOC_DIR,
             STD_LIB_DOC_DIR,
             &[txn_script_file],
-            STD_LIB_DIR,
-        )
-    }
-    for init_script_file in init_script_files() {
-        build_doc(
-            TRANSACTION_SCRIPTS_DOC_DIR,
-            STD_LIB_DOC_DIR,
-            &[init_script_file],
             STD_LIB_DIR,
         )
     }
