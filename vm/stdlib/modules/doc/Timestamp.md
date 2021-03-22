@@ -147,7 +147,7 @@ Conversion factor between seconds and milliseconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_initialize">initialize</a>(account: &signer, genesis_timestamp: u64) {
-    // Only callable by the Genesis address
+    // Only callable by the <a href="Genesis.md#0x1_Genesis">Genesis</a> address
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
     <b>let</b> milli_timer = <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a> {milliseconds: genesis_timestamp};
     move_to&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(account, milli_timer);
