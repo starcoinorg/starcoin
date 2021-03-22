@@ -47,9 +47,29 @@ fn test_peer_selector() {
     ];
 
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-    let beat_selector = peer_selector.bests().unwrap();
-    assert_eq!(2, beat_selector.len());
+    let best_selector = peer_selector.bests().unwrap();
+    assert_eq!(2, best_selector.len());
 
     let top_selector = peer_selector.top(3);
     assert_eq!(3, top_selector.len());
+}
+
+#[test]
+fn test_better_peer() {
+    let mut peers = Vec::new();
+    let random_peer = PeerInfo::random();
+    for _ in 0..20 {
+        peers.push(PeerInfo::random());
+    }
+
+    let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+    let better_selector = peer_selector.betters(random_peer.total_difficulty());
+    assert!(better_selector.is_some());
+
+    let better_selector = better_selector.unwrap();
+    assert!(!better_selector.contains(&random_peer));
+
+    better_selector.iter().for_each(|better_peer| {
+        assert!(better_peer.total_difficulty() >= random_peer.total_difficulty());
+    });
 }

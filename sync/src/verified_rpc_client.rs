@@ -7,6 +7,7 @@ use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
+use rand::seq::IteratorRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -18,12 +19,12 @@ use starcoin_state_tree::StateNode;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::peer_info::PeerInfo;
-use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
+    U256,
 };
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -265,43 +266,34 @@ impl VerifiedRpcClient {
         Ok(resp)
     }
 
-    pub async fn get_sync_target(&self) -> Result<SyncTarget> {
-        //TODO optimize target selector, calculate best target from multi peers.
-        let best_peers = self
-            .peer_selector
-            .bests()
-            .ok_or_else(|| format_err!("No best peer to request"))?;
+    pub async fn get_sync_target(
+        peer_selector: &PeerSelector,
+        difficulty: U256,
+    ) -> Result<SyncTarget> {
+        let mut better_peers = peer_selector
+            .betters(difficulty)
+            .ok_or_else(|| format_err!("No better peer to request"))?;
 
-        let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
-            best_peers
-                .into_iter()
-                .fold(vec![], |mut chain_statuses, peer| {
-                    let update = chain_statuses
-                        .iter_mut()
-                        .find(|(chain_status, _peers)| peer.chain_info().status() == chain_status)
-                        .map(|(_chain_status, peers)| {
-                            peers.push(peer.peer_id());
-                            true
-                        })
-                        .unwrap_or(false);
+        let better_peer = better_peers
+            .iter_mut()
+            .choose(&mut rand::thread_rng())
+            .cloned()
+            .expect("Better peer is none.");
+        let peers = better_peers
+            .iter()
+            .filter(|peer_info| {
+                peer_info.block_number() >= better_peer.block_number()
+                    && peer_info.total_difficulty() >= better_peer.total_difficulty()
+            })
+            .map(|peer_info| peer_info.peer_id())
+            .collect();
 
-                    if !update {
-                        chain_statuses
-                            .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
-                    }
-                    chain_statuses
-                });
-        //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
-        if chain_statuses.len() > 1 {
-            chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
-                peers_1.len().cmp(&peers_2.len())
-            });
-        }
-        let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
-        let header = chain_status.head;
         Ok(SyncTarget {
-            target_id: BlockIdAndNumber::new(header.id(), header.number()),
-            block_info: chain_status.info,
+            target_id: BlockIdAndNumber::new(
+                better_peer.latest_header().id(),
+                better_peer.latest_header().number(),
+            ),
+            block_info: better_peer.chain_info().status().info().clone(),
             peers,
         })
     }

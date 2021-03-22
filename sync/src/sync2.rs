@@ -145,8 +145,6 @@ impl SyncService2 {
             if peer_selector.is_empty() {
                 return Err(format_err!("[sync] No peers to sync."));
             }
-            let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
-            let target = rpc_client.get_sync_target().await?;
 
             let startup_info = storage
                 .get_startup_info()?
@@ -156,11 +154,14 @@ impl SyncService2 {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
+
+            let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
+            let target = VerifiedRpcClient::get_sync_target(
+                rpc_client.selector(),
+                current_block_info.get_total_difficulty(),
+            )
+            .await?;
             info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
-            if current_block_info.total_difficulty >= target.block_info.total_difficulty {
-                info!("[sync] Current is already bast.");
-                return Ok(None);
-            }
 
             let (fut, task_handle, task_event_handle) = full_sync_task(
                 current_block_id,
