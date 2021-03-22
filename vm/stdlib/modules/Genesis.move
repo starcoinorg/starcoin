@@ -19,7 +19,7 @@ module Genesis {
     use 0x1::ChainId;
     use 0x1::ConsensusStrategy;
     use 0x1::TransactionPublishOption;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::TransactionTimeoutConfig;
     use 0x1::Epoch;
     use 0x1::Version;
@@ -163,7 +163,7 @@ module Genesis {
             let cap = Token::remove_mint_capability<STC>(&genesis_account);
             let key = Token::issue_linear_mint_key<STC>(&cap, time_mint_amount, time_mint_period);
             Token::add_mint_capability(&genesis_account, cap);
-            Box::put(&association, key);
+            Collection::put(&association, key);
         };
         // only dev network set genesis auth key.
         if (!Vector::is_empty(&genesis_auth_key)) {

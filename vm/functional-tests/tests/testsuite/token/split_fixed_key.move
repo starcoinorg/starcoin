@@ -21,12 +21,12 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{FixedTimeMintKey};
 
     fun bob_take_fixed_key_from_offer(account: &signer) {
         let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 
@@ -41,13 +41,13 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token;
 
     fun split_fixed_key(signer: &signer) {
-        let mint_key = Box::take<Token::FixedTimeMintKey<STC>>(signer);
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
         let new_mint_key = Token::split_fixed_key<STC>(&mut mint_key, 20000); //ESPLIT
-        Box::put(signer, mint_key);
+        Collection::put(signer, mint_key);
         Offer::create<Token::FixedTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
     }
 }
@@ -58,13 +58,13 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token;
 
     fun split_fixed_key(signer: &signer) {
-        let mint_key = Box::take<Token::FixedTimeMintKey<STC>>(signer);
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
         let new_mint_key = Token::split_fixed_key<STC>(&mut mint_key, 200);
-        Box::put(signer, mint_key);
+        Collection::put(signer, mint_key);
         Offer::create<Token::FixedTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
     }
 }
@@ -74,12 +74,12 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{FixedTimeMintKey};
 
     fun alice_take_fixed_key_from_offer(account: &signer) {
         let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{bob}});
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 
@@ -92,12 +92,12 @@ script {
 //! sender: alice
 script {
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token;
     use 0x1::Account;
 
     fun alice_mint_by_fixed_key(signer: &signer) {
-        let mint_key = Box::take<Token::FixedTimeMintKey<STC>>(signer);
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
         let tokens = Token::mint_with_fixed_key<STC>(mint_key);
         assert(Token::value(&tokens) > 0, 102);
         Account::deposit_to_self(signer, tokens);
@@ -108,12 +108,12 @@ script {
 //! sender: bob
 script {
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token;
     use 0x1::Account;
 
     fun bob_mint_by_fixed_key(signer: &signer) {
-        let mint_key = Box::take<Token::FixedTimeMintKey<STC>>(signer);
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
         let tokens = Token::mint_with_fixed_key<STC>(mint_key);
         assert(Token::value(&tokens) > 0, 103);
         Account::deposit_to_self(signer, tokens);

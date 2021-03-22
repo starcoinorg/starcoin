@@ -57,11 +57,11 @@ script {
     use 0x1::Offer;
     use 0x1::STC::STC;
     use 0x1::Token::{FixedTimeMintKey};
-    use 0x1::Box;
+    use 0x1::Collection;
 
     fun redeem_offer(account: &signer) {
         let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
-        Box::put(account,key);
+        Collection::put(account,key);
     }
 }
 
@@ -76,10 +76,10 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token::{Self, FixedTimeMintKey};
-    use 0x1::Box;
+    use 0x1::Collection;
 
     fun mint(account: &signer) {
-        let key = Box::take<FixedTimeMintKey<STC>>(account);
+        let key = Collection::take<FixedTimeMintKey<STC>>(account);
         let token = Token::mint_with_fixed_key(key); //EMINT_AMOUNT_EQUAL_ZERO
         Account::deposit_to_self(account, token);
     }
@@ -98,12 +98,12 @@ script {
 script {
     use 0x1::STC::STC;
     use 0x1::Token::{Self, FixedTimeMintKey};
-    use 0x1::Box;
+    use 0x1::Collection;
 
     fun mint(account: &signer) {
-        let key = Box::take<FixedTimeMintKey<STC>>(account);
+        let key = Collection::take<FixedTimeMintKey<STC>>(account);
         assert(Token::end_time_of_key<STC>(&key) == 5, 1001); //5 seconds
-        Box::put(account,key);
+        Collection::put(account,key);
     }
 }
 
@@ -113,10 +113,10 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token::{Self, FixedTimeMintKey};
-    use 0x1::Box;
+    use 0x1::Collection;
 
     fun mint(account: &signer) {
-        let key = Box::take<FixedTimeMintKey<STC>>(account);
+        let key = Collection::take<FixedTimeMintKey<STC>>(account);
         let token = Token::mint_with_fixed_key(key);
         assert(Token::value(&token) == 10000, 1001);
         Account::deposit_to_self(account, token);

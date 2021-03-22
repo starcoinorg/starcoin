@@ -55,12 +55,12 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{LinearTimeMintKey};
 
     fun redeem_offer(account: &signer) {
         let key = Offer::redeem<LinearTimeMintKey<STC>>(account, {{genesis}});
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 
@@ -74,15 +74,15 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{Self, LinearTimeMintKey};
 
     fun mint(account: &signer) {
-        let key = Box::take<LinearTimeMintKey<STC>>(account);
+        let key = Collection::take<LinearTimeMintKey<STC>>(account);
         let token = Token::mint_with_linear_key(&mut key);
         // mint 10000/5
         assert(Token::value(&token) == 2000, 1001);
-        Box::put(account, key);
+        Collection::put(account, key);
         Account::deposit_to_self(account, token);
     }
 }
@@ -98,17 +98,17 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{Self, LinearTimeMintKey};
     use 0x1::Debug;
 
     fun mint(account: &signer) {
-        let key = Box::take<LinearTimeMintKey<STC>>(account);
+        let key = Collection::take<LinearTimeMintKey<STC>>(account);
         let token = Token::mint_with_linear_key(&mut key);
         Debug::print(&Token::value(&token));
         // mint 10000/5 again
         assert(Token::value(&token) == 2000, 1002);
-        Box::put(account, key);
+        Collection::put(account, key);
         Account::deposit_to_self(account, token);
     }
 }
@@ -122,11 +122,11 @@ script {
 //! sender: bob
 script {
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{Self, LinearTimeMintKey};
 
     fun mint(account: &signer) {
-        let key = Box::take<LinearTimeMintKey<STC>>(account);
+        let key = Collection::take<LinearTimeMintKey<STC>>(account);
         Token::destroy_empty_key(key); //EDESTROY_KEY_NOT_EMPTY
     }
 }
@@ -137,16 +137,16 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{Self, LinearTimeMintKey};
 
     fun mint(account: &signer) {
-        let key = Box::take<LinearTimeMintKey<STC>>(account);
+        let key = Collection::take<LinearTimeMintKey<STC>>(account);
         //mint all remain
         let token = Token::mint_with_linear_key(&mut key);
         assert(Token::value(&token) == 6000, 1003);
         Account::deposit_to_self(account, token);
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 
@@ -155,15 +155,15 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{Self, LinearTimeMintKey};
 
     fun mint(account: &signer) {
-        let key = Box::take<LinearTimeMintKey<STC>>(account);
+        let key = Collection::take<LinearTimeMintKey<STC>>(account);
         //mint empty
         let token = Token::mint_with_linear_key(&mut key); //EMINT_AMOUNT_EQUAL_ZERO
         Account::deposit_to_self(account, token);
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 // check: "Keep(ABORTED { code: 27911"
@@ -172,11 +172,11 @@ script {
 //! sender: bob
 script {
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{Self, LinearTimeMintKey};
 
     fun mint(account: &signer) {
-        let key = Box::take<LinearTimeMintKey<STC>>(account);
+        let key = Collection::take<LinearTimeMintKey<STC>>(account);
         Token::destroy_empty_key(key);
     }
 }

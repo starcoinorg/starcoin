@@ -23,16 +23,16 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Token::{LinearTimeMintKey};
 
     fun redeem_offer(account: &signer) {
         let key = Offer::redeem<LinearTimeMintKey<STC>>(account, {{genesis}});
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 // check: gas_used
-// check: 77479
+// check: 90849
 
 //! block-prologue
 //! author: alice
@@ -50,5 +50,5 @@ script {
     }
 }
 // check: gas_used
-// check: 175711
+// check: 247626
 // check: "Keep(EXECUTED)"
