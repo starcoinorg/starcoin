@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //TODO FIXME for fuzzing Arbitrary;
 #![allow(clippy::unit_arg)]
+mod language_storage_ext;
 
 pub mod account_address;
 
@@ -18,6 +19,7 @@ pub mod identifier {
 }
 
 pub mod language_storage {
+    pub use crate::language_storage_ext::FunctionId;
     pub use move_core_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };

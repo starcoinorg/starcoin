@@ -35,7 +35,7 @@ use starcoin_types::U256;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::language_storage::{FunctionId, ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
@@ -153,12 +153,13 @@ impl From<RawUserTransaction> for TransactionRequest {
                 request.script = Some(s.into());
             }
             TransactionPayload::Package(p) => {
-                let (_, m, _s) = p.into_inner();
-                //TODO support ScriptFunction
-                //request.script = s.map(Into::into);
+                let (_, m, s) = p.into_inner();
+                request.script = s.map(Into::into);
                 request.modules = m.into_iter().map(|m| StrView(m.into())).collect();
             }
-            TransactionPayload::ScriptFunction(_) => {}
+            TransactionPayload::ScriptFunction(s) => {
+                request.script = Some(ScriptData::from(s));
+            }
         }
         request
     }
@@ -204,8 +205,8 @@ impl ScriptData {
 
         match self.code.0 {
             ByteCodeOrScriptFunction::ByteCode(code) => Ok(Script::new(code, ty_args, args)),
-            ByteCodeOrScriptFunction::ScriptFunction { module, function } => {
-                Err(ScriptFunction::new(module.0, function, ty_args, args))
+            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
+                Err(ScriptFunction::new(module, function, ty_args, args))
             }
         }
     }
@@ -232,21 +233,35 @@ impl From<Script> for ScriptData {
         }
     }
 }
+impl From<ScriptFunction> for ScriptData {
+    fn from(s: ScriptFunction) -> Self {
+        ScriptData {
+            code: StrView(ByteCodeOrScriptFunction::ScriptFunction(FunctionId {
+                module: s.module().clone(),
+                function: s.function().to_owned(),
+            })),
+            type_args: s.ty_args().iter().cloned().map(TypeTagView::from).collect(),
+            args: s
+                .args()
+                .iter()
+                .cloned()
+                .map(TransactionArgumentView::from)
+                .collect(),
+        }
+    }
+}
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
 pub enum ByteCodeOrScriptFunction {
     ByteCode(ByteCode),
-    ScriptFunction {
-        module: ModuleIdView,
-        function: Identifier,
-    },
+    ScriptFunction(FunctionId),
 }
 
 impl std::fmt::Display for ByteCodeOrScriptFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             ByteCodeOrScriptFunction::ByteCode(c) => write!(f, "0x{}", hex::encode(c)),
-            ByteCodeOrScriptFunction::ScriptFunction { module, function } => {
+            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
                 write!(f, "{}::{}", module, function)
             }
         }
@@ -260,10 +275,10 @@ impl FromStr for ByteCodeOrScriptFunction {
         if splits.len() == 2 {
             let module_id = ModuleIdView::from_str(splits[1])?;
             let function = Identifier::new(splits[0])?;
-            Ok(ByteCodeOrScriptFunction::ScriptFunction {
-                module: module_id,
+            Ok(ByteCodeOrScriptFunction::ScriptFunction(FunctionId {
+                module: module_id.0,
                 function,
-            })
+            }))
         } else {
             Ok(ByteCodeOrScriptFunction::ByteCode(hex::decode(
                 s.strip_prefix("0x").unwrap_or(s),
@@ -990,6 +1005,28 @@ pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
 pub type StructTagView = StrView<StructTag>;
 pub type TransactionArgumentView = StrView<TransactionArgument>;
+pub type FunctionIdView = StrView<FunctionId>;
+
+impl std::fmt::Display for FunctionIdView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+impl FromStr for FunctionIdView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let splits: Vec<&str> = s.rsplitn(2, "::").collect();
+        if splits.len() != 2 {
+            anyhow::bail!("invalid script function id");
+        }
+        let module_id = ModuleIdView::from_str(splits[1])?;
+        let function = Identifier::new(splits[0])?;
+        Ok(StrView(FunctionId {
+            module: module_id.0,
+            function,
+        }))
+    }
+}
 
 impl std::fmt::Display for StrView<ModuleId> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -1106,9 +1143,7 @@ impl_str_view_for! {ByteCodeOrScriptFunction}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ContractCall {
-    pub module_address: AccountAddress,
-    pub module_name: String,
-    pub func: String,
+    pub function_id: FunctionIdView,
     pub type_args: Vec<TypeTagView>,
     pub args: Vec<TransactionArgumentView>,
 }
@@ -1122,7 +1157,7 @@ impl ServiceRequest for ConnectLocal {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::ByteCodeOrScriptFunction;
+    use crate::types::{ByteCodeOrScriptFunction, FunctionId};
     use starcoin_types::account_address::AccountAddress;
 
     #[test]
@@ -1132,12 +1167,11 @@ mod tests {
             script_function,
             ByteCodeOrScriptFunction::ScriptFunction { .. }
         ));
-        if let ByteCodeOrScriptFunction::ScriptFunction { module, function } = script_function {
-            assert_eq!(
-                *module.0.address(),
-                "0x1".parse::<AccountAddress>().unwrap()
-            );
-            assert_eq!(module.0.name().as_str(), "M");
+        if let ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) =
+            script_function
+        {
+            assert_eq!(*module.address(), "0x1".parse::<AccountAddress>().unwrap());
+            assert_eq!(module.name().as_str(), "M");
             assert_eq!(function.as_str(), "func1");
         }
 

@@ -24,9 +24,7 @@ fn test_view_of_transaction_arg() {
 fn test_deserialize() {
     let s = r#"
 {
-  "module_address": "0x0CC02653F9D7A62D07754D859B066BDE",
-  "module_name": "T",
-  "func": "A",
+  "function_id": "0x0CC02653F9D7A62D07754D859B066BDE::T::A",
   "type_args": [ "0x42C4DDA17CC39AF459C20D09F6A82EDF::T::T"],
   "args": ["0xD6F8FAF8FA976104B8BA8C6F85DCF9E4"]
 }        

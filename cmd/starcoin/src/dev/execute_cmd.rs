@@ -4,23 +4,23 @@
 use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::temp_path;
 use starcoin_dev::playground;
 use starcoin_move_compiler::{
     compile_source_string_no_report, errors, load_bytecode_file, CompiledUnit, MOVE_EXTENSION,
 };
-use starcoin_rpc_api::types::{DryRunTransactionRequest, StrView, TransactionVMStatus};
+use starcoin_rpc_api::types::{
+    DryRunTransactionRequest, FunctionIdView, StrView, TransactionVMStatus,
+};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_transaction_builder::{compiled_transaction_script, StdlibScript};
 use starcoin_types::transaction::{
-    parse_transaction_argument, DryRunTransaction, Module, RawUserTransaction, Script,
-    TransactionArgument,
+    parse_transaction_argument, DryRunTransaction, Module, Package, RawUserTransaction, Script,
+    ScriptFunction, TransactionArgument, TransactionPayload,
 };
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use stdlib::restore_stdlib_in_dir;
@@ -84,14 +84,14 @@ pub struct ExecuteOpt {
     /// Whether dry-run in local cli or remote node.
     local_mode: bool,
 
-    #[structopt(long = "script", name = "builtin-script")]
-    /// builtin script name to execute
-    script_name: Option<StdlibScript>,
+    #[structopt(long = "function", name = "script-function")]
+    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
+    script_function: Option<FunctionIdView>,
 
     #[structopt(
         name = "move_file",
         parse(from_os_str),
-        required_unless = "builtin-script"
+        required_unless = "script-function"
     )]
     /// bytecode file or move script source file
     move_file: Option<PathBuf>,
@@ -114,22 +114,17 @@ impl CommandAction for ExecuteCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
+        let client = ctx.state().client();
         let sender = if let Some(sender) = ctx.opt().sender {
             sender
         } else {
             ctx.state().default_account()?.address
         };
+        let type_tags = opt.type_tags.clone().unwrap_or_default();
+        let args = opt.args.clone().unwrap_or_default();
 
-        let (bytecode, is_script) = if let Some(builtin_script) = opt.script_name.as_ref() {
-            let code =
-                compiled_transaction_script(StdlibVersion::Latest, *builtin_script).into_vec();
-            (code, true)
-        } else {
-            let move_file_path = ctx
-                .opt()
-                .move_file
-                .clone()
-                .ok_or_else(|| format_err!("expect a move file path"))?;
+        let script_function_id = opt.script_function.clone().map(|id| id.0);
+        let bytedata = if let Some(move_file_path) = ctx.opt().move_file.as_ref() {
             let ext = move_file_path
                 .as_path()
                 .extension()
@@ -162,46 +157,61 @@ impl CommandAction for ExecuteCommand {
                     CompiledUnit::Module { .. } => false,
                     CompiledUnit::Script { .. } => true,
                 };
-                (compile_unit.serialize(), is_script)
+                Some((compile_unit.serialize(), is_script))
             } else {
-                load_bytecode_file(move_file_path.as_path())?
+                Some(load_bytecode_file(move_file_path.as_path())?)
+            }
+        } else {
+            None
+        };
+        let txn_payload = match (bytedata, script_function_id) {
+            // package deploy
+            (Some((bytecode, false)), function_id) => {
+                let module_init_script_function = function_id
+                    .map(|id| ScriptFunction::new(id.module, id.function, type_tags, args));
+                let package =
+                    Package::new(vec![Module::new(bytecode)], module_init_script_function)?;
+                TransactionPayload::Package(package)
+            }
+            // script
+            (Some((bytecode, true)), None) => {
+                let script = Script::new(bytecode, type_tags, args);
+                TransactionPayload::Script(script)
+            }
+            (Some((_bytecode, true)), Some(_)) => {
+                bail!("should only provide script function or script file, not both");
+            }
+            // script function
+            (None, Some(function_id)) => {
+                let script_function =
+                    ScriptFunction::new(function_id.module, function_id.function, type_tags, args);
+                TransactionPayload::ScriptFunction(script_function)
+            }
+            (None, None) => {
+                bail!("this should not happen, bug here!");
             }
         };
 
-        let type_tags = opt.type_tags.clone();
-        let args = opt.args.clone();
+        let raw_txn = {
+            let account_resource = {
+                let chain_state_reader = RemoteStateReader::new(client)?;
+                let account_state_reader = AccountStateReader::new(&chain_state_reader);
+                account_state_reader.get_account_resource(&sender)?
+            };
 
-        let client = ctx.state().client();
-        let node_info = client.node_info()?;
-        let chain_state_reader = RemoteStateReader::new(client)?;
-        let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let account_resource = account_state_reader.get_account_resource(&sender)?;
+            if account_resource.is_none() {
+                bail!("address {} not exists on chain", &sender);
+            }
+            let account_resource = account_resource.unwrap();
 
-        if account_resource.is_none() {
-            bail!("address {} not exists on chain", &sender);
-        }
-        let account_resource = account_resource.unwrap();
-
-        let expiration_time = opt.expiration_time + node_info.now_seconds;
-        let script_txn = if is_script {
-            RawUserTransaction::new_script(
+            let expiration_time = {
+                let node_info = client.node_info()?;
+                opt.expiration_time + node_info.now_seconds
+            };
+            RawUserTransaction::new_with_default_gas_token(
                 sender,
                 account_resource.sequence_number(),
-                Script::new(
-                    bytecode,
-                    type_tags.unwrap_or_default(),
-                    args.unwrap_or_default(),
-                ),
-                opt.max_gas_amount,
-                opt.gas_price,
-                expiration_time,
-                ctx.state().net().chain_id(),
-            )
-        } else {
-            RawUserTransaction::new_module(
-                sender,
-                account_resource.sequence_number(),
-                Module::new(bytecode),
+                txn_payload,
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
@@ -209,7 +219,7 @@ impl CommandAction for ExecuteCommand {
             )
         };
 
-        let signed_txn = client.account_sign_txn(script_txn)?;
+        let signed_txn = client.account_sign_txn(raw_txn)?;
         let txn_hash = signed_txn.id();
         let output = if opt.local_mode {
             let state_view = RemoteStateReader::new(client)?;
