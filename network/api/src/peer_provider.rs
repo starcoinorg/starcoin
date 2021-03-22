@@ -14,6 +14,7 @@ use rand::prelude::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
+use starcoin_types::U256;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -228,6 +229,24 @@ impl PeerSelector {
                 peers
             });
         Some(best_peers)
+    }
+
+    pub fn betters(&self, difficulty: U256) -> Option<Vec<PeerInfo>> {
+        if self.is_empty() {
+            return None;
+        }
+        let betters: Vec<PeerInfo> = self
+            .details
+            .lock()
+            .iter()
+            .filter(|peer| peer.peer_info().total_difficulty() > difficulty)
+            .map(|peer| peer.peer_info().clone())
+            .collect();
+        if betters.is_empty() {
+            None
+        } else {
+            Some(betters)
+        }
     }
 
     pub fn best(&self) -> Option<PeerInfo> {
