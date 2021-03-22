@@ -145,6 +145,5 @@ async fn test_sync_target() {
             .await
             .unwrap();
     assert!(!target.peers.is_empty());
-    assert!(target.target_id.number() >= current_peer.block_number());
     assert!(target.block_info.get_total_difficulty() >= current_peer.total_difficulty());
 }
