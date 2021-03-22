@@ -1,4 +1,7 @@
-script {
+address 0x1 {
+/// The module for init Genesis
+module Genesis {
+
     use 0x1::CoreAddresses;
     use 0x1::Account;
     use 0x1::Signer;
@@ -23,7 +26,15 @@ script {
     use 0x1::Config;
     use 0x1::Option;
 
-    fun genesis_init(
+
+    spec module {
+        pragma verify = false; // break after enabling v2 compilation scheme
+        pragma aborts_if_is_partial = false;
+        pragma aborts_if_is_strict = true;
+    }
+
+
+    public(script) fun initialize(
         stdlib_version: u64,
 
         // block reward config
@@ -138,12 +149,12 @@ script {
             Option::some(0),
         );
         // stc should be initialized after genesis_account's module upgrade strategy set.
-        {
-            STC::initialize(&genesis_account, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
-            Account::do_accept_token<STC>(&genesis_account);
-            DummyToken::initialize(&genesis_account);
-            Account::do_accept_token<STC>(&association);
-        };
+            {
+                STC::initialize(&genesis_account, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
+                Account::do_accept_token<STC>(&genesis_account);
+                DummyToken::initialize(&genesis_account);
+                Account::do_accept_token<STC>(&association);
+            };
         if (pre_mine_amount > 0) {
             let stc = Token::mint<STC>(&genesis_account, pre_mine_amount);
             Account::deposit(Signer::address_of(&association), stc);
@@ -168,4 +179,6 @@ script {
         Account::release_genesis_signer(genesis_account);
         Account::release_genesis_signer(association);
     }
+
+}
 }

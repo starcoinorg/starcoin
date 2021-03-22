@@ -371,12 +371,16 @@ impl StarcoinVM {
             }
             if let Some(init_script) = package.init_script() {
                 let sender = txn_data.sender;
-                let ty_args = init_script.ty_args().to_vec();
-                let args = convert_txn_args(init_script.args());
-                let s = init_script.code().to_vec();
                 debug!("execute init script by account {:?}", sender);
                 session
-                    .execute_script(s, ty_args, args, vec![sender], cost_strategy)
+                    .execute_script_function(
+                        init_script.module(),
+                        init_script.function(),
+                        init_script.ty_args().to_vec(),
+                        convert_txn_args(init_script.args()),
+                        vec![sender],
+                        cost_strategy,
+                    )
                     .map_err(|e| e.into_vm_status())?
             }
             charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;

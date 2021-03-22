@@ -21,10 +21,10 @@ use std::{
 };
 use stdlib::{
     build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, build_transaction_script_abi,
-    build_transaction_script_doc, compile_scripts, compile_scripts_to_bytes, compiled_scripts,
-    save_binary, save_scripts, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
-    STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
+    build_transaction_script_doc, compile_scripts_to_bytes, compiled_scripts, save_binary,
+    save_scripts, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR,
+    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS,
+    TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
 fn incremental_update_scripts_with_version(
@@ -150,9 +150,6 @@ fn full_update_with_version(version_number: u64) -> PathBuf {
     let mut stdlib_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     stdlib_src.push(STDLIB_DIR_NAME);
 
-    let mut init_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-    init_scripts_src.push(INIT_SCRIPTS);
-
     let mut txn_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     txn_scripts_src.push(TRANSACTION_SCRIPTS);
 
@@ -163,7 +160,6 @@ fn full_update_with_version(version_number: u64) -> PathBuf {
     }
     std::fs::create_dir_all(&dest).unwrap();
     fs_extra::dir::copy(stdlib_src, &dest, &options).unwrap();
-    fs_extra::dir::copy(init_scripts_src, &dest, &options).unwrap();
     fs_extra::dir::copy(txn_scripts_src, &dest, &options).unwrap();
     dest
 }
@@ -186,10 +182,6 @@ fn replace_stdlib_by_path(
         module_path.pop();
     }
 
-    compile_scripts(
-        Path::new(INIT_SCRIPTS),
-        PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(INIT_SCRIPTS),
-    );
     save_scripts(
         new_script,
         PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(TRANSACTION_SCRIPTS),
@@ -263,10 +255,6 @@ fn main() {
     let mut txn_scripts_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     txn_scripts_path.push(TRANSACTION_SCRIPTS);
     std::fs::create_dir_all(&txn_scripts_path).unwrap();
-
-    let mut init_scripts_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-    init_scripts_path.push(INIT_SCRIPTS);
-    std::fs::create_dir_all(&init_scripts_path).unwrap();
 
     // Write the stdlib blob
     let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
