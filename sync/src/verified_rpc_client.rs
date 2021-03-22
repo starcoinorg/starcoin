@@ -29,7 +29,6 @@ use starcoin_types::{
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
-use stream_task::TaskResultCollector;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]

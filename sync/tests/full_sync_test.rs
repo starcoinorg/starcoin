@@ -4,8 +4,6 @@ use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
 use network_api::{PeerSelector, PeerStrategy};
-use network_rpc_core::server::NetworkRpcServer;
-use network_rpc_core::InmemoryRpcClient;
 use starcoin_service_registry::ActorService;
 use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
@@ -144,8 +142,10 @@ async fn test_sync_target() {
     }
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
     let target =
-        VerifiedRpcClient::get_sync_target(&peer_selector, current_peer.total_difficulty()).await?;
-    assert!(target.peers.len() > 0);
+        VerifiedRpcClient::get_sync_target(&peer_selector, current_peer.total_difficulty())
+            .await
+            .unwrap();
+    assert!(!target.peers.is_empty());
     assert!(target.target_id.number() >= current_peer.block_number());
     assert!(target.block_info.get_total_difficulty() >= current_peer.total_difficulty());
 }
