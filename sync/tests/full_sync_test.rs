@@ -136,8 +136,7 @@ fn test_broadcast_with_difficulty() {
 async fn test_sync_target() {
     let mut peers = Vec::new();
     let current_peer = PeerInfo::random();
-    peers.push(current_peer.clone());
-    for _ in 0..10 {
+    for _ in 0..20 {
         peers.push(PeerInfo::random());
     }
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
