@@ -8070,7 +8070,6 @@ dependencies = [
  "starcoin-txpool-mock-service",
  "starcoin-types",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "test-helper",
  "thiserror",

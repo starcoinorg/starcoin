@@ -29,7 +29,7 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
-use starcoin_types::transaction::{RawUserTransaction, TransactionArgument};
+use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
 use starcoin_vm_types::access_path::AccessPath;
@@ -174,18 +174,56 @@ pub struct DryRunTransactionRequest {
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ScriptData {
-    pub code: StrView<ByteCodeOrScriptName>,
+    pub code: StrView<ByteCodeOrScriptFunction>,
     #[serde(default)]
     pub type_args: Vec<TypeTagView>,
     #[serde(default)]
     pub args: Vec<TransactionArgumentView>,
 }
 
+impl ScriptData {
+    pub fn into_script_function(self) -> anyhow::Result<ScriptFunction> {
+        match self.into_data() {
+            Err(script_function) => Ok(script_function),
+            _ => {
+                anyhow::bail!("not a script function");
+            }
+        }
+    }
+    pub fn into_script(self) -> anyhow::Result<Script> {
+        match self.into_data() {
+            Ok(script) => Ok(script),
+            _ => {
+                anyhow::bail!("not a script");
+            }
+        }
+    }
+    fn into_data(self) -> Result<Script, ScriptFunction> {
+        let ty_args: Vec<_> = self.type_args.into_iter().map(|s| s.0).collect();
+        let args: Vec<_> = self.args.into_iter().map(|s| s.0).collect();
+
+        match self.code.0 {
+            ByteCodeOrScriptFunction::ByteCode(code) => Ok(Script::new(code, ty_args, args)),
+            ByteCodeOrScriptFunction::ScriptFunction { module, function } => {
+                Err(ScriptFunction::new(module.0, function, ty_args, args))
+            }
+        }
+    }
+}
+impl Into<TransactionPayload> for ScriptData {
+    fn into(self) -> TransactionPayload {
+        match self.into_data() {
+            Ok(script) => TransactionPayload::Script(script),
+            Err(func) => TransactionPayload::ScriptFunction(func),
+        }
+    }
+}
+
 impl From<Script> for ScriptData {
     fn from(s: Script) -> Self {
         let (code, ty_args, args) = s.into_inner();
         ScriptData {
-            code: StrView(ByteCodeOrScriptName::ByteCode(code)),
+            code: StrView(ByteCodeOrScriptFunction::ByteCode(code)),
             type_args: ty_args.into_iter().map(TypeTagView::from).collect(),
             args: args
                 .into_iter()
@@ -196,9 +234,42 @@ impl From<Script> for ScriptData {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
-pub enum ByteCodeOrScriptName {
+pub enum ByteCodeOrScriptFunction {
     ByteCode(ByteCode),
-    ScriptName(String),
+    ScriptFunction {
+        module: ModuleIdView,
+        function: Identifier,
+    },
+}
+
+impl std::fmt::Display for ByteCodeOrScriptFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            ByteCodeOrScriptFunction::ByteCode(c) => write!(f, "0x{}", hex::encode(c)),
+            ByteCodeOrScriptFunction::ScriptFunction { module, function } => {
+                write!(f, "{}::{}", module, function)
+            }
+        }
+    }
+}
+
+impl FromStr for ByteCodeOrScriptFunction {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let splits: Vec<&str> = s.rsplitn(2, "::").collect();
+        if splits.len() == 2 {
+            let module_id = ModuleIdView::from_str(splits[1])?;
+            let function = Identifier::new(splits[0])?;
+            Ok(ByteCodeOrScriptFunction::ScriptFunction {
+                module: module_id,
+                function,
+            })
+        } else {
+            Ok(ByteCodeOrScriptFunction::ByteCode(hex::decode(
+                s.strip_prefix("0x").unwrap_or(s),
+            )?))
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -998,25 +1069,6 @@ impl FromStr for StrView<Vec<u8>> {
     }
 }
 
-impl std::fmt::Display for StrView<ByteCodeOrScriptName> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.0 {
-            ByteCodeOrScriptName::ByteCode(c) => write!(f, "0x{}", hex::encode(c)),
-            ByteCodeOrScriptName::ScriptName(s) => write!(f, "{}", s),
-        }
-    }
-}
-
-impl FromStr for StrView<ByteCodeOrScriptName> {
-    type Err = anyhow::Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(match s.strip_prefix("0x") {
-            Some(s) => ByteCodeOrScriptName::ByteCode(hex::decode(s)?),
-            None => ByteCodeOrScriptName::ScriptName(s.to_string()),
-        }))
-    }
-}
-
 impl std::fmt::Display for StrView<AccountPublicKey> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -1050,6 +1102,7 @@ macro_rules! impl_str_view_for {
     )*}
 }
 impl_str_view_for! {u64 i64 u128 i128}
+impl_str_view_for! {ByteCodeOrScriptFunction}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ContractCall {
@@ -1065,4 +1118,30 @@ pub struct ConnectLocal;
 
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::types::ByteCodeOrScriptFunction;
+    use starcoin_types::account_address::AccountAddress;
+
+    #[test]
+    fn test_script_data() {
+        let script_function: ByteCodeOrScriptFunction = "0x1::M::func1".parse().unwrap();
+        assert!(matches!(
+            script_function,
+            ByteCodeOrScriptFunction::ScriptFunction { .. }
+        ));
+        if let ByteCodeOrScriptFunction::ScriptFunction { module, function } = script_function {
+            assert_eq!(
+                *module.0.address(),
+                "0x1".parse::<AccountAddress>().unwrap()
+            );
+            assert_eq!(module.0.name().as_str(), "M");
+            assert_eq!(function.as_str(), "func1");
+        }
+
+        let bytecode: ByteCodeOrScriptFunction = "0x123432ab34".parse().unwrap();
+        assert!(matches!(bytecode, ByteCodeOrScriptFunction::ByteCode(_)));
+    }
 }
