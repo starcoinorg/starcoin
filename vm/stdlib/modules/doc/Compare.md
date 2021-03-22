@@ -9,12 +9,10 @@
 -  [Function `cmp_bcs_bytes`](#0x1_Compare_cmp_bcs_bytes)
 -  [Function `cmp_u8`](#0x1_Compare_cmp_u8)
 -  [Function `cmp_u64`](#0x1_Compare_cmp_u64)
--  [Function `cmp_u128`](#0x1_Compare_cmp_u128)
 -  [Specification](#@Specification_1)
     -  [Function `cmp_bcs_bytes`](#@Specification_1_cmp_bcs_bytes)
     -  [Function `cmp_u8`](#@Specification_1_cmp_u8)
     -  [Function `cmp_u64`](#@Specification_1_cmp_u64)
-    -  [Function `cmp_u128`](#@Specification_1_cmp_u128)
 
 
 <pre><code><b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
@@ -169,32 +167,6 @@ Keep this in mind when using this function to compare addresses.
 
 </details>
 
-<a name="0x1_Compare_cmp_u128"></a>
-
-## Function `cmp_u128`
-
-
-
-<pre><code><b>fun</b> <a href="Compare.md#0x1_Compare_cmp_u128">cmp_u128</a>(i1: u128, i2: u128): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Compare.md#0x1_Compare_cmp_u128">cmp_u128</a>(i1: u128, i2: u128): u8 {
-    <b>if</b> (i1 == i2) <a href="Compare.md#0x1_Compare_EQUAL">EQUAL</a>
-    <b>else</b> <b>if</b> (i1 &lt; i2) <a href="Compare.md#0x1_Compare_LESS_THAN">LESS_THAN</a>
-    <b>else</b> <a href="Compare.md#0x1_Compare_GREATER_THAN">GREATER_THAN</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="@Specification_1"></a>
 
 ## Specification
@@ -245,22 +217,6 @@ Keep this in mind when using this function to compare addresses.
 
 
 <pre><code><b>fun</b> <a href="Compare.md#0x1_Compare_cmp_u64">cmp_u64</a>(i1: u64, i2: u64): u8
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_cmp_u128"></a>
-
-### Function `cmp_u128`
-
-
-<pre><code><b>fun</b> <a href="Compare.md#0x1_Compare_cmp_u128">cmp_u128</a>(i1: u128, i2: u128): u8
 </code></pre>
 
 
