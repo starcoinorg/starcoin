@@ -9,7 +9,6 @@ pub mod account;
 pub mod chain;
 pub mod contract_api;
 pub mod debug;
-pub mod dev;
 pub mod errors;
 pub mod metadata;
 pub mod miner;

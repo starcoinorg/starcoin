@@ -24,8 +24,8 @@ use starcoin_rpc_api::node_manager::NodeManagerApi;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
-    account::AccountApi, chain::ChainApi, debug::DebugApi, dev::DevApi, miner::MinerApi,
-    node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
+    account::AccountApi, chain::ChainApi, debug::DebugApi, miner::MinerApi, node::NodeApi,
+    pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
 use std::collections::HashSet;
@@ -69,7 +69,7 @@ impl RpcService {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn new_with_api<C, N, NM, SM, NWM, T, A, S, D, P, M, DEV, Contract>(
+    pub fn new_with_api<C, N, NM, SM, NWM, T, A, S, D, P, M, Contract>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
@@ -82,7 +82,6 @@ impl RpcService {
         pubsub_api: Option<P>,
         debug_api: Option<D>,
         miner_api: Option<M>,
-        dev_api: Option<DEV>,
         contract_api: Option<Contract>,
     ) -> Self
     where
@@ -97,7 +96,6 @@ impl RpcService {
         P: StarcoinPubSub<Metadata = Metadata>,
         D: DebugApi,
         M: MinerApi,
-        DEV: DevApi,
         Contract: ContractApi,
     {
         let mut api_registry = ApiRegistry::new(config.rpc.api_quotas.clone());
@@ -141,9 +139,6 @@ impl RpcService {
         }
         if let Some(miner_api) = miner_api {
             api_registry.register(Api::Miner, MinerApi::to_delegate(miner_api));
-        }
-        if let Some(dev_api) = dev_api {
-            api_registry.register(Api::Dev, DevApi::to_delegate(dev_api));
         }
         if let Some(contract_api) = contract_api {
             api_registry.register(Api::Contract, ContractApi::to_delegate(contract_api));

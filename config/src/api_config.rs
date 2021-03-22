@@ -8,7 +8,6 @@ pub enum Api {
     Account,
     Chain,
     Debug,
-    Dev,
     Miner,
     NetworkManager,
     NodeManager,
@@ -43,7 +42,6 @@ impl std::fmt::Display for Api {
             Self::Account => "account",
             Self::Chain => "chain",
             Self::Debug => "debug",
-            Self::Dev => "dev",
             Self::Miner => "miner",
             Self::NetworkManager => "network_manager",
             Self::NodeManager => "node_manager",
@@ -68,7 +66,6 @@ impl FromStr for Api {
             "account" => Ok(Account),
             "chain" => Ok(Chain),
             "debug" => Ok(Debug),
-            "dev" => Ok(Dev),
             "miner" => Ok(Miner),
             "network_manager" => Ok(NetworkManager),
             "node_manager" => Ok(NodeManager),
@@ -186,7 +183,6 @@ impl ApiSet {
     pub fn list_apis(&self) -> HashSet<Api> {
         let mut public_list: HashSet<Api> = [
             Api::Chain,
-            Api::Dev,
             Api::Miner,
             Api::Node,
             Api::State,

@@ -29,7 +29,7 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
-    dev::DevClient, miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
+    miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
     node_manager::NodeManagerClient, state::StateClient, sync_manager::SyncManagerClient,
     txpool::TxPoolClient, types::TransactionEventView,
 };
@@ -835,7 +835,6 @@ pub(crate) struct RpcClientInner {
     debug_client: DebugClient,
     chain_client: ChainClient,
     pubsub_client: PubSubClient,
-    dev_client: DevClient,
     contract_client: ContractClient,
     miner_client: MinerClient,
     sync_client: SyncManagerClient,
@@ -853,7 +852,6 @@ impl RpcClientInner {
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
-            dev_client: channel.clone().into(),
             contract_client: channel.clone().into(),
             pubsub_client: channel.clone().into(),
             miner_client: channel.clone().into(),
