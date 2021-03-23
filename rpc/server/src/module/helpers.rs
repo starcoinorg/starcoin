@@ -1,17 +1,12 @@
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
-use starcoin_rpc_api::types::{ByteCodeOrScriptName, ScriptData, TransactionRequest};
+use starcoin_rpc_api::types::TransactionRequest;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::AccountResource;
-use starcoin_types::genesis_config::StdlibVersion;
-use starcoin_types::transaction::{
-    Module, Package, RawUserTransaction, Script, TransactionPayload,
-};
-use std::str::FromStr;
+use starcoin_types::transaction::{Module, Package, RawUserTransaction, TransactionPayload};
 use std::sync::Arc;
-use stdlib::transaction_scripts::{StdlibScript, VersionedStdlibScript};
 
 #[derive(Clone)]
 pub(crate) struct TransactionRequestFiller<Account, Pool, State, Chain> {
@@ -33,39 +28,24 @@ where
         &self,
         txn_request: TransactionRequest,
     ) -> anyhow::Result<RawUserTransaction> {
-        let build_script = |stdlib_version: StdlibVersion, script_data: ScriptData| {
-            let code = match script_data.code.0 {
-                ByteCodeOrScriptName::ScriptName(script_name) => {
-                    VersionedStdlibScript::new(stdlib_version)
-                        .compiled_bytes(StdlibScript::from_str(script_name.as_str())?)
-                        .into_vec()
-                }
-                ByteCodeOrScriptName::ByteCode(c) => c,
-            };
-            let ty_args: Vec<_> = script_data.type_args.into_iter().map(|s| s.0).collect();
-            let args: Vec<_> = script_data.args.into_iter().map(|s| s.0).collect();
-            Ok::<_, anyhow::Error>(Script::new(code, ty_args, args))
-        };
-        let stdlib_version = self.node_config.net().genesis_config().stdlib_version;
         let payload = if !txn_request.modules.is_empty() {
             let modules = txn_request
                 .modules
                 .into_iter()
                 .map(|c| Module::new(c.0))
                 .collect();
-            let _script = txn_request
+            let script_function = txn_request
                 .script
-                .map(|script_data| build_script(stdlib_version, script_data))
+                .map(|script_data| script_data.into_script_function())
                 .transpose()?;
-            //TODO support SciptFunction
-            TransactionPayload::Package(Package::new(modules, None)?)
+            TransactionPayload::Package(Package::new(modules, script_function)?)
         } else {
             let script = txn_request.script.ok_or_else(|| {
                 anyhow::anyhow!(
                     "invalid transaction request: script should not be empty if no modules"
                 )
             })?;
-            TransactionPayload::Script(build_script(stdlib_version, script)?)
+            script.into()
         };
 
         let sender = match txn_request.sender {

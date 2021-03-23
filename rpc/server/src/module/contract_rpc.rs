@@ -113,9 +113,7 @@ where
         let service = self.chain_state.clone();
         let playground = self.playground.clone();
         let ContractCall {
-            module_address,
-            module_name,
-            func,
+            function_id,
             type_args,
             args,
         } = call;
@@ -123,9 +121,8 @@ where
             let state_root = service.state_root().await?;
             let output = playground.call_contract(
                 state_root,
-                module_address,
-                module_name,
-                func,
+                function_id.0.module,
+                function_id.0.function,
                 type_args.into_iter().map(|v| v.0).collect(),
                 args.into_iter().map(|v| v.0).collect(),
             )?;

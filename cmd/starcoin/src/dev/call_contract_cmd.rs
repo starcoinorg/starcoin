@@ -6,32 +6,24 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::{
-    AnnotatedMoveValueView, ContractCall, TransactionArgumentView, TypeTagView,
+    AnnotatedMoveValueView, ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView,
 };
-use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
 /// Call Contract command
 ///  Some examples:
 ///  ``` shell
 ///  # 0x1::Block::get_current_block_number()
-///  dev call --module-address 0x1 --module-name Block --func-name get_current_block_number
+///  dev call --function 0x1::Block::current_block_number
 ///  # 0x1::Account::balance<0x1::STC::STC>(0x726098b70ba8aa2cc172af19af8804)
-///  dev call --func-name balance --module-address 0x1 --module-name Account -t 0x1::STC::STC --arg 0x726098b70ba8aa2cc172af19af8804
+///  dev call --function 0x1::Account::balance -t 0x1::STC::STC --arg 0x726098b70ba8aa2cc172af19af8804
 ///  ```
 #[derive(Debug, StructOpt)]
 #[structopt(name = "call")]
 pub struct CallContractOpt {
-    #[structopt(
-        long = "module-address",
-        name = "module address",
-        help = "hex encoded string, like 0x0, 0x1"
-    )]
-    module_address: AccountAddress,
     #[structopt(long)]
-    module_name: String,
-    #[structopt(long)]
-    func_name: String,
+    /// function to execute, example: 0x1::Block::current_block_number
+    function: FunctionIdView,
     #[structopt(
         short = "t",
         long = "type_tag",
@@ -63,9 +55,7 @@ impl CommandAction for CallContractCommand {
         let opt = ctx.opt();
 
         let call = ContractCall {
-            module_address: opt.module_address,
-            module_name: opt.module_name.clone(),
-            func: opt.func_name.clone(),
+            function_id: opt.function.clone(),
             type_args: opt.type_tags.clone().unwrap_or_default(),
             args: opt.args.clone().unwrap_or_default(),
         };

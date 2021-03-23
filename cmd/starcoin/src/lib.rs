@@ -36,7 +36,7 @@ pub fn add_command(
                 .subcommand(account::UnlockCommand)
                 .subcommand(account::ExportCommand)
                 .subcommand(account::ImportCommand)
-                .subcommand(account::ExecuteBuildInCommand)
+                .subcommand(account::ExecuteScriptFunctionCmd)
                 .subcommand(account::LockCommand)
                 .subcommand(account::ChangePasswordCmd)
                 .subcommand(account::DefaultCommand),

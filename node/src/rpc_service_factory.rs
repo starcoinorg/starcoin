@@ -12,7 +12,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerService;
 use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_server::module::{
-    AccountRpcImpl, ChainRpcImpl, ContractRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl,
+    AccountRpcImpl, ChainRpcImpl, ContractRpcImpl, DebugRpcImpl, MinerRpcImpl,
     NetworkManagerRpcImpl, NodeManagerRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService,
     StateRpcImpl, SyncManagerRpcImpl, TxPoolRpcImpl,
 };
@@ -73,21 +73,16 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));
 
         let contract_api = {
-            let dev_playground = PlaygroudService::new(storage.clone());
+            let dev_playground = PlaygroudService::new(storage);
 
             ContractRpcImpl::new(
                 config.clone(),
                 account_service,
                 txpool_service,
-                chain_state_service.clone(),
+                chain_state_service,
                 chain_service,
                 dev_playground,
             )
-        };
-
-        let dev_api = {
-            let dev_playground = PlaygroudService::new(storage);
-            DevRpcImpl::new(chain_state_service, dev_playground)
         };
 
         Ok(RpcService::new_with_api(
@@ -103,7 +98,6 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             pubsub_api,
             debug_api,
             miner_api,
-            Some(dev_api),
             Some(contract_api),
         ))
     }

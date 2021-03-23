@@ -4,7 +4,9 @@ use anyhow::{format_err, Result};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
-use starcoin_rpc_api::types::{AnnotatedMoveValueView, ContractCall, TransactionVMStatus};
+use starcoin_rpc_api::types::{
+    AnnotatedMoveValueView, ContractCall, FunctionIdView, TransactionVMStatus,
+};
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::{
@@ -25,6 +27,7 @@ use starcoin_vm_types::{
     transaction::Package,
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::{thread::sleep, time::Duration};
 use test_helper::executor::compile_module_with_address;
@@ -350,9 +353,7 @@ fn test_upgrade_module() {
 
     // 9. verify
     let call = ContractCall {
-        module_address: genesis_address(),
-        module_name: "TestModule".to_string(),
-        func: "is_test".to_string(),
+        function_id: FunctionIdView::from_str("0x1::TestModule::is_test").unwrap(),
         type_args: Vec::new(),
         args: Vec::new(),
     };

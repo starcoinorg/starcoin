@@ -7,7 +7,6 @@ use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValu
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::state_view::StateView;
@@ -41,14 +40,12 @@ impl PlaygroudService {
     pub fn call_contract(
         &self,
         state_root: HashValue,
-        module_address: AccountAddress,
-        module_name: String,
-        func: String,
+        module_id: ModuleId,
+        func: Identifier,
         type_args: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
     ) -> Result<Vec<AnnotatedMoveValue>> {
         let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
-        let module_id = ModuleId::new(module_address, Identifier::new(module_name)?);
         let rets = call_contract(&state_view, module_id, func.as_str(), type_args, args)?;
         Ok(rets)
     }

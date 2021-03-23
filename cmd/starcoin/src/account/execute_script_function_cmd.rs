@@ -6,28 +6,27 @@ use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::HashValue;
+use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_transaction_builder::compiled_transaction_script;
-use starcoin_transaction_builder::StdlibScript;
 use starcoin_types::transaction::{
-    parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
+    parse_transaction_argument, RawUserTransaction, TransactionArgument,
 };
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "execute-builtin")]
-pub struct ExecuteBuiltInScriptOpt {
+#[structopt(name = "execute-function")]
+pub struct ExecuteScriptFunctionOpt {
     #[structopt(short = "s")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 
-    #[structopt(long = "script", name = "script-name")]
-    /// builtin script name to execute
-    script_name: StdlibScript,
+    #[structopt(long = "function", name = "script-function")]
+    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
+    script_function: FunctionIdView,
 
     #[structopt(
     short = "t",
@@ -75,12 +74,12 @@ pub struct ExecuteBuiltInScriptOpt {
     blocking: bool,
 }
 
-pub struct ExecuteBuildInCommand;
+pub struct ExecuteScriptFunctionCmd;
 
-impl CommandAction for ExecuteBuildInCommand {
+impl CommandAction for ExecuteScriptFunctionCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ExecuteBuiltInScriptOpt;
+    type Opt = ExecuteScriptFunctionOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -100,16 +99,18 @@ impl CommandAction for ExecuteBuildInCommand {
         })?;
         let expiration_time = opt.expiration_time + node_info.now_seconds;
 
-        let bytecode =
-            compiled_transaction_script(StdlibVersion::Latest, opt.script_name).into_vec();
-
         let type_tags = opt.type_tags.clone().unwrap_or_default();
         let args = opt.args.clone().unwrap_or_default();
-
-        let script_txn = RawUserTransaction::new_script(
+        let script_function = opt.script_function.clone().0;
+        let script_txn = RawUserTransaction::new_script_function(
             sender.address,
             account_resource.sequence_number(),
-            Script::new(bytecode, type_tags, args),
+            ScriptFunction::new(
+                script_function.module,
+                script_function.function,
+                type_tags,
+                args,
+            ),
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,

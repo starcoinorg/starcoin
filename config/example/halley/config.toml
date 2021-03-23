@@ -19,16 +19,16 @@ custom_user_api_quota = [["chain.info", "100/s"], ["chain.get_block_by_hash", "1
 default_global_api_quota = "2000/s"
 
 [rpc.http]
-apis = "chain,dev,miner,node,state,txpool,contract"
+apis = "chain,miner,node,state,txpool,contract"
 
 [rpc.ipc]
-apis = "account,chain,debug,dev,miner,network_manager,node_manager,node,pubsub,state,sync_manager,txpool,contract"
+apis = "account,chain,debug,miner,network_manager,node_manager,node,pubsub,state,sync_manager,txpool,contract"
 
 [rpc.tcp]
-apis = "chain,dev,miner,node,state,txpool,contract"
+apis = "chain,miner,node,state,txpool,contract"
 
 [rpc.ws]
-apis = "chain,dev,miner,node,pubsub,state,txpool,contract"
+apis = "chain,miner,node,pubsub,state,txpool,contract"
 
 [storage]
 max_open_files = 40960
