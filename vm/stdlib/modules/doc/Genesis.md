@@ -13,8 +13,8 @@ The module for init Genesis
 <pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
 <b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
 <b>use</b> <a href="BlockReward.md#0x1_BlockReward">0x1::BlockReward</a>;
-<b>use</b> <a href="Box.md#0x1_Box">0x1::Box</a>;
 <b>use</b> <a href="ChainId.md#0x1_ChainId">0x1::ChainId</a>;
+<b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
 <b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
 <b>use</b> <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">0x1::ConsensusStrategy</a>;
@@ -181,7 +181,7 @@ The module for init Genesis
         <b>let</b> cap = <a href="Token.md#0x1_Token_remove_mint_capability">Token::remove_mint_capability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&genesis_account);
         <b>let</b> key = <a href="Token.md#0x1_Token_issue_linear_mint_key">Token::issue_linear_mint_key</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&cap, time_mint_amount, time_mint_period);
         <a href="Token.md#0x1_Token_add_mint_capability">Token::add_mint_capability</a>(&genesis_account, cap);
-        <a href="Box.md#0x1_Box_put">Box::put</a>(&association, key);
+        <a href="Collection.md#0x1_Collection_put">Collection::put</a>(&association, key);
     };
     // only dev network set genesis auth key.
     <b>if</b> (!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&genesis_auth_key)) {

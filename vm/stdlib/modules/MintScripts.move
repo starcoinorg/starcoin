@@ -1,7 +1,7 @@
 address 0x1 {
 module MintScripts {
     use 0x1::Token;
-    use 0x1::Box;
+    use 0x1::Collection;
     use 0x1::Account;
     use 0x1::Offer;
 
@@ -12,7 +12,7 @@ module MintScripts {
         lock_period: u64,
     ) {
         // 1. take key: LinearTimeMintKey<Token>
-        let mint_key = Box::take<Token::LinearTimeMintKey<Token>>(signer);
+        let mint_key = Collection::take<Token::LinearTimeMintKey<Token>>(signer);
 
         // 2. mint token
         let (tokens, new_mint_key) = Token::split_linear_key<Token>(&mut mint_key, amount);
@@ -24,7 +24,7 @@ module MintScripts {
         if (Token::is_empty_key(&mint_key)) {
             Token::destroy_empty_key(mint_key);
         } else {
-            Box::put(signer, mint_key);
+            Collection::put(signer, mint_key);
         };
 
         // 5. offer
@@ -39,7 +39,7 @@ module MintScripts {
         signer: &signer,
     ) {
         // 1. take key: FixedTimeMintKey<Token>
-        let mint_key = Box::take<Token::FixedTimeMintKey<Token>>(signer);
+        let mint_key = Collection::take<Token::FixedTimeMintKey<Token>>(signer);
 
         // 2. mint token
         let tokens = Token::mint_with_fixed_key<Token>(mint_key);
@@ -56,7 +56,7 @@ module MintScripts {
         signer: &signer,
     ) {
         // 1. take key: LinearTimeMintKey<Token>
-        let mint_key = Box::take<Token::LinearTimeMintKey<Token>>(signer);
+        let mint_key = Collection::take<Token::LinearTimeMintKey<Token>>(signer);
 
         // 2. mint token
         let tokens = Token::mint_with_linear_key<Token>(&mut mint_key);
@@ -68,7 +68,7 @@ module MintScripts {
         if (Token::is_empty_key(&mint_key)) {
             Token::destroy_empty_key(mint_key);
         } else {
-            Box::put(signer, mint_key);
+            Collection::put(signer, mint_key);
         }
     }
 
@@ -83,13 +83,13 @@ module MintScripts {
         lock_period: u64,
     ) {
         // 1. take key: FixedTimeMintKey<Token>
-        let mint_key = Box::take<Token::FixedTimeMintKey<Token>>(signer);
+        let mint_key = Collection::take<Token::FixedTimeMintKey<Token>>(signer);
 
         // 2.
         let new_mint_key = Token::split_fixed_key<Token>(&mut mint_key, amount);
 
         // 3. put key
-        Box::put(signer, mint_key);
+        Collection::put(signer, mint_key);
 
         // 4. offer
         Offer::create<Token::FixedTimeMintKey<Token>>(signer, new_mint_key, for_address, lock_period);

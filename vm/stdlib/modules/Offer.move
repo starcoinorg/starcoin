@@ -3,7 +3,7 @@ module Offer {
     use 0x1::Timestamp;
     use 0x1::Signer;
     use 0x1::Errors;
-    use 0x1::Box;
+    use 0x1::Collection;
 
     spec module {
         pragma verify = true;
@@ -73,7 +73,7 @@ module Offer {
         offer_address: address,
     ) acquires Offer {
         let offered = redeem<Offered>(signer, offer_address);
-        Box::put(signer, offered);
+        Collection::put(signer, offered);
     }
 
     spec fun take_offer {

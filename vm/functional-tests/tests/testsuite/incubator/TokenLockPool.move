@@ -206,12 +206,12 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Box;
+    use 0x1::Collection;
     use {{default}}::TokenLockPool::{LinearTimeLockKey};
 
     fun redeem_offer(account: &signer) {
         let key = Offer::redeem<LinearTimeLockKey<STC>>(account, {{alice}});
-        Box::put(account, key);
+        Collection::put(account, key);
     }
 }
 
@@ -227,15 +227,15 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token;
-    use 0x1::Box;
+    use 0x1::Collection;
     use {{default}}::TokenLockPool::{Self, LinearTimeLockKey};
 
     fun unlock(account: &signer) {
-        let key = Box::take<LinearTimeLockKey<STC>>(account);
+        let key = Collection::take<LinearTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         // withdraw 10000/5
         assert(Token::value(&token) == 2000, 1001);
-        Box::put(account, key);
+        Collection::put(account, key);
         Account::deposit_to_self(account, token);
     }
 }
@@ -251,15 +251,15 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token;
-    use 0x1::Box;
+    use 0x1::Collection;
     use {{default}}::TokenLockPool::{Self, LinearTimeLockKey};
 
     fun unlock(account: &signer) {
-        let key = Box::take<LinearTimeLockKey<STC>>(account);
+        let key = Collection::take<LinearTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         // withdraw 10000/5 again
         assert(Token::value(&token) == 2000, 1002);
-        Box::put(account, key);
+        Collection::put(account, key);
         Account::deposit_to_self(account, token);
     }
 }
@@ -275,11 +275,11 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token;
-    use 0x1::Box;
+    use 0x1::Collection;
     use {{default}}::TokenLockPool::{Self, LinearTimeLockKey};
 
     fun unlock(account: &signer) {
-        let key = Box::take<LinearTimeLockKey<STC>>(account);
+        let key = Collection::take<LinearTimeLockKey<STC>>(account);
         //unlock all remain
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         assert(Token::value(&token) == 6000, 1003);

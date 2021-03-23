@@ -27,11 +27,11 @@ module HideToken {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Token::Token;
 
-    struct Box has key, store { t: Token<MyToken>,}
+    struct Collection has key, store { t: Token<MyToken>,}
 
     public fun hide(account: &signer, token: Token<MyToken>) {
-        let b = Box { t: token };
-        move_to<Box>(account, b);
+        let b = Collection { t: token };
+        move_to<Collection>(account, b);
     }
 }
 

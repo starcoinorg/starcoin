@@ -6,14 +6,14 @@ module M {
 
     struct Foo has copy, drop, store { x: bool }
     struct Bar has copy, drop, store { x: u128, y: Foo, z: bool }
-    struct Box<T> has copy, drop, store { x: T }
+    struct Collection<T> has copy, drop, store { x: T }
 
     public fun test() {
         let x: u64;
         let v: vector<u64>;
         let foo: Foo;
         let bar: Bar;
-        let box: Box<Foo>;
+        let box: Collection<Foo>;
 
         x = 42;
         Debug::print<u64>(&x);
@@ -30,8 +30,8 @@ module M {
         bar = Bar { x: 404u128, y: Foo { x: false }, z: true };
         Debug::print<Bar>(&bar);
 
-        box = Box<Foo> { x: Foo { x: false } };
-        Debug::print<Box<Foo>>(&box);
+        box = Collection<Foo> { x: Foo { x: false } };
+        Debug::print<Collection<Foo>>(&box);
     }
 }
 // check: EXECUTED
