@@ -130,17 +130,17 @@ fn main() {
         let (diem_package_name, diem_package_path) = match options.language {
             Language::Rust => (
                 if options.diem_version_number == "0.1.0" {
-                    "diem-types".to_string()
+                    "starcoin-types".to_string()
                 } else {
-                    format!("diem-types:{}", options.diem_version_number)
+                    format!("starcoin-types:{}", options.diem_version_number)
                 },
-                vec!["diem-types"],
+                vec!["starcoin-types"],
             ),
             Language::Java => (
                 "com.starcoin.types".to_string(),
                 vec!["com", "starcoin", "types"],
             ),
-            _ => ("diem_types".to_string(), vec!["diem_types"]),
+            _ => ("starcoin_types".to_string(), vec!["starcoin_types"]),
         };
         let custom_diem_code = buildgen::read_custom_code_from_paths(
             &diem_package_path,
