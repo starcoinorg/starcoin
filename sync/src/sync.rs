@@ -155,9 +155,12 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
+            let rpc_client = Arc::new(VerifiedRpcClient::new(
+                peer_selector.clone(),
+                network.clone(),
+            ));
             if let Some(target) = VerifiedRpcClient::get_sync_target(
-                rpc_client.selector(),
+                rpc_client.clone(),
                 current_block_info.get_total_difficulty(),
             )
             .await?
@@ -171,7 +174,7 @@ impl SyncService {
                     config.net().time_service(),
                     storage.clone(),
                     connector_service.clone(),
-                    Arc::new(rpc_client),
+                    rpc_client.clone(),
                     self_ref.clone(),
                     network.clone(),
                     config.sync.max_retry_times(),
