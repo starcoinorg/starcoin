@@ -480,6 +480,10 @@ impl NetworkService {
         protocol_name: Cow<'static, str>,
         message: Vec<u8>,
     ) {
+        info!(
+            "[network-p2p] write notification: target: {}, protocol: {}, msg: {:?}",
+            target, protocol_name, message
+        );
         // We clone the `NotificationsSink` in order to be able to unlock the network-wide
         // `peers_notifications_sinks` mutex as soon as possible.
         let sink = {
@@ -1196,6 +1200,10 @@ impl Future for NetworkWorker {
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
                         for (protocol, message) in &messages {
+                            info!(
+                                "[network-p2p] receive notification from: {}, {}, {:?}",
+                                remote, protocol, message
+                            );
                             metrics
                                 .notifications_sizes
                                 .with_label_values(&["in", &protocol])

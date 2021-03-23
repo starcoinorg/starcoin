@@ -292,11 +292,17 @@ impl NetworkBehaviour for Protocol {
                 peer_id,
                 set_id,
                 notifications_sink,
-            } => CustomMessageOutcome::NotificationStreamReplaced {
-                remote: peer_id,
-                protocol: self.notif_protocols[usize::from(set_id)].clone(),
-                notifications_sink,
-            },
+            } => {
+                if self.bad_handshake_substreams.contains(&(peer_id, set_id)) {
+                    CustomMessageOutcome::None
+                } else {
+                    CustomMessageOutcome::NotificationStreamReplaced {
+                        remote: peer_id,
+                        protocol: self.notif_protocols[usize::from(set_id)].clone(),
+                        notifications_sink,
+                    }
+                }
+            }
             GenericProtoOut::Notification {
                 peer_id,
                 set_id,
