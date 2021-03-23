@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
+use starcoin_vm_types::transaction::{
+    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
+};
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, TypeTag},
 };
 use serde_generate::{
+    csharp,
     indent::{IndentConfig, IndentedWriter},
-    java, CodeGeneratorConfig,
-};
-use starcoin_vm_types::transaction::{
-    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
+    CodeGeneratorConfig,
 };
 
 use heck::{CamelCase, ShoutySnakeCase};
@@ -21,109 +22,102 @@ use std::{
     path::PathBuf,
 };
 
-/// Output transaction builders and decoders in Java for the given ABIs.
+/// Output transaction builders and decoders in C# for the given ABIs.
 /// Source files will be located in a subdirectory of `install_dir` corresponding to the given
-/// package name (if any, otherwise `install_dir` it self).
+/// namespace name (if any, otherwise `install_dir` it self).
 pub fn write_source_files(
     install_dir: std::path::PathBuf,
-    package_name: &str,
+    namespace_name: &str,
     abis: &[ScriptABI],
 ) -> Result<()> {
-    write_script_call_files(install_dir.clone(), package_name, abis)?;
-    write_helper_file(install_dir, package_name, abis)
+    write_script_call_files(install_dir.clone(), namespace_name, abis)?;
+    write_helper_file(install_dir, namespace_name, abis)
 }
 
 /// Output transaction helper functions for the given ABIs.
 fn write_helper_file(
     install_dir: std::path::PathBuf,
-    package_name: &str,
+    namespace_name: &str,
     abis: &[ScriptABI],
 ) -> Result<()> {
     let mut dir_path = install_dir;
-    let parts = package_name.split('.').collect::<Vec<_>>();
+    let parts = namespace_name.split('.').collect::<Vec<_>>();
     for part in &parts {
         dir_path = dir_path.join(part);
     }
     std::fs::create_dir_all(&dir_path)?;
 
-    let mut file = std::fs::File::create(dir_path.join("Helpers.java"))?;
-    let mut emitter = JavaEmitter {
+    let mut file = std::fs::File::create(dir_path.join("Helpers.cs"))?;
+    let mut emitter = CsharpEmitter {
         out: IndentedWriter::new(&mut file, IndentConfig::Space(4)),
-        package_name,
+        namespace_name,
     };
     emitter.output_preamble()?;
-    writeln!(emitter.out, "\npublic final class Helpers {{")?;
+    writeln!(emitter.out, "\npublic static class Helpers {{")?;
     emitter.out.indent();
 
-    emitter.output_encode_method()?;
+    emitter.output_encode_methods()?;
     emitter.output_decode_method()?;
 
     for abi in abis {
         emitter.output_script_encoder_function(abi)?;
     }
-    for abi in common::transaction_script_abis(abis).iter() {
-        emitter.output_transaction_script_decoder_function(abi)?;
-    }
-    for abi in common::script_function_abis(abis).iter() {
-        emitter.output_script_function_decoder_function(abi)?;
+    for abi in abis {
+        emitter.output_script_decoder_function(abi)?;
     }
 
     emitter.output_transaction_script_encoder_map(&common::transaction_script_abis(abis))?;
     emitter.output_script_function_encoder_map(&common::script_function_abis(abis))?;
-    for abi in common::transaction_script_abis(abis) {
+    for abi in &common::transaction_script_abis(abis) {
         emitter.output_code_constant(&abi)?;
     }
     // Must be defined after the constants.
-    emitter.output_transaction_script_decoder_map(&common::transaction_script_abis(abis))?;
-    emitter.output_script_function_decoder_map(&common::script_function_abis(abis))?;
+    emitter.output_decoder_maps(abis)?;
 
     emitter.output_decoding_helpers(abis)?;
 
     emitter.out.unindent();
-    writeln!(emitter.out, "\n}}\n")
+    writeln!(emitter.out, "\n}}\n")?; // class
+    emitter.out.unindent();
+    writeln!(emitter.out, "\n}}\n") // namespace
 }
 
 fn write_script_call_files(
     install_dir: std::path::PathBuf,
-    package_name: &str,
+    namespace_name: &str,
     abis: &[ScriptABI],
 ) -> Result<()> {
-    let external_definitions = crate::common::get_external_definitions("com.diem.types");
+    let external_definitions = crate::common::get_external_definitions("Diem.Types");
     let (transaction_script_abis, script_fun_abis): (Vec<_>, Vec<_>) = abis
         .iter()
         .cloned()
         .partition(|abi| abi.is_transaction_script_abi());
-
     let mut script_registry: BTreeMap<_, _> = vec![(
         "ScriptCall".to_string(),
         common::make_abi_enum_container(transaction_script_abis.as_slice()),
     )]
     .into_iter()
     .collect();
-
     let mut script_function_registry: BTreeMap<_, _> = vec![(
         "ScriptFunctionCall".to_string(),
         common::make_abi_enum_container(script_fun_abis.as_slice()),
     )]
     .into_iter()
     .collect();
-
     script_registry.append(&mut script_function_registry);
+
     let mut comments: BTreeMap<_, _> = abis
         .iter()
         .map(|abi| {
-            let mut paths = package_name
+            let mut paths = namespace_name
                 .split('.')
                 .map(String::from)
                 .collect::<Vec<_>>();
-            paths.push(
-                if abi.is_transaction_script_abi() {
-                    "ScriptCall"
-                } else {
-                    "ScriptFunctionCall"
-                }
-                .to_string(),
-            );
+            paths.push(if abi.is_transaction_script_abi() {
+                "ScriptCall".to_string()
+            } else {
+                "ScriptFunctionCall".to_string()
+            });
             paths.push(abi.name().to_camel_case());
             (paths, prepare_doc_string(abi.doc()))
         })
@@ -137,23 +131,23 @@ fn write_script_call_files(
         "Structured representation of a call into a known Move script function.".into(),
     );
 
-    let config = CodeGeneratorConfig::new(package_name.to_string())
+    let config = CodeGeneratorConfig::new(namespace_name.to_string())
         .with_comments(comments)
         .with_external_definitions(external_definitions)
         .with_serialization(false);
-    java::CodeGenerator::new(&config)
+    csharp::CodeGenerator::new(&config)
         .write_source_files(install_dir, &script_registry)
         .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, format!("{}", err)))?;
     Ok(())
 }
 
-/// Add minimal escaping for Javadoc.
+/// Add minimal escaping for XML Comments.
 fn prepare_doc_string(doc: &str) -> String {
     let doc = crate::common::prepare_doc_string(doc);
     // Escape quoted strings and special characters.
     let doc = regex::Regex::new("`([^`]*)`|(>=)|(<=)|(>)|(<)")
         .unwrap()
-        .replace_all(&doc, "{@code $1$2$3$4$5}");
+        .replace_all(&doc, "<code>$1$2$3$4$5</code>");
     // Replace subsection titles.
     let doc = regex::Regex::new("##* (.*)\n")
         .unwrap()
@@ -166,68 +160,63 @@ fn prepare_doc_string(doc: &str) -> String {
 }
 
 /// Shared state for the Java code generator.
-struct JavaEmitter<'a, T> {
+struct CsharpEmitter<'a, T> {
     /// Writer.
     out: IndentedWriter<T>,
-    /// Name of the package owning the generated definitions (e.g. "com.my_org.my_package")
-    package_name: &'a str,
+    /// Name of the namespace owning the generated definitions (e.g. "MyOrg.MyTechnology")
+    namespace_name: &'a str,
 }
 
-impl<'a, T> JavaEmitter<'a, T>
+impl<'a, T> CsharpEmitter<'a, T>
 where
     T: Write,
 {
     fn output_preamble(&mut self) -> Result<()> {
-        writeln!(self.out, "package {};\n", self.package_name)?;
         writeln!(
             self.out,
             r#"
-import java.math.BigInteger;
-import java.lang.IllegalArgumentException;
-import java.lang.IndexOutOfBoundsException;
-import com.diem.types.AccountAddress;
-import com.diem.types.Script;
-import com.diem.types.ScriptFunction;
-import com.diem.types.TransactionPayload;
-import com.diem.types.Identifier;
-import com.diem.types.ModuleId;
-import com.diem.types.TransactionArgument;
-import com.diem.types.TypeTag;
-import com.novi.serde.Int128;
-import com.novi.serde.Unsigned;
-import com.novi.serde.Bytes;
+using System; // For ArgumentException and IndexOutOfRangeException
+using System.Numerics; // For BigInteger
+using Diem.Types; // For Script, TransactionArgument, TypeTag, TransactionPayload, ScriptFunction
+using Serde; // For ValueArray (e.g., ValueArray<byte>)
+using System.Collections;
+using System.Collections.Generic; // For List, Dictonary
 "#,
         )?;
+        writeln!(self.out, "namespace {}\n{{", self.namespace_name)?;
         Ok(())
     }
 
-    fn output_encode_method(&mut self) -> Result<()> {
+    fn output_encode_methods(&mut self) -> Result<()> {
         writeln!(
             self.out,
             r#"
-/**
- * Build a Diem {{@link com.diem.types.Script}} from a structured value {{@link ScriptCall}}.
- *
- * @param call {{@link ScriptCall}} value to encode.
- * @return Encoded script.
- */
-public static Script encode_script(ScriptCall call) {{
-    ScriptEncodingHelper helper = TRANSACTION_SCRIPT_ENCODER_MAP.get(call.getClass());
-    return helper.encode(call);
+/// <summary>
+/// Build a Diem Script from a structured value {{@link ScriptCall}}.
+/// </summary>
+/// <returns>
+/// Encoded Script
+/// </returns>
+/// <param name="call">ScriptCall value to encode.</param>
+public static Script EncodeScript(ScriptCall call) {{
+    ScriptEncodingHelper helper = TRANSACTION_SCRIPT_ENCODER_MAP[call.GetType()];
+    return helper(call);
 }}"#
         )?;
+
         writeln!(
             self.out,
             r#"
-/**
- * Build a Diem {{@link com.diem.types.TransactionPayload}} from a structured value {{@link ScriptFunctionCall}}.
- *
- * @param call {{@link ScriptFunctionCall}} value to encode.
- * @return Encoded TransactionPayload.
- */
-public static TransactionPayload encode_script_function(ScriptFunctionCall call) {{
-    ScriptFunctionEncodingHelper helper = SCRIPT_FUNCTION_ENCODER_MAP.get(call.getClass());
-    return helper.encode(call);
+/// <summary>
+/// Build a Diem Transaction Script from a structured value {{@link ScriptFunctionCall}}.
+/// </summary>
+/// <returns>
+/// Encoded TransactionPayload holding a ScriptFunction
+/// </returns>
+/// <param name="call">ScriptFunctionCall value to encode.</param>
+public static TransactionPayload EncodeScriptFunction(ScriptFunctionCall call) {{
+    ScriptFunctionEncodingHelper helper = SCRIPT_FUNCTION_ENCODER_MAP[call.GetType()];
+    return helper(call);
 }}"#
         )
     }
@@ -236,18 +225,19 @@ public static TransactionPayload encode_script_function(ScriptFunctionCall call)
         writeln!(
             self.out,
             r#"
-/**
- * Try to recognize a Diem {{@link com.diem.types.Script}} and convert it into a structured value {{@code ScriptCall}}.
- *
- * @param script {{@link com.diem.types.Script}} values to decode.
- * @return Decoded {{@link ScriptCall}} value.
- */
-public static ScriptCall decode_script(Script script) throws IllegalArgumentException, IndexOutOfBoundsException {{
-    TransactionScriptDecodingHelper helper = TRANSACTION_SCRIPT_DECODER_MAP.get(script.code);
+/// <summary>
+/// Try to recognize a Diem Script and convert it into a structured value Script.
+/// </summary>
+/// <returns>
+/// Decoded ScriptCall value
+/// </returns>
+/// <param name="script">Script values to decode</param>
+public static ScriptCall DecodeScript(Script script) {{
+    TransactionScriptDecodingHelper helper = TRANSACTION_SCRIPT_DECODER_MAP[script.code];
     if (helper == null) {{
-        throw new IllegalArgumentException("Unknown script bytecode");
+        throw new ArgumentException("Unknown script bytecode");
     }}
-    return helper.decode(script);
+    return helper(script);
 }}
 "#
         )?;
@@ -255,26 +245,73 @@ public static ScriptCall decode_script(Script script) throws IllegalArgumentExce
         writeln!(
             self.out,
             r#"
-/**
- * Try to recognize a Diem {{@link com.diem.types.TransactionPayload}} and convert it into a structured value {{@code ScriptFunctionCall}}.
- *
- * @param payload {{@link com.diem.types.TransactionPayload}} values to decode.
- * @return Decoded {{@link ScriptFunctionCall}} value.
- */
-public static ScriptFunctionCall decode_script_function_payload(TransactionPayload payload) throws IllegalArgumentException, IndexOutOfBoundsException {{
-    if (payload instanceof TransactionPayload.ScriptFunction) {{
+/// <summary>
+/// Try to recognize a Diem TransactionPayload holding a ScriptFunction and convert it into a structured value ScriptFunction.
+/// </summary>
+/// <returns>
+/// Decoded ScriptFunctionCall value
+/// </returns>
+/// <param name="script">TransactionPayload value to decode</param>
+public static ScriptFunctionCall DecodeScriptFunctionPayload(TransactionPayload payload) {{
+    if (payload is TransactionPayload.ScriptFunction) {{
         ScriptFunction script = ((TransactionPayload.ScriptFunction)payload).value;
-        ScriptFunctionDecodingHelper helper = SCRIPT_FUNCTION_DECODER_MAP.get(script.module.name.value + script.function.value);
+        ScriptFunctionDecodingHelper helper = SCRIPT_FUNCTION_DECODER_MAP[script.module.name.value + script.function.value];
         if (helper == null) {{
-            throw new IllegalArgumentException("Unknown script function");
+            throw new ArgumentException("Unknown script function");
         }}
-        return helper.decode(payload);
+        return helper(payload);
     }} else {{
-        throw new IllegalArgumentException("Unknown transaction payload");
+        throw new ArgumentException("Unknown transaction payload");
     }}
 }}
 "#
         )
+    }
+
+    fn output_script_encoder_function(&mut self, abi: &ScriptABI) -> Result<()> {
+        let quoted_type_params: Vec<_> = abi
+            .ty_args()
+            .iter()
+            .map(|ty_arg| format!("TypeTag {}", ty_arg.name()))
+            .collect();
+        let quoted_type_params_doc: Vec<_> = abi
+            .ty_args()
+            .iter()
+            .map(|ty_arg| format!("{} <code>TypeTag</code> value", ty_arg.name()))
+            .collect();
+        let quoted_params: Vec<_> = abi
+            .args()
+            .iter()
+            .map(|arg| format!("{} {}", Self::quote_type(arg.type_tag()), arg.name()))
+            .collect();
+        let quoted_params_doc: Vec<_> = abi
+            .args()
+            .iter()
+            .map(|arg| {
+                format!(
+                    "{} <code>{}</code> value",
+                    arg.name(),
+                    Self::quote_type(arg.type_tag())
+                )
+            })
+            .collect();
+
+        match abi {
+            ScriptABI::TransactionScript(abi) => self.emit_transaction_script_encoder(
+                abi,
+                quoted_type_params,
+                quoted_type_params_doc,
+                quoted_params,
+                quoted_params_doc,
+            ),
+            ScriptABI::ScriptFunction(abi) => self.emit_script_function_encoder(
+                abi,
+                quoted_type_params,
+                quoted_type_params_doc,
+                quoted_params,
+                quoted_params_doc,
+            ),
+        }
     }
 
     fn emit_transaction_script_encoder(
@@ -291,7 +328,7 @@ public static ScriptFunctionCall decode_script_function_payload(TransactionPaylo
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
-                "Encoded {@link com.diem.types.Script} value.",
+                "Encoded Diem.Types.Script value.",
             ),
             abi.name(),
             [quoted_type_params, quoted_params].concat().join(", ")
@@ -299,14 +336,16 @@ public static ScriptFunctionCall decode_script_function_payload(TransactionPaylo
         self.out.indent();
         writeln!(
             self.out,
-            r#"Script.Builder builder = new Script.Builder();
-builder.code = new Bytes({}_CODE);
-builder.ty_args = java.util.Arrays.asList({});
-builder.args = java.util.Arrays.asList({});
-return builder.build();"#,
-            abi.name().to_shouty_snake_case(),
+            r#"TypeTag[] tt = new TypeTag[] {{{}}};
+TransactionArgument[] ta = new TransactionArgument[] {{{}}};
+return new Script(
+  new ValueArray<byte>((byte[]) (Array) {}_CODE),
+  new ValueArray<TypeTag>(tt),
+  new ValueArray<TransactionArgument>(ta)
+);"#,
             Self::quote_type_arguments(abi.ty_args()),
             Self::quote_arguments(abi.args()),
+            abi.name().to_shouty_snake_case(),
         )?;
         self.out.unindent();
         writeln!(self.out, "}}")
@@ -326,7 +365,7 @@ return builder.build();"#,
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
-                "Encoded {@link com.diem.types.TransactionPayload} value.",
+                "Encoded Diem.Types.TransactionPayload value holding a ScriptFunction.",
             ),
             abi.name(),
             [quoted_type_params, quoted_params].concat().join(", ")
@@ -334,80 +373,36 @@ return builder.build();"#,
         self.out.indent();
         writeln!(
             self.out,
-            r#"ScriptFunction.Builder script_function_builder = new ScriptFunction.Builder();
-script_function_builder.ty_args = java.util.Arrays.asList({});
-script_function_builder.args = java.util.Arrays.asList({});
-script_function_builder.function = {};
-script_function_builder.module = {};
-
-TransactionPayload.ScriptFunction.Builder builder = new TransactionPayload.ScriptFunction.Builder();
-builder.value = script_function_builder.build();
-return builder.build();"#,
+            "TypeTag[] tt = new TypeTag[] {{{}}};
+TransactionArgument[] ta = new TransactionArgument[] {{{}}};
+return new TransactionPayload.ScriptFunction(
+    new ScriptFunction(
+      {},
+      {},
+      new ValueArray<TypeTag>(tt),
+      new ValueArray<TransactionArgument>(ta)
+    )
+);",
             Self::quote_type_arguments(abi.ty_args()),
             Self::quote_arguments(abi.args()),
-            Self::quote_identifier(abi.name()),
             Self::quote_module_id(abi.module_name()),
+            Self::quote_identifier(abi.name()),
         )?;
         self.out.unindent();
         writeln!(self.out, "}}")
     }
 
-    fn output_script_encoder_function(&mut self, abi: &ScriptABI) -> Result<()> {
-        let quoted_type_params: Vec<_> = abi
-            .ty_args()
-            .iter()
-            .map(|ty_arg| format!("TypeTag {}", ty_arg.name()))
-            .collect();
-        let quoted_type_params_doc: Vec<_> = abi
-            .ty_args()
-            .iter()
-            .map(|ty_arg| format!("{} {{@code TypeTag}} value", ty_arg.name()))
-            .collect();
-        let quoted_params: Vec<_> = abi
-            .args()
-            .iter()
-            .map(|arg| format!("{} {}", Self::quote_type(arg.type_tag()), arg.name()))
-            .collect();
-        let quoted_params_doc: Vec<_> = abi
-            .args()
-            .iter()
-            .map(|arg| {
-                format!(
-                    "{} {{@code {}}} value",
-                    arg.name(),
-                    Self::quote_type(arg.type_tag())
-                )
-            })
-            .collect();
-        match abi {
-            ScriptABI::TransactionScript(abi) => self.emit_transaction_script_encoder(
-                abi,
-                quoted_type_params,
-                quoted_type_params_doc,
-                quoted_params,
-                quoted_params_doc,
-            ),
-            ScriptABI::ScriptFunction(abi) => self.emit_script_function_encoder(
-                abi,
-                quoted_type_params,
-                quoted_type_params_doc,
-                quoted_params,
-                quoted_params_doc,
-            ),
-        }
-    }
-
-    fn output_transaction_script_decoder_function(
+    fn emit_transaction_script_decoder_function(
         &mut self,
         abi: &TransactionScriptABI,
     ) -> Result<()> {
         writeln!(
             self.out,
-            "\nprivate static ScriptCall decode_{}_script(Script {}script) throws IllegalArgumentException, IndexOutOfBoundsException {{",
+            "\nprivate static ScriptCall decode_{}_script(Script {}script) {{",
             abi.name(),
             // prevent warning "unused variable"
             if abi.ty_args().is_empty() && abi.args().is_empty() {
-            "_"
+                "_"
             } else {
                 ""
             }
@@ -415,46 +410,45 @@ return builder.build();"#,
         self.out.indent();
         writeln!(
             self.out,
-            "ScriptCall.{0}.Builder builder = new ScriptCall.{0}.Builder();",
+            "return new ScriptCall.{0}(",
             abi.name().to_camel_case(),
         )?;
+        let mut params = String::from("");
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
-            writeln!(
-                self.out,
-                "builder.{} = script.ty_args.get({});",
+            params.push_str(&format!(
+                "    // {}\n    script.ty_args[{}],\n",
                 ty_arg.name(),
                 index,
-            )?;
+            ));
         }
         for (index, arg) in abi.args().iter().enumerate() {
-            writeln!(
-                self.out,
-                "builder.{} = Helpers.decode_{}_argument(script.args.get({}));",
-                arg.name(),
+            params.push_str(&format!(
+                "    Helpers.decode_{}_argument(script.args[{}]),\n",
                 common::mangle_type(arg.type_tag()),
                 index,
-            )?;
+            ));
         }
-        writeln!(self.out, "return builder.build();")?;
+        params.pop(); // removes last newline
+        params.pop(); // removes last trailing comma
+        writeln!(self.out, "{}", params)?;
+        writeln!(self.out, ");")?;
         self.out.unindent();
-        writeln!(self.out, "}}")?;
-        Ok(())
+        writeln!(self.out, "}}")
     }
 
-    fn output_script_function_decoder_function(&mut self, abi: &ScriptFunctionABI) -> Result<()> {
-        // `payload` is always used, so don't need to add `"_"` prefix
+    fn emit_script_function_decoder_function(&mut self, abi: &ScriptFunctionABI) -> Result<()> {
+        // `payload` is always used, so don't need to add a `"_"`
         writeln!(
             self.out,
-            "\nprivate static ScriptFunctionCall decode_{}_script_function(TransactionPayload payload) throws IllegalArgumentException, IndexOutOfBoundsException {{",
+            "\nprivate static ScriptFunctionCall decode_{}_script_function(TransactionPayload payload) {{",
             abi.name(),
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "if(!(payload instanceof TransactionPayload.ScriptFunction)) {{
-                throw new IllegalArgumentException(\"Transaction payload not a Script Function\");
-        }}"
+            "if (payload is TransactionPayload.ScriptFunction) {{"
         )?;
+        self.out.indent();
         writeln!(
             self.out,
             "ScriptFunction {}script = ((TransactionPayload.ScriptFunction)payload).value;",
@@ -467,30 +461,46 @@ return builder.build();"#,
         )?;
         writeln!(
             self.out,
-            "ScriptFunctionCall.{0}.Builder builder = new ScriptFunctionCall.{0}.Builder();",
+            "return new ScriptFunctionCall.{0}(",
             abi.name().to_camel_case(),
         )?;
+        let mut params = String::from("");
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
-            writeln!(
-                self.out,
-                "builder.{} = script.ty_args.get({});",
+            params.push_str(&format!(
+                "    // {}\n    script.ty_args[{}],\n",
                 ty_arg.name(),
                 index,
-            )?;
+            ));
         }
         for (index, arg) in abi.args().iter().enumerate() {
-            writeln!(
-                self.out,
-                "builder.{} = Helpers.decode_{}_argument(script.args.get({}));",
-                arg.name(),
+            params.push_str(&format!(
+                "    Helpers.decode_{}_argument(script.args[{}]),\n",
                 common::mangle_type(arg.type_tag()),
                 index,
-            )?;
+            ));
         }
-        writeln!(self.out, "return builder.build();")?;
+        params.pop(); // removes last newline
+        params.pop(); // removes last trailing comma
+        writeln!(self.out, "{}", params)?;
+        writeln!(self.out, ");")?;
+        self.out.unindent();
+        writeln!(self.out, "}} else {{")?;
+        self.out.indent();
+        writeln!(
+            self.out,
+            "throw new ArgumentException(\"Tried to decode an unknown script function\");"
+        )?;
         self.out.unindent();
         writeln!(self.out, "}}")?;
-        Ok(())
+        self.out.unindent();
+        writeln!(self.out, "}}")
+    }
+
+    fn output_script_decoder_function(&mut self, abi: &ScriptABI) -> Result<()> {
+        match abi {
+            ScriptABI::TransactionScript(abi) => self.emit_transaction_script_decoder_function(abi),
+            ScriptABI::ScriptFunction(abi) => self.emit_script_function_decoder_function(abi),
+        }
     }
 
     fn output_transaction_script_encoder_map(
@@ -500,18 +510,16 @@ return builder.build();"#,
         writeln!(
             self.out,
             r#"
-interface ScriptEncodingHelper {{
-    public Script encode(ScriptCall call);
-}}
+delegate Script ScriptEncodingHelper(ScriptCall call);
 
-private static final java.util.Map<Class<?>, ScriptEncodingHelper> TRANSACTION_SCRIPT_ENCODER_MAP = initTransactionScriptEncoderMap();
+private static readonly System.Collections.Generic.Dictionary<Type, ScriptEncodingHelper> TRANSACTION_SCRIPT_ENCODER_MAP = initScriptEncoderMap();
 
-private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScriptEncoderMap() {{"#
+private static System.Collections.Generic.Dictionary<Type, ScriptEncodingHelper> initScriptEncoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<Class<?>, ScriptEncodingHelper> map = new java.util.HashMap<>();"
+            "System.Collections.Generic.Dictionary<Type, ScriptEncodingHelper> map = new System.Collections.Generic.Dictionary<Type, ScriptEncodingHelper>();"
         )?;
         for abi in abis {
             let params = std::iter::empty()
@@ -522,7 +530,7 @@ private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScri
                 .join(", ");
             writeln!(
                 self.out,
-                "map.put(ScriptCall.{0}.class, (ScriptEncodingHelper)((call) -> {{
+                "map.Add(typeof(ScriptCall.{0}), (ScriptEncodingHelper)((call) => {{
     ScriptCall.{0} obj = (ScriptCall.{0})call;
     return Helpers.encode_{1}_script({2});
 }}));",
@@ -540,18 +548,16 @@ private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScri
         writeln!(
             self.out,
             r#"
-interface ScriptFunctionEncodingHelper {{
-    public TransactionPayload encode(ScriptFunctionCall call);
-}}
+delegate TransactionPayload ScriptFunctionEncodingHelper(ScriptFunctionCall call);
 
-private static final java.util.Map<Class<?>, ScriptFunctionEncodingHelper> SCRIPT_FUNCTION_ENCODER_MAP = initScriptFunctionEncoderMap();
+private static readonly System.Collections.Generic.Dictionary<Type, ScriptFunctionEncodingHelper> SCRIPT_FUNCTION_ENCODER_MAP = initScriptFunctionEncoderMap();
 
-private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptFunctionEncoderMap() {{"#
+private static System.Collections.Generic.Dictionary<Type, ScriptFunctionEncodingHelper> initScriptFunctionEncoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<Class<?>, ScriptFunctionEncodingHelper> map = new java.util.HashMap<>();"
+            "System.Collections.Generic.Dictionary<Type, ScriptFunctionEncodingHelper> map = new System.Collections.Generic.Dictionary<Type, ScriptFunctionEncodingHelper>();"
         )?;
         for abi in abis {
             let params = std::iter::empty()
@@ -562,7 +568,7 @@ private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptF
                 .join(", ");
             writeln!(
                 self.out,
-                "map.put(ScriptFunctionCall.{0}.class, (ScriptFunctionEncodingHelper)((call) -> {{
+                "map.Add(typeof(ScriptFunctionCall.{0}), (ScriptFunctionEncodingHelper)((call) => {{
     ScriptFunctionCall.{0} obj = (ScriptFunctionCall.{0})call;
     return Helpers.encode_{1}_script_function({2});
 }}));",
@@ -576,62 +582,53 @@ private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptF
         writeln!(self.out, "}}")
     }
 
-    fn output_transaction_script_decoder_map(
-        &mut self,
-        abis: &[TransactionScriptABI],
-    ) -> Result<()> {
+    fn output_decoder_maps(&mut self, abis: &[ScriptABI]) -> Result<()> {
         writeln!(
             self.out,
             r#"
-interface TransactionScriptDecodingHelper {{
-    public ScriptCall decode(Script script);
-}}
+delegate ScriptCall TransactionScriptDecodingHelper(Script script);
 
-private static final java.util.Map<Bytes, TransactionScriptDecodingHelper> TRANSACTION_SCRIPT_DECODER_MAP = initTransactionScriptDecoderMap();
+private static readonly System.Collections.Generic.Dictionary<ValueArray<byte>, TransactionScriptDecodingHelper> TRANSACTION_SCRIPT_DECODER_MAP = initTransactionScriptDecoderMap();
 
-private static java.util.Map<Bytes, TransactionScriptDecodingHelper> initTransactionScriptDecoderMap() {{"#
+private static System.Collections.Generic.Dictionary<ValueArray<byte>, TransactionScriptDecodingHelper> initTransactionScriptDecoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<Bytes, TransactionScriptDecodingHelper> map = new java.util.HashMap<>();"
+            "System.Collections.Generic.Dictionary<ValueArray<byte>, TransactionScriptDecodingHelper> map = new System.Collections.Generic.Dictionary<ValueArray<byte>, TransactionScriptDecodingHelper>();"
         )?;
-        for abi in abis {
+        for abi in common::transaction_script_abis(abis) {
             writeln!(
                 self.out,
-                "map.put(new Bytes({}_CODE), (TransactionScriptDecodingHelper)((script) -> Helpers.decode_{}_script(script)));",
+                "map.Add(new ValueArray<byte>((byte[]) (Array){}_CODE), (TransactionScriptDecodingHelper)((script) => Helpers.decode_{}_script(script)));",
                 abi.name().to_shouty_snake_case(),
                 abi.name()
             )?;
         }
         writeln!(self.out, "return map;")?;
         self.out.unindent();
-        writeln!(self.out, "}}")
-    }
+        writeln!(self.out, "}}")?;
 
-    fn output_script_function_decoder_map(&mut self, abis: &[ScriptFunctionABI]) -> Result<()> {
         writeln!(
             self.out,
             r#"
-interface ScriptFunctionDecodingHelper {{
-    public ScriptFunctionCall decode(TransactionPayload payload);
-}}
+delegate ScriptFunctionCall ScriptFunctionDecodingHelper(TransactionPayload script);
 
-private static final java.util.Map<String, ScriptFunctionDecodingHelper> SCRIPT_FUNCTION_DECODER_MAP = initDecoderMap();
+private static readonly System.Collections.Generic.Dictionary<string, ScriptFunctionDecodingHelper> SCRIPT_FUNCTION_DECODER_MAP = initScriptFunctionDecoderMap();
 
-private static java.util.Map<String, ScriptFunctionDecodingHelper> initDecoderMap() {{"#
+private static System.Collections.Generic.Dictionary<string, ScriptFunctionDecodingHelper> initScriptFunctionDecoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<String, ScriptFunctionDecodingHelper> map = new java.util.HashMap<>();"
+            "System.Collections.Generic.Dictionary<string, ScriptFunctionDecodingHelper> map = new System.Collections.Generic.Dictionary<string, ScriptFunctionDecodingHelper>();"
         )?;
-        for abi in abis {
+        for abi in common::script_function_abis(abis) {
             writeln!(
                 self.out,
-                "map.put(\"{0}{1}\", (ScriptFunctionDecodingHelper)((payload) -> Helpers.decode_{1}_script_function(payload)));",
+                "map.Add(\"{0}\" + \"{1}\", (ScriptFunctionDecodingHelper)((script) => Helpers.decode_{1}_script_function(script)));",
                 abi.module_name().name(),
-                abi.name()
+                abi.name(),
             )?;
         }
         writeln!(self.out, "return map;")?;
@@ -665,8 +662,8 @@ private static java.util.Map<String, ScriptFunctionDecodingHelper> initDecoderMa
             self.out,
             r#"
 private static {} decode_{}_argument(TransactionArgument arg) {{
-    if (!(arg instanceof TransactionArgument.{})) {{
-        throw new IllegalArgumentException("Was expecting a {} argument");
+    if (!(arg is TransactionArgument.{})) {{
+        throw new ArgumentException("Was expecting a {} argument");
     }}
     return ((TransactionArgument.{}) arg).value{};
 }}
@@ -683,7 +680,7 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
     fn output_code_constant(&mut self, abi: &TransactionScriptABI) -> Result<()> {
         writeln!(
             self.out,
-            "\nprivate static byte[] {}_CODE = {{{}}};",
+            "\nprivate static sbyte[] {}_CODE = {{{}}};",
             abi.name().to_shouty_snake_case(),
             abi.code()
                 .iter()
@@ -694,41 +691,17 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
         Ok(())
     }
 
-    fn quote_identifier(ident: &str) -> String {
-        format!("new Identifier(\"{}\")", ident)
-    }
-
-    fn quote_address(address: &AccountAddress) -> String {
-        format!(
-            "AccountAddress.valueOf(new byte[] {{ {} }})",
-            address
-                .to_vec()
-                .iter()
-                .map(|x| format!("{}", x))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    }
-
-    fn quote_module_id(module_id: &ModuleId) -> String {
-        format!(
-            "new ModuleId({}, {})",
-            Self::quote_address(module_id.address()),
-            Self::quote_identifier(module_id.name().as_str())
-        )
-    }
-
     fn quote_doc<I>(doc: &str, params_doc: I, return_doc: &str) -> String
     where
         I: IntoIterator<Item = String>,
     {
         let mut doc = prepare_doc_string(doc) + "\n";
         for text in params_doc {
-            doc = format!("{}\n@param {}", doc, text);
+            doc = format!("{}\n<param>{}</param>", doc, text);
         }
-        doc = format!("{}\n@return {}", doc, return_doc);
+        doc = format!("{}\n<return> {}", doc, return_doc);
         let text = textwrap::indent(&doc, " * ").replace("\n\n", "\n *\n");
-        format!("/**\n{}\n */\n", text)
+        format!("/**\n{} */\n", text)
     }
 
     fn quote_type_arguments(ty_args: &[TypeArgumentABI]) -> String {
@@ -746,16 +719,40 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
             .join(", ")
     }
 
+    fn quote_identifier(ident: &str) -> String {
+        format!("new Identifier(\"{}\")", ident)
+    }
+
+    fn quote_address(address: &AccountAddress) -> String {
+        format!(
+            "new AccountAddress(new ValueArray<byte>(new byte[] {{ {} }}))",
+            address
+                .to_vec()
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+
+    fn quote_module_id(module_id: &ModuleId) -> String {
+        format!(
+            "new ModuleId({}, {})",
+            Self::quote_address(module_id.address()),
+            Self::quote_identifier(module_id.name().as_str()),
+        )
+    }
+
     fn quote_type(type_tag: &TypeTag) -> String {
         use TypeTag::*;
         match type_tag {
-            Bool => "Boolean".into(),
-            U8 => "@Unsigned Byte".into(),
-            U64 => "@Unsigned Long".into(),
-            U128 => "@Unsigned @Int128 BigInteger".into(),
+            Bool => "bool".into(),
+            U8 => "byte".into(),
+            U64 => "ulong".into(),
+            U128 => "BigInteger".into(),
             Address => "AccountAddress".into(),
             Vector(type_tag) => match type_tag.as_ref() {
-                U8 => "Bytes".into(),
+                U8 => "ValueArray<byte>".into(),
                 _ => common::type_not_allowed(type_tag),
             },
 
@@ -796,10 +793,10 @@ impl crate::SourceInstaller for Installer {
 
     fn install_transaction_builders(
         &self,
-        package_name: &str,
+        namespace_name: &str,
         abis: &[ScriptABI],
     ) -> std::result::Result<(), Self::Error> {
-        write_source_files(self.install_dir.clone(), package_name, abis)?;
+        write_source_files(self.install_dir.clone(), namespace_name, abis)?;
         Ok(())
     }
 }

@@ -8542,6 +8542,7 @@ dependencies = [
  "log 0.4.14",
  "move-prover",
  "once_cell",
+ "rayon",
  "serde",
  "sha2 0.9.3",
  "starcoin-crypto",
@@ -9407,7 +9408,9 @@ version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "bcs",
+ "heck",
  "move-core-types",
+ "regex",
  "serde-generate",
  "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=f2b44e0455ca19cda822523e3038d6b6bae78b28)",
  "serde_yaml",
@@ -9415,6 +9418,7 @@ dependencies = [
  "structopt 0.3.21",
  "tempfile",
  "textwrap 0.13.4",
+ "which 4.0.2",
 ]
 
 [[package]]
