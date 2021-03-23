@@ -8,5 +8,5 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.39"
-serde = { version = "1.0.124" }
+serde = { version = "1.0.125" }
 bcs = "0.1.2"
