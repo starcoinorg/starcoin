@@ -20,9 +20,9 @@ use std::{
     path::{Path, PathBuf},
 };
 use stdlib::{
-    build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, build_transaction_script_abi,
+    build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map,
     build_transaction_script_doc, compile_scripts_to_bytes, compiled_scripts, save_binary,
-    save_scripts, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR,
+    save_scripts, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, COMPILED_SCRIPTS_ABI_DIR,
     LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS,
     TRANSACTION_SCRIPTS_DOC_DIR,
 };
@@ -193,9 +193,9 @@ fn replace_stdlib_by_path(
     build_stdlib_doc();
 
     // Generate script ABIs
-    std::fs::remove_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap_or(());
-    std::fs::create_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap();
-    build_transaction_script_abi();
+    std::fs::remove_dir_all(&COMPILED_SCRIPTS_ABI_DIR).unwrap_or(());
+    std::fs::create_dir_all(&COMPILED_SCRIPTS_ABI_DIR).unwrap();
+    build_script_abis();
 
     std::fs::remove_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap_or(());
     std::fs::create_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap();

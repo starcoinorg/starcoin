@@ -96,6 +96,12 @@ Metadata:
 Module:
   STRUCT:
     - code: BYTES
+ModuleId:
+  STRUCT:
+    - address:
+        TYPENAME: AccountAddress
+    - name:
+        TYPENAME: Identifier
 MultiEd25519PublicKey:
   NEWTYPESTRUCT: BYTES
 MultiEd25519Signature:
@@ -116,6 +122,18 @@ RawTransaction:
 Script:
   STRUCT:
     - code: BYTES
+    - ty_args:
+        SEQ:
+          TYPENAME: TypeTag
+    - args:
+        SEQ:
+          TYPENAME: TransactionArgument
+ScriptFunction:
+  STRUCT:
+    - module:
+        TYPENAME: ModuleId
+    - function:
+        TYPENAME: Identifier
     - ty_args:
         SEQ:
           TYPENAME: TypeTag
@@ -196,6 +214,10 @@ TransactionPayload:
       Package:
         NEWTYPE:
           TYPENAME: Package
+    2:
+      ScriptFunction:
+        NEWTYPE:
+          TYPENAME: ScriptFunction
 Package:
   STRUCT:
     - package_address:

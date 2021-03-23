@@ -6,6 +6,7 @@
 use include_dir::{include_dir, Dir};
 use log::LevelFilter;
 use once_cell::sync::Lazy;
+use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::{
@@ -45,6 +46,8 @@ pub const STD_LIB_DOC_DIR: &str = "modules/doc";
 /// The output path for transaction script documentation.
 pub const TRANSACTION_SCRIPTS_DOC_DIR: &str = "transaction_scripts/doc";
 pub const COMPILED_TRANSACTION_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
+// use same dir as scripts abi
+pub const COMPILED_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
 
 pub const ERROR_DESC_DIR: &str = "error_descriptions";
 pub const ERROR_DESC_FILENAME: &str = "error_descriptions";
@@ -265,15 +268,15 @@ pub fn build_stdlib_doc() {
     build_doc(STD_LIB_DOC_DIR, "", stdlib_files().as_slice(), "")
 }
 
-pub fn build_transaction_script_abi() {
-    for txn_script_file in transaction_script_files() {
+pub fn build_script_abis() {
+    stdlib_files().par_iter().for_each(|file| {
         build_abi(
-            COMPILED_TRANSACTION_SCRIPTS_ABI_DIR,
-            &[txn_script_file],
+            COMPILED_SCRIPTS_ABI_DIR,
+            &[file.clone()],
             STD_LIB_DIR,
             COMPILED_TRANSACTION_SCRIPTS_DIR,
         )
-    }
+    });
 }
 
 #[allow(clippy::field_reassign_with_default)]

@@ -5,7 +5,6 @@ use std::process::Command;
 use tempfile::tempdir;
 
 #[test]
-#[ignore]
 fn test_that_installed_rust_code_compiles() {
     let dir = tempdir().unwrap();
 
@@ -26,7 +25,7 @@ fn test_that_installed_rust_code_compiles() {
         .arg("--language")
         .arg("rust")
         .arg("--module-name")
-        .arg("starcoin-stdlib:0.1.1")
+        .arg("starcoin-stdlib")
         .arg("--with-diem-types")
         .arg("testsuite/generate-format/tests/staged/starcoin.yaml")
         .arg("--target-source-dir")
