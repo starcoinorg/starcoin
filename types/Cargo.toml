@@ -20,7 +20,7 @@ prost = "0.7"
 rand = "0.8.3"
 rand_core = { version = "0.6.2", default-features = false }
 ref-cast = "1.0"
-serde = { version = "1.0.124", default-features = false }
+serde = { version = "1.0.125", default-features = false }
 serde_json = "1.0"
 thiserror = "1.0.24"
 tiny-keccak = { version = "1.5.0", default-features = false }

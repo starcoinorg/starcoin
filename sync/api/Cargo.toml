@@ -10,7 +10,7 @@ starcoin-types = {path = "../../types", package="starcoin-types"}
 starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}
 async-trait = "0.1"
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-serde = { version = "1.0.124", default-features = false }
+serde = { version = "1.0.125", default-features = false }
 starcoin-accumulator = {path = "../../core/accumulator"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 stream-task ={ path = "../../commons/stream-task"}
