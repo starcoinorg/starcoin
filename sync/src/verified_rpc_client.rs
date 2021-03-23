@@ -269,33 +269,36 @@ impl VerifiedRpcClient {
     pub async fn get_sync_target(
         peer_selector: &PeerSelector,
         difficulty: U256,
-    ) -> Result<SyncTarget> {
-        let mut better_peers = peer_selector
+    ) -> Result<Option<SyncTarget>> {
+        Ok(peer_selector
             .betters(difficulty)
-            .ok_or_else(|| format_err!("No better peer to request"))?;
+            .and_then(|mut better_peers| -> Option<SyncTarget> {
+                if let Some(better_peer) = better_peers
+                    .iter_mut()
+                    .choose(&mut rand::thread_rng())
+                    .cloned()
+                {
+                    let peers = better_peers
+                        .iter()
+                        .filter(|peer_info| {
+                            peer_info.block_number() >= better_peer.block_number()
+                                && peer_info.total_difficulty() >= better_peer.total_difficulty()
+                        })
+                        .map(|peer_info| peer_info.peer_id())
+                        .collect();
 
-        let better_peer = better_peers
-            .iter_mut()
-            .choose(&mut rand::thread_rng())
-            .cloned()
-            .expect("Better peer is none.");
-        let peers = better_peers
-            .iter()
-            .filter(|peer_info| {
-                peer_info.block_number() >= better_peer.block_number()
-                    && peer_info.total_difficulty() >= better_peer.total_difficulty()
-            })
-            .map(|peer_info| peer_info.peer_id())
-            .collect();
-
-        Ok(SyncTarget {
-            target_id: BlockIdAndNumber::new(
-                better_peer.latest_header().id(),
-                better_peer.latest_header().number(),
-            ),
-            block_info: better_peer.chain_info().status().info().clone(),
-            peers,
-        })
+                    Some(SyncTarget {
+                        target_id: BlockIdAndNumber::new(
+                            better_peer.latest_header().id(),
+                            better_peer.latest_header().number(),
+                        ),
+                        block_info: better_peer.chain_info().status().info().clone(),
+                        peers,
+                    })
+                } else {
+                    None
+                }
+            }))
     }
 
     pub async fn get_state_node_by_node_hash(
