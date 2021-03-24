@@ -142,11 +142,17 @@ impl SyncNodeMocker {
         delay_milliseconds: u64,
         random_error_percent: u32,
     ) -> Result<Self> {
-        Self::new_with_strategy(
-            net,
+        let chain = MockChain::new(net)?;
+        let peer_id = PeerId::random();
+        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info());
+        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
+        Ok(Self::new_inner(
+            peer_id,
+            chain,
             ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
-        )
+            peer_selector,
+        ))
     }
 
     pub fn new_with_strategy(
@@ -154,14 +160,52 @@ impl SyncNodeMocker {
         error_strategy: ErrorStrategy,
         random_error_percent: u32,
     ) -> Result<Self> {
-        let peer_info = PeerInfo::random();
+        let chain = MockChain::new(net)?;
+        let peer_id = PeerId::random();
+        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info());
+        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
+        Ok(Self::new_inner(
+            peer_id,
+            chain,
+            error_strategy,
+            random_error_percent,
+            peer_selector,
+        ))
+    }
 
-        Ok(Self {
-            peer_id: peer_info.peer_id(),
-            chain_mocker: MockChain::new(net)?,
-            err_mocker: ErrorMocker::new(error_strategy, random_error_percent, peer_info.peer_id()),
-            peer_selector: PeerSelector::new(vec![peer_info], PeerStrategy::default()),
-        })
+    pub fn new_with_chain_selector(
+        peer_id: PeerId,
+        chain: MockChain,
+        delay_milliseconds: u64,
+        random_error_percent: u32,
+        peer_selector: PeerSelector,
+    ) -> Self {
+        Self::new_inner(
+            peer_id,
+            chain,
+            ErrorStrategy::Timeout(delay_milliseconds),
+            random_error_percent,
+            peer_selector,
+        )
+    }
+
+    fn new_inner(
+        peer_id: PeerId,
+        chain: MockChain,
+        error_strategy: ErrorStrategy,
+        random_error_percent: u32,
+        peer_selector: PeerSelector,
+    ) -> Self {
+        Self {
+            peer_id: peer_id.clone(),
+            chain_mocker: chain,
+            err_mocker: ErrorMocker::new(error_strategy, random_error_percent, peer_id),
+            peer_selector,
+        }
+    }
+
+    pub fn peer_info(&self) -> PeerInfo {
+        PeerInfo::new(self.peer_id.clone(), self.chain_mocker.chain_info())
     }
 
     pub fn sync_target(&self) -> SyncTarget {

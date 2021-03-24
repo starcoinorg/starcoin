@@ -11,6 +11,7 @@ use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 
@@ -27,11 +28,7 @@ impl MockChain {
 
         let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)?;
         let miner = AccountInfo::random();
-        Ok(Self {
-            net,
-            head: chain,
-            miner,
-        })
+        Ok(Self::new_inner(net, chain, miner))
     }
 
     pub fn new_with_storage(
@@ -41,11 +38,16 @@ impl MockChain {
         miner: AccountInfo,
     ) -> Result<Self> {
         let chain = BlockChain::new(net.time_service(), head_block_hash, storage)?;
-        Ok(Self {
-            net,
-            head: chain,
-            miner,
-        })
+        Ok(Self::new_inner(net, chain, miner))
+    }
+
+    pub fn new_with_chain(net: ChainNetwork, chain: BlockChain) -> Result<Self> {
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner))
+    }
+
+    fn new_inner(net: ChainNetwork, head: BlockChain, miner: AccountInfo) -> Self {
+        Self { net, head, miner }
     }
 
     pub fn net(&self) -> &ChainNetwork {
@@ -54,6 +56,10 @@ impl MockChain {
 
     pub fn head(&self) -> &BlockChain {
         &self.head
+    }
+
+    pub fn chain_info(&self) -> ChainInfo {
+        self.head.info()
     }
 
     pub fn fork_new_branch(&self, head_id: Option<HashValue>) -> Result<BlockChain> {

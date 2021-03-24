@@ -283,18 +283,16 @@ impl VerifiedRpcClient {
                             if best_peer == better_peer {
                                 target_peer = Some(better_peer.clone());
                                 peers.push(better_peer.peer_id());
-                            } else {
-                                if let Some(block_id) = fetcher
-                                    .fetch_block_id(
-                                        Some(best_peer.peer_id()),
-                                        better_peer.block_number(),
-                                    )
-                                    .await?
-                                {
-                                    if block_id == better_peer.block_id() {
-                                        target_peer = Some(better_peer.clone());
-                                        peers.push(better_peer.peer_id());
-                                    }
+                            } else if let Some(block_id) = fetcher
+                                .fetch_block_id(
+                                    Some(best_peer.peer_id()),
+                                    better_peer.block_number(),
+                                )
+                                .await?
+                            {
+                                if block_id == better_peer.block_id() {
+                                    target_peer = Some(better_peer.clone());
+                                    peers.push(better_peer.peer_id());
                                 }
                             }
                         }
