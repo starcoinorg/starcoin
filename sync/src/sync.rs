@@ -49,14 +49,14 @@ pub enum SyncStage {
     Done,
 }
 
-pub struct SyncService2 {
+pub struct SyncService {
     sync_status: SyncStatus,
     stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
 }
 
-impl SyncService2 {
+impl SyncService {
     pub fn new(config: Arc<NodeConfig>, storage: Arc<Storage>) -> Result<Self> {
         let startup_info = storage
             .get_startup_info()?
@@ -262,8 +262,8 @@ impl SyncService2 {
     }
 }
 
-impl ServiceFactory<Self> for SyncService2 {
-    fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService2> {
+impl ServiceFactory<Self> for SyncService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
 
@@ -271,7 +271,7 @@ impl ServiceFactory<Self> for SyncService2 {
     }
 }
 
-impl ActorService for SyncService2 {
+impl ActorService for SyncService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<PeerEvent>();
@@ -288,8 +288,8 @@ impl ActorService for SyncService2 {
     }
 }
 
-impl EventHandler<Self, AncestorEvent> for SyncService2 {
-    fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<SyncService2>) {
+impl EventHandler<Self, AncestorEvent> for SyncService {
+    fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<SyncService>) {
         match &mut self.stage {
             SyncStage::Synchronizing(handle) => {
                 handle.task_begin = Some(msg.ancestor);
@@ -301,7 +301,7 @@ impl EventHandler<Self, AncestorEvent> for SyncService2 {
     }
 }
 
-impl EventHandler<Self, PeerEvent> for SyncService2 {
+impl EventHandler<Self, PeerEvent> for SyncService {
     fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<Self>) {
         if self.sync_status.is_prepare() {
             return;
@@ -340,7 +340,7 @@ pub struct SyncBeginEvent {
     peer_selector: PeerSelector,
 }
 
-impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
+impl EventHandler<Self, SyncBeginEvent> for SyncService {
     fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
         let (target, task_handle, task_event_handle, peer_selector) = (
             msg.target,
@@ -420,7 +420,7 @@ impl CheckSyncEvent {
     }
 }
 
-impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
+impl EventHandler<Self, CheckSyncEvent> for SyncService {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
         if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
@@ -429,7 +429,7 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     }
 }
 
-impl EventHandler<Self, SystemStarted> for SyncService2 {
+impl EventHandler<Self, SystemStarted> for SyncService {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
         // change from prepare to Synchronized
         self.sync_status.sync_done();
@@ -443,7 +443,7 @@ pub struct SyncDoneEvent {
     cancel: bool,
 }
 
-impl EventHandler<Self, SyncDoneEvent> for SyncService2 {
+impl EventHandler<Self, SyncDoneEvent> for SyncService {
     fn handle_event(&mut self, _msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
         match std::mem::replace(&mut self.stage, SyncStage::Done) {
             SyncStage::NotStart | SyncStage::Done => {
@@ -473,7 +473,7 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService2 {
     }
 }
 
-impl EventHandler<Self, NewHeadBlock> for SyncService2 {
+impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
@@ -485,21 +485,21 @@ impl EventHandler<Self, NewHeadBlock> for SyncService2 {
     }
 }
 
-impl ServiceHandler<Self, SyncStatusRequest> for SyncService2 {
+impl ServiceHandler<Self, SyncStatusRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: SyncStatusRequest,
-        _ctx: &mut ServiceContext<SyncService2>,
+        _ctx: &mut ServiceContext<SyncService>,
     ) -> SyncStatus {
         self.sync_status.clone()
     }
 }
 
-impl ServiceHandler<Self, PeerScoreRequest> for SyncService2 {
+impl ServiceHandler<Self, PeerScoreRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: PeerScoreRequest,
-        _ctx: &mut ServiceContext<SyncService2>,
+        _ctx: &mut ServiceContext<SyncService>,
     ) -> PeerScoreResponse {
         let resp = match &mut self.stage {
             SyncStage::Synchronizing(handle) => Some(handle.peer_selector.scores()),
@@ -509,11 +509,11 @@ impl ServiceHandler<Self, PeerScoreRequest> for SyncService2 {
     }
 }
 
-impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
+impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: SyncProgressRequest,
-        _ctx: &mut ServiceContext<SyncService2>,
+        _ctx: &mut ServiceContext<SyncService>,
     ) -> Option<SyncProgressReport> {
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
@@ -543,17 +543,17 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
     }
 }
 
-impl ServiceHandler<Self, SyncCancelRequest> for SyncService2 {
-    fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<SyncService2>) {
+impl ServiceHandler<Self, SyncCancelRequest> for SyncService {
+    fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<SyncService>) {
         self.cancel_task();
     }
 }
 
-impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
+impl ServiceHandler<Self, SyncStartRequest> for SyncService {
     fn handle(
         &mut self,
         msg: SyncStartRequest,
-        ctx: &mut ServiceContext<SyncService2>,
+        ctx: &mut ServiceContext<SyncService>,
     ) -> Result<()> {
         if msg.force {
             info!("[sync] Try to cancel previous sync task, because receive force sync request.");
@@ -568,4 +568,4 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
     }
 }
 
-impl SyncServiceHandler for SyncService2 {}
+impl SyncServiceHandler for SyncService {}

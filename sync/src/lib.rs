@@ -3,7 +3,7 @@
 
 #![deny(clippy::integer_arithmetic)]
 pub mod block_connector;
-pub mod sync2;
+pub mod sync;
 //TODO implement sync metrics.
 pub mod sync_metrics;
 pub mod tasks;

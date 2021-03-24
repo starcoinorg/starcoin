@@ -5,7 +5,7 @@ use futures::executor::block_on;
 use logger::prelude::*;
 use network_api::{PeerSelector, PeerStrategy};
 use starcoin_service_registry::ActorService;
-use starcoin_sync::sync2::SyncService2;
+use starcoin_sync::sync::SyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_types::peer_info::PeerInfo;
 use std::sync::Arc;
@@ -38,7 +38,7 @@ fn test_sync_by_notification() {
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
     // stop sync service and just use notification message to sync.
     second_node
-        .stop_service(SyncService2::service_name().to_string())
+        .stop_service(SyncService::service_name().to_string())
         .unwrap();
 
     let second_chain = second_node.chain_service().unwrap();

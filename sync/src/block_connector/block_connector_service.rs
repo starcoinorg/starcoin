@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::WriteBlockChainService;
-use crate::sync2::{CheckSyncEvent, SyncService2};
+use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
@@ -120,7 +120,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
                             //TODO cache future block
-                            if let Ok(sync_service) = ctx.service_ref::<SyncService2>() {
+                            if let Ok(sync_service) = ctx.service_ref::<SyncService>() {
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
