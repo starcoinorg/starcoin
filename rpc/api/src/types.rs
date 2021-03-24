@@ -52,15 +52,14 @@ pub type ByteCode = Vec<u8>;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStructView {
-    pub is_resource: bool,
+    pub abilities: u8,
     pub type_: StructTagView,
     pub value: Vec<(Identifier, AnnotatedMoveValueView)>,
 }
 impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     fn from(origin: AnnotatedMoveStruct) -> Self {
         Self {
-            // Todo: migrate to ability
-            is_resource: origin.abilities.has_key(),
+            abilities: origin.abilities.into_u8(),
             type_: StrView(origin.type_),
             value: origin
                 .value
