@@ -40,7 +40,7 @@ hex = { version = "0.4.3", default-features = false }
 starcoin-move-compiler = { path = "../../vm/compiler"}
 starcoin-dev= {path = "../../vm/dev"}
 starcoin-txpool-api = { path = "../../txpool/api" }
-starcoin-genesis = { path = "../../core/genesis" }
+starcoin-genesis = { path = "../../genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }

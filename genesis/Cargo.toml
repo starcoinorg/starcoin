@@ -1,0 +1,36 @@
+[package]
+name = "starcoin-genesis"
+version = "1.0.0-alpha.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+
+[dependencies]
+anyhow = "1.0.39"
+thiserror = "1.0"
+structopt = "0.3.21"
+once_cell = "1.7.2"
+include_dir = "0.6.0"
+starcoin-types = {path = "../types", features = ["fuzzing"]}
+starcoin-crypto = { path = "../commons/crypto"}
+serde = { version = "1.0.125" }
+starcoin-config = { path = "../config"}
+starcoin-executor = { path = "../executor"}
+starcoin-storage = { path = "../storage"}
+starcoin-statedb = { path = "../state/statedb"}
+starcoin-accumulator = { path = "../commons/accumulator"}
+stest = { path = "../commons/stest"}
+starcoin-logger = { path = "../commons/logger"}
+starcoin-consensus = { path = "../consensus"}
+starcoin-state-api = { path = "../state/api"}
+starcoin-vm-types = { path = "../vm/types"}
+starcoin-transaction-builder = { path = "../vm/transaction-builder"}
+stdlib = { path = "../vm/stdlib"}
+bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
+starcoin-chain = { path = "../chain"}
+
+[features]
+default = []
+fuzzing = ["starcoin-types/fuzzing"]

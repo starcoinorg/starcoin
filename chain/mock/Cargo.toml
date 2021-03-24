@@ -32,7 +32,7 @@ starcoin-vm-types = { path = "../../vm/types" }
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 starcoin-account-api = { path = "../../account/api" }
-starcoin-genesis = { path = "../../core/genesis" }
+starcoin-genesis = { path = "../../genesis" }
 starcoin-chain = { path = "../../chain" }
 
 [dev-dependencies]

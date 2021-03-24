@@ -23,7 +23,7 @@ starcoin-types = { path = "../types" }
 starcoin-crypto = { path = "../commons/crypto" }
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
-starcoin-genesis = {path = "../core/genesis"}
+starcoin-genesis = {path = "../genesis"}
 starcoin-storage = {path = "../storage"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 consensus = {path = "../consensus", package="starcoin-consensus" }

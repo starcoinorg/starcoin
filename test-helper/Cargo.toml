@@ -32,7 +32,7 @@ starcoin-logger = { path = "../commons/logger" }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-sync = { path = "../sync" }
-starcoin-genesis = { path = "../core/genesis" }
+starcoin-genesis = { path = "../genesis" }
 starcoin-account-api = { path = "../account/api" }
 starcoin-account-service = { path = "../account/service" }
 starcoin-state-api = { path = "../state/api" }

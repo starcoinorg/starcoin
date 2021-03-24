@@ -25,5 +25,5 @@ starcoin-statedb = {path = "../../state/statedb"}
 starcoin-metrics = {path = "../../commons/metrics"}
 
 [dev-dependencies]
-starcoin-genesis = {path = "../../core/genesis"}
+starcoin-genesis = {path = "../../genesis"}
 stest = {path = "../../commons/stest"}

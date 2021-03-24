@@ -19,7 +19,7 @@ starcoin-storage = { path = "../../storage" }
 starcoin-crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
-starcoin-genesis = { path = "../../core/genesis" }
+starcoin-genesis = { path = "../../genesis" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 
 [dev-dependencies]

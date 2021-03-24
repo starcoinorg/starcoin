@@ -45,7 +45,7 @@ proptest-derive = { version = "0.3.0", default-features = false, optional = true
 stdlib = { path = "../vm/stdlib" }
 tempfile="3"
 starcoin-open-block = {path = "../chain/open-block"}
-starcoin-genesis = { path = "../core/genesis" }
+starcoin-genesis = { path = "../genesis" }
 test-helper = { path = "../test-helper" }
 proptest = "1.0.0"
 proptest-derive = { version = "0.3.0" }

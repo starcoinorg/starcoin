@@ -20,7 +20,7 @@ starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-storage = { path = "../../storage" }
-starcoin-genesis = { path = "../../core/genesis" }
+starcoin-genesis = { path = "../../genesis" }
 starcoin-account-api = { path = "../../account/api" }
 starcoin-account-lib = { path = "../../account/lib" }
 starcoin-chain = { path = "../../chain" }

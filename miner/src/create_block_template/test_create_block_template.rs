@@ -5,11 +5,11 @@ use crate::create_block_template::{
     CreateBlockTemplateRequest, CreateBlockTemplateService, EmptyProvider, Inner,
 };
 use anyhow::Result;
-use chain::BlockChain;
 use consensus::Consensus;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_account_service::AccountService;
+use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetworkID;
 use starcoin_config::{temp_path, NodeConfig, StarcoinOpt};
