@@ -113,6 +113,16 @@ members = [
     "devtools/x",
 ]
 
+[workspace.move-to-diem-deps]
+diem_crates_in_language = [
+]
+exclude = [
+]
+# This is a list of existing move to diem dependencies that we plan to eliminate over time.
+# You should refrain from adding new entries to this list in general.
+existing_deps = [
+]
+
 # Interesting subsets of the workspace, These are used for generating and
 # checking dependency summaries.
 
