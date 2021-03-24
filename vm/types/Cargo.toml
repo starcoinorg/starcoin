@@ -32,7 +32,7 @@ bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-accumulator = { path = "../../commons/accumulator"}
-forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 
 [dev-dependencies]
 proptest = "1.0.0"

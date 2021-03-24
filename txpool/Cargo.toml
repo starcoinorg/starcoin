@@ -30,7 +30,7 @@ crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
 transaction-pool = "2.0.3"
 storage = {path = "../storage", package="starcoin-storage"}
 starcoin-statedb={ path="../state/statedb" }
-forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = {path="../commons/forkable-jellyfish-merkle"}
 starcoin-state-tree={path="../state/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-config={path="../config"}

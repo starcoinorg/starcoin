@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 starcoin-crypto = { path = "../../commons/crypto"}
 serde = { version = "1.0.125" }
 anyhow = "1.0.39"

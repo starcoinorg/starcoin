@@ -24,7 +24,7 @@ once_cell = "1.7.2"
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../commons/accumulator"}
 starcoin-proptest-helpers = { path = "../commons/proptest-helpers", optional = true}
-forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
+forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-metrics = { path = "../commons/metrics"}
 starcoin-config = { path = "../config"}
