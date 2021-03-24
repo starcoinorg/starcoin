@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain::BlockChain;
+use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
@@ -31,7 +31,6 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use traits::ChainReader;
 
 mod errors;
 pub use errors::GenesisError;

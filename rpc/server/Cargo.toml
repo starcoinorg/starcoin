@@ -40,7 +40,6 @@ starcoin-chain-service = {path ="../../chain/service"}
 starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-account-service = { path = "../../account/service"}
 starcoin-statedb = { path = "../../state/statedb"}
-starcoin-traits = { path = "../../core/traits"}
 starcoin-state-tree = { path = "../../state/state-tree"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}

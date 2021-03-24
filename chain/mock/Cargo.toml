@@ -16,7 +16,6 @@ starcoin-executor = { path = "../../executor", package = "starcoin-executor" }
 crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
 starcoin-consensus = { path = "../../consensus" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
-starcoin-traits = { path = "../../core/traits" }
 starcoin-state-api = { path = "../../state/api" }
 starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
 async-trait = "0.1"

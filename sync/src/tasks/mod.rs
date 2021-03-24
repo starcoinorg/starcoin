@@ -13,7 +13,7 @@ use network_api::{PeerProvider, PeerSelector};
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
-use starcoin_chain::BlockChain;
+use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
@@ -28,7 +28,6 @@ use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator,
     TaskHandle,
 };
-use traits::ChainReader;
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {}
 

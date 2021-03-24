@@ -31,7 +31,6 @@ accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 txpool = { path = "../txpool", package = "starcoin-txpool" }
 starcoin-chain-service = { path = "../chain/service" }
-traits = { path = "../core/traits", package = "starcoin-traits" }
 starcoin-storage = { path = "../storage", package = "starcoin-storage" }
 txpool-api = { path = "../txpool/api", package = "starcoin-txpool-api" }
 starcoin-state-api = { path = "../state/api" }

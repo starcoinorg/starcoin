@@ -21,7 +21,6 @@ config = {path = "../config", package="starcoin-config"}
 network = { path = "../network", package = "starcoin-network" }
 starcoin-types = { path = "../types" }
 starcoin-crypto = { path = "../commons/crypto" }
-traits = {path = "../core/traits", package="starcoin-traits"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
 starcoin-genesis = {path = "../core/genesis"}

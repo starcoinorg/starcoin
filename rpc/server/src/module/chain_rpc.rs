@@ -3,6 +3,7 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
+use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
@@ -12,7 +13,6 @@ use starcoin_rpc_api::types::{
     TransactionEventView, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;

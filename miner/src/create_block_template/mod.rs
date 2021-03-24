@@ -3,6 +3,7 @@
 
 use anyhow::{format_err, Result};
 use chain::BlockChain;
+use chain::{ChainReader, ChainWriter};
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use futures::executor::block_on;
@@ -21,7 +22,6 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
-use traits::{ChainReader, ChainWriter};
 use types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},

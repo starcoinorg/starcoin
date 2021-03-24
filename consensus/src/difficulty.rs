@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::difficult_to_target;
 use anyhow::{bail, format_err, Result};
+use starcoin_chain_api::ChainReader;
 use starcoin_logger::prelude::*;
-use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{U256, U512};
 use std::cmp::Ordering;

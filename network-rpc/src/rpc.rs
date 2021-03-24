@@ -7,7 +7,7 @@ use crypto::HashValue;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_rpc_core::NetRpcError;
-use starcoin_chain_service::ChainReaderService;
+use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetStateWithProof, GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest,
@@ -27,7 +27,6 @@ use starcoin_types::{
 };
 use state_tree::StateNode;
 use std::sync::Arc;
-use traits::ChainAsyncService;
 use txpool::TxPoolService;
 use txpool_api::TxPoolSyncService;
 

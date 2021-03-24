@@ -5,6 +5,7 @@ use anyhow::{bail, format_err, Result};
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
+use starcoin_chain_api::ExcludedTxns;
 use starcoin_executor::{execute_block_transactions, execute_transactions};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -23,7 +24,6 @@ use starcoin_types::{
 };
 use std::{convert::TryInto, sync::Arc};
 use storage::Store;
-use traits::ExcludedTxns;
 
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
