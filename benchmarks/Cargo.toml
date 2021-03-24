@@ -16,7 +16,7 @@ starcoin-storage = { path = "../storage" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 starcoin-config = { path = "../config"}
-starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
+starcoin-accumulator = { package="starcoin-accumulator", path = "../commons/accumulator"}
 starcoin-chain = { path = "../chain" }
 starcoin-consensus = { path = "../consensus" }
 starcoin-genesis = {path = "../core/genesis"}

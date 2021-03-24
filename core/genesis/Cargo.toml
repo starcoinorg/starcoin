@@ -20,7 +20,7 @@ starcoin-config = { path = "../../config"}
 starcoin-executor = { path = "../../executor"}
 starcoin-storage = { path = "../../storage"}
 starcoin-statedb = { path = "../../state/statedb"}
-starcoin-accumulator = { path = "../accumulator"}
+starcoin-accumulator = { path = "../../commons/accumulator"}
 stest = { path = "../../commons/stest"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-consensus = { path = "../../consensus"}
