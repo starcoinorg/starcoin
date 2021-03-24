@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use starcoin_account::account_storage::AccountStorage;
+use starcoin_account::AccountManager;
 use starcoin_account_api::AccountInfo;
-use starcoin_account_lib::account_storage::AccountStorage;
-use starcoin_account_lib::AccountManager;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;

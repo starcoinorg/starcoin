@@ -22,7 +22,7 @@ starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-storage = { path = "../../storage" }
 starcoin-genesis = { path = "../../genesis" }
 starcoin-account-api = { path = "../../account/api" }
-starcoin-account-lib = { path = "../../account/lib" }
+starcoin-account = { path = "../../account" }
 starcoin-chain = { path = "../../chain" }
 starcoin-chain-mock = { path = "../../chain/mock" }
 

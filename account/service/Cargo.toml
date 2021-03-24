@@ -16,14 +16,12 @@ bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-config = { path = "../../config" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-account-api = { path = "../api", features = ["mock"] }
-starcoin-account-lib = { path = "../lib" }
+starcoin-account = { path = "../" }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-chain-notify = { path = "../../chain/chain-notify" }
 
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
-starcoin-types = { path = "../../types" }
 tempfile = "3"
-tokio = { version = "0.2", features = ["full"] }
 

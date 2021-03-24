@@ -6930,25 +6930,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-account-api"
-version = "1.0.0-alpha.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures 0.3.12",
- "hex",
- "rand 0.8.3",
- "rand_core 0.6.2",
- "serde",
- "serde_bytes",
- "starcoin-crypto",
- "starcoin-service-registry",
- "starcoin-types",
- "thiserror",
-]
-
-[[package]]
-name = "starcoin-account-lib"
+name = "starcoin-account"
 version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
@@ -6971,6 +6953,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-account-api"
+version = "1.0.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures 0.3.12",
+ "hex",
+ "rand 0.8.3",
+ "rand_core 0.6.2",
+ "serde",
+ "serde_bytes",
+ "starcoin-crypto",
+ "starcoin-service-registry",
+ "starcoin-types",
+ "thiserror",
+]
+
+[[package]]
 name = "starcoin-account-service"
 version = "1.0.0-alpha.1"
 dependencies = [
@@ -6978,8 +6978,8 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.12",
+ "starcoin-account",
  "starcoin-account-api",
- "starcoin-account-lib",
  "starcoin-chain-notify",
  "starcoin-config",
  "starcoin-crypto",
@@ -6988,7 +6988,6 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tempfile",
- "tokio 0.2.25",
 ]
 
 [[package]]
@@ -7464,8 +7463,8 @@ dependencies = [
  "scmd",
  "serde",
  "serde_json",
+ "starcoin-account",
  "starcoin-account-api",
- "starcoin-account-lib",
  "starcoin-chain",
  "starcoin-chain-mock",
  "starcoin-config",
