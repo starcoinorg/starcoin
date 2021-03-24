@@ -31,8 +31,8 @@ move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
 starcoin-crypto = { path = "../../commons/crypto" }
-starcoin-accumulator = { path = "../../core/accumulator"}
-forkable-jellyfish-merkle = { path = "../../core/forkable-jellyfish-merkle"}
+starcoin-accumulator = { path = "../../commons/accumulator"}
+forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 
 [dev-dependencies]
 proptest = "1.0.0"

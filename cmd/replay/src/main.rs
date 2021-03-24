@@ -4,7 +4,7 @@
 use sp_utils::stop_watch::start_watch;
 use starcoin_chain::verifier::Verifier;
 use starcoin_chain::verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier};
-use starcoin_chain::BlockChain;
+use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::RocksdbConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_genesis::Genesis;
@@ -16,7 +16,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
 use structopt::StructOpt;
-use traits::ChainReader;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "replay")]

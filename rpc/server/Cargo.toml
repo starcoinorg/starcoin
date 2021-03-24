@@ -40,7 +40,6 @@ starcoin-chain-service = {path ="../../chain/service"}
 starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-account-service = { path = "../../account/service"}
 starcoin-statedb = { path = "../../state/statedb"}
-starcoin-traits = { path = "../../core/traits"}
 starcoin-state-tree = { path = "../../state/state-tree"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
@@ -71,6 +70,6 @@ starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}
 tokio = { version = "0.2", features = ["full"] }
-starcoin-genesis = {path = "../../core/genesis"}
+starcoin-genesis = {path = "../../genesis"}
 test-helper = { path = "../../test-helper" }
 starcoin-chain-mock = { path = "../../chain/mock" }

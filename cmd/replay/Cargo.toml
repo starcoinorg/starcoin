@@ -14,10 +14,9 @@ path = "src/main.rs"
 structopt = "0.3.21"
 starcoin-config = { path = "../../config"}
 starcoin-chain = { path = "../../chain"}
-starcoin-genesis = { path = "../../core/genesis"}
+starcoin-genesis = { path = "../../genesis"}
 starcoin-storage = { path = "../../storage"}
 starcoin-vm-types = { path = "../../vm/types"}
-traits = { path = "../../core/traits", package = "starcoin-traits"}
 starcoin-logger = { path = "../../commons/logger" }
 sp-utils = {path = "../../commons/utils"}
 

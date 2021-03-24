@@ -4,10 +4,10 @@
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
+use starcoin_chain::ChainWriter;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
-use starcoin_traits::ChainWriter;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let (storage, chain_info, _) =

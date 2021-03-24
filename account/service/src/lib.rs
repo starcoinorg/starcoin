@@ -6,4 +6,4 @@ mod service;
 
 pub use account_events::AccountEventService;
 pub use service::AccountService;
-pub use starcoin_account_lib::account_storage::AccountStorage;
+pub use starcoin_account::account_storage::AccountStorage;

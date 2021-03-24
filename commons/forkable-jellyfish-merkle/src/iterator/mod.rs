@@ -23,9 +23,6 @@ use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
 use std::marker::PhantomData;
 
-#[cfg(test)]
-use short_hex_str::AsShortHexStr;
-
 /// `NodeVisitInfo` keeps track of the status of an internal node during the iteration process. It
 /// indicates which ones of its children have been visited.
 #[derive(Debug)]
@@ -207,7 +204,7 @@ where
     pub fn print(&self) -> Result<()> {
         let nodes = &self.parent_stack;
         for node in nodes {
-            println!("internal node key: {:?}", node.node_key.short_str());
+            println!("internal node key: {:?}", node.node_key.to_hex());
             if let Ok(Node::Internal(internal)) = self.reader.get_node(&node.node_key) {
                 println!("child: {:?}", internal.all_child());
             }

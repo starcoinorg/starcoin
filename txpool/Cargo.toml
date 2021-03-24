@@ -30,7 +30,7 @@ crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
 transaction-pool = "2.0.3"
 storage = {path = "../storage", package="starcoin-storage"}
 starcoin-statedb={ path="../state/statedb" }
-forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = {path="../commons/forkable-jellyfish-merkle"}
 starcoin-state-tree={path="../state/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-config={path="../config"}
@@ -45,7 +45,7 @@ proptest-derive = { version = "0.3.0", default-features = false, optional = true
 stdlib = { path = "../vm/stdlib" }
 tempfile="3"
 starcoin-open-block = {path = "../chain/open-block"}
-starcoin-genesis = { path = "../core/genesis" }
+starcoin-genesis = { path = "../genesis" }
 test-helper = { path = "../test-helper" }
 proptest = "1.0.0"
 proptest-derive = { version = "0.3.0" }

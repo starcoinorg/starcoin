@@ -6,6 +6,7 @@ use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
+use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_path, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
@@ -15,7 +16,6 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
-use traits::{ChainReader, ChainWriter};
 
 /// Benchmarking support for chain.
 pub struct ChainBencher {

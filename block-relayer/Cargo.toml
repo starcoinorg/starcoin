@@ -11,7 +11,6 @@ anyhow = "1.0.39"
 futures = "0.3.12"
 config = {path = "../config", package="starcoin-config"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-traits = {path = "../core/traits", package="starcoin-traits"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 async-trait = "0.1"
 starcoin-txpool-api = { path = "../txpool/api" }

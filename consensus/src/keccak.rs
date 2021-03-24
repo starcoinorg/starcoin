@@ -5,8 +5,8 @@ use crate::consensus::Consensus;
 use crate::{difficulty, set_header_nonce, target_to_difficulty};
 use anyhow::Result;
 use sha3::{Digest, Keccak256};
+use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
-use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::U256;
 

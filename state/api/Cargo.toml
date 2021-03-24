@@ -13,7 +13,7 @@ serde = { version = "1.0.125", features = ["derive"] }
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}
-merkle-tree = { package = "forkable-jellyfish-merkle", path = "../../core/forkable-jellyfish-merkle" }
+merkle-tree = { package = "forkable-jellyfish-merkle", path = "../../commons/forkable-jellyfish-merkle" }
 starcoin-state-tree = { path = "../state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-service-registry = { path = "../../commons/service-registry" }

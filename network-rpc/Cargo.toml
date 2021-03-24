@@ -27,11 +27,10 @@ prometheus = "0.12.0"
 network-api = { path="../network/api" }
 bcs-ext = { path = "../commons/bcs_ext", package = "bcs-ext" }
 starcoin-types = { path = "../types", package = "starcoin-types" }
-accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
+accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 txpool = { path = "../txpool", package = "starcoin-txpool" }
 starcoin-chain-service = { path = "../chain/service" }
-traits = { path = "../core/traits", package = "starcoin-traits" }
 starcoin-storage = { path = "../storage", package = "starcoin-storage" }
 txpool-api = { path = "../txpool/api", package = "starcoin-txpool-api" }
 starcoin-state-api = { path = "../state/api" }

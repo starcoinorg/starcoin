@@ -32,8 +32,7 @@ starcoin-logger = { path = "../commons/logger" }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-sync = { path = "../sync" }
-starcoin-traits = { path = "../core/traits" }
-starcoin-genesis = { path = "../core/genesis" }
+starcoin-genesis = { path = "../genesis" }
 starcoin-account-api = { path = "../account/api" }
 starcoin-account-service = { path = "../account/service" }
 starcoin-state-api = { path = "../state/api" }
@@ -55,7 +54,7 @@ starcoin-move-compiler = { path = "../vm/compiler"}
 rand = "0.8.3"
 network-api = { path = "../network/api" }
 async-trait = "0.1.48"
-accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
+accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 

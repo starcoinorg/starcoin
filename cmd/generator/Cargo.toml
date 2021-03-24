@@ -15,15 +15,15 @@ hex = { version = "0.4.3", default-features = false }
 futures-timer = "3.0"
 structopt = "0.3.21"
 scmd = { path = "../../commons/scmd" }
-starcoin-traits = { path = "../../core/traits" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-storage = { path = "../../storage" }
-starcoin-genesis = { path = "../../core/genesis" }
+starcoin-genesis = { path = "../../genesis" }
 starcoin-account-api = { path = "../../account/api" }
-starcoin-account-lib = { path = "../../account/lib" }
+starcoin-account = { path = "../../account" }
+starcoin-chain = { path = "../../chain" }
 starcoin-chain-mock = { path = "../../chain/mock" }
 
 [[bin]]

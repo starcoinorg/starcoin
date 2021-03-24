@@ -6,6 +6,7 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::AccountAsyncService;
+use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::contract_api::ContractApi;
@@ -15,7 +16,6 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
-use starcoin_traits::ChainAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};

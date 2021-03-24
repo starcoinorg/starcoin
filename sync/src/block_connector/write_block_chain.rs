@@ -6,6 +6,7 @@ use anyhow::{format_err, Result};
 use config::NodeConfig;
 use logger::prelude::*;
 use starcoin_chain::BlockChain;
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
@@ -18,7 +19,6 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
-use traits::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 

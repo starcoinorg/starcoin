@@ -4,3 +4,4 @@
 mod chain_service;
 
 pub use chain_service::ChainReaderService;
+pub use starcoin_chain_api::{ChainAsyncService, ReadableChainService, WriteableChainService};

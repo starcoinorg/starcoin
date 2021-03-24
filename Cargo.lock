@@ -683,7 +683,6 @@ dependencies = [
  "starcoin-state-store-api",
  "starcoin-state-tree",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
@@ -2445,7 +2444,6 @@ dependencies = [
  "rand_core 0.6.2",
  "serde",
  "serde_bytes",
- "short-hex-str",
  "starcoin-crypto",
  "thiserror",
  "tiny-keccak 1.5.0",
@@ -6932,25 +6930,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-account-api"
-version = "1.0.0-alpha.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures 0.3.12",
- "hex",
- "rand 0.8.3",
- "rand_core 0.6.2",
- "serde",
- "serde_bytes",
- "starcoin-crypto",
- "starcoin-service-registry",
- "starcoin-types",
- "thiserror",
-]
-
-[[package]]
-name = "starcoin-account-lib"
+name = "starcoin-account"
 version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
@@ -6973,6 +6953,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-account-api"
+version = "1.0.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures 0.3.12",
+ "hex",
+ "rand 0.8.3",
+ "rand_core 0.6.2",
+ "serde",
+ "serde_bytes",
+ "starcoin-crypto",
+ "starcoin-service-registry",
+ "starcoin-types",
+ "thiserror",
+]
+
+[[package]]
 name = "starcoin-account-service"
 version = "1.0.0-alpha.1"
 dependencies = [
@@ -6980,8 +6978,8 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.12",
+ "starcoin-account",
  "starcoin-account-api",
- "starcoin-account-lib",
  "starcoin-chain-notify",
  "starcoin-config",
  "starcoin-crypto",
@@ -6990,7 +6988,6 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tempfile",
- "tokio 0.2.25",
 ]
 
 [[package]]
@@ -7034,7 +7031,6 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-sync",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7072,7 +7068,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-types",
@@ -7130,7 +7125,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-types",
  "thiserror",
@@ -7271,10 +7265,10 @@ dependencies = [
  "rand_core 0.6.2",
  "rust-argon2",
  "sha3",
+ "starcoin-chain-api",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",
- "starcoin-traits",
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
@@ -7469,15 +7463,15 @@ dependencies = [
  "scmd",
  "serde",
  "serde_json",
+ "starcoin-account",
  "starcoin-account-api",
- "starcoin-account-lib",
+ "starcoin-chain",
  "starcoin-chain-mock",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-types",
  "structopt 0.3.21",
 ]
@@ -7501,7 +7495,6 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-types",
@@ -7594,7 +7587,6 @@ dependencies = [
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7635,7 +7627,6 @@ dependencies = [
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-service-registry",
- "starcoin-traits",
  "starcoin-types",
  "stest",
  "structopt 0.3.21",
@@ -7752,7 +7743,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7824,7 +7814,6 @@ dependencies = [
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7866,6 +7855,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.1",
  "starcoin-accumulator",
+ "starcoin-chain-api",
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-genesis",
@@ -7874,7 +7864,6 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-types",
  "stest",
 ]
@@ -7899,7 +7888,6 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-storage",
- "starcoin-traits",
  "starcoin-vm-types",
  "structopt 0.3.21",
 ]
@@ -7983,7 +7971,6 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
@@ -8066,7 +8053,6 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
@@ -8250,7 +8236,6 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
@@ -8285,20 +8270,6 @@ version = "1.0.0-alpha.1"
 dependencies = [
  "anyhow",
  "systemstat",
-]
-
-[[package]]
-name = "starcoin-traits"
-version = "1.0.0-alpha.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "starcoin-chain-api",
- "starcoin-crypto",
- "starcoin-state-api",
- "starcoin-types",
- "starcoin-vm-types",
- "thiserror",
 ]
 
 [[package]]
@@ -8872,7 +8843,6 @@ dependencies = [
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
- "starcoin-traits",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",

@@ -2,13 +2,13 @@ use anyhow::Result;
 use crypto::keygen::KeyGen;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
+use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_executor::{
     build_transfer_from_association, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
-use starcoin_traits::ChainReader;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, account_config, U256};
 use std::{convert::TryInto, sync::Arc};

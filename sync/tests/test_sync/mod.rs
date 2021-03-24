@@ -1,10 +1,10 @@
 use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
+use starcoin_chain_service::ChainAsyncService;
 use std::thread::sleep;
 use std::{sync::Arc, time::Duration};
 use test_helper::run_node_by_config;
-use traits::ChainAsyncService;
 
 pub fn test_sync() {
     let first_config = Arc::new(NodeConfig::random_for_test());

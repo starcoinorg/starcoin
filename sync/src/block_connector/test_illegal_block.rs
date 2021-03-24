@@ -13,7 +13,9 @@ use consensus::Consensus;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
+use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
+use starcoin_chain_service::WriteableChainService;
 use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
@@ -24,8 +26,6 @@ use starcoin_vm_types::time::{duration_since_epoch, TimeServiceType};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use traits::WriteableChainService;
-use traits::{ChainReader, ChainWriter};
 
 async fn new_block_and_main_with_halley() -> (Block, MockChain) {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);

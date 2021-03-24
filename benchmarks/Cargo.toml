@@ -16,16 +16,15 @@ starcoin-storage = { path = "../storage" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 starcoin-config = { path = "../config"}
-starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
+starcoin-accumulator = { package="starcoin-accumulator", path = "../commons/accumulator"}
 starcoin-chain = { path = "../chain" }
 starcoin-consensus = { path = "../consensus" }
-starcoin-genesis = {path = "../core/genesis"}
+starcoin-genesis = {path = "../genesis"}
 starcoin-executor = {path = "../executor", package="starcoin-executor" }
 starcoin-vm-types = { path = "../vm/types" }
-traits = { path = "../core/traits", package = "starcoin-traits" }
 starcoin-account-api = { path = "../account/api"}
 parking_lot = "0.11"
-forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
 rand = "0.8.3"

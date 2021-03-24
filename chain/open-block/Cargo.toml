@@ -12,9 +12,9 @@ starcoin-types = {path = "../../types"}
 starcoin-executor = {path = "../../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-traits = {path = "../../core/traits", package="starcoin-traits"}
 starcoin-state-api = {path = "../../state/api"}
-starcoin-accumulator = {path = "../../core/accumulator", package="starcoin-accumulator"}
+starcoin-chain-api = {path = "../api"}
+starcoin-accumulator = {path = "../../commons/accumulator", package="starcoin-accumulator"}
 async-trait = "0.1"
 futures = "0.3.12"
 parking_lot = "0.11"
@@ -25,5 +25,5 @@ starcoin-statedb = {path = "../../state/statedb"}
 starcoin-metrics = {path = "../../commons/metrics"}
 
 [dev-dependencies]
-starcoin-genesis = {path = "../../core/genesis"}
+starcoin-genesis = {path = "../../genesis"}
 stest = {path = "../../commons/stest"}

@@ -21,22 +21,21 @@ config = {path = "../config", package="starcoin-config"}
 network = { path = "../network", package = "starcoin-network" }
 starcoin-types = { path = "../types" }
 starcoin-crypto = { path = "../commons/crypto" }
-traits = {path = "../core/traits", package="starcoin-traits"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
-starcoin-genesis = {path = "../core/genesis"}
+starcoin-genesis = {path = "../genesis"}
 starcoin-storage = {path = "../storage"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 consensus = {path = "../consensus", package="starcoin-consensus" }
 executor = {path = "../executor", package="starcoin-executor" }
 starcoin-state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 parking_lot = "0.11"
-forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
+forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 async-trait = "0.1"
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
-starcoin-accumulator = { package = "starcoin-accumulator", path = "../core/accumulator" }
+starcoin-accumulator = { package = "starcoin-accumulator", path = "../commons/accumulator" }
 starcoin-metrics = { path = "../commons/metrics" }
 once_cell = "1.7.2"
 starcoin-network-rpc-api = { path = "../network-rpc/api" }

@@ -4,15 +4,15 @@ use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
 use network_api::{PeerSelector, PeerStrategy};
+use starcoin_chain_service::ChainAsyncService;
 use starcoin_service_registry::ActorService;
-use starcoin_sync::sync2::SyncService2;
+use starcoin_sync::sync::SyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_types::peer_info::PeerInfo;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use test_helper::run_node_by_config;
-use traits::ChainAsyncService;
 
 #[stest::test(timeout = 120)]
 fn test_full_sync() {
@@ -38,7 +38,7 @@ fn test_sync_by_notification() {
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
     // stop sync service and just use notification message to sync.
     second_node
-        .stop_service(SyncService2::service_name().to_string())
+        .stop_service(SyncService::service_name().to_string())
         .unwrap();
 
     let second_chain = second_node.chain_service().unwrap();

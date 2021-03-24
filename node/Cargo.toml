@@ -36,8 +36,7 @@ starcoin-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-logger = {path = "../commons/logger"}
 starcoin-types = {path = "../types"}
 starcoin-sync = {path = "../sync"}
-starcoin-traits = {path = "../core/traits"}
-starcoin-genesis = { path = "../core/genesis"}
+starcoin-genesis = { path = "../genesis"}
 starcoin-account-api = { path = "../account/api"}
 starcoin-account-service = { path = "../account/service"}
 starcoin-state-api = { path = "../state/api"}

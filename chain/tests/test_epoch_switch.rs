@@ -4,10 +4,10 @@
 use anyhow::Result;
 use consensus::Consensus;
 use starcoin_chain::BlockChain;
+use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::AccountStateReader;
-use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_transaction_builder::encode_create_account_script_function;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;

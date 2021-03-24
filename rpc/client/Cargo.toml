@@ -44,6 +44,5 @@ futures-timer = "3.0"
 [dev-dependencies]
 starcoin-rpc-server = { path = "../server" }
 starcoin-config = { path = "../../config"}
-starcoin-traits = { path = "../../core/traits"}
 stest = { path = "../../commons/stest"}
 test-helper = { path = "../../test-helper"}

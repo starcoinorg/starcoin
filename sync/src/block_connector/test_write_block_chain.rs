@@ -5,7 +5,8 @@ use crate::block_connector::WriteBlockChainService;
 use config::NodeConfig;
 use consensus::Consensus;
 use starcoin_account_api::AccountInfo;
-use starcoin_chain::BlockChain;
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain_service::WriteableChainService;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
@@ -15,7 +16,6 @@ use starcoin_types::block::Block;
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_vm_types::time::TimeService;
 use std::sync::Arc;
-use traits::{ChainReader, WriteableChainService};
 
 pub async fn create_writeable_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,

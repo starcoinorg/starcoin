@@ -11,7 +11,7 @@ once_cell = "1.7.2"
 
 starcoin-types = { path = "../../types" }
 network-rpc-core = { path = "../core" }
-starcoin-accumulator = { path = "../../core/accumulator" }
+starcoin-accumulator = { path = "../../commons/accumulator" }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-state-api = { path = "../../state/api" }
 starcoin-state-tree = { path = "../../state/state-tree" }

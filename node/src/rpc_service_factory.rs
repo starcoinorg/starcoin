@@ -20,7 +20,7 @@ use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::Storage;
-use starcoin_sync::sync2::SyncService2;
+use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
 
@@ -39,7 +39,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             .service_ref_opt::<NodeService>()?
             .map(|service_ref| NodeManagerRpcImpl::new(service_ref.clone()));
         let sync_manager_api = ctx
-            .service_ref_opt::<SyncService2>()?
+            .service_ref_opt::<SyncService>()?
             .map(|service_ref| SyncManagerRpcImpl::new(service_ref.clone()));
         let network_manager_api = NetworkManagerRpcImpl::new(network_service);
         let chain_api = ctx

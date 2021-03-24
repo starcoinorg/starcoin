@@ -1,5 +1,5 @@
 use anyhow::{Error, Result};
-use starcoin_account_lib::account_storage::AccountStorage;
+use starcoin_account::account_storage::AccountStorage;
 use starcoin_chain_notify::message::ContractEventNotification;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};

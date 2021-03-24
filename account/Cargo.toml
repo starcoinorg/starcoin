@@ -1,0 +1,28 @@
+[package]
+name = "starcoin-account"
+version = "1.0.0-alpha.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.39"
+futures = "0.3.12"
+async-trait = "0.1"
+rand = "0.8.3"
+parking_lot = "0.11"
+serde = "1.0.125"
+rand_core = { version = "0.6.2", default-features = false }
+starcoin-account-api = {path = "./api"}
+bcs-ext ={package= "bcs-ext", path = "../commons/bcs_ext" }
+starcoin-types = { path = "../types"}
+starcoin-config = { path = "../config"}
+starcoin-crypto = { path = "../commons/crypto"}
+starcoin-decrypt = {path = "../commons/decrypt"}
+starcoin-storage = {path = "../storage"}
+starcoin-logger = {path = "../commons/logger"}
+
+[dev-dependencies]
+hex= "0.4.3"
+tempfile="3"

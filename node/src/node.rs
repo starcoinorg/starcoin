@@ -40,7 +40,7 @@ use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_sync::block_connector::BlockConnectorService;
-use starcoin_sync::sync2::SyncService2;
+use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::SystemStarted;
@@ -220,7 +220,7 @@ impl NodeService {
         //registry.register::<SyncService>().await?;
 
         registry.register::<BlockConnectorService>().await?;
-        registry.register::<SyncService2>().await?;
+        registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;
 
