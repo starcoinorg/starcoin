@@ -25,6 +25,7 @@ static VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
 /// publishing are mutually exclusive options.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum VMPublishingOption {
+    //TODO remove Vec from Locked.
     /// Only allow scripts on a whitelist to be run
     Locked(Vec<[u8; SCRIPT_HASH_LENGTH]>),
     /// Allow custom scripts, but _not_ custom module publishing

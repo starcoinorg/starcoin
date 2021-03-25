@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::core_code_address;
 use crate::serde_helper::vec_bytes;
 use crate::transaction::transaction_argument::TransactionArgument;
 use bcs_ext::Sample;
@@ -59,8 +60,7 @@ impl fmt::Debug for Script {
 }
 
 impl Sample for Script {
-    /// Sample script source code:
-    /// vm/stdlib/transaction_scripts/empty_script.move
+    /// Sample script source code empty_script.move
     fn sample() -> Self {
         Self {
             code: hex::decode("a11ceb0b0100000001050001000000000102")
@@ -301,5 +301,19 @@ impl ScriptFunction {
 
     pub fn args(&self) -> &[Vec<u8>] {
         &self.args
+    }
+}
+
+impl Sample for ScriptFunction {
+    fn sample() -> Self {
+        Self {
+            module: ModuleId::new(
+                core_code_address(),
+                Identifier::new("EmptyScripts").unwrap(),
+            ),
+            function: Identifier::new("empty_script").unwrap(),
+            ty_args: vec![],
+            args: vec![],
+        }
     }
 }

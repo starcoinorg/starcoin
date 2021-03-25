@@ -115,7 +115,7 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
     )?;
     //verify txn timeout
     {
-        assert!(account_execute(&alice, &chain_state, empty_txn_payload(&net)).is_err());
+        assert!(account_execute(&alice, &chain_state, empty_txn_payload()).is_err());
     }
     Ok(())
 }
@@ -200,7 +200,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     )?;
 
     //get gas_used
-    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
+    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
     let old_gas_used = output.gas_used();
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
@@ -226,7 +226,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
     // get gas used of modified gas schedule
-    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
+    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
     assert!(output.gas_used() > old_gas_used);
     Ok(())
 }

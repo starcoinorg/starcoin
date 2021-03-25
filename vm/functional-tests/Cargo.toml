@@ -39,10 +39,6 @@ starcoin-vm-types = { path = "../types"}
 name = "testsuite"
 harness = false
 
-[[test]]
-name = "stdlib_sanity_check"
-harness = false
-
 [features]
 default = []
 fuzzing = ["starcoin-vm-types/fuzzing"]

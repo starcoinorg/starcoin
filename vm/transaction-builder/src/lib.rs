@@ -19,11 +19,9 @@ use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
-    Transaction, TransactionPayload,
+    Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
+    TransactionArgument, TransactionPayload,
 };
-pub use stdlib::transaction_scripts::compiled_transaction_script;
-pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -593,8 +591,14 @@ pub fn build_module_upgrade_queue(
     )
 }
 
-pub fn build_empty_script() -> Script {
-    let empty_script =
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::EmptyScript).into_vec();
-    Script::new(empty_script, vec![], vec![])
+pub fn build_empty_script() -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("EmptyScripts").unwrap(),
+        ),
+        Identifier::new("empty_script").unwrap(),
+        vec![],
+        vec![],
+    )
 }

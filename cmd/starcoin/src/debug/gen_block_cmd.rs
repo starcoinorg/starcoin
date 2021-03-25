@@ -37,7 +37,7 @@ impl CommandAction for GenBlockCommand {
             1000000,
             1,
             3000,
-            TransactionPayload::Script(empty),
+            TransactionPayload::ScriptFunction(empty),
         )?;
         let txn_hash = signed_txn.id();
         cli_state.client().submit_transaction(signed_txn)?;

@@ -37,7 +37,6 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
-use stdlib::transaction_scripts::VersionedStdlibScript;
 
 #[derive(
     Clone,
@@ -1014,8 +1013,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
     let stdlib_version = StdlibVersion::Latest;
-    let versioned_script = VersionedStdlibScript::new(stdlib_version);
-    let publishing_option = VMPublishingOption::Locked(versioned_script.whitelist());
+    let publishing_option = VMPublishingOption::Locked(vec![]);
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
             //TODO conform init parameter.
