@@ -15,6 +15,7 @@ use network_rpc_core::RawRpcClient;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
+use std::borrow::Cow;
 use std::sync::Arc;
 
 //TODO Service registry should support custom service ref.
@@ -57,7 +58,7 @@ impl RawRpcClient for NetworkServiceRef {
     fn send_raw_request(
         &self,
         peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>> {
         let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);

@@ -12,6 +12,7 @@ pub use starcoin_types::peer_info::PeerId;
 
 //TODO find a suitable place for this type.
 use crate::server::NetworkRpcServer;
+use std::borrow::Cow;
 
 pub mod delegates;
 pub mod server;
@@ -77,7 +78,7 @@ impl NetRpcError {
         )
     }
 
-    pub fn method_not_fount(rpc_path: String) -> Self {
+    pub fn method_not_fount(rpc_path: Cow<'static, str>) -> Self {
         Self::new(
             RpcErrorCode::MethodNotFound,
             format!("Request method {} not found", rpc_path),
@@ -122,7 +123,7 @@ pub trait RawRpcServer {
     fn handle_raw_request(
         &self,
         peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>>;
 }
@@ -133,7 +134,7 @@ pub trait RawRpcClient {
     fn send_raw_request(
         &self,
         peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<anyhow::Result<Vec<u8>>>;
 }
@@ -157,7 +158,7 @@ impl RawRpcClient for InmemoryRpcClient {
     fn send_raw_request(
         &self,
         _peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<anyhow::Result<Vec<u8>>> {
         Box::pin(
