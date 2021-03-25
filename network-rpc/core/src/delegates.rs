@@ -5,6 +5,7 @@ use anyhow::Result;
 use futures::prelude::future::BoxFuture;
 use futures::Future;
 use starcoin_types::peer_info::PeerId;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -35,7 +36,7 @@ where
     T: Send + Sync + 'static,
 {
     delegate: Arc<T>,
-    methods: HashMap<String, Arc<dyn RpcMethod>>,
+    methods: HashMap<Cow<'static, str>, Arc<dyn RpcMethod>>,
 }
 
 impl<T> IoDelegate<T>
@@ -49,14 +50,14 @@ where
         }
     }
 
-    pub fn add_method<F, I>(&mut self, name: &str, method: F)
+    pub fn add_method<F, I>(&mut self, name: &'static str, method: F)
     where
         F: Fn(Arc<T>, PeerId, Vec<u8>) -> I,
         F: Send + Sync + 'static,
         I: Future<Output = Result<Vec<u8>>> + Send + Unpin + 'static,
     {
         self.methods.insert(
-            name.into(),
+            Cow::from(name),
             Arc::new(DelegateAsyncMethod {
                 delegate: self.delegate.clone(),
                 closure: method,
@@ -69,8 +70,8 @@ impl<T> IntoIterator for IoDelegate<T>
 where
     T: Send + Sync + 'static,
 {
-    type Item = (String, Arc<dyn RpcMethod>);
-    type IntoIter = std::collections::hash_map::IntoIter<String, Arc<dyn RpcMethod>>;
+    type Item = (Cow<'static, str>, Arc<dyn RpcMethod>);
+    type IntoIter = std::collections::hash_map::IntoIter<Cow<'static, str>, Arc<dyn RpcMethod>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.methods.into_iter()
