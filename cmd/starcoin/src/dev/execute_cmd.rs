@@ -22,6 +22,7 @@ use starcoin_types::transaction::{
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use std::path::PathBuf;
 use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
@@ -168,7 +169,7 @@ impl CommandAction for ExecuteCommand {
             // package deploy
             (Some((bytecode, false)), function_id) => {
                 let module_init_script_function = function_id
-                    .map(|id| ScriptFunction::new(id.module, id.function, type_tags, args));
+                    .map(|id| ScriptFunction::new(id.module, id.function, type_tags, convert_txn_args(&args)));
                 let package =
                     Package::new(vec![Module::new(bytecode)], module_init_script_function)?;
                 TransactionPayload::Package(package)
@@ -184,7 +185,7 @@ impl CommandAction for ExecuteCommand {
             // script function
             (None, Some(function_id)) => {
                 let script_function =
-                    ScriptFunction::new(function_id.module, function_id.function, type_tags, args);
+                    ScriptFunction::new(function_id.module, function_id.function, type_tags, convert_txn_args(&args));
                 TransactionPayload::ScriptFunction(script_function)
             }
             (None, None) => {

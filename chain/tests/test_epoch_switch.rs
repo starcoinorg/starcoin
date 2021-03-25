@@ -124,10 +124,10 @@ fn build_cast_vote_txn(
         Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
-            TransactionArgument::Address(*alice.address()),
-            TransactionArgument::U64(proposer_id),
-            TransactionArgument::Bool(true),
-            TransactionArgument::U128(voting_power / 2),
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&proposer_id).unwrap(),
+            bcs_ext::to_bytes(&true).unwrap(),
+            bcs_ext::to_bytes(&(voting_power / 2)).unwrap(),
         ],
     );
     alice.sign_txn(build_transaction(
@@ -150,8 +150,8 @@ fn build_queue_txn(
         Identifier::new("queue_proposal_action").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
-            TransactionArgument::Address(*alice.address()),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&0).unwrap(),
         ],
     );
     alice.sign_txn(build_transaction(

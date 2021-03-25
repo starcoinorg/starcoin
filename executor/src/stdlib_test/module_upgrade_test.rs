@@ -37,10 +37,10 @@ fn test_dao_upgrade_module() -> Result<()> {
         Identifier::new("propose_module_upgrade").unwrap(),
         vec![stc_type_tag()],
         vec![
-            TransactionArgument::Address(genesis_address()),
-            TransactionArgument::U8Vector(package_hash.to_vec()),
-            TransactionArgument::U64(1),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(&genesis_address()).unwrap(),
+            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&1).unwrap(),
+            bcs_ext::to_bytes(&0).unwrap(),
         ],
     );
     let execute_script_function = ScriptFunction::new(
@@ -51,8 +51,8 @@ fn test_dao_upgrade_module() -> Result<()> {
         Identifier::new("submit_module_upgrade_plan").unwrap(),
         vec![stc_type_tag()],
         vec![
-            TransactionArgument::Address(*alice.address()),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&0).unwrap(),
         ],
     );
     let chain_state = dao_vote_test(

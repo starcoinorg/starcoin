@@ -377,7 +377,7 @@ impl StarcoinVM {
                         init_script.module(),
                         init_script.function(),
                         init_script.ty_args().to_vec(),
-                        convert_txn_args(init_script.args()),
+                        init_script.args().to_vec(),
                         vec![sender],
                         cost_strategy,
                     )
@@ -433,7 +433,7 @@ impl StarcoinVM {
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
-                        convert_txn_args(script_function.args()),
+                        script_function.args().to_vec(),
                         vec![txn_data.sender()],
                         cost_strategy,
                     ),

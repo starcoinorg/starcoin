@@ -124,9 +124,9 @@ fn test_gen_accounts() -> Result<()> {
         Identifier::new("peer_to_peer_batch").unwrap(),
         vec![stc_type_tag()],
         vec![
-            TransactionArgument::U8Vector(address_vec),
-            TransactionArgument::U8Vector(auth_key_vec),
-            TransactionArgument::U128(1),
+            bcs_ext::to_bytes(&address_vec).unwrap(),
+            bcs_ext::to_bytes(&auth_key_vec).unwrap(),
+            bcs_ext::to_bytes(&1).unwrap(),
         ],
     );
     association_execute(

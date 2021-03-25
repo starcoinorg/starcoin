@@ -128,6 +128,7 @@ pub mod on_chain_config;
 pub mod on_chain_resource;
 pub mod time;
 pub mod token;
+pub mod serde_helper;
 
 #[cfg(test)]
 mod unit_tests;

@@ -14,6 +14,7 @@ use crate::transaction::{
     SignedUserTransaction, TransactionPayload,
 };
 use crate::transaction_argument::TransactionArgument;
+use crate::transaction_argument::convert_txn_args;
 use crate::{account_address, account_config};
 use anyhow::Result;
 use move_core_types::language_storage::TypeTag;
@@ -448,7 +449,7 @@ impl Arbitrary for ScriptFunction {
             vec(any::<TransactionArgument>(), 0..10),
         )
             .prop_map(|(module, function, ty_args, args)| {
-                ScriptFunction::new(module, function, ty_args, args)
+                ScriptFunction::new(module, function, ty_args, convert_txn_args(&args))
             })
             .boxed()
     }
