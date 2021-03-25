@@ -7,6 +7,7 @@ use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use network_p2p_types::network_state::NetworkState;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
+use std::borrow::Cow;
 
 #[rpc]
 pub trait NetworkManagerApi {
@@ -27,7 +28,7 @@ pub trait NetworkManagerApi {
     fn call_peer(
         &self,
         peer_id: String,
-        rpc_method: String,
+        rpc_method: Cow<'static, str>,
         message: StrView<Vec<u8>>,
     ) -> FutureResult<StrView<Vec<u8>>>;
 }

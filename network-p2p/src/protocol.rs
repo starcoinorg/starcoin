@@ -36,7 +36,7 @@ pub(crate) const CURRENT_VERSION: u32 = 1;
 /// Lowest version we support
 pub(crate) const MIN_VERSION: u32 = 1;
 
-pub(crate) const HARDCODED_PEERSETS_SYNC: sc_peerset::SetId = sc_peerset::SetId::from(0);
+pub(crate) const HARD_CORE_PROTOCOL_ID: sc_peerset::SetId = sc_peerset::SetId::from(0);
 
 pub mod rep {
     use sc_peerset::ReputationChange as Rep;
@@ -270,7 +270,7 @@ impl NetworkBehaviour for Protocol {
                     self.bad_handshake_substreams.insert((peer_id, set_id));
                     self.peerset_handle.report_peer(peer_id, rep::BAD_MESSAGE);
                     self.behaviour
-                        .disconnect_peer(&peer_id, HARDCODED_PEERSETS_SYNC);
+                        .disconnect_peer(&peer_id, HARD_CORE_PROTOCOL_ID);
                     CustomMessageOutcome::None
                 }
             },
@@ -328,7 +328,7 @@ impl DiscoveryNetBehaviour for Protocol {
     fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
         for peer_id in peer_ids {
             self.peerset_handle
-                .add_to_peers_set(HARDCODED_PEERSETS_SYNC, peer_id);
+                .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
         }
     }
 }
@@ -390,12 +390,12 @@ impl Protocol {
 
     /// Returns true if we have a channel open with this node.
     pub fn is_open(&self, peer_id: &PeerId) -> bool {
-        self.behaviour.is_open(peer_id, HARDCODED_PEERSETS_SYNC)
+        self.behaviour.is_open(peer_id, HARD_CORE_PROTOCOL_ID)
     }
 
     /// Returns the list of all the peers that the peerset currently requests us to be connected to.
     pub fn requested_peers(&self) -> impl Iterator<Item = &PeerId> {
-        self.behaviour.requested_peers(HARDCODED_PEERSETS_SYNC)
+        self.behaviour.requested_peers(HARD_CORE_PROTOCOL_ID)
     }
     /// Adjusts the reputation of a node.
     pub fn report_peer(&self, who: PeerId, reputation: sc_peerset::ReputationChange) {
@@ -566,7 +566,7 @@ impl Protocol {
         let handshake_msg =
             Self::build_handshake_msg(self.notif_protocols.to_vec(), self.chain_info.clone());
         self.behaviour
-            .set_notif_protocol_handshake(HARDCODED_PEERSETS_SYNC, handshake_msg)
+            .set_notif_protocol_handshake(HARD_CORE_PROTOCOL_ID, handshake_msg)
     }
 
     fn format_stats(&self) -> String {
