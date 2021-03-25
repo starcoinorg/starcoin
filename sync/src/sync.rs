@@ -155,35 +155,42 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
-            let target = VerifiedRpcClient::get_sync_target(
-                rpc_client.selector(),
+            let rpc_client = Arc::new(VerifiedRpcClient::new(
+                peer_selector.clone(),
+                network.clone(),
+            ));
+            if let Some(target) = VerifiedRpcClient::get_sync_target(
+                rpc_client.clone(),
                 current_block_info.get_total_difficulty(),
             )
-            .await?;
-            info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
+            .await?
+            {
+                info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
-            let (fut, task_handle, task_event_handle) = full_sync_task(
-                current_block_id,
-                target.clone(),
-                skip_pow_verify,
-                config.net().time_service(),
-                storage.clone(),
-                connector_service.clone(),
-                Arc::new(rpc_client),
-                self_ref.clone(),
-                network.clone(),
-                config.sync.max_retry_times(),
-            )?;
+                let (fut, task_handle, task_event_handle) = full_sync_task(
+                    current_block_id,
+                    target.clone(),
+                    skip_pow_verify,
+                    config.net().time_service(),
+                    storage.clone(),
+                    connector_service.clone(),
+                    rpc_client.clone(),
+                    self_ref.clone(),
+                    network.clone(),
+                    config.sync.max_retry_times(),
+                )?;
 
-            self_ref.notify(SyncBeginEvent {
-                target,
-                task_handle,
-                task_event_handle,
-                peer_selector,
-            })?;
-            Ok(Some(fut.await?))
-            //Ok(())
+                self_ref.notify(SyncBeginEvent {
+                    target,
+                    task_handle,
+                    task_event_handle,
+                    peer_selector,
+                })?;
+                Ok(Some(fut.await?))
+            } else {
+                debug!("[sync]No better peer to request.");
+                Ok(None)
+            }
         };
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let self_ref = ctx.self_ref();

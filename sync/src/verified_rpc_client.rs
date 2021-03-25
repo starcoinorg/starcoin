@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::sync_metrics::SYNC_METRICS;
-use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
+use crate::tasks::{sync_score_metrics::SYNC_SCORE_METRICS, PeerOperator, SyncFetcher};
 use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
-use rand::seq::IteratorRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -266,36 +265,70 @@ impl VerifiedRpcClient {
         Ok(resp)
     }
 
-    pub async fn get_sync_target(
-        peer_selector: &PeerSelector,
-        difficulty: U256,
-    ) -> Result<SyncTarget> {
-        let mut better_peers = peer_selector
-            .betters(difficulty)
-            .ok_or_else(|| format_err!("No better peer to request"))?;
+    pub async fn get_sync_target<F>(fetcher: Arc<F>, difficulty: U256) -> Result<Option<SyncTarget>>
+    where
+        F: SyncFetcher + 'static,
+    {
+        if let Some(mut better_peers) = fetcher.peer_selector().betters(difficulty) {
+            better_peers.sort_by(|info_1, info_2| {
+                info_1.total_difficulty().cmp(&info_2.total_difficulty())
+            });
 
-        let better_peer = better_peers
-            .iter_mut()
-            .choose(&mut rand::thread_rng())
-            .cloned()
-            .expect("Better peer is none.");
-        let peers = better_peers
-            .iter()
-            .filter(|peer_info| {
-                peer_info.block_number() >= better_peer.block_number()
-                    && peer_info.total_difficulty() >= better_peer.total_difficulty()
-            })
-            .map(|peer_info| peer_info.peer_id())
-            .collect();
+            if let Some(best_peer) = better_peers.last() {
+                let mut peers = Vec::new();
+                let mut target_peer = None;
+                for better_peer in better_peers.iter() {
+                    let mut eligible = false;
+                    match target_peer.as_ref() {
+                        None => {
+                            if best_peer == better_peer {
+                                target_peer = Some(better_peer.clone());
+                                eligible = true;
+                            } else if let Some(block_id) = fetcher
+                                .fetch_block_id(
+                                    Some(best_peer.peer_id()),
+                                    better_peer.block_number(),
+                                )
+                                .await?
+                            {
+                                if block_id == better_peer.block_id() {
+                                    target_peer = Some(better_peer.clone());
+                                    eligible = true;
+                                }
+                            }
+                        }
+                        Some(peer) => {
+                            if best_peer == better_peer {
+                                eligible = true;
+                            } else if let Some(block_id) = fetcher
+                                .fetch_block_id(Some(better_peer.peer_id()), peer.block_number())
+                                .await?
+                            {
+                                if block_id == peer.block_id() {
+                                    eligible = true;
+                                }
+                            }
+                        }
+                    }
 
-        Ok(SyncTarget {
-            target_id: BlockIdAndNumber::new(
-                better_peer.latest_header().id(),
-                better_peer.latest_header().number(),
-            ),
-            block_info: better_peer.chain_info().status().info().clone(),
-            peers,
-        })
+                    if eligible {
+                        peers.push(better_peer.peer_id());
+                    }
+                }
+
+                if let Some(peer) = target_peer {
+                    return Ok(Some(SyncTarget {
+                        target_id: BlockIdAndNumber::new(
+                            peer.latest_header().id(),
+                            peer.latest_header().number(),
+                        ),
+                        block_info: peer.chain_info().status().info().clone(),
+                        peers,
+                    }));
+                }
+            }
+        }
+        Ok(None)
     }
 
     pub async fn get_state_node_by_node_hash(
