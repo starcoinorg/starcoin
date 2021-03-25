@@ -14,9 +14,7 @@ use starcoin_types::account_config::association_address;
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block::Block;
 use starcoin_types::genesis_config::ChainId;
-use starcoin_types::transaction::{
-    ScriptFunction, SignedUserTransaction, TransactionArgument, TransactionPayload,
-};
+use starcoin_types::transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
@@ -151,7 +149,7 @@ fn build_queue_txn(
         vec![stc_type_tag(), action_type_tag],
         vec![
             bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&0).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
     alice.sign_txn(build_transaction(

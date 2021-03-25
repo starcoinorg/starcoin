@@ -7,6 +7,7 @@ pub mod pubsub;
 pub use node_api_types::*;
 
 use bcs_ext::BCSCodec;
+use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
@@ -42,13 +43,11 @@ use starcoin_vm_types::transaction::{
     Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
     TransactionPayload, TransactionStatus,
 };
-use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
 use starcoin_vm_types::write_set::WriteOp;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
-use hex::FromHex;
 
 pub type ByteCode = Vec<u8>;
 
@@ -205,13 +204,17 @@ impl ScriptData {
     fn into_data(self) -> Result<Script, ScriptFunction> {
         let ty_args: Vec<_> = self.type_args.into_iter().map(|s| s.0).collect();
         let args: Vec<_> = self.args.into_iter().map(|s| s.0).collect();
-        let arguments_bcs: Vec<_> = self.arguments_bcs.into_iter().map(|s| s.0.to_vec()).collect();
+        let arguments_bcs: Vec<_> = self
+            .arguments_bcs
+            .into_iter()
+            .map(|s| s.0.to_vec())
+            .collect();
 
         match self.code.0 {
             ByteCodeOrScriptFunction::ByteCode(code) => Ok(Script::new(code, ty_args, args)),
-            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
-                Err(ScriptFunction::new(module, function, ty_args, arguments_bcs))
-            }
+            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => Err(
+                ScriptFunction::new(module, function, ty_args, arguments_bcs),
+            ),
         }
     }
 }
@@ -247,12 +250,7 @@ impl From<ScriptFunction> for ScriptData {
             })),
             type_args: s.ty_args().iter().cloned().map(TypeTagView::from).collect(),
             args: vec![],
-            arguments_bcs: s
-                .args()
-                .iter()
-                .cloned()
-                .map(BytesView::from)
-                .collect(),
+            arguments_bcs: s.args().iter().cloned().map(BytesView::from).collect(),
         }
     }
 }
@@ -1202,8 +1200,8 @@ impl From<Vec<u8>> for BytesView {
 
 impl<'de> Deserialize<'de> for BytesView {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
         <Vec<u8>>::from_hex(s)
@@ -1214,8 +1212,8 @@ impl<'de> Deserialize<'de> for BytesView {
 
 impl Serialize for BytesView {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         hex::encode(self).serialize(serializer)
     }

@@ -13,8 +13,8 @@ use crate::transaction::{
     Module, Package, RawUserTransaction, Script, ScriptFunction, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
-use crate::transaction_argument::TransactionArgument;
 use crate::transaction_argument::convert_txn_args;
+use crate::transaction_argument::TransactionArgument;
 use crate::{account_address, account_config};
 use anyhow::Result;
 use move_core_types::language_storage::TypeTag;

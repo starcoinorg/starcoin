@@ -1,8 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::transaction::transaction_argument::TransactionArgument;
 use crate::serde_helper::vec_bytes;
+use crate::transaction::transaction_argument::TransactionArgument;
 use bcs_ext::Sample;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, TypeTag};

@@ -8,7 +8,6 @@ use starcoin_types::transaction::ScriptFunction;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
-use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::values::VMValueCast;
 use test_helper::dao::dao_vote_test;
 use test_helper::executor::*;
@@ -39,8 +38,8 @@ fn test_dao_upgrade_module() -> Result<()> {
         vec![
             bcs_ext::to_bytes(&genesis_address()).unwrap(),
             bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&1).unwrap(),
-            bcs_ext::to_bytes(&0).unwrap(),
+            bcs_ext::to_bytes(&1u64).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
     let execute_script_function = ScriptFunction::new(
@@ -52,7 +51,7 @@ fn test_dao_upgrade_module() -> Result<()> {
         vec![stc_type_tag()],
         vec![
             bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&0).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
     let chain_state = dao_vote_test(

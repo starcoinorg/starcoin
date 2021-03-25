@@ -16,7 +16,7 @@ use starcoin_types::{
     event::EventHandle,
     transaction::{
         authenticator::AuthenticationKey, RawUserTransaction, ScriptFunction,
-        SignedUserTransaction, TransactionArgument, TransactionPayload,
+        SignedUserTransaction, TransactionPayload,
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
@@ -689,9 +689,7 @@ pub fn create_account_txn_sent_as_association(
 ) -> SignedUserTransaction {
     let mut args: Vec<Vec<u8>> = Vec::new();
     args.push(bcs_ext::to_bytes(new_account.address()).unwrap());
-    args.push(bcs_ext::to_bytes(&
-        new_account.auth_key().to_vec(),
-    ).unwrap());
+    args.push(bcs_ext::to_bytes(&new_account.auth_key().to_vec()).unwrap());
     args.push(bcs_ext::to_bytes(&initial_amount).unwrap());
 
     create_signed_txn_with_association_account(

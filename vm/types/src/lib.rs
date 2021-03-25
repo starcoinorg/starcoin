@@ -126,9 +126,9 @@ pub mod event;
 pub mod genesis_config;
 pub mod on_chain_config;
 pub mod on_chain_resource;
+pub mod serde_helper;
 pub mod time;
 pub mod token;
-pub mod serde_helper;
 
 #[cfg(test)]
 mod unit_tests;
