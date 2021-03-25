@@ -14,9 +14,7 @@ use starcoin_types::account_config::association_address;
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block::Block;
 use starcoin_types::genesis_config::ChainId;
-use starcoin_types::transaction::{
-    ScriptFunction, SignedUserTransaction, TransactionArgument, TransactionPayload,
-};
+use starcoin_types::transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
@@ -111,10 +109,9 @@ fn build_cast_vote_txn(
     alice: &Account,
     action_type_tag: TypeTag,
     voting_power: u128,
-    _net: &ChainNetwork,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    let proposer_id = 0;
+    let proposer_id: u64 = 0;
     println!("alice voting power: {}", voting_power);
     let vote_script_function = ScriptFunction::new(
         ModuleId::new(
@@ -124,10 +121,10 @@ fn build_cast_vote_txn(
         Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
-            TransactionArgument::Address(*alice.address()),
-            TransactionArgument::U64(proposer_id),
-            TransactionArgument::Bool(true),
-            TransactionArgument::U128(voting_power / 2),
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&proposer_id).unwrap(),
+            bcs_ext::to_bytes(&true).unwrap(),
+            bcs_ext::to_bytes(&(voting_power / 2)).unwrap(),
         ],
     );
     alice.sign_txn(build_transaction(
@@ -150,8 +147,8 @@ fn build_queue_txn(
         Identifier::new("queue_proposal_action").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![
-            TransactionArgument::Address(*alice.address()),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
     alice.sign_txn(build_transaction(
@@ -271,7 +268,6 @@ pub fn modify_on_chain_config_by_dao_block(
                 &alice,
                 action_type_tag.clone(),
                 voting_power,
-                net,
                 block_timestamp / 1000,
             )],
         )?;
@@ -316,7 +312,7 @@ pub fn modify_on_chain_config_by_dao_block(
             *alice.address(),
             0,
         );
-        assert_eq!(state, AGREED);
+        assert_eq!(state, AGREED, "expect AGREED state, but got {}", state);
     }
 
     // block 6

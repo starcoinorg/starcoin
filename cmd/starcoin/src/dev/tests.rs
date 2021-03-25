@@ -22,6 +22,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{
     account_config::{association_address, genesis_address, AccountResource},
     transaction::Package,
@@ -233,7 +234,7 @@ fn test_upgrade_module() {
         ),
         Identifier::new("cast_vote").unwrap(),
         type_tags,
-        args,
+        convert_txn_args(&args),
     );
     let vote_raw_txn = RawUserTransaction::new_script_function(
         default_account.address,
@@ -402,7 +403,7 @@ fn test_only_new_module() {
         ),
         Identifier::new("update_module_upgrade_strategy").unwrap(),
         Vec::new(),
-        args,
+        convert_txn_args(&args),
     );
     let only_new_module_strategy_raw_txn = RawUserTransaction::new_script_function(
         default_account.address,

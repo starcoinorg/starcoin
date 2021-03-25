@@ -10,7 +10,7 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
+use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
@@ -124,9 +124,9 @@ fn test_gen_accounts() -> Result<()> {
         Identifier::new("peer_to_peer_batch").unwrap(),
         vec![stc_type_tag()],
         vec![
-            TransactionArgument::U8Vector(address_vec),
-            TransactionArgument::U8Vector(auth_key_vec),
-            TransactionArgument::U128(1),
+            bcs_ext::to_bytes(&address_vec).unwrap(),
+            bcs_ext::to_bytes(&auth_key_vec).unwrap(),
+            bcs_ext::to_bytes(&1u128).unwrap(),
         ],
     );
     association_execute(

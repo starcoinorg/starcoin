@@ -7,6 +7,7 @@ pub mod pubsub;
 pub use node_api_types::*;
 
 use bcs_ext::BCSCodec;
+use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
@@ -179,6 +180,8 @@ pub struct ScriptData {
     pub type_args: Vec<TypeTagView>,
     #[serde(default)]
     pub args: Vec<TransactionArgumentView>,
+    #[serde(default)]
+    pub arguments_bcs: Vec<BytesView>,
 }
 
 impl ScriptData {
@@ -201,12 +204,17 @@ impl ScriptData {
     fn into_data(self) -> Result<Script, ScriptFunction> {
         let ty_args: Vec<_> = self.type_args.into_iter().map(|s| s.0).collect();
         let args: Vec<_> = self.args.into_iter().map(|s| s.0).collect();
+        let arguments_bcs: Vec<_> = self
+            .arguments_bcs
+            .into_iter()
+            .map(|s| s.0.to_vec())
+            .collect();
 
         match self.code.0 {
             ByteCodeOrScriptFunction::ByteCode(code) => Ok(Script::new(code, ty_args, args)),
-            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
-                Err(ScriptFunction::new(module, function, ty_args, args))
-            }
+            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => Err(
+                ScriptFunction::new(module, function, ty_args, arguments_bcs),
+            ),
         }
     }
 }
@@ -229,6 +237,7 @@ impl From<Script> for ScriptData {
                 .into_iter()
                 .map(TransactionArgumentView::from)
                 .collect(),
+            arguments_bcs: vec![],
         }
     }
 }
@@ -240,12 +249,8 @@ impl From<ScriptFunction> for ScriptData {
                 function: s.function().to_owned(),
             })),
             type_args: s.ty_args().iter().cloned().map(TypeTagView::from).collect(),
-            args: s
-                .args()
-                .iter()
-                .cloned()
-                .map(TransactionArgumentView::from)
-                .collect(),
+            args: vec![],
+            arguments_bcs: s.args().iter().cloned().map(BytesView::from).collect(),
         }
     }
 }
@@ -1139,6 +1144,80 @@ macro_rules! impl_str_view_for {
 }
 impl_str_view_for! {u64 i64 u128 i128}
 impl_str_view_for! {ByteCodeOrScriptFunction}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BytesView(Box<[u8]>);
+
+impl BytesView {
+    pub fn new<T: Into<Box<[u8]>>>(bytes: T) -> Self {
+        Self(bytes.into())
+    }
+
+    pub fn into_inner(self) -> Box<[u8]> {
+        self.0
+    }
+
+    pub fn inner(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl std::ops::Deref for BytesView {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::convert::AsRef<[u8]> for BytesView {
+    fn as_ref(&self) -> &[u8] {
+        self.inner()
+    }
+}
+
+impl std::fmt::Display for BytesView {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for byte in self.inner() {
+            write!(f, "{:02x}", byte)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl From<&[u8]> for BytesView {
+    fn from(bytes: &[u8]) -> Self {
+        Self(bytes.into())
+    }
+}
+
+impl From<Vec<u8>> for BytesView {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self(bytes.into_boxed_slice())
+    }
+}
+
+impl<'de> Deserialize<'de> for BytesView {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <String>::deserialize(deserializer)?;
+        <Vec<u8>>::from_hex(s)
+            .map_err(D::Error::custom)
+            .map(Into::into)
+    }
+}
+
+impl Serialize for BytesView {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        hex::encode(self).serialize(serializer)
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ContractCall {

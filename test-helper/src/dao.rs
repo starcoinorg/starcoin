@@ -16,9 +16,7 @@ use starcoin_types::account_config::{association_address, genesis_address, stc_t
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{
-    Script, ScriptFunction, TransactionArgument, TransactionPayload,
-};
+use starcoin_types::transaction::{Script, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;
@@ -237,7 +235,7 @@ fn execute_cast_vote(
         ),
     )?;
     let proposer_address = *alice.address();
-    let proposer_id = 0;
+    let proposer_id = 0u64;
     let voting_power = get_balance(*alice.address(), chain_state);
     println!("alice voting power: {}", voting_power);
     let script_function = ScriptFunction::new(
@@ -248,10 +246,10 @@ fn execute_cast_vote(
         Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), dao_action_type_tag.clone()],
         vec![
-            TransactionArgument::Address(proposer_address),
-            TransactionArgument::U64(proposer_id),
-            TransactionArgument::Bool(true),
-            TransactionArgument::U128(voting_power / 2),
+            bcs_ext::to_bytes(&proposer_address).unwrap(),
+            bcs_ext::to_bytes(&proposer_id).unwrap(),
+            bcs_ext::to_bytes(&true).unwrap(),
+            bcs_ext::to_bytes(&(voting_power / 2)).unwrap(),
         ],
     );
     // vote first.
@@ -284,18 +282,18 @@ pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> ScriptFunctio
         Identifier::new("propose_update_consensus_config").unwrap(),
         vec![],
         vec![
-            TransactionArgument::U64(80),
-            TransactionArgument::U64(10000),
-            TransactionArgument::U128(64000000000),
-            TransactionArgument::U64(10),
-            TransactionArgument::U64(48),
-            TransactionArgument::U64(24),
-            TransactionArgument::U64(1000),
-            TransactionArgument::U64(60000),
-            TransactionArgument::U64(2),
-            TransactionArgument::U64(1000000),
-            TransactionArgument::U8(strategy),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(&80u64).unwrap(),
+            bcs_ext::to_bytes(&10000u64).unwrap(),
+            bcs_ext::to_bytes(&64000000000u128).unwrap(),
+            bcs_ext::to_bytes(&10u64).unwrap(),
+            bcs_ext::to_bytes(&48u64).unwrap(),
+            bcs_ext::to_bytes(&24u64).unwrap(),
+            bcs_ext::to_bytes(&1000u64).unwrap(),
+            bcs_ext::to_bytes(&60000u64).unwrap(),
+            bcs_ext::to_bytes(&2u64).unwrap(),
+            bcs_ext::to_bytes(&1000000u64).unwrap(),
+            bcs_ext::to_bytes(&strategy).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )
 }
@@ -310,8 +308,8 @@ pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> ScriptFunc
         Identifier::new("propose_update_reward_config").unwrap(),
         vec![],
         vec![
-            TransactionArgument::U64(reward_delay),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(&reward_delay).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )
 }
@@ -326,8 +324,8 @@ pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> Sc
         Identifier::new("propose_update_txn_timeout_config").unwrap(),
         vec![],
         vec![
-            TransactionArgument::U64(duration_seconds),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(&duration_seconds).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )
 }
@@ -345,9 +343,9 @@ pub fn vote_txn_publish_option_script(
         Identifier::new("propose_update_txn_publish_option").unwrap(),
         vec![],
         vec![
-            TransactionArgument::U8Vector(script_hash.to_vec()),
-            TransactionArgument::Bool(module_publishing_allowed),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(&script_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&module_publishing_allowed).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )
 }
@@ -363,24 +361,24 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> Script
         Identifier::new("propose_update_vm_config").unwrap(),
         vec![],
         vec![
-            TransactionArgument::U8Vector(
-                bcs_ext::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
-            ),
-            TransactionArgument::U8Vector(
-                bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap(),
-            ),
-            TransactionArgument::U64(gas_constants.global_memory_per_byte_cost.get()),
-            TransactionArgument::U64(gas_constants.global_memory_per_byte_write_cost.get()),
-            TransactionArgument::U64(gas_constants.min_transaction_gas_units.get()),
-            TransactionArgument::U64(gas_constants.large_transaction_cutoff.get()),
-            TransactionArgument::U64(gas_constants.intrinsic_gas_per_byte.get()),
-            TransactionArgument::U64(gas_constants.maximum_number_of_gas_units.get()),
-            TransactionArgument::U64(gas_constants.min_price_per_gas_unit.get()),
-            TransactionArgument::U64(gas_constants.max_price_per_gas_unit.get()),
-            TransactionArgument::U64(gas_constants.max_transaction_size_in_bytes),
-            TransactionArgument::U64(gas_constants.gas_unit_scaling_factor),
-            TransactionArgument::U64(gas_constants.default_account_size.get()),
-            TransactionArgument::U64(0),
+            bcs_ext::to_bytes(
+                &bcs_ext::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap())
+                .unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.max_transaction_size_in_bytes).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.gas_unit_scaling_factor).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.default_account_size.get()).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )
 }
@@ -398,7 +396,7 @@ pub fn execute_script_on_chain_config(
         ),
         Identifier::new("execute_on_chain_config_proposal").unwrap(),
         vec![type_tag],
-        vec![TransactionArgument::U64(proposal_id)],
+        vec![bcs_ext::to_bytes(&proposal_id).unwrap()],
     )
 }
 
@@ -536,8 +534,8 @@ pub fn dao_vote_test(
             Identifier::new("queue_proposal_action").unwrap(),
             vec![stc_type_tag(), action_type_tag.clone()],
             vec![
-                TransactionArgument::Address(*alice.address()),
-                TransactionArgument::U64(0),
+                bcs_ext::to_bytes(alice.address()).unwrap(),
+                bcs_ext::to_bytes(&0u64).unwrap(),
             ],
         );
         account_execute(

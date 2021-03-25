@@ -14,6 +14,7 @@ use starcoin_types::transaction::{
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
@@ -109,7 +110,7 @@ impl CommandAction for ExecuteScriptFunctionCmd {
                 script_function.module,
                 script_function.function,
                 type_tags,
-                args,
+                convert_txn_args(&args),
             ),
             opt.max_gas_amount,
             opt.gas_price,

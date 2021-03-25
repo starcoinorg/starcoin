@@ -168,8 +168,7 @@ ScriptFunction:
         SEQ:
           TYPENAME: TypeTag
     - args:
-        SEQ:
-          TYPENAME: TransactionArgument
+        SEQ: BYTES
 ScriptFunctionABI:
   STRUCT:
     - name: STR

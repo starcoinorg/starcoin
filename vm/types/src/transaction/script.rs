@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::serde_helper::vec_bytes;
 use crate::transaction::transaction_argument::TransactionArgument;
 use bcs_ext::Sample;
 use move_core_types::identifier::{IdentStr, Identifier};
@@ -267,7 +268,8 @@ pub struct ScriptFunction {
     module: ModuleId,
     function: Identifier,
     ty_args: Vec<TypeTag>,
-    args: Vec<TransactionArgument>,
+    #[serde(with = "vec_bytes")]
+    args: Vec<Vec<u8>>,
 }
 
 impl ScriptFunction {
@@ -275,7 +277,7 @@ impl ScriptFunction {
         module: ModuleId,
         function: Identifier,
         ty_args: Vec<TypeTag>,
-        args: Vec<TransactionArgument>,
+        args: Vec<Vec<u8>>,
     ) -> Self {
         ScriptFunction {
             module,
@@ -297,7 +299,7 @@ impl ScriptFunction {
         &self.ty_args
     }
 
-    pub fn args(&self) -> &[TransactionArgument] {
+    pub fn args(&self) -> &[Vec<u8>] {
         &self.args
     }
 }
