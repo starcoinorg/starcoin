@@ -1,7 +1,6 @@
 address 0x1 {
 /// `TransactionPublishOption` provide an option to limit:
-/// - which scripts are allowed to run.
-/// - whether user can publish custom modules on chain.
+/// - whether user can use script or publish custom modules on chain.
 module TransactionPublishOption {
     use 0x1::Config;
     use 0x1::Timestamp;

@@ -20,6 +20,7 @@ use starcoin_types::transaction::{
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};
@@ -136,8 +137,12 @@ impl CommandAction for GenerateMultisigTxnCommand {
 
         let payload = match (script_function_id, ctx.opt().script_file.clone()) {
             (Some(function_id), None) => {
-                let script_function =
-                    ScriptFunction::new(function_id.module, function_id.function, type_tags, args);
+                let script_function = ScriptFunction::new(
+                    function_id.module,
+                    function_id.function,
+                    type_tags,
+                    convert_txn_args(&args),
+                );
                 TransactionPayload::ScriptFunction(script_function)
             }
             (None, Some(bytecode_path)) => {

@@ -17,7 +17,7 @@ use starcoin_types::account_config::{association_address, genesis_address, stc_t
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{ScriptFunction, TransactionArgument, TransactionPayload};
+use starcoin_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;

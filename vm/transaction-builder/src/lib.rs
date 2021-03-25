@@ -20,7 +20,7 @@ use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
-    TransactionArgument, TransactionPayload,
+    TransactionPayload,
 };
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 

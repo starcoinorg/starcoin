@@ -1,0 +1,9 @@
+{
+  "module": {
+    "address": "0x00000000000000000000000000000001",
+    "name": "EmptyScripts"
+  },
+  "function": "empty_script",
+  "ty_args": [],
+  "args": []
+}
