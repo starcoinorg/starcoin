@@ -109,10 +109,9 @@ fn build_cast_vote_txn(
     alice: &Account,
     action_type_tag: TypeTag,
     voting_power: u128,
-    _net: &ChainNetwork,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    let proposer_id = 0;
+    let proposer_id: u64 = 0;
     println!("alice voting power: {}", voting_power);
     let vote_script_function = ScriptFunction::new(
         ModuleId::new(
@@ -269,7 +268,6 @@ pub fn modify_on_chain_config_by_dao_block(
                 &alice,
                 action_type_tag.clone(),
                 voting_power,
-                net,
                 block_timestamp / 1000,
             )],
         )?;
@@ -314,7 +312,7 @@ pub fn modify_on_chain_config_by_dao_block(
             *alice.address(),
             0,
         );
-        assert_eq!(state, AGREED);
+        assert_eq!(state, AGREED, "expect AGREED state, but got {}", state);
     }
 
     // block 6
