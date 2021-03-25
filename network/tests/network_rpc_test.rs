@@ -9,9 +9,9 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_types::peer_info::RpcInfo;
+use std::borrow::Cow;
 use test_helper::build_network;
 use test_helper::network::MockRpcHandler;
-
 #[cfg(test)]
 mod network_service_test;
 
@@ -44,7 +44,7 @@ async fn test_network_raw_rpc() {
     info!("req :{:?}", request);
     let resp = service2
         .service_ref
-        .send_raw_request(peer_id_1, "test".to_string(), request.clone())
+        .send_raw_request(peer_id_1, Cow::from("test"), request.clone())
         .await;
     assert_eq!(request, resp.unwrap());
 
@@ -57,7 +57,7 @@ async fn test_network_raw_rpc() {
     info!("req :{:?}", request);
     let resp = service1
         .service_ref
-        .send_raw_request(peer_id_2, "test".to_string(), request.clone())
+        .send_raw_request(peer_id_2, Cow::from("test"), request.clone())
         .await;
     assert_eq!(request, resp.unwrap());
 
