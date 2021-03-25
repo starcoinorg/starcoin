@@ -278,11 +278,12 @@ impl VerifiedRpcClient {
                 let mut peers = Vec::new();
                 let mut target_peer = None;
                 for better_peer in better_peers.iter() {
+                    let mut eligible = false;
                     match target_peer.as_ref() {
                         None => {
                             if best_peer == better_peer {
                                 target_peer = Some(better_peer.clone());
-                                peers.push(better_peer.peer_id());
+                                eligible = true;
                             } else if let Some(block_id) = fetcher
                                 .fetch_block_id(
                                     Some(best_peer.peer_id()),
@@ -292,15 +293,26 @@ impl VerifiedRpcClient {
                             {
                                 if block_id == better_peer.block_id() {
                                     target_peer = Some(better_peer.clone());
-                                    peers.push(better_peer.peer_id());
+                                    eligible = true;
                                 }
                             }
                         }
                         Some(peer) => {
-                            if peer.block_number() <= better_peer.block_number() {
-                                peers.push(better_peer.peer_id());
+                            if best_peer == better_peer {
+                                eligible = true;
+                            } else if let Some(block_id) = fetcher
+                                .fetch_block_id(Some(better_peer.peer_id()), peer.block_number())
+                                .await?
+                            {
+                                if block_id == peer.block_id() {
+                                    eligible = true;
+                                }
                             }
                         }
+                    }
+
+                    if eligible {
+                        peers.push(better_peer.peer_id());
                     }
                 }
 

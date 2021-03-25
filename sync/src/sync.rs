@@ -188,7 +188,7 @@ impl SyncService {
                 })?;
                 Ok(Some(fut.await?))
             } else {
-                debug!("[sync]Sync target is none.");
+                debug!("[sync]No better peer to request.");
                 Ok(None)
             }
         };

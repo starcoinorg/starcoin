@@ -3,13 +3,13 @@ mod test_sync;
 use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
+use starcoin_chain_api::ChainAsyncService;
 use starcoin_service_registry::ActorService;
 use starcoin_sync::sync::SyncService;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use test_helper::run_node_by_config;
-use traits::ChainAsyncService;
 
 #[stest::test(timeout = 120)]
 fn test_full_sync() {
