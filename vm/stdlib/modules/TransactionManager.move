@@ -87,7 +87,6 @@ module TransactionManager {
             assert(
                 TransactionPublishOption::is_script_allowed(
                     Signer::address_of(account),
-                    &txn_script_or_package_hash,
                 ),
                 Errors::invalid_argument(EPROLOGUE_SCRIPT_NOT_ALLOWED),
             );
@@ -116,7 +115,7 @@ module TransactionManager {
             is_script_or_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE || txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT),
         };
         aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE && !TransactionPublishOption::spec_is_module_allowed(Signer::address_of(account));
-        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT && !TransactionPublishOption::spec_is_script_allowed(Signer::address_of(account), txn_script_or_package_hash);
+        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT && !TransactionPublishOption::spec_is_script_allowed(Signer::address_of(account));
         include PackageTxnManager::CheckPackageTxnAbortsIfWithType{is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
     }
 

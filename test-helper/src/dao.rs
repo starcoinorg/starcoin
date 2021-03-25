@@ -332,7 +332,7 @@ pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> Sc
 /// vote txn publish option scripts
 pub fn vote_txn_publish_option_script(
     _net: &ChainNetwork,
-    script_hash: HashValue,
+    script_allowed: bool,
     module_publishing_allowed: bool,
 ) -> ScriptFunction {
     ScriptFunction::new(
@@ -343,7 +343,7 @@ pub fn vote_txn_publish_option_script(
         Identifier::new("propose_update_txn_publish_option").unwrap(),
         vec![],
         vec![
-            bcs_ext::to_bytes(&script_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&script_allowed).unwrap(),
             bcs_ext::to_bytes(&module_publishing_allowed).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],

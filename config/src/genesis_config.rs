@@ -22,7 +22,7 @@ use starcoin_vm_types::gas_schedule::{
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
-    init_cost_table, ConsensusConfig, DaoConfig, VMConfig, VMPublishingOption, Version,
+    init_cost_table, ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::{TimeService, TimeServiceType};
@@ -585,7 +585,7 @@ pub struct GenesisConfig {
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
     /// Script allow list and Module publish option
-    pub publishing_option: VMPublishingOption,
+    pub publishing_option: TransactionPublishOption,
     /// consensus config
     pub consensus_config: ConsensusConfig,
     /// association account's key pair
@@ -760,7 +760,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -809,7 +809,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -863,7 +863,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -919,7 +919,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::CustomScripts,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -978,7 +978,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::CustomScripts,
+        publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -1013,7 +1013,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
     let stdlib_version = StdlibVersion::Latest;
-    let publishing_option = VMPublishingOption::Locked(vec![]);
+    let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
             //TODO conform init parameter.

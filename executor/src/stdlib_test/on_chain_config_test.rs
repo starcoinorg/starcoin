@@ -125,9 +125,10 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
     let alice = Account::new();
     let (chain_state, net) = prepare_genesis();
     let action_type_tag = txn_publish_config_type_tag();
-    let script_hash = HashValue::random();
-    let module_publishing_allowed = true;
-    let vote_script = vote_txn_publish_option_script(&net, script_hash, module_publishing_allowed);
+    let script_allowed = false;
+    let module_publishing_allowed = false;
+    let vote_script =
+        vote_txn_publish_option_script(&net, script_allowed, module_publishing_allowed);
 
     let chain_state = dao_vote_test(
         alice,
@@ -150,8 +151,18 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
         vec![],
         serialize_values(&vec![MoveValue::Address(genesis_address())]),
     )?;
+    let is_module_allowed_on_chain: bool = read_config.pop().unwrap().1.cast().unwrap();
+    assert_eq!(is_module_allowed_on_chain, module_publishing_allowed);
+
+    let mut read_config = execute_readonly_function(
+        &chain_state,
+        &module_id,
+        &Identifier::new("is_script_allowed")?,
+        vec![],
+        serialize_values(&vec![MoveValue::Address(genesis_address())]),
+    )?;
     let is_script_allowed_on_chain: bool = read_config.pop().unwrap().1.cast().unwrap();
-    assert_eq!(is_script_allowed_on_chain, module_publishing_allowed);
+    assert_eq!(is_script_allowed_on_chain, script_allowed);
     Ok(())
 }
 

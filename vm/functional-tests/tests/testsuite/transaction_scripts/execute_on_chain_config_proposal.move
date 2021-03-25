@@ -8,19 +8,19 @@
 
 //! new-transaction
 //! sender: alice
-//! args: x"", false, 0
+//! args: false, false, 0
 script {
     use 0x1::OnChainConfigScripts;
 
     fun main(account: &signer,
-             script_allow_list: vector<u8>,
+             script_allowed: bool,
              module_publishing_allowed: bool,
              exec_delay: u64) {
-        OnChainConfigScripts::propose_update_txn_publish_option(account, script_allow_list, module_publishing_allowed, exec_delay);
+        OnChainConfigScripts::propose_update_txn_publish_option(account, script_allowed, module_publishing_allowed, exec_delay);
     }
 }
 // check: gas_used
-// check: 187603
+// check: 185415
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -128,5 +128,5 @@ script {
     }
 }
 // check: gas_used
-// check: 114697
+// check: 115775
 // check: "Keep(EXECUTED)"
