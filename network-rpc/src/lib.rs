@@ -122,8 +122,7 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
                 result: Ok(resp),
                 reputation_changes: vec![],
             }) {
-                //TODO change log level
-                warn!("Send response to rpc call failed:{:?}", e);
+                error!("Send response to rpc call failed:{:?}", e);
             }
         });
     }

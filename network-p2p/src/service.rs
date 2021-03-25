@@ -42,7 +42,7 @@ use crate::network_state::{
 };
 use crate::protocol::event::Event;
 use crate::protocol::generic_proto::{NotificationsSink, Ready};
-use crate::protocol::{Protocol, HARDCODED_PEERSETS_SYNC};
+use crate::protocol::{Protocol, HARD_CORE_PROTOCOL_ID};
 use crate::request_responses::{InboundFailure, OutboundFailure, RequestFailure, ResponseFailure};
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
@@ -75,6 +75,8 @@ use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+
+const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 
 /// Minimum Requirements for a Hash within Networking
 pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
@@ -481,8 +483,10 @@ impl NetworkService {
         message: Vec<u8>,
     ) {
         info!(
-            "[network-p2p] write notification: target: {}, protocol: {}, msg: {:?}",
-            target, protocol_name, message
+            "[network-p2p] write notification {} {} {}",
+            target,
+            protocol_name,
+            message.len()
         );
         // We clone the `NotificationsSink` in order to be able to unlock the network-wide
         // `peers_notifications_sinks` mutex as soon as possible.
@@ -723,13 +727,19 @@ impl NetworkService {
             pending_response: tx,
             connect,
         });
-        match future::timeout(Duration::from_secs(5), rx).await {
+        match future::timeout(Duration::from_secs(REQUEST_RESPONSE_TIMEOUT_SECONDS), rx).await {
             Ok(Ok(v)) => v,
             // The channel can only be closed if the network worker no longer exists. If the
             // network worker no longer exists, then all connections to `target` are necessarily
             // closed, and we legitimately report this situation as a "ConnectionClosed".
-            Err(_) => Err(RequestFailure::Network(OutboundFailure::ConnectionClosed)),
-            Ok(Err(_)) => Err(RequestFailure::Network(OutboundFailure::Timeout)),
+            Err(e) => {
+                error!("[network-p2p] request to worker waiting timeout: {}", e);
+                Err(RequestFailure::Network(OutboundFailure::Timeout))
+            }
+            Ok(Err(e)) => {
+                error!("[network-p2p] request to worker failed: {}", e);
+                Err(RequestFailure::Network(OutboundFailure::ConnectionClosed))
+            }
         }
     }
 
@@ -775,20 +785,18 @@ impl NetworkService {
 
     /// Connect to unreserved peers and allow unreserved peers to connect.
     pub fn accept_unreserved_peers(&self) {
-        self.peerset
-            .set_reserved_only(HARDCODED_PEERSETS_SYNC, false);
+        self.peerset.set_reserved_only(HARD_CORE_PROTOCOL_ID, false);
     }
 
     /// Disconnect from unreserved peers and deny new unreserved peers to connect.
     pub fn deny_unreserved_peers(&self) {
-        self.peerset
-            .set_reserved_only(HARDCODED_PEERSETS_SYNC, true);
+        self.peerset.set_reserved_only(HARD_CORE_PROTOCOL_ID, true);
     }
 
     /// Removes a `PeerId` from the list of reserved peers.
     pub fn remove_reserved_peer(&self, peer: PeerId) {
         self.peerset
-            .remove_reserved_peer(HARDCODED_PEERSETS_SYNC, peer);
+            .remove_reserved_peer(HARD_CORE_PROTOCOL_ID, peer);
     }
 
     /// Adds a `PeerId` and its address as reserved. The string should encode the address
@@ -796,7 +804,7 @@ impl NetworkService {
     pub fn add_reserved_peer(&self, peer: String) -> Result<(), String> {
         let (peer_id, addr) = parse_str_addr(&peer).map_err(|e| format!("{:?}", e))?;
         self.peerset
-            .add_reserved_peer(HARDCODED_PEERSETS_SYNC, peer_id);
+            .add_reserved_peer(HARD_CORE_PROTOCOL_ID, peer_id);
         let _ = self
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::AddKnownAddress(peer_id, addr));
@@ -1201,8 +1209,10 @@ impl Future for NetworkWorker {
                     if let Some(metrics) = this.metrics.as_ref() {
                         for (protocol, message) in &messages {
                             info!(
-                                "[network-p2p] receive notification from: {}, {}, {:?}",
-                                remote, protocol, message
+                                "[network-p2p] receive notification from {} {} {}",
+                                remote,
+                                protocol,
+                                message.len()
                             );
                             metrics
                                 .notifications_sizes
