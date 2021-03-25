@@ -61,7 +61,7 @@ impl BroadcastScoreMetrics {
             .inc();
     }
 
-    pub fn report_old(&self, peer: PeerId, score: i64) {
+    pub fn report_expire(&self, peer: PeerId, score: i64) {
         self.peer_broadcast_score
             .with_label_values(&[&format!("peer-{:?}", peer)])
             .inc_by(score as u64);

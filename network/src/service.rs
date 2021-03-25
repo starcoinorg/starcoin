@@ -399,7 +399,7 @@ impl Inner {
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
-                BROADCAST_SCORE_METRICS.report_old(
+                BROADCAST_SCORE_METRICS.report_expire(
                     peer_id,
                     self.score_handler
                         .execute(BlockBroadcastEntry::new(false, HandleState::Succ)),
