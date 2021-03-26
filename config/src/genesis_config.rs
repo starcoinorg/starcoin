@@ -22,7 +22,7 @@ use starcoin_vm_types::gas_schedule::{
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
-    init_cost_table, ConsensusConfig, DaoConfig, VMConfig, VMPublishingOption, Version,
+    init_cost_table, ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::{TimeService, TimeServiceType};
@@ -37,7 +37,6 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
-use stdlib::transaction_scripts::VersionedStdlibScript;
 
 #[derive(
     Clone,
@@ -586,7 +585,7 @@ pub struct GenesisConfig {
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
     /// Script allow list and Module publish option
-    pub publishing_option: VMPublishingOption,
+    pub publishing_option: TransactionPublishOption,
     /// consensus config
     pub consensus_config: ConsensusConfig,
     /// association account's key pair
@@ -667,6 +666,7 @@ impl GenesisConfig {
     }
 }
 
+// UNCLE_RATE = UNCLE_RATE_TARGET/1000
 static UNCLE_RATE_TARGET: u64 = 240;
 static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
@@ -761,7 +761,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -810,7 +810,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -864,7 +864,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::Open,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -920,7 +920,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::CustomScripts,
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -979,9 +979,9 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
-        publishing_option: VMPublishingOption::CustomScripts,
+        publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
+            uncle_rate_target: 500,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
@@ -1000,7 +1000,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60 * 60 * 1000,           // 1h
-            voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
+            voting_period: 60 * 60 * 24 * 1000, // 1d
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
@@ -1014,8 +1014,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
     let stdlib_version = StdlibVersion::Latest;
-    let versioned_script = VersionedStdlibScript::new(stdlib_version);
-    let publishing_option = VMPublishingOption::Locked(versioned_script.whitelist());
+    let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
             //TODO conform init parameter.

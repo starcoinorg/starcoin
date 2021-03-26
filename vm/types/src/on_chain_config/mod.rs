@@ -26,7 +26,7 @@ pub use self::{
     dao_config::DaoConfig,
     genesis_gas_schedule::init_cost_table,
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
-    vm_config::{vm_config_type_tag, VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
+    vm_config::{vm_config_type_tag, TransactionPublishOption, VMConfig, SCRIPT_HASH_LENGTH},
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 

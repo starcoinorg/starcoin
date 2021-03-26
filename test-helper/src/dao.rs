@@ -11,18 +11,18 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
+use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{association_address, genesis_address, stc_type_tag};
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{Script, ScriptFunction, TransactionPayload};
+use starcoin_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::VMValueCast;
-use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 
 //TODO transfer to enum
 pub const PENDING: u8 = 1;
@@ -332,7 +332,7 @@ pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> Sc
 /// vote txn publish option scripts
 pub fn vote_txn_publish_option_script(
     _net: &ChainNetwork,
-    script_hash: HashValue,
+    script_allowed: bool,
     module_publishing_allowed: bool,
 ) -> ScriptFunction {
     ScriptFunction::new(
@@ -343,7 +343,7 @@ pub fn vote_txn_publish_option_script(
         Identifier::new("propose_update_txn_publish_option").unwrap(),
         vec![],
         vec![
-            bcs_ext::to_bytes(&script_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&script_allowed).unwrap(),
             bcs_ext::to_bytes(&module_publishing_allowed).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
@@ -400,12 +400,8 @@ pub fn execute_script_on_chain_config(
     )
 }
 
-pub fn empty_txn_payload(net: &ChainNetwork) -> TransactionPayload {
-    TransactionPayload::Script(Script::new(
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::EmptyScript).into_vec(),
-        vec![],
-        vec![],
-    ))
+pub fn empty_txn_payload() -> TransactionPayload {
+    TransactionPayload::ScriptFunction(build_empty_script())
 }
 
 pub fn dao_vote_test(

@@ -353,8 +353,8 @@ mod tests {
     use starcoin_types::account_config::{genesis_address, ModuleUpgradeStrategy};
     use starcoin_vm_types::account_config::association_address;
     use starcoin_vm_types::genesis_config::ChainId;
-    use starcoin_vm_types::on_chain_config::DaoConfig;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, VMConfig, Version};
+    use starcoin_vm_types::on_chain_config::{DaoConfig, TransactionPublishOption};
     use starcoin_vm_types::on_chain_resource::Epoch;
 
     #[stest::test]
@@ -456,11 +456,27 @@ mod tests {
             vm_config.is_some(),
             "VMConfig on_chain_config should exist."
         );
+        assert_eq!(vm_config.as_ref().unwrap(), &net.genesis_config().vm_config);
+
+        let vm_publish_option =
+            account_state_reader.get_on_chain_config::<TransactionPublishOption>()?;
+        assert!(
+            vm_publish_option.is_some(),
+            "vm_publish_option on_chain_config should exist."
+        );
+        assert_eq!(
+            vm_publish_option.as_ref().unwrap(),
+            &net.genesis_config().publishing_option
+        );
 
         let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;
         assert!(
             consensus_config.is_some(),
             "ConsensusConfig on_chain_config should exist."
+        );
+        assert_eq!(
+            consensus_config.as_ref().unwrap(),
+            &net.genesis_config().consensus_config
         );
 
         let dao_config = account_state_reader.get_on_chain_config::<DaoConfig>()?;
@@ -471,6 +487,10 @@ mod tests {
 
         let version = account_state_reader.get_on_chain_config::<Version>()?;
         assert!(version.is_some(), "Version on_chain_config should exist.");
+        assert_eq!(
+            version.as_ref().unwrap().major,
+            net.genesis_config().stdlib_version.version()
+        );
 
         let module_upgrade_strategy =
             account_state_reader.get_resource::<ModuleUpgradeStrategy>(genesis_address())?;

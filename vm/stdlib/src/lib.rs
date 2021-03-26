@@ -23,14 +23,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub mod transaction_scripts;
-
 pub const STD_LIB_DIR: &str = "modules";
 pub const MOVE_EXTENSION: &str = "move";
 
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
-
-pub const TRANSACTION_SCRIPTS: &str = "transaction_scripts";
 
 /// The output path under which compiled files will be put
 pub const COMPILED_OUTPUT_PATH: &str = "compiled";
@@ -43,8 +39,6 @@ pub const COMPILED_EXTENSION: &str = "mv";
 
 /// The output path for stdlib documentation.
 pub const STD_LIB_DOC_DIR: &str = "modules/doc";
-/// The output path for transaction script documentation.
-pub const TRANSACTION_SCRIPTS_DOC_DIR: &str = "transaction_scripts/doc";
 pub const COMPILED_TRANSACTION_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
 // use same dir as scripts abi
 pub const COMPILED_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
@@ -205,13 +199,6 @@ pub(crate) fn stdlib_files() -> Vec<String> {
     filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
-pub fn transaction_script_files() -> Vec<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(TRANSACTION_SCRIPTS);
-    let dirfiles = datatest_stable::utils::iterate_directory(&path);
-    filter_move_files(dirfiles).collect::<Vec<_>>()
-}
-
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
     let (_, compiled_units) =
         move_compile_and_report(&stdlib_files(), &[], Some(Address::DIEM_CORE), None, false)
@@ -292,17 +279,6 @@ fn build_abi(output_path: &str, sources: &[String], dep_path: &str, compiled_scr
     options.abigen.compiled_script_directory = compiled_script_path.to_string();
     options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
-}
-
-pub fn build_transaction_script_doc() {
-    for txn_script_file in transaction_script_files() {
-        build_doc(
-            TRANSACTION_SCRIPTS_DOC_DIR,
-            STD_LIB_DOC_DIR,
-            &[txn_script_file],
-            STD_LIB_DIR,
-        )
-    }
 }
 
 #[allow(clippy::field_reassign_with_default)]

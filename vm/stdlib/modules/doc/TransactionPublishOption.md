@@ -4,8 +4,7 @@
 # Module `0x1::TransactionPublishOption`
 
 <code><a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a></code> provide an option to limit:
-- which scripts are allowed to run.
-- whether user can publish custom modules on chain.
+- whether user can use script or publish custom modules on chain.
 
 
 -  [Struct `TransactionPublishOption`](#0x1_TransactionPublishOption_TransactionPublishOption)
@@ -26,7 +25,6 @@
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
-<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
 
@@ -36,9 +34,9 @@
 ## Struct `TransactionPublishOption`
 
 Defines and holds the publishing policies for the VM. There are three possible configurations:
-1. No module publishing, only allowlisted scripts are allowed.
-2. No module publishing, custom scripts are allowed.
-3. Both module publishing and custom scripts are allowed.
+1.  !script_allowed && !module_publishing_allowed No module publishing, only script function in module are allowed.
+2.  script_allowed && !module_publishing_allowed No module publishing, custom scripts are allowed.
+3.  script_allowed && module_publishing_allowed Both module publishing and custom scripts are allowed.
 We represent these as the following resource.
 
 
@@ -53,7 +51,7 @@ We represent these as the following resource.
 
 <dl>
 <dt>
-<code>script_allow_list: vector&lt;vector&lt;u8&gt;&gt;</code>
+<code>script_allowed: bool</code>
 </dt>
 <dd>
 
@@ -128,7 +126,7 @@ The script hash has an invalid length
 Module initialization.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, merged_script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, script_allowed: bool, module_publishing_allowed: bool)
 </code></pre>
 
 
@@ -139,7 +137,7 @@ Module initialization.
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(
     account: &signer,
-    merged_script_allow_list: vector&lt;u8&gt;,
+    script_allowed: bool,
     module_publishing_allowed: bool,
 ) {
     <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
@@ -147,7 +145,7 @@ Module initialization.
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
         <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>),
     );
-    <b>let</b> transaction_publish_option = <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">Self::new_transaction_publish_option</a>(merged_script_allow_list, module_publishing_allowed);
+    <b>let</b> transaction_publish_option = <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">Self::new_transaction_publish_option</a>(script_allowed, module_publishing_allowed);
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(
         account,
         transaction_publish_option,
@@ -166,7 +164,7 @@ Module initialization.
 Create a new option. Mainly used in DAO.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(script_allowed: bool, module_publishing_allowed: bool): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>
 </code></pre>
 
 
@@ -176,27 +174,10 @@ Create a new option. Mainly used in DAO.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(
-    script_allow_list: vector&lt;u8&gt;,
+    script_allowed: bool,
     module_publishing_allowed: bool,
 ): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a> {
-    <b>let</b> list = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;vector&lt;u8&gt;&gt;();
-    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&script_allow_list) / <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>;
-    <b>let</b> i = 0;
-    <b>while</b> (i &lt; len){
-        <b>let</b> script_hash = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
-        <b>let</b> j = 0;
-        <b>while</b> (j &lt; <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>){
-            <b>let</b> index = <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a> * i + j;
-            <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(
-                &<b>mut</b> script_hash,
-                *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&script_allow_list, index),
-            );
-            j = j + 1;
-        };
-        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>&lt;vector&lt;u8&gt;&gt;(&<b>mut</b> list, script_hash);
-        i = i + 1;
-    };
-    <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a> { script_allow_list: list, module_publishing_allowed }
+    <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a> { script_allowed, module_publishing_allowed }
 }
 </code></pre>
 
@@ -208,10 +189,10 @@ Create a new option. Mainly used in DAO.
 
 ## Function `is_script_allowed`
 
-Check if sender can execute script with <code>hash</code>
+Check if sender can execute script with
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address, hash: &vector&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address): bool
 </code></pre>
 
 
@@ -220,10 +201,9 @@ Check if sender can execute script with <code>hash</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address, hash: &vector&lt;u8&gt;): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address): bool {
     <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(account);
-    <a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&publish_option.script_allow_list) ||
-        <a href="Vector.md#0x1_Vector_contains">Vector::contains</a>(&publish_option.script_allow_list, hash)
+    publish_option.script_allowed
 }
 </code></pre>
 
@@ -266,10 +246,9 @@ Check if a sender can publish a module
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
 <a name="0x1_TransactionPublishOption_spec_is_script_allowed"></a>
-<b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">spec_is_script_allowed</a>(addr: address, hash: vector&lt;u8&gt;) : bool{
+<b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">spec_is_script_allowed</a>(addr: address) : bool{
     <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
-    len(publish_option.script_allow_list) == 0 ||
-        <a href="Vector.md#0x1_Vector_spec_contains">Vector::spec_contains</a>(publish_option.script_allow_list, hash)
+    publish_option.script_allowed
 }
 <a name="0x1_TransactionPublishOption_spec_is_module_allowed"></a>
 <b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_module_allowed">spec_is_module_allowed</a>(addr: address) : bool{
@@ -285,7 +264,7 @@ Check if a sender can publish a module
 ### Function `initialize`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, merged_script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, script_allowed: bool, module_publishing_allowed: bool)
 </code></pre>
 
 
@@ -304,7 +283,7 @@ Check if a sender can publish a module
 ### Function `new_transaction_publish_option`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(script_allowed: bool, module_publishing_allowed: bool): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>
 </code></pre>
 
 
@@ -320,7 +299,7 @@ Check if a sender can publish a module
 ### Function `is_script_allowed`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address, hash: &vector&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address): bool
 </code></pre>
 
 

@@ -57,6 +57,7 @@ async-trait = "0.1.48"
 accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
+starcoin-transaction-builder = { path = "../vm/transaction-builder"}
 
 
 [dev-dependencies]

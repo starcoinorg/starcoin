@@ -181,7 +181,6 @@ It verifies:
         <b>assert</b>(
             <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">TransactionPublishOption::is_script_allowed</a>(
                 <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
-                &txn_script_or_package_hash,
             ),
             <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TransactionManager.md#0x1_TransactionManager_EPROLOGUE_SCRIPT_NOT_ALLOWED">EPROLOGUE_SCRIPT_NOT_ALLOWED</a>),
         );
@@ -348,7 +347,7 @@ The runtime always runs this before executing the transactions in a block.
     is_script_or_package: (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a> || txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>),
 };
 <b>aborts_if</b> txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a> && !<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_module_allowed">TransactionPublishOption::spec_is_module_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-<b>aborts_if</b> txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a> && !<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">TransactionPublishOption::spec_is_script_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), txn_script_or_package_hash);
+<b>aborts_if</b> txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a> && !<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">TransactionPublishOption::spec_is_script_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIfWithType">PackageTxnManager::CheckPackageTxnAbortsIfWithType</a>{is_package: (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
 </code></pre>
 

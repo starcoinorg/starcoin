@@ -41,9 +41,8 @@ script {
     use 0x1::OnChainConfigDao;
     use 0x1::TransactionPublishOption;
     use 0x1::STC::STC;
-    use 0x1::Vector;
     fun propose(signer: &signer) {
-        let new_config = TransactionPublishOption::new_transaction_publish_option(Vector::empty(), false);
+        let new_config = TransactionPublishOption::new_transaction_publish_option(true, false);
         OnChainConfigDao::propose_update<STC, TransactionPublishOption::TransactionPublishOption>(signer, new_config, 0);
     }
 }
@@ -132,7 +131,7 @@ script {
         assert(state == 6, (state as u64));
         OnChainConfigDao::execute<STC, TransactionPublishOption::TransactionPublishOption>({{alice}}, 0);
         assert(!TransactionPublishOption::is_module_allowed({{genesis}}), 401);
-        assert(TransactionPublishOption::is_script_allowed({{genesis}},&x"0010"), 402);
+        assert(TransactionPublishOption::is_script_allowed({{genesis}}), 402);
     }
 }
 // check: EXECUTED

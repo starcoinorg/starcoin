@@ -18,41 +18,61 @@ static VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VM_CONFIG_MODULE_NAME).unwrap());
 
 /// Defines and holds the publishing policies for the VM. There are three possible configurations:
-/// 1. No module publishing, only whitelisted scripts are allowed.
-/// 2. No module publishing, custom scripts are allowed.
-/// 3. Both module publishing and custom scripts are allowed.
-/// We represent these as an enum instead of a struct since whitelisting and module/script
-/// publishing are mutually exclusive options.
+/// 1.  !script_allowed && !module_publishing_allowed No module publishing, only script function are allowed.
+/// 2.  script_allowed && !module_publishing_allowed No module publishing, custom scripts are allowed.
+/// 3.  script_allowed && module_publishing_allowed Both module publishing and custom scripts are allowed.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub enum VMPublishingOption {
-    /// Only allow scripts on a whitelist to be run
-    Locked(Vec<[u8; SCRIPT_HASH_LENGTH]>),
-    /// Allow custom scripts, but _not_ custom module publishing
-    CustomScripts,
-    /// Allow both custom scripts and custom module publishing
-    Open,
+pub struct TransactionPublishOption {
+    // Anyone can use custom script if this flag is set to true.
+    script_allowed: bool,
+    // Anyone can publish new module if this flag is set to true.
+    module_publishing_allowed: bool,
 }
 
-impl VMPublishingOption {
-    pub fn is_open(&self) -> bool {
-        matches!(self, VMPublishingOption::Open)
-    }
-
-    pub fn is_allowed_script(&self, program: &[u8]) -> bool {
-        match self {
-            VMPublishingOption::Open | VMPublishingOption::CustomScripts => true,
-            VMPublishingOption::Locked(whitelist) => {
-                let hash_value = HashValue::sha3_256_of(program);
-                whitelist.contains(hash_value.as_ref())
-            }
+impl TransactionPublishOption {
+    pub fn locked() -> Self {
+        Self {
+            script_allowed: false,
+            module_publishing_allowed: false,
         }
     }
 
-    pub fn allowed_script(&self) -> Vec<[u8; SCRIPT_HASH_LENGTH]> {
-        match self {
-            VMPublishingOption::Open | VMPublishingOption::CustomScripts => Vec::new(),
-            VMPublishingOption::Locked(whitelist) => whitelist.clone(),
+    pub fn custom_scripts() -> Self {
+        Self {
+            script_allowed: true,
+            module_publishing_allowed: false,
         }
+    }
+
+    pub fn open() -> Self {
+        Self {
+            script_allowed: true,
+            module_publishing_allowed: true,
+        }
+    }
+
+    pub fn is_module_publishing_allowed(&self) -> bool {
+        self.module_publishing_allowed
+    }
+
+    pub fn is_script_allowed(&self) -> bool {
+        self.script_allowed
+    }
+}
+
+impl OnChainConfig for TransactionPublishOption {
+    const MODULE_IDENTIFIER: &'static str = "TransactionPublishOption";
+    const CONF_IDENTIFIER: &'static str = "TransactionPublishOption";
+
+    fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
+        let vm_publishing_option = bcs_ext::from_bytes::<TransactionPublishOption>(&bytes)
+            .map_err(|e| {
+                format_err!(
+                    "Failed first round of deserialization for TransactionPublishOption: {}",
+                    e
+                )
+            })?;
+        Ok(vm_publishing_option)
     }
 }
 

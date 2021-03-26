@@ -19,11 +19,9 @@ use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
-    Transaction, TransactionPayload,
+    Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
+    TransactionPayload,
 };
-pub use stdlib::transaction_scripts::compiled_transaction_script;
-pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -360,17 +358,6 @@ pub fn build_stdlib_package(
         let association_auth_key =
             AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        let initial_script_allow_list = genesis_config.publishing_option.allowed_script();
-
-        let mut merged_script_allow_list: Vec<u8> = Vec::new();
-        for i in 0..initial_script_allow_list.len() {
-            let tmp = &mut initial_script_allow_list
-                .get(i)
-                .expect("Cannot get script allow list member")
-                .to_vec();
-            merged_script_allow_list.append(tmp);
-        }
-
         let instruction_schedule =
             bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
                 .expect("Cannot serialize gas schedule");
@@ -412,8 +399,13 @@ pub fn build_stdlib_package(
                 bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_gas_limit).unwrap(),
                 bcs_ext::to_bytes(&genesis_config.consensus_config.strategy).unwrap(),
                 //vm config
-                bcs_ext::to_bytes(&merged_script_allow_list).unwrap(),
-                bcs_ext::to_bytes(&genesis_config.publishing_option.is_open()).unwrap(),
+                bcs_ext::to_bytes(&genesis_config.publishing_option.is_script_allowed()).unwrap(),
+                bcs_ext::to_bytes(
+                    &genesis_config
+                        .publishing_option
+                        .is_module_publishing_allowed(),
+                )
+                .unwrap(),
                 bcs_ext::to_bytes(&instruction_schedule).unwrap(),
                 bcs_ext::to_bytes(&native_schedule).unwrap(),
                 //gas constants
@@ -593,8 +585,14 @@ pub fn build_module_upgrade_queue(
     )
 }
 
-pub fn build_empty_script() -> Script {
-    let empty_script =
-        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::EmptyScript).into_vec();
-    Script::new(empty_script, vec![], vec![])
+pub fn build_empty_script() -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("EmptyScripts").unwrap(),
+        ),
+        Identifier::new("empty_script").unwrap(),
+        vec![],
+        vec![],
+    )
 }

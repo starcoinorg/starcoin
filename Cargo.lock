@@ -8899,6 +8899,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
+ "starcoin-transaction-builder",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
