@@ -666,6 +666,7 @@ impl GenesisConfig {
     }
 }
 
+// UNCLE_RATE = UNCLE_RATE_TARGET/1000
 static UNCLE_RATE_TARGET: u64 = 240;
 static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
@@ -980,7 +981,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: UNCLE_RATE_TARGET,
+            uncle_rate_target: 500,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
@@ -999,7 +1000,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60 * 60 * 1000,           // 1h
-            voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
+            voting_period: 60 * 60 * 24 * 1000, // 1d
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
