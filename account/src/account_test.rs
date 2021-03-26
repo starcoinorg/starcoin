@@ -111,6 +111,8 @@ pub fn test_wallet_unlock() -> Result<()> {
     Ok(())
 }
 
+// ignore for now.
+#[ignore]
 #[test]
 pub fn test_wallet_account() -> Result<()> {
     use bcs_ext::BCSCodec;

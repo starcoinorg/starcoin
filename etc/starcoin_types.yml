@@ -146,8 +146,7 @@ Script:
         SEQ:
           TYPENAME: TypeTag
     - args:
-        SEQ:
-          TYPENAME: TransactionArgument
+        SEQ: BYTES
 ScriptABI:
   ENUM:
     0:

@@ -3,28 +3,25 @@
 
 use crate::account_config::core_code_address;
 use crate::serde_helper::vec_bytes;
-use crate::transaction::transaction_argument::TransactionArgument;
+
 use bcs_ext::Sample;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, TypeTag};
 use serde::{Deserialize, Serialize};
-use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
 
 /// Call a Move script.
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
-    #[serde(
-        deserialize_with = "deserialize_binary",
-        serialize_with = "serialize_binary"
-    )]
+    #[serde(with = "serde_bytes")]
     code: Vec<u8>,
     ty_args: Vec<TypeTag>,
-    args: Vec<TransactionArgument>,
+    #[serde(with = "vec_bytes")]
+    args: Vec<Vec<u8>>,
 }
 
 impl Script {
-    pub fn new(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<TransactionArgument>) -> Self {
+    pub fn new(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
         Script {
             code,
             ty_args,
@@ -40,11 +37,11 @@ impl Script {
         &self.ty_args
     }
 
-    pub fn args(&self) -> &[TransactionArgument] {
+    pub fn args(&self) -> &[Vec<u8>] {
         &self.args
     }
 
-    pub fn into_inner(self) -> (Vec<u8>, Vec<TypeTag>, Vec<TransactionArgument>) {
+    pub fn into_inner(self) -> (Vec<u8>, Vec<TypeTag>, Vec<Vec<u8>>) {
         (self.code, self.ty_args, self.args)
     }
 }
@@ -301,6 +298,9 @@ impl ScriptFunction {
 
     pub fn args(&self) -> &[Vec<u8>] {
         &self.args
+    }
+    pub fn into_inner(self) -> (ModuleId, Identifier, Vec<TypeTag>, Vec<Vec<u8>>) {
+        (self.module, self.function, self.ty_args, self.args)
     }
 }
 

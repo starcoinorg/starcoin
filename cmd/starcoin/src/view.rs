@@ -179,9 +179,9 @@ impl From<TransactionEventView> for EventView {
         EventView {
             key: event_view.event_key,
             sequence_number: event_view.event_seq_number.0,
-            data: EventDataView::new(&event_view.type_tag, &event_view.data).unwrap_or({
+            data: EventDataView::new(&event_view.type_tag, &event_view.data.0).unwrap_or({
                 EventDataView::Unknown {
-                    data: event_view.data,
+                    data: event_view.data.0,
                     type_tag: event_view.type_tag,
                 }
             }),
