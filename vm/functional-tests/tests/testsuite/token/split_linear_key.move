@@ -203,7 +203,7 @@ script {
         assert(Token::value(&tokens) < 10000, 101);
         Account::deposit_to_self(&signer, tokens);
         Collection::put(&signer, mint_key);
-        Offer::create<Token::LinearTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+        Offer::create<Token::LinearTimeMintKey<STC>>(&signer, new_mint_key, {{alice}}, 0);
     }
 }
 

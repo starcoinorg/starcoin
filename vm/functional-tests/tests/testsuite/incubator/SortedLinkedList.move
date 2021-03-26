@@ -426,11 +426,11 @@ module NameService {
         move_to<Expiration>(account, Expiration { expire_on_block_number: Vector::singleton(0u64)});
     }
 
-    fun add_expirtation(account: signer) acquires Expiration {
-        let sender = Signer::address_of(&account);
+    fun add_expirtation(account: &signer) acquires Expiration {
+        let sender = Signer::address_of(account);
         let current_block = Block::get_current_block_number();
         if (!exists<Expiration>(sender)) {
-            move_to<Expiration>(&account, Expiration {expire_on_block_number: Vector::singleton(current_block + EXPIRE_AFTER)});
+            move_to<Expiration>(account, Expiration {expire_on_block_number: Vector::singleton(current_block + EXPIRE_AFTER)});
         } else {
             let expire_vector_mut = &mut borrow_global_mut<Expiration>(sender).expire_on_block_number;
             Vector::push_back<u64>(expire_vector_mut, current_block + EXPIRE_AFTER);

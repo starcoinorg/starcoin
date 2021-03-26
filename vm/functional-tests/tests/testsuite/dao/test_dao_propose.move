@@ -27,7 +27,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: signer) {
-        ModifyDaoConfigProposal::propose<STC>(&signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED

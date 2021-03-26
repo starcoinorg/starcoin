@@ -80,7 +80,7 @@ script {
     }
 }
 // check: gas_used
-// check: 28542085
+// check: 28542057
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -93,7 +93,7 @@ script {
     }
 }
 // check: gas_used
-// check: 38610
+// check: 38582
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -107,7 +107,7 @@ script {
     }
 }
 // check: gas_used
-// check: 23153986
+// check: 23153958
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -120,7 +120,7 @@ script {
     }
 }
 // check: gas_used
-// check: 38610
+// check: 38582
 // check: "Keep(EXECUTED)"
 
 
@@ -134,7 +134,7 @@ script {
     }
 }
 // check: gas_used
-// check: 39082856
+// check: 39082842
 // check: "Keep(EXECUTED)"
 // search 10000 need 39078951 gas
 
@@ -149,7 +149,7 @@ script {
     }
 }
 // check: gas_used
-// check: 52798
+// check: 52756
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -176,5 +176,5 @@ script {
     }
 }
 // check: gas_used
-// check: 23369126
+// check: 23369098
 // check: "Keep(EXECUTED)"

@@ -27,7 +27,7 @@ script {
 use 0x1::Timestamp;
 
 fun main(signer: signer) {
-    Timestamp::initialize(signer, 0);
+    Timestamp::initialize(&signer, 0);
 }
 }
 
@@ -41,7 +41,7 @@ script {
 use 0x1::Timestamp;
 
 fun main(signer: signer) {
-    Timestamp::initialize(signer, 0);
+    Timestamp::initialize(&signer, 0);
 }
 }
 
@@ -55,7 +55,7 @@ script {
 use 0x1::Timestamp;
 
 fun main(signer: signer) {
-    Timestamp::update_global_time(signer, 10);
+    Timestamp::update_global_time(&signer, 10);
 }
 }
 
@@ -68,7 +68,7 @@ script {
 use 0x1::Timestamp;
 
 fun main(signer: signer) {
-    Timestamp::update_global_time(signer, 20);
+    Timestamp::update_global_time(&signer, 20);
 }
 }
 
@@ -83,7 +83,7 @@ use 0x1::Timestamp;
 
 fun main(signer: signer) {
     let now = Timestamp::now_seconds();
-    Timestamp::update_global_time(signer, now);
+    Timestamp::update_global_time(&signer, now);
 }
 }
 // check: ABORTED
@@ -96,7 +96,7 @@ use 0x1::Timestamp;
 
 fun main(signer: signer) {
     let now = Timestamp::now_seconds();
-    Timestamp::update_global_time(signer, now-1);
+    Timestamp::update_global_time(&signer, now-1);
 }
 }
 

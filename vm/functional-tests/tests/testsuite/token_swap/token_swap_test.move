@@ -80,7 +80,7 @@ module TokenSwap {
         register_liquidity_token<X, Y>(signer);
     }
 
-    fun register_liquidity_token<X: store, Y: store>(signer: signer) {
+    fun register_liquidity_token<X: store, Y: store>(signer: &signer) {
         assert_admin(signer);
 
         Token::register_token<LiquidityToken<X, Y>>(signer, 3);
@@ -203,7 +203,7 @@ module TokenSwap {
         (x_swapped, y_swapped)
     }
 
-    fun assert_admin(signer: signer) {
+    fun assert_admin(signer: &signer) {
         assert(Signer::address_of(signer) == admin_address(), 401);
     }
     fun admin_address(): address {
@@ -230,10 +230,10 @@ use 0x1::Token;
 use 0x1::STC;
 fun main(signer: signer) {
     Token::register_token<Token1::Token1>(
-        signer,
+        &signer,
         3,
     );
-    TokenSwap::register_swap_pair<STC::STC, Token1::Token1>(signer);
+    TokenSwap::register_swap_pair<STC::STC, Token1::Token1>(&signer);
 }
 }
 // check: EXECUTED
@@ -244,7 +244,7 @@ script{
 use {{admin}}::Token1;
 use 0x1::Account;
 fun main(signer: signer) {
-    Account::do_accept_token<Token1::Token1>(signer);
+    Account::do_accept_token<Token1::Token1>(&signer);
 }
 }
 // check: EXECUTED
@@ -258,7 +258,7 @@ use {{admin}}::Token1;
 use 0x1::Account;
 use 0x1::Token;
 fun main(signer: signer) {
-    let token = Token::mint<Token1::Token1>(signer, 100000000);
+    let token = Token::mint<Token1::Token1>(&signer, 100000000);
     Account::deposit({{liquidier}}, token);
     assert(Account::balance<Token1::Token1>({{liquidier}}) == 100000000, 42);
 }
@@ -275,14 +275,14 @@ script{
 
 
     fun main(signer: signer) {
-        Account::do_accept_token<LiquidityToken<STC::STC, Token1::Token1>>(signer);
+        Account::do_accept_token<LiquidityToken<STC::STC, Token1::Token1>>(&signer);
         // STC/Token1 = 1:10
         let stc_amount = 1000000;
         let token1_amount = 10000000;
-        let stc = Account::withdraw<STC::STC>(signer, stc_amount);
-        let token1 = Account::withdraw<Token1::Token1>(signer, token1_amount);
+        let stc = Account::withdraw<STC::STC>(&signer, stc_amount);
+        let token1 = Account::withdraw<Token1::Token1>(&signer, token1_amount);
         let liquidity_token = TokenSwap::mint<STC::STC, Token1::Token1>(stc, token1);
-        Account::deposit_to_self(signer, liquidity_token);
+        Account::deposit_to_self(&signer, liquidity_token);
 
         let (x, y) = TokenSwap::get_reserves<STC::STC, Token1::Token1>();
         assert(x == stc_amount, 111);
@@ -301,17 +301,17 @@ script {
     use 0x1::Account;
     use 0x1::Token;
     fun main(signer: signer) {
-        Account::do_accept_token<Token1::Token1>(signer);
+        Account::do_accept_token<Token1::Token1>(&signer);
 
         let stc_amount = 100000;
-        let stc = Account::withdraw<STC::STC>(signer, stc_amount);
+        let stc = Account::withdraw<STC::STC>(&signer, stc_amount);
         let amount_out = {
             let (x, y) = TokenSwap::get_reserves<STC::STC, Token1::Token1>();
             TokenSwapHelper::get_amount_out(stc_amount, x, y)
         };
         let (stc_token, token1_token) = TokenSwap::swap<STC::STC, Token1::Token1>(stc, amount_out, Token::zero<Token1::Token1>(), 0);
         Token::destroy_zero(stc_token);
-        Account::deposit_to_self(signer, token1_token);
+        Account::deposit_to_self(&signer, token1_token);
     }
 }
 
@@ -328,11 +328,11 @@ script{
     // use 0x1::Debug;
 
     fun main(signer: signer) {
-        let liquidity_balance = Account::balance<LiquidityToken<STC::STC, Token1::Token1>>(Signer::address_of(signer));
-        let liquidity = Account::withdraw<LiquidityToken<STC::STC, Token1::Token1>>(signer, liquidity_balance);
+        let liquidity_balance = Account::balance<LiquidityToken<STC::STC, Token1::Token1>>(Signer::address_of(&signer));
+        let liquidity = Account::withdraw<LiquidityToken<STC::STC, Token1::Token1>>(&signer, liquidity_balance);
         let (stc, token1) = TokenSwap::burn<STC::STC, Token1::Token1>(liquidity);
-        Account::deposit_to_self(signer, stc);
-        Account::deposit_to_self(signer, token1);
+        Account::deposit_to_self(&signer, stc);
+        Account::deposit_to_self(&signer, token1);
 
         let (x, y) = TokenSwap::get_reserves<STC::STC, Token1::Token1>();
         assert(x == 0, 111);

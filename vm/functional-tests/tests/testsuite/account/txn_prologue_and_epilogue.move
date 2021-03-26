@@ -70,7 +70,7 @@ script {
         let txn_max_gas_units = 10000; //EPROLOGUE_CANT_PAY_GAS_DEPOSIT
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -101,7 +101,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             wrong_txn_public_key, //EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY
@@ -134,7 +134,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -167,7 +167,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -180,7 +180,7 @@ script {
         let gas_units_remaining = 10;
 
         Account::txn_epilogue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,
@@ -215,7 +215,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -249,7 +249,7 @@ script {
         let gas_units_remaining = 10;
 
         Account::txn_epilogue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,
@@ -283,7 +283,7 @@ script {
         let gas_units_remaining = 10;
 
         Account::txn_epilogue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,

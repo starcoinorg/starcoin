@@ -29,7 +29,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: signer) {
-        ModifyDaoConfigProposal::propose<STC>(&signer, 60 * 60 * 24 * 1000, 0, 101, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 101, 0, 0);
     }
 }
 // check: "Keep(ABORTED { code: 102919"
@@ -40,7 +40,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: signer) {
-        ModifyDaoConfigProposal::propose<STC>(&signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED
@@ -52,7 +52,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: signer) {
-        ModifyDaoConfigProposal::propose<STC>(&signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED
@@ -63,7 +63,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: signer) {
-        ModifyDaoConfigProposal::propose<STC>(&signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: RESOURCE_ALREADY_EXISTS
@@ -466,7 +466,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: signer) {
-        ModifyDaoConfigProposal::propose<STC>(&signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED
@@ -540,7 +540,7 @@ script {
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::Dao;
-    fun vote(&signer: signer) {
+    fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 2);
         assert(state == 2, (state as u64));
         {

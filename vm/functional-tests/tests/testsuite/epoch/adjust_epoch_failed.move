@@ -8,7 +8,7 @@ use 0x1::Epoch;
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let uncles = 1;
-        let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
     }
 }
 
@@ -23,7 +23,7 @@ script {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let uncles = 1;
-        let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
     }
 }
 
@@ -41,7 +41,7 @@ script {
         let config = ConsensusConfig::get_config();
         let max_uncles_per_block = ConsensusConfig::base_max_uncles_per_block(&config);
         let uncles = max_uncles_per_block + 1;
-        let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
     }
 }
 // check: "Keep(ABORTED { code: 25863"
@@ -57,7 +57,7 @@ script {
         let uncles = 1;
         let config = ConsensusConfig::get_config();
         let block_number = 1 + ConsensusConfig::epoch_block_count(&config);
-        let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
     }
 }
 // check: "Keep(ABORTED { code: 19"
@@ -73,7 +73,7 @@ script {
         let uncles = 1;
         let config = ConsensusConfig::get_config();
         let block_number = ConsensusConfig::epoch_block_count(&config);
-        let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
     }
 }
 // check: "Keep(ABORTED { code: 25863"
@@ -89,7 +89,7 @@ script {
         let uncles = 0;
         let config = ConsensusConfig::get_config();
         let block_number = ConsensusConfig::epoch_block_count(&config);
-        let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
     }
 }
 // check: EXECUTED

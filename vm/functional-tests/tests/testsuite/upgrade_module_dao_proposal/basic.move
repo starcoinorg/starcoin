@@ -182,7 +182,7 @@ script {
         let proposal_id = 0;
         let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModule>({{alice}}, proposal_id);
         assert(state == 2, (state as u64));
-        let balance = Account::balance<MyToken>(Signer::address_of(signer));
+        let balance = Account::balance<MyToken>(Signer::address_of(&signer));
         let balance = Account::withdraw<MyToken>(&signer, balance / 2);
         Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModule>(&signer, {{alice}}, proposal_id, balance, true);
     }

@@ -12,7 +12,7 @@
 script {
     use 0x1::OnChainConfigScripts;
 
-    fun main(account: &signer,
+    fun main(account: signer,
              script_allowed: bool,
              module_publishing_allowed: bool,
              exec_delay: u64) {
@@ -20,7 +20,7 @@ script {
     }
 }
 // check: gas_used
-// check: 185415
+// check: 185421
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -128,5 +128,5 @@ script {
     }
 }
 // check: gas_used
-// check: 115775
+// check: 115781
 // check: "Keep(EXECUTED)"

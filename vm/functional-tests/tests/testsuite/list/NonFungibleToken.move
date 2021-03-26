@@ -272,12 +272,12 @@ module NonFungibleToken {
     struct TokenLock<Token> has key, store {
     }
 
-    fun lock<Token: store>(account: signer) {
-        move_to<TokenLock<Token>>(&account, TokenLock<Token>{});
+    fun lock<Token: store>(account: &signer) {
+        move_to<TokenLock<Token>>(account, TokenLock<Token>{});
     }
 
-    fun unlock<Token: store>(account: signer) acquires TokenLock {
-        let sender = Signer::address_of(&account);
+    fun unlock<Token: store>(account: &signer) acquires TokenLock {
+        let sender = Signer::address_of(account);
         let TokenLock<Token> {} = move_from<TokenLock<Token>>(sender);
     }
 
@@ -289,7 +289,7 @@ module NonFungibleToken {
             limited: limited,
             total: total,
         };
-        move_to<LimitedMeta>(&account, limited_meta);
+        move_to<LimitedMeta>(account, limited_meta);
         SortedLinkedList::create_new_list<vector<u8>>(account, Vector::empty());
     }
 
