@@ -110,7 +110,7 @@
       },
       "header": {
         "properties": {
-          "accumulator_root": {
+          "txn_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -176,7 +176,7 @@
           "number": {
             "type": "long"
           },
-          "parent_block_accumulator_root": {
+          "block_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -261,7 +261,7 @@
       "uncles": {
         "type": "nested",
         "properties": {
-          "accumulator_root": {
+          "txn_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -327,7 +327,7 @@
           "number": {
             "type": "long"
           },
-          "parent_block_accumulator_root": {
+          "block_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
