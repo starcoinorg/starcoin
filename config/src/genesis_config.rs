@@ -968,7 +968,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
             network: BuiltinNetworkID::Proxima,
-            block_number: 697500,
+            block_number: 956666,
         }),
         version: Version { major: 1 },
         reward_delay: 7,
