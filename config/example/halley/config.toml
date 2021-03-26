@@ -4,11 +4,13 @@ max_backup = 100
 [metrics]
 address = "127.0.0.1"
 
+[metrics.push_config]
+interval = 0
+
 [miner]
 miner_thread = 3
 
 [network]
-discover_local = true
 node_name = "alice-node1"
 seeds = ["/ip4/1.2.3.3/tcp/9840/p2p/QmRZ6ZwVzhJ6xpVV1CEve2RKiUzK4y2pSx3eg2cvQMsT4f", "/ip4/1.2.3.4/tcp/9840/p2p/12D3KooWCfUex27aoqaKScponiLB4N4FWbgmbHYjVoRebGrQaRYk"]
 
