@@ -22,6 +22,7 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, dependencies},
@@ -312,7 +313,8 @@ fn make_script_transaction(
 ) -> Result<SignedUserTransaction> {
     let mut blob = vec![];
     script.serialize(&mut blob)?;
-    let script = TransactionScript::new(blob, config.ty_args.clone(), config.args.clone());
+    let script =
+        TransactionScript::new(blob, config.ty_args.clone(), convert_txn_args(&config.args));
 
     let params = get_transaction_parameters(exec, config);
     let raw_txn = RawUserTransaction::new_script(

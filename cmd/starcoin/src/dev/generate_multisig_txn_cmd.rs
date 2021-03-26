@@ -161,7 +161,11 @@ impl CommandAction for GenerateMultisigTxnCommand {
                         }
                         Ok(s) => s,
                     };
-                TransactionPayload::Script(Script::new(bytecode, type_tags, args))
+                TransactionPayload::Script(Script::new(
+                    bytecode,
+                    type_tags,
+                    convert_txn_args(&args),
+                ))
             }
             (None, None) => {
                 bail!("either script-file or stdlib-script name should be provided");

@@ -3,15 +3,11 @@
 
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
-use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Module {
-    #[serde(
-        deserialize_with = "deserialize_binary",
-        serialize_with = "serialize_binary"
-    )]
+    #[serde(with = "serde_bytes")]
     code: Vec<u8>,
 }
 impl From<Module> for Vec<u8> {

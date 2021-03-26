@@ -35,7 +35,7 @@ use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{DryRunTransaction, Module, Package, TransactionPayloadType};
-use starcoin_vm_types::transaction_argument::convert_txn_args;
+
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -424,7 +424,7 @@ impl StarcoinVM {
                 TransactionPayload::Script(script) => session.execute_script(
                     script.code().to_vec(),
                     script.ty_args().to_vec(),
-                    convert_txn_args(script.args()),
+                    script.args().to_vec(),
                     vec![txn_data.sender()],
                     cost_strategy,
                 ),

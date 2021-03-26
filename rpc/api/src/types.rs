@@ -12,7 +12,6 @@ use jsonrpc_core_client::RpcChannel;
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
-use serde_helpers::{deserialize_binary, serialize_binary};
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
@@ -43,6 +42,7 @@ use starcoin_vm_types::transaction::{
     Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
     TransactionPayload, TransactionStatus,
 };
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
 use starcoin_vm_types::write_set::WriteOp;
 use std::collections::BTreeMap;
@@ -173,15 +173,59 @@ pub struct DryRunTransactionRequest {
     pub sender_public_key: Option<StrView<AccountPublicKey>>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ArgumentsView {
+    HumanReadable(Vec<TransactionArgumentView>),
+    BCS(Vec<StrView<Vec<u8>>>),
+}
+
+impl ArgumentsView {
+    pub fn to_bcs_bytes(&self) -> Vec<Vec<u8>> {
+        match self {
+            Self::HumanReadable(vs) => {
+                convert_txn_args(&vs.iter().map(|v| v.0.clone()).collect::<Vec<_>>())
+            }
+            Self::BCS(vs) => vs.iter().map(|v| v.0.clone()).collect(),
+        }
+    }
+}
+
+/// Be caution:
+/// We only allow passing args by TransactionArgumentView to our jsonrpc.
+/// Because we cannot distinguish whether `0x12341235` is an human readable address or just some bcs bytes in hex string.
+impl<'de> Deserialize<'de> for ArgumentsView {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let args = <Vec<TransactionArgumentView>>::deserialize(deserializer)?;
+        Ok(ArgumentsView::HumanReadable(args))
+    }
+}
+
+/// Only return BCS hex string when returning arguments out of jsonrpc.
+impl Serialize for ArgumentsView {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Self::HumanReadable(_vs) => {
+                // transform view to bcs first.
+                let data: Vec<_> = self.to_bcs_bytes().into_iter().map(StrView).collect();
+                data.serialize(serializer)
+            }
+            Self::BCS(data) => data.serialize(serializer),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ScriptData {
     pub code: StrView<ByteCodeOrScriptFunction>,
     #[serde(default)]
     pub type_args: Vec<TypeTagView>,
-    #[serde(default)]
-    pub args: Vec<TransactionArgumentView>,
-    #[serde(default)]
-    pub arguments_bcs: Vec<BytesView>,
+    pub args: ArgumentsView,
 }
 
 impl ScriptData {
@@ -203,18 +247,13 @@ impl ScriptData {
     }
     fn into_data(self) -> Result<Script, ScriptFunction> {
         let ty_args: Vec<_> = self.type_args.into_iter().map(|s| s.0).collect();
-        let args: Vec<_> = self.args.into_iter().map(|s| s.0).collect();
-        let arguments_bcs: Vec<_> = self
-            .arguments_bcs
-            .into_iter()
-            .map(|s| s.0.to_vec())
-            .collect();
+        let args: Vec<_> = self.args.to_bcs_bytes();
 
         match self.code.0 {
             ByteCodeOrScriptFunction::ByteCode(code) => Ok(Script::new(code, ty_args, args)),
-            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => Err(
-                ScriptFunction::new(module, function, ty_args, arguments_bcs),
-            ),
+            ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
+                Err(ScriptFunction::new(module, function, ty_args, args))
+            }
         }
     }
 }
@@ -233,24 +272,20 @@ impl From<Script> for ScriptData {
         ScriptData {
             code: StrView(ByteCodeOrScriptFunction::ByteCode(code)),
             type_args: ty_args.into_iter().map(TypeTagView::from).collect(),
-            args: args
-                .into_iter()
-                .map(TransactionArgumentView::from)
-                .collect(),
-            arguments_bcs: vec![],
+            args: ArgumentsView::BCS(args.into_iter().map(StrView).collect()),
         }
     }
 }
 impl From<ScriptFunction> for ScriptData {
     fn from(s: ScriptFunction) -> Self {
+        let (module, function, ty_args, args) = s.into_inner();
         ScriptData {
             code: StrView(ByteCodeOrScriptFunction::ScriptFunction(FunctionId {
-                module: s.module().clone(),
-                function: s.function().to_owned(),
+                module,
+                function,
             })),
-            type_args: s.ty_args().iter().cloned().map(TypeTagView::from).collect(),
-            args: vec![],
-            arguments_bcs: s.args().iter().cloned().map(BytesView::from).collect(),
+            type_args: ty_args.into_iter().map(TypeTagView::from).collect(),
+            args: ArgumentsView::BCS(args.into_iter().map(StrView).collect()),
         }
     }
 }
@@ -353,11 +388,7 @@ pub struct RawUserTransactionView {
     pub sequence_number: StrView<u64>,
 
     // The transaction payload in bcs_ext bytes.
-    #[serde(
-        serialize_with = "serialize_binary",
-        deserialize_with = "deserialize_binary"
-    )]
-    pub payload: Vec<u8>,
+    pub payload: StrView<Vec<u8>>,
 
     // Maximal total gas specified by wallet to spend for this transaction.
     pub max_gas_amount: StrView<u64>,
@@ -388,7 +419,7 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
             gas_token_code: origin.gas_token_code(),
             expiration_timestamp_secs: origin.expiration_timestamp_secs().into(),
             chain_id: origin.chain_id().id(),
-            payload: origin.into_payload().encode()?,
+            payload: StrView(origin.into_payload().encode()?),
         })
     }
 }
@@ -728,11 +759,7 @@ pub struct TransactionEventView {
     // txn index in block
     pub transaction_index: Option<u32>,
 
-    #[serde(
-        serialize_with = "serialize_binary",
-        deserialize_with = "deserialize_binary"
-    )]
-    pub data: Vec<u8>,
+    pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTag,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
@@ -745,7 +772,7 @@ impl From<ContractEventInfo> for TransactionEventView {
             block_number: Some(info.block_number.into()),
             transaction_hash: Some(info.transaction_hash),
             transaction_index: Some(info.transaction_index),
-            data: info.event.event_data().to_vec(),
+            data: StrView(info.event.event_data().to_vec()),
             type_tag: info.event.type_tag().clone(),
             event_key: *info.event.key(),
             event_seq_number: info.event.sequence_number().into(),
@@ -759,7 +786,7 @@ impl From<ContractEvent> for TransactionEventView {
             block_number: None,
             transaction_hash: None,
             transaction_index: None,
-            data: event.event_data().to_vec(),
+            data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone(),
             event_key: *event.key(),
             event_seq_number: event.sequence_number().into(),
@@ -780,7 +807,7 @@ impl TransactionEventView {
             block_number: block_number.map(Into::into),
             transaction_hash,
             transaction_index,
-            data: contract_event.event_data().to_vec(),
+            data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone(),
             event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),

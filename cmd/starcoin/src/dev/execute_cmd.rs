@@ -177,7 +177,7 @@ impl CommandAction for ExecuteCommand {
             }
             // script
             (Some((bytecode, true)), None) => {
-                let script = Script::new(bytecode, type_tags, args);
+                let script = Script::new(bytecode, type_tags, convert_txn_args(&args));
                 TransactionPayload::Script(script)
             }
             (Some((_bytecode, true)), Some(_)) => {
