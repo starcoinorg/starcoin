@@ -7,11 +7,11 @@ script {
     use 0x1::Account;
     use 0x1::Authenticator;
 
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Account::create_account<STC>(copy auth_key_vec);
-        Account::pay_from<STC>(account, txn_sender, 5000);
+        Account::pay_from<STC>(&account, txn_sender, 5000);
     }
 }
 // check: EXECUTED
@@ -24,7 +24,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -40,7 +40,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -59,7 +59,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -70,7 +70,7 @@ script {
         let txn_max_gas_units = 10000; //EPROLOGUE_CANT_PAY_GAS_DEPOSIT
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -89,7 +89,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -101,7 +101,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             wrong_txn_public_key, //EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY
@@ -120,7 +120,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -134,7 +134,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -153,7 +153,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -167,7 +167,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -180,7 +180,7 @@ script {
         let gas_units_remaining = 10;
 
         Account::txn_epilogue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,
@@ -201,7 +201,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -215,7 +215,7 @@ script {
         let txn_max_gas_units = 1000;
 
         Account::txn_prologue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -234,7 +234,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -249,7 +249,7 @@ script {
         let gas_units_remaining = 10;
 
         Account::txn_epilogue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,
@@ -268,7 +268,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::Authenticator;
     use 0x1::Vector;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
@@ -283,7 +283,7 @@ script {
         let gas_units_remaining = 10;
 
         Account::txn_epilogue<STC>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,

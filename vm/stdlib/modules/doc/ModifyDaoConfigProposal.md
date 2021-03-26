@@ -165,7 +165,7 @@ Should be called by token issuer.
 Entrypoint for the proposal.
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -175,7 +175,7 @@ Entrypoint for the proposal.
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(
-    signer: &signer,
+    signer: signer,
     voting_delay: u64,
     voting_period: u64,
     voting_quorum_rate: u8,
@@ -189,7 +189,7 @@ Entrypoint for the proposal.
         voting_quorum_rate,
         min_action_delay,
     };
-    <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;(signer, action, exec_delay);
+    <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;(&signer, action, exec_delay);
 }
 </code></pre>
 
@@ -282,7 +282,7 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 ### Function `propose`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
 </code></pre>
 
 

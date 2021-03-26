@@ -42,8 +42,8 @@ module Tester {
 script {
 use {{bob}}::Tester;
 
-fun main(account: &signer) {
-    Tester::test(account);
+fun main(account: signer) {
+    Tester::test(&account);
 }
 }
 

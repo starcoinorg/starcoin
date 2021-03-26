@@ -43,9 +43,9 @@ module M {
 
 script {
 use {{alice}}::M;
-fun main(account: &signer) {
+fun main(account: signer) {
   let cup = M::new();
-  M::publish(cup, account);
+  M::publish(cup, &account);
 }
 }
 
@@ -58,8 +58,8 @@ fun main(account: &signer) {
 
 script {
 use {{alice}}::M;
-fun main(account: &signer) {
-  let y = M::destroy(account);
+fun main(account: signer) {
+  let y = M::destroy(&account);
   assert(y == 1, 41)
 }
 }
@@ -73,10 +73,10 @@ fun main(account: &signer) {
 
 script {
 use {{alice}}::M;
-fun main(account: &signer) {
+fun main(account: signer) {
     let cup = M::new();
-    M::publish(cup, account);
-    let y = M::destroy(account);
+    M::publish(cup, &account);
+    let y = M::destroy(&account);
     assert(y == 1, 41);
 }
 }
@@ -89,10 +89,10 @@ fun main(account: &signer) {
 
 script {
 use {{alice}}::M;
-fun main(account: &signer) {
+fun main(account: signer) {
     let cup = M::new();
-    M::publish(cup, account);
-    let cup = M::get_cup(account);
+    M::publish(cup, &account);
+    let cup = M::get_cup(&account);
     M::destroy_x(cup)
 }
 }

@@ -12,7 +12,7 @@
 script {
     use 0x1::OnChainConfigScripts;
 
-    fun main(account: &signer,
+    fun main(account: signer,
              script_allowed: bool,
              module_publishing_allowed: bool,
              exec_delay: u64) {
@@ -20,7 +20,7 @@ script {
     }
 }
 // check: gas_used
-// check: 185415
+// check: 185421
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -37,7 +37,7 @@ script {
     use 0x1::OnChainConfigDao::OnChainConfigUpdate;
     use 0x1::TransactionPublishOption::TransactionPublishOption;
 
-    fun main(account: &signer,
+    fun main(account: signer,
             proposer_address: address,
             proposal_id: u64,
             agree: bool,
@@ -52,7 +52,7 @@ script {
     }
 }
 // check: gas_used
-// check: 176147
+// check: 176139
 // check: "Keep(EXECUTED)"
 
 
@@ -70,7 +70,7 @@ script {
     use 0x1::OnChainConfigDao::OnChainConfigUpdate;
     use 0x1::TransactionPublishOption::TransactionPublishOption;
 
-    fun main(_account: &signer,
+    fun main(_account: signer,
             proposer_address: address,
             proposal_id: u64,
         ) {
@@ -93,7 +93,7 @@ script {
     use 0x1::OnChainConfigDao::OnChainConfigUpdate;
     use 0x1::TransactionPublishOption::TransactionPublishOption;
 
-    fun main(account: &signer,
+    fun main(account: signer,
             proposer_address: address,
             proposal_id: u64,
         ) {
@@ -105,7 +105,7 @@ script {
     }
 }
 // check: gas_used
-// check: 118839
+// check: 118831
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -120,7 +120,7 @@ script {
     use 0x1::OnChainConfigScripts;
     use 0x1::TransactionPublishOption::TransactionPublishOption;
 
-    fun main(account: &signer, proposal_id: u64) {
+    fun main(account: signer, proposal_id: u64) {
         OnChainConfigScripts::execute_on_chain_config_proposal<TransactionPublishOption>(
             account,
             proposal_id
@@ -128,5 +128,5 @@ script {
     }
 }
 // check: gas_used
-// check: 115775
+// check: 115781
 // check: "Keep(EXECUTED)"

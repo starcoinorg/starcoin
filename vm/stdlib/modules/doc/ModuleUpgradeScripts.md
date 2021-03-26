@@ -29,7 +29,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -39,14 +39,14 @@
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
-    signer: &signer,
+    signer: signer,
     module_address: address,
     package_hash: vector&lt;u8&gt;,
     version: u64,
     exec_delay: u64,
 ) {
     <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">UpgradeModuleDaoProposal::propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(
-        signer,
+        &signer,
         module_address,
         package_hash,
         version,
@@ -65,7 +65,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(signer: &signer, strategy: u8)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(signer: signer, strategy: u8)
 </code></pre>
 
 
@@ -75,19 +75,19 @@
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(
-    signer: &signer,
+    signer: signer,
     strategy: u8,
 ) {
     // 1. check version
     <b>if</b> (strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_two_phase">PackageTxnManager::get_strategy_two_phase</a>()) {
-        <b>if</b> (!<a href="Config.md#0x1_Config_config_exist_by_address">Config::config_exist_by_address</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))) {
-            <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(signer, <a href="Version.md#0x1_Version_new_version">Version::new_version</a>(1));
+        <b>if</b> (!<a href="Config.md#0x1_Config_config_exist_by_address">Config::config_exist_by_address</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&signer))) {
+            <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(&signer, <a href="Version.md#0x1_Version_new_version">Version::new_version</a>(1));
         }
     };
 
     // 2. <b>update</b> strategy
     <a href="PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
-        signer,
+        &signer,
         strategy,
         <a href="Option.md#0x1_Option_none">Option::none</a>&lt;u64&gt;(),
     );
@@ -104,7 +104,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -114,7 +114,7 @@
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
-    _signer: &signer,
+    _signer: signer,
     proposer_address: address,
     proposal_id: u64,
 ) {
@@ -132,7 +132,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: signer)
 </code></pre>
 
 
@@ -142,9 +142,9 @@
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(
-    signer: &signer,
+    signer: signer,
 ) {
-    <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan">PackageTxnManager::cancel_upgrade_plan</a>(signer);
+    <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan">PackageTxnManager::cancel_upgrade_plan</a>(&signer);
 }
 </code></pre>
 
@@ -170,7 +170,7 @@
 ### Function `cancel_upgrade_plan`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: &signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_cancel_upgrade_plan">cancel_upgrade_plan</a>(signer: signer)
 </code></pre>
 
 

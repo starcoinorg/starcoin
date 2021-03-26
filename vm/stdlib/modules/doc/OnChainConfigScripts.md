@@ -38,7 +38,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_consensus_config">propose_update_consensus_config</a>(account: &signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_consensus_config">propose_update_consensus_config</a>(account: signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
 </code></pre>
 
 
@@ -47,7 +47,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_consensus_config">propose_update_consensus_config</a>(account: &signer,
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_consensus_config">propose_update_consensus_config</a>(account: signer,
                                                       uncle_rate_target: u64,
                                                       base_block_time_target: u64,
                                                       base_reward_per_block: u128,
@@ -71,7 +71,7 @@
         base_max_uncles_per_block,
         base_block_gas_limit,
         strategy);
-    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>&gt;(account, consensus_config, exec_delay);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>&gt;(&account, consensus_config, exec_delay);
 }
 </code></pre>
 
@@ -85,7 +85,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_reward_config">propose_update_reward_config</a>(account: &signer, reward_delay: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_reward_config">propose_update_reward_config</a>(account: signer, reward_delay: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -94,11 +94,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_reward_config">propose_update_reward_config</a>(account: &signer,
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_reward_config">propose_update_reward_config</a>(account: signer,
                                                    reward_delay: u64,
                                                    exec_delay: u64) {
     <b>let</b> reward_config = <a href="RewardConfig.md#0x1_RewardConfig_new_reward_config">RewardConfig::new_reward_config</a>(reward_delay);
-    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;(account, reward_config, exec_delay);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;(&account, reward_config, exec_delay);
 }
 </code></pre>
 
@@ -112,7 +112,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: &signer, script_allowed: bool, module_publishing_allowed: bool, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: signer, script_allowed: bool, module_publishing_allowed: bool, exec_delay: u64)
 </code></pre>
 
 
@@ -121,12 +121,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: &signer,
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: signer,
                                                         script_allowed: bool,
                                                         module_publishing_allowed: bool,
                                                         exec_delay: u64) {
     <b>let</b> txn_publish_option = <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">TransactionPublishOption::new_transaction_publish_option</a>(script_allowed, module_publishing_allowed);
-    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>&gt;(account, txn_publish_option, exec_delay);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>&gt;(&account, txn_publish_option, exec_delay);
 }
 </code></pre>
 
@@ -140,7 +140,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: &signer, duration_seconds: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: signer, duration_seconds: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -149,11 +149,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: &signer,
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: signer,
                                                         duration_seconds: u64,
                                                         exec_delay: u64) {
     <b>let</b> txn_timeout_config = <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_new_transaction_timeout_config">TransactionTimeoutConfig::new_transaction_timeout_config</a>(duration_seconds);
-    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig">TransactionTimeoutConfig::TransactionTimeoutConfig</a>&gt;(account, txn_timeout_config, exec_delay);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig">TransactionTimeoutConfig::TransactionTimeoutConfig</a>&gt;(&account, txn_timeout_config, exec_delay);
 }
 </code></pre>
 
@@ -167,7 +167,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_vm_config">propose_update_vm_config</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_vm_config">propose_update_vm_config</a>(account: signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -176,7 +176,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_vm_config">propose_update_vm_config</a>(account: &signer,
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_vm_config">propose_update_vm_config</a>(account: signer,
                                                instruction_schedule: vector&lt;u8&gt;,
                                                native_schedule: vector&lt;u8&gt;,
                                                global_memory_per_byte_cost: u64,
@@ -204,7 +204,7 @@
         max_transaction_size_in_bytes,
         gas_unit_scaling_factor,
         default_account_size);
-    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="VMConfig.md#0x1_VMConfig_VMConfig">VMConfig::VMConfig</a>&gt;(account, vm_config, exec_delay);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">OnChainConfigDao::propose_update</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, <a href="VMConfig.md#0x1_VMConfig_VMConfig">VMConfig::VMConfig</a>&gt;(&account, vm_config, exec_delay);
 }
 </code></pre>
 
@@ -218,7 +218,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copyable</b>&gt;(account: &signer, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copyable</b>&gt;(account: signer, proposal_id: u64)
 </code></pre>
 
 
@@ -227,8 +227,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copy</b> + drop + store&gt;(account: &signer, proposal_id: u64) {
-    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">OnChainConfigDao::execute</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, ConfigT&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), proposal_id);
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copy</b> + drop + store&gt;(account: signer, proposal_id: u64) {
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">OnChainConfigDao::execute</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>, ConfigT&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&account), proposal_id);
 }
 </code></pre>
 
@@ -246,7 +246,7 @@
 ### Function `propose_update_consensus_config`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_consensus_config">propose_update_consensus_config</a>(account: &signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_consensus_config">propose_update_consensus_config</a>(account: signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
 </code></pre>
 
 
@@ -262,7 +262,7 @@
 ### Function `propose_update_reward_config`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_reward_config">propose_update_reward_config</a>(account: &signer, reward_delay: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_reward_config">propose_update_reward_config</a>(account: signer, reward_delay: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -278,7 +278,7 @@
 ### Function `propose_update_txn_publish_option`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: &signer, script_allowed: bool, module_publishing_allowed: bool, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: signer, script_allowed: bool, module_publishing_allowed: bool, exec_delay: u64)
 </code></pre>
 
 
@@ -294,7 +294,7 @@
 ### Function `propose_update_txn_timeout_config`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: &signer, duration_seconds: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: signer, duration_seconds: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -310,7 +310,7 @@
 ### Function `propose_update_vm_config`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_vm_config">propose_update_vm_config</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_propose_update_vm_config">propose_update_vm_config</a>(account: signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -326,7 +326,7 @@
 ### Function `execute_on_chain_config_proposal`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copyable</b>&gt;(account: &signer, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copyable</b>&gt;(account: signer, proposal_id: u64)
 </code></pre>
 
 

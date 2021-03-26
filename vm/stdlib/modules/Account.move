@@ -206,11 +206,11 @@ module Account {
     native fun create_signer(addr: address): signer;
     native fun destroy_signer(sig: signer);
 
-    public(script) fun create_account_with_initial_amount<TokenType: store>(account: &signer, fresh_address: address, auth_key: vector<u8>, initial_amount: u128) acquires Account, Balance {
+    public(script) fun create_account_with_initial_amount<TokenType: store>(account: signer, fresh_address: address, auth_key: vector<u8>, initial_amount: u128) acquires Account, Balance {
         let created_address = create_account<TokenType>(auth_key);
         assert(fresh_address == created_address, Errors::invalid_argument(EADDRESS_AND_AUTH_KEY_MISMATCH));
         if (initial_amount > 0) {
-            pay_from<TokenType>(account, fresh_address, initial_amount);
+            pay_from<TokenType>(&account, fresh_address, initial_amount);
         };
     }
 
@@ -573,8 +573,8 @@ module Account {
         aborts_if !exists<Account>(cap.account_address);
     }
 
-    public(script) fun rotate_authentication_key(account: &signer, new_key: vector<u8>) acquires Account {
-        let key_rotation_capability = extract_key_rotation_capability(account);
+    public(script) fun rotate_authentication_key(account: signer, new_key: vector<u8>) acquires Account {
+        let key_rotation_capability = extract_key_rotation_capability(&account);
         rotate_authentication_key_with_capability(&key_rotation_capability, new_key);
         restore_key_rotation_capability(key_rotation_capability);
     }
@@ -622,8 +622,8 @@ module Account {
 
     }
 
-    public(script) fun accept_token<TokenType: store>(account: &signer) acquires Account {
-        do_accept_token<TokenType>(account);
+    public(script) fun accept_token<TokenType: store>(account: signer) acquires Account {
+        do_accept_token<TokenType>(&account);
     }
 
     spec fun accept_token {

@@ -211,7 +211,7 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: &signer, offer_address: address)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: signer, offer_address: address)
 </code></pre>
 
 
@@ -221,11 +221,11 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered: store&gt;(
-    signer: &signer,
+    signer: signer,
     offer_address: address,
 ) <b>acquires</b> <a href="Offer.md#0x1_Offer">Offer</a> {
-    <b>let</b> offered = <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(signer, offer_address);
-    <a href="Collection.md#0x1_Collection_put">Collection::put</a>(signer, offered);
+    <b>let</b> offered = <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(&signer, offer_address);
+    <a href="Collection.md#0x1_Collection_put">Collection::put</a>(&signer, offered);
 }
 </code></pre>
 
@@ -319,7 +319,7 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 ### Function `take_offer`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: &signer, offer_address: address)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: signer, offer_address: address)
 </code></pre>
 
 

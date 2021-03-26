@@ -7,9 +7,9 @@
 script {
 use 0x1::PackageTxnManager;
 use 0x1::Signer;
-fun main(account: &signer) {
+fun main(account: signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::check_package_txn(Signer::address_of(account), hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
 }
 }
 
@@ -22,9 +22,9 @@ use 0x1::Config;
 use 0x1::Version;
 use 0x1::PackageTxnManager;
 use 0x1::Option;
-fun main(account: &signer) {
-    Config::publish_new_config<Version::Version>(account, Version::new_version(1));
-    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(2));
+fun main(account: signer) {
+    Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
+    PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(2));
 }
 }
 
@@ -36,9 +36,9 @@ fun main(account: &signer) {
 script {
 use 0x1::PackageTxnManager;
 use 0x1::Signer;
-fun main(account: &signer) {
+fun main(account: signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::check_package_txn(Signer::address_of(account), hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
 }
 }
 
@@ -48,9 +48,9 @@ fun main(account: &signer) {
 //! sender: alice
 script {
 use 0x1::PackageTxnManager;
-fun main(account: &signer) {
+fun main(account: signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::submit_upgrade_plan(account, copy hash, 1);
+    PackageTxnManager::submit_upgrade_plan(&account, copy hash, 1);
 }
 }
 
@@ -62,9 +62,9 @@ fun main(account: &signer) {
 script {
 use 0x1::PackageTxnManager;
 use 0x1::Signer;
-fun main(account: &signer) {
+fun main(account: signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::check_package_txn(Signer::address_of(account), hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
 }
 }
 
@@ -80,9 +80,9 @@ fun main(account: &signer) {
 script {
 use 0x1::PackageTxnManager;
 use 0x1::Signer;
-fun main(account: &signer) {
+fun main(account: signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::check_package_txn(Signer::address_of(account), hash);
+    PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
 }
 }
 
@@ -93,8 +93,8 @@ fun main(account: &signer) {
 //! sender: alice
 script {
     use 0x1::PackageTxnManager;
-    fun main(account: &signer) {
-        PackageTxnManager::cancel_upgrade_plan(account);
+    fun main(account: signer) {
+        PackageTxnManager::cancel_upgrade_plan(&account);
     }
 }
 
@@ -105,8 +105,8 @@ script {
 //! sender: alice
 script {
     use 0x1::PackageTxnManager;
-    fun main(account: &signer) {
-        PackageTxnManager::cancel_upgrade_plan(account);
+    fun main(account: signer) {
+        PackageTxnManager::cancel_upgrade_plan(&account);
     }
 }
 
@@ -117,8 +117,8 @@ script {
 script {
     use 0x1::PackageTxnManager;
     use 0x1::Option;
-    fun main(account: &signer) {
-        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_arbitrary(), Option::some<u64>(0));
+    fun main(account: signer) {
+        PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_arbitrary(), Option::some<u64>(0));
     }
 }
 
@@ -129,8 +129,8 @@ script {
 script {
     use 0x1::PackageTxnManager;
     use 0x1::Option;
-    fun main(account: &signer) {
-        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_new_module(), Option::some<u64>(0));
+    fun main(account: signer) {
+        PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_new_module(), Option::some<u64>(0));
     }
 }
 
@@ -142,8 +142,8 @@ script {
 script {
     use 0x1::PackageTxnManager;
     use 0x1::Option;
-    fun main(account: &signer) {
-        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_freeze(), Option::some<u64>(0));
+    fun main(account: signer) {
+        PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_freeze(), Option::some<u64>(0));
     }
 }
 // check: EXECUTED

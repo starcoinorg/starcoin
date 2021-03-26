@@ -7,15 +7,15 @@ module TransferScripts {
     use 0x1::BCS;
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 101;
 
-    public(script) fun peer_to_peer<TokenType: store>(account: &signer, payee: address, payee_auth_key: vector<u8>, amount: u128) {
+    public(script) fun peer_to_peer<TokenType: store>(account: signer, payee: address, payee_auth_key: vector<u8>, amount: u128) {
         if (!Account::exists_at(payee)) {
             let created_address = Account::create_account<TokenType>(payee_auth_key);
             assert(payee == created_address, Errors::invalid_argument(EADDRESS_AND_AUTH_KEY_MISMATCH));
         };
-        Account::pay_from<TokenType>(account, payee, amount)
+        Account::pay_from<TokenType>(&account, payee, amount)
     }
 
-    public(script) fun peer_to_peer_batch<TokenType: store>(account: &signer, payeees: vector<u8>, payee_auth_keys: vector<u8>, amount: u128) {
+    public(script) fun peer_to_peer_batch<TokenType: store>(account: signer, payeees: vector<u8>, payee_auth_keys: vector<u8>, amount: u128) {
         let payee_bytes_vec = Vector::split<u8>(&payeees, 16);
         let auth_key_bytes_vec = Vector::split<u8>(&payee_auth_keys, 32);
         let len = Vector::length(&payee_bytes_vec);
@@ -28,13 +28,13 @@ module TransferScripts {
                 let created_address = Account::create_account<TokenType>(payee_auth_key);
                 assert(payee == created_address, Errors::invalid_argument(EADDRESS_AND_AUTH_KEY_MISMATCH));
             };
-            Account::pay_from<TokenType>(account, payee, amount);
+            Account::pay_from<TokenType>(&account, payee, amount);
             i = i + 1;
         }
     }
 
     public(script) fun peer_to_peer_with_metadata<TokenType: store>(
-        account: &signer,
+        account: signer,
         payee: address,
         payee_auth_key: vector<u8>,
         amount: u128,
@@ -44,7 +44,7 @@ module TransferScripts {
             let created_address = Account::create_account<TokenType>(payee_auth_key);
             assert(payee == created_address, Errors::invalid_argument(EADDRESS_AND_AUTH_KEY_MISMATCH));
         };
-        Account::pay_from_with_metadata<TokenType>(account,payee, amount, metadata)
+        Account::pay_from_with_metadata<TokenType>(&account,payee, amount, metadata)
     }
 }
 }

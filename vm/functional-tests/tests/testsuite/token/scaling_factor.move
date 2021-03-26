@@ -26,8 +26,8 @@ module MyToken {
 script {
 use {{alice}}::MyToken;
 
-fun main(account: &signer) {
-    MyToken::init(account, 39); // EPRECISION_TOO_LARGE
+fun main(account: signer) {
+    MyToken::init(&account, 39); // EPRECISION_TOO_LARGE
 }
 }
 
@@ -38,8 +38,8 @@ fun main(account: &signer) {
 script {
 use {{alice}}::MyToken;
 
-fun main(account: &signer) {
-MyToken::init(account, 3);
+fun main(account: signer) {
+MyToken::init(&account, 3);
 }
 }
 
@@ -51,7 +51,7 @@ script {
 use {{alice}}::MyToken::MyToken;
 use 0x1::Token;
 
-fun main(_account: &signer) {
+fun main(_account: signer) {
     let sf = Token::scaling_factor<MyToken>();
     assert(sf == 1000, 101);
 }
