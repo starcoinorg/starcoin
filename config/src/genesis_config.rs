@@ -997,7 +997,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version: StdlibVersion::Version(1),
         dao_config: DaoConfig {
             voting_delay: 60 * 60 * 1000,           // 1h
             voting_period: 60 * 60 * 24 * 1000, // 1d
