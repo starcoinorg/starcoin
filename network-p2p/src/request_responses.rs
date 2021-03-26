@@ -267,10 +267,15 @@ impl RequestResponsesBehaviour {
     ) {
         if let Some((protocol, _)) = self.protocols.get_mut(protocol_name) {
             if protocol.is_connected(target) || connect.should_connect() {
+                let len = request.len();
                 let request_id = protocol.send_request(target, request);
                 let prev_req_id = self.pending_requests.insert(
                     (protocol_name.to_string().into(), request_id).into(),
                     (Instant::now(), pending_response),
+                );
+                info!(
+                    "[network-p2p] req-resp send request {} {} {} {}",
+                    request_id, target, protocol_name, len,
                 );
                 debug_assert!(prev_req_id.is_none(), "Expect request id to be unique.");
             } else if pending_response
@@ -581,6 +586,13 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 .remove(&(protocol.clone(), request_id).into())
                             {
                                 Some((started, pending_response)) => {
+                                    if let Ok(response) = &response {
+                                        info!(
+                                            "[network-p2p] req-resp received response {} {}",
+                                            request_id,
+                                            response.len()
+                                        );
+                                    };
                                     let delivered = pending_response
                                         .send(response.map_err(|()| RequestFailure::Refused))
                                         .map_err(|_| RequestFailure::Obsolete);
