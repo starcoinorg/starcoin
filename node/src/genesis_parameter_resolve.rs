@@ -222,7 +222,7 @@ mod tests {
         let resolver = RpcFutureBlockParameterResolver::new(BuiltinNetworkID::Main.into());
         let parameter = FutureBlockParameter {
             network: BuiltinNetworkID::Proxima,
-            block_number: 571111,
+            block_number: 956666,
         };
         let genesis_parameter = resolver.resolve(&parameter).unwrap();
         debug!("{:?}", genesis_parameter);

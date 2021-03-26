@@ -941,7 +941,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version: StdlibVersion::Version(1),
         dao_config: DaoConfig {
             voting_delay: 60_000,          // 1min
             voting_period: 60 * 60 * 1000, // 1h
@@ -965,11 +965,10 @@ pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 
 pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // This is a test config,
-    //TODO conform launch time
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
             network: BuiltinNetworkID::Proxima,
-            block_number: 697500,
+            block_number: 956666,
         }),
         version: Version { major: 1 },
         reward_delay: 7,

@@ -12,7 +12,7 @@ A Layered Cryptocurrency and Decentralized Blockchain System.
 cargo build --release 
 ```
 
-For prerequisites and detailed build instructions please read [Build from source](http://developer.starcoin.org/en/build/) document.
+For prerequisites and detailed build instructions please read [Build from source](https://developer.starcoin.org/en/build/) document.
 
 ## Install binary
 
@@ -25,7 +25,7 @@ Download binary release from github [releases](https://github.com/starcoinorg/st
 starcoin -n dev console
 ```
 
-More detailed dev instructions please read [Run starcoin dev network](http://developer.starcoin.org/en/runnetwork/) document.
+More detailed dev instructions please read [Run starcoin dev network](https://developer.starcoin.org/en/runnetwork/) document.
 
 ## Join a test network
 
@@ -33,12 +33,13 @@ More detailed dev instructions please read [Run starcoin dev network](http://dev
 starcoin -n halley console
 ```
 
-More detailed test network info please read [Join starcoin test network](http://developer.starcoin.org/en/runnetwork/).
+More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/runnetwork/).
 
 ## Network deployment status
 
-1. halley : Auto deploy latest code.
-2. proxima: v0.9.4
+1. halley: auto deploy latest code.
+2. proxima: v0.9.5
+3. barnard: v1.0.0.beta
 
 ## Contribution
 Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.
