@@ -1,6 +1,5 @@
 # Starcoin Stdlib Release Notes
 
-Version 0.1
-    - basic functionality ready (to add more details)
-    - spec coverage 80%
+Version 1
+    - release for Starcoin 1.0
 
