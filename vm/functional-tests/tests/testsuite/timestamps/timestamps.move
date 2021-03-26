@@ -3,7 +3,7 @@
 script {
 use 0x1::Timestamp;
 
-fun main(_signer: &signer) {
+fun main(_signer: signer) {
     assert(!Timestamp::is_genesis(), 1000);
 }
 }
@@ -14,7 +14,7 @@ fun main(_signer: &signer) {
 script {
     use 0x1::Timestamp;
 
-    fun main(_signer: &signer) {
+    fun main(_signer: signer) {
         Timestamp::assert_genesis();
     }
 }
@@ -26,7 +26,7 @@ script {
 script {
 use 0x1::Timestamp;
 
-fun main(signer: &signer) {
+fun main(signer: signer) {
     Timestamp::initialize(signer, 0);
 }
 }
@@ -40,7 +40,7 @@ fun main(signer: &signer) {
 script {
 use 0x1::Timestamp;
 
-fun main(signer: &signer) {
+fun main(signer: signer) {
     Timestamp::initialize(signer, 0);
 }
 }
@@ -54,7 +54,7 @@ fun main(signer: &signer) {
 script {
 use 0x1::Timestamp;
 
-fun main(signer: &signer) {
+fun main(signer: signer) {
     Timestamp::update_global_time(signer, 10);
 }
 }
@@ -67,7 +67,7 @@ fun main(signer: &signer) {
 script {
 use 0x1::Timestamp;
 
-fun main(signer: &signer) {
+fun main(signer: signer) {
     Timestamp::update_global_time(signer, 20);
 }
 }
@@ -81,7 +81,7 @@ fun main(signer: &signer) {
 script {
 use 0x1::Timestamp;
 
-fun main(signer: &signer) {
+fun main(signer: signer) {
     let now = Timestamp::now_seconds();
     Timestamp::update_global_time(signer, now);
 }
@@ -94,7 +94,7 @@ fun main(signer: &signer) {
 script {
 use 0x1::Timestamp;
 
-fun main(signer: &signer) {
+fun main(signer: signer) {
     let now = Timestamp::now_seconds();
     Timestamp::update_global_time(signer, now-1);
 }

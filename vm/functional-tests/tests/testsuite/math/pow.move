@@ -5,7 +5,7 @@
 
 script {
     use 0x1::Math::pow;
-    fun main(_signer: &signer) {
+    fun main(_signer: signer) {
         assert(pow(1, 2) == 1, 0);
         assert(pow(2, 1) == 2, 1);
         assert(pow(2, 2) == 4, 1);

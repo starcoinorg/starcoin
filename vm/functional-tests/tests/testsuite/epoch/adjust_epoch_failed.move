@@ -4,7 +4,7 @@
 script {
 use 0x1::Epoch;
     //ENOT_GENESIS_ACCOUNT
-    fun adjust_epoch(genesis_account: &signer) {
+    fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let uncles = 1;
@@ -19,7 +19,7 @@ use 0x1::Epoch;
 script {
     use 0x1::Epoch;
     //block_number < epoch_ref.end_block_number, do nothing
-    fun adjust_epoch(genesis_account: &signer) {
+    fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let uncles = 1;
@@ -35,7 +35,7 @@ script {
     use 0x1::Epoch;
     use 0x1::ConsensusConfig;
     //EINVALID_UNCLES_COUNT
-    fun adjust_epoch(genesis_account: &signer) {
+    fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let config = ConsensusConfig::get_config();
@@ -52,7 +52,7 @@ script {
     use 0x1::Epoch;
     use 0x1::ConsensusConfig;
     //EUNREACHABLE, block_number > epoch_ref.end_block_number
-    fun adjust_epoch(genesis_account: &signer) {
+    fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
         let uncles = 1;
         let config = ConsensusConfig::get_config();
@@ -68,7 +68,7 @@ script {
     use 0x1::Epoch;
     use 0x1::ConsensusConfig;
     //EINVALID_UNCLES_COUNT. If block_number == epoch_ref.end_block_number, uncles should be 0
-    fun adjust_epoch(genesis_account: &signer) {
+    fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
         let uncles = 1;
         let config = ConsensusConfig::get_config();
@@ -84,7 +84,7 @@ script {
     use 0x1::Epoch;
     use 0x1::ConsensusConfig;
     //block_number == epoch_ref.end_block_number
-    fun adjust_epoch(genesis_account: &signer) {
+    fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
         let uncles = 0;
         let config = ConsensusConfig::get_config();

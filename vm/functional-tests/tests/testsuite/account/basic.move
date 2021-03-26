@@ -25,8 +25,8 @@ module Holder {
 script {
     use 0x1::STC::STC;
     use 0x1::Account;
-    fun main(account: &signer) {
-        let with_cap = Account::extract_withdraw_capability(account);
+    fun main(account: signer) {
+        let with_cap = Account::extract_withdraw_capability(&account);
         Account::pay_from_capability<STC>(&with_cap, {{bob}}, 10, x"");
         Account::restore_withdraw_capability(with_cap);
     }
@@ -37,8 +37,8 @@ script {
 //! sender: bob
 script {
     use 0x1::Account;
-    fun main(account: &signer) {
-        let rot_cap = Account::extract_key_rotation_capability(account);
+    fun main(account: signer) {
+        let rot_cap = Account::extract_key_rotation_capability(&account);
         Account::rotate_authentication_key_with_capability(&rot_cap, x"123abc");
         Account::restore_key_rotation_capability(rot_cap);
     }
@@ -51,14 +51,14 @@ script {
 script {
     use 0x1::Account;
     use {{default}}::Holder;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         Holder::hold(
-            account,
-            Account::extract_key_rotation_capability(account)
+            &account,
+            Account::extract_key_rotation_capability(&account)
         );
         Holder::hold(
-            account,
-            Account::extract_key_rotation_capability(account)
+            &account,
+            Account::extract_key_rotation_capability(&account)
         );
     }
 }
@@ -69,16 +69,16 @@ script {
 script {
     use 0x1::Account;
     use 0x1::Signer;
-    fun main(sender: &signer) {
-        let cap = Account::extract_key_rotation_capability(sender);
+    fun main(sender: signer) {
+        let cap = Account::extract_key_rotation_capability(&sender);
         assert(
-            *Account::key_rotation_capability_address(&cap) == Signer::address_of(sender), 0
+            *Account::key_rotation_capability_address(&cap) == Signer::address_of(&sender), 0
         );
         Account::restore_key_rotation_capability(cap);
-        let with_cap = Account::extract_withdraw_capability(sender);
+        let with_cap = Account::extract_withdraw_capability(&sender);
 
         assert(
-            *Account::withdraw_capability_address(&with_cap) == Signer::address_of(sender),
+            *Account::withdraw_capability_address(&with_cap) == Signer::address_of(&sender),
             0
         );
         Account::restore_withdraw_capability(with_cap);
@@ -91,8 +91,8 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    fun main(account: &signer) {
-        let with_cap = Account::extract_withdraw_capability(account);
+    fun main(account: signer) {
+        let with_cap = Account::extract_withdraw_capability(&account);
         Account::pay_from_capability<STC>(&with_cap, {{alice}}, 10000, x"");
         Account::restore_withdraw_capability(with_cap);
         assert(Account::balance<STC>({{alice}}) == 10000, 60)
@@ -130,8 +130,8 @@ fun main() {
 script {
 use 0x1::Account;
 use 0x1::Signer;
-fun main(account: &signer) {
-    let seq = Account::sequence_number(Signer::address_of(account));
+fun main(account: signer) {
+    let seq = Account::sequence_number(Signer::address_of(&account));
     assert(seq == 3, seq);
 }
 }

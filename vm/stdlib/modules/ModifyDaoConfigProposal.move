@@ -63,7 +63,7 @@ module ModifyDaoConfigProposal {
 
     /// Entrypoint for the proposal.
     public(script) fun propose<TokenT: copy + drop + store>(
-        signer: &signer,
+        signer: signer,
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
@@ -77,7 +77,7 @@ module ModifyDaoConfigProposal {
             voting_quorum_rate,
             min_action_delay,
         };
-        Dao::propose<TokenT, DaoConfigUpdate>(signer, action, exec_delay);
+        Dao::propose<TokenT, DaoConfigUpdate>(&signer, action, exec_delay);
     }
     spec fun propose {
         use 0x1::Timestamp;

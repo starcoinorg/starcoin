@@ -9,11 +9,11 @@ script {
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_key(account: &signer) {
-        let cap = Token::remove_mint_capability<STC>(account);
+    fun create_key(account: signer) {
+        let cap = Token::remove_mint_capability<STC>(&account);
         let key = Token::issue_fixed_mint_key<STC>(&cap, 0, 5); //amount should large than 0
-        Token::add_mint_capability(account, cap);
-        Offer::create(account, key, {{bob}}, 0);
+        Token::add_mint_capability(&account, cap);
+        Offer::create(&account, key, {{bob}}, 0);
     }
 }
 // check: "Keep(ABORTED { code: 4615"
@@ -26,11 +26,11 @@ script {
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_key(account: &signer) {
-        let cap = Token::remove_mint_capability<STC>(account);
+    fun create_key(account: signer) {
+        let cap = Token::remove_mint_capability<STC>(&account);
         let key = Token::issue_fixed_mint_key<STC>(&cap, 10000, 0); //period should large than 0
-        Token::add_mint_capability(account, cap);
-        Offer::create(account, key, {{bob}}, 0);
+        Token::add_mint_capability(&account, cap);
+        Offer::create(&account, key, {{bob}}, 0);
     }
 }
 // check: "Keep(ABORTED { code: 4615"
@@ -43,11 +43,11 @@ script {
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_key(account: &signer) {
-        let cap = Token::remove_mint_capability<STC>(account);
+    fun create_key(account: signer) {
+        let cap = Token::remove_mint_capability<STC>(&account);
         let key = Token::issue_fixed_mint_key<STC>(&cap, 10000, 5);
-        Token::add_mint_capability(account, cap);
-        Offer::create(account, key, {{bob}}, 0);
+        Token::add_mint_capability(&account, cap);
+        Offer::create(&account, key, {{bob}}, 0);
     }
 }
 
@@ -59,9 +59,9 @@ script {
     use 0x1::Token::{FixedTimeMintKey};
     use 0x1::Collection;
 
-    fun redeem_offer(account: &signer) {
-        let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
-        Collection::put(account,key);
+    fun redeem_offer(account: signer) {
+        let key = Offer::redeem<FixedTimeMintKey<STC>>(&account, {{genesis}});
+        Collection::put(&account,key);
     }
 }
 
@@ -78,10 +78,10 @@ script {
     use 0x1::Token::{Self, FixedTimeMintKey};
     use 0x1::Collection;
 
-    fun mint(account: &signer) {
-        let key = Collection::take<FixedTimeMintKey<STC>>(account);
+    fun mint(account: signer) {
+        let key = Collection::take<FixedTimeMintKey<STC>>(&account);
         let token = Token::mint_with_fixed_key(key); //EMINT_AMOUNT_EQUAL_ZERO
-        Account::deposit_to_self(account, token);
+        Account::deposit_to_self(&account, token);
     }
 }
 
@@ -100,10 +100,10 @@ script {
     use 0x1::Token::{Self, FixedTimeMintKey};
     use 0x1::Collection;
 
-    fun mint(account: &signer) {
-        let key = Collection::take<FixedTimeMintKey<STC>>(account);
+    fun mint(account: signer) {
+        let key = Collection::take<FixedTimeMintKey<STC>>(&account);
         assert(Token::end_time_of_key<STC>(&key) == 5, 1001); //5 seconds
-        Collection::put(account,key);
+        Collection::put(&account,key);
     }
 }
 
@@ -115,10 +115,10 @@ script {
     use 0x1::Token::{Self, FixedTimeMintKey};
     use 0x1::Collection;
 
-    fun mint(account: &signer) {
-        let key = Collection::take<FixedTimeMintKey<STC>>(account);
+    fun mint(account: signer) {
+        let key = Collection::take<FixedTimeMintKey<STC>>(&account);
         let token = Token::mint_with_fixed_key(key);
         assert(Token::value(&token) == 10000, 1001);
-        Account::deposit_to_self(account, token);
+        Account::deposit_to_self(&account, token);
     }
 }

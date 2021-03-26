@@ -67,8 +67,8 @@ module MyConfig{
 script {
 use {{alice}}::MyConfig;
 
-fun main(account: &signer) {
-    MyConfig::init(account);
+fun main(account: signer) {
+    MyConfig::init(&account);
 }
 }
 
@@ -79,8 +79,8 @@ fun main(account: &signer) {
 script {
 use {{alice}}::MyConfig;
 
-fun main(account: &signer) {
-    MyConfig::publish_new_config_with_capability(account,MyConfig::new_config(10));
+fun main(account: signer) {
+    MyConfig::publish_new_config_with_capability(&account,MyConfig::new_config(10));
 }
 }
 
@@ -93,8 +93,8 @@ script {
 use 0x1::Config;
 use {{alice}}::MyConfig;
 
-fun main(account: &signer) {
-    Config::set(account, MyConfig::new_config(2));
+fun main(account: signer) {
+    Config::set(&account, MyConfig::new_config(2));
     assert(MyConfig::get_my_config() == 2, 1001);
      assert(MyConfig::get() == 2, 1002);
 }
@@ -108,8 +108,8 @@ fun main(account: &signer) {
 script {
 use {{alice}}::MyConfig;
 
-fun main(account: &signer) {
-    MyConfig::extract_modify_config_capability(account);
+fun main(account: signer) {
+    MyConfig::extract_modify_config_capability(&account);
 }
 }
 
@@ -122,8 +122,8 @@ script {
 use 0x1::Config;
 use {{alice}}::MyConfig;
 
-fun main(account: &signer) {
-    Config::set(account, MyConfig::new_config(3));
+fun main(account: signer) {
+    Config::set(&account, MyConfig::new_config(3));
     assert(MyConfig::get_my_config() == 3, 1002);
 //    assert(MyConfig::get() == 3, 1003);
 }
@@ -168,8 +168,8 @@ script {
 use 0x1::Config;
 use {{alice}}::MyConfig;
 
-fun main(account: &signer) {
-    Config::set(account, MyConfig::new_config(5));
+fun main(account: signer) {
+    Config::set(&account, MyConfig::new_config(5));
     assert(MyConfig::get_my_config() == 5, 1004);
     assert(MyConfig::get() == 5, 1005);
 }

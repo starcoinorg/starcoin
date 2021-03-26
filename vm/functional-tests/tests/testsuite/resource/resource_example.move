@@ -41,9 +41,9 @@ fun main() {
 //! sender: bob
 script {
 use {{alice}}::Example;
-fun main(account: &signer) {
+fun main(account: signer) {
     let r = Example::new();
-    Example::save(account, r);
-    assert(Example::get_x(account), 1);
+    Example::save(&account, r);
+    assert(Example::get_x(&account), 1);
 }
 }

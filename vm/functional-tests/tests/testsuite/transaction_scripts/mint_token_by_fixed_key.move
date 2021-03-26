@@ -8,15 +8,15 @@ script {
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_key(account: &signer) {
-        let cap = Token::remove_mint_capability<STC>(account);
+    fun create_key(account: signer) {
+        let cap = Token::remove_mint_capability<STC>(&account);
         let key = Token::issue_fixed_mint_key<STC>(&cap, 10000, 2);
-        Token::add_mint_capability(account, cap);
-        Offer::create(account, key, {{bob}}, 0);
+        Token::add_mint_capability(&account, cap);
+        Offer::create(&account, key, {{bob}}, 0);
     }
 }
 // check: gas_used
-// check: 63157
+// check: 63115
 
 //! new-transaction
 //! sender: bob
@@ -26,13 +26,13 @@ script {
     use 0x1::Token::{FixedTimeMintKey};
     use 0x1::Collection;
 
-    fun redeem_offer(account: &signer) {
-        let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
-        Collection::put(account,key);
+    fun redeem_offer(account: signer) {
+        let key = Offer::redeem<FixedTimeMintKey<STC>>(&account, {{genesis}});
+        Collection::put(&account,key);
     }
 }
 // check: gas_used
-// check: 85121
+// check: 85093
 
 //! block-prologue
 //! author: alice
@@ -50,11 +50,11 @@ script {
     use 0x1::MintScripts;
     use 0x1::STC::STC;
 
-    fun main(account: &signer) {
+    fun main(account: signer) {
         MintScripts::mint_token_by_fixed_key<STC>(account);
     }
 }
 // check: gas_used
-// check: 198134
+// check: 198126
 // check: "Keep(EXECUTED)"
 

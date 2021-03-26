@@ -10,14 +10,14 @@
 script {
     use 0x1::Account;
 
-    fun main(account: &signer) {
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(account, {{bob}}, 10);
+    fun main(account: signer) {
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
         // gas used out
     }
 }

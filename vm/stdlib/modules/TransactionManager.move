@@ -41,7 +41,7 @@ module TransactionManager {
     /// - That the account has enough balance to pay for all of the gas
     /// - That the sequence number matches the transaction's sequence key
     public fun prologue<TokenType: store>(
-        account: &signer,
+        account: signer,
         txn_sender: address,
         txn_sequence_number: u64,
         txn_public_key: vector<u8>,
@@ -55,14 +55,14 @@ module TransactionManager {
     ) {
         // Can only be invoked by genesis account
         assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
+            Signer::address_of(&account) == CoreAddresses::GENESIS_ADDRESS(),
             Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
         assert(ChainId::get() == chain_id, Errors::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
         Account::txn_prologue<TokenType>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_public_key,
@@ -75,18 +75,18 @@ module TransactionManager {
         );
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE) {
             assert(
-                TransactionPublishOption::is_module_allowed(Signer::address_of(account)),
+                TransactionPublishOption::is_module_allowed(Signer::address_of(&account)),
                 Errors::invalid_argument(EPROLOGUE_MODULE_NOT_ALLOWED),
             );
             PackageTxnManager::package_txn_prologue(
-                account,
+                &account,
                 txn_package_address,
                 txn_script_or_package_hash,
             );
         } else if (txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT) {
             assert(
                 TransactionPublishOption::is_script_allowed(
-                    Signer::address_of(account),
+                    Signer::address_of(&account),
                 ),
                 Errors::invalid_argument(EPROLOGUE_SCRIPT_NOT_ALLOWED),
             );
@@ -122,7 +122,7 @@ module TransactionManager {
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
     public fun epilogue<TokenType: store>(
-        account: &signer,
+        account: signer,
         txn_sender: address,
         txn_sequence_number: u64,
         txn_gas_price: u64,
@@ -134,9 +134,9 @@ module TransactionManager {
         // txn execute success or fail.
         success: bool,
     ) {
-        CoreAddresses::assert_genesis_address(account);
+        CoreAddresses::assert_genesis_address(&account);
         Account::txn_epilogue<TokenType>(
-            account,
+            &account,
             txn_sender,
             txn_sequence_number,
             txn_gas_price,
@@ -145,7 +145,7 @@ module TransactionManager {
         );
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE) {
             PackageTxnManager::package_txn_epilogue(
-                account,
+                &account,
                 txn_sender,
                 txn_package_address,
                 success,
@@ -172,7 +172,7 @@ module TransactionManager {
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
     /// The runtime always runs this before executing the transactions in a block.
     public fun block_prologue(
-        account: &signer,
+        account: signer,
         parent_hash: vector<u8>,
         timestamp: u64,
         author: address,
@@ -183,27 +183,27 @@ module TransactionManager {
         parent_gas_used: u64,
     ) {
         // Can only be invoked by genesis account
-        CoreAddresses::assert_genesis_address(account);
+        CoreAddresses::assert_genesis_address(&account);
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
         assert(ChainId::get() == chain_id, Errors::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
 
         // deal with previous block first.
-        let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
+        let txn_fee = TransactionFee::distribute_transaction_fees<STC>(&account);
 
         // then deal with current block.
-        Timestamp::update_global_time(account, timestamp);
+        Timestamp::update_global_time(&account, timestamp);
         Block::process_block_metadata(
-            account,
+            &account,
             parent_hash,
             author,
             timestamp,
             uncles,
             number,
         );
-        let reward = Epoch::adjust_epoch(account, number, timestamp, uncles, parent_gas_used);
+        let reward = Epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
         // pass in previous block gas fees.
-        BlockReward::process_block_reward(account, number, reward, author, auth_key_vec, txn_fee);
+        BlockReward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
     }
 
     spec fun block_prologue {

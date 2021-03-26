@@ -9,7 +9,7 @@ module OnChainConfigScripts {
     use 0x1::VMConfig;
     use 0x1::Signer;
 
-    public ( script ) fun propose_update_consensus_config(account: &signer,
+    public ( script ) fun propose_update_consensus_config(account: signer,
                                                           uncle_rate_target: u64,
                                                           base_block_time_target: u64,
                                                           base_reward_per_block: u128,
@@ -33,48 +33,48 @@ module OnChainConfigScripts {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-        OnChainConfigDao::propose_update<STC::STC, ConsensusConfig::ConsensusConfig>(account, consensus_config, exec_delay);
+        OnChainConfigDao::propose_update<STC::STC, ConsensusConfig::ConsensusConfig>(&account, consensus_config, exec_delay);
     }
 
     spec fun propose_update_consensus_config {
         pragma verify = false;
     }
 
-    public ( script ) fun propose_update_reward_config(account: &signer,
+    public ( script ) fun propose_update_reward_config(account: signer,
                                                        reward_delay: u64,
                                                        exec_delay: u64) {
         let reward_config = RewardConfig::new_reward_config(reward_delay);
-        OnChainConfigDao::propose_update<STC::STC, RewardConfig::RewardConfig>(account, reward_config, exec_delay);
+        OnChainConfigDao::propose_update<STC::STC, RewardConfig::RewardConfig>(&account, reward_config, exec_delay);
     }
 
     spec fun propose_update_reward_config {
         pragma verify = false;
     }
 
-    public ( script ) fun propose_update_txn_publish_option(account: &signer,
+    public ( script ) fun propose_update_txn_publish_option(account: signer,
                                                             script_allowed: bool,
                                                             module_publishing_allowed: bool,
                                                             exec_delay: u64) {
         let txn_publish_option = TransactionPublishOption::new_transaction_publish_option(script_allowed, module_publishing_allowed);
-        OnChainConfigDao::propose_update<STC::STC, TransactionPublishOption::TransactionPublishOption>(account, txn_publish_option, exec_delay);
+        OnChainConfigDao::propose_update<STC::STC, TransactionPublishOption::TransactionPublishOption>(&account, txn_publish_option, exec_delay);
     }
 
     spec fun propose_update_txn_publish_option {
         pragma verify = false;
     }
 
-    public ( script ) fun propose_update_txn_timeout_config(account: &signer,
+    public ( script ) fun propose_update_txn_timeout_config(account: signer,
                                                             duration_seconds: u64,
                                                             exec_delay: u64) {
         let txn_timeout_config = TransactionTimeoutConfig::new_transaction_timeout_config(duration_seconds);
-        OnChainConfigDao::propose_update<STC::STC, TransactionTimeoutConfig::TransactionTimeoutConfig>(account, txn_timeout_config, exec_delay);
+        OnChainConfigDao::propose_update<STC::STC, TransactionTimeoutConfig::TransactionTimeoutConfig>(&account, txn_timeout_config, exec_delay);
     }
 
     spec fun propose_update_txn_timeout_config {
         pragma verify = false;
     }
 
-    public ( script ) fun propose_update_vm_config(account: &signer,
+    public ( script ) fun propose_update_vm_config(account: signer,
                                                    instruction_schedule: vector<u8>,
                                                    native_schedule: vector<u8>,
                                                    global_memory_per_byte_cost: u64,
@@ -102,15 +102,15 @@ module OnChainConfigScripts {
             max_transaction_size_in_bytes,
             gas_unit_scaling_factor,
             default_account_size);
-        OnChainConfigDao::propose_update<STC::STC, VMConfig::VMConfig>(account, vm_config, exec_delay);
+        OnChainConfigDao::propose_update<STC::STC, VMConfig::VMConfig>(&account, vm_config, exec_delay);
     }
 
     spec fun propose_update_vm_config {
         pragma verify = false;
     }
 
-    public ( script ) fun execute_on_chain_config_proposal<ConfigT: copy + drop + store>(account: &signer, proposal_id: u64) {
-        OnChainConfigDao::execute<STC::STC, ConfigT>(Signer::address_of(account), proposal_id);
+    public ( script ) fun execute_on_chain_config_proposal<ConfigT: copy + drop + store>(account: signer, proposal_id: u64) {
+        OnChainConfigDao::execute<STC::STC, ConfigT>(Signer::address_of(&account), proposal_id);
     }
 
     spec fun execute_on_chain_config_proposal {

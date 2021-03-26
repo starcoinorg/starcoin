@@ -11,7 +11,7 @@ anyhow = "1.0.39"
 once_cell = "1.7.2"
 prometheus = "0.12.0"
 starcoin-types = { path = "../../types"}
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="a318bb619320e8f3c8ec7e3e3bbbe1af8bc52dee" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="f71f37c1b0ba5b24fa8c88893d3aa2adaf08a425" }
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}
 num_enum = "0.5.1"

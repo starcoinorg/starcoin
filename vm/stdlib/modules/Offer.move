@@ -69,11 +69,11 @@ module Offer {
     spec fun address_of {aborts_if !exists<Offer<Offered>>(offer_address);}
 
     public(script) fun take_offer<Offered: store>(
-        signer: &signer,
+        signer: signer,
         offer_address: address,
     ) acquires Offer {
-        let offered = redeem<Offered>(signer, offer_address);
-        Collection::put(signer, offered);
+        let offered = redeem<Offered>(&signer, offer_address);
+        Collection::put(&signer, offered);
     }
 
     spec fun take_offer {

@@ -5,7 +5,7 @@
 
 script {
     use 0x1::Math::sqrt;
-    fun main(_signer: &signer) {
+    fun main(_signer: signer) {
          assert(sqrt(0) == 0, 0);
          assert(sqrt(1) == 1, 1);
          assert(sqrt(2) == 1, 1);
