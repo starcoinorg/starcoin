@@ -23,16 +23,16 @@ docker pull starcoin/starcoin:v0.9.3
 
 2. Run starcoin node
 
-Run proxima network node
+Run barnard network node
 
 ```shell
-docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin -n proxima
+docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin -n barnard
 ``` 
 
 3. Attach to console
 
 ```shell
-docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/proxima/starcoin.ipc console
+docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/barnard/starcoin.ipc console
 ```
 
 More detail about run a network node see [Run/Join Network](./runnetwork).

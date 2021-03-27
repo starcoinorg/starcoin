@@ -23,16 +23,16 @@ docker pull starcoin/starcoin:v0.9.3
 
 2. 通过 Docker 运行 starcoin 节点
 
-运行 proxima 网络的节点
+运行 barnard 网络的节点
 
 ```shell
-docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin -n proxima
+docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin -n barnard
 ``` 
 
 3. 通过 Docker 连接到 starcoin 控制台
 
 ```shell
-docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/proxima/starcoin.ipc console
+docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/barnard/starcoin.ipc console
 ```
 
 更多参数以及网络说明请参看 [运行以及加入网络](./runnetwork).

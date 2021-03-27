@@ -18,7 +18,7 @@ FLAGS:
 
 OPTIONS:
 - --seed 指定 seed
-- -n,--net 网络名 ,可以是 dev/halley/proxima/main 其中一个，本地测试网络使用 dev。如果想自定义网络请参看[运行自定义网络](./runcustomnetwork)
+- -n,--net 网络名 ,可以是 dev/halley/proxima/barnard/main 其中一个，本地测试网络使用 dev。如果想自定义网络请参看[运行自定义网络](./runcustomnetwork)
 
 
 SUBCOMMAND:
@@ -67,18 +67,19 @@ starcoin -n halley
 
 "Halley" 这个名字的灵感来自于[哈雷彗星](https://en.wikipedia.org/wiki/Halley%27s_Comet)，正式名为 1P/Halley，是一颗短周期彗星，每隔75-76年从地球上看到一次。
 
-## 加入 Proxima 网络
+## 加入 Proxima/Barnard 网络
 
-**Proxima** 是 starcoin 长期运行的一个测试网络，将在 2020 年第三季度发布，正式发布后不会清除数据.
+**Proxima** 是 starcoin 长期运行的一个测试网络，将在 2020 年第三季度发布，正式发布后不会清除数据. 最新版的 Barnard 网络于 2021/3/27 日启动
 
-可以使用如下命令加入 Proxima 网络:
+可以使用如下命令加入 Barnard 网络:
 
 ```shell
-starcoin -n proxima
+starcoin -n barnard
 ```
+
 
 "Proxima" 这个名字的灵感来自于[比邻星](https://en.wikipedia.org/wiki/Proxima_Centauri)，它是一颗小的、低质量的恒星，位于半人马座南部的南半球，距离太阳4.244光年(1.301pc)。
 
 ## 加入主网
 
-TODO
+主网将于 2021 年 4-5 月 Barnard 某个高度启动，具体高度待公布。

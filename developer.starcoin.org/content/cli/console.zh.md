@@ -13,10 +13,10 @@ weight: 1
 starcoin -n dev console
 ```
 
-以下命令会启动一个 proxima 节点并进入控制台：
+以下命令会启动一个 barnard 节点并进入控制台：
 
 ```shell
-starcoin -n proxima console
+starcoin -n barnard console
 ```
 
 如果这种方式启动，控制台和节点在同一个进程内，控制台退出，节点也会自动退出。
@@ -35,13 +35,13 @@ starcoin -n proxima console
 这个命令和启动节点同时进入控制台的命令一样，命令会自动检测目录下是否有 ipc 文件，如果有则会自动连接，不再启动新的节点。
 
 ``` shell
-starcoin -n proxima console
+starcoin -n barnard console
 ```
 
 或者明确指定 ipc 文件。 
 
 ``` shell
-starcoin --connect ~/.starcoin/proxima/starcoin.ipc console
+starcoin --connect ~/.starcoin/barnard/starcoin.ipc console
 ```
 
 注: Windows 下的 ipc 文件路径不一样
@@ -61,6 +61,6 @@ starcoin --connect ws://127.0.0.1:9870 console
 
 `9870` 是 starcoin 的默认 websocket 端口，如果你修改了它，请替换成自己修改后的值。 
 
-可以通过节点 config 文件查看 websocket 端口，默认的 config 文件在 `~/.starcoin/proxima/config.yml`
+可以通过节点 config 文件查看 websocket 端口，默认的 config 文件在 `~/.starcoin/barnard/config.yml`
 
 更多命令和参数请通过  starcoin help 查看。

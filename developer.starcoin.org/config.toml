@@ -1,4 +1,4 @@
-baseURL = "http://developer.starcoin.org/"
+baseURL = "https://developer.starcoin.org/"
 languageCode = "en"
 title = "Starcoin Developer"
 DefaultContentLanguage = "en"
@@ -33,7 +33,7 @@ enableGitInfo = true
 
 [[menu.after]]
   name = "Starcoin"
-  url = "http://starcoin.org/"
+  url = "https://starcoin.org/"
   weight = 20
 
 [params]
