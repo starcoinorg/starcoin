@@ -12,7 +12,7 @@ A Layered Cryptocurrency and Decentralized Blockchain System.
 cargo build --release 
 ```
 
-For prerequisites and detailed build instructions please read [Build from source](https://developer.starcoin.org/en/build/) document.
+For prerequisites and detailed build instructions please read [Build from source](https://developer.starcoin.org/en/setup/build/) document.
 
 ## Install binary
 
