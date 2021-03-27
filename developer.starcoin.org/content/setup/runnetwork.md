@@ -19,7 +19,7 @@ FLAGS:
 
 OPTIONS:
 - --seed config seed node address manually
-- -n, --net network name ,it should be one of dev/halley/proxima/main
+- -n, --net network name ,it should be one of dev/halley/proxima/barnard/main
 
 SUBCOMMAND:
 - console Run node background, after node started ,start cli console
@@ -67,14 +67,14 @@ starcoin -n halley
 Inspiration of the name "Halley" comes from the [Comet Halley](https://en.wikipedia.org/wiki/Halley%27s_Comet), officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
 
 
-## Join Proxima network
+## Join Proxima or Barnard network
 
-**Proxima** is starcoin long-running test network, will be released at the third quater of 2020.
+**Proxima** is starcoin long-running test network, released at the third quater of 2020, Barnard is the successor of proxima
 
-You could use such command to join Proxima network:
+You could use such command to join Barnard network:
 
 ```shell
-starcoin -n proxima
+starcoin -n barnard
 ```
 
 Inspiration of the name "Proxima" comes from the [Proxima Centauri](https://en.wikipedia.org/wiki/Proxima_Centauri), it is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus. 
@@ -82,4 +82,4 @@ Inspiration of the name "Proxima" comes from the [Proxima Centauri](https://en.w
 
 ## Join main network
 
-TODO
+Mainnet will launch between April and May, 2021.
