@@ -67,9 +67,22 @@ starcoin -n halley
 Inspiration of the name "Halley" comes from the [Comet Halley](https://en.wikipedia.org/wiki/Halley%27s_Comet), officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
 
 
-## Join Proxima or Barnard network
+## Join Proxima network
 
-**Proxima** is starcoin long-running test network, released at the third quater of 2020, Barnard is the successor of proxima
+**Proxima** is starcoin long-running test network, released at the third quater of 2020
+
+You could use such command to join Barnard network:
+
+```shell
+starcoin -n proxima
+```
+
+Inspiration of the name "Proxima" comes from the [Proxima Centauri](https://en.wikipedia.org/wiki/Proxima_Centauri), it is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus. 
+
+
+## Join Barnard network
+
+**Barnard** is starcoin permanent test network, barnard is the successor of proxima.
 
 You could use such command to join Barnard network:
 
@@ -77,7 +90,7 @@ You could use such command to join Barnard network:
 starcoin -n barnard
 ```
 
-Inspiration of the name "Proxima" comes from the [Proxima Centauri](https://en.wikipedia.org/wiki/Proxima_Centauri), it is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus. 
+Inspiration of the name "Barnard" comes from the [Barnard's Star](https://en.wikipedia.org/wiki/Barnard%27s_Star), it is a red dwarf about six light-years away from Earth in the constellation of Ophiuchus.
 
 
 ## Join main network
