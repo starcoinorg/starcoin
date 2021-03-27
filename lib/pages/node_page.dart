@@ -63,8 +63,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     final double buttonIconSize = 40.0;
     final blue = Color.fromARGB(255, 0, 255, 255);
 
-    final blueTextstyle = TextStyle(color: blue, fontSize: 25);
-    final whiteTextstyle = TextStyle(color: Colors.white, fontSize: 25);
+    final blueTextstyle = TextStyle(color: blue, fontSize: 18);
+    final whiteTextstyle = TextStyle(color: Colors.white, fontSize: 18);
     final edgeTexts = EdgeInsets.only(left: 30, right: 30);
     final dateTime = DateTime.now();
     time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
@@ -117,7 +117,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
             tmpText = lines.sublist(lines.length - maxLines).join();
           }
           setState(() {
-            text = tmpText;
+              text = tmpText;
           });
         });
         startRequest = true;
@@ -406,7 +406,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
         final balance = await node.balanceOfStc(address);
         final nodeInfo = await node.nodeInfo();
         final totalDifficulty =
-            nodeInfo['peer_info']['chain_info']['total_difficulty'];
+            nodeInfo['peer_info']['chain_info']['block_info']['total_difficulty'];
 
         final syncProgress = await node.syncProgress();
         var taskNames;
@@ -420,7 +420,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
           this.address = address.toString();
           this.balance = balance.toBigInt() / BigInt.from(1000000000);
           this.difficulty = totalDifficulty;
-          this.taskName = taskNames[taskNames.length - 1];
+          if(taskNames!=null)
+            this.taskName = taskNames[taskNames.length - 1];
           this.percent = percent;
         });
       }
