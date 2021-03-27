@@ -31,14 +31,14 @@ dependencies:
   cupertino_icons: ^0.1.2
   provider: ^3.1.0+1
   hex: ^0.1.2
-  shared_preferences: ^0.5.6+1
+  shared_preferences: ^2.0.3
   flutter_spinkit: "^4.1.1+1"
   flutter_hooks: ^0.9.0
   built_value: ^7.1.0
   built_collection: ^4.3.2
   flutter_redux: ^0.7.0
   font_awesome_flutter: ^8.2.0
-  path: 1.8.0-nullsafety.3
+  path: 1.8.0
   date_format: 1.0.9
   image: ^2.1.14
   starcoin_wallet:
@@ -76,6 +76,7 @@ flutter:
     - assets/images/starcoin-share-template.png
     - assets/images/starcoin-qr.png
     - assets/images/starcoin-save-pk.png
+    - assets/images/starcoin-bg-bn.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

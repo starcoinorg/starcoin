@@ -93,10 +93,14 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
             command,
             [
               "-n",
-              "proxima",
+              "barnard",
               "--http-apis",
               "all",
               "--disable-ipc-rpc",
+              "--push-server-url",
+              "http://miner-metrics-pushgw.starcoin.org:9191/",
+              "--push-interval",
+              "5"
               //"--disable-mint-empty-block",
               //"false"
             ],
@@ -171,7 +175,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
             body: Container(
                 decoration: BoxDecoration(
                     image: DecorationImage(
-                        image: AssetImage("assets/images/starcoin-bg.png"),
+                        image: AssetImage("assets/images/starcoin-bg-bn.png"),
                         fit: BoxFit.cover)),
                 child: Container(
                     margin: EdgeInsets.all(20),
