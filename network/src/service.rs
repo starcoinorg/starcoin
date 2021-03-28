@@ -8,7 +8,7 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::FutureExt;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
@@ -469,27 +469,44 @@ impl Inner {
                 let (protocol_name, message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
+
+                let filtered_peer_ids = self
+                    .peers
+                    .values()
+                    .filter(|peer| {
+                        if peer.known_blocks.contains(&id) {
+                            trace!(
+                                "peer({:?}) know this block({:?}), so do not broadcast. ",
+                                peer.peer_info.peer_id(),
+                                id
+                            );
+                            false
+                        } else {
+                            true
+                        }
+                    })
+                    .map(|peer| peer.peer_info.peer_id())
+                    .collect::<Vec<_>>();
+                let peers_len = self.peers.len() as u32;
+
                 let selected_peers = select_random_peers(
-                    self.config.network.min_peers_to_propagate()
-                        ..=self.config.network.max_peers_to_propagate(),
-                    &self.peers,
+                    self.config
+                        .network
+                        .min_peers_to_propagate()
+                        .max(peers_len / 2)
+                        ..=self.config.network.max_peers_to_propagate().max(peers_len), // use max(max_peers_to_propagate,peers_len) to ensure range [min,max] , max > min.
+                    filtered_peer_ids.iter(),
                 );
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
-                    if peer.known_blocks.contains(&id)
-                        || peer.peer_info.total_difficulty() >= total_difficulty
-                    {
-                        debug!("peer({:?})'s total_difficulty is >= block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
-                    } else {
-                        send_peer_count = send_peer_count.saturating_add(1);
-                        peer.known_blocks.put(id, ());
+                    send_peer_count = send_peer_count.saturating_add(1);
+                    peer.known_blocks.put(id, ());
 
-                        self.network_service.write_notification(
-                            peer_id.clone().into(),
-                            protocol_name.clone(),
-                            message.clone(),
-                        )
-                    }
+                    self.network_service.write_notification(
+                        peer_id.into(),
+                        protocol_name.clone(),
+                        message.clone(),
+                    )
                 }
 
                 debug!(
@@ -509,7 +526,7 @@ impl Inner {
                 let selected_peers = select_random_peers(
                     self.config.network.min_peers_to_propagate()
                         ..=self.config.network.max_peers_to_propagate(),
-                    &self.peers,
+                    self.peers.keys(),
                 );
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
@@ -566,10 +583,10 @@ impl Inner {
     }
 }
 
-fn select_random_peers(
-    peer_num_range: RangeInclusive<u32>,
-    peers: &HashMap<PeerId, Peer>,
-) -> Vec<PeerId> {
+fn select_random_peers<'a, P>(peer_num_range: RangeInclusive<u32>, peers: P) -> Vec<PeerId>
+where
+    P: ExactSizeIterator<Item = &'a PeerId>,
+{
     let (min_peers, max_peers) = peer_num_range.into_inner();
     let peers_len = peers.len();
     // take sqrt(x) peers
@@ -577,7 +594,7 @@ fn select_random_peers(
     count = count.min(max_peers).max(min_peers);
 
     let mut random = rand::thread_rng();
-    let mut peer_ids: Vec<_> = peers.keys().cloned().collect();
+    let mut peer_ids: Vec<_> = peers.cloned().collect();
     peer_ids.shuffle(&mut random);
     peer_ids.truncate(count as usize);
     peer_ids
@@ -585,29 +602,37 @@ fn select_random_peers(
 
 #[cfg(test)]
 mod test {
-    use crate::service::{select_random_peers, Peer};
-    use network_api::{PeerId, PeerInfo};
-    use starcoin_types::startup_info::ChainInfo;
-    use std::collections::HashMap;
+    use crate::service::select_random_peers;
+    use network_api::PeerId;
 
-    fn create_peers(n: u32) -> HashMap<PeerId, Peer> {
-        (0..n)
-            .map(|_| {
-                let peer_id = PeerId::random();
-                let peer = Peer::new(PeerInfo::new(peer_id.clone(), ChainInfo::random()));
-                (peer_id, peer)
-            })
-            .collect()
+    fn create_peers(n: u32) -> Vec<PeerId> {
+        (0..n).map(|_| PeerId::random()).collect()
     }
 
     #[test]
     fn test_select_peer() {
-        assert_eq!(select_random_peers(1..=3, &create_peers(2)).len(), 1);
-        assert_eq!(select_random_peers(2..=5, &create_peers(9)).len(), 3);
-        assert_eq!(select_random_peers(8..=128, &create_peers(3)).len(), 3);
-        assert_eq!(select_random_peers(8..=128, &create_peers(4)).len(), 4);
-        assert_eq!(select_random_peers(8..=128, &create_peers(10)).len(), 8);
-        assert_eq!(select_random_peers(8..=128, &create_peers(25)).len(), 8);
-        assert_eq!(select_random_peers(8..=128, &create_peers(64)).len(), 8);
+        assert_eq!(select_random_peers(1..=3, create_peers(2).iter()).len(), 1);
+        assert_eq!(select_random_peers(2..=5, create_peers(9).iter()).len(), 3);
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(3).iter()).len(),
+            3
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(4).iter()).len(),
+            4
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(10).iter()).len(),
+            8
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(25).iter()).len(),
+            8
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(64).iter()).len(),
+            8
+        );
+        assert_eq!(select_random_peers(3..=3, create_peers(3).iter()).len(), 3);
     }
 }
