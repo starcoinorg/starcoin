@@ -966,9 +966,10 @@ pub static BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // This is a test config,
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
-            network: BuiltinNetworkID::Proxima,
-            block_number: 956666,
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
+            parent_hash: HashValue::from_hex_literal("0x3a06de3042a4b8fe156c4ae88d93e7a2e23d621965eddf46351d13d3e8ba3bb6").unwrap(),
+            timestamp: 1616846974851,
+            difficulty: 0x03bd.into(),
         }),
         version: Version { major: 1 },
         reward_delay: 7,

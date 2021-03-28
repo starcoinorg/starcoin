@@ -73,15 +73,10 @@ impl Display for Genesis {
 impl Genesis {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
 
-    pub fn load_by_opt(option: GenesisOpt, net: &ChainNetwork) -> Result<Self> {
+    pub fn load_by_opt(option: GenesisOpt, net: &ChainNetwork) -> Result<Option<Self>> {
         match (option, net.id()) {
-            (GenesisOpt::Generated, ChainNetworkID::Builtin(id)) => {
-                match Self::load_generated(*id)? {
-                    Some(genesis) => Ok(genesis),
-                    None => Self::build(net),
-                }
-            }
-            (_, _) => Self::build(net),
+            (GenesisOpt::Generated, ChainNetworkID::Builtin(id)) => Self::load_generated(*id),
+            (_, _) => Ok(Some(Self::build(net)?)),
         }
     }
 
@@ -89,9 +84,11 @@ impl Genesis {
     pub fn load(net: &ChainNetwork) -> Result<Self> {
         // test and dev always use Fresh genesis.
         if net.is_test() || net.is_dev() {
-            Self::load_by_opt(GenesisOpt::Fresh, net)
+            Ok(Self::load_by_opt(GenesisOpt::Fresh, net)?
+                .expect("generate test/dev genesis should success"))
         } else {
-            Self::load_by_opt(GenesisOpt::Generated, net)
+            Self::load_by_opt(GenesisOpt::Generated, net)?
+                .ok_or_else(|| format_err!("{}'s genesis do not generated", net))
         }
     }
 

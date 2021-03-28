@@ -32,11 +32,12 @@ fn main() {
             continue;
         }
         let net = ChainNetwork::new_builtin(id);
-        let new_genesis =
-            Genesis::load_by_opt(GenesisOpt::Fresh, &net).expect("build genesis fail.");
-        let generated_genesis = Genesis::load(&net);
+        let new_genesis = Genesis::load_by_opt(GenesisOpt::Fresh, &net)
+            .expect("build genesis fail.")
+            .expect("build genesis fresh should success.");
+        let generated_genesis = Genesis::load_by_opt(GenesisOpt::Generated, &net);
         let regenerate = match generated_genesis {
-            Ok(generated_genesis) => {
+            Ok(Some(generated_genesis)) => {
                 let regenerate = new_genesis.block().id() != generated_genesis.block().id();
                 if regenerate {
                     info!(
@@ -49,6 +50,14 @@ fn main() {
                     debug!("new genesis: {}", new_genesis);
                 }
                 regenerate
+            }
+            Ok(None) => {
+                info!(
+                    "Chain net {} previous generated genesis do to exist, generate new genesis({:?}).",
+                    net,
+                    new_genesis.block().id()
+                );
+                true
             }
             Err(e) => {
                 warn!(
