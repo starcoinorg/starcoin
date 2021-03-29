@@ -12,7 +12,7 @@ pub struct ScoreCounter {
 impl ScoreCounter {
     pub fn new(score: u64) -> Self {
         Self {
-            score: Arc::new(AtomicU64::new(score)),
+            score: Arc::new(AtomicU64::new(if score == 0 { 1 } else { score })),
             count: Arc::new(AtomicU64::new(0)),
         }
     }
