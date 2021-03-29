@@ -47,9 +47,9 @@ use std::{
 use std::{collections::HashSet, collections::VecDeque};
 use wasm_timer::Instant;
 
-pub use libp2p::PeerId;
-use futures::channel::oneshot::{Sender, Receiver};
 use futures::channel::oneshot;
+use futures::channel::oneshot::{Receiver, Sender};
+pub use libp2p::PeerId;
 
 /// We don't accept nodes whose reputation is under this value.
 const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
@@ -189,9 +189,10 @@ impl PeersetHandle {
 
     pub fn reputations(&self, reputation_threshold: i32) -> Receiver<Vec<(PeerId, i32)>> {
         let (reputation_tx, reputation_rx) = oneshot::channel();
-        let _ = self
-            .tx
-            .unbounded_send(Action::PeerReputations((reputation_tx, reputation_threshold)));
+        let _ = self.tx.unbounded_send(Action::PeerReputations((
+            reputation_tx,
+            reputation_threshold,
+        )));
         reputation_rx
     }
 }
@@ -718,10 +719,12 @@ impl Peerset {
     }
 
     /// Effective peer list.
-    fn effective_peer_list(&mut self, reputation_threshold:i32) -> Vec<(PeerId, i32)> {
-        self.data.peer_reputations().filter(|(_, reputation)| {reputation >= &reputation_threshold}).map(
-            |(peer_id, reputation)| (peer_id.clone(), reputation)
-        ).collect()
+    fn effective_peer_list(&mut self, reputation_threshold: i32) -> Vec<(PeerId, i32)> {
+        self.data
+            .peer_reputations()
+            .filter(|(_, reputation)| reputation >= &reputation_threshold)
+            .map(|(peer_id, reputation)| (*peer_id, reputation))
+            .collect()
     }
 }
 

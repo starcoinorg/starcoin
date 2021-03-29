@@ -4,6 +4,7 @@
 use crate::ReputationChange;
 use anyhow::*;
 use bcs_ext::{BCSCodec, Sample};
+use futures::channel::oneshot::Receiver;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;
@@ -12,7 +13,6 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use std::borrow::Cow;
-use futures::channel::oneshot::Receiver;
 
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
@@ -214,7 +214,7 @@ pub struct ReportReputation {
 
 #[derive(Clone, Debug)]
 pub struct PeerReputations {
-    pub threshold: i32
+    pub threshold: i32,
 }
 
 impl ServiceRequest for PeerReputations {

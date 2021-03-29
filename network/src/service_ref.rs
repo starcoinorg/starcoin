@@ -5,6 +5,7 @@ use crate::service::NetworkActorService;
 use crate::worker::RPC_PROTOCOL_PREFIX;
 use crate::PeerMessage;
 use anyhow::{format_err, Result};
+use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::messages::NotificationMessage;
@@ -17,7 +18,6 @@ use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::sync::Arc;
-use futures::channel::oneshot::Receiver;
 
 //TODO Service registry should support custom service ref.
 #[derive(Clone)]
@@ -54,7 +54,10 @@ impl PeerProvider for NetworkServiceRef {
         self.service_ref.report_peer(peer_id, cost_benefit)
     }
 
-    fn reputations(&self, reputation_threshold:i32) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
+    fn reputations(
+        &self,
+        reputation_threshold: i32,
+    ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
         self.service_ref.reputations(reputation_threshold)
     }
 }

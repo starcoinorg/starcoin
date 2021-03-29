@@ -11,8 +11,8 @@ use futures::FutureExt;
 use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
-    GetPeerById, GetPeerSet, PeerReputations, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
-    ReportReputation, TransactionsMessage,
+    GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
+    PeerReputations, ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{NetworkActor, PeerMessageHandler};
@@ -222,11 +222,13 @@ impl ServiceHandler<Self, PeerReputations> for NetworkActorService {
         msg: PeerReputations,
         ctx: &mut ServiceContext<NetworkActorService>,
     ) -> <PeerReputations as ServiceRequest>::Response {
-        let rx = self.inner
-            .network_service.reputations(msg.threshold);
+        let rx = self.inner.network_service.reputations(msg.threshold);
         let fut = async move {
             match rx.await {
-                Ok(t) => t.into_iter().map(|(peer_id, score)| { (PeerId::new(peer_id), score) }).collect(),
+                Ok(t) => t
+                    .into_iter()
+                    .map(|(peer_id, score)| (PeerId::new(peer_id), score))
+                    .collect(),
                 Err(e) => {
                     debug!("sth wrong {}", e);
                     Vec::new()

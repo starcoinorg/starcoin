@@ -1,10 +1,10 @@
+use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::messages::NotificationMessage;
 use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider, ReputationChange};
 use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerInfo;
-use futures::channel::oneshot::Receiver;
 
 #[derive(Clone)]
 pub struct DummyNetworkService {
@@ -48,7 +48,10 @@ impl PeerProvider for DummyNetworkService {
         info!("report_peer {:?}: reputation: {:?}", peer_id, cost_benefit);
     }
 
-    fn reputations(&self, _reputation_threshold:i32) -> BoxFuture<'_, anyhow::Result<Receiver<Vec<(PeerId, i32)>>>> {
+    fn reputations(
+        &self,
+        _reputation_threshold: i32,
+    ) -> BoxFuture<'_, anyhow::Result<Receiver<Vec<(PeerId, i32)>>>> {
         unimplemented!()
     }
 }
