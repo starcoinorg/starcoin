@@ -12,6 +12,7 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use std::borrow::Cow;
+use futures::channel::oneshot::Receiver;
 
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
@@ -209,6 +210,15 @@ pub enum PeerEvent {
 pub struct ReportReputation {
     pub peer_id: PeerId,
     pub change: ReputationChange,
+}
+
+#[derive(Clone, Debug)]
+pub struct PeerReputations {
+    pub threshold: i32
+}
+
+impl ServiceRequest for PeerReputations {
+    type Response = Receiver<Vec<(PeerId, i32)>>;
 }
 
 #[derive(Clone, Debug)]

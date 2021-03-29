@@ -121,6 +121,7 @@ impl SyncService {
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
 
             let mut peer_set = network.peer_set().await?;
+            // let peer_reputations = network.reputations().
             let mut peer_selector = PeerSelector::new(peer_set, peer_select_strategy);
             loop {
                 if peer_selector.is_empty()

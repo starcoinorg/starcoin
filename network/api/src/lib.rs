@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerMessage, ReportReputation,
+    GetPeerById, GetPeerSet, PeerReputations, GetSelfPeer, NotificationMessage, PeerMessage, ReportReputation,
 };
 use anyhow::*;
 use futures::future::BoxFuture;
@@ -26,6 +26,7 @@ pub use peer_provider::PeerDetail;
 pub use peer_provider::{PeerProvider, PeerSelector, PeerStrategy};
 
 pub use starcoin_types::peer_info::{PeerId, PeerInfo};
+use futures::channel::oneshot::Receiver;
 
 pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + PeerProvider {
     /// send notification message to a peer.
@@ -40,6 +41,7 @@ pub trait NetworkActor:
     + EventHandler<Self, NotificationMessage>
     + EventHandler<Self, ReportReputation>
     + ServiceHandler<Self, GetPeerSet>
+    + ServiceHandler<Self, PeerReputations>
     + ServiceHandler<Self, GetSelfPeer>
     + ServiceHandler<Self, GetPeerById>
 {
@@ -68,6 +70,10 @@ where
         }) {
             debug!("report_peer error: {}.", e);
         }
+    }
+
+    fn reputations(&self, reputation_threshold:i32) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
+        self.send(PeerReputations {threshold:reputation_threshold}).boxed()
     }
 }
 

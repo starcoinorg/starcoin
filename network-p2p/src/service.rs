@@ -51,7 +51,7 @@ use crate::{
 use crate::{config, Multiaddr};
 use crate::{config::parse_str_addr, transport};
 use async_std::future;
-use futures::channel::oneshot::Canceled;
+use futures::channel::oneshot::{Canceled, Receiver};
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
@@ -747,6 +747,10 @@ impl NetworkService {
     /// given scalar.
     pub fn report_peer(&self, who: PeerId, cost_benefit: ReputationChange) {
         self.peerset.report_peer(who, cost_benefit);
+    }
+
+    pub fn reputations(&self, reputation_threshold: i32) -> Receiver<Vec<(PeerId, i32)>> {
+        self.peerset.reputations(reputation_threshold)
     }
 
     /// Disconnect from a node as soon as possible.

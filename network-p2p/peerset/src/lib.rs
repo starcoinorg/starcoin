@@ -48,6 +48,8 @@ use std::{collections::HashSet, collections::VecDeque};
 use wasm_timer::Instant;
 
 pub use libp2p::PeerId;
+use futures::channel::oneshot::{Sender, Receiver};
+use futures::channel::oneshot;
 
 /// We don't accept nodes whose reputation is under this value.
 const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
@@ -66,6 +68,7 @@ enum Action {
     ReportPeer(PeerId, ReputationChange),
     AddToPeersSet(SetId, PeerId),
     RemoveFromPeersSet(SetId, PeerId),
+    PeerReputations((Sender<Vec<(PeerId, i32)>>, i32)),
 }
 
 /// Identifier of a set in the peerset.
@@ -182,6 +185,14 @@ impl PeersetHandle {
         let _ = self
             .tx
             .unbounded_send(Action::RemoveFromPeersSet(set_id, peer_id));
+    }
+
+    pub fn reputations(&self, reputation_threshold: i32) -> Receiver<Vec<(PeerId, i32)>> {
+        let (reputation_tx, reputation_rx) = oneshot::channel();
+        let _ = self
+            .tx
+            .unbounded_send(Action::PeerReputations((reputation_tx, reputation_threshold)));
+        reputation_rx
     }
 }
 
@@ -705,6 +716,13 @@ impl Peerset {
     pub fn num_discovered_peers(&self) -> usize {
         self.data.peers().len()
     }
+
+    /// Effective peer list.
+    fn effective_peer_list(&mut self, reputation_threshold:i32) -> Vec<(PeerId, i32)> {
+        self.data.peer_reputations().filter(|(_, reputation)| {reputation >= &reputation_threshold}).map(
+            |(peer_id, reputation)| (peer_id.clone(), reputation)
+        ).collect()
+    }
 }
 
 impl Stream for Peerset {
@@ -741,6 +759,10 @@ impl Stream for Peerset {
                 }
                 Action::RemoveFromPeersSet(sets_name, peer_id) => {
                     self.on_remove_from_peers_set(sets_name, peer_id)
+                }
+                Action::PeerReputations((tx, reputation_threshold)) => {
+                    let effective_peer_reputations = self.effective_peer_list(reputation_threshold);
+                    let _ = tx.send(effective_peer_reputations);
                 }
             }
         }

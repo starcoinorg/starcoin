@@ -18,6 +18,7 @@ use starcoin_types::U256;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use futures::channel::oneshot::Receiver;
 
 pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     /// Get all peers, the peer's order is unsorted.
@@ -28,6 +29,8 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
+
+    fn reputations(&self, reputation_threshold:i32) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>>;
 }
 
 #[derive(Clone)]

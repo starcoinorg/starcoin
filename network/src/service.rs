@@ -11,7 +11,7 @@ use futures::FutureExt;
 use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
-    GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
+    GetPeerById, GetPeerSet, PeerReputations, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
     ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
@@ -213,6 +213,27 @@ impl ServiceHandler<Self, GetPeerSet> for NetworkActorService {
             .iter()
             .map(|(_, peer)| peer.get_peer_info().clone())
             .collect::<Vec<_>>()
+    }
+}
+
+impl ServiceHandler<Self, PeerReputations> for NetworkActorService {
+    fn handle(
+        &mut self,
+        msg: PeerReputations,
+        ctx: &mut ServiceContext<NetworkActorService>,
+    ) -> <PeerReputations as ServiceRequest>::Response {
+        let rx = self.inner
+            .network_service.reputations(msg.threshold);
+        let fut = async move {
+            match rx.await {
+                Ok(t) => t.into_iter().map(|(peer_id, score)| { (PeerId::new(peer_id), score) }).collect(),
+                Err(e) => {
+                    debug!("sth wrong {}", e);
+                    Vec::new()
+                }
+            }
+        };
+        ctx.exec(fut)
     }
 }
 

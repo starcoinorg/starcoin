@@ -17,6 +17,7 @@ use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::sync::Arc;
+use futures::channel::oneshot::Receiver;
 
 //TODO Service registry should support custom service ref.
 #[derive(Clone)]
@@ -51,6 +52,10 @@ impl PeerProvider for NetworkServiceRef {
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
         self.service_ref.report_peer(peer_id, cost_benefit)
+    }
+
+    fn reputations(&self, reputation_threshold:i32) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
+        self.service_ref.reputations(reputation_threshold)
     }
 }
 
