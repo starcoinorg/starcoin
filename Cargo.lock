@@ -5688,7 +5688,7 @@ dependencies = [
  "prost",
  "prost-types",
  "tempfile",
- "which 4.0.2",
+ "which 4.1.0",
 ]
 
 [[package]]
@@ -9447,7 +9447,7 @@ dependencies = [
  "structopt 0.3.21",
  "tempfile",
  "textwrap 0.13.4",
- "which 4.0.2",
+ "which 4.1.0",
 ]
 
 [[package]]
@@ -10076,12 +10076,12 @@ dependencies = [
 
 [[package]]
 name = "which"
-version = "4.0.2"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87c14ef7e1b8b8ecfc75d5eca37949410046e66f15d185c01d70824f1f8111ef"
+checksum = "b55551e42cbdf2ce2bedd2203d0cc08dba002c27510f86dab6d0ce304cba3dfe"
 dependencies = [
+ "either",
  "libc",
- "thiserror",
 ]
 
 [[package]]
