@@ -4,6 +4,7 @@
 use crate::ReputationChange;
 use anyhow::*;
 use bcs_ext::{BCSCodec, Sample};
+use futures::channel::oneshot::Receiver;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;
@@ -209,6 +210,15 @@ pub enum PeerEvent {
 pub struct ReportReputation {
     pub peer_id: PeerId,
     pub change: ReputationChange,
+}
+
+#[derive(Clone, Debug)]
+pub struct PeerReputations {
+    pub threshold: i32,
+}
+
+impl ServiceRequest for PeerReputations {
+    type Response = Receiver<Vec<(PeerId, i32)>>;
 }
 
 #[derive(Clone, Debug)]

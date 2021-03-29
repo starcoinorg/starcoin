@@ -32,6 +32,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
+const REPUTATION_THRESHOLD: i32 = -1000;
+
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
     target: SyncTarget,
@@ -121,7 +123,21 @@ impl SyncService {
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
 
             let mut peer_set = network.peer_set().await?;
-            let mut peer_selector = PeerSelector::new(peer_set, peer_select_strategy);
+            let peer_reputations = network
+                .reputations(REPUTATION_THRESHOLD)
+                .await?
+                .await?
+                .into_iter()
+                .map(|(peer, reputation)| {
+                    (
+                        peer,
+                        (REPUTATION_THRESHOLD.abs().saturating_add(reputation)) as u64,
+                    )
+                })
+                .collect();
+
+            let mut peer_selector =
+                PeerSelector::new_with_reputation(peer_reputations, peer_set, peer_select_strategy);
             loop {
                 if peer_selector.is_empty()
                     || peer_selector.len() < (config.net().min_peers() as usize)

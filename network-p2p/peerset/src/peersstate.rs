@@ -222,6 +222,13 @@ impl PeersState {
         self.nodes.keys()
     }
 
+    /// Returns the list of all the reputations we know of.
+    pub fn peer_reputations(&self) -> impl Iterator<Item = (&PeerId, i32)> {
+        self.nodes
+            .iter()
+            .map(|(peer_id, node)| (peer_id, node.reputation))
+    }
+
     /// Returns the list of peers we are connected to in the context of a specific set.
     ///
     /// # Panic

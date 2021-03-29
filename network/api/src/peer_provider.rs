@@ -5,6 +5,7 @@ use crate::peer_score::ScoreCounter;
 use crate::PeerId;
 use crate::PeerInfo;
 use anyhow::Result;
+use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use itertools::Itertools;
 use network_p2p_types::ReputationChange;
@@ -15,6 +16,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -28,6 +30,11 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
+
+    fn reputations(
+        &self,
+        reputation_threshold: i32,
+    ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>>;
 }
 
 #[derive(Clone)]
@@ -63,6 +70,15 @@ impl From<PeerInfo> for PeerDetail {
         Self {
             peer_info: peer,
             score_counter: ScoreCounter::default(),
+        }
+    }
+}
+
+impl From<(PeerInfo, u64)> for PeerDetail {
+    fn from(peer: (PeerInfo, u64)) -> Self {
+        Self {
+            peer_info: peer.0,
+            score_counter: ScoreCounter::new(peer.1),
         }
     }
 }
@@ -130,14 +146,31 @@ impl Debug for PeerSelector {
 
 impl PeerSelector {
     pub fn new(peers: Vec<PeerInfo>, strategy: PeerStrategy) -> Self {
-        let len = peers.len() as u64;
+        Self::new_with_reputation(Vec::new(), peers, strategy)
+    }
+
+    pub fn new_with_reputation(
+        reputations: Vec<(PeerId, u64)>,
+        peers: Vec<PeerInfo>,
+        strategy: PeerStrategy,
+    ) -> Self {
+        let reputations = reputations.into_iter().collect::<HashMap<PeerId, u64>>();
+        let mut total_score = 0;
         let peer_details = peers
             .into_iter()
-            .map(|peer| -> PeerDetail { peer.into() })
+            .map(|peer| -> PeerDetail {
+                let score = if let Some(reputation) = reputations.get(&peer.peer_id()) {
+                    *reputation
+                } else {
+                    1
+                };
+                total_score += score;
+                (peer, score).into()
+            })
             .collect();
         Self {
             details: Arc::new(Mutex::new(peer_details)),
-            total_score: Arc::new(AtomicU64::new(len)),
+            total_score: Arc::new(AtomicU64::new(total_score)),
             strategy,
         }
     }

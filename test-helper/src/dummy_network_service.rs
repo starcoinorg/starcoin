@@ -1,3 +1,4 @@
+use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::messages::NotificationMessage;
@@ -45,5 +46,12 @@ impl PeerProvider for DummyNetworkService {
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
         info!("report_peer {:?}: reputation: {:?}", peer_id, cost_benefit);
+    }
+
+    fn reputations(
+        &self,
+        _reputation_threshold: i32,
+    ) -> BoxFuture<'_, anyhow::Result<Receiver<Vec<(PeerId, i32)>>>> {
+        unimplemented!()
     }
 }

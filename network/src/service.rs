@@ -12,7 +12,7 @@ use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
-    ReportReputation, TransactionsMessage,
+    PeerReputations, ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{NetworkActor, PeerMessageHandler};
@@ -216,6 +216,29 @@ impl ServiceHandler<Self, GetPeerSet> for NetworkActorService {
     }
 }
 
+impl ServiceHandler<Self, PeerReputations> for NetworkActorService {
+    fn handle(
+        &mut self,
+        msg: PeerReputations,
+        ctx: &mut ServiceContext<NetworkActorService>,
+    ) -> <PeerReputations as ServiceRequest>::Response {
+        let rx = self.inner.network_service.reputations(msg.threshold);
+        let fut = async move {
+            match rx.await {
+                Ok(t) => t
+                    .into_iter()
+                    .map(|(peer_id, score)| (PeerId::new(peer_id), score))
+                    .collect(),
+                Err(e) => {
+                    debug!("sth wrong {}", e);
+                    Vec::new()
+                }
+            }
+        };
+        ctx.exec(fut)
+    }
+}
+
 impl ServiceHandler<Self, GetPeerById> for NetworkActorService {
     fn handle(
         &mut self,
@@ -399,7 +422,7 @@ impl Inner {
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
-                BROADCAST_SCORE_METRICS.report_old(
+                BROADCAST_SCORE_METRICS.report_expire(
                     peer_id,
                     self.score_handler
                         .execute(BlockBroadcastEntry::new(false, HandleState::Succ)),
