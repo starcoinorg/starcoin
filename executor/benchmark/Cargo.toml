@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 itertools = { version = "0.10.0", default-features = false }
 rand = "0.8.3"
 rayon = "1"

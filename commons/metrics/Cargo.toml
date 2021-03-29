@@ -8,7 +8,7 @@ edition = "2018"
 description = "Starcoin metrics"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 futures = "0.3.12"
 hyper = "0.13.9"
 starcoin-logger = { path = "../logger" }

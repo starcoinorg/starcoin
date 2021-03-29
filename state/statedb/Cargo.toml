@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 thiserror = "1.0"
 parking_lot = "0.11.1"
 lru = "0.6.5"

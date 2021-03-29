@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 futures = "0.3.12"
 serde = { version = "1.0.125", features = ["derive"] }
 log = "0.4.14"
