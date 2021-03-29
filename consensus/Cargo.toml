@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 thiserror = "1.0"
 futures = "0.3.12"
 once_cell = "1.7.2"

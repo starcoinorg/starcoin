@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 parking_lot = "0.11.1"
 starcoin-types = {path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}

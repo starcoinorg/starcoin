@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 starcoin-config = { path = "../../config"}
 stdlib = { package="stdlib", path = "../stdlib"}
 starcoin-vm-types = { path = "../types"}

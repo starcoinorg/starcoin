@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 hex= "0.4.3"
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 futures = "0.3.12"
 serde = { version = "1.0.125", default-features = false }
 rand = "0.8.3"
