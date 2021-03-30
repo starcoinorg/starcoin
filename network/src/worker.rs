@@ -5,7 +5,7 @@ use anyhow::*;
 use bitflags::_core::time::Duration;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
-use log::{debug, error};
+use log::{debug, error, info};
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
@@ -74,6 +74,9 @@ pub fn build_network_worker(
     };
     let allow_non_globals_in_dht = discover_local;
     let boot_nodes = node_config.network.seeds();
+
+    info!("Final bootstrap seeds: {:?}", boot_nodes);
+
     let config = NetworkConfiguration {
         listen_addresses: vec![node_config.network.listen()],
         boot_nodes,
@@ -84,6 +87,8 @@ pub fn build_network_worker(
             .expect("decode network node key should success.");
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
+        in_peers: node_config.network.max_incoming_peers(),
+        out_peers: node_config.network.max_outgoing_peers(),
         notifications_protocols: protocols,
         request_response_protocols: rpc_protocols,
         transport: transport_config,

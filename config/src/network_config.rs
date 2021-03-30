@@ -200,13 +200,24 @@ pub struct NetworkConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long)]
-    /// min peers to propagate new block and new transactions. Default to 8.
+    /// min peers to propagate new block and new transactions. Default 8.
     min_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long)]
-    ///max peers to propagate new block and new transactions. Default to 128.
+    ///max peers to propagate new block and new transactions. Default 128.
     max_peers_to_propagate: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long)]
+    ///max count for incoming peers. Default 25.
+    max_incoming_peers: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long)]
+    ///max count for outgoing connected peers. Default 75.
+    /// max peers = max_incoming_peers + max_outgoing_peers
+    max_outgoing_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long)]
@@ -296,6 +307,14 @@ impl NetworkConfig {
         self.min_peers_to_propagate.clone().unwrap_or(8)
     }
 
+    pub fn max_incoming_peers(&self) -> u32 {
+        self.max_incoming_peers.clone().unwrap_or(25)
+    }
+
+    pub fn max_outgoing_peers(&self) -> u32 {
+        self.max_outgoing_peers.clone().unwrap_or(75)
+    }
+
     pub fn node_name(&self) -> String {
         self.node_name.clone().unwrap_or_else(generate_node_name)
     }
@@ -367,11 +386,6 @@ impl ConfigModule for NetworkConfig {
             self.disable_seed = opt.network.disable_seed;
         }
 
-        info!(
-            "Final bootstrap seeds: {:?}, disable_seed: {}",
-            self.seeds, self.disable_seed
-        );
-
         self.network_rpc_quotas
             .merge(&opt.network.network_rpc_quotas)?;
 
@@ -398,6 +412,13 @@ impl ConfigModule for NetworkConfig {
         }
         if opt.network.discover_local.is_some() {
             self.discover_local = opt.network.discover_local;
+        }
+
+        if opt.network.max_incoming_peers.is_some() {
+            self.max_incoming_peers = opt.network.max_incoming_peers;
+        }
+        if opt.network.max_outgoing_peers.is_some() {
+            self.max_outgoing_peers = opt.network.max_outgoing_peers;
         }
 
         self.load_or_generate_keypair()?;
