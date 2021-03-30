@@ -1,6 +1,6 @@
 [package]
 name = "stream-task"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
