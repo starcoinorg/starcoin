@@ -74,10 +74,15 @@ fn main() {
         .expect("create block chain should success.");
     //read from first chain
     let begin = SystemTime::now();
-    let mut block_vec = vec![];
+    // let mut block_vec = vec![];
     for i in 1..block_num {
         if let Ok(Some(block)) = chain.get_block_by_number(i) {
-            block_vec.push(block);
+            if let Some(uncle_vec) = block.body.uncles {
+                for uncle in uncle_vec {
+                    println!("uncle: {:?}, author: {:?}", uncle.number(), uncle.author());
+                }
+            }
+            // block_vec.push(block);
         } else {
             println!("read block err, number : {:?}", i);
             break;
@@ -86,41 +91,41 @@ fn main() {
     let use_time = SystemTime::now().duration_since(begin).unwrap();
     println!("read use time: {:?}", use_time.as_nanos());
 
-    let storage2 = Arc::new(
-        Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new(),
-            DBStorage::new(to_dir.join("starcoindb"), RocksdbConfig::default()).unwrap(),
-        ))
-        .unwrap(),
-    );
-    let (chain_info2, _) = Genesis::init_and_check_storage(&net, storage2.clone(), to_dir.as_ref())
-        .expect("init storage by genesis fail.");
-
-    let mut chain2 = BlockChain::new(
-        net.time_service(),
-        chain_info2.status().head().id(),
-        storage2,
-    )
-    .expect("create block chain should success.");
-    let begin = SystemTime::now();
-    for block in block_vec {
-        match opts.verifier {
-            Verifier::Basic => {
-                chain2.apply_with_verifier::<BasicVerifier>(block).unwrap();
-            }
-            Verifier::Consensus => {
-                chain2
-                    .apply_with_verifier::<ConsensusVerifier>(block)
-                    .unwrap();
-            }
-            Verifier::None => {
-                chain2.apply_with_verifier::<NoneVerifier>(block).unwrap();
-            }
-            Verifier::Full => {
-                chain2.apply_with_verifier::<FullVerifier>(block).unwrap();
-            }
-        };
-    }
-    let use_time = SystemTime::now().duration_since(begin).unwrap();
+    // let storage2 = Arc::new(
+    //     Storage::new(StorageInstance::new_cache_and_db_instance(
+    //         CacheStorage::new(),
+    //         DBStorage::new(to_dir.join("starcoindb"), RocksdbConfig::default()).unwrap(),
+    //     ))
+    //     .unwrap(),
+    // );
+    // let (chain_info2, _) = Genesis::init_and_check_storage(&net, storage2.clone(), to_dir.as_ref())
+    //     .expect("init storage by genesis fail.");
+    //
+    // let mut chain2 = BlockChain::new(
+    //     net.time_service(),
+    //     chain_info2.status().head().id(),
+    //     storage2,
+    // )
+    // .expect("create block chain should success.");
+    // let begin = SystemTime::now();
+    // for block in block_vec {
+    //     match opts.verifier {
+    //         Verifier::Basic => {
+    //             chain2.apply_with_verifier::<BasicVerifier>(block).unwrap();
+    //         }
+    //         Verifier::Consensus => {
+    //             chain2
+    //                 .apply_with_verifier::<ConsensusVerifier>(block)
+    //                 .unwrap();
+    //         }
+    //         Verifier::None => {
+    //             chain2.apply_with_verifier::<NoneVerifier>(block).unwrap();
+    //         }
+    //         Verifier::Full => {
+    //             chain2.apply_with_verifier::<FullVerifier>(block).unwrap();
+    //         }
+    //     };
+    // }
+    // let use_time = SystemTime::now().duration_since(begin).unwrap();
     println!("apply use time: {:?}", use_time.as_nanos());
 }
