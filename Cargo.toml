@@ -86,7 +86,8 @@ members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
-    "cmd/indexer"
+    "cmd/indexer",
+    "cmd/resource-exporter"
 ]
 
 default-members = [
@@ -175,7 +176,8 @@ default-members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
-    "cmd/indexer"
+    "cmd/indexer",
+    "cmd/resource-exporter"
 ]
 
 [profile.dev]

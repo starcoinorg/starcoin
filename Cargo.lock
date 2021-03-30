@@ -6270,6 +6270,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "resource-exporter"
+version = "1.0.0-beta.1"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "csv",
+ "hex",
+ "serde",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-resource-viewer",
+ "starcoin-state-tree",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "structopt 0.3.21",
+]
+
+[[package]]
 name = "ring"
 version = "0.16.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
