@@ -133,7 +133,7 @@ impl BlockRelayer {
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
             if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
-                debug!("Block is failed block : {:?}", block_id);
+                warn!("Block is failed block : {:?}", block_id);
             } else {
                 let peers = network.peer_set().await?;
                 let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
@@ -209,10 +209,6 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) {
-        if !self.is_synced() {
-            debug!("[block-relay] Ignore PeerCompactBlockMessage because the node has not been synchronized yet.");
-            return;
-        }
         let sync_status = self
             .sync_status
             .as_ref()

@@ -108,7 +108,7 @@ impl ActorService for NetworkActorService {
 
 impl EventHandler<Self, SyncStatusChangeEvent> for NetworkActorService {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
-        self.inner.update_sync_status(msg.0);
+        self.inner.update_chain_status(msg.0);
     }
 }
 
@@ -294,7 +294,6 @@ pub(crate) struct Inner {
     self_peer: Peer,
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
-    sync_status: Option<SyncStatus>,
     metrics: Option<NetworkMetrics>,
     score_handler: Arc<dyn Score<BlockBroadcastEntry> + 'static>,
 }
@@ -317,26 +316,17 @@ impl Inner {
             self_peer: Peer::new(self_info),
             peers: HashMap::new(),
             peer_message_handler: Arc::new(peer_message_handler),
-            sync_status: None,
             metrics,
             score_handler: Arc::new(LinearScore::new(10)),
         })
     }
 
-    pub(crate) fn is_synced(&self) -> bool {
-        match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
-            None => false,
-        }
-    }
-
-    pub(crate) fn update_sync_status(&mut self, sync_status: SyncStatus) {
+    pub(crate) fn update_chain_status(&mut self, sync_status: SyncStatus) {
         let chain_status = sync_status.chain_status().clone();
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
         self.network_service.update_chain_status(chain_status);
-        self.sync_status = Some(sync_status);
     }
 
     pub(crate) fn handle_network_message(
@@ -406,12 +396,8 @@ impl Inner {
             };
 
             if let Some(notification) = notification {
-                if self.is_synced() {
-                    let peer_message = PeerMessage::new(peer_id.clone(), notification);
-                    self.peer_message_handler.handle_message(peer_message);
-                } else {
-                    debug!("Ignore notification message from peer: {}, protocol: {} , because node is not synchronized.", peer_id, protocol);
-                }
+                let peer_message = PeerMessage::new(peer_id.clone(), notification);
+                self.peer_message_handler.handle_message(peer_message);
                 BROADCAST_SCORE_METRICS.report_new(
                     peer_id,
                     self.score_handler
@@ -487,6 +473,15 @@ impl Inner {
                     "update self network chain status, total_difficulty is {}, peer_info is {:?}",
                     total_difficulty, self.self_peer.peer_info
                 );
+                //Update chain status in two case:
+                //1. New Block broadcast
+                //2. Sync status change.
+                // may be update by repeat message, but can not find a more good way.
+                self.network_service.update_chain_status(ChainStatus::new(
+                    msg.compact_block.header.clone(),
+                    msg.block_info.clone(),
+                ));
+
                 self.self_peer.known_blocks.put(id, ());
                 let mut send_peer_count: usize = 0;
                 let (protocol_name, message) = notification

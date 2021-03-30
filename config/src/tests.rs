@@ -86,6 +86,10 @@ fn test_example_config_compact() -> Result<()> {
             "alice-node1",
             "--discover-local",
             "true",
+            "--max-incoming-peers",
+            "25",
+            "--max-outgoing-peers",
+            "75",
             //P2P
             "--p2prpc-default-global-api-quota",
             "2000/s",
