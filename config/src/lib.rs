@@ -156,7 +156,7 @@ impl FromStr for Connect {
 }
 
 static OPT_NET_HELP: &str = r#"Chain Network 
-    Builtin network: test,dev,halley,proxima,main
+    Builtin network: test,dev,halley,proxima,barnard,main
     Custom network format: chain_name:chain_id
     Such as:  
     my_chain:123 will init a new chain with id `123`. 
