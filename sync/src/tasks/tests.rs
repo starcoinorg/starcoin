@@ -936,9 +936,13 @@ async fn test_sync_target() {
         0,
         peer_selector,
     ));
-    let target = node2
+    let full_target = node2
         .get_best_target(genesis_chain_info.total_difficulty())
         .unwrap()
+        .unwrap();
+    let target = node2
+        .get_better_target(genesis_chain_info.total_difficulty(), full_target)
+        .await
         .unwrap();
     assert_eq!(target.peers.len(), 2);
     assert_eq!(target.target_id.number(), low_chain_info.head().number());
