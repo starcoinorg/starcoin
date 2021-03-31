@@ -67,7 +67,10 @@ where
     }
 
     pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
-        WRITE_BLOCK_CHAIN_METRICS.try_connect_count.inc();
+        WRITE_BLOCK_CHAIN_METRICS
+            .block_connect_count
+            .with_label_values(&["try_connect"])
+            .inc();
         let block_id = header.id();
         let block_exist = self.block_exist(block_id);
         let block_chain = if block_exist {
@@ -155,7 +158,10 @@ where
                 .set(retracted_count as i64);
         }
         self.commit_2_txpool(enacted_blocks, retracted_blocks);
-        WRITE_BLOCK_CHAIN_METRICS.broadcast_head_count.inc();
+        WRITE_BLOCK_CHAIN_METRICS
+            .block_connect_count
+            .with_label_values(&["broadcast_head"])
+            .inc();
         self.config
             .net()
             .time_service()
@@ -274,7 +280,10 @@ where
             && !self.block_exist(block_id)
         {
             let executed_block = self.main.apply(block).map_err(|e| {
-                WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
+                WRITE_BLOCK_CHAIN_METRICS
+                    .block_connect_count
+                    .with_label_values(&["verify_failed"])
+                    .inc();
                 e
             })?;
             let enacted_blocks = vec![executed_block.block().clone()];
@@ -290,7 +299,10 @@ where
                     block_id,
                     branch.get_total_difficulty()?
                 );
-                WRITE_BLOCK_CHAIN_METRICS.duplicate_conn_count.inc();
+                WRITE_BLOCK_CHAIN_METRICS
+                    .block_connect_count
+                    .with_label_values(&["duplicate_connect"])
+                    .inc();
                 self.select_head(branch)?;
                 Ok(())
             }
@@ -305,7 +317,10 @@ where
                     .with_label_values(&["time"])
                     .start_timer();
                 let _executed_block = branch.apply(block).map_err(|e| {
-                    WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
+                    WRITE_BLOCK_CHAIN_METRICS
+                        .block_connect_count
+                        .with_label_values(&["verify_failed"])
+                        .inc();
                     e
                 })?;
                 timer.observe_duration();
