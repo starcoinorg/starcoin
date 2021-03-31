@@ -48,6 +48,9 @@ pub mod peer_info;
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod proptest_types;
 
+pub mod sign_message {
+    pub use starcoin_vm_types::sign_message::*;
+}
 pub mod startup_info;
 pub mod state_set;
 pub mod system_events;

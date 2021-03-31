@@ -10,6 +10,7 @@ use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountResult};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{Uniform, ValidCryptoMaterial};
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::authenticator::AccountSignature;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -187,7 +188,7 @@ impl AccountManager {
     pub fn sign_message(
         &self,
         signer_address: AccountAddress,
-        message: Vec<u8>,
+        message: SigningMessage,
     ) -> AccountResult<AccountSignature> {
         let pass = self.key_cache.write().get_pass(&signer_address);
         match pass {

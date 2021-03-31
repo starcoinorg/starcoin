@@ -56,6 +56,7 @@ mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
 pub use jsonrpc_core::Params;
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use tokio::runtime::Runtime;
 
@@ -327,6 +328,15 @@ impl RpcClient {
     ) -> anyhow::Result<SignedUserTransaction> {
         let signer = raw_txn.sender();
         self.call_rpc_blocking(|inner| inner.account_client.sign_txn(raw_txn, signer))
+            .map_err(map_err)
+    }
+
+    pub fn account_sign_message(
+        &self,
+        signer: AccountAddress,
+        message: SigningMessage,
+    ) -> anyhow::Result<StrView<Vec<u8>>> {
+        self.call_rpc_blocking(|inner| inner.account_client.sign(signer, message))
             .map_err(map_err)
     }
 

@@ -8,6 +8,7 @@ use starcoin_crypto::multi_ed25519::MultiEd25519Signature;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::authenticator::AccountSignature;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
@@ -24,7 +25,11 @@ pub trait AccountAsyncService:
     async fn get_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
 
     /// Signs the hash of data with given address.
-    async fn sign_message(&self, address: AccountAddress, message: Vec<u8>) -> Result<Vec<u8>>;
+    async fn sign_message(
+        &self,
+        address: AccountAddress,
+        message: SigningMessage,
+    ) -> Result<Vec<u8>>;
 
     async fn sign_txn(
         &self,
@@ -110,7 +115,11 @@ where
         }
     }
 
-    async fn sign_message(&self, address: AccountAddress, message: Vec<u8>) -> Result<Vec<u8>> {
+    async fn sign_message(
+        &self,
+        address: AccountAddress,
+        message: SigningMessage,
+    ) -> Result<Vec<u8>> {
         let response = self
             .send(AccountRequest::SignMessage {
                 signer: address,

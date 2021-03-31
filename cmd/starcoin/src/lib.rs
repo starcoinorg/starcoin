@@ -39,6 +39,8 @@ pub fn add_command(
                 .subcommand(account::ExecuteScriptFunctionCmd)
                 .subcommand(account::LockCommand)
                 .subcommand(account::ChangePasswordCmd)
+                .subcommand(account::SignMessageCmd)
+                .subcommand(account::VerifySignMessageCmd)
                 .subcommand(account::DefaultCommand),
         )
         .command(

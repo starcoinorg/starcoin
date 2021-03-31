@@ -14,6 +14,7 @@ use starcoin_state_api::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::sync::Arc;
 use std::time::Duration;
@@ -125,11 +126,11 @@ where
     fn sign(
         &self,
         address: AccountAddress,
-        data: StrView<Vec<u8>>,
+        data: SigningMessage,
     ) -> FutureResult<StrView<Vec<u8>>> {
         let account_service = self.account.clone();
         let f = async move {
-            let signature = account_service.sign_message(address, data.0).await?;
+            let signature = account_service.sign_message(address, data).await?;
             Ok(signature.into())
         };
         Box::pin(f.map_err(map_err).boxed())

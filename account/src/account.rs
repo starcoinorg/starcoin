@@ -10,6 +10,7 @@ use starcoin_crypto::{PrivateKey, ValidCryptoMaterial};
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::authenticator::{AccountSignature, AuthenticationKey};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
@@ -70,10 +71,8 @@ impl Account {
         AccountInfo::new(self.addr, self.private_key.public_key(), false)
     }
 
-    pub fn sign_message(&self, _message: Vec<u8>) -> AccountSignature {
-        // FIXME: currently, private key cannot sign raw bytes message. the api is not exposed.
-        // we need a way to do this without wrap bytes into a struct.
-        unimplemented!()
+    pub fn sign_message(&self, message: SigningMessage) -> AccountSignature {
+        self.private_key.sign_message(message)
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
+use crate::sign_message::SigningMessage;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
@@ -10,6 +11,7 @@ use rand::{rngs::OsRng, Rng};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{
     Ed25519PrivateKey, ED25519_PRIVATE_KEY_LENGTH, ED25519_PUBLIC_KEY_LENGTH,
+    ED25519_SIGNATURE_LENGTH,
 };
 use starcoin_crypto::multi_ed25519::multi_shard::{
     MultiEd25519KeyShard, MultiEd25519SignatureShard,
@@ -326,12 +328,27 @@ pub enum AccountPrivateKey {
     Multi(MultiEd25519KeyShard),
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, DeserializeKey, SerializeKey, Eq)]
 pub enum AccountSignature {
     Single(Ed25519PublicKey, Ed25519Signature),
     Multi(MultiEd25519PublicKey, MultiEd25519SignatureShard),
 }
-
+impl ValidCryptoMaterial for AccountSignature {
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Single(public_key, signature) => {
+                let mut bytes = public_key.to_bytes().to_vec();
+                bytes.extend(signature.to_bytes().to_vec());
+                bytes
+            }
+            Self::Multi(multi_key, multi_signed_shard) => {
+                let mut bytes = multi_key.to_bytes().to_vec();
+                bytes.extend(multi_signed_shard.to_bytes().to_vec());
+                bytes
+            }
+        }
+    }
+}
 impl ValidCryptoMaterial for AccountPublicKey {
     fn to_bytes(&self) -> Vec<u8> {
         match self {
@@ -436,6 +453,10 @@ impl AccountPrivateKey {
             Self::Multi(key) => AccountSignature::Multi(key.public_key(), key.sign(message)),
         }
     }
+
+    pub fn sign_message(&self, message: SigningMessage) -> AccountSignature {
+        self.sign(&message)
+    }
 }
 
 impl Into<AccountPrivateKey> for Ed25519PrivateKey {
@@ -462,6 +483,32 @@ impl TryFrom<&[u8]> for AccountPrivateKey {
     }
 }
 
+impl TryFrom<&[u8]> for AccountSignature {
+    type Error = CryptoMaterialError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let length = value.len();
+        if length == ED25519_PUBLIC_KEY_LENGTH + ED25519_SIGNATURE_LENGTH {
+            let public_key = Ed25519PublicKey::try_from(&value[..ED25519_PUBLIC_KEY_LENGTH])?;
+            let signature = Ed25519Signature::try_from(&value[ED25519_PUBLIC_KEY_LENGTH..])?;
+            Ok(Self::Single(public_key, signature))
+        } else {
+            // 1 is MultiEd25519PublicKey's threshold
+            // 4 is  MultiEd25519Signature's bitmap
+            // 1 is MultiEd25519SignatureShard's threshold
+            let key_size =
+                (length - 1 - 4 - 1) / (ED25519_PUBLIC_KEY_LENGTH + ED25519_SIGNATURE_LENGTH);
+            let key_len = key_size * ED25519_PUBLIC_KEY_LENGTH + 1;
+            let multi_public_key = MultiEd25519PublicKey::try_from(&value[..key_len])?;
+            let multi_signature = MultiEd25519Signature::try_from(&value[key_len..length - 1])?;
+            Ok(Self::Multi(
+                multi_public_key,
+                MultiEd25519SignatureShard::new(multi_signature, value[length]),
+            ))
+        }
+    }
+}
+
 impl AccountSignature {
     pub fn build_transaction(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         Ok(match self {
@@ -480,6 +527,13 @@ impl AccountSignature {
                 }
             }
         })
+    }
+
+    pub fn verify<T: Serialize + CryptoHash>(&self, message: &T) -> Result<()> {
+        match self {
+            Self::Single(public_key, signature) => signature.verify(message, public_key),
+            Self::Multi(public_key, signature) => signature.verify(message, public_key),
+        }
     }
 }
 
