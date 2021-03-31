@@ -395,7 +395,6 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
-                    self.stage = SyncStage::Done;
                     task_handle.cancel();
                 } else {
                     let target_id_number =

@@ -16,6 +16,7 @@ fn test_full_sync() {
     test_sync::test_sync()
 }
 
+//FIX ME
 #[ignore]
 #[stest::test(timeout = 120)]
 fn test_sync_by_notification() {
@@ -68,8 +69,6 @@ fn test_sync_by_notification() {
     first_node.stop().unwrap();
 }
 
-//TODO fixme
-#[ignore]
 #[stest::test(timeout = 120)]
 fn test_broadcast_with_difficulty() {
     let first_config = Arc::new(NodeConfig::random_for_test());
