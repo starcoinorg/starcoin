@@ -138,6 +138,7 @@ impl BlockRelayer {
                 let peers = network.peer_set().await?;
                 let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+                let timer = BLOCK_RELAYER_METRICS.txns_filled_time.start_timer();
                 let block = BlockRelayer::fill_compact_block(
                     txpool.clone(),
                     rpc_client,
@@ -145,6 +146,7 @@ impl BlockRelayer {
                     peer_id.clone(),
                 )
                 .await?;
+                timer.observe_duration();
                 block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
             }
             Ok(())

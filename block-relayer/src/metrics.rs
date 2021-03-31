@@ -1,5 +1,8 @@
 use once_cell::sync::Lazy;
-use starcoin_metrics::{register_int_gauge, IntGauge, Opts, PrometheusError};
+use starcoin_metrics::{
+    default_registry, register_histogram, register_int_gauge, Histogram, IntGauge, Opts,
+    PrometheusError, UIntCounter,
+};
 
 pub static BLOCK_RELAYER_METRICS: Lazy<BlockRelayerMetrics> =
     Lazy::new(|| BlockRelayerMetrics::register().expect("BlockRelayerMetrics register should ok."));
@@ -9,6 +12,8 @@ pub struct BlockRelayerMetrics {
     pub txns_filled_from_network: IntGauge,
     pub txns_filled_from_txpool: IntGauge,
     pub txns_filled_from_prefill: IntGauge,
+    pub txns_filled_time: Histogram,
+    pub block_broadcast_time: UIntCounter,
 }
 
 impl BlockRelayerMetrics {
@@ -28,10 +33,17 @@ impl BlockRelayerMetrics {
             "Count of block filled transactions from prefill"
         )
         .namespace("starcoin"))?;
+        let txns_filled_time =
+            register_histogram!("starcoin_txns_filled_time", "txns filled time")?;
+        let block_broadcast_time =
+            UIntCounter::new("block_broadcast_time", "block broadcast time".to_string())?;
+        default_registry().register(Box::new(block_broadcast_time.clone()))?;
         Ok(Self {
             txns_filled_from_network,
             txns_filled_from_txpool,
             txns_filled_from_prefill,
+            txns_filled_time,
+            block_broadcast_time,
         })
     }
 }
