@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::tasks::{full_sync_task, AncestorEvent};
+use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use config::NodeConfig;
@@ -143,7 +143,7 @@ impl SyncService {
                     || peer_selector.len() < (config.net().min_peers() as usize)
                 {
                     info!(
-                        "[sync]Wait enough peers, current: {:?} peers, min peers: {:?}",
+                        "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
                         peer_selector.len(),
                         config.net().min_peers()
                     );
@@ -175,11 +175,9 @@ impl SyncService {
                 peer_selector.clone(),
                 network.clone(),
             ));
-            if let Some(target) = VerifiedRpcClient::get_sync_target(
-                rpc_client.clone(),
-                current_block_info.get_total_difficulty(),
-            )
-            .await?
+            if let Some(target) = rpc_client
+                .get_sync_target(current_block_info.get_total_difficulty())
+                .await?
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
