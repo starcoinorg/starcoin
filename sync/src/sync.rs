@@ -175,9 +175,8 @@ impl SyncService {
                 peer_selector.clone(),
                 network.clone(),
             ));
-            if let Some(target) = rpc_client
-                .get_sync_target(current_block_info.get_total_difficulty())
-                .await?
+            if let Some(target) =
+                rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 

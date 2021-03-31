@@ -242,7 +242,7 @@ impl PeerSelector {
     }
 
     /// Filter by the max total_difficulty
-    pub fn bests(&self) -> Option<Vec<PeerInfo>> {
+    pub fn bests(&self, min_difficulty: U256) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
@@ -261,7 +261,11 @@ impl PeerSelector {
                 };
                 peers
             });
-        Some(best_peers)
+        if best_peers.is_empty() || best_peers[0].total_difficulty() <= min_difficulty {
+            None
+        } else {
+            Some(best_peers)
+        }
     }
 
     pub fn betters(&self, difficulty: U256) -> Option<Vec<PeerInfo>> {
@@ -283,7 +287,7 @@ impl PeerSelector {
     }
 
     pub fn best(&self) -> Option<PeerInfo> {
-        if let Some(peers) = self.bests() {
+        if let Some(peers) = self.bests(0.into()) {
             peers.choose(&mut rand::thread_rng()).cloned()
         } else {
             None

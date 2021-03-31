@@ -6,9 +6,9 @@ use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
-    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask,
+    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
-use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
+use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::Context;
 use anyhow::{format_err, Result};
 use config::{BuiltinNetworkID, ChainNetwork};
@@ -936,8 +936,8 @@ async fn test_sync_target() {
         0,
         peer_selector,
     ));
-    let target = VerifiedRpcClient::get_sync_target(node2, genesis_chain_info.total_difficulty())
-        .await
+    let target = node2
+        .get_best_target(genesis_chain_info.total_difficulty())
         .unwrap()
         .unwrap();
     assert_eq!(target.peers.len(), 2);

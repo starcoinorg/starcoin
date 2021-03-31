@@ -1,10 +1,9 @@
 use crate::tasks::{
     AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
-    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator, SyncFetcher,
+    BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
 };
 use anyhow::format_err;
-use logger::prelude::*;
-use network_api::{PeerId, PeerProvider};
+use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_storage::Store;
@@ -15,68 +14,6 @@ use std::sync::Arc;
 use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle,
 };
-
-/// Split the full target to sub target
-pub async fn sub_target<F>(
-    full_target: SyncTarget,
-    ancestor: BlockIdAndNumber,
-    fetcher: F,
-) -> anyhow::Result<SyncTarget>
-where
-    F: SyncFetcher + 'static,
-{
-    let target_number = ancestor.number.saturating_add(1000);
-    if target_number >= full_target.target_id.number() {
-        return Ok(full_target);
-    }
-    //1. best peer get block id
-    let best_peer = fetcher
-        .peer_selector()
-        .best()
-        .ok_or_else(|| format_err!("Best peer is none when create sub target"))?;
-    let mut target_peers: Vec<PeerId> = Vec::new();
-    target_peers.push(best_peer.peer_id());
-    if let Some(target_id) = fetcher
-        .fetch_block_id(Some(best_peer.peer_id()), target_number)
-        .await?
-    {
-        info!("Best peer target id : {}: {:?}", target_number, target_id);
-        let best_block_info = fetcher
-            .fetch_block_info(Some(best_peer.peer_id()), target_id)
-            .await?
-            .ok_or_else(|| {
-                format_err!(
-                    "Fetch {} BlockInfo from {:?} return none when create sub target",
-                    target_id,
-                    best_peer.peer_id()
-                )
-            })?;
-        //2. filter other peers
-        for peer_id in fetcher.peer_selector().peers_by_filter(|peer| {
-            best_peer.peer_id() != peer.peer_id()
-                && peer.chain_info().status().head.number() >= target_number
-        }) {
-            if let Some(block_info) = fetcher
-                .fetch_block_info(Some(peer_id.clone()), target_id)
-                .await?
-            {
-                if best_block_info == block_info {
-                    target_peers.push(peer_id);
-                } else {
-                    warn!("[sync] Block {}'s block info is different at best peer {}({:?}) and peer {}({:?})", target_id, best_peer.peer_id(), best_block_info, peer_id, block_info);
-                }
-            }
-        }
-
-        Ok(SyncTarget {
-            target_id: BlockIdAndNumber::new(target_id, target_number),
-            block_info: best_block_info,
-            peers: target_peers,
-        })
-    } else {
-        Ok(full_target)
-    }
-}
 
 pub struct InnerSyncTask<H, F, N>
 where
@@ -139,11 +76,12 @@ where
     pub async fn do_sync(
         self,
         current_block_info: BlockInfo,
-        buffer_size: usize,
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
     ) -> Result<(BlockChain, TaskHandle), TaskError> {
+        let buffer_size = self.target.peers.len();
+
         let ancestor_block_info = self.ancestor_block_info().map_err(TaskError::BreakError)?;
         let accumulator_sync_task = BlockAccumulatorSyncTask::new(
             // start_number is include, so start from ancestor.number + 1

@@ -47,7 +47,7 @@ fn test_peer_selector() {
     ];
 
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-    let best_selector = peer_selector.bests().unwrap();
+    let best_selector = peer_selector.bests(0.into()).unwrap();
     assert_eq!(2, best_selector.len());
 
     let top_selector = peer_selector.top(3);

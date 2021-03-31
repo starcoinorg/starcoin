@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::sync_metrics::SYNC_METRICS;
-use crate::tasks::{sync_score_metrics::SYNC_SCORE_METRICS, PeerOperator, SyncFetcher};
+use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
@@ -15,15 +15,13 @@ use starcoin_network_rpc_api::{
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
-use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockIdAndNumber};
+use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
-    U256,
 };
 use std::fmt::Debug;
 use std::sync::Arc;
