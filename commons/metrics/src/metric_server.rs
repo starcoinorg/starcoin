@@ -100,7 +100,7 @@ pub fn push_metrics(push_server_url: String, auth_username: Option<String>, auth
     ) {
         Ok(_) => {}
         Err(e) => {
-            error!("push metrics error: {:?}", e);
+            debug!("push metrics error: {:?}", e);
         }
     };
 }
