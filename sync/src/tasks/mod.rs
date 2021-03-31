@@ -29,7 +29,77 @@ use stream_task::{
     TaskHandle,
 };
 
-pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {}
+pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+    fn get_sync_target(&self, difficulty: U256) -> BoxFuture<Result<Option<SyncTarget>>> {
+        let fut = async move {
+            if let Some(mut better_peers) = self.peer_selector().betters(difficulty) {
+                better_peers.sort_by(|info_1, info_2| {
+                    info_1.total_difficulty().cmp(&info_2.total_difficulty())
+                });
+
+                if let Some(best_peer) = better_peers.last() {
+                    let mut peers = Vec::new();
+                    let mut target_peer = None;
+                    for better_peer in better_peers.iter() {
+                        let mut eligible = false;
+                        match target_peer.as_ref() {
+                            None => {
+                                if best_peer == better_peer {
+                                    target_peer = Some(better_peer.clone());
+                                    eligible = true;
+                                } else if let Some(block_id) = self
+                                    .fetch_block_id(
+                                        Some(best_peer.peer_id()),
+                                        better_peer.block_number(),
+                                    )
+                                    .await?
+                                {
+                                    if block_id == better_peer.block_id() {
+                                        target_peer = Some(better_peer.clone());
+                                        eligible = true;
+                                    }
+                                }
+                            }
+                            Some(peer) => {
+                                if best_peer == better_peer {
+                                    eligible = true;
+                                } else if let Some(block_id) = self
+                                    .fetch_block_id(
+                                        Some(better_peer.peer_id()),
+                                        peer.block_number(),
+                                    )
+                                    .await?
+                                {
+                                    if block_id == peer.block_id() {
+                                        eligible = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if eligible {
+                            peers.push(better_peer.peer_id());
+                        }
+                    }
+
+                    if let Some(peer) = target_peer {
+                        return Ok(Some(SyncTarget {
+                            target_id: BlockIdAndNumber::new(
+                                peer.latest_header().id(),
+                                peer.latest_header().number(),
+                            ),
+                            block_info: peer.chain_info().status().info().clone(),
+                            peers,
+                        }));
+                    }
+                }
+            }
+            Ok(None)
+        };
+
+        fut.boxed()
+    }
+}
 
 impl<T> SyncFetcher for Arc<T> where T: SyncFetcher {}
 
@@ -346,6 +416,7 @@ use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use starcoin_types::U256;
 use std::str::FromStr;
 
 pub fn full_sync_task<H, A, F, N>(
