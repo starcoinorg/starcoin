@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use super::metrics::MINER_METRICS;
 use anyhow::{format_err, Result};
 use consensus::Consensus;
 use crypto::hash::HashValue;
@@ -204,6 +205,7 @@ where
             .or_insert_with(Vec::new)
             .push(uncle.id());
         self.uncles.insert(uncle.id(), uncle);
+        MINER_METRICS.maybe_uncle_count.inc();
     }
 
     pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
@@ -219,6 +221,7 @@ where
             )?;
             //current block possible bean uncle.
             self.uncles.insert(current_id, current_header);
+            MINER_METRICS.maybe_uncle_count.inc();
         }
         Ok(())
     }

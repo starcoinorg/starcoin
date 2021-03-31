@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::{full_sync_task, AncestorEvent};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
@@ -202,6 +203,7 @@ impl SyncService {
                     task_event_handle,
                     peer_selector,
                 })?;
+                SYNC_METRICS.sync_times.with_label_values(&["start"]).inc();
                 Ok(Some(fut.await?))
             } else {
                 debug!("[sync]No better peer to request.");
@@ -215,6 +217,7 @@ impl SyncService {
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
+                        SYNC_METRICS.sync_times.with_label_values(&["done"]).inc();
                         false
                     }
                     Ok(None) => {
@@ -226,6 +229,7 @@ impl SyncService {
                             match task_err {
                                 TaskError::Canceled => {
                                     info!("[sync] Sync task is cancel");
+                                    SYNC_METRICS.sync_times.with_label_values(&["cancel"]).inc();
                                     true
                                 }
                                 TaskError::BreakError(err) => {
@@ -246,15 +250,18 @@ impl SyncService {
                                         err,
                                         err.root_cause(),
                                     );
+                                    SYNC_METRICS.sync_times.with_label_values(&["break"]).inc();
                                     false
                                 }
                                 task_err => {
                                     error!("[sync] Sync task error: {:?}", task_err);
+                                    SYNC_METRICS.sync_times.with_label_values(&["error"]).inc();
                                     false
                                 }
                             }
                         } else {
                             error!("[sync] Sync task error: {:?}", err);
+                            SYNC_METRICS.sync_times.with_label_values(&["error"]).inc();
                             false
                         }
                     }
