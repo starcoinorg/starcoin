@@ -78,7 +78,7 @@ where
         writeln!(
             self.out,
             r#"
-from {}diem_types import (Script, ScriptFunction, TransactionPayload, TransactionPayload__ScriptFunction, Identifier, ModuleId, TypeTag, AccountAddress, TransactionArgument, TransactionArgument__Bool, TransactionArgument__U8, TransactionArgument__U64, TransactionArgument__U128, TransactionArgument__Address, TransactionArgument__U8Vector)"#,
+from {}starcoin_types import (Script, ScriptFunction, TransactionPayload, TransactionPayload__ScriptFunction, Identifier, ModuleId, TypeTag, AccountAddress, TransactionArgument, TransactionArgument__Bool, TransactionArgument__U8, TransactionArgument__U64, TransactionArgument__U128, TransactionArgument__Address, TransactionArgument__U8Vector)"#,
             match &self.diem_package_name {
                 None => "".into(),
                 Some(package) => package.clone() + ".",
@@ -141,8 +141,8 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
 
     fn output_script_call_enum_with_imports(&mut self, abis: &[ScriptABI]) -> Result<()> {
         let diem_types_module = match &self.diem_package_name {
-            None => "diem_types".into(),
-            Some(package) => format!("{}.diem_types", package),
+            None => "starcoin_types".into(),
+            Some(package) => format!("{}.starcoin_types", package),
         };
         let external_definitions = crate::common::get_external_definitions(&diem_types_module);
         let (transaction_script_abis, script_fun_abis): (Vec<_>, Vec<_>) = abis
@@ -309,10 +309,10 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
         for (index, arg) in abi.args().iter().enumerate() {
             writeln!(
                 self.out,
-                "{}=decode_{}_argument(script.args[{}]),",
+                "{}=bcs.deserialize(script.args[{}],{}),",
                 arg.name(),
-                common::mangle_type(arg.type_tag()),
                 index,
+                common::mangle_type(arg.type_tag()),
             )?;
         }
         self.out.unindent();
@@ -579,13 +579,13 @@ def decode_{}_argument(arg: TransactionArgument) -> {}:
     fn quote_transaction_argument(type_tag: &TypeTag, name: &str) -> String {
         use TypeTag::*;
         match type_tag {
-            Bool => format!("TransactionArgument__Bool(value={})", name),
-            U8 => format!("TransactionArgument__U8(value={})", name),
-            U64 => format!("TransactionArgument__U64(value={})", name),
-            U128 => format!("TransactionArgument__U128(value={})", name),
-            Address => format!("TransactionArgument__Address(value={})", name),
+            Bool => format!("bcs.serialize({}, st.bool)", name),
+            U8 => format!("bcs.serialize({}, st.uint8)", name),
+            U64 => format!("bcs.serialize({}, st.uint64)", name),
+            U128 => format!("bcs.serialize({}, st.uint128)", name),
+            Address => format!("{}.bcs_serialize()", name),
             Vector(type_tag) => match type_tag.as_ref() {
-                U8 => format!("TransactionArgument__U8Vector(value={})", name),
+                U8 => format!("bcs.serialize({}, bytes)", name),
                 _ => common::type_not_allowed(type_tag),
             },
 
