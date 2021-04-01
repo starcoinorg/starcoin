@@ -5,7 +5,7 @@ metadata:
   labels:
     app: explorer-api
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: explorer-api
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: explorer-api
-          image: starcoin/starcoin-explorer-api:v0.4.1
+          image: wk3368/starcoin-explorer-api:v0.4.4
           ports:
             - containerPort: 8080
           env:
@@ -29,5 +29,3 @@ spec:
                 secretKeyRef:
                   name: starcoin-elasticsearch-es-elastic-user
                   key: elastic
-            - name: STARCOIN_ES_PREFIX
-              value: halley*
