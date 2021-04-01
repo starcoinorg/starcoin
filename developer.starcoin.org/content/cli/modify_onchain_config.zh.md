@@ -7,55 +7,89 @@ weight: 7
 
 <!--more-->
 
-下面用修改Version的信息来举例说明：
+下面我们看一个修改 PublishOption 的例子。
 
-## 修改Version的配置：
+## 修改 PublishOption 的配置：
 
-1. 把Version的major修改为8，发起投票。
+1. 把 PublishOption 修改为 Open 状态 (缺省是Locked)，发起投票。
 
-注意：每个配置修改，对应的提案脚本不一样，参考附录的表格。
-```shell
-#先解锁默认账户，可以通过 account show命令查询。注意：以下用到的账户（0x43019bd9fd7b25c5275867a0f0b17010）都需要替换成自己的。
-account unlock 0x43019bd9fd7b25c5275867a0f0b17010 -d 1800
-dev execute -s 0x43019bd9fd7b25c5275867a0f0b17010 -b --script propose_update_version --arg 8 0
+``` bash
+# 解锁节点账号，用节点账号发起提案。注意：以下用到的账户（0x3ce9c3beeb95b555f5e3f2ac297afbf1）都需要替换成自己的账户。
+account unlock 0x3ce9c3beeb95b555f5e3f2ac297afbf1
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::OnChainConfigScripts::propose_update_txn_publish_option --arg true true 0
 ```
 提案发起后，用户需要等待公示期过后才能开始投票。
 可以使用如下命令查看提案信息。
 
-``` shell
-dev call --module-address 0x1 --module-name Dao --func-name proposal_info -t 0x1::STC::STC -t 0x1::ModifyDaoConfigProposal::DaoConfigUpdate --arg 0x43019bd9fd7b25c5275867a0f0b17010 --arg 0
+``` bash
+dev call --function 0x1::Dao::proposal_info -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1
+```
+
+返回结果包含了五个值，依次是：proposal_id，投票开始时间，投票结束时间，赞成票数，反对票数。
+``` json
+{
+  "ok": [
+    {
+      "U64": "0"
+    },
+    {
+      "type": "U64",
+      "value": 1602596122
+    },
+    {
+      "type": "U64",
+      "value": 1602599722
+    },
+    {
+      "type": "U128",
+      "value": 2000000000000000
+    },
+    {
+      "type": "U128",
+      "value": 0
+    }
+  ]
+}
 ```
 
 2. 用户投票
 
-投票的用户需要 balance 不能为0，可以通过挖矿或者其他账户转账的方式获得。
+投票的用户需要 balance 不能为 0，可以通过挖矿或者其他账户转账的方式获得。
 ``` shell
 # 解锁投票用户
 account unlock 0x1ddb8ec4850de3a57dede0f82edc5ec3
-dev execute -s 0x1ddb8ec4850de3a57dede0f82edc5ec3 -b --script cast_vote -t 0x1::STC::STC -t 0x1::ModifyDaoConfigProposal::DaoConfigUpdate --arg 0x43019bd9fd7b25c5275867a0f0b17010 --arg 0 --arg true --arg 100000u128
+account execute-function -s 0x1ddb8ec4850de3a57dede0f82edc5ec3 --function 0x1::DaoVoteScripts::cast_vote -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --arg 0 --arg true --arg 2000000000000000u128
 ```
-投票完成，需要等待投票期结束。
+投票完成，需要等待投票期结束。注意，第一个参数 0 表示 proposal id 是 0。第二个参数 true 表示赞成，第三个参数是投的 token 数量。
 
 3. 执行提案
 
+执行提案前，可以通过以下命令查看提案状态：
+
+``` bash
+dev call --function 0x1::Dao::proposal_state -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 0
+```
+返回：（如果返回结果是 4，说明提案通过，其他提案状态可以参考标准库文档）
 注意： Dao的提案通过后的执行脚本都一样，需要注意proposal_id参数，当前示例是0
-``` shell
+
+放入待执行对列：
+
+``` bash
+# 用节点账号将通过后的提案入队列
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::Dao::queue_proposal_action -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --arg 0
+```
+检查提案状态，待执行公示期过后：
+``` bash
 #用节点账号发起交易执行提案
-dev execute  -b --script execute_on_chain_config_proposal -t 0x1::Version::Version  --arg 0x43019bd9fd7b25c5275867a0f0b17010 --arg 0
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::OnChainConfigScripts::execute_on_chain_config_proposal -t 0x1::TransactionPublishOption::TransactionPublishOption --arg 0
+
 ```
 
-4. 验证Version参数是否正确
+4. 最后取回质押的 token，清理掉完成的提案，验证参数是否正确
+``` bash
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::Dao::destroy_terminated_proposal -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 0
+```
 
-```shell
-dev call --module-address 0x1 --module-name Version --func-name get
-```
-返回结果如下：
-```
-+-----+
-| U64 |
-+-----+
-| 8   |
-+-----+
-```
 恭喜你，整个修改流程就完成了。
+
 
