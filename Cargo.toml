@@ -87,7 +87,8 @@ members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
-    "cmd/indexer"
+    "cmd/indexer",
+    "cmd/resource-exporter"
 ]
 
 [profile.dev]
