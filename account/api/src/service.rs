@@ -128,9 +128,15 @@ where
             .await??;
         if let AccountResponse::MessageSignature(signature) = response {
             Ok(match *signature {
-                AccountSignature::Single(_, s) => s.to_bytes().to_vec(),
-                AccountSignature::Multi(_, s) => {
-                    Into::<MultiEd25519Signature>::into(s).to_bytes().to_vec()
+                AccountSignature::Single(p, s) => {
+                    let mut bytes = p.to_bytes().to_vec();
+                    bytes.extend(s.to_bytes().to_vec());
+                    bytes
+                }
+                AccountSignature::Multi(p, s) => {
+                    let mut bytes = p.to_bytes().to_vec();
+                    bytes.extend(Into::<MultiEd25519Signature>::into(s).to_bytes().to_vec());
+                    bytes
                 }
             })
         } else {
