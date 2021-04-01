@@ -8,6 +8,7 @@ use crate::types::{StrView, TransactionRequest};
 use crate::FutureResult;
 use starcoin_account_api::AccountInfo;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::token::token_code::TokenCode;
 
@@ -28,11 +29,8 @@ pub trait AccountApi {
     fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountInfo>>;
 
     #[rpc(name = "account.sign")]
-    fn sign(
-        &self,
-        address: AccountAddress,
-        data: StrView<Vec<u8>>,
-    ) -> FutureResult<StrView<Vec<u8>>>;
+    fn sign(&self, address: AccountAddress, data: SigningMessage)
+        -> FutureResult<StrView<Vec<u8>>>;
 
     /// sign a txn request, return hex encoded bcs_ext bytes of signed user txn.
     #[rpc(name = "account.sign_txn_request")]

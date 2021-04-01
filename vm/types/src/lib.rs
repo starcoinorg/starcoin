@@ -127,6 +127,7 @@ pub mod genesis_config;
 pub mod on_chain_config;
 pub mod on_chain_resource;
 pub mod serde_helper;
+pub mod sign_message;
 pub mod time;
 pub mod token;
 
