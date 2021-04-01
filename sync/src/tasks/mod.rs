@@ -20,7 +20,10 @@ use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
+use starcoin_types::startup_info::ChainStatus;
+use starcoin_types::U256;
 use starcoin_vm_types::time::TimeService;
+use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::time::Instant;
@@ -29,7 +32,122 @@ use stream_task::{
     TaskHandle,
 };
 
-pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {}
+pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+    fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
+        if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
+            //TODO fast verify best peers by accumulator
+            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
+                best_peers
+                    .into_iter()
+                    .fold(vec![], |mut chain_statuses, peer| {
+                        let update = chain_statuses
+                            .iter_mut()
+                            .find(|(chain_status, _peers)| {
+                                peer.chain_info().status() == chain_status
+                            })
+                            .map(|(_chain_status, peers)| {
+                                peers.push(peer.peer_id());
+                                true
+                            })
+                            .unwrap_or(false);
+
+                        if !update {
+                            chain_statuses
+                                .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                        }
+                        chain_statuses
+                    });
+            //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
+            if chain_statuses.len() > 1 {
+                chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
+                    peers_1.len().cmp(&peers_2.len())
+                });
+            }
+            let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
+            let header = chain_status.head;
+            Ok(Some(SyncTarget {
+                target_id: BlockIdAndNumber::new(header.id(), header.number()),
+                block_info: chain_status.info,
+                peers,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn get_better_target(
+        &self,
+        min_difficulty: U256,
+        best_target: SyncTarget,
+    ) -> BoxFuture<Result<SyncTarget>> {
+        let fut = async move {
+            if min_difficulty >= best_target.block_info.total_difficulty {
+                return Ok(best_target);
+            }
+
+            if let Some(mut better_peers) = self.peer_selector().betters(min_difficulty) {
+                better_peers.sort_by(|info_1, info_2| {
+                    info_1.total_difficulty().cmp(&info_2.total_difficulty())
+                });
+
+                let mut peers = Vec::new();
+                let mut target_peer = None;
+                for better_peer in better_peers.iter() {
+                    let mut eligible = false;
+                    match target_peer.as_ref() {
+                        None => {
+                            if best_target.peers.contains(&better_peer.peer_id()) {
+                                target_peer = Some(better_peer.clone());
+                                eligible = true;
+                            } else if let Some(block_id) = self
+                                .fetch_block_id(
+                                    best_target.peers.first().cloned(),
+                                    better_peer.block_number(),
+                                )
+                                .await?
+                            {
+                                if block_id == better_peer.block_id() {
+                                    target_peer = Some(better_peer.clone());
+                                    eligible = true;
+                                }
+                            }
+                        }
+                        Some(peer) => {
+                            if best_target.peers.contains(&better_peer.peer_id()) {
+                                eligible = true;
+                            } else if let Some(block_id) = self
+                                .fetch_block_id(Some(better_peer.peer_id()), peer.block_number())
+                                .await?
+                            {
+                                if block_id == peer.block_id() {
+                                    eligible = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if eligible {
+                        peers.push(better_peer.peer_id());
+                    }
+                }
+
+                if let Some(peer) = target_peer {
+                    return Ok(SyncTarget {
+                        target_id: BlockIdAndNumber::new(
+                            peer.latest_header().id(),
+                            peer.latest_header().number(),
+                        ),
+                        block_info: peer.chain_info().status().info().clone(),
+                        peers,
+                    });
+                }
+            }
+            Ok(best_target)
+        };
+
+        fut.boxed()
+    }
+}
 
 impl<T> SyncFetcher for Arc<T> where T: SyncFetcher {}
 
@@ -346,7 +464,6 @@ use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
-use std::str::FromStr;
 
 pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
@@ -414,6 +531,12 @@ where
 
     let all_fut = async move {
         let ancestor = fut.await?;
+        let mut ancestor_block_info = storage
+            .get_block_info(ancestor.id)
+            .map_err(TaskError::BreakError)?
+            .ok_or_else(|| format_err!("Can not find block info by id: {}", ancestor.id))
+            .map_err(TaskError::BreakError)?;
+
         let mut ancestor_event_handle = ancestor_event_handle;
         if let Err(e) = ancestor_event_handle.handle(AncestorEvent { ancestor }) {
             error!(
@@ -433,10 +556,10 @@ where
             for peer in all_peers {
                 fetcher.peer_selector().add_or_update_peer(peer);
             }
-            let sub_target =
-                inner_sync_task::sub_target(target.clone(), latest_ancestor, fetcher.clone())
-                    .await
-                    .map_err(TaskError::BreakError)?;
+            let sub_target = fetcher
+                .get_better_target(ancestor_block_info.total_difficulty, target.clone())
+                .await
+                .map_err(TaskError::BreakError)?;
 
             fetcher.peer_selector().retain(sub_target.peers.as_slice());
 
@@ -455,7 +578,6 @@ where
             let (block_chain, _) = inner
                 .do_sync(
                     current_block_info.clone(),
-                    2,
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
@@ -486,7 +608,9 @@ where
             if target.target_id.number() <= latest_block_chain.status().head.number() {
                 break;
             }
-            latest_ancestor = latest_block_chain.current_header().into();
+            let chain_status = latest_block_chain.status();
+            latest_ancestor = chain_status.head.into();
+            ancestor_block_info = chain_status.info;
         }
         Ok(latest_block_chain)
     };

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::sync_metrics::SYNC_METRICS;
-use crate::tasks::{sync_score_metrics::SYNC_SCORE_METRICS, PeerOperator, SyncFetcher};
+use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
@@ -15,15 +15,13 @@ use starcoin_network_rpc_api::{
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
-use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockIdAndNumber};
+use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
-    U256,
 };
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -263,72 +261,6 @@ impl VerifiedRpcClient {
             .await?;
         let resp = BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
-    }
-
-    pub async fn get_sync_target<F>(fetcher: Arc<F>, difficulty: U256) -> Result<Option<SyncTarget>>
-    where
-        F: SyncFetcher + 'static,
-    {
-        if let Some(mut better_peers) = fetcher.peer_selector().betters(difficulty) {
-            better_peers.sort_by(|info_1, info_2| {
-                info_1.total_difficulty().cmp(&info_2.total_difficulty())
-            });
-
-            if let Some(best_peer) = better_peers.last() {
-                let mut peers = Vec::new();
-                let mut target_peer = None;
-                for better_peer in better_peers.iter() {
-                    let mut eligible = false;
-                    match target_peer.as_ref() {
-                        None => {
-                            if best_peer == better_peer {
-                                target_peer = Some(better_peer.clone());
-                                eligible = true;
-                            } else if let Some(block_id) = fetcher
-                                .fetch_block_id(
-                                    Some(best_peer.peer_id()),
-                                    better_peer.block_number(),
-                                )
-                                .await?
-                            {
-                                if block_id == better_peer.block_id() {
-                                    target_peer = Some(better_peer.clone());
-                                    eligible = true;
-                                }
-                            }
-                        }
-                        Some(peer) => {
-                            if best_peer == better_peer {
-                                eligible = true;
-                            } else if let Some(block_id) = fetcher
-                                .fetch_block_id(Some(better_peer.peer_id()), peer.block_number())
-                                .await?
-                            {
-                                if block_id == peer.block_id() {
-                                    eligible = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if eligible {
-                        peers.push(better_peer.peer_id());
-                    }
-                }
-
-                if let Some(peer) = target_peer {
-                    return Ok(Some(SyncTarget {
-                        target_id: BlockIdAndNumber::new(
-                            peer.latest_header().id(),
-                            peer.latest_header().number(),
-                        ),
-                        block_info: peer.chain_info().status().info().clone(),
-                        peers,
-                    }));
-                }
-            }
-        }
-        Ok(None)
     }
 
     pub async fn get_state_node_by_node_hash(
