@@ -221,13 +221,8 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         let current_timestamp = self.time_service.now_millis();
         let time = current_timestamp.saturating_sub(block_timestamp);
         BLOCK_RELAYER_METRICS
-            .block_broadcast
-            .with_label_values(&["time"])
-            .inc_by(time);
-        BLOCK_RELAYER_METRICS
-            .block_broadcast
-            .with_label_values(&["count"])
-            .inc();
+            .block_broadcast_time
+            .observe(time as f64);
         // let sync_status = self
         //     .sync_status
         //     .as_ref()
