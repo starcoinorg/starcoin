@@ -128,7 +128,7 @@ impl serde::Serialize for MoveValue {
             AnnotatedMoveValue::U128(v) => serializer.serialize_u128(*v),
             AnnotatedMoveValue::Address(v) => v.serialize(serializer),
             AnnotatedMoveValue::Vector(v) => {
-                let vs: Vec<_> = v.clone().into_iter().map(|v| MoveValue(v)).collect();
+                let vs: Vec<_> = v.clone().into_iter().map(MoveValue).collect();
                 vs.serialize(serializer)
             }
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
