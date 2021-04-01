@@ -47,11 +47,14 @@ account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::M
 dev call --function 0x1::Dao::proposal_info -t 0x1::STC::STC -t 0x1::ModifyDaoConfigProposal::DaoConfigUpdate --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1
 ```
 
-返回结果包含了四个值，依次是：投票开始时间，投票结束时间，赞成票数，反对票数。
+返回结果包含了五个值，依次是：proposal_id，投票开始时间，投票结束时间，赞成票数，反对票数。
 
 ``` json
 {
   "ok": [
+    {
+      "U64": "0"
+    },
     {
       "type": "U64",
       "value": 1602596122
@@ -93,6 +96,9 @@ dev call --function 0x1::Dao::proposal_info -t 0x1::STC::STC -t 0x1::ModifyDaoCo
 ``` json
 {
   "ok": [
+    {
+      "U64": "0"
+    },
     {
       "type": "U64",
       "value": 1602596122
@@ -179,6 +185,9 @@ starcoin% dev call --function 0x1::Dao::voting_delay -t 0x1::STC::STC
   ]
 }
 ```
-
+7.清理掉完成的提案
+```bash
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::Dao::destroy_terminated_proposal -t 0x1::STC::STC -t 0x1::ModifyDaoConfigProposal::DaoConfigUpdate --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 0
+```
 以上是一个去中心化治理的案例流程，它没有展示出 DAO 模块的所有功能。
 更多请探索 Starcoin 标准库的官方文档。
