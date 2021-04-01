@@ -67,14 +67,14 @@ starcoin -n halley
 
 "Halley" 这个名字的灵感来自于[哈雷彗星](https://en.wikipedia.org/wiki/Halley%27s_Comet)，正式名为 1P/Halley，是一颗短周期彗星，每隔75-76年从地球上看到一次。
 
-## 加入 Proxima/Barnard 网络
+## 加入 Proxima 网络
 
-**Proxima** 是 starcoin 长期运行的一个测试网络，将在 2020 年第三季度发布，正式发布后不会清除数据. 最新版的 Barnard 网络于 2021/3/27 日启动
+**Proxima** 是 starcoin 长期运行的一个测试网. 
 
-可以使用如下命令加入 Barnard 网络:
+可以使用如下命令加入 proxima 网络:
 
 ```shell
-starcoin -n barnard
+starcoin -n proxima
 ```
 
 
@@ -83,7 +83,7 @@ starcoin -n barnard
 
 ## 加入 Barnard 网络
 
-**Barnard** 是 starcoin 将永久运行的一个测试网络，barnard 是 proxima 的后继者。
+**Barnard** 是 starcoin 将永久运行的一个测试网络，最新版的 Barnard 网络于 2021/3/27 日启动。barnard 是 proxima 的后继者。
 
 你可以使用如下命令来加入 barnard 网络： 
 
