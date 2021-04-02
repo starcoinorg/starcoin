@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: explorer-api
-          image: starcoin/starcoin-explorer-api:v0.4.4
+          image: starcoin/starcoin-explorer-api:v0.4.5
           ports:
             - containerPort: 8080
           env:
