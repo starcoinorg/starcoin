@@ -9,8 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{Storage, Store};
 use starcoin_types::block::Block;
-use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent};
+use starcoin_types::system_events::NewHeadBlock;
 use std::sync::Arc;
 
 /// ChainNotify watch `NewHeadBlock` message from bus,
@@ -18,22 +17,11 @@ use std::sync::Arc;
 /// User can subscribe the two notification to watch onchain events.
 pub struct ChainNotifyHandlerService {
     store: Arc<dyn Store>,
-    sync_status: Option<SyncStatus>,
 }
 
 impl ChainNotifyHandlerService {
     pub fn new(store: Arc<dyn Store>) -> Self {
-        Self {
-            store,
-            sync_status: None,
-        }
-    }
-
-    pub fn is_synced(&self) -> bool {
-        match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
-            None => false,
-        }
+        Self { store }
     }
 }
 
@@ -48,21 +36,13 @@ impl ServiceFactory<Self> for ChainNotifyHandlerService {
 
 impl ActorService for ChainNotifyHandlerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
         Ok(())
-    }
-}
-
-impl EventHandler<Self, SyncStatusChangeEvent> for ChainNotifyHandlerService {
-    fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
-        self.sync_status = Some(msg.0);
     }
 }
 
@@ -72,18 +52,14 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         item: NewHeadBlock,
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) {
-        if self.is_synced() {
-            let NewHeadBlock(block_detail) = item;
-            let block = block_detail.block();
-            // notify header.
-            self.notify_new_block(block, ctx);
+        let NewHeadBlock(block_detail) = item;
+        let block = block_detail.block();
+        // notify header.
+        self.notify_new_block(block, ctx);
 
-            // notify events
-            if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
-                error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
-            }
-        } else {
-            debug!("[chain-notify] Ignore NewHeadBlock event because the node has not been synchronized yet.")
+        // notify events
+        if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
+            error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
         }
     }
 }
