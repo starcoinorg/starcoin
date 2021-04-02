@@ -220,25 +220,10 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         let block_timestamp = compact_block_msg.message.compact_block.header.timestamp();
         let current_timestamp = self.time_service.now_millis();
         let time = current_timestamp.saturating_sub(block_timestamp);
-        BLOCK_RELAYER_METRICS
-            .block_broadcast
-            .with_label_values(&["time"])
-            .inc_by(time);
-        BLOCK_RELAYER_METRICS
-            .block_broadcast
-            .with_label_values(&["count"])
-            .inc();
-        // let sync_status = self
-        //     .sync_status
-        //     .as_ref()
-        //     .expect("Sync status should bean some at here");
-        // let current_total_difficulty = sync_status.chain_status().total_difficulty();
-        // let block_total_difficulty = compact_block_msg.message.block_info.total_difficulty;
-        // let block_id = compact_block_msg.message.compact_block.header.id();
-        // if current_total_difficulty > block_total_difficulty {
-        //     debug!("[block-relay] Ignore PeerCompactBlockMessage because node current total_difficulty({}) > block({})'s total_difficulty({}).", current_total_difficulty, block_id, block_total_difficulty);
-        //     return;
-        // }
+        let time_sec = (time as f64) / 1000_f64;
+        BLOCK_RELAYER_METRICS.block_broadcast_time.observe(time_sec);
+        //TODO should filter too old block?
+
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
             error!(
                 "[block-relay] handle PeerCompactBlockMessage error: {:?}",
