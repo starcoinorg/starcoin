@@ -70,6 +70,9 @@ impl BlockRelayer {
         let txns = {
             let mut txns: Vec<Option<SignedUserTransaction>> =
                 vec![None; compact_block.short_ids.len()];
+            BLOCK_RELAYER_METRICS
+                .broadcast_txns_count
+                .set(compact_block.short_ids.len() as u64);
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {

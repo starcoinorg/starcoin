@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
     default_registry, register_histogram, register_int_gauge, Histogram, IntGauge, Opts,
-    PrometheusError, UIntCounter,
+    PrometheusError, UIntCounter, UIntGauge,
 };
 
 pub static BLOCK_RELAYER_METRICS: Lazy<BlockRelayerMetrics> =
@@ -15,6 +15,7 @@ pub struct BlockRelayerMetrics {
     pub txns_filled_time: Histogram,
     pub block_broadcast_time: Histogram,
     pub txns_filled_failed: UIntCounter,
+    pub broadcast_txns_count: UIntGauge,
 }
 
 impl BlockRelayerMetrics {
@@ -42,6 +43,8 @@ impl BlockRelayerMetrics {
             "starcoin_txns_filled_failed",
             "txns filled failed".to_string(),
         )?;
+        let broadcast_txns_count =
+            register_uint_gauge!("starcoin_broadcast_txns_count", "broadcast txns count.")?;
         default_registry().register(Box::new(txns_filled_failed.clone()))?;
         Ok(Self {
             txns_filled_from_network,
@@ -50,6 +53,7 @@ impl BlockRelayerMetrics {
             txns_filled_time,
             block_broadcast_time,
             txns_filled_failed,
+            broadcast_txns_count,
         })
     }
 }
