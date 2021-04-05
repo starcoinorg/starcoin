@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    default_registry, register_histogram, register_int_gauge, Histogram, IntGauge, Opts,
-    PrometheusError, UIntCounter, UIntGauge,
+    default_registry, register_histogram, register_int_gauge, register_uint_gauge, Histogram,
+    IntGauge, Opts, PrometheusError, UIntCounter, UIntGauge,
 };
 
 pub static BLOCK_RELAYER_METRICS: Lazy<BlockRelayerMetrics> =

@@ -21,6 +21,7 @@ pub struct SyncMetrics {
     pub sync_get_block_ids_time: HistogramVec,
     pub sync_apply_block_time: HistogramVec,
     pub sync_times: UIntCounterVec,
+    pub sync_break_times: UIntCounterVec,
 }
 
 impl SyncMetrics {
@@ -50,13 +51,22 @@ impl SyncMetrics {
             .namespace(SC_NS),
             &["type"],
         )?;
-
+        let sync_break_times = UIntCounterVec::new(
+            Opts::new(
+                format!("{}{}", PREFIX, "sync_break_times"),
+                "sync break times".to_string(),
+            )
+            .namespace(SC_NS),
+            &["type"],
+        )?;
         default_registry().register(Box::new(sync_times.clone()))?;
+        default_registry().register(Box::new(sync_break_times.clone()))?;
 
         Ok(Self {
             sync_get_block_ids_time,
             sync_apply_block_time,
             sync_times,
+            sync_break_times,
         })
     }
 }
