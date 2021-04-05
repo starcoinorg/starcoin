@@ -225,6 +225,7 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         //TODO should filter too old block?
 
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
+            BLOCK_RELAYER_METRICS.txns_filled_failed.inc();
             error!(
                 "[block-relay] handle PeerCompactBlockMessage error: {:?}",
                 e
