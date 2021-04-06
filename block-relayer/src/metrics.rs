@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
     default_registry, register_histogram, register_int_gauge, register_uint_gauge, Histogram,
-    IntGauge, Opts, PrometheusError, UIntCounter, UIntGauge,
+    IntGauge, Opts, PrometheusError, UIntCounterVec, UIntGauge,
 };
 
 pub static BLOCK_RELAYER_METRICS: Lazy<BlockRelayerMetrics> =
@@ -14,8 +14,8 @@ pub struct BlockRelayerMetrics {
     pub txns_filled_from_prefill: IntGauge,
     pub txns_filled_time: Histogram,
     pub block_broadcast_time: Histogram,
-    pub txns_filled_failed: UIntCounter,
-    pub broadcast_txns_count: UIntGauge,
+    pub txns_filled_failed: UIntCounterVec,
+    pub block_txns_count: UIntGauge,
 }
 
 impl BlockRelayerMetrics {
@@ -39,9 +39,13 @@ impl BlockRelayerMetrics {
             register_histogram!("starcoin_txns_filled_time", "txns filled time")?;
         let block_broadcast_time = register_histogram!("block_broadcast", "block broadcast time.")?;
 
-        let txns_filled_failed = UIntCounter::new(
-            "starcoin_txns_filled_failed",
-            "txns filled failed".to_string(),
+        let txns_filled_failed = UIntCounterVec::new(
+            Opts::new(
+                "starcoin_txns_filled_failed",
+                "txns filled failed".to_string(),
+            )
+            .namespace("starcoin"),
+            &["type"],
         )?;
         let broadcast_txns_count =
             register_uint_gauge!("starcoin_broadcast_txns_count", "broadcast txns count.")?;
@@ -53,7 +57,7 @@ impl BlockRelayerMetrics {
             txns_filled_time,
             block_broadcast_time,
             txns_filled_failed,
-            broadcast_txns_count,
+            block_txns_count: broadcast_txns_count,
         })
     }
 }
