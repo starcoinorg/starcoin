@@ -70,6 +70,9 @@ impl BlockRelayer {
         let txns = {
             let mut txns: Vec<Option<SignedUserTransaction>> =
                 vec![None; compact_block.short_ids.len()];
+            BLOCK_RELAYER_METRICS
+                .block_txns_count
+                .set(compact_block.short_ids.len() as u64);
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
@@ -113,6 +116,12 @@ impl BlockRelayer {
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
                     if let Some(txn) = fetched_missing_txn_map.remove(short_id) {
+                        if txn.is_err() {
+                            BLOCK_RELAYER_METRICS
+                                .txns_filled_failed
+                                .with_label_values(&["miss"])
+                                .inc();
+                        }
                         txns[index] = Some(txn?);
                         BLOCK_RELAYER_METRICS.txns_filled_from_network.inc();
                     }
@@ -225,6 +234,10 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         //TODO should filter too old block?
 
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
+            BLOCK_RELAYER_METRICS
+                .txns_filled_failed
+                .with_label_values(&["error"])
+                .inc();
             error!(
                 "[block-relay] handle PeerCompactBlockMessage error: {:?}",
                 e

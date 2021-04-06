@@ -239,8 +239,12 @@ impl SyncService {
                                                 ReputationChange::new_fatal("invalid_response"),
                                             )
                                         }
+                                        SYNC_METRICS.sync_break_times.with_label_values(&["verify_err"]).inc();
                                     }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
+                                        SYNC_METRICS.sync_break_times.with_label_values(&["bcs_err"]).inc();
+                                    } else {
+                                        SYNC_METRICS.sync_break_times.with_label_values(&["other_err"]).inc();
                                     }
                                     warn!(
                                         "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
