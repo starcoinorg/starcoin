@@ -17,7 +17,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                 let arg_names = compute_arg_identifiers(&args).unwrap();
                 let returns = match compute_returns(method) {
                     Ok(r) => r,
-                    Err(e) => panic!(e)
+                    Err(e) => panic!("{}", e)
                 };
                 if arg_names.len() < 2 {
                     panic!("network Rpc method must has at least two argument");

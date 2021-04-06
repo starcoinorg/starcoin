@@ -3,13 +3,11 @@
 
 #![forbid(unsafe_code)]
 
-use crate::{
-    cli::{Options, INLINE_PRELUDE},
-    prelude_template_helpers::StratificationHelper,
-};
+use crate::cli::{Options, INLINE_PRELUDE};
 use abigen::Abigen;
 use anyhow::anyhow;
 use boogie_backend::{boogie_wrapper::BoogieWrapper, bytecode_translator::BoogieTranslator};
+use boogie_backend_v2::prelude_template_helpers::StratificationHelper;
 use bytecode::{
     data_invariant_instrumentation::DataInvariantInstrumentationProcessor,
     debug_instrumentation::DebugInstrumenter,
@@ -41,7 +39,6 @@ use std::{
 
 pub mod cli;
 mod pipelines;
-mod prelude_template_helpers;
 
 // =================================================================================================
 // Entry Point
@@ -111,8 +108,8 @@ pub fn run_move_prover<W: WriteColor>(
         return Err(anyhow!("exiting with analysis errors"));
     }
     let writer = CodeWriter::new(env.internal_loc());
-    add_prelude(&options, &writer)?;
     if options.vnext {
+        boogie_backend_v2::add_prelude(&options.backend, &writer)?;
         let mut translator = boogie_backend_v2::bytecode_translator::BoogieTranslator::new(
             &env,
             &options.backend,
@@ -121,6 +118,7 @@ pub fn run_move_prover<W: WriteColor>(
         );
         translator.translate();
     } else {
+        add_prelude(&options, &writer)?;
         let mut translator = BoogieTranslator::new(&env, &options.backend, &targets, &writer);
         translator.translate();
     }
@@ -281,16 +279,13 @@ fn add_prelude(options: &Options, writer: &CodeWriter) -> anyhow::Result<()> {
     emit!(writer, "\n// ** prelude from {}\n\n", &options.prelude_path);
     let content = if options.prelude_path == INLINE_PRELUDE {
         debug!("using inline prelude");
-        if options.vnext {
-            String::from_utf8_lossy(boogie_backend_v2::DEFAULT_PRELUDE).to_string()
-        } else {
-            String::from_utf8_lossy(DEFAULT_PRELUDE).to_string()
-        }
+        String::from_utf8_lossy(DEFAULT_PRELUDE).to_string()
     } else {
         debug!("using prelude at {}", &options.prelude_path);
         fs::read_to_string(&options.prelude_path)?
     };
     let mut handlebars = Handlebars::new();
+    handlebars.set_strict_mode(true);
     handlebars.register_helper(
         "stratified",
         Box::new(StratificationHelper::new(

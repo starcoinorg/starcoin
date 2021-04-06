@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 crossbeam = "0.7.3"
-diem-proptest-helpers = { package="diem-proptest-helpers",  git = "https://github.com/starcoinorg/diem", rev="f71f37c1b0ba5b24fa8c88893d3aa2adaf08a425" }
+diem-proptest-helpers = { package="diem-proptest-helpers",  git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
 
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
