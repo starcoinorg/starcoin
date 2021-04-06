@@ -16,7 +16,7 @@ export Z3_EXE=/usr/local/bin/z3;
 export RUSTFLAGS='-Ccodegen-units=1'
 #pleanse ensure tow test command's argument is same.
 cargo test --no-run -- --color never --format pretty
-RUST_LOG=OFF RUST_BACKTRACE=0 cargo test --no-fail-fast -j 5 -- --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
+RUST_LOG=OFF RUST_BACKTRACE=0 cargo test --no-fail-fast -j 1 -- --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
 grep -e '^test[[:space:]][^[:space:]]*[[:space:]]\.\.\.[[:space:]]FAILED' "$TEST_RESULT_FILE" >"$TEST_RESULT_FAILED_FILE" ||true
 
 status=0
