@@ -31,18 +31,26 @@ fn test_peer_selector() {
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
+            vec![],
+            vec![],
         ),
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(99.into())),
+            vec![],
+            vec![],
         ),
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
+            vec![],
+            vec![],
         ),
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(1.into())),
+            vec![],
+            vec![],
         ),
     ];
 

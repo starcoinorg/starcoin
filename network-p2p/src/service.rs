@@ -222,6 +222,12 @@ impl NetworkWorker {
             params.chain_info,
             boot_node_ids.clone(),
             notif_protocols,
+            params
+                .network_config
+                .request_response_protocols
+                .iter()
+                .map(|config| config.name.clone())
+                .collect(),
         )?;
 
         // Build the swarm.
@@ -1139,6 +1145,8 @@ impl Future for NetworkWorker {
                     protocol,
                     notifications_sink,
                     info,
+                    notif_protocols,
+                    rpc_protocols,
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
                         metrics.notifications_streams_opened_total.inc();
@@ -1152,6 +1160,8 @@ impl Future for NetworkWorker {
                         remote,
                         protocol,
                         info,
+                        notif_protocols,
+                        rpc_protocols,
                     });
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamReplaced {

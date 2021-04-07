@@ -56,6 +56,8 @@ pub enum Event {
         /// The concerned protocol. Each protocol uses a different substream.
         protocol: Cow<'static, str>,
         info: Box<ChainInfo>,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
     },
 
     /// Closed a substream with the given node. Always matches a corresponding previous

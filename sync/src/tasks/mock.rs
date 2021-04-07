@@ -144,7 +144,7 @@ impl SyncNodeMocker {
     ) -> Result<Self> {
         let chain = MockChain::new(net)?;
         let peer_id = PeerId::random();
-        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info());
+        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![]);
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
         Ok(Self::new_inner(
             peer_id,
@@ -162,7 +162,7 @@ impl SyncNodeMocker {
     ) -> Result<Self> {
         let chain = MockChain::new(net)?;
         let peer_id = PeerId::random();
-        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info());
+        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![]);
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
         Ok(Self::new_inner(
             peer_id,
@@ -205,7 +205,12 @@ impl SyncNodeMocker {
     }
 
     pub fn peer_info(&self) -> PeerInfo {
-        PeerInfo::new(self.peer_id.clone(), self.chain_mocker.chain_info())
+        PeerInfo::new(
+            self.peer_id.clone(),
+            self.chain_mocker.chain_info(),
+            vec![],
+            vec![],
+        )
     }
 
     pub fn sync_target(&self) -> SyncTarget {

@@ -61,7 +61,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         }
         let mut protocols = NotificationMessage::protocols();
         protocols.push(TEST_NOTIF_PROTOCOL_NAME.into());
-        let worker =
+        let (_peer_info, worker) =
             build_network_worker(&node_config, chain_info.clone(), protocols, None).unwrap();
         let network_service = worker.service().clone();
         async_std::task::spawn(worker);

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::RequestResponseConfig;
 use crate::protocol::message::generic::Status;
 use crate::service::NetworkStateInfo;
 use crate::{config, Event, NetworkService, NetworkWorker};
@@ -16,8 +17,10 @@ use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use std::borrow::Cow;
 use std::thread;
 use std::{sync::Arc, time::Duration};
+use Event::NotificationStreamOpened;
 
 static TEST_CHAIN_INFO: Lazy<ChainInfo> =
     Lazy::new(|| ChainInfo::new(ChainId::new(0), HashValue::zero(), ChainStatus::random()));
@@ -183,7 +186,7 @@ fn notifications_back_pressure() {
         // Wait for the `NotificationStreamOpened`.
         loop {
             match events_stream1.next().await.unwrap() {
-                Event::NotificationStreamOpened { .. } => break,
+                NotificationStreamOpened { .. } => break,
                 e => {
                     debug!("receive event: {:?}", e);
                 }
@@ -426,7 +429,7 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 #[stest::test]
 fn test_handshake_fail() {
     let protocol = ProtocolId::from("starcoin");
-    let config1 = generate_config(vec![]);
+    let config1 = generate_config(vec![], vec![PROTOCOL_NAME.into()], vec![]);
     let chain1 = ChainInfo::random();
     let worker1 =
         NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), chain1, None)).unwrap();
@@ -439,7 +442,7 @@ fn test_handshake_fail() {
         peer_id: service1.local_peer_id(),
     };
 
-    let config2 = generate_config(vec![seed]);
+    let config2 = generate_config(vec![seed], vec![PROTOCOL_NAME.into()], vec![]);
     let chain2 = ChainInfo::random();
 
     let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain2, None)).unwrap();
@@ -461,12 +464,17 @@ fn test_handshake_fail() {
     assert_eq!(state2.connected_peers.len(), 0);
 }
 
-fn generate_config(boot_nodes: Vec<MultiaddrWithPeerId>) -> NetworkConfiguration {
+fn generate_config(
+    boot_nodes: Vec<MultiaddrWithPeerId>,
+    notif_protocols: Vec<Cow<'static, str>>,
+    rpc_protocols: Vec<RequestResponseConfig>,
+) -> NetworkConfiguration {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
 
     config::NetworkConfiguration {
         //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
-        notifications_protocols: vec![From::from(PROTOCOL_NAME)],
+        notifications_protocols: notif_protocols,
+        request_response_protocols: rpc_protocols,
         listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
         boot_nodes,
@@ -491,4 +499,107 @@ fn test_handshake_message() {
     let bytes = hex::decode(bin_msg).unwrap();
     let status2 = Status::decode(bytes.as_slice()).unwrap();
     assert_eq!(status, status2);
+}
+
+#[stest::test]
+fn test_support_protocol() {
+    let protocol = ProtocolId::from("starcoin");
+    let txn_v1 = "/starcoin/txn/1";
+    let block_v1 = "/starcoin/block/1";
+    let get_block_rpc = RequestResponseConfig {
+        name: "/starcoin/rpc/get_blocks".into(),
+        max_request_size: 1024,
+        max_response_size: 1024,
+        request_timeout: Duration::from_millis(1000),
+        inbound_queue: None,
+    };
+    let config1 = generate_config(
+        vec![],
+        vec![block_v1.into(), txn_v1.into()],
+        vec![get_block_rpc],
+    );
+    let chain1 = ChainInfo::random();
+    let worker1 = NetworkWorker::new(Params::new(
+        config1.clone(),
+        protocol.clone(),
+        chain1.clone(),
+        None,
+    ))
+    .unwrap();
+    let service1 = worker1.service().clone();
+    let stream1 = service1.event_stream("test1");
+    task::spawn(worker1);
+
+    let seed = config::MultiaddrWithPeerId {
+        multiaddr: config1.listen_addresses[0].clone(),
+        peer_id: service1.local_peer_id(),
+    };
+
+    let config2 = generate_config(vec![seed], vec![block_v1.into()], vec![]);
+
+    let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain1, None)).unwrap();
+    let service2 = worker2.service().clone();
+    let stream2 = service2.event_stream("test1");
+    task::spawn(worker2);
+
+    thread::sleep(Duration::from_secs(1));
+
+    debug!(
+        "first peer is {:?},second peer is {:?}",
+        service1.peer_id(),
+        service2.peer_id()
+    );
+    let state1 = block_on(async { service1.network_state().await }).unwrap();
+    let state2 = block_on(async { service2.network_state().await }).unwrap();
+
+    assert_eq!(state1.connected_peers.len(), 1);
+    assert_eq!(state2.connected_peers.len(), 1);
+
+    let open_event1 = block_on(async {
+        stream1
+            .filter(|event| future::ready(matches!(event, Event::NotificationStreamOpened { .. })))
+            .take(1)
+            .collect::<Vec<_>>()
+            .await
+    })
+    .pop()
+    .unwrap();
+    if let Event::NotificationStreamOpened {
+        remote,
+        protocol: _,
+        info: _,
+        notif_protocols,
+        rpc_protocols,
+    } = open_event1
+    {
+        assert_eq!(&remote, service2.peer_id());
+        assert_eq!(notif_protocols.len(), 1);
+        assert_eq!(rpc_protocols.len(), 0);
+    } else {
+        panic!("Unexpected event type: {:?}", open_event1)
+    }
+
+    let open_event2 = block_on(async {
+        stream2
+            .filter(|event| future::ready(matches!(event, Event::NotificationStreamOpened { .. })))
+            .take(1)
+            .collect::<Vec<_>>()
+            .await
+    })
+    .pop()
+    .unwrap();
+    if let Event::NotificationStreamOpened {
+        remote,
+        protocol: _,
+        info: _,
+        notif_protocols,
+        rpc_protocols,
+    } = open_event2
+    {
+        assert_eq!(&remote, service1.peer_id());
+        assert_eq!(notif_protocols.len(), 2);
+        assert_eq!(rpc_protocols.len(), 1);
+    } else {
+        panic!("Unexpected event type: {:?}", open_event2)
+    }
 }
