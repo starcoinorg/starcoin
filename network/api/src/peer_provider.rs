@@ -192,20 +192,18 @@ impl PeerSelector {
     }
 
     /// Get top N peers sorted by total_difficulty
-    pub fn top(self, n: usize) -> Vec<PeerId> {
+    pub fn top(&self, n: usize) -> Vec<PeerId> {
         if self.is_empty() {
             return Vec::new();
         }
-        let mut peers = self.details.lock();
-        Self::sort(&mut peers);
-        let mut top: Vec<PeerId> = Vec::new();
-        for peer in peers.iter() {
-            if top.len() >= n {
-                break;
-            }
-            top.push(peer.peer_id());
-        }
-        top
+        self.details
+            .lock()
+            .iter()
+            .sorted_by_key(|peer| peer.peer_info.total_difficulty())
+            .rev()
+            .map(|peer| peer.peer_info.peer_id())
+            .take(n)
+            .collect()
     }
 
     pub fn peer_score(&self, peer_id: &PeerId, score: i64) {
@@ -315,15 +313,28 @@ impl PeerSelector {
     }
 
     pub fn retain(&self, peers: &[PeerId]) {
+        self.retain_by_filter(|peer| peers.contains(&peer.peer_id()));
+    }
+
+    pub fn retain_by_filter<F>(&self, filter: F)
+    where
+        F: Fn(&PeerDetail) -> bool,
+    {
         let mut score: u64 = 0;
         self.details.lock().retain(|peer| -> bool {
-            let flag = peers.contains(&peer.peer_id());
+            let flag = filter(peer);
             if flag {
                 score = score.saturating_add(peer.score_counter.score());
             }
             flag
         });
         self.total_score.store(score, Ordering::SeqCst);
+    }
+
+    /// Retain the peer which supported rpc call.
+    pub fn retain_rpc_peers(&self) {
+        //TODO enable retain when most node upgrade and send rpc protocol in handshake.
+        //self.retain_by_filter(|peer| peer.peer_info.is_support_rpc())
     }
 
     pub fn remove_peer(&self, peer: &PeerId) -> usize {
@@ -436,11 +447,6 @@ impl PeerSelector {
 
     pub fn len(&self) -> usize {
         self.details.lock().len()
-    }
-
-    fn sort(peers: &mut Vec<PeerDetail>) {
-        peers.sort_by_key(|p| p.peer_info.total_difficulty());
-        peers.reverse();
     }
 
     pub fn scores(&self) -> Vec<(PeerId, u64)> {

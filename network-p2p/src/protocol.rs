@@ -458,13 +458,6 @@ impl Protocol {
         notifications_sink: NotificationsSink,
     ) -> CustomMessageOutcome {
         debug!(target: "network-p2p", "New peer {} {:?}", who, status);
-        if self.context_data.peers.contains_key(&who) {
-            log!(
-                target: "network-p2p",
-                if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
-                "Unexpected status packet from {}", who
-            );
-        }
         if status.info.genesis_hash() != self.chain_info.genesis_hash() {
             if self.boot_node_ids.contains(&who) {
                 error!(
@@ -475,7 +468,9 @@ impl Protocol {
                     status.info.genesis_hash(),
                 );
             } else {
-                info!(
+                log!(
+                    target: "network-p2p",
+                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
                     "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
                     who,
                     self.chain_info.genesis_hash(),
@@ -489,7 +484,7 @@ impl Protocol {
         if status.version < MIN_VERSION && CURRENT_VERSION < status.min_supported_version {
             log!(
                 target: "network-p2p",
-                if self.important_peers.contains(&who) { Level::Warn } else { Level::Trace },
+                if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
                 "Peer {:?} using unsupported protocol version {}", who, status.version
             );
             self.peerset_handle.report_peer(who, rep::BAD_PROTOCOL);

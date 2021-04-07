@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metrics::BLOCK_RELAYER_METRICS;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use futures::FutureExt;
@@ -168,8 +168,11 @@ impl BlockRelayer {
             if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
                 warn!("Block is failed block : {:?}", block_id);
             } else {
-                let peers = network.peer_set().await?;
-                let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+                let peer = network
+                    .get_peer(peer_id.clone())
+                    .await?
+                    .ok_or_else(|| format_err!("CompatBlockMessage's peer {} is not connected"))?;
+                let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default());
                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                 let timer = BLOCK_RELAYER_METRICS.txns_filled_time.start_timer();
                 let block = BlockRelayer::fill_compact_block(
