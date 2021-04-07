@@ -29,6 +29,9 @@ starcoin-move-compiler = { path = "../vm/compiler"}
 log = "0.4.14"
 
 [dev-dependencies]
+hex = "0.4"
+serde_json="1"
+serde="1"
 starcoin-resource-viewer = {path = "../vm/resource-viewer"}
 tempfile = "3.1.0"
 starcoin-consensus = { path = "../consensus" }

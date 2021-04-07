@@ -79,8 +79,11 @@ impl CommandAction for CompileCommand {
             &deps,
             sender,
         )?;
+
         let compile_unit = match compile_result {
-            Ok(c) => c,
+            Ok(mut c) => c
+                .pop()
+                .ok_or_else(|| anyhow::anyhow!("file should at least contain one compile unit"))?,
             Err(e) => {
                 eprintln!(
                     "{}",

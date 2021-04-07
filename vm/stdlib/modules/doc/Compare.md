@@ -7,10 +7,12 @@
 
 -  [Constants](#@Constants_0)
 -  [Function `cmp_bcs_bytes`](#0x1_Compare_cmp_bcs_bytes)
+-  [Function `cmp_bytes`](#0x1_Compare_cmp_bytes)
 -  [Function `cmp_u8`](#0x1_Compare_cmp_u8)
 -  [Function `cmp_u64`](#0x1_Compare_cmp_u64)
 -  [Specification](#@Specification_1)
     -  [Function `cmp_bcs_bytes`](#@Specification_1_cmp_bcs_bytes)
+    -  [Function `cmp_bytes`](#@Specification_1_cmp_bytes)
     -  [Function `cmp_u8`](#@Specification_1_cmp_u8)
     -  [Function `cmp_u64`](#@Specification_1_cmp_u64)
 
@@ -115,6 +117,45 @@ Keep this in mind when using this function to compare addresses.
 
 </details>
 
+<a name="0x1_Compare_cmp_bytes"></a>
+
+## Function `cmp_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bytes">cmp_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bytes">cmp_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8 {
+    <b>let</b> l1 = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(v1);
+    <b>let</b> l2 = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(v2);
+    <b>let</b> len_cmp = <a href="Compare.md#0x1_Compare_cmp_u64">cmp_u64</a>(l1, l2);
+    <b>let</b> i1 = 0;
+    <b>let</b> i2 = 0;
+    <b>while</b> (i1 &lt; l1 && i2 &lt; l2) {
+        <b>let</b> elem_cmp = <a href="Compare.md#0x1_Compare_cmp_u8">cmp_u8</a>(*<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(v1, i1), *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(v2, i2));
+        <b>if</b> (elem_cmp != 0) {
+            <b>return</b> elem_cmp
+        };
+        // <b>else</b>, compare next element
+        i1 = i1 + 1;
+        i2 = i2 + 1;
+    };
+    // all compared elements equal; <b>use</b> length comparison <b>to</b> <b>break</b> the tie
+    len_cmp
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Compare_cmp_u8"></a>
 
 ## Function `cmp_u8`
@@ -185,6 +226,22 @@ Keep this in mind when using this function to compare addresses.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_cmp_bytes"></a>
+
+### Function `cmp_bytes`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Compare.md#0x1_Compare_cmp_bytes">cmp_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
 </code></pre>
 
 

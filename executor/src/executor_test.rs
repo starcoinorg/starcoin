@@ -31,7 +31,7 @@ use test_helper::executor::{
 };
 
 use test_helper::executor::{
-    compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
+    compile_modules_with_address, execute_and_apply, get_balance, get_sequence_number,
     prepare_genesis,
 };
 // use test_helper::Account;
@@ -208,7 +208,9 @@ fn test_package_txn() -> Result<()> {
 
     // verify package txn
     {
-        let module = compile_module_with_address(*alice.address(), TEST_MODULE);
+        let module = compile_modules_with_address(*alice.address(), TEST_MODULE)
+            .pop()
+            .unwrap();
         let package = Package::new_with_module(module)?;
         // let package_hash = package.crypto_hash();
 
@@ -227,7 +229,9 @@ fn test_package_txn() -> Result<()> {
 
     // now, upgrade to test module_1
     {
-        let module = compile_module_with_address(*alice.address(), TEST_MODULE_1);
+        let module = compile_modules_with_address(*alice.address(), TEST_MODULE_1)
+            .pop()
+            .unwrap();
         let package = Package::new_with_module(module)?;
         let mut vm = StarcoinVM::new();
         let txn = alice.sign_txn(build_raw_txn(
@@ -246,7 +250,9 @@ fn test_package_txn() -> Result<()> {
 
     // now, upgrade the test module
     {
-        let module = compile_module_with_address(*alice.address(), TEST_MODULE_2);
+        let module = compile_modules_with_address(*alice.address(), TEST_MODULE_2)
+            .pop()
+            .unwrap();
         let package = Package::new_with_module(module)?;
         let mut vm = StarcoinVM::new();
         let txn = alice.sign_txn(build_raw_txn(
@@ -749,7 +755,9 @@ fn test_publish_module_and_upgrade() -> Result<()> {
         }
         "#;
     // compile with account 1's address
-    let compiled_module = compile_module_with_address(*account1.address(), module_source);
+    let compiled_module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
 
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),
@@ -774,7 +782,9 @@ fn test_publish_module_and_upgrade() -> Result<()> {
         }
         "#;
     // compile with account 1's address
-    let compiled_module = compile_module_with_address(*account1.address(), module_source);
+    let compiled_module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
 
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),

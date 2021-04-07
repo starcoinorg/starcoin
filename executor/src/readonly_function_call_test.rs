@@ -14,7 +14,7 @@ use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
-use test_helper::executor::{compile_module_with_address, execute_and_apply, prepare_genesis};
+use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
 
 #[stest::test]
 fn test_readonly_function_call() -> Result<()> {
@@ -58,7 +58,9 @@ fn test_readonly_function_call() -> Result<()> {
         "#;
 
     // compile with account 1's address
-    let module = compile_module_with_address(*account1.address(), module_source);
+    let module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
 
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),

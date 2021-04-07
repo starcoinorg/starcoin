@@ -24,7 +24,9 @@ fn test_dao_upgrade_module() -> Result<()> {
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
     });
-    let module = compile_module_with_address(genesis_address(), TEST_MODULE);
+    let module = compile_modules_with_address(genesis_address(), TEST_MODULE)
+        .pop()
+        .unwrap();
     let package = Package::new_with_module(module)?;
     let package_hash = package.crypto_hash();
 

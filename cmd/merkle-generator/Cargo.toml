@@ -1,0 +1,20 @@
+[package]
+name = "merkle-generator"
+version = "0.1.0"
+authors = ["caojiafeng <funfriendcjf@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+csv = "~1"
+serde = "~1"
+serde_json = {version="~1", features=["arbitrary_precision"]}
+anyhow="~1"
+hex="~0.4"
+structopt = "~0.3"
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+merkletree = {version="0.21.0", features=["chaincore"]}
+rust-crypto = "~0.2"
+starcoin-vm-types = {path = "../../vm/types"}
+starcoin-crypto={path = "../../commons/crypto"}
