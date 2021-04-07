@@ -17,8 +17,9 @@ use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::SyncStatusChangeEvent;
+use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
 use starcoin_types::time::TimeService;
 use starcoin_types::{
     block::{Block, BlockBody},
@@ -59,6 +60,23 @@ impl BlockRelayer {
             Some(sync_status) => sync_status.is_synced(),
             None => false,
         }
+    }
+
+    fn broadcast_compact_block(
+        &self,
+        network: NetworkServiceRef,
+        executed_block: Arc<ExecutedBlock>,
+    ) {
+        if !self.is_synced() {
+            debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
+            return;
+        }
+        let compact_block = executed_block.block().clone().into();
+        let compact_block_msg =
+            CompactBlockMessage::new(compact_block, executed_block.block_info.clone());
+        network.broadcast(NotificationMessage::CompactBlock(Box::new(
+            compact_block_msg,
+        )));
     }
 
     async fn fill_compact_block(
@@ -179,12 +197,14 @@ impl ActorService for BlockRelayer {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewBranch>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<SyncStatusChangeEvent>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewBranch>();
         Ok(())
     }
 }
@@ -201,10 +221,6 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             "[block-relay] Handle new head block event, block_id: {:?}",
             event.0.block().id()
         );
-        if !self.is_synced() {
-            debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
-            return;
-        }
         let network = match ctx.get_shared::<NetworkServiceRef>() {
             Ok(network) => network,
             Err(e) => {
@@ -212,11 +228,24 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
                 return;
             }
         };
-        let compact_block = event.0.block().clone().into();
-        let compact_block_msg = CompactBlockMessage::new(compact_block, event.0.block_info.clone());
-        network.broadcast(NotificationMessage::CompactBlock(Box::new(
-            compact_block_msg,
-        )));
+        self.broadcast_compact_block(network, event.0);
+    }
+}
+
+impl EventHandler<Self, NewBranch> for BlockRelayer {
+    fn handle_event(&mut self, event: NewBranch, ctx: &mut ServiceContext<BlockRelayer>) {
+        debug!(
+            "[block-relay] Handle new branch event, block_id: {:?}",
+            event.0.block().id()
+        );
+        let network = match ctx.get_shared::<NetworkServiceRef>() {
+            Ok(network) => network,
+            Err(e) => {
+                error!("Get network service error: {:?}", e);
+                return;
+            }
+        };
+        self.broadcast_compact_block(network, event.0);
     }
 }
 
