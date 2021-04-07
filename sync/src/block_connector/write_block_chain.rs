@@ -111,23 +111,23 @@ where
         let block_header = block.header().clone();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
-        let mut map_be_uncles = Vec::new();
         let parent_is_main_head = self.is_main_head(&block_header.parent_hash());
+        //TODO refactor this.
+        let block_info = new_branch
+            .get_block_info(Some(block.id()))?
+            .expect("head block's block info should exist.");
+        let executed_block = ExecutedBlock::new(block.clone(), block_info);
         if branch_total_difficulty > main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![block.clone()], 0, vec![])
+                    (1, vec![block], 0, vec![])
                 };
-            //TODO refactor this.
-            let block_info = new_branch
-                .get_block_info(Some(block.id()))?
-                .expect("head block's block info should exist.");
             self.main = new_branch;
 
             self.do_new_head(
-                ExecutedBlock::new(block, block_info),
+                executed_block,
                 enacted_count,
                 enacted_blocks,
                 retracted_count,
@@ -135,8 +135,7 @@ where
             )?;
         } else {
             //send new branch event
-            map_be_uncles.push(block_header);
-            self.broadcast_new_branch(map_be_uncles);
+            self.broadcast_new_branch(executed_block);
         }
         Ok(())
     }
@@ -264,8 +263,8 @@ where
         }
     }
 
-    fn broadcast_new_branch(&self, maybe_uncles: Vec<BlockHeader>) {
-        if let Err(e) = self.bus.broadcast(NewBranch(maybe_uncles.into())) {
+    fn broadcast_new_branch(&self, block: ExecutedBlock) {
+        if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(block))) {
             error!("Broadcast NewBranch error: {:?}", e);
         }
     }
