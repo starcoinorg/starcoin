@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::path::PathBuf;
 use std::process::Command;
 
 fn assert_that_version_control_has_no_unstaged_changes() {
@@ -26,12 +27,12 @@ fn assert_that_version_control_has_no_unstaged_changes() {
 fn test_that_generated_file_are_up_to_date_in_git() {
     // Better not run the `stdlib` tool when the repository is not in a clean state.
     assert_that_version_control_has_no_unstaged_changes();
-
-    assert!(Command::new("cargo")
+    // Directly use the compiled debug binary to run, avoid compile again.
+    let path = PathBuf::from("../../target/debug/stdlib")
+        .canonicalize()
+        .unwrap();
+    assert!(Command::new(path)
         .current_dir("../..")
-        .arg("run")
-        .arg("-p")
-        .arg("stdlib")
         .status()
         .unwrap()
         .success());
