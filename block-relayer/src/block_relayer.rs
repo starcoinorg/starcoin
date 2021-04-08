@@ -55,9 +55,9 @@ impl BlockRelayer {
         }
     }
 
-    pub fn is_synced(&self) -> bool {
+    pub fn is_nearly_synced(&self) -> bool {
         match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
+            Some(sync_status) => sync_status.is_nearly_synced(),
             None => false,
         }
     }
@@ -67,7 +67,7 @@ impl BlockRelayer {
         network: NetworkServiceRef,
         executed_block: Arc<ExecutedBlock>,
     ) {
-        if !self.is_synced() {
+        if !self.is_nearly_synced() {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
             return;
         }
