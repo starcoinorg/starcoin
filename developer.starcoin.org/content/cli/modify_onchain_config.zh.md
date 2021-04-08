@@ -85,7 +85,14 @@ account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::O
 
 ```
 
-4. 最后取回质押的 token，清理掉完成的提案，验证参数是否正确
+4. 取回质押的 Token
+
+``` bash
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function  0x1::DaoVoteScripts::unstake_vote -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 0
+```
+
+
+4. 最后清理掉完成的提案，验证参数是否正确
 ``` bash
 account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::Dao::destroy_terminated_proposal -t 0x1::STC::STC -t 0x1::OnChainConfigDao::OnChainConfigUpdate<0x1::TransactionPublishOption::TransactionPublishOption> --arg 0x3ce9c3beeb95b555f5e3f2ac297afbf1 0
 ```
