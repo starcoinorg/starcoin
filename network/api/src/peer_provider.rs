@@ -144,6 +144,8 @@ impl Debug for PeerSelector {
     }
 }
 
+const MAX_BETTER_PEER_SIZE: usize = 20;
+
 impl PeerSelector {
     pub fn new(peers: Vec<PeerInfo>, strategy: PeerStrategy) -> Self {
         Self::new_with_reputation(Vec::new(), peers, strategy)
@@ -266,20 +268,26 @@ impl PeerSelector {
         }
     }
 
-    pub fn betters(&self, difficulty: U256) -> Option<Vec<PeerInfo>> {
+    pub fn betters(&self, difficulty: U256, gap: u64) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
-        let betters: Vec<PeerInfo> = self
+        let mut betters: Vec<PeerInfo> = self
             .details
             .lock()
             .iter()
             .filter(|peer| peer.peer_info().total_difficulty() > difficulty)
+            .sorted_by(|peer_1, peer_2| Ord::cmp(&peer_2.score(), &peer_1.score()))
             .map(|peer| peer.peer_info().clone())
             .collect();
         if betters.is_empty() {
             None
         } else {
+            let index = std::cmp::min(
+                std::cmp::min(betters.len() - 1, MAX_BETTER_PEER_SIZE),
+                gap as usize,
+            );
+            let _ = betters.split_off(index);
             Some(betters)
         }
     }
