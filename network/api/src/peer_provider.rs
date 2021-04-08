@@ -266,7 +266,7 @@ impl PeerSelector {
         }
     }
 
-    pub fn betters(&self, difficulty: U256) -> Option<Vec<PeerInfo>> {
+    pub fn betters(&self, difficulty: U256, max_peers: u64) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
@@ -275,6 +275,8 @@ impl PeerSelector {
             .lock()
             .iter()
             .filter(|peer| peer.peer_info().total_difficulty() > difficulty)
+            .sorted_by(|peer_1, peer_2| Ord::cmp(&peer_2.score(), &peer_1.score()))
+            .take(max_peers as usize)
             .map(|peer| peer.peer_info().clone())
             .collect();
         if betters.is_empty() {

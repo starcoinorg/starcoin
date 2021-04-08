@@ -79,13 +79,15 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
         &self,
         min_difficulty: U256,
         best_target: SyncTarget,
+        max_peers: u64,
     ) -> BoxFuture<Result<SyncTarget>> {
         let fut = async move {
             if min_difficulty >= best_target.block_info.total_difficulty {
                 return Ok(best_target);
             }
 
-            if let Some(mut better_peers) = self.peer_selector().betters(min_difficulty) {
+            if let Some(mut better_peers) = self.peer_selector().betters(min_difficulty, max_peers)
+            {
                 better_peers.sort_by(|info_1, info_2| {
                     info_1.total_difficulty().cmp(&info_2.total_difficulty())
                 });
@@ -528,6 +530,7 @@ where
     let (fut, _) = sync_task.with_handle();
 
     let event_handle_clone = event_handle.clone();
+    let mut max_peers = max_better_peers(target_block_number, current_block_number);
 
     let all_fut = async move {
         let ancestor = fut.await?;
@@ -559,7 +562,11 @@ where
             fetcher.peer_selector().retain_rpc_peers();
 
             let sub_target = fetcher
-                .get_better_target(ancestor_block_info.total_difficulty, target.clone())
+                .get_better_target(
+                    ancestor_block_info.total_difficulty,
+                    target.clone(),
+                    max_peers,
+                )
                 .await
                 .map_err(TaskError::BreakError)?;
 
@@ -611,6 +618,10 @@ where
                 break;
             }
             let chain_status = latest_block_chain.status();
+            max_peers = max_better_peers(
+                target_block_number,
+                latest_block_chain.current_header().number(),
+            );
             latest_ancestor = chain_status.head.into();
             ancestor_block_info = chain_status.info;
         }
@@ -619,4 +630,17 @@ where
     let task = TaskFuture::new(all_fut.boxed());
     let (fut, handle) = task.with_handle();
     Ok((fut, handle, event_handle))
+}
+
+const MAX_BETTER_PEER_SIZE: u64 = 20;
+
+fn max_better_peers(target_block_number: u64, latest_block_number: u64) -> u64 {
+    if target_block_number > latest_block_number {
+        std::cmp::min(
+            target_block_number.saturating_sub(latest_block_number),
+            MAX_BETTER_PEER_SIZE,
+        )
+    } else {
+        MAX_BETTER_PEER_SIZE
+    }
 }

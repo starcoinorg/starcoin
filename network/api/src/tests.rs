@@ -71,7 +71,7 @@ fn test_better_peer() {
     }
 
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-    let better_selector = peer_selector.betters(random_peer.total_difficulty());
+    let better_selector = peer_selector.betters(random_peer.total_difficulty(), 10);
     assert!(better_selector.is_some());
 
     let better_selector = better_selector.unwrap();
