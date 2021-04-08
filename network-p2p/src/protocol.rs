@@ -64,6 +64,8 @@ pub enum CustomMessageOutcome {
         protocol: Cow<'static, str>,
         notifications_sink: NotificationsSink,
         info: Box<ChainInfo>,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
     },
     /// The [`NotificationsSink`] of some notification protocols need an update.
     NotificationStreamReplaced {
@@ -116,6 +118,7 @@ pub struct Protocol {
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
     notif_protocols: Vec<Cow<'static, str>>,
+    rpc_protocols: Vec<Cow<'static, str>>,
     /// If we receive a new "substream open" event that contains an invalid handshake, we ask the
     /// inner layer to force-close the substream. Force-closing the substream will generate a
     /// "substream closed" event. This is a problem: since we can't propagate the "substream open"
@@ -339,17 +342,24 @@ impl Protocol {
         peerset_config: sc_peerset::PeersetConfig,
         chain_info: ChainInfo,
         boot_node_ids: Arc<HashSet<PeerId>>,
-        notif_protocols: impl IntoIterator<Item = Cow<'static, str>>,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
     ) -> errors::Result<(Protocol, sc_peerset::PeersetHandle)> {
         let mut important_peers = HashSet::new();
-        for reserved in &peerset_config.sets[0].reserved_nodes {
-            important_peers.insert(*reserved);
+        important_peers.extend(boot_node_ids.iter());
+        for peer_set in peerset_config.sets.iter() {
+            for reserved in &peer_set.reserved_nodes {
+                important_peers.insert(*reserved);
+            }
         }
+
         let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
-        let notif_protocols: Vec<Cow<'static, str>> = notif_protocols.into_iter().collect();
         let behaviour = {
-            let handshake_message =
-                Self::build_handshake_msg(notif_protocols.clone(), chain_info.clone());
+            let handshake_message = Self::build_handshake_msg(
+                notif_protocols.to_vec(),
+                rpc_protocols.to_vec(),
+                chain_info.clone(),
+            );
 
             let notif_protocol_wth_handshake: Vec<(Cow<'static, str>, Vec<u8>, u64)> =
                 notif_protocols
@@ -378,6 +388,7 @@ impl Protocol {
             chain_info,
             boot_node_ids,
             notif_protocols,
+            rpc_protocols,
             bad_handshake_substreams: Default::default(),
         };
         Ok((protocol, peerset_handle))
@@ -447,13 +458,6 @@ impl Protocol {
         notifications_sink: NotificationsSink,
     ) -> CustomMessageOutcome {
         debug!(target: "network-p2p", "New peer {} {:?}", who, status);
-        if self.context_data.peers.contains_key(&who) {
-            log!(
-                target: "network-p2p",
-                if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
-                "Unexpected status packet from {}", who
-            );
-        }
         if status.info.genesis_hash() != self.chain_info.genesis_hash() {
             if self.boot_node_ids.contains(&who) {
                 error!(
@@ -464,7 +468,9 @@ impl Protocol {
                     status.info.genesis_hash(),
                 );
             } else {
-                info!(
+                log!(
+                    target: "network-p2p",
+                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
                     "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
                     who,
                     self.chain_info.genesis_hash(),
@@ -478,7 +484,7 @@ impl Protocol {
         if status.version < MIN_VERSION && CURRENT_VERSION < status.min_supported_version {
             log!(
                 target: "network-p2p",
-                if self.important_peers.contains(&who) { Level::Warn } else { Level::Trace },
+                if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
                 "Peer {:?} using unsupported protocol version {}", who, status.version
             );
             self.peerset_handle.report_peer(who, rep::BAD_PROTOCOL);
@@ -496,21 +502,31 @@ impl Protocol {
             protocol: protocol_name,
             notifications_sink,
             info: Box::new(status.info),
+            notif_protocols: status.notif_protocols.to_vec(),
+            rpc_protocols: status.rpc_protocols.to_vec(),
         }
     }
 
-    fn build_status(notif_protocols: Vec<Cow<'static, str>>, info: ChainInfo) -> Status {
+    fn build_status(
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+        info: ChainInfo,
+    ) -> Status {
         message::generic::Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
             notif_protocols,
-            rpc_protocols: vec![],
+            rpc_protocols,
             info,
         }
     }
 
-    fn build_handshake_msg(notif_protocols: Vec<Cow<'static, str>>, info: ChainInfo) -> Vec<u8> {
-        Self::build_status(notif_protocols, info)
+    fn build_handshake_msg(
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+        info: ChainInfo,
+    ) -> Vec<u8> {
+        Self::build_status(notif_protocols, rpc_protocols, info)
             .encode()
             .expect("Status encode should success.")
     }
@@ -563,8 +579,11 @@ impl Protocol {
     }
 
     fn update_handshake(&mut self) {
-        let handshake_msg =
-            Self::build_handshake_msg(self.notif_protocols.to_vec(), self.chain_info.clone());
+        let handshake_msg = Self::build_handshake_msg(
+            self.notif_protocols.to_vec(),
+            self.rpc_protocols.to_vec(),
+            self.chain_info.clone(),
+        );
         self.behaviour
             .set_notif_protocol_handshake(HARD_CORE_PROTOCOL_ID, handshake_msg)
     }

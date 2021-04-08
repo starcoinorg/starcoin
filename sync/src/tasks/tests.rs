@@ -914,10 +914,20 @@ async fn test_sync_target() {
     let mut node1 = SyncNodeMocker::new(net1, 1, 0).unwrap();
     node1.produce_block(10).unwrap();
     let low_chain_info = node1.peer_info().chain_info().clone();
-    peer_infos.push(PeerInfo::new(PeerId::random(), low_chain_info.clone()));
+    peer_infos.push(PeerInfo::new(
+        PeerId::random(),
+        low_chain_info.clone(),
+        vec![],
+        vec![],
+    ));
     node1.produce_block(10).unwrap();
     let high_chain_info = node1.peer_info().chain_info().clone();
-    peer_infos.push(PeerInfo::new(PeerId::random(), high_chain_info.clone()));
+    peer_infos.push(PeerInfo::new(
+        PeerId::random(),
+        high_chain_info.clone(),
+        vec![],
+        vec![],
+    ));
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let (_, genesis_chain_info, _) =

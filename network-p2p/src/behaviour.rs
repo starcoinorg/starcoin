@@ -69,6 +69,8 @@ pub enum BehaviourOut {
         /// Object that permits sending notifications to the peer.
         notifications_sink: NotificationsSink,
         info: Box<ChainInfo>,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
     },
 
     /// The [`NotificationsSink`] object used to send notifications with the given peer must be
@@ -256,6 +258,8 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
                 protocol,
                 notifications_sink,
                 info,
+                notif_protocols,
+                rpc_protocols,
             } => {
                 self.events
                     .push_back(BehaviourOut::NotificationStreamOpened {
@@ -263,6 +267,8 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
                         protocol,
                         notifications_sink,
                         info,
+                        notif_protocols,
+                        rpc_protocols,
                     });
             }
             CustomMessageOutcome::NotificationStreamClosed { remote, protocol } => {

@@ -556,6 +556,8 @@ where
             for peer in all_peers {
                 fetcher.peer_selector().add_or_update_peer(peer);
             }
+            fetcher.peer_selector().retain_rpc_peers();
+
             let sub_target = fetcher
                 .get_better_target(ancestor_block_info.total_difficulty, target.clone())
                 .await

@@ -16,6 +16,7 @@ use std::str::FromStr;
 pub use network_p2p_types::multiaddr::Multiaddr;
 use network_p2p_types::multihash::Error;
 pub use network_p2p_types::multihash::Multihash;
+use std::borrow::Cow;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct PeerId(network_p2p_types::PeerId);
@@ -150,15 +151,24 @@ impl fmt::Display for PeerId {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
-    peer_id: PeerId,
-    chain_info: ChainInfo,
+    pub peer_id: PeerId,
+    pub chain_info: ChainInfo,
+    pub notif_protocols: Vec<Cow<'static, str>>,
+    pub rpc_protocols: Vec<Cow<'static, str>>,
 }
 
 impl PeerInfo {
-    pub fn new(peer_id: PeerId, chain_info: ChainInfo) -> Self {
+    pub fn new(
+        peer_id: PeerId,
+        chain_info: ChainInfo,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+    ) -> Self {
         Self {
             peer_id,
             chain_info,
+            notif_protocols,
+            rpc_protocols,
         }
     }
 
@@ -190,14 +200,29 @@ impl PeerInfo {
         self.chain_info.update_status(chain_status)
     }
 
-    pub fn into_inner(self) -> (PeerId, ChainInfo) {
-        (self.peer_id, self.chain_info)
+    /// This peer is support notification
+    pub fn is_support_notification(&self) -> bool {
+        !self.notif_protocols.is_empty()
+    }
+
+    pub fn is_support_notif_protocol(&self, protocol: Cow<'static, str>) -> bool {
+        self.notif_protocols.contains(&protocol)
+    }
+
+    pub fn is_support_rpc(&self) -> bool {
+        !self.rpc_protocols.is_empty()
+    }
+
+    pub fn is_support_rpc_protocol(&self, protocol: Cow<'static, str>) -> bool {
+        self.rpc_protocols.contains(&protocol)
     }
 
     pub fn random() -> Self {
         Self {
             peer_id: PeerId::random(),
             chain_info: ChainInfo::random(),
+            notif_protocols: vec![],
+            rpc_protocols: vec![],
         }
     }
 }

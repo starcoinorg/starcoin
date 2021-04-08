@@ -53,14 +53,14 @@ impl NetworkActorService {
     where
         H: PeerMessageHandler + 'static,
     {
-        let worker = build_network_worker(
+        let (self_info, worker) = build_network_worker(
             config.as_ref(),
-            chain_info.clone(),
+            chain_info,
             NotificationMessage::protocols(),
             rpc,
         )?;
         let service = worker.service().clone();
-        let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
+        //let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
         let inner = Inner::new(config, self_info, service, peer_message_handler)?;
         Ok(Self {
             worker: Some(worker),
@@ -120,15 +120,20 @@ impl EventHandler<Self, Event> for NetworkActorService {
             }
             Event::NotificationStreamOpened {
                 remote,
-                info,
                 protocol,
-                ..
+                info,
+                notif_protocols,
+                rpc_protocols,
             } => {
                 //TODO Refactor PeerEvent for handle protocol and substream.
                 // Currently, every notification stream open will trigger a PeerEvent, so it will trigger repeat event.
-                debug!("Connected peer {:?}, protocol: {}", remote, protocol);
+                debug!(
+                    "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
+                    remote, protocol, notif_protocols, rpc_protocols
+                );
                 let peer_event = PeerEvent::Open(remote.clone().into(), info.clone());
-                self.inner.on_peer_connected(remote.into(), *info);
+                self.inner
+                    .on_peer_connected(remote.into(), *info, notif_protocols, rpc_protocols);
                 ctx.broadcast(peer_event);
             }
             Event::NotificationStreamClosed { remote, .. } => {
@@ -423,14 +428,27 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn on_peer_connected(&mut self, peer_id: PeerId, chain_info: ChainInfo) {
+    pub(crate) fn on_peer_connected(
+        &mut self,
+        peer_id: PeerId,
+        chain_info: ChainInfo,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+    ) {
         self.peers
             .entry(peer_id.clone())
             .and_modify(|peer| {
                 peer.peer_info
                     .update_chain_status(chain_info.status().clone());
             })
-            .or_insert_with(|| Peer::new(PeerInfo::new(peer_id, chain_info)));
+            .or_insert_with(|| {
+                Peer::new(PeerInfo::new(
+                    peer_id,
+                    chain_info,
+                    notif_protocols,
+                    rpc_protocols,
+                ))
+            });
     }
 
     pub(crate) fn on_peer_disconnected(&mut self, peer_id: PeerId) {
