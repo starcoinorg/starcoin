@@ -151,10 +151,10 @@ impl fmt::Display for PeerId {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
-    peer_id: PeerId,
-    chain_info: ChainInfo,
-    notif_protocols: Vec<Cow<'static, str>>,
-    rpc_protocols: Vec<Cow<'static, str>>,
+    pub peer_id: PeerId,
+    pub chain_info: ChainInfo,
+    pub notif_protocols: Vec<Cow<'static, str>>,
+    pub rpc_protocols: Vec<Cow<'static, str>>,
 }
 
 impl PeerInfo {
@@ -215,10 +215,6 @@ impl PeerInfo {
 
     pub fn is_support_rpc_protocol(&self, protocol: Cow<'static, str>) -> bool {
         self.rpc_protocols.contains(&protocol)
-    }
-
-    pub fn into_inner(self) -> (PeerId, ChainInfo) {
-        (self.peer_id, self.chain_info)
     }
 
     pub fn random() -> Self {

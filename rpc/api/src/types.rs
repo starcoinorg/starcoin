@@ -943,14 +943,17 @@ impl From<ChainInfo> for ChainInfoView {
 pub struct PeerInfoView {
     pub peer_id: PeerId,
     pub chain_info: ChainInfoView,
+    pub notif_protocols: String,
+    pub rpc_protocols: String,
 }
 
 impl From<PeerInfo> for PeerInfoView {
     fn from(info: PeerInfo) -> Self {
-        let (peer_id, chain_info) = info.into_inner();
         Self {
-            peer_id,
-            chain_info: chain_info.into(),
+            peer_id: info.peer_id,
+            chain_info: info.chain_info.into(),
+            notif_protocols: info.notif_protocols.join(","),
+            rpc_protocols: info.rpc_protocols.join(","),
         }
     }
 }
