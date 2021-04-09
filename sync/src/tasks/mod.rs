@@ -88,7 +88,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
 
             if let Some(mut better_peers) = self
                 .peer_selector()
-                .betters(min_difficulty, MAX_BETTER_PEER_SIZE * 2)
+                .betters(min_difficulty, MAX_BETTER_PEER_SIZE.saturating_mul(2))
             {
                 better_peers.sort_by(|info_1, info_2| {
                     info_1.total_difficulty().cmp(&info_2.total_difficulty())
