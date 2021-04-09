@@ -1,4 +1,4 @@
-## Contrilib
+## Contrib Contracts
 
 The repo contains contribution move libraries, which are not suitable to be in Starcoin stdlib.
 

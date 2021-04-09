@@ -1327,8 +1327,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
-name = "contrlib"
-version = "0.1.0"
+name = "contrib-contracts"
+version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
  "hex",
