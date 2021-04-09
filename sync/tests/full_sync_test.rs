@@ -3,7 +3,9 @@ mod test_sync;
 use config::NodeConfig;
 use futures::executor::block_on;
 use logger::prelude::*;
+use rand::random;
 use starcoin_chain_api::ChainAsyncService;
+use starcoin_node::NodeHandle;
 use starcoin_service_registry::ActorService;
 use starcoin_sync::sync::SyncService;
 use std::sync::Arc;
@@ -70,18 +72,14 @@ fn test_sync_by_notification() {
 }
 
 #[stest::test(timeout = 120)]
-fn test_broadcast_with_difficulty() {
+fn test_sync_and_notification() {
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
-    let first_chain = first_node.chain_service().unwrap();
-    let count = 5;
-    for _i in 0..count {
+    for _i in 0..5 {
         first_node.generate_block().unwrap();
     }
     sleep(Duration::from_millis(500));
-    let block_1 = block_on(async { first_chain.clone().main_head_block().await.unwrap() });
-    let number_1 = block_1.header().number();
 
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
@@ -89,41 +87,45 @@ fn test_broadcast_with_difficulty() {
     //second_config.miner.enable_miner_client = false;
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
-    let second_chain = second_node.chain_service().unwrap();
+    //wait first sync.
+    wait_two_node_synced(&first_node, &second_node);
 
-    let not_broadcast_block = second_node.generate_block().unwrap();
-    let mut number_2 = 0;
-    for i in 0..10_usize {
-        std::thread::sleep(Duration::from_secs(2));
-        let block_2 = block_on(async { second_chain.clone().main_head_block().await.unwrap() });
-        number_2 = block_2.header().number();
-        debug!("index : {}, second chain number is {}", i, number_2);
-        if number_2 == number_1 {
-            break;
+    // generate block
+    for _i in 0..10 {
+        let r: u32 = random();
+        if r % 2 == 0 {
+            let _broadcast_block = first_node.generate_block().unwrap();
+        } else {
+            let _broadcast_block = second_node.generate_block().unwrap();
         }
     }
-    assert_eq!(number_1, number_2, "two node is not sync.");
+    // wait sync again.
+    wait_two_node_synced(&first_node, &second_node);
+}
 
-    let block_not_exist = block_on(async {
-        first_chain
-            .get_header_by_hash(&not_broadcast_block.header().id())
-            .await
-            .unwrap()
-    });
-    assert!(block_not_exist.is_none());
+fn wait_two_node_synced(first_node: &NodeHandle, second_node: &NodeHandle) {
+    let first_chain = first_node.chain_service().unwrap();
+    let second_chain = second_node.chain_service().unwrap();
 
-    let broadcast_block = second_node.generate_block().unwrap();
-
-    sleep(Duration::from_millis(500));
-    let block_must_exist = block_on(async {
-        first_chain
-            .get_header_by_hash(&broadcast_block.header().id())
-            .await
-            .unwrap()
-    });
-    assert!(block_must_exist.is_some());
-    assert_eq!(
-        block_must_exist.unwrap().id(),
-        broadcast_block.header().id()
-    );
+    for i in 0..100 {
+        let block_1 = block_on(async { first_chain.clone().main_head_block().await.unwrap() });
+        let block_2 = block_on(async { second_chain.clone().main_head_block().await.unwrap() });
+        debug!(
+            "check sync index : {}, first chain number is:{}, second chain number is: {}",
+            i,
+            block_1.header().number(),
+            block_2.header().number()
+        );
+        if block_1 == block_2 {
+            break;
+        } else if i == 100 {
+            panic!(
+                "two node is not synced, first: {:?}, second: {:?}",
+                block_1.header(),
+                block_2.header(),
+            );
+        } else {
+            std::thread::sleep(Duration::from_millis(500));
+        }
+    }
 }
