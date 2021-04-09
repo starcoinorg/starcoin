@@ -98,7 +98,7 @@ pub fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u12
         .unwrap_or_default()
 }
 
-pub fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
+pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<Module> {
     let temp_dir = temp_path();
     let stdlib_files =
         restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
@@ -107,14 +107,17 @@ pub fn compile_module_with_address(address: AccountAddress, code: &str) -> Modul
             .expect("compile fail")
             .1
             .expect("compile fail");
-    Module::new(compiled_result.serialize())
+    compiled_result
+        .into_iter()
+        .map(|m| Module::new(m.serialize()))
+        .collect()
 }
 #[allow(unused)]
 pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
     let temp_dir = temp_path();
     let stdlib_files =
         restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
-    let compile_unit = starcoin_move_compiler::compile_source_string_no_report(
+    let mut compile_unit = starcoin_move_compiler::compile_source_string_no_report(
         code.as_ref(),
         &stdlib_files,
         genesis_address(),
@@ -122,7 +125,10 @@ pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
     .expect("compile fail")
     .1
     .expect("compile fail");
-    compile_unit.serialize()
+    compile_unit
+        .pop()
+        .expect("at least contain one script")
+        .serialize()
 }
 
 pub fn association_execute(

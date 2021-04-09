@@ -1,0 +1,21 @@
+[package]
+name = "contrib-contracts"
+version = "1.0.0-beta.3"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dev-dependencies]
+test-helper= {path = "../test-helper"}
+starcoin-executor = {path = "../executor"}
+starcoin-vm-types = { path = "../vm/types"}
+starcoin-types = {path = "../types"}
+#starcoin-move-compiler= {path = "../vm/compiler"}
+stdlib = {path = "../vm/stdlib"}
+stest = {path = "../commons/stest"}
+tempfile = "~3"
+serde = "~1"
+serde_json = "~1"
+anyhow = "~1"
+hex="0.4"

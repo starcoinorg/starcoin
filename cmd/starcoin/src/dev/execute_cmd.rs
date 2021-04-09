@@ -141,7 +141,7 @@ impl CommandAction for ExecuteCommand {
                     &deps,
                     sender,
                 )?;
-                let compile_unit = match compile_result {
+                let mut compile_units = match compile_result {
                     Ok(c) => c,
                     Err(e) => {
                         eprintln!(
@@ -153,7 +153,9 @@ impl CommandAction for ExecuteCommand {
                         bail!("compile error")
                     }
                 };
-
+                let compile_unit = compile_units.pop().ok_or_else(|| {
+                    anyhow::anyhow!("file should at least contain one compile unit")
+                })?;
                 let is_script = match compile_unit {
                     CompiledUnit::Module { .. } => false,
                     CompiledUnit::Script { .. } => true,

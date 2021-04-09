@@ -10,7 +10,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use statedb::ChainStateDB;
-use test_helper::executor::{compile_module_with_address, execute_and_apply, prepare_genesis};
+use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
 
 fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
     let account1 = Account::new();
@@ -40,7 +40,9 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
             }
         }
         "#;
-    let compiled_module = compile_module_with_address(*account1.address(), module_source);
+    let compiled_module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
     let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),
         TransactionPayload::Package(Package::new_with_module(compiled_module).unwrap()),

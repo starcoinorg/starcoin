@@ -209,7 +209,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfd7e7ae3f9a1fb5c03b389fc6bb9a51400d0c13053f0dca698c832bfd893a0d"
 dependencies = [
  "block-cipher-trait",
- "byteorder",
+ "byteorder 1.4.3",
  "opaque-debug 0.2.3",
 ]
 
@@ -220,7 +220,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63dd91889c49327ad7ef3b500fd1109dbd3c509a03db0d4a9ce413b79f575cb6"
 dependencies = [
  "block-cipher",
- "byteorder",
+ "byteorder 1.4.3",
  "opaque-debug 0.3.0",
 ]
 
@@ -599,7 +599,7 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "489d6c0ed21b11d038c31b6ceccca973e65d73ba3bd8ecb9a2babf5546164643"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "safemem",
 ]
 
@@ -609,7 +609,7 @@ version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
 ]
 
 [[package]]
@@ -694,7 +694,7 @@ version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f30d3a39baa26f9651f17b375061f3233dde33424a8b72b0dbe93a68a0bc896d"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "serde",
 ]
 
@@ -785,7 +785,7 @@ checksum = "c0940dc441f31689269e10ac70eb1002a3a1d3ad1390e030043662eb7fe4688b"
 dependencies = [
  "block-padding 0.1.5",
  "byte-tools",
- "byteorder",
+ "byteorder 1.4.3",
  "generic-array 0.12.4",
 ]
 
@@ -1012,6 +1012,12 @@ dependencies = [
 
 [[package]]
 name = "byteorder"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fc10e8cc6b2580fda3f36eb6dc5316657f812a3df879a44a66fc9f0fdbc4855"
+
+[[package]]
+name = "byteorder"
 version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
@@ -1022,7 +1028,7 @@ version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "iovec",
 ]
 
@@ -1319,6 +1325,23 @@ name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
+
+[[package]]
+name = "contrib-contracts"
+version = "1.0.0-beta.3"
+dependencies = [
+ "anyhow",
+ "hex",
+ "serde",
+ "serde_json",
+ "starcoin-executor",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "stdlib",
+ "stest",
+ "tempfile",
+ "test-helper",
+]
 
 [[package]]
 name = "convert_case"
@@ -1665,7 +1688,7 @@ version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f627126b946c25a4638eec0ea634fc52506dea98db118aae985118ce7c3d723f"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "digest 0.9.0",
  "rand_core 0.5.1",
  "subtle 2.4.0",
@@ -1678,7 +1701,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44339b9ecede7f72a0d3b012bf9bb5a616dc8bfde23ce544e42da075c87198f0"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "digest 0.9.0",
  "fiat-crypto",
  "rand_core 0.6.2",
@@ -2033,7 +2056,7 @@ name = "diem-workspace-hack"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=f71f37c1b0ba5b24fa8c88893d3aa2adaf08a425#f71f37c1b0ba5b24fa8c88893d3aa2adaf08a425"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "bytes 1.0.1",
  "cc",
  "chrono",
@@ -2163,7 +2186,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4d33be9473d06f75f58220f71f7a9317aca647dc061dbd3c361b0bef505fbea"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "quick-error 1.2.3",
 ]
 
@@ -2456,7 +2479,7 @@ version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "byteorder",
+ "byteorder 1.4.3",
  "criterion",
  "hex",
  "mirai-annotations",
@@ -2700,6 +2723,12 @@ dependencies = [
  "pin-utils",
  "slab",
 ]
+
+[[package]]
+name = "gcc"
+version = "0.3.55"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
 
 [[package]]
 name = "generic-array"
@@ -4245,6 +4274,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
 
 [[package]]
+name = "memmap"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6585fd95e7bb50d6cc31e20d4cf9afb4e2ba16c5846fc76793f11218da9c475b"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "memoffset"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4260,6 +4299,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "157b4208e3059a8f9e78d559edc658e13df41410cb3ae03979c83130067fdd87"
 dependencies = [
  "autocfg 1.0.1",
+]
+
+[[package]]
+name = "merkle-generator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "csv",
+ "hex",
+ "merkletree",
+ "rust-crypto",
+ "serde",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-vm-types",
+ "structopt 0.3.21",
+]
+
+[[package]]
+name = "merkletree"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2202d6eb93a775e0a619fc08924b341d0cf12d6e0f064ee52d24311de45b925b"
+dependencies = [
+ "anyhow",
+ "arrayref",
+ "log 0.4.14",
+ "memmap",
+ "positioned-io",
+ "rand 0.7.3",
+ "rayon",
+ "rust-crypto",
+ "serde",
+ "tempdir",
+ "tempfile",
+ "typenum",
 ]
 
 [[package]]
@@ -5153,7 +5229,7 @@ checksum = "d2c6805f98667a3828afb2ec2c396a8d610497e8d546f5447188aae47c5a79ec"
 dependencies = [
  "arrayref",
  "bs58 0.4.0",
- "byteorder",
+ "byteorder 1.4.3",
  "data-encoding",
  "multihash",
  "percent-encoding 2.1.0",
@@ -5191,7 +5267,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e02a625dd75084c2a7024f07c575b61b782f729d18702dabb3cdbf31911dc61"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "bytes 0.4.12",
  "httparse",
  "log 0.4.14",
@@ -5279,7 +5355,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "006c038a43a45995a9670da19e67600114740e8511d4333bf97a56e66a7542d9"
 dependencies = [
  "base64 0.9.3",
- "byteorder",
+ "byteorder 1.4.3",
  "crypto-mac 0.7.0",
  "hmac 0.7.1",
  "rand 0.5.6",
@@ -5512,6 +5588,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "positioned-io"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c405a565f48a728dbb07fa1770e30791b0fa3e6344c1e5615225ce84049354d6"
+dependencies = [
+ "byteorder 0.5.3",
+ "kernel32-sys",
+ "libc",
+ "winapi 0.2.8",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5640,7 +5728,7 @@ checksum = "1e0d9cc07f18492d879586c92b485def06bc850da3118075cd45d50e9c95b0e5"
 dependencies = [
  "bit-set",
  "bitflags",
- "byteorder",
+ "byteorder 1.4.3",
  "lazy_static",
  "num-traits",
  "quick-error 2.0.0",
@@ -6148,7 +6236,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae1ded71d66a4a97f5e961fd0cb25a5f366a42a41570d16a763a69c092c26ae4"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
 ]
 
 [[package]]
@@ -6324,6 +6412,19 @@ dependencies = [
  "blake2b_simd",
  "constant_time_eq",
  "crossbeam-utils 0.8.3",
+]
+
+[[package]]
+name = "rust-crypto"
+version = "0.2.36"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f76d05d3993fd5f4af9434e8e436db163a12a9d40e1a58a726f27a01dfd12a2a"
+dependencies = [
+ "gcc",
+ "libc",
+ "rand 0.3.23",
+ "rustc-serialize",
+ "time",
 ]
 
 [[package]]
@@ -7072,7 +7173,7 @@ version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "byteorder",
+ "byteorder 1.4.3",
  "itertools 0.10.0",
  "lru",
  "mirai-annotations",
@@ -7330,7 +7431,7 @@ name = "starcoin-consensus"
 version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
- "byteorder",
+ "byteorder 1.4.3",
  "cryptonight-rs",
  "futures 0.3.12",
  "hex",
@@ -7397,7 +7498,7 @@ version = "1.0.0-beta.3"
 dependencies = [
  "aes-gcm 0.5.0",
  "anyhow",
- "byteorder",
+ "byteorder 1.4.3",
  "hmac 0.7.1",
  "pbkdf2",
  "rand 0.8.3",
@@ -7427,8 +7528,11 @@ version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "hex",
  "log 0.4.14",
  "once_cell",
+ "serde",
+ "serde_json",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-config",
@@ -7681,7 +7785,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-std",
- "byteorder",
+ "byteorder 1.4.3",
  "dyn-clone",
  "futures 0.3.12",
  "futures-channel",
@@ -8242,7 +8346,7 @@ version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "byteorder",
+ "byteorder 1.4.3",
  "chrono",
  "forkable-jellyfish-merkle",
  "lru",
@@ -8455,7 +8559,7 @@ version = "1.0.0-beta.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "byteorder",
+ "byteorder 1.4.3",
  "bytes 1.0.1",
  "forkable-jellyfish-merkle",
  "futures 0.3.12",
@@ -8829,6 +8933,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tempdir"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15f2b5fb00ccdf689e0149d1b1b3c03fead81c2b37735d812fa8bddbbf41b6d8"
+dependencies = [
+ "rand 0.4.6",
+ "remove_dir_all",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8848,7 +8962,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd106a334b7657c10b7c540a0106114feadeb4dc314513e97df481d5d966f42"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "dirs",
  "winapi 0.3.9",
 ]
@@ -9533,7 +9647,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ada8297e8d70872fa9a551d93250a9f407beb9f37ef86494eb20012a2ff7c24"
 dependencies = [
  "base64 0.13.0",
- "byteorder",
+ "byteorder 1.4.3",
  "bytes 1.0.1",
  "http",
  "httparse",
@@ -9603,7 +9717,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e11fe9a9348741cf134085ad57c249508345fe16411b3d7fb4ff2da2f1d6382e"
 dependencies = [
- "byteorder",
+ "byteorder 1.4.3",
  "crunchy",
  "hex",
  "static_assertions",
@@ -10064,7 +10178,7 @@ checksum = "5e3810f0d00c4dccb54c30a4eee815e703232819dec7b007db115791c42aa374"
 dependencies = [
  "base64 0.10.1",
  "bitflags",
- "byteorder",
+ "byteorder 1.4.3",
  "bytes 0.4.12",
  "futures 0.1.31",
  "native-tls",
