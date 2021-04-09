@@ -24,7 +24,7 @@ IFS=' '
 while read -r -a testcase; do
   case_name=${testcase[1]}
   echo "rerun failed test $case_name"
-  RUST_LOG=DEBUG RUST_BACKTRACE=full cargo test "$case_name" -- --nocapture
+  RUST_LOG=DEBUG RUST_BACKTRACE=full cargo test --no-fail-fast -j 1 "$case_name" -- --nocapture
   case_status=$?
   if [ $case_status -ne 0 ]; then
     status=$case_status
