@@ -86,7 +86,9 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 return Ok(best_target);
             }
 
-            if let Some(mut better_peers) = self.peer_selector().betters(min_difficulty, max_peers)
+            if let Some(mut better_peers) = self
+                .peer_selector()
+                .betters(min_difficulty, MAX_BETTER_PEER_SIZE.saturating_mul(2))
             {
                 better_peers.sort_by(|info_1, info_2| {
                     info_1.total_difficulty().cmp(&info_2.total_difficulty())
@@ -95,6 +97,10 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 let mut peers = Vec::new();
                 let mut target_peer = None;
                 for better_peer in better_peers.iter() {
+                    if peers.len() >= max_peers as usize {
+                        break;
+                    }
+
                     let mut eligible = false;
                     match target_peer.as_ref() {
                         None => {
