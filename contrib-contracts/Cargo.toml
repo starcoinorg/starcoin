@@ -1,6 +1,6 @@
 [package]
 name = "contrib-contracts"
-version = "1.0.0-beta.3"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
