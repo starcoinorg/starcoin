@@ -418,12 +418,14 @@ impl TryFrom<&[u8]> for AccountPublicKey {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<AccountPublicKey> for Ed25519PublicKey {
     fn into(self) -> AccountPublicKey {
         AccountPublicKey::Single(self)
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<AccountPublicKey> for MultiEd25519PublicKey {
     fn into(self) -> AccountPublicKey {
         AccountPublicKey::Multi(self)
@@ -459,12 +461,14 @@ impl AccountPrivateKey {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<AccountPrivateKey> for Ed25519PrivateKey {
     fn into(self) -> AccountPrivateKey {
         AccountPrivateKey::Single(self)
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<AccountPrivateKey> for MultiEd25519KeyShard {
     fn into(self) -> AccountPrivateKey {
         AccountPrivateKey::Multi(self)

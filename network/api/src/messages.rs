@@ -174,6 +174,7 @@ impl PeerTransactionsMessage {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<PeerMessage> for PeerTransactionsMessage {
     fn into(self) -> PeerMessage {
         PeerMessage::new_transactions(self.peer_id, self.message)
@@ -193,6 +194,7 @@ impl PeerCompactBlockMessage {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<PeerMessage> for PeerCompactBlockMessage {
     fn into(self) -> PeerMessage {
         PeerMessage::new_compact_block(self.peer_id, self.message)

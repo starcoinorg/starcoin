@@ -41,6 +41,7 @@ pub static SCALE_MILLISTC: u32 = 6;
 pub static SCALE_STC: u32 = 9;
 
 #[derive(Clone, Copy, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum STCUnit {
     NanoSTC,
     MicroSTC,

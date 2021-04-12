@@ -17,6 +17,7 @@ use std::sync::Arc;
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
@@ -60,6 +61,7 @@ impl From<&CacheObject> for Option<Vec<u8>> {
 
 ///Storage instance type define
 #[derive(Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum StorageInstance {
     CACHE {
         cache: Arc<CacheStorage>,
@@ -378,6 +380,7 @@ where
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait CodecKVStore<K, V>: std::marker::Send + std::marker::Sync
 where
     K: KeyCodec,
@@ -413,6 +416,7 @@ impl KeyCodec for u64 {
         Ok(self.to_be_bytes().to_vec())
     }
 
+    #[allow(clippy::redundant_slicing)]
     fn decode_key(data: &[u8]) -> Result<Self> {
         Ok((&data[..]).read_u64::<BigEndian>()?)
     }

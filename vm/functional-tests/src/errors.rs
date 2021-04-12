@@ -8,6 +8,7 @@ use thiserror::Error;
 
 /// Defines all errors in this crate.
 #[derive(Clone, Debug, Error)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ErrorKind {
     #[error(
     "an error occurred when executing the transaction, vm status {:?}, txn status {:?}",

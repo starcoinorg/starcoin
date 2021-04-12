@@ -40,6 +40,7 @@ pub static STORAGE_TIMES: Lazy<HistogramVec> = Lazy::new(|| {
 pub static CACHE_ITEMS: Lazy<UIntGauge> =
     Lazy::new(|| register_uint_gauge!("starcoin_cache_items", "How many items in cache").unwrap());
 
+#[allow(clippy::upper_case_acronyms)]
 pub enum ResultType {
     NONE,
     SOME,

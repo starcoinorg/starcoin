@@ -403,6 +403,7 @@ impl Sample for BlockHeader {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<RawBlockHeader> for BlockHeader {
     fn into(self) -> RawBlockHeader {
         RawBlockHeader {
@@ -583,6 +584,7 @@ impl BlockBody {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<BlockBody> for Vec<SignedUserTransaction> {
     fn into(self) -> BlockBody {
         BlockBody {
@@ -592,6 +594,7 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Vec<SignedUserTransaction>> for BlockBody {
     fn into(self) -> Vec<SignedUserTransaction> {
         self.transactions
@@ -1004,6 +1007,7 @@ impl From<Block> for BlockSummary {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<(BlockHeader, Vec<BlockHeader>)> for BlockSummary {
     fn into(self) -> (BlockHeader, Vec<BlockHeader>) {
         (self.block_header, self.uncles)

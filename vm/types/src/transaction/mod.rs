@@ -732,6 +732,8 @@ impl Deref for BlockTransactionInfo {
         &self.txn_info
     }
 }
+
+#[allow(clippy::from_over_into)]
 impl Into<(HashValue, TransactionInfo)> for BlockTransactionInfo {
     fn into(self) -> (HashValue, TransactionInfo) {
         (self.block_id, self.txn_info)

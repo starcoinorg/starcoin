@@ -98,6 +98,6 @@ impl CommandAction for GetCoinCommand {
         if !opt.no_blocking {
             ctx.state().watch_txn(id)?;
         }
-        Ok(txn.try_into()?)
+        txn.try_into()
     }
 }

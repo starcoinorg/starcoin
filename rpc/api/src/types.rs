@@ -174,6 +174,7 @@ pub struct DryRunTransactionRequest {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ArgumentsView {
     HumanReadable(Vec<TransactionArgumentView>),
     BCS(Vec<StrView<Vec<u8>>>),
@@ -257,6 +258,7 @@ impl ScriptData {
         }
     }
 }
+#[allow(clippy::from_over_into)]
 impl Into<TransactionPayload> for ScriptData {
     fn into(self) -> TransactionPayload {
         match self.into_data() {
@@ -485,6 +487,7 @@ impl From<BlockMetadata> for BlockMetadataView {
         }
     }
 }
+#[allow(clippy::from_over_into)]
 impl Into<BlockMetadata> for BlockMetadataView {
     fn into(self) -> BlockMetadata {
         let BlockMetadataView {
@@ -695,6 +698,7 @@ impl TransactionInfoView {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum TransactionVMStatus {
     Executed,
     OutOfGas,

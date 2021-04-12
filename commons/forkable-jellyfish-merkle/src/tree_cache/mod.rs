@@ -261,6 +261,7 @@ where
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl<'a, R, K> Into<(Vec<HashValue>, TreeUpdateBatch<K>)> for TreeCache<'a, R, K>
 where
     R: 'a + TreeReader<K>,

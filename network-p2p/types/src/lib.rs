@@ -125,6 +125,7 @@ impl TryFrom<String> for MultiaddrWithPeerId {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Multiaddr> for MultiaddrWithPeerId {
     fn into(self) -> Multiaddr {
         self.concat()

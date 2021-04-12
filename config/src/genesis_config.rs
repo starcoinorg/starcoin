@@ -53,6 +53,7 @@ use std::sync::Arc;
     Serialize,
 )]
 #[repr(u8)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum BuiltinNetworkID {
     /// A ephemeral network just for unit test.
     Test = 255,
@@ -195,6 +196,7 @@ impl From<BuiltinNetworkID> for ChainNetwork {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct CustomNetworkID {
     chain_name: String,
     chain_id: ChainId,
@@ -238,6 +240,7 @@ impl FromStr for CustomNetworkID {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ChainNetworkID {
     Builtin(BuiltinNetworkID),
     Custom(CustomNetworkID),

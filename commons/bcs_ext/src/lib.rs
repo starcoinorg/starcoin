@@ -24,6 +24,7 @@ where
     bcs::from_bytes(bytes).map_err(|e| e.into())
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub trait BCSCodec<'a>: Sized {
     fn encode(&self) -> Result<Vec<u8>>;
     fn decode(bytes: &'a [u8]) -> Result<Self>;

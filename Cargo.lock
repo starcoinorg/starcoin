@@ -9125,7 +9125,7 @@ dependencies = [
  "anyhow",
  "atty",
  "camino",
- "crossbeam-channel 0.5.0",
+ "crossbeam-channel 0.5.1",
  "duct",
  "num_cpus",
  "once_cell",

@@ -666,7 +666,7 @@ impl NetworkService {
         let (tx, rx) = oneshot::channel();
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::AddressByPeerID(peer_id, tx));
+            .unbounded_send(ServiceToWorkerMsg::AddressByPeerId(peer_id, tx));
         match rx.await {
             Ok(t) => t,
             Err(e) => {
@@ -953,7 +953,7 @@ enum ServiceToWorkerMsg {
     NetworkState(oneshot::Sender<NetworkState>),
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
     UpdateChainStatus(Box<ChainStatus>),
-    AddressByPeerID(PeerId, oneshot::Sender<Vec<Multiaddr>>),
+    AddressByPeerId(PeerId, oneshot::Sender<Vec<Multiaddr>>),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -1041,7 +1041,7 @@ impl Future for NetworkWorker {
                         .user_protocol_mut()
                         .update_chain_status(*status);
                 }
-                ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
+                ServiceToWorkerMsg::AddressByPeerId(peer_id, tx) => {
                     let _ = tx.send(this.network_service.get_address(&peer_id));
                 }
             }

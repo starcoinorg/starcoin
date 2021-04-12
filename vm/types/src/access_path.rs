@@ -198,6 +198,7 @@ impl From<&ResourceKey> for AccessPath {
     Debug,
 )]
 #[repr(u8)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum DataType {
     CODE,
     RESOURCE,

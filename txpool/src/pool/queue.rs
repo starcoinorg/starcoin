@@ -84,6 +84,7 @@ impl fmt::Display for Status {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<TxPoolStatus> for Status {
     fn into(self) -> TxPoolStatus {
         TxPoolStatus {
