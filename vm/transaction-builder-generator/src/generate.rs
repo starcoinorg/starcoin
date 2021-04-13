@@ -20,6 +20,7 @@ enum Language {
     Rust,
     Cpp,
     Java,
+    Dart,
 }
 }
 
@@ -98,6 +99,17 @@ fn main() {
                 Language::Java => {
                     panic!("Code generation in Java requires --target_source_dir");
                 }
+                Language::Dart => {
+                    // let module_name = options.module_name.as_deref().unwrap_or("Helpers");
+                    // let parts = module_name.rsplitn(2, '.').collect::<Vec<_>>();
+                    // let (_, class_name) = if parts.len() > 1 {
+                    //     (Some(parts[1]), parts[0])
+                    // } else {
+                    //     (None, parts[0])
+                    // };
+                    // buildgen::dart::output(&mut out, &abis, class_name).unwrap()
+                    panic!("Code generation in dart requires --target_source_dir");
+                }
             }
             return;
         }
@@ -115,6 +127,7 @@ fn main() {
                 Language::Rust => Box::new(serdegen::rust::Installer::new(install_dir.clone())),
                 Language::Cpp => Box::new(serdegen::cpp::Installer::new(install_dir.clone())),
                 Language::Java => Box::new(serdegen::java::Installer::new(install_dir.clone())),
+                Language::Dart => Box::new(serdegen::dart::Installer::new(install_dir.clone())),
             };
 
         match options.language {
@@ -166,6 +179,7 @@ fn main() {
             )),
             Language::Cpp => Box::new(buildgen::cpp::Installer::new(install_dir)),
             Language::Java => Box::new(buildgen::java::Installer::new(install_dir)),
+            Language::Dart => Box::new(buildgen::dart::Installer::new(install_dir)),
         };
 
     if let Some(name) = options.module_name {
