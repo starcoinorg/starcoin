@@ -551,7 +551,7 @@ where
             } else {
                 // Else create the new leaf node with the same address but new blob content.
                 tree_cache.delete_node(&node_key, true /* is_leaf */);
-                return Ok(Self::create_leaf_node(key, blob, tree_cache)?);
+                return Self::create_leaf_node(key, blob, tree_cache);
             }
         }
 

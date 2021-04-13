@@ -62,13 +62,13 @@ module ToddNickles {
         nickles: Token::Coin<T>,
     }
 
-    public fun init(account: &signer) {
-        assert(Signer::address_of(account) == {{bob}}, 42);
-        move_to(account, Wallet { nickles: Token::create(T{}, 0) })
+    public fun init(account: signer) {
+        assert(Signer::address_of(&account) == {{bob}}, 42);
+        move_to(&account, Wallet { nickles: Token::create(T{}, 0) })
     }
 
-    public fun mint(account: &signer): Token::Coin<T> {
-        assert(Signer::address_of(account) == {{bob}}, 42);
+    public fun mint(account: signer): Token::Coin<T> {
+        assert(Signer::address_of(&account) == {{bob}}, 42);
         Token::create(T{}, 5)
     }
 

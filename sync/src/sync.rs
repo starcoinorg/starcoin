@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::tasks::{full_sync_task, AncestorEvent};
+use crate::sync_metrics::SYNC_METRICS;
+use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use config::NodeConfig;
@@ -31,6 +32,8 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
+
+const REPUTATION_THRESHOLD: i32 = -1000;
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -121,24 +124,38 @@ impl SyncService {
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
 
             let mut peer_set = network.peer_set().await?;
-            let mut peer_selector = PeerSelector::new(peer_set, peer_select_strategy);
+
             loop {
-                if peer_selector.is_empty()
-                    || peer_selector.len() < (config.net().min_peers() as usize)
-                {
+                if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
                     info!(
-                        "[sync]Wait enough peers, current: {:?} peers, min peers: {:?}",
-                        peer_selector.len(),
+                        "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
+                        peer_set.len(),
                         config.net().min_peers()
                     );
                     Delay::new(Duration::from_secs(1)).await;
                     peer_set = network.peer_set().await?;
-                    peer_selector = PeerSelector::new(peer_set, peer_select_strategy);
                 } else {
                     break;
                 }
             }
 
+            let peer_reputations = network
+                .reputations(REPUTATION_THRESHOLD)
+                .await?
+                .await?
+                .into_iter()
+                .map(|(peer, reputation)| {
+                    (
+                        peer,
+                        (REPUTATION_THRESHOLD.abs().saturating_add(reputation)) as u64,
+                    )
+                })
+                .collect();
+
+            let peer_selector =
+                PeerSelector::new_with_reputation(peer_reputations, peer_set, peer_select_strategy);
+
+            peer_selector.retain_rpc_peers();
             if !peers.is_empty() {
                 peer_selector.retain(peers.as_ref())
             }
@@ -155,35 +172,40 @@ impl SyncService {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
 
-            let rpc_client = VerifiedRpcClient::new(peer_selector.clone(), network.clone());
-            let target = VerifiedRpcClient::get_sync_target(
-                rpc_client.selector(),
-                current_block_info.get_total_difficulty(),
-            )
-            .await?;
-            info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
-
-            let (fut, task_handle, task_event_handle) = full_sync_task(
-                current_block_id,
-                target.clone(),
-                skip_pow_verify,
-                config.net().time_service(),
-                storage.clone(),
-                connector_service.clone(),
-                Arc::new(rpc_client),
-                self_ref.clone(),
+            let rpc_client = Arc::new(VerifiedRpcClient::new(
+                peer_selector.clone(),
                 network.clone(),
-                config.sync.max_retry_times(),
-            )?;
+            ));
+            if let Some(target) =
+                rpc_client.get_best_target(current_block_info.get_total_difficulty())?
+            {
+                info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
-            self_ref.notify(SyncBeginEvent {
-                target,
-                task_handle,
-                task_event_handle,
-                peer_selector,
-            })?;
-            Ok(Some(fut.await?))
-            //Ok(())
+                let (fut, task_handle, task_event_handle) = full_sync_task(
+                    current_block_id,
+                    target.clone(),
+                    skip_pow_verify,
+                    config.net().time_service(),
+                    storage.clone(),
+                    connector_service.clone(),
+                    rpc_client.clone(),
+                    self_ref.clone(),
+                    network.clone(),
+                    config.sync.max_retry_times(),
+                )?;
+
+                self_ref.notify(SyncBeginEvent {
+                    target,
+                    task_handle,
+                    task_event_handle,
+                    peer_selector,
+                })?;
+                SYNC_METRICS.sync_times.with_label_values(&["start"]).inc();
+                Ok(Some(fut.await?))
+            } else {
+                debug!("[sync]No better peer to request.");
+                Ok(None)
+            }
         };
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let self_ref = ctx.self_ref();
@@ -192,6 +214,7 @@ impl SyncService {
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
+                        SYNC_METRICS.sync_times.with_label_values(&["done"]).inc();
                         false
                     }
                     Ok(None) => {
@@ -203,6 +226,7 @@ impl SyncService {
                             match task_err {
                                 TaskError::Canceled => {
                                     info!("[sync] Sync task is cancel");
+                                    SYNC_METRICS.sync_times.with_label_values(&["cancel"]).inc();
                                     true
                                 }
                                 TaskError::BreakError(err) => {
@@ -215,23 +239,30 @@ impl SyncService {
                                                 ReputationChange::new_fatal("invalid_response"),
                                             )
                                         }
+                                        SYNC_METRICS.sync_break_times.with_label_values(&["verify_err"]).inc();
                                     }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
+                                        SYNC_METRICS.sync_break_times.with_label_values(&["bcs_err"]).inc();
+                                    } else {
+                                        SYNC_METRICS.sync_break_times.with_label_values(&["other_err"]).inc();
                                     }
                                     warn!(
                                         "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
                                         err,
                                         err.root_cause(),
                                     );
+                                    SYNC_METRICS.sync_times.with_label_values(&["break"]).inc();
                                     false
                                 }
                                 task_err => {
                                     error!("[sync] Sync task error: {:?}", task_err);
+                                    SYNC_METRICS.sync_times.with_label_values(&["error"]).inc();
                                     false
                                 }
                             }
                         } else {
                             error!("[sync] Sync task error: {:?}", err);
+                            SYNC_METRICS.sync_times.with_label_values(&["error"]).inc();
                             false
                         }
                     }
@@ -372,7 +403,6 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
-                    self.stage = SyncStage::Done;
                     task_handle.cancel();
                 } else {
                     let target_id_number =

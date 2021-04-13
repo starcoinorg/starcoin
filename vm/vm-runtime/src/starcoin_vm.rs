@@ -35,7 +35,7 @@ use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{DryRunTransaction, Module, Package, TransactionPayloadType};
-use starcoin_vm_types::transaction_argument::convert_txn_args;
+
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -56,6 +56,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 #[derive(Clone)]
+#[allow(clippy::upper_case_acronyms)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
     move_vm: Arc<MoveVMAdapter>,
@@ -377,7 +378,7 @@ impl StarcoinVM {
                         init_script.module(),
                         init_script.function(),
                         init_script.ty_args().to_vec(),
-                        convert_txn_args(init_script.args()),
+                        init_script.args().to_vec(),
                         vec![sender],
                         cost_strategy,
                     )
@@ -424,7 +425,7 @@ impl StarcoinVM {
                 TransactionPayload::Script(script) => session.execute_script(
                     script.code().to_vec(),
                     script.ty_args().to_vec(),
-                    convert_txn_args(script.args()),
+                    script.args().to_vec(),
                     vec![txn_data.sender()],
                     cost_strategy,
                 ),
@@ -433,7 +434,7 @@ impl StarcoinVM {
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
-                        convert_txn_args(script_function.args()),
+                        script_function.args().to_vec(),
                         vec![txn_data.sender()],
                         cost_strategy,
                     ),
@@ -609,13 +610,13 @@ impl StarcoinVM {
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
         BLOCK_UNCLES.observe(uncles as f64);
-        Ok(get_transaction_output(
+        get_transaction_output(
             &mut (),
             session,
             &cost_strategy,
             max_gas_amount,
             KeptVMStatus::Executed,
-        )?)
+        )
     }
 
     fn execute_user_transaction(

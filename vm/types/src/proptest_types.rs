@@ -13,6 +13,7 @@ use crate::transaction::{
     Module, Package, RawUserTransaction, Script, ScriptFunction, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
+use crate::transaction_argument::convert_txn_args;
 use crate::transaction_argument::TransactionArgument;
 use crate::{account_address, account_config};
 use anyhow::Result;
@@ -427,7 +428,7 @@ impl Arbitrary for Script {
         (
             vec(any::<u8>(), 0..100),
             vec(any::<TypeTag>(), 0..4),
-            vec(any::<TransactionArgument>(), 0..10),
+            vec(any::<Vec<u8>>(), 0..10),
         )
             .prop_map(|(code, ty_args, args)| Script::new(code, ty_args, args))
             .boxed()
@@ -448,7 +449,7 @@ impl Arbitrary for ScriptFunction {
             vec(any::<TransactionArgument>(), 0..10),
         )
             .prop_map(|(module, function, ty_args, args)| {
-                ScriptFunction::new(module, function, ty_args, args)
+                ScriptFunction::new(module, function, ty_args, convert_txn_args(&args))
             })
             .boxed()
     }

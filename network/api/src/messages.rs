@@ -4,6 +4,7 @@
 use crate::ReputationChange;
 use anyhow::*;
 use bcs_ext::{BCSCodec, Sample};
+use futures::channel::oneshot::Receiver;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;
@@ -173,6 +174,7 @@ impl PeerTransactionsMessage {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<PeerMessage> for PeerTransactionsMessage {
     fn into(self) -> PeerMessage {
         PeerMessage::new_transactions(self.peer_id, self.message)
@@ -192,6 +194,7 @@ impl PeerCompactBlockMessage {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<PeerMessage> for PeerCompactBlockMessage {
     fn into(self) -> PeerMessage {
         PeerMessage::new_compact_block(self.peer_id, self.message)
@@ -209,6 +212,15 @@ pub enum PeerEvent {
 pub struct ReportReputation {
     pub peer_id: PeerId,
     pub change: ReputationChange,
+}
+
+#[derive(Clone, Debug)]
+pub struct PeerReputations {
+    pub threshold: i32,
+}
+
+impl ServiceRequest for PeerReputations {
+    type Response = Receiver<Vec<(PeerId, i32)>>;
 }
 
 #[derive(Clone, Debug)]

@@ -8,14 +8,14 @@ use 0x1::DummyToken::{Self, DummyToken};
 use 0x1::Token;
 use 0x1::Account;
 use 0x1::Signer;
-fun main(account: &signer) {
-    let account_address = Signer::address_of(account);
+fun main(account: signer) {
+    let account_address = Signer::address_of(&account);
     let old_market_cap = Token::market_cap<DummyToken>();
     let amount = 100;
-    let coin = DummyToken::mint(account, amount);
+    let coin = DummyToken::mint(&account, amount);
     assert(Token::value<DummyToken>(&coin) == amount, 1);
     assert(Token::market_cap<DummyToken>() == old_market_cap + amount, 2);
-    Account::deposit_to_self(account, coin);
+    Account::deposit_to_self(&account, coin);
     assert(Account::balance<DummyToken>(account_address) == amount, 3);
 }
 }
@@ -29,11 +29,11 @@ script {
     use 0x1::Token;
     use 0x1::Account;
     use 0x1::Signer;
-    fun test_burn(account: &signer) {
-        let account_address = Signer::address_of(account);
+    fun test_burn(account: signer) {
+        let account_address = Signer::address_of(&account);
         let old_market_cap = Token::market_cap<DummyToken>();
         let amount = 100;
-        let coin = DummyToken::mint(account, amount);
+        let coin = DummyToken::mint(&account, amount);
         assert(Token::value<DummyToken>(&coin) == amount, 1);
         assert(Token::market_cap<DummyToken>() == old_market_cap + amount, 2);
         DummyToken::burn(coin);
@@ -50,11 +50,11 @@ script {
     use 0x1::Token;
     use 0x1::Account;
     use 0x1::Signer;
-    fun amount_exceed_limit(account: &signer) {
-        let account_address = Signer::address_of(account);
+    fun amount_exceed_limit(account: signer) {
+        let account_address = Signer::address_of(&account);
         let old_market_cap = Token::market_cap<DummyToken>();
         let amount = 10001; // amount should < 10000
-        let coin = DummyToken::mint(account, amount);
+        let coin = DummyToken::mint(&account, amount);
         assert(Token::value<DummyToken>(&coin) == amount, 1);
         assert(Token::market_cap<DummyToken>() == old_market_cap + amount, 2);
         DummyToken::burn(coin);

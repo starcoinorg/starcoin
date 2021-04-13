@@ -22,7 +22,7 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, dependencies},
@@ -36,21 +36,11 @@ use starcoin_vm_types::{
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
-use stdlib::{transaction_scripts::compiled_transaction_script, transaction_scripts::StdlibScript};
 
 pub type TransactionId = usize;
 
-static PRECOMPILED_TXN_SCRIPTS: Lazy<HashMap<String, CompiledScript>> = Lazy::new(|| {
-    StdlibScript::all()
-        .into_iter()
-        .map(|script| {
-            let name = script.name();
-            let bytes = compiled_transaction_script(StdlibVersion::Latest, script).into_vec();
-            let compiled_script = CompiledScript::deserialize(&bytes).unwrap();
-            (name, compiled_script)
-        })
-        .collect::<HashMap<String, CompiledScript>>()
-});
+//TODO remove this
+static PRECOMPILED_TXN_SCRIPTS: Lazy<HashMap<String, CompiledScript>> = Lazy::new(HashMap::new);
 
 /// A transaction to be evaluated by the testing infra.
 /// Contains code and a transaction config.
@@ -323,7 +313,8 @@ fn make_script_transaction(
 ) -> Result<SignedUserTransaction> {
     let mut blob = vec![];
     script.serialize(&mut blob)?;
-    let script = TransactionScript::new(blob, config.ty_args.clone(), config.args.clone());
+    let script =
+        TransactionScript::new(blob, config.ty_args.clone(), convert_txn_args(&config.args));
 
     let params = get_transaction_parameters(exec, config);
     let raw_txn = RawUserTransaction::new_script(
@@ -463,6 +454,7 @@ fn eval_transaction<TComp: Compiler>(
     log.append(EvaluationOutput::Stage(Stage::Compiler));
     let compiler_log = |s| log.append(EvaluationOutput::Output(OutputType::CompilerLog(s)));
 
+    //TODO support Call ScriptFunction
     let parsed_script_or_module =
         if let Some(compiled_script) = is_precompiled_script(&transaction.input) {
             ScriptOrModule::Script(compiled_script)

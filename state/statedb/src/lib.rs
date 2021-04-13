@@ -205,6 +205,7 @@ impl AccountStateObject {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.

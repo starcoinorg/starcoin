@@ -92,7 +92,7 @@ Aborts if the sender already has a <code><a href="SharedEd25519PublicKey.md#0x1_
 Aborts if the length of <code>new_public_key</code> is not 32.
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -101,7 +101,7 @@ Aborts if the length of <code>new_public_key</code> is not 32.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;) {
     <b>let</b> t = <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a> {
         key: x"",
         rotation_cap: <a href="Account.md#0x1_Account_extract_key_rotation_capability">Account::extract_key_rotation_capability</a>(account)
@@ -246,7 +246,7 @@ Returns true if <code>addr</code> holds a <code><a href="SharedEd25519PublicKey.
 ### Function `publish`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;)
 </code></pre>
 
 

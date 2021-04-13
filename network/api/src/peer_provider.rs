@@ -5,6 +5,7 @@ use crate::peer_score::ScoreCounter;
 use crate::PeerId;
 use crate::PeerInfo;
 use anyhow::Result;
+use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use itertools::Itertools;
 use network_p2p_types::ReputationChange;
@@ -15,6 +16,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -28,6 +30,11 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
+
+    fn reputations(
+        &self,
+        reputation_threshold: i32,
+    ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>>;
 }
 
 #[derive(Clone)]
@@ -63,6 +70,15 @@ impl From<PeerInfo> for PeerDetail {
         Self {
             peer_info: peer,
             score_counter: ScoreCounter::default(),
+        }
+    }
+}
+
+impl From<(PeerInfo, u64)> for PeerDetail {
+    fn from(peer: (PeerInfo, u64)) -> Self {
+        Self {
+            peer_info: peer.0,
+            score_counter: ScoreCounter::new(peer.1),
         }
     }
 }
@@ -130,14 +146,31 @@ impl Debug for PeerSelector {
 
 impl PeerSelector {
     pub fn new(peers: Vec<PeerInfo>, strategy: PeerStrategy) -> Self {
-        let len = peers.len() as u64;
+        Self::new_with_reputation(Vec::new(), peers, strategy)
+    }
+
+    pub fn new_with_reputation(
+        reputations: Vec<(PeerId, u64)>,
+        peers: Vec<PeerInfo>,
+        strategy: PeerStrategy,
+    ) -> Self {
+        let reputations = reputations.into_iter().collect::<HashMap<PeerId, u64>>();
+        let mut total_score = 0;
         let peer_details = peers
             .into_iter()
-            .map(|peer| -> PeerDetail { peer.into() })
+            .map(|peer| -> PeerDetail {
+                let score = if let Some(reputation) = reputations.get(&peer.peer_id()) {
+                    *reputation
+                } else {
+                    1
+                };
+                total_score += score;
+                (peer, score).into()
+            })
             .collect();
         Self {
             details: Arc::new(Mutex::new(peer_details)),
-            total_score: Arc::new(AtomicU64::new(len)),
+            total_score: Arc::new(AtomicU64::new(total_score)),
             strategy,
         }
     }
@@ -159,20 +192,18 @@ impl PeerSelector {
     }
 
     /// Get top N peers sorted by total_difficulty
-    pub fn top(self, n: usize) -> Vec<PeerId> {
+    pub fn top(&self, n: usize) -> Vec<PeerId> {
         if self.is_empty() {
             return Vec::new();
         }
-        let mut peers = self.details.lock();
-        Self::sort(&mut peers);
-        let mut top: Vec<PeerId> = Vec::new();
-        for peer in peers.iter() {
-            if top.len() >= n {
-                break;
-            }
-            top.push(peer.peer_id());
-        }
-        top
+        self.details
+            .lock()
+            .iter()
+            .sorted_by_key(|peer| peer.peer_info.total_difficulty())
+            .rev()
+            .map(|peer| peer.peer_info.peer_id())
+            .take(n)
+            .collect()
     }
 
     pub fn peer_score(&self, peer_id: &PeerId, score: i64) {
@@ -209,7 +240,7 @@ impl PeerSelector {
     }
 
     /// Filter by the max total_difficulty
-    pub fn bests(&self) -> Option<Vec<PeerInfo>> {
+    pub fn bests(&self, min_difficulty: U256) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
@@ -228,10 +259,14 @@ impl PeerSelector {
                 };
                 peers
             });
-        Some(best_peers)
+        if best_peers.is_empty() || best_peers[0].total_difficulty() <= min_difficulty {
+            None
+        } else {
+            Some(best_peers)
+        }
     }
 
-    pub fn betters(&self, difficulty: U256) -> Option<Vec<PeerInfo>> {
+    pub fn betters(&self, difficulty: U256, max_peers: u64) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
@@ -240,6 +275,8 @@ impl PeerSelector {
             .lock()
             .iter()
             .filter(|peer| peer.peer_info().total_difficulty() > difficulty)
+            .sorted_by(|peer_1, peer_2| Ord::cmp(&peer_2.score(), &peer_1.score()))
+            .take(max_peers as usize)
             .map(|peer| peer.peer_info().clone())
             .collect();
         if betters.is_empty() {
@@ -250,7 +287,7 @@ impl PeerSelector {
     }
 
     pub fn best(&self) -> Option<PeerInfo> {
-        if let Some(peers) = self.bests() {
+        if let Some(peers) = self.bests(0.into()) {
             peers.choose(&mut rand::thread_rng()).cloned()
         } else {
             None
@@ -278,15 +315,28 @@ impl PeerSelector {
     }
 
     pub fn retain(&self, peers: &[PeerId]) {
+        self.retain_by_filter(|peer| peers.contains(&peer.peer_id()));
+    }
+
+    pub fn retain_by_filter<F>(&self, filter: F)
+    where
+        F: Fn(&PeerDetail) -> bool,
+    {
         let mut score: u64 = 0;
         self.details.lock().retain(|peer| -> bool {
-            let flag = peers.contains(&peer.peer_id());
+            let flag = filter(peer);
             if flag {
                 score = score.saturating_add(peer.score_counter.score());
             }
             flag
         });
         self.total_score.store(score, Ordering::SeqCst);
+    }
+
+    /// Retain the peer which supported rpc call.
+    pub fn retain_rpc_peers(&self) {
+        //TODO enable retain when most node upgrade and send rpc protocol in handshake.
+        //self.retain_by_filter(|peer| peer.peer_info.is_support_rpc())
     }
 
     pub fn remove_peer(&self, peer: &PeerId) -> usize {
@@ -399,11 +449,6 @@ impl PeerSelector {
 
     pub fn len(&self) -> usize {
         self.details.lock().len()
-    }
-
-    fn sort(peers: &mut Vec<PeerDetail>) {
-        peers.sort_by_key(|p| p.peer_info.total_difficulty());
-        peers.reverse();
     }
 
     pub fn scores(&self) -> Vec<(PeerId, u64)> {

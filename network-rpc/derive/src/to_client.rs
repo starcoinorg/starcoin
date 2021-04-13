@@ -17,7 +17,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                 let arg_names = compute_arg_identifiers(&args).unwrap();
                 let returns = match compute_returns(method) {
                     Ok(r) => r,
-                    Err(e) => panic!(e)
+                    Err(e) => panic!("{}", e)
                 };
                 if arg_names.len() < 2 {
                     panic!("network Rpc method must has at least two argument");
@@ -35,8 +35,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                             };
 
                             let peer_id = #peer_id_indent;
-                            debug!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
-                            let rpc_path = stringify!(#name).to_string();
+                            info!("[network-rpc] call method: {:?}, peer_id:{:?} args: {:?} ", stringify!(#name), peer_id, #user_arg_indent);
+                            let rpc_path = Cow::from(stringify!(#name).to_string());
                             let result = self.request(peer_id.clone(), rpc_path, input_arg_serialized).await;
                             match result {
                                 Ok(result) => {
@@ -45,22 +45,22 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                         Ok(r) => match r {
                                             Ok(v) => {
                                                 let result = from_bytes::<#returns>(&v);
-                                                debug!("[network-rpc] response : {:?} ", result); 
+                                                debug!("[network-rpc] response: {} {:?} ", peer_id, result);
                                                 result
                                             },
                                             Err(e) => {
-                                                debug!("[network-rpc] response error: {:?} ", e);
+                                                error!("[network-rpc] response error: {} {:?}", peer_id, e);
                                                 Err(e).with_context(|| peer_id)
                                             },
                                         },
                                         Err(e) => {
-                                            debug!("[network-rpc] response error: {:?} ", e); 
+                                            error!("[network-rpc] response error: {} {:?} ", peer_id, e);
                                             Err(e)
                                         },
                                     }
                                 },
                                 Err(e) => {
-                                     debug!("[network-rpc] response error: {:?} ", e);
+                                    error!("[network-rpc] response error: {:?} ", e);
                                     Err(e)
                                 }
                             }
@@ -88,7 +88,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         use std::sync::Arc;
         use network_rpc_core::NetRpcError;
         use anyhow::Context;
-
+        use std::borrow::Cow;
         #get_rpc_info_method
 
         #[derive(Clone)]
@@ -106,7 +106,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         }
 
         impl NetworkRpcClient {
-            async fn request(&self, peer_id: PeerId, path: String, request: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+            async fn request(&self, peer_id: PeerId, path: Cow<'static, str>, request: Vec<u8>) -> anyhow::Result<Vec<u8>> {
                     self.raw_client
                     .send_raw_request(
                         peer_id,

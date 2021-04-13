@@ -43,9 +43,9 @@ module M {
 script {
 use {{alice}}::M;
 
-fun main(account: &signer) {
+fun main(account: signer) {
     let m = M::new();
-    M::save(account, m);
+    M::save(&account, m);
 }
 }
 
@@ -57,8 +57,8 @@ fun main(account: &signer) {
 script {
 use {{alice}}::M;
 
-fun main(account: &signer) {
-    let v = M::get_value(account);
+fun main(account: signer) {
+    let v = M::get_value(&account);
     assert(v == 1, 80001);
 }
 }
@@ -71,8 +71,8 @@ fun main(account: &signer) {
 script {
 use {{alice}}::M;
 
-fun main(account: &signer) {
-    let m = M::get(account);
+fun main(account: signer) {
+    let m = M::get(&account);
     let v = M::destroy(m);
     assert(v == 1, 80001);
 }

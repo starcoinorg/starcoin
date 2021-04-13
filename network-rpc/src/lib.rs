@@ -104,12 +104,11 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
         let rpc_server = self.rpc_server.clone();
         let api_limiters = self.rpc_limiters.clone();
         ctx.spawn(async move {
-            let protocol = msg.protocol.to_string();
+            let protocol = msg.protocol;
             let peer = msg.request.peer.into();
-            let result = match api_limiters.check(&protocol, Some(&peer)) {
+            let result = match api_limiters.check(&protocol.to_string(), Some(&peer)) {
                 Err(e) => Err(NetRpcError::new(RpcErrorCode::RateLimited, e.to_string())),
                 Ok(_) => {
-                    //TODO use Cow to replace String.
                     rpc_server
                         .handle_raw_request(peer, protocol, msg.request.payload)
                         .await
@@ -122,8 +121,7 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
                 result: Ok(resp),
                 reputation_changes: vec![],
             }) {
-                //TODO change log level
-                warn!("Send response to rpc call failed:{:?}", e);
+                error!("Send response to rpc call failed:{:?}", e);
             }
         });
     }

@@ -386,8 +386,8 @@ module MoveNft {
 script {
 use {{nftservice}}::NonFungibleToken;
 use {{nftservice}}::TestNft::TestNft;
-fun main(account: &signer) {
-    NonFungibleToken::initialize<TestNft>(account, false, 0);
+fun main(account: signer) {
+    NonFungibleToken::initialize<TestNft>(&account, false, 0);
 }
 }
 
@@ -399,11 +399,11 @@ script {
 use {{nftservice}}::NonFungibleToken;
 use {{nftservice}}::TestNft::{Self, TestNft};
 use 0x1::Hash;
-fun main(account: &signer) {
+fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
     let token = TestNft::new_test_nft();
-    NonFungibleToken::preemptive<TestNft>(account, {{nftservice}}, token_id, token);
+    NonFungibleToken::preemptive<TestNft>(&account, {{nftservice}}, token_id, token);
 }
 }
 
@@ -413,8 +413,8 @@ fun main(account: &signer) {
 //! sender: alice
 script {
 use {{alice}}::MoveNft;
-fun main(account: &signer) {
-    MoveNft::move_nft(account);
+fun main(account: signer) {
+    MoveNft::move_nft(&account);
 }
 }
 
@@ -425,8 +425,8 @@ fun main(account: &signer) {
 script {
 use {{nftservice}}::NonFungibleToken;
 use {{nftservice}}::TestNft::TestNft;
-fun main(account: &signer) {
-    NonFungibleToken::accept_token<TestNft>(account);
+fun main(account: signer) {
+    NonFungibleToken::accept_token<TestNft>(&account);
 }
 }
 
@@ -438,10 +438,10 @@ script {
 use {{nftservice}}::NonFungibleToken;
 use {{nftservice}}::TestNft::TestNft;
 use 0x1::Hash;
-fun main(account: &signer) {
+fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
-    NonFungibleToken::safe_transfer<TestNft>(account, {{nftservice}}, token_id, {{bob}});
+    NonFungibleToken::safe_transfer<TestNft>(&account, {{nftservice}}, token_id, {{bob}});
 }
 }
 
@@ -451,8 +451,8 @@ fun main(account: &signer) {
 //! sender: alice
 script {
 use {{alice}}::MoveNft;
-fun main(account: &signer) {
-    MoveNft::move_back_nft(account);
+fun main(account: signer) {
+    MoveNft::move_back_nft(&account);
 }
 }
 
@@ -464,10 +464,10 @@ script {
 use {{nftservice}}::NonFungibleToken;
 use {{nftservice}}::TestNft::TestNft;
 use 0x1::Hash;
-fun main(account: &signer) {
+fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
-    NonFungibleToken::safe_transfer<TestNft>(account, {{nftservice}}, token_id, {{bob}});
+    NonFungibleToken::safe_transfer<TestNft>(&account, {{nftservice}}, token_id, {{bob}});
 }
 }
 

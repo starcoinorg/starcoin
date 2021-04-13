@@ -125,6 +125,7 @@ impl TryFrom<String> for MultiaddrWithPeerId {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Multiaddr> for MultiaddrWithPeerId {
     fn into(self) -> Multiaddr {
         self.concat()
@@ -181,7 +182,7 @@ pub enum RequestFailure {
     /// The remote replied, but the local node is no longer interested in the response.
     Obsolete,
     /// Problem on the network.
-    #[display(fmt = "Problem on the network")]
+    #[display(fmt = "Problem on the network: {:?}", _0)]
     Network(#[error(ignore)] OutboundFailure),
 }
 
@@ -189,7 +190,7 @@ pub enum RequestFailure {
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum ResponseFailure {
     /// Problem on the network.
-    #[display(fmt = "Problem on the network")]
+    #[display(fmt = "Problem on the network: {:?}", _0)]
     Network(#[error(ignore)] InboundFailure),
 }
 

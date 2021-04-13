@@ -24,14 +24,14 @@ script {
     use 0x1::Account;
     use 0x1::Token;
 
-    fun main(account: &signer) {
-        MyToken::init(account);
+    fun main(account: signer) {
+        MyToken::init(&account);
 
         let market_cap = Token::market_cap<MyToken>();
         assert(market_cap == 0, 8001);
         assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
-        Account::do_accept_token<MyToken>(account);
+        Account::do_accept_token<MyToken>(&account);
     }
 }
 
@@ -45,9 +45,9 @@ script {
     use 0x1::Config;
 
 
-    fun set_dao_config(signer: &signer) {
+    fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
 
         Dao::set_voting_delay<MyToken>(&mut cap, 30 * 1000);
@@ -67,9 +67,9 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Config;
 
-    fun set_dao_config(signer: &signer) {
+    fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
         Dao::set_voting_delay<MyToken>(&mut cap, 0);
         Config::restore_modify_config_capability(cap);
@@ -84,9 +84,9 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Config;
 
-    fun set_dao_config(signer: &signer) {
+    fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
         Dao::set_voting_period<MyToken>(&mut cap, 0);
         Config::restore_modify_config_capability(cap);
@@ -101,9 +101,9 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Config;
 
-    fun set_dao_config(signer: &signer) {
+    fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
         Dao::set_voting_quorum_rate<MyToken>(&mut cap, 0);
         Config::restore_modify_config_capability(cap);
@@ -118,9 +118,9 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Config;
 
-    fun set_dao_config(signer: &signer) {
+    fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
         Dao::set_min_action_delay<MyToken>(&mut cap, 0);
         Config::restore_modify_config_capability(cap);
@@ -134,8 +134,8 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::ModifyDaoConfigProposal;
 
-    fun test_plugin(signer: &signer) {
-        ModifyDaoConfigProposal::plugin<MyToken>(signer); //ERR_NOT_AUTHORIZED
+    fun test_plugin(signer: signer) {
+        ModifyDaoConfigProposal::plugin<MyToken>(&signer); //ERR_NOT_AUTHORIZED
     }
 }
 // check: "Keep(ABORTED { code: 102658"
@@ -147,9 +147,9 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Config;
 
-    fun modify_dao_config(signer: &signer) {
+    fun modify_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
         let voting_delay = 30 * 1000;
         let voting_period = 30 * 30 * 1000;
@@ -190,9 +190,9 @@ script {
     use {{alice}}::MyToken::MyToken;
     use 0x1::Config;
 
-    fun modify_dao_config(signer: &signer) {
+    fun modify_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
-            signer
+            &signer
         );
         let voting_delay = 30 * 1000;
         let voting_period = 30 * 30 * 1000;
@@ -218,7 +218,7 @@ script {
     use 0x1::Dao;
     use {{alice}}::MyToken::MyToken;
 
-    fun new_dao_config_failed(_signer: &signer) {
+    fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 0; //should > 0
         let voting_period = 30 * 30 * 1000;
         let voting_quorum_rate = 50;
@@ -240,7 +240,7 @@ script {
     use 0x1::Dao;
     use {{alice}}::MyToken::MyToken;
 
-    fun new_dao_config_failed(_signer: &signer) {
+    fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
         let voting_period = 0; //should > 0
         let voting_quorum_rate = 50;
@@ -262,7 +262,7 @@ script {
     use 0x1::Dao;
     use {{alice}}::MyToken::MyToken;
 
-    fun new_dao_config_failed(_signer: &signer) {
+    fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
         let voting_period = 30 * 30 * 1000;
         let voting_quorum_rate = 0; //should > 0
@@ -284,7 +284,7 @@ script {
     use 0x1::Dao;
     use {{alice}}::MyToken::MyToken;
 
-    fun new_dao_config_failed(_signer: &signer) {
+    fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
         let voting_period = 30 * 30 * 1000;
         let voting_quorum_rate = 101; //should <= 100
@@ -306,7 +306,7 @@ script {
     use 0x1::Dao;
     use {{alice}}::MyToken::MyToken;
 
-    fun new_dao_config_failed(_signer: &signer) {
+    fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
         let voting_period = 30 * 30 * 1000;
         let voting_quorum_rate = 50;

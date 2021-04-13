@@ -57,6 +57,10 @@ pub mod playground {
 }
 pub mod test;
 
+pub mod nextest {
+    pub use diem_x::nextest::*;
+}
+
 pub mod cargo {
     pub use diem_x::cargo::*;
 }
@@ -105,6 +109,9 @@ enum Command {
     #[structopt(name = "test")]
     /// Run tests
     Test(test::Args),
+    #[structopt(name = "nextest")]
+    /// Run tests with new test runner
+    Nextest(nextest::Args),
     #[structopt(name = "tools")]
     /// Run tests
     Tools(tools::Args),
@@ -148,6 +155,7 @@ fn main() -> Result<()> {
     match args.cmd {
         Command::Tools(args) => tools::run(args, xctx),
         Command::Test(args) => test::run(args, xctx),
+        Command::Nextest(args) => nextest::run(args, xctx),
         Command::Build(args) => build::run(args, xctx),
         Command::ChangedSince(args) => changed_since::run(args, xctx),
         Command::Check(args) => check::run(args, xctx),

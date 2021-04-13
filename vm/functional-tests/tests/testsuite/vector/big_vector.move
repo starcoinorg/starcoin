@@ -74,26 +74,26 @@ module BigVectorTest {
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::init(account);
-        assert(BigVectorTest::value_of(account, 4999) == 4999, 101);
+    fun main(account: signer) {
+        BigVectorTest::init(&account);
+        assert(BigVectorTest::value_of(&account, 4999) == 4999, 101);
     }
 }
 // check: gas_used
-// check: 28542085
+// check: 28542057
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::append(account, 1);
-        assert(BigVectorTest::value_of(account, 5000) == 5000, 102);
+    fun main(account: signer) {
+        BigVectorTest::append(&account, 1);
+        assert(BigVectorTest::value_of(&account, 5000) == 5000, 102);
     }
 }
 // check: gas_used
-// check: 38610
+// check: 38582
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -101,26 +101,26 @@ script {
 // appand 5000 elements "5000, 5001, ... 10000" to the vector
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::append(account, 5000);
-        assert(BigVectorTest::value_of(account, 10000) == 10000, 103);
+    fun main(account: signer) {
+        BigVectorTest::append(&account, 5000);
+        assert(BigVectorTest::value_of(&account, 10000) == 10000, 103);
     }
 }
 // check: gas_used
-// check: 23153986
+// check: 23153958
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::append(account, 1);
-        assert(BigVectorTest::value_of(account, 10001) == 10001, 104);
+    fun main(account: signer) {
+        BigVectorTest::append(&account, 1);
+        assert(BigVectorTest::value_of(&account, 10001) == 10001, 104);
     }
 }
 // check: gas_used
-// check: 38610
+// check: 38582
 // check: "Keep(EXECUTED)"
 
 
@@ -128,13 +128,13 @@ script {
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        let (has, _) = BigVectorTest::index_of(account, 0x1, 10001);
+    fun main(account: signer) {
+        let (has, _) = BigVectorTest::index_of(&account, 0x1, 10001);
         assert(has == true, 106);
     }
 }
 // check: gas_used
-// check: 39082856
+// check: 39082842
 // check: "Keep(EXECUTED)"
 // search 10000 need 39078951 gas
 
@@ -142,22 +142,22 @@ script {
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::remove(account, 10001);
-        assert(BigVectorTest::value_of(account, 0) == 0, 105);
-        assert(BigVectorTest::value_of(account, 10000) == 10000, 105);
+    fun main(account: signer) {
+        BigVectorTest::remove(&account, 10001);
+        assert(BigVectorTest::value_of(&account, 0) == 0, 105);
+        assert(BigVectorTest::value_of(&account, 10000) == 10000, 105);
     }
 }
 // check: gas_used
-// check: 52798
+// check: 52756
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::remove(account, 0);
+    fun main(account: signer) {
+        BigVectorTest::remove(&account, 0);
     }
 }
 // check: EXECUTION_FAILURE
@@ -170,11 +170,11 @@ script {
 //! sender: alice
 script {
     use {{alice}}::BigVectorTest;
-    fun main(account: &signer) {
-        BigVectorTest::remove(account, 5000);
-        assert(BigVectorTest::value_of(account, 9999) == 10000, 107);
+    fun main(account: signer) {
+        BigVectorTest::remove(&account, 5000);
+        assert(BigVectorTest::value_of(&account, 9999) == 10000, 107);
     }
 }
 // check: gas_used
-// check: 23369126
+// check: 23369098
 // check: "Keep(EXECUTED)"

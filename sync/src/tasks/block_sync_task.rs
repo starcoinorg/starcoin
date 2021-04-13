@@ -37,6 +37,7 @@ impl SyncBlockData {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<(Block, Option<BlockInfo>, Option<PeerId>)> for SyncBlockData {
     fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>) {
         (self.block, self.info, self.peer_id)

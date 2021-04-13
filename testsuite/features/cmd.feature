@@ -118,6 +118,16 @@ Feature: cmd integration test
     Examples:
       |  |
 
+#account sign message
+  Scenario Outline: [cmd] account sign message
+    Then cmd: "account unlock"
+    Then cmd: "account sign-message  -m ssyuan"
+    Then cmd: "account verify-sign-message -m ssyuan -d @$.result@"
+    Then assert: "$.result ok"
+
+    Examples:
+      |  |
+
 #mytoken
   Scenario Outline: [cmd] my_token test
     Then cmd: "account show"

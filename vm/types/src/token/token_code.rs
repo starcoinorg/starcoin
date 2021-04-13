@@ -78,6 +78,7 @@ impl FromStr for TokenCode {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<TypeTag> for TokenCode {
     fn into(self) -> TypeTag {
         TypeTag::Struct(StructTag {

@@ -13,10 +13,10 @@ The following command will start a dev node and enter the console:
 starcoin -n dev console
 ```
 
-The following command will start a proxima node and enter the console.
+The following command will start a barnard node and enter the console.
 
 ```shell
-starcoin -n proxima console
+starcoin -n barnard console
 ```
 
 If started this way, the console and the node are in the same process, and if the console exits, the node will also exit automatically.
@@ -35,13 +35,13 @@ Execute the following command to access the starcoin console.
 This command is the same as the one that starts the node while entering the console. The command will automatically detect if there is an ipc file in the directory, and if so, it will automatically connect the node.
 
 ``` shell
-starcoin -n proxima console
+starcoin -n barnard console
 ```
 
 Or specify the ipc file explicitly. 
 
 ``` shell
-starcoin --connect ~/.starcoin/proxima/starcoin.ipc console
+starcoin --connect ~/.starcoin/barnard/starcoin.ipc console
 ```
 
 Note: The path to the ipc file is different on Windows
@@ -61,6 +61,6 @@ starcoin --connect ws://127.0.0.1:9870 console
 
 ``9870`` is the default websocket port for starcoin, if you have modified it, please replace it with your own modified value. 
 
-You can view the websocket port through the node config file, the default config file is `~/.starcoin/proxima/config.yml`.
+You can view the websocket port through the node config file, the default config file is `~/.starcoin/barnard/config.yml`.
 
 More commands and parameters can be found in starcoin help.

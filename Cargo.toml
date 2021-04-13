@@ -36,6 +36,7 @@ members = [
     "txpool/mock-service",
     "executor",
     "executor/benchmark",
+    "contrib-contracts",
     "chain",
     "chain/api",
     "chain/open-block",
@@ -86,7 +87,9 @@ members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
-    "cmd/indexer"
+    "cmd/indexer",
+    "cmd/resource-exporter",
+    "cmd/merkle-generator"
 ]
 
 default-members = [
@@ -125,6 +128,7 @@ default-members = [
     "txpool/mock-service",
     "executor",
     "executor/benchmark",
+    "contrib-contracts",
     "chain",
     "chain/api",
     "chain/open-block",
@@ -175,7 +179,9 @@ default-members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
-    "cmd/indexer"
+    "cmd/indexer",
+    "cmd/resource-exporter",
+    "cmd/merkle-generator"
 ]
 
 [profile.dev]

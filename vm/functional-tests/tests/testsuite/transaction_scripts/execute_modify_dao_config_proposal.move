@@ -13,7 +13,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
 
-    fun main(signer: &signer,
+    fun main(signer: signer,
             voting_delay: u64,
             voting_period: u64,
             voting_quorum_rate: u8,
@@ -23,7 +23,7 @@ script {
     }
 }
 // check: gas_used
-// check: 186513
+// check: 186519
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -39,7 +39,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::ModifyDaoConfigProposal::DaoConfigUpdate;
 
-    fun main(account: &signer,
+    fun main(account: signer,
             proposer_address: address,
             proposal_id: u64,
             agree: bool,
@@ -54,7 +54,7 @@ script {
     }
 }
 // check: gas_used
-// check: 176147
+// check: 176139
 // check: "Keep(EXECUTED)"
 
 
@@ -71,7 +71,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::ModifyDaoConfigProposal::DaoConfigUpdate;
 
-    fun main(_account: &signer,
+    fun main(_account: signer,
             proposer_address: address,
             proposal_id: u64,
         ) {
@@ -93,7 +93,7 @@ script {
     use 0x1::STC::STC;
     use 0x1::ModifyDaoConfigProposal::DaoConfigUpdate;
 
-    fun main(account: &signer,
+    fun main(account: signer,
              proposer_address: address,
              proposal_id: u64,
     ) {
@@ -105,7 +105,7 @@ script {
     }
 }
 // check: gas_used
-// check: 118839
+// check: 118831
 // check: "Keep(EXECUTED)"
 
 //! block-prologue

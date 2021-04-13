@@ -1,0 +1,32 @@
+{
+  "root": "0xfc737972c3f091bde071c4e73bcf29273cc28e97484cbea4c93bb1bda5dbc71b",
+  "proofs": [
+    {
+      "address": "0x0000000000000000000000000a550c18",
+      "index": 0,
+      "amount": 1000000000,
+      "proof": [
+        "0xc27bfc510a432edd4db55fd91fe82c852e38f1790a5a0f455f7d209e2efff9fc",
+        "0xc66045013499090f37f7d6d34956f218edd8b24294c06f77c32a82ed0e9647c0"
+      ]
+    },
+    {
+      "address": "0xffebfbb40556a9f585958bcb3fc233b3",
+      "index": 1,
+      "amount": 1000000000,
+      "proof": [
+        "0x459334507452c90de981c298b0b2cb1a18410ee47c3fc7bbf6c18416553edcef",
+        "0xc66045013499090f37f7d6d34956f218edd8b24294c06f77c32a82ed0e9647c0"
+      ]
+    },
+    {
+      "address": "0xfff9556961bad3db959f46fcb2a1f997",
+      "index": 2,
+      "amount": 2000000000,
+      "proof": [
+        "0xf440068f283ac86efb2c98387afaffce03d2286a96942156b9d10ba5afd03bcc",
+        "0xa39ed979a96f477ebadd7d49efb0d373222450bfa538edfac663f998a93e5ac1"
+      ]
+    }
+  ]
+}

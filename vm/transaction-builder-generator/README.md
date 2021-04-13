@@ -54,6 +54,8 @@ target/debug/generate-transaction-builders \
     --language python3 \
     --module-name starcoin_stdlib \
     --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --diem-package-name "starcoin" \
+    --serde-package-name "starcoin" \
     --target-source-dir "target/python" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```

@@ -382,6 +382,7 @@ impl ListenAddress {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<SocketAddr> for ListenAddress {
     fn into(self) -> SocketAddr {
         SocketAddr::new(self.address, self.port)

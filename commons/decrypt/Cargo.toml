@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-decrypt"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 edition = "2018"
@@ -13,4 +13,4 @@ aes-gcm = "0.5"
 rand = "0.8.3"
 rand_core = { version = "0.6.2", default-features = false }
 byteorder="1.4"
-anyhow= "1.0.39"
+anyhow= "1.0.40"

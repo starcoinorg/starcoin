@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-vm-types"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 once_cell = "1.7.2"
 rand = "0.8.3"
 serde = { version = "1.0.125", default-features = false }
@@ -22,11 +22,11 @@ log = "0.4.14"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b" }
-vm = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b"}
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "bfd7b336d14858d288e908636853949693642bcf" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "bfd7b336d14858d288e908636853949693642bcf" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "bfd7b336d14858d288e908636853949693642bcf" }
+vm = { git = "https://github.com/starcoinorg/diem", rev = "bfd7b336d14858d288e908636853949693642bcf"}
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "bfd7b336d14858d288e908636853949693642bcf" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -37,7 +37,7 @@ forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { git = "https://github.com/starcoinorg/diem", rev = "e3967fa3dd494bdf929ac99160f89751cac4c58b", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/diem", rev = "bfd7b336d14858d288e908636853949693642bcf", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 

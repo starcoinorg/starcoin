@@ -15,8 +15,10 @@ use structopt::StructOpt;
 /// Get stat of tps for an epoch.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tps")]
+#[allow(clippy::upper_case_acronyms)]
 pub struct TPSOpt {}
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct StatTPSCommand;
 
 impl CommandAction for StatTPSCommand {

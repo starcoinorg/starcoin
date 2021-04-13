@@ -7,7 +7,6 @@ use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
-use rand::seq::IteratorRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
@@ -16,15 +15,13 @@ use starcoin_network_rpc_api::{
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
-use starcoin_sync_api::SyncTarget;
-use starcoin_types::block::{Block, BlockIdAndNumber};
+use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
-    U256,
 };
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -264,38 +261,6 @@ impl VerifiedRpcClient {
             .await?;
         let resp = BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
-    }
-
-    pub async fn get_sync_target(
-        peer_selector: &PeerSelector,
-        difficulty: U256,
-    ) -> Result<SyncTarget> {
-        let mut better_peers = peer_selector
-            .betters(difficulty)
-            .ok_or_else(|| format_err!("No better peer to request"))?;
-
-        let better_peer = better_peers
-            .iter_mut()
-            .choose(&mut rand::thread_rng())
-            .cloned()
-            .expect("Better peer is none.");
-        let peers = better_peers
-            .iter()
-            .filter(|peer_info| {
-                peer_info.block_number() >= better_peer.block_number()
-                    && peer_info.total_difficulty() >= better_peer.total_difficulty()
-            })
-            .map(|peer_info| peer_info.peer_id())
-            .collect();
-
-        Ok(SyncTarget {
-            target_id: BlockIdAndNumber::new(
-                better_peer.latest_header().id(),
-                better_peer.latest_header().number(),
-            ),
-            block_info: better_peer.chain_info().status().info().clone(),
-            peers,
-        })
     }
 
     pub async fn get_state_node_by_node_hash(

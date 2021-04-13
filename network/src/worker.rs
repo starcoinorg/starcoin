@@ -5,7 +5,8 @@ use anyhow::*;
 use bitflags::_core::time::Duration;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
-use log::{debug, error};
+use log::{debug, error, info};
+use network_api::PeerInfo;
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
@@ -29,7 +30,7 @@ pub fn build_network_worker(
     chain_info: ChainInfo,
     protocols: Vec<Cow<'static, str>>,
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
-) -> Result<NetworkWorker> {
+) -> Result<(PeerInfo, NetworkWorker)> {
     let node_name = node_config.node_name();
     let discover_local = node_config.network.discover_local();
     let transport_config = if is_memory_addr(&node_config.network.listen()) {
@@ -74,6 +75,17 @@ pub fn build_network_worker(
     };
     let allow_non_globals_in_dht = discover_local;
     let boot_nodes = node_config.network.seeds();
+
+    info!("Final bootstrap seeds: {:?}", boot_nodes);
+    let self_info = PeerInfo::new(
+        node_config.network.self_peer_id(),
+        chain_info.clone(),
+        protocols.to_vec(),
+        rpc_protocols
+            .iter()
+            .map(|config| config.name.clone())
+            .collect(),
+    );
     let config = NetworkConfiguration {
         listen_addresses: vec![node_config.network.listen()],
         boot_nodes,
@@ -84,6 +96,8 @@ pub fn build_network_worker(
             .expect("decode network node key should success.");
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
+        in_peers: node_config.network.max_incoming_peers(),
+        out_peers: node_config.network.max_outgoing_peers(),
         notifications_protocols: protocols,
         request_response_protocols: rpc_protocols,
         transport: transport_config,
@@ -103,5 +117,6 @@ pub fn build_network_worker(
         //TODO use a custom registry for each instance.
         Some(default_registry().clone()),
     ))?;
-    Ok(worker)
+
+    Ok((self_info, worker))
 }

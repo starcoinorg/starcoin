@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-config"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 clap = "2.33.3"
 dirs-next = "2.0.0"
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 thiserror = "1.0"
 serde = { version = "1.0.125", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
@@ -30,7 +30,7 @@ starcoin-vm-types = { path = "../vm/types" }
 starcoin-uint = { path = "../types/uint" }
 network-p2p-types = { path = "../network-p2p/types"}
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
-diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
 stdlib = { path = "../vm/stdlib"}

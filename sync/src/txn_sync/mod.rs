@@ -3,17 +3,15 @@ use logger::prelude::*;
 use network::NetworkServiceRef;
 use network_api::{NetworkService, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
-use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::sync::Arc;
 use txpool::TxPoolService;
 
-#[derive(Clone)]
-pub struct TxnSyncService {
-    inner: Inner,
-}
+#[derive(Clone, Default)]
+pub struct TxnSyncService {}
 
 impl ActorService for TxnSyncService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
@@ -27,26 +25,23 @@ impl ActorService for TxnSyncService {
     }
 }
 
-impl ServiceFactory<Self> for TxnSyncService {
-    fn create(ctx: &mut ServiceContext<TxnSyncService>) -> Result<TxnSyncService> {
-        let txpool = ctx.get_shared::<TxPoolService>()?;
-        let network = ctx.get_shared::<NetworkServiceRef>()?;
-        Ok(Self::new(txpool, network))
-    }
-}
-
 impl TxnSyncService {
-    pub fn new<N>(txpool: TxPoolService, network: N) -> Self
-    where
-        N: NetworkService + RawRpcClient + 'static,
-    {
-        Self {
-            inner: Inner {
-                pool: txpool,
-                rpc_client: NetworkRpcClient::new(network.clone()),
-                peer_provider: Arc::new(network),
-            },
+    pub fn sync_txn(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
+        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let inner = Inner::new(txpool, network);
+
+        // sync txn after block sync task done.
+        // because txn verify dependency the latest chain state, such as timestamp on chain.
+        // only sync txn if txpool is empty currently.
+        if inner.pool.status().txn_count == 0 {
+            ctx.wait(async move {
+                if let Err(e) = inner.sync_txn().await {
+                    error!("handle sync txn event fail: {:?}", e);
+                }
+            });
         }
+        Ok(())
     }
 }
 
@@ -54,18 +49,8 @@ impl EventHandler<Self, SyncStatusChangeEvent> for TxnSyncService {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
         let sync_status = msg.0;
         if sync_status.is_synced() {
-            // sync txn after block sync task done.
-            // because txn verify dependency the latest chain state, such as timestamp on chain.
-
-            // only sync txn if txpool is empty currently.
-            //TODO optimize txpool sync.
-            if self.inner.pool.status().txn_count == 0 {
-                let inner = self.inner.clone();
-                ctx.wait(async move {
-                    if let Err(e) = inner.sync_txn().await {
-                        error!("handle sync txn event fail: {:?}", e);
-                    }
-                });
+            if let Err(e) = self.sync_txn(ctx) {
+                error!("handle sync txn event fail: {:?}", e);
             }
         }
     }
@@ -79,6 +64,16 @@ struct Inner {
 }
 
 impl Inner {
+    pub fn new<N>(txpool: TxPoolService, network: N) -> Self
+    where
+        N: NetworkService + RawRpcClient + 'static,
+    {
+        Self {
+            pool: txpool,
+            rpc_client: NetworkRpcClient::new(network.clone()),
+            peer_provider: Arc::new(network),
+        }
+    }
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
         let peers = self.peer_provider.peer_set().await?;

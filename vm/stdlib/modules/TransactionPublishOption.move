@@ -1,9 +1,7 @@
 address 0x1 {
 /// `TransactionPublishOption` provide an option to limit:
-/// - which scripts are allowed to run.
-/// - whether user can publish custom modules on chain.
+/// - whether user can use script or publish custom modules on chain.
 module TransactionPublishOption {
-    use 0x1::Vector;
     use 0x1::Config;
     use 0x1::Timestamp;
     use 0x1::CoreAddresses;
@@ -14,10 +12,9 @@ module TransactionPublishOption {
         pragma verify = false; // break after enabling v2 compilation scheme
         pragma aborts_if_is_strict = true;
 
-        define spec_is_script_allowed(addr: address, hash: vector<u8>) : bool{
+        define spec_is_script_allowed(addr: address) : bool{
             let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
-            len(publish_option.script_allow_list) == 0 ||
-                Vector::spec_contains(publish_option.script_allow_list, hash)
+            publish_option.script_allowed
         }
 
         define spec_is_module_allowed(addr: address) : bool{
@@ -36,14 +33,13 @@ module TransactionPublishOption {
     const EALLOWLIST_ALREADY_CONTAINS_SCRIPT: u64 = 1002;
 
     /// Defines and holds the publishing policies for the VM. There are three possible configurations:
-    /// 1. No module publishing, only allowlisted scripts are allowed.
-    /// 2. No module publishing, custom scripts are allowed.
-    /// 3. Both module publishing and custom scripts are allowed.
+    /// 1.  !script_allowed && !module_publishing_allowed No module publishing, only script function in module are allowed.
+    /// 2.  script_allowed && !module_publishing_allowed No module publishing, custom scripts are allowed.
+    /// 3.  script_allowed && module_publishing_allowed Both module publishing and custom scripts are allowed.
     /// We represent these as the following resource.
     struct TransactionPublishOption has copy, drop, store {
-        // Only script hashes in the following list can be executed. If the vector is empty, no
-        // limitation would be enforced.
-        script_allow_list: vector<vector<u8>>,
+        // Anyone can use script if this flag is set to true.
+        script_allowed: bool,
         // Anyone can publish new module if this flag is set to true.
         module_publishing_allowed: bool,
     }
@@ -51,7 +47,7 @@ module TransactionPublishOption {
     /// Module initialization.
     public fun initialize(
         account: &signer,
-        merged_script_allow_list: vector<u8>,
+        script_allowed: bool,
         module_publishing_allowed: bool,
     ) {
         Timestamp::assert_genesis();
@@ -59,7 +55,7 @@ module TransactionPublishOption {
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
             Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
-        let transaction_publish_option = Self::new_transaction_publish_option(merged_script_allow_list, module_publishing_allowed);
+        let transaction_publish_option = Self::new_transaction_publish_option(script_allowed, module_publishing_allowed);
         Config::publish_new_config(
             account,
             transaction_publish_option,
@@ -75,38 +71,20 @@ module TransactionPublishOption {
 
     /// Create a new option. Mainly used in DAO.
     public fun new_transaction_publish_option(
-        script_allow_list: vector<u8>,
+        script_allowed: bool,
         module_publishing_allowed: bool,
     ): TransactionPublishOption {
-        let list = Vector::empty<vector<u8>>();
-        let len = Vector::length(&script_allow_list) / SCRIPT_HASH_LENGTH;
-        let i = 0;
-        while (i < len){
-            let script_hash = Vector::empty<u8>();
-            let j = 0;
-            while (j < SCRIPT_HASH_LENGTH){
-                let index = SCRIPT_HASH_LENGTH * i + j;
-                Vector::push_back(
-                    &mut script_hash,
-                    *Vector::borrow(&script_allow_list, index),
-                );
-                j = j + 1;
-            };
-            Vector::push_back<vector<u8>>(&mut list, script_hash);
-            i = i + 1;
-        };
-        TransactionPublishOption { script_allow_list: list, module_publishing_allowed }
+        TransactionPublishOption { script_allowed, module_publishing_allowed }
     }
 
     spec fun new_transaction_publish_option {
         aborts_if false;
     }
 
-    /// Check if sender can execute script with `hash`
-    public fun is_script_allowed(account: address, hash: &vector<u8>): bool {
+    /// Check if sender can execute script with
+    public fun is_script_allowed(account: address): bool {
         let publish_option = Config::get_by_address<TransactionPublishOption>(account);
-        Vector::is_empty(&publish_option.script_allow_list) ||
-            Vector::contains(&publish_option.script_allow_list, hash)
+        publish_option.script_allowed
     }
 
     spec fun is_script_allowed {

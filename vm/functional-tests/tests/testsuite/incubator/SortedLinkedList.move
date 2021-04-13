@@ -275,8 +275,8 @@ module SortedLinkedList {
 //creating a new list _@alice
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
-        SortedLinkedList::create_new_list<u64>(account, 0);
+    fun main(account: signer) {
+        SortedLinkedList::create_new_list<u64>(&account, 0);
     }
 }
 // check: EXECUTED
@@ -286,8 +286,8 @@ script {
 //attempting to create another list with the same head
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
-        SortedLinkedList::create_new_list<u64>(account, 0);
+    fun main(account: signer) {
+        SortedLinkedList::create_new_list<u64>(&account, 0);
     }
 }
 // check: ABORTED
@@ -298,11 +298,11 @@ script {
 //adding a new element to Alice's list _@alice -> 10@bob
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         // let prev_entry = SortedLinkedList::entry_handle({{alice}}, 0);
-    // SortedLinkedList::insert_node<u64>(account, 10, prev_entry);
+    // SortedLinkedList::insert_node<u64>(&account, 10, prev_entry);
     let head_entry = SortedLinkedList::entry_handle({{alice}}, 0);
-        SortedLinkedList::find_position_and_insert(account, 10, head_entry);
+        SortedLinkedList::find_position_and_insert(&account, 10, head_entry);
     }
 }
 // check: EXECUTED
@@ -312,11 +312,11 @@ script {
 //adding a new element to Alice's list _@alice -> 10@bob -> 12@carol
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         // let prev_entry = SortedLinkedList::entry_handle({{bob}}, 0);
-    // SortedLinkedList::insert_node<u64>(account, 12, prev_entry);
+    // SortedLinkedList::insert_node<u64>(&account, 12, prev_entry);
     let head_entry = SortedLinkedList::entry_handle({{alice}}, 0);
-        SortedLinkedList::find_position_and_insert(account, 12, head_entry);
+        SortedLinkedList::find_position_and_insert(&account, 12, head_entry);
     }
 }
 // check: EXECUTED
@@ -326,9 +326,9 @@ script {
 //adding a new element to Alice's list _@alice -> 10@bob -> 11@carol -> 12@carol
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let head_entry = SortedLinkedList::entry_handle({{alice}}, 0);
-        SortedLinkedList::find_position_and_insert(account, 11, head_entry);
+        SortedLinkedList::find_position_and_insert(&account, 11, head_entry);
     }
 }
 // check: EXECUTED
@@ -360,9 +360,9 @@ script {
 //Alice removes Bob's node _@alice -> 11@carol -> 12@carol
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let entry = SortedLinkedList::entry_handle({{bob}}, 0);
-        SortedLinkedList::remove_node_by_list_owner<u64>(account, entry);
+        SortedLinkedList::remove_node_by_list_owner<u64>(&account, entry);
     }
 }
 // check: EXECUTED
@@ -372,9 +372,9 @@ script {
 //David removes his node _@alice -> 12@carol
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let entry = SortedLinkedList::entry_handle({{carol}}, 1);
-        SortedLinkedList::remove_node_by_node_owner<u64>(account, entry);
+        SortedLinkedList::remove_node_by_node_owner<u64>(&account, entry);
     }
 }
 // check: EXECUTED
@@ -384,10 +384,10 @@ script {
 //Alice empties her list and removes it
 script {
     use {{default}}::SortedLinkedList;
-    fun main(account: &signer) {
+    fun main(account: signer) {
         let entry = SortedLinkedList::entry_handle({{carol}}, 0);
-        SortedLinkedList::remove_node_by_list_owner<u64>(account, entry);
-        SortedLinkedList::remove_list<u64>(account);
+        SortedLinkedList::remove_node_by_list_owner<u64>(&account, entry);
+        SortedLinkedList::remove_list<u64>(&account);
     }
 }
 // check: EXECUTED
@@ -498,8 +498,8 @@ module NameService {
 //initialize the nameservice list
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
-    NameService::initialize(account);
+fun main(account: signer) {
+    NameService::initialize(&account);
 }
 }
 // check: EXECUTED
@@ -509,9 +509,9 @@ fun main(account: &signer) {
 //adding a new name to NameService's list _@nameservice -> b"alice"@alice
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
+fun main(account: signer) {
     let head = NameService::entry_handle({{nameservice}}, 0);
-    NameService::find_position_and_insert(account, b"alice", head);
+    NameService::find_position_and_insert(&account, b"alice", head);
 }
 }
 // check: EXECUTED
@@ -521,9 +521,9 @@ fun main(account: &signer) {
 //adding a new name to NameService's list _@nameservice -> b"bob"@bob -> b"alice"@alice
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
+fun main(account: signer) {
     let head = NameService::entry_handle({{nameservice}}, 0);
-    NameService::find_position_and_insert(account, b"bob", head);
+    NameService::find_position_and_insert(&account, b"bob", head);
 }
 }
 // check: EXECUTED
@@ -533,9 +533,9 @@ fun main(account: &signer) {
 //adding a new name to NameService's list _@nameservice -> b"bob"@bob -> b"alice"@alice -> b"carol"@carol
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
+fun main(account: signer) {
     let head = NameService::entry_handle({{nameservice}}, 0);
-    NameService::find_position_and_insert(account, b"carol", head);
+    NameService::find_position_and_insert(&account, b"carol", head);
 }
 }
 // check: EXECUTED
@@ -558,9 +558,9 @@ fun main() {
 //removes her entry _@nameservice -> b"bob"@bob -> b"alice"@alice
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
+fun main(account: signer) {
     let entry = NameService::entry_handle({{carol}}, 0);
-    NameService::remove_entry_by_entry_owner(account, entry);
+    NameService::remove_entry_by_entry_owner(&account, entry);
 }
 }
 // check: EXECUTED
@@ -570,10 +570,10 @@ fun main(account: &signer) {
 //removes bob's entry _@nameservice -> b"alice"@alice
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
+fun main(account: signer) {
     let entry = NameService::entry_handle({{bob}}, 0);
     assert(NameService::is_expired(copy entry), 27);
-    NameService::remove_entry_by_service_owner(account, entry);
+    NameService::remove_entry_by_service_owner(&account, entry);
 }
 }
 // check: ABORTED
@@ -614,10 +614,10 @@ fun main(account: &signer) {
 //removes her entry _@nameservice -> b"alice"@alice
 script {
 use {{nameservice}}::NameService;
-fun main(account: &signer) {
+fun main(account: signer) {
     let entry = NameService::entry_handle({{bob}}, 0);
     assert(NameService::is_expired(copy entry), 27);
-    NameService::remove_entry_by_service_owner(account, entry);
+    NameService::remove_entry_by_service_owner(&account, entry);
 }
 }
 // check: EXECUTED

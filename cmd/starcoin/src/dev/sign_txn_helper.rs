@@ -69,7 +69,7 @@ pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
     let client = cli_state.client();
     let chain_state_reader = RemoteStateReader::new(client)?;
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
-    Ok(account_state_reader
+    account_state_reader
         .get_on_chain_config::<DaoConfig>()?
-        .ok_or_else(|| format_err!("DaoConfig not exist on chain."))?)
+        .ok_or_else(|| format_err!("DaoConfig not exist on chain."))
 }

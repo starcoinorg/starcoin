@@ -6,7 +6,7 @@ use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
-    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask,
+    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::Context;
@@ -17,17 +17,19 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::PeerId;
+use network_api::{PeerId, PeerSelector, PeerStrategy};
 use pin_utils::core_reexport::time::Duration;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
+use starcoin_chain_mock::MockChain;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::BlockStore;
 use starcoin_sync_api::SyncTarget;
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
@@ -903,4 +905,56 @@ async fn test_err_context() -> Result<()> {
         debug!("err{:?}", err);
     }
     Ok(())
+}
+
+#[stest::test]
+async fn test_sync_target() {
+    let mut peer_infos = vec![];
+    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let mut node1 = SyncNodeMocker::new(net1, 1, 0).unwrap();
+    node1.produce_block(10).unwrap();
+    let low_chain_info = node1.peer_info().chain_info().clone();
+    peer_infos.push(PeerInfo::new(
+        PeerId::random(),
+        low_chain_info.clone(),
+        vec![],
+        vec![],
+    ));
+    node1.produce_block(10).unwrap();
+    let high_chain_info = node1.peer_info().chain_info().clone();
+    peer_infos.push(PeerInfo::new(
+        PeerId::random(),
+        high_chain_info.clone(),
+        vec![],
+        vec![],
+    ));
+
+    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let (_, genesis_chain_info, _) =
+        Genesis::init_storage_for_test(&net2).expect("init storage by genesis fail.");
+    let mock_chain = MockChain::new_with_chain(
+        net2,
+        node1.chain().fork(high_chain_info.head().id()).unwrap(),
+    )
+    .unwrap();
+
+    let peer_selector = PeerSelector::new(peer_infos, PeerStrategy::default());
+    let node2 = Arc::new(SyncNodeMocker::new_with_chain_selector(
+        PeerId::random(),
+        mock_chain,
+        1,
+        0,
+        peer_selector,
+    ));
+    let full_target = node2
+        .get_best_target(genesis_chain_info.total_difficulty())
+        .unwrap()
+        .unwrap();
+    let target = node2
+        .get_better_target(genesis_chain_info.total_difficulty(), full_target, 10)
+        .await
+        .unwrap();
+    assert_eq!(target.peers.len(), 2);
+    assert_eq!(target.target_id.number(), low_chain_info.head().number());
+    assert_eq!(target.target_id.id(), low_chain_info.head().id());
 }

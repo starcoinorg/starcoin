@@ -16,7 +16,7 @@ use starcoin_types::{
     event::EventHandle,
     transaction::{
         authenticator::AuthenticationKey, RawUserTransaction, ScriptFunction,
-        SignedUserTransaction, TransactionArgument, TransactionPayload,
+        SignedUserTransaction, TransactionPayload,
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
@@ -647,6 +647,7 @@ impl KeyRotationCapability {
 
 /// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
 /// given arguments.
+#[allow(clippy::vec_init_then_push)]
 pub fn peer_to_peer_txn(
     sender: &Account,
     receiver: &Account,
@@ -655,10 +656,10 @@ pub fn peer_to_peer_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*receiver.address()));
-    args.push(TransactionArgument::U8Vector(receiver.auth_key().to_vec()));
-    args.push(TransactionArgument::U128(transfer_amount));
+    let mut args: Vec<Vec<u8>> = Vec::new();
+    args.push(bcs_ext::to_bytes(receiver.address()).unwrap());
+    args.push(bcs_ext::to_bytes(&receiver.auth_key().to_vec()).unwrap());
+    args.push(bcs_ext::to_bytes(&transfer_amount).unwrap());
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
@@ -680,6 +681,7 @@ pub fn peer_to_peer_txn(
 }
 
 /// Returns a transaction to create a new account with the given arguments.
+#[allow(clippy::vec_init_then_push)]
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,
     seq_num: u64,
@@ -687,12 +689,10 @@ pub fn create_account_txn_sent_as_association(
     expiration_timstamp_secs: u64,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(*new_account.address()));
-    args.push(TransactionArgument::U8Vector(
-        new_account.auth_key().to_vec(),
-    ));
-    args.push(TransactionArgument::U128(initial_amount));
+    let mut args: Vec<Vec<u8>> = Vec::new();
+    args.push(bcs_ext::to_bytes(new_account.address()).unwrap());
+    args.push(bcs_ext::to_bytes(&new_account.auth_key().to_vec()).unwrap());
+    args.push(bcs_ext::to_bytes(&initial_amount).unwrap());
 
     create_signed_txn_with_association_account(
         TransactionPayload::ScriptFunction(ScriptFunction::new(

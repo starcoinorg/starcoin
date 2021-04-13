@@ -63,8 +63,8 @@ module Genesis {
         strategy: u8,
 
         //vm config
-        merged_script_allow_list: vector<u8>,
-        is_open_module: bool,
+        script_allowed: bool,
+        module_publishing_allowed: bool,
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
 
@@ -100,8 +100,8 @@ module Genesis {
         Block::initialize(&genesis_account, parent_hash);
         TransactionPublishOption::initialize(
             &genesis_account,
-            merged_script_allow_list,
-            is_open_module,
+            script_allowed,
+            module_publishing_allowed,
         );
         // init config
         VMConfig::initialize(

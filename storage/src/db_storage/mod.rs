@@ -13,6 +13,7 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::Path;
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
     db: DB,
     cfs: Vec<ColumnFamilyName>,

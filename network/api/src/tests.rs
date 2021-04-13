@@ -31,23 +31,31 @@ fn test_peer_selector() {
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
+            vec![],
+            vec![],
         ),
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(99.into())),
+            vec![],
+            vec![],
         ),
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(100.into())),
+            vec![],
+            vec![],
         ),
         PeerInfo::new(
             PeerId::random(),
             ChainInfo::new(1.into(), HashValue::zero(), mock_chain_status(1.into())),
+            vec![],
+            vec![],
         ),
     ];
 
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-    let best_selector = peer_selector.bests().unwrap();
+    let best_selector = peer_selector.bests(0.into()).unwrap();
     assert_eq!(2, best_selector.len());
 
     let top_selector = peer_selector.top(3);
@@ -63,7 +71,7 @@ fn test_better_peer() {
     }
 
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-    let better_selector = peer_selector.betters(random_peer.total_difficulty());
+    let better_selector = peer_selector.betters(random_peer.total_difficulty(), 10);
     assert!(better_selector.is_some());
 
     let better_selector = better_selector.unwrap();

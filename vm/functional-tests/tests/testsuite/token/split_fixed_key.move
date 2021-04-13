@@ -8,11 +8,11 @@ script {
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_key(account: &signer) {
-        let cap = Token::remove_mint_capability<STC>(account);
+    fun create_key(account: signer) {
+        let cap = Token::remove_mint_capability<STC>(&account);
         let key = Token::issue_fixed_mint_key<STC>(&cap, 10000, 5);
-        Token::add_mint_capability(account, cap);
-        Offer::create(account, key, {{bob}}, 0);
+        Token::add_mint_capability(&account, cap);
+        Offer::create(&account, key, {{bob}}, 0);
     }
 }
 
@@ -24,9 +24,9 @@ script {
     use 0x1::Collection;
     use 0x1::Token::{FixedTimeMintKey};
 
-    fun bob_take_fixed_key_from_offer(account: &signer) {
-        let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
-        Collection::put(account, key);
+    fun bob_take_fixed_key_from_offer(account: signer) {
+        let key = Offer::redeem<FixedTimeMintKey<STC>>(&account, {{genesis}});
+        Collection::put(&account, key);
     }
 }
 
@@ -44,11 +44,11 @@ script {
     use 0x1::Collection;
     use 0x1::Token;
 
-    fun split_fixed_key(signer: &signer) {
-        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
+    fun split_fixed_key(signer: signer) {
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(&signer);
         let new_mint_key = Token::split_fixed_key<STC>(&mut mint_key, 20000); //ESPLIT
-        Collection::put(signer, mint_key);
-        Offer::create<Token::FixedTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+        Collection::put(&signer, mint_key);
+        Offer::create<Token::FixedTimeMintKey<STC>>(&signer, new_mint_key, {{alice}}, 0);
     }
 }
 // check: "Keep(ABORTED { code: 27393"
@@ -61,11 +61,11 @@ script {
     use 0x1::Collection;
     use 0x1::Token;
 
-    fun split_fixed_key(signer: &signer) {
-        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
+    fun split_fixed_key(signer: signer) {
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(&signer);
         let new_mint_key = Token::split_fixed_key<STC>(&mut mint_key, 200);
-        Collection::put(signer, mint_key);
-        Offer::create<Token::FixedTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+        Collection::put(&signer, mint_key);
+        Offer::create<Token::FixedTimeMintKey<STC>>(&signer, new_mint_key, {{alice}}, 0);
     }
 }
 
@@ -77,9 +77,9 @@ script {
     use 0x1::Collection;
     use 0x1::Token::{FixedTimeMintKey};
 
-    fun alice_take_fixed_key_from_offer(account: &signer) {
-        let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{bob}});
-        Collection::put(account, key);
+    fun alice_take_fixed_key_from_offer(account: signer) {
+        let key = Offer::redeem<FixedTimeMintKey<STC>>(&account, {{bob}});
+        Collection::put(&account, key);
     }
 }
 
@@ -96,11 +96,11 @@ script {
     use 0x1::Token;
     use 0x1::Account;
 
-    fun alice_mint_by_fixed_key(signer: &signer) {
-        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
+    fun alice_mint_by_fixed_key(signer: signer) {
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(&signer);
         let tokens = Token::mint_with_fixed_key<STC>(mint_key);
         assert(Token::value(&tokens) > 0, 102);
-        Account::deposit_to_self(signer, tokens);
+        Account::deposit_to_self(&signer, tokens);
     }
 }
 
@@ -112,10 +112,10 @@ script {
     use 0x1::Token;
     use 0x1::Account;
 
-    fun bob_mint_by_fixed_key(signer: &signer) {
-        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(signer);
+    fun bob_mint_by_fixed_key(signer: signer) {
+        let mint_key = Collection::take<Token::FixedTimeMintKey<STC>>(&signer);
         let tokens = Token::mint_with_fixed_key<STC>(mint_key);
         assert(Token::value(&tokens) > 0, 103);
-        Account::deposit_to_self(signer, tokens);
+        Account::deposit_to_self(&signer, tokens);
     }
 }

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metrics::BLOCK_RELAYER_METRICS;
-use anyhow::Result;
+use anyhow::{format_err, Result};
+use config::NodeConfig;
 use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -16,8 +17,10 @@ use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::SyncStatusChangeEvent;
+use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
+use starcoin_types::time::TimeService;
 use starcoin_types::{
     block::{Block, BlockBody},
     cmpact_block::{CompactBlock, ShortId},
@@ -27,32 +30,53 @@ use starcoin_types::{
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
+use std::sync::Arc;
 
 pub struct BlockRelayer {
     txpool: TxPoolService,
     sync_status: Option<SyncStatus>,
+    time_service: Arc<dyn TimeService>,
 }
 
 impl ServiceFactory<Self> for BlockRelayer {
     fn create(ctx: &mut ServiceContext<BlockRelayer>) -> Result<BlockRelayer> {
         let txpool = ctx.get_shared::<TxPoolService>()?;
-        Ok(Self::new(txpool))
+        let time_service = ctx.get_shared::<Arc<NodeConfig>>()?.net().time_service();
+        Ok(Self::new(txpool, time_service))
     }
 }
 
 impl BlockRelayer {
-    pub fn new(txpool: TxPoolService) -> Self {
+    pub fn new(txpool: TxPoolService, time_service: Arc<dyn TimeService>) -> Self {
         Self {
             txpool,
             sync_status: None,
+            time_service,
         }
     }
 
-    pub fn is_synced(&self) -> bool {
+    pub fn is_nearly_synced(&self) -> bool {
         match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
+            Some(sync_status) => sync_status.is_nearly_synced(),
             None => false,
         }
+    }
+
+    fn broadcast_compact_block(
+        &self,
+        network: NetworkServiceRef,
+        executed_block: Arc<ExecutedBlock>,
+    ) {
+        if !self.is_nearly_synced() {
+            debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
+            return;
+        }
+        let compact_block = executed_block.block().clone().into();
+        let compact_block_msg =
+            CompactBlockMessage::new(compact_block, executed_block.block_info.clone());
+        network.broadcast(NotificationMessage::CompactBlock(Box::new(
+            compact_block_msg,
+        )));
     }
 
     async fn fill_compact_block(
@@ -64,6 +88,9 @@ impl BlockRelayer {
         let txns = {
             let mut txns: Vec<Option<SignedUserTransaction>> =
                 vec![None; compact_block.short_ids.len()];
+            BLOCK_RELAYER_METRICS
+                .block_txns_count
+                .set(compact_block.short_ids.len() as u64);
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
@@ -107,6 +134,12 @@ impl BlockRelayer {
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
                     if let Some(txn) = fetched_missing_txn_map.remove(short_id) {
+                        if txn.is_err() {
+                            BLOCK_RELAYER_METRICS
+                                .txns_filled_failed
+                                .with_label_values(&["miss"])
+                                .inc();
+                        }
                         txns[index] = Some(txn?);
                         BLOCK_RELAYER_METRICS.txns_filled_from_network.inc();
                     }
@@ -133,11 +166,15 @@ impl BlockRelayer {
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
             if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
-                debug!("Block is failed block : {:?}", block_id);
+                warn!("Block is failed block : {:?}", block_id);
             } else {
-                let peers = network.peer_set().await?;
-                let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+                let peer = network
+                    .get_peer(peer_id.clone())
+                    .await?
+                    .ok_or_else(|| format_err!("CompatBlockMessage's peer {} is not connected"))?;
+                let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default());
                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+                let timer = BLOCK_RELAYER_METRICS.txns_filled_time.start_timer();
                 let block = BlockRelayer::fill_compact_block(
                     txpool.clone(),
                     rpc_client,
@@ -145,6 +182,7 @@ impl BlockRelayer {
                     peer_id.clone(),
                 )
                 .await?;
+                timer.observe_duration();
                 block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
             }
             Ok(())
@@ -162,12 +200,14 @@ impl ActorService for BlockRelayer {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewBranch>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<SyncStatusChangeEvent>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewBranch>();
         Ok(())
     }
 }
@@ -184,10 +224,6 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             "[block-relay] Handle new head block event, block_id: {:?}",
             event.0.block().id()
         );
-        if !self.is_synced() {
-            debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
-            return;
-        }
         let network = match ctx.get_shared::<NetworkServiceRef>() {
             Ok(network) => network,
             Err(e) => {
@@ -195,11 +231,24 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
                 return;
             }
         };
-        let compact_block = event.0.block().clone().into();
-        let compact_block_msg = CompactBlockMessage::new(compact_block, event.0.block_info.clone());
-        network.broadcast(NotificationMessage::CompactBlock(Box::new(
-            compact_block_msg,
-        )));
+        self.broadcast_compact_block(network, event.0);
+    }
+}
+
+impl EventHandler<Self, NewBranch> for BlockRelayer {
+    fn handle_event(&mut self, event: NewBranch, ctx: &mut ServiceContext<BlockRelayer>) {
+        debug!(
+            "[block-relay] Handle new branch event, block_id: {:?}",
+            event.0.block().id()
+        );
+        let network = match ctx.get_shared::<NetworkServiceRef>() {
+            Ok(network) => network,
+            Err(e) => {
+                error!("Get network service error: {:?}", e);
+                return;
+            }
+        };
+        self.broadcast_compact_block(network, event.0);
     }
 }
 
@@ -209,22 +258,18 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) {
-        if !self.is_synced() {
-            debug!("[block-relay] Ignore PeerCompactBlockMessage because the node has not been synchronized yet.");
-            return;
-        }
-        let sync_status = self
-            .sync_status
-            .as_ref()
-            .expect("Sync status should bean some at here");
-        let current_total_difficulty = sync_status.chain_status().total_difficulty();
-        let block_total_difficulty = compact_block_msg.message.block_info.total_difficulty;
-        let block_id = compact_block_msg.message.compact_block.header.id();
-        if current_total_difficulty > block_total_difficulty {
-            debug!("[block-relay] Ignore PeerCompactBlockMessage because node current total_difficulty({}) > block({})'s total_difficulty({}).", current_total_difficulty, block_id, block_total_difficulty);
-            return;
-        }
+        let block_timestamp = compact_block_msg.message.compact_block.header.timestamp();
+        let current_timestamp = self.time_service.now_millis();
+        let time = current_timestamp.saturating_sub(block_timestamp);
+        let time_sec = (time as f64) / 1000_f64;
+        BLOCK_RELAYER_METRICS.block_broadcast_time.observe(time_sec);
+        //TODO should filter too old block?
+
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
+            BLOCK_RELAYER_METRICS
+                .txns_filled_failed
+                .with_label_values(&["error"])
+                .inc();
             error!(
                 "[block-relay] handle PeerCompactBlockMessage error: {:?}",
                 e

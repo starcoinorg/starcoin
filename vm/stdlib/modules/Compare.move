@@ -54,6 +54,30 @@ module Compare {
         len_cmp
     }
 
+    public fun cmp_bytes(v1: &vector<u8>, v2: &vector<u8>): u8 {
+        let l1 = Vector::length(v1);
+        let l2 = Vector::length(v2);
+        let len_cmp = cmp_u64(l1, l2);
+        let i1 = 0;
+        let i2 = 0;
+        while (i1 < l1 && i2 < l2) {
+            let elem_cmp = cmp_u8(*Vector::borrow(v1, i1), *Vector::borrow(v2, i2));
+            if (elem_cmp != 0) {
+                return elem_cmp
+            };
+            // else, compare next element
+            i1 = i1 + 1;
+            i2 = i2 + 1;
+        };
+        // all compared elements equal; use length comparison to break the tie
+        len_cmp
+    }
+
+    spec fun cmp_bytes {
+        pragma verify = false;
+        //cmp_u8(*Vector::borrow(v1, i1), *Vector::borrow(v2, i2)) is not covered
+    }
+
     spec fun cmp_bcs_bytes {
         pragma verify = false;
         //cmp_u8(*Vector::borrow(v1, i1), *Vector::borrow(v2, i2)) is not covered

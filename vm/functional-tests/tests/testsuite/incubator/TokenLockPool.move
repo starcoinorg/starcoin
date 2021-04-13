@@ -44,7 +44,7 @@ module TokenLockPool {
 
     spec fun initialize {
         include CoreAddresses::AbortsIfNotGenesisAddress;
-        aborts_if exists<TokenPool<STC>>(Signer::address_of(account));
+        aborts_if exists<TokenPool<STC>>(Signer::address_of(&account));
     }
 
     // Create a LinearTimeLock by token and period in seconds.
@@ -180,8 +180,8 @@ module TokenLockPool {
 //!sender: genesis
 script {
     use {{default}}::TokenLockPool;
-    fun init(account: &signer){
-        TokenLockPool::initialize(account);
+    fun init(account: signer){
+        TokenLockPool::initialize(&account);
     }
 }
 
@@ -194,10 +194,10 @@ script {
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_lock(account: &signer) {
-        let token = Account::withdraw<STC>(account, 10000);
+    fun create_lock(account: signer) {
+        let token = Account::withdraw<STC>(&account, 10000);
         let key = TokenLockPool::create_linear_lock<STC>(token, 5);
-        Offer::create(account, key, {{bob}}, 0);
+        Offer::create(&account, key, {{bob}}, 0);
     }
 }
 
@@ -209,9 +209,9 @@ script {
     use 0x1::Collection;
     use {{default}}::TokenLockPool::{LinearTimeLockKey};
 
-    fun redeem_offer(account: &signer) {
-        let key = Offer::redeem<LinearTimeLockKey<STC>>(account, {{alice}});
-        Collection::put(account, key);
+    fun redeem_offer(account: signer) {
+        let key = Offer::redeem<LinearTimeLockKey<STC>>(&account, {{alice}});
+        Collection::put(&account, key);
     }
 }
 
@@ -230,13 +230,13 @@ script {
     use 0x1::Collection;
     use {{default}}::TokenLockPool::{Self, LinearTimeLockKey};
 
-    fun unlock(account: &signer) {
-        let key = Collection::take<LinearTimeLockKey<STC>>(account);
+    fun unlock(account: signer) {
+        let key = Collection::take<LinearTimeLockKey<STC>>(&account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         // withdraw 10000/5
         assert(Token::value(&token) == 2000, 1001);
-        Collection::put(account, key);
-        Account::deposit_to_self(account, token);
+        Collection::put(&account, key);
+        Account::deposit_to_self(&account, token);
     }
 }
 
@@ -254,13 +254,13 @@ script {
     use 0x1::Collection;
     use {{default}}::TokenLockPool::{Self, LinearTimeLockKey};
 
-    fun unlock(account: &signer) {
-        let key = Collection::take<LinearTimeLockKey<STC>>(account);
+    fun unlock(account: signer) {
+        let key = Collection::take<LinearTimeLockKey<STC>>(&account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         // withdraw 10000/5 again
         assert(Token::value(&token) == 2000, 1002);
-        Collection::put(account, key);
-        Account::deposit_to_self(account, token);
+        Collection::put(&account, key);
+        Account::deposit_to_self(&account, token);
     }
 }
 
@@ -278,12 +278,12 @@ script {
     use 0x1::Collection;
     use {{default}}::TokenLockPool::{Self, LinearTimeLockKey};
 
-    fun unlock(account: &signer) {
-        let key = Collection::take<LinearTimeLockKey<STC>>(account);
+    fun unlock(account: signer) {
+        let key = Collection::take<LinearTimeLockKey<STC>>(&account);
         //unlock all remain
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         assert(Token::value(&token) == 6000, 1003);
         TokenLockPool::destroy_empty(key);
-        Account::deposit_to_self(account, token);
+        Account::deposit_to_self(&account, token);
     }
 }

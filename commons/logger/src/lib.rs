@@ -320,7 +320,7 @@ pub fn init_with_default_level(
         let config = build_config(arg.clone()).expect("build log config fail.");
         let handle = match log4rs::init_config(config) {
             Ok(handle) => handle,
-            Err(e) => panic!(e.to_string()),
+            Err(e) => panic!("{}", e.to_string()),
         };
         let logger_handle = LoggerHandle::new(arg, handle);
 

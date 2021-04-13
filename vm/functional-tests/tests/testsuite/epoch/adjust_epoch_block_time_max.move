@@ -6,7 +6,7 @@ use 0x1::ConsensusConfig;
 use 0x1::Epoch;
 //use 0x1::Debug;
 
-    fun adjust_epoch_block_time(genesis_account: &signer) {
+    fun adjust_epoch_block_time(genesis_account: signer) {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let times = 0;
@@ -20,7 +20,7 @@ use 0x1::Epoch;
                 uncles = 0;
                 //Debug::print(&Epoch::block_time_target());
             };
-            let _reward = Epoch::adjust_epoch(genesis_account, block_number, block_time_milliseonds, uncles, 0);
+            let _reward = Epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
 
             let block_time_target = Epoch::block_time_target();
             //Debug::print(&block_time_target);

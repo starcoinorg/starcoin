@@ -6,7 +6,7 @@ use anyhow::Result;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use test_helper::executor::{compile_module_with_address, execute_and_apply, prepare_genesis};
+use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
 
 macro_rules! module_compatibility_test {
     ($name:ident, $prog1:literal, $prog2:literal, $result:ident) => {
@@ -24,7 +24,9 @@ macro_rules! module_compatibility_test {
             let program1 = String::from($prog1);
 
             // compile with account 1's address
-            let compiled_module = compile_module_with_address(*account1.address(), &program1);
+            let compiled_module = compile_modules_with_address(*account1.address(), &program1)
+                .pop()
+                .unwrap();
 
             let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
                 *account1.address(),
@@ -42,7 +44,9 @@ macro_rules! module_compatibility_test {
             let program2 = String::from($prog2);
 
             // compile with account 1's address
-            let compiled_module = compile_module_with_address(*account1.address(), &program2);
+            let compiled_module = compile_modules_with_address(*account1.address(), &program2)
+                .pop()
+                .unwrap();
 
             let txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
                 *account1.address(),

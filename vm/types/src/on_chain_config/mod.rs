@@ -26,7 +26,7 @@ pub use self::{
     dao_config::DaoConfig,
     genesis_gas_schedule::init_cost_table,
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
-    vm_config::{vm_config_type_tag, VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
+    vm_config::{vm_config_type_tag, TransactionPublishOption, VMConfig, SCRIPT_HASH_LENGTH},
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 
@@ -35,6 +35,7 @@ pub use crate::on_chain_resource::GlobalTimeOnChain;
 /// 2. Add the config's `ConfigID` to `ON_CHAIN_CONFIG_REGISTRY`
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[allow(clippy::box_vec)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ConfigID(&'static str, &'static str, &'static str, Vec<TypeTag>);
 
 impl ConfigID {
@@ -48,6 +49,7 @@ impl ConfigID {
     }
 }
 
+#[allow(clippy::vec_init_then_push)]
 pub static ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
     let mut configs: Vec<ConfigID> = Vec::new();
     configs.push(VMConfig::config_id());

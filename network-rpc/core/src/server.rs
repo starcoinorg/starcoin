@@ -8,19 +8,20 @@ use crate::{NetRpcError, RawRpcServer};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use log::warn;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct NetworkRpcServer {
-    methods: HashMap<String, Arc<dyn RpcMethod>>,
+    methods: HashMap<Cow<'static, str>, Arc<dyn RpcMethod>>,
 }
 
 impl NetworkRpcServer {
     pub fn new<F>(rpc_methods: F) -> Self
     where
-        F: IntoIterator<Item = (String, Arc<dyn RpcMethod>)>,
+        F: IntoIterator<Item = (Cow<'static, str>, Arc<dyn RpcMethod>)>,
     {
-        let mut methods: HashMap<String, Arc<dyn RpcMethod>> = Default::default();
+        let mut methods: HashMap<Cow<'static, str>, Arc<dyn RpcMethod>> = Default::default();
         methods.extend(rpc_methods);
         NetworkRpcServer { methods }
     }
@@ -28,7 +29,7 @@ impl NetworkRpcServer {
     pub async fn handle_request_async(
         &self,
         peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> Result<Vec<u8>> {
         if let Some(method) = self.methods.get(&rpc_path) {
@@ -51,7 +52,7 @@ impl RawRpcServer for NetworkRpcServer {
     fn handle_raw_request(
         &self,
         peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>> {
         self.handle_request_async(peer_id, rpc_path, message)

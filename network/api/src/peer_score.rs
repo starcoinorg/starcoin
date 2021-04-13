@@ -10,6 +10,13 @@ pub struct ScoreCounter {
 }
 
 impl ScoreCounter {
+    pub fn new(score: u64) -> Self {
+        Self {
+            score: Arc::new(AtomicU64::new(if score == 0 { 1 } else { score })),
+            count: Arc::new(AtomicU64::new(0)),
+        }
+    }
+
     pub fn inc_by(&self, score: i64) {
         self.score.fetch_add(score as u64, Ordering::SeqCst);
         self.count.fetch_add(1, Ordering::SeqCst);
@@ -26,10 +33,7 @@ impl ScoreCounter {
 
 impl Default for ScoreCounter {
     fn default() -> Self {
-        Self {
-            score: Arc::new(AtomicU64::new(1)),
-            count: Arc::new(AtomicU64::new(0)),
-        }
+        Self::new(1)
     }
 }
 

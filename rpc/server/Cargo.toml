@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-rpc-server"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -10,7 +10,7 @@ edition = "2018"
 log = "0.4"
 parking_lot = "0.11"
 futures-channel = "0.3"
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 thiserror = "1.0"
 dashmap = "4.0"
 hex = { version = "0.4.3", default-features = false }

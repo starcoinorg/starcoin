@@ -7,10 +7,10 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
 
-    fun main(account: &signer, fresh_address: address, auth_key: vector<u8>, initial_amount: u128) {
+    fun main(account: signer, fresh_address: address, auth_key: vector<u8>, initial_amount: u128) {
         Account::create_account_with_initial_amount<STC>(account, fresh_address, auth_key, initial_amount);
     }
 }
 // check: gas_used
-// check: 1068941
+// check: 1068945
 // check: "Keep(EXECUTED)"

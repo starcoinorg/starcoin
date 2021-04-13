@@ -22,8 +22,7 @@ impl OnChainConfig for DaoConfig {
     const CONF_IDENTIFIER: &'static str = "DaoConfig";
 
     fn type_params() -> Vec<TypeTag> {
-        let mut params = vec![];
-        params.push(stc_type_tag());
+        let params = vec![stc_type_tag()];
         params
     }
 }

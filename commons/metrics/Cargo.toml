@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-metrics"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,7 +8,7 @@ edition = "2018"
 description = "Starcoin metrics"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 futures = "0.3.12"
 hyper = "0.13.9"
 starcoin-logger = { path = "../logger" }

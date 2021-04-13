@@ -71,6 +71,8 @@ fn convert_to_rpc_error<T: Into<RpcError>>(err: T) -> jsonrpc_core::Error {
 /// only traits defined in the current crate can be implemented for arbitrary types.
 #[derive(Debug)]
 struct RpcError(jsonrpc_core::Error);
+
+#[allow(clippy::from_over_into)]
 impl Into<jsonrpc_core::Error> for RpcError {
     fn into(self) -> jsonrpc_core::Error {
         self.0

@@ -85,6 +85,6 @@ impl CommandAction for TxPoolStatusCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        Ok(client.txpool_status()?)
+        client.txpool_status()
     }
 }

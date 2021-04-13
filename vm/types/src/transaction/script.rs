@@ -1,28 +1,27 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::transaction::transaction_argument::TransactionArgument;
+use crate::account_config::core_code_address;
+use crate::serde_helper::vec_bytes;
+
 use bcs_ext::Sample;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, TypeTag};
 use serde::{Deserialize, Serialize};
-use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
 
 /// Call a Move script.
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
-    #[serde(
-        deserialize_with = "deserialize_binary",
-        serialize_with = "serialize_binary"
-    )]
+    #[serde(with = "serde_bytes")]
     code: Vec<u8>,
     ty_args: Vec<TypeTag>,
-    args: Vec<TransactionArgument>,
+    #[serde(with = "vec_bytes")]
+    args: Vec<Vec<u8>>,
 }
 
 impl Script {
-    pub fn new(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<TransactionArgument>) -> Self {
+    pub fn new(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
         Script {
             code,
             ty_args,
@@ -38,11 +37,11 @@ impl Script {
         &self.ty_args
     }
 
-    pub fn args(&self) -> &[TransactionArgument] {
+    pub fn args(&self) -> &[Vec<u8>] {
         &self.args
     }
 
-    pub fn into_inner(self) -> (Vec<u8>, Vec<TypeTag>, Vec<TransactionArgument>) {
+    pub fn into_inner(self) -> (Vec<u8>, Vec<TypeTag>, Vec<Vec<u8>>) {
         (self.code, self.ty_args, self.args)
     }
 }
@@ -58,8 +57,7 @@ impl fmt::Debug for Script {
 }
 
 impl Sample for Script {
-    /// Sample script source code:
-    /// vm/stdlib/transaction_scripts/empty_script.move
+    /// Sample script source code empty_script.move
     fn sample() -> Self {
         Self {
             code: hex::decode("a11ceb0b0100000001050001000000000102")
@@ -72,12 +70,14 @@ impl Sample for Script {
 
 /// How to call a particular Move script (aka. an "ABI").
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ScriptABI {
     TransactionScript(TransactionScriptABI),
     ScriptFunction(ScriptFunctionABI),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ScriptFunctionABI {
     /// The public name of the script.
     name: String,
@@ -92,6 +92,7 @@ pub struct ScriptFunctionABI {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct TransactionScriptABI {
     /// The public name of the script.
     name: String,
@@ -108,6 +109,7 @@ pub struct TransactionScriptABI {
 
 /// The description of a (regular) argument in a script.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ArgumentABI {
     /// The name of the argument.
     name: String,
@@ -118,6 +120,7 @@ pub struct ArgumentABI {
 
 /// The description of a type argument in a script.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct TypeArgumentABI {
     /// The name of the argument.
     name: String,
@@ -267,7 +270,8 @@ pub struct ScriptFunction {
     module: ModuleId,
     function: Identifier,
     ty_args: Vec<TypeTag>,
-    args: Vec<TransactionArgument>,
+    #[serde(with = "vec_bytes")]
+    args: Vec<Vec<u8>>,
 }
 
 impl ScriptFunction {
@@ -275,7 +279,7 @@ impl ScriptFunction {
         module: ModuleId,
         function: Identifier,
         ty_args: Vec<TypeTag>,
-        args: Vec<TransactionArgument>,
+        args: Vec<Vec<u8>>,
     ) -> Self {
         ScriptFunction {
             module,
@@ -297,7 +301,24 @@ impl ScriptFunction {
         &self.ty_args
     }
 
-    pub fn args(&self) -> &[TransactionArgument] {
+    pub fn args(&self) -> &[Vec<u8>] {
         &self.args
+    }
+    pub fn into_inner(self) -> (ModuleId, Identifier, Vec<TypeTag>, Vec<Vec<u8>>) {
+        (self.module, self.function, self.ty_args, self.args)
+    }
+}
+
+impl Sample for ScriptFunction {
+    fn sample() -> Self {
+        Self {
+            module: ModuleId::new(
+                core_code_address(),
+                Identifier::new("EmptyScripts").unwrap(),
+            ),
+            function: Identifier::new("empty_script").unwrap(),
+            ty_args: vec![],
+            args: vec![],
+        }
     }
 }

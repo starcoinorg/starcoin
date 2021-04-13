@@ -267,10 +267,15 @@ impl RequestResponsesBehaviour {
     ) {
         if let Some((protocol, _)) = self.protocols.get_mut(protocol_name) {
             if protocol.is_connected(target) || connect.should_connect() {
+                let len = request.len();
                 let request_id = protocol.send_request(target, request);
                 let prev_req_id = self.pending_requests.insert(
                     (protocol_name.to_string().into(), request_id).into(),
                     (Instant::now(), pending_response),
+                );
+                info!(target:"network-rpc-client",
+                    "{} {} {} {}",
+                    request_id, target, protocol_name, len,
                 );
                 debug_assert!(prev_req_id.is_none(), "Expect request id to be unique.");
             } else if pending_response
@@ -576,15 +581,18 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 },
                             ..
                         } => {
-                            let (started, delivered) = match self
+                            let (started, delivered, response_len) = match self
                                 .pending_requests
                                 .remove(&(protocol.clone(), request_id).into())
                             {
                                 Some((started, pending_response)) => {
+                                    let response_len =
+                                        response.as_ref().map(|resp| resp.len()).unwrap_or(0);
                                     let delivered = pending_response
                                         .send(response.map_err(|()| RequestFailure::Refused))
                                         .map_err(|_| RequestFailure::Obsolete);
-                                    (started, delivered)
+
+                                    (started, delivered, response_len)
                                 }
                                 None => {
                                     log::warn!(
@@ -596,6 +604,16 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                     continue;
                                 }
                             };
+
+                            info!(target:
+                                  "network-rpc-client",
+                                  "{} {} {} {} {}",
+                                  request_id,
+                                  protocol,
+                                  response_len,
+                                  delivered.is_ok(),
+                                  started.elapsed().as_millis(),
+                            );
 
                             let out = Event::RequestFinished {
                                 peer,

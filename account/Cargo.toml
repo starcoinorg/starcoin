@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-account"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 futures = "0.3.12"
 async-trait = "0.1"
 rand = "0.8.3"

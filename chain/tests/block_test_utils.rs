@@ -10,10 +10,10 @@ use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_executor::{block_execute, DEFAULT_EXPIRATION_TIME};
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
+use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::genesis_config::StdlibVersion;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
-use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
+use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader},
     block_metadata::BlockMetadata,
@@ -21,8 +21,6 @@ use starcoin_types::{
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
-use stdlib::transaction_scripts::compiled_transaction_script;
-use stdlib::transaction_scripts::StdlibScript;
 use storage::storage::StorageInstance;
 use storage::Storage;
 
@@ -85,12 +83,8 @@ fn gen_header(
     )
 }
 
-fn gen_script_payload(version: StdlibVersion) -> TransactionPayload {
-    TransactionPayload::Script(Script::new(
-        compiled_transaction_script(version, StdlibScript::EmptyScript).into_vec(),
-        vec![],
-        vec![],
-    ))
+fn gen_script_payload() -> TransactionPayload {
+    TransactionPayload::ScriptFunction(build_empty_script())
 }
 
 fn txn_transfer(
@@ -109,7 +103,7 @@ fn txn_transfer(
                     temp_index.unwrap(),
                     universe,
                     expired,
-                    Some(gen_script_payload(StdlibVersion::Latest)),
+                    Some(gen_script_payload()),
                 )
                 .into_inner(),
             )

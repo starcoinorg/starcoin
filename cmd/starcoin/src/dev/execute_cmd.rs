@@ -21,6 +21,7 @@ use starcoin_types::transaction::{
     ScriptFunction, TransactionArgument, TransactionPayload,
 };
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use stdlib::restore_stdlib_in_dir;
@@ -140,7 +141,7 @@ impl CommandAction for ExecuteCommand {
                     &deps,
                     sender,
                 )?;
-                let compile_unit = match compile_result {
+                let mut compile_units = match compile_result {
                     Ok(c) => c,
                     Err(e) => {
                         eprintln!(
@@ -152,7 +153,9 @@ impl CommandAction for ExecuteCommand {
                         bail!("compile error")
                     }
                 };
-
+                let compile_unit = compile_units.pop().ok_or_else(|| {
+                    anyhow::anyhow!("file should at least contain one compile unit")
+                })?;
                 let is_script = match compile_unit {
                     CompiledUnit::Module { .. } => false,
                     CompiledUnit::Script { .. } => true,
@@ -167,15 +170,16 @@ impl CommandAction for ExecuteCommand {
         let txn_payload = match (bytedata, script_function_id) {
             // package deploy
             (Some((bytecode, false)), function_id) => {
-                let module_init_script_function = function_id
-                    .map(|id| ScriptFunction::new(id.module, id.function, type_tags, args));
+                let module_init_script_function = function_id.map(|id| {
+                    ScriptFunction::new(id.module, id.function, type_tags, convert_txn_args(&args))
+                });
                 let package =
                     Package::new(vec![Module::new(bytecode)], module_init_script_function)?;
                 TransactionPayload::Package(package)
             }
             // script
             (Some((bytecode, true)), None) => {
-                let script = Script::new(bytecode, type_tags, args);
+                let script = Script::new(bytecode, type_tags, convert_txn_args(&args));
                 TransactionPayload::Script(script)
             }
             (Some((_bytecode, true)), Some(_)) => {
@@ -183,8 +187,12 @@ impl CommandAction for ExecuteCommand {
             }
             // script function
             (None, Some(function_id)) => {
-                let script_function =
-                    ScriptFunction::new(function_id.module, function_id.function, type_tags, args);
+                let script_function = ScriptFunction::new(
+                    function_id.module,
+                    function_id.function,
+                    type_tags,
+                    convert_txn_args(&args),
+                );
                 TransactionPayload::ScriptFunction(script_function)
             }
             (None, None) => {

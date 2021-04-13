@@ -127,6 +127,7 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum Connect {
     /// Connect by ipc file path, if Path is absent, use default ipc file.
     IPC(Option<PathBuf>),
@@ -156,7 +157,7 @@ impl FromStr for Connect {
 }
 
 static OPT_NET_HELP: &str = r#"Chain Network 
-    Builtin network: test,dev,halley,proxima,main
+    Builtin network: test,dev,halley,proxima,barnard,main
     Custom network format: chain_name:chain_id
     Such as:  
     my_chain:123 will init a new chain with id `123`. 

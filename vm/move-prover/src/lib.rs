@@ -3,13 +3,11 @@
 
 #![forbid(unsafe_code)]
 
-use crate::{
-    cli::{Options, INLINE_PRELUDE},
-    prelude_template_helpers::StratificationHelper,
-};
+use crate::cli::{Options, INLINE_PRELUDE};
 use abigen::Abigen;
 use anyhow::anyhow;
 use boogie_backend::{boogie_wrapper::BoogieWrapper, bytecode_translator::BoogieTranslator};
+use boogie_backend_v2::prelude_template_helpers::StratificationHelper;
 use bytecode::{
     data_invariant_instrumentation::DataInvariantInstrumentationProcessor,
     debug_instrumentation::DebugInstrumenter,
@@ -41,7 +39,6 @@ use std::{
 
 pub mod cli;
 mod pipelines;
-mod prelude_template_helpers;
 
 // =================================================================================================
 // Entry Point
@@ -111,9 +108,20 @@ pub fn run_move_prover<W: WriteColor>(
         return Err(anyhow!("exiting with analysis errors"));
     }
     let writer = CodeWriter::new(env.internal_loc());
-    add_prelude(&options, &writer)?;
-    let mut translator = BoogieTranslator::new(&env, &options.backend, &targets, &writer);
-    translator.translate();
+    if options.vnext {
+        boogie_backend_v2::add_prelude(&options.backend, &writer)?;
+        let mut translator = boogie_backend_v2::bytecode_translator::BoogieTranslator::new(
+            &env,
+            &options.backend,
+            &targets,
+            &writer,
+        );
+        translator.translate();
+    } else {
+        add_prelude(&options, &writer)?;
+        let mut translator = BoogieTranslator::new(&env, &options.backend, &targets, &writer);
+        translator.translate();
+    }
     if env.has_errors() {
         env.report_errors(error_writer);
         return Err(anyhow!("exiting with boogie generation errors"));
@@ -125,14 +133,31 @@ pub fn run_move_prover<W: WriteColor>(
     if !options.prover.generate_only {
         let boogie_file_id =
             writer.process_result(|result| env.add_source(&options.output_path, result, false));
-        let boogie = BoogieWrapper {
-            env: &env,
-            targets: &targets,
-            writer: &writer,
-            options: &options.backend,
-            boogie_file_id,
-        };
-        boogie.call_boogie_and_verify_output(options.backend.bench_repeat, &options.output_path)?;
+        if options.vnext {
+            let boogie = boogie_backend_v2::boogie_wrapper::BoogieWrapper {
+                env: &env,
+                targets: &targets,
+                writer: &writer,
+                options: &options.backend,
+                boogie_file_id,
+            };
+            boogie.call_boogie_and_verify_output(
+                options.backend.bench_repeat,
+                &options.output_path,
+            )?;
+        } else {
+            let boogie = BoogieWrapper {
+                env: &env,
+                targets: &targets,
+                writer: &writer,
+                options: &options.backend,
+                boogie_file_id,
+            };
+            boogie.call_boogie_and_verify_output(
+                options.backend.bench_repeat,
+                &options.output_path,
+            )?;
+        }
         let boogie_elapsed = now.elapsed();
         if options.backend.bench_repeat <= 1 {
             info!(
@@ -250,6 +275,7 @@ fn run_read_write_set(env: &GlobalEnv, options: &Options, now: Instant) {
 
 /// Adds the prelude to the generated output.
 fn add_prelude(options: &Options, writer: &CodeWriter) -> anyhow::Result<()> {
+    // TOODO: move this to boogie-backend
     emit!(writer, "\n// ** prelude from {}\n\n", &options.prelude_path);
     let content = if options.prelude_path == INLINE_PRELUDE {
         debug!("using inline prelude");
@@ -259,6 +285,7 @@ fn add_prelude(options: &Options, writer: &CodeWriter) -> anyhow::Result<()> {
         fs::read_to_string(&options.prelude_path)?
     };
     let mut handlebars = Handlebars::new();
+    handlebars.set_strict_mode(true);
     handlebars.register_helper(
         "stratified",
         Box::new(StratificationHelper::new(

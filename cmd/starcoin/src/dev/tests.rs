@@ -22,6 +22,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{
     account_config::{association_address, genesis_address, AccountResource},
     transaction::Package,
@@ -30,7 +31,7 @@ use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{thread::sleep, time::Duration};
-use test_helper::executor::compile_module_with_address;
+use test_helper::executor::compile_modules_with_address;
 use test_helper::run_node_by_config;
 
 pub fn _sign_txn_with_association_account_by_rpc_client(
@@ -168,7 +169,9 @@ fn test_upgrade_module() {
         }
         "#;
     let test_upgrade_module =
-        compile_module_with_address(genesis_address(), test_upgrade_module_source);
+        compile_modules_with_address(genesis_address(), test_upgrade_module_source)
+            .pop()
+            .unwrap();
     let test_upgrade_module_package = Package::new_with_module(test_upgrade_module).unwrap();
 
     let dao_config = config.net().genesis_config().dao_config;
@@ -233,7 +236,7 @@ fn test_upgrade_module() {
         ),
         Identifier::new("cast_vote").unwrap(),
         type_tags,
-        args,
+        convert_txn_args(&args),
     );
     let vote_raw_txn = RawUserTransaction::new_script_function(
         default_account.address,
@@ -402,7 +405,7 @@ fn test_only_new_module() {
         ),
         Identifier::new("update_module_upgrade_strategy").unwrap(),
         Vec::new(),
-        args,
+        convert_txn_args(&args),
     );
     let only_new_module_strategy_raw_txn = RawUserTransaction::new_script_function(
         default_account.address,
@@ -445,7 +448,9 @@ fn test_only_new_module() {
         }
         "#;
     let test_upgrade_module_1 =
-        compile_module_with_address(default_account.address, test_upgrade_module_source_1);
+        compile_modules_with_address(default_account.address, test_upgrade_module_source_1)
+            .pop()
+            .unwrap();
     let test_upgrade_module_package_1 = Package::new_with_module(test_upgrade_module_1).unwrap();
     let package_txn_1 = _sign_txn_with_association_account_by_rpc_client(
         &cli_state,
@@ -484,7 +489,9 @@ fn test_only_new_module() {
         }
         "#;
     let test_upgrade_module_2 =
-        compile_module_with_address(default_account.address, test_upgrade_module_source_2);
+        compile_modules_with_address(default_account.address, test_upgrade_module_source_2)
+            .pop()
+            .unwrap();
     let test_upgrade_module_package_2 = Package::new_with_module(test_upgrade_module_2).unwrap();
     let package_txn_2 = _sign_txn_with_association_account_by_rpc_client(
         &cli_state,

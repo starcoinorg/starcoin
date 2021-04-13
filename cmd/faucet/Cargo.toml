@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-faucet"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 tiny_http = "0.6"
 futures = "0.3.12"
 hex = { version = "0.4.3", default-features = false }

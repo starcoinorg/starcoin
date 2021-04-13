@@ -11,13 +11,13 @@ script {
     use 0x1::Signer;
     use 0x1::Token::Token;
 
-    fun create_offer(account: &signer) {
-        let token = Account::withdraw<STC>(account, 10000);
-        Offer::create(account, token, {{bob}}, 5);
+    fun create_offer(account: signer) {
+        let token = Account::withdraw<STC>(&account, 10000);
+        Offer::create(&account, token, {{bob}}, 5);
         // test Offer::exists_at
-        assert(Offer::exists_at<Token<STC>>(Signer::address_of(account)), 1001);
+        assert(Offer::exists_at<Token<STC>>(Signer::address_of(&account)), 1001);
         // test Offer::address_of
-        assert(Offer::address_of<Token<STC>>(Signer::address_of(account)) == {{bob}}, 1002);
+        assert(Offer::address_of<Token<STC>>(Signer::address_of(&account)) == {{bob}}, 1002);
     }
 }
 
@@ -36,9 +36,9 @@ script {
     use 0x1::Token::Token;
     use 0x1::STC::STC;
 
-    fun redeem_offer(account: &signer) {
-        let token = Offer::redeem<Token<STC>>(account, {{alice}});
-        Account::deposit_to_self(account, token);
+    fun redeem_offer(account: signer) {
+        let token = Offer::redeem<Token<STC>>(&account, {{alice}});
+        Account::deposit_to_self(&account, token);
     }
 }
 
@@ -57,9 +57,9 @@ script {
     use 0x1::Token::Token;
     use 0x1::STC::STC;
 
-    fun redeem_offer(account: &signer) {
-        let token = Offer::redeem<Token<STC>>(account, {{alice}});
-        Account::deposit_to_self(account, token);
+    fun redeem_offer(account: signer) {
+        let token = Offer::redeem<Token<STC>>(&account, {{alice}});
+        Account::deposit_to_self(&account, token);
     }
 }
 // check: "Keep(ABORTED { code: 25863"
@@ -72,9 +72,9 @@ script {
     use 0x1::Token::Token;
     use 0x1::STC::STC;
 
-    fun redeem_offer(account: &signer) {
-        let token = Offer::redeem<Token<STC>>(account, {{alice}});
-        Account::deposit_to_self(account, token);
+    fun redeem_offer(account: signer) {
+        let token = Offer::redeem<Token<STC>>(&account, {{alice}});
+        Account::deposit_to_self(&account, token);
     }
 }
 

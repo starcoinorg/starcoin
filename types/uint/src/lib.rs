@@ -137,6 +137,7 @@ impl From<HashValue> for U256 {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<HashValue> for U256 {
     fn into(self) -> HashValue {
         let mut bytes = [0u8; 32];

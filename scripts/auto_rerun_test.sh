@@ -14,7 +14,9 @@ export BOOGIE_EXE=$BOOGIE_PATH;
 export Z3_EXE=/usr/local/bin/z3;
 
 export RUSTFLAGS='-Ccodegen-units=1'
-RUST_LOG=OFF RUST_BACKTRACE=0 cargo test --no-fail-fast -j 10 -- --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
+#pleanse ensure tow test command's argument is same.
+cargo test --no-run -- --color never --format pretty
+RUST_LOG=OFF RUST_BACKTRACE=0 cargo test --no-fail-fast -j 1 -- --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
 grep -e '^test[[:space:]][^[:space:]]*[[:space:]]\.\.\.[[:space:]]FAILED' "$TEST_RESULT_FILE" >"$TEST_RESULT_FAILED_FILE" ||true
 
 status=0
@@ -22,7 +24,7 @@ IFS=' '
 while read -r -a testcase; do
   case_name=${testcase[1]}
   echo "rerun failed test $case_name"
-  RUST_LOG=DEBUG RUST_BACKTRACE=full cargo test "$case_name" -- --nocapture
+  RUST_LOG=DEBUG RUST_BACKTRACE=full cargo test --no-fail-fast -j 1 "$case_name" -- --nocapture
   case_status=$?
   if [ $case_status -ne 0 ]; then
     status=$case_status

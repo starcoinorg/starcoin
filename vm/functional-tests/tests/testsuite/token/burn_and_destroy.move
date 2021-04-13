@@ -28,14 +28,14 @@ script {
     use 0x1::Account;
     use 0x1::Token;
 
-    fun main(account: &signer) {
-        MyToken::init(account);
+    fun main(account: signer) {
+        MyToken::init(&account);
 
         let market_cap = Token::market_cap<MyToken>();
         assert(market_cap == 0, 8001);
         assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
-        Account::do_accept_token<MyToken>(account);
+        Account::do_accept_token<MyToken>(&account);
     }
 }
 
@@ -49,13 +49,13 @@ script {
 use 0x1::Account;
 use 0x1::Token;
 use {{alice}}::MyToken::{MyToken};
-fun main(account: &signer) {
+fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
     let old_market_cap = Token::market_cap<MyToken>();
-    let coin = Token::mint<MyToken>(account, 10000);
+    let coin = Token::mint<MyToken>(&account, 10000);
     assert(Token::value<MyToken>(&coin) == 10000, 8002);
     assert(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
-    Account::deposit_to_self<MyToken>(account, coin);
+    Account::deposit_to_self<MyToken>(&account, coin);
 }
 }
 
@@ -67,9 +67,9 @@ fun main(account: &signer) {
 script {
 use 0x1::Token;
 use {{alice}}::MyToken::{MyToken};
-fun test_withdraw_and_burn(account: &signer) {
-    let cap = Token::remove_burn_capability<MyToken>(account);
-    Token::add_burn_capability<MyToken>(account, cap);
+fun test_withdraw_and_burn(account: signer) {
+    let cap = Token::remove_burn_capability<MyToken>(&account);
+    Token::add_burn_capability<MyToken>(&account, cap);
 }
 }
 // check: EXECUTED
@@ -81,15 +81,15 @@ script {
 use 0x1::Token;
 use {{alice}}::MyToken::{MyToken};
 use 0x1::Account;
-fun test_withdraw_and_burn(account: &signer) {
+fun test_withdraw_and_burn(account: signer) {
     let market_cap = Token::market_cap<MyToken>();
     assert(market_cap == 10000, 8004);
-    let token = Account::withdraw<MyToken>(account, 10000);
+    let token = Account::withdraw<MyToken>(&account, 10000);
     let t1 = Token::withdraw<MyToken>(&mut token, 100);
     let t2 = Token::withdraw<MyToken>(&mut token, 10000); // amount is not enough
-    Token::burn<MyToken>(account, token);
-    Token::burn<MyToken>(account, t1);
-    Token::burn<MyToken>(account, t2);
+    Token::burn<MyToken>(&account, token);
+    Token::burn<MyToken>(&account, t1);
+    Token::burn<MyToken>(&account, t2);
 }
 }
 
@@ -100,13 +100,13 @@ fun test_withdraw_and_burn(account: &signer) {
 script {
 use 0x1::Token;
 use {{alice}}::MyToken::MyToken;
-fun test_mint_and_burn(account: &signer) {
+fun test_mint_and_burn(account: signer) {
     let old_market_cap = Token::market_cap<MyToken>();
     let amount = 100;
-    let coin = Token::mint<MyToken>(account, amount);
+    let coin = Token::mint<MyToken>(&account, amount);
     assert(Token::value<MyToken>(&coin) == amount, 8008);
     assert(Token::market_cap<MyToken>() == old_market_cap + amount, 8009);
-    Token::burn<MyToken>(account, coin);
+    Token::burn<MyToken>(&account, coin);
 }
 }
 
@@ -119,10 +119,10 @@ script {
 use 0x1::Token;
 use {{alice}}::MyToken::{MyToken};
 use 0x1::Account;
-fun test_withdraw_and_burn(account: &signer) {
-    let zero = Account::withdraw<MyToken>(account, 0);
+fun test_withdraw_and_burn(account: signer) {
+    let zero = Account::withdraw<MyToken>(&account, 0);
     Token::destroy_zero<MyToken>(zero);
-    let token = Account::withdraw<MyToken>(account, 10); //EDESTROY_TOKEN_NON_ZERO
+    let token = Account::withdraw<MyToken>(&account, 10); //EDESTROY_TOKEN_NON_ZERO
     Token::destroy_zero<MyToken>(token);
 }
 }
@@ -134,10 +134,10 @@ fun test_withdraw_and_burn(account: &signer) {
 script {
 use 0x1::Token;
 use {{alice}}::MyToken::{MyToken};
-fun test_withdraw_and_burn(account: &signer) {
-    let burn_cap = Token::remove_burn_capability<MyToken>(account);
+fun test_withdraw_and_burn(account: signer) {
+    let burn_cap = Token::remove_burn_capability<MyToken>(&account);
     Token::destroy_burn_capability<MyToken>(burn_cap);
-    let mint_cap = Token::remove_mint_capability<MyToken>(account);
+    let mint_cap = Token::remove_mint_capability<MyToken>(&account);
     Token::destroy_mint_capability<MyToken>(mint_cap);
 }
 }

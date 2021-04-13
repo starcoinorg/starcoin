@@ -26,9 +26,9 @@ script {
     use 0x1::Collection;
     use {{default}}::TestR;
 
-    fun test_single(account: &signer) {
+    fun test_single(account: signer) {
         let r = TestR::new(1);
-        Collection::put(account, r);
+        Collection::put(&account, r);
     }
 }
 
@@ -39,15 +39,15 @@ script {
     use 0x1::Signer;
     use {{default}}::TestR::{Self, TestR};
 
-    fun test_single(account: &signer) {
-        let addr = Signer::address_of(account);
+    fun test_single(account: signer) {
+        let addr = Signer::address_of(&account);
         assert(Collection::has<TestR>(addr), 1000);
         let c = Collection::borrow_collection<TestR>(addr);
-        let r = Collection::pop_back(account, &mut c);
+        let r = Collection::pop_back(&account, &mut c);
         assert(TestR::id_of(&r) == 1, 1001);
         // the has method will return true when collection is borrowed.
         assert(Collection::has<TestR>(addr), 1002);
-        Collection::append(account, &mut c, r);
+        Collection::append(&account, &mut c, r);
         Collection::return_collection(c);
     }
 }
@@ -59,13 +59,13 @@ script {
     use 0x1::Signer;
     use {{default}}::TestR::{Self,TestR};
 
-    fun test_multi(account: &signer) {
-        let addr = Signer::address_of(account);
+    fun test_multi(account: signer) {
+        let addr = Signer::address_of(&account);
         let c = Collection::borrow_collection<TestR>(addr);
         let r2 = TestR::new(2);
-        Collection::append(account, &mut c, r2);
+        Collection::append(&account, &mut c, r2);
         let r3 = TestR::new(3);
-        Collection::append(account, &mut c, r3);
+        Collection::append(&account, &mut c, r3);
         Collection::return_collection(c);
     }
 }
@@ -77,8 +77,8 @@ script {
     use 0x1::Signer;
     use {{default}}::TestR::{Self, TestR};
 
-    fun test_borrow_by_owner(account: &signer) {
-        let addr = Signer::address_of(account);
+    fun test_borrow_by_owner(account: signer) {
+        let addr = Signer::address_of(&account);
         let c = Collection::borrow_collection<TestR>(addr);
         let c_len = Collection::length<TestR>(&c);
         assert(c_len == 3, 1004);
@@ -100,7 +100,7 @@ script {
     use 0x1::Collection;
     use {{default}}::TestR::{Self, TestR};
 
-    fun test_borrow_by_other(_account: &signer) {
+    fun test_borrow_by_other(_account: signer) {
         let c = Collection::borrow_collection<TestR>({{alice}});
         let r = Collection::borrow(&c, 0);
         let id = TestR::id_of(r);
@@ -115,9 +115,9 @@ script {
     use 0x1::Collection;
     use {{default}}::TestR::{Self, TestR};
 
-    fun test_remove_by_other(account: &signer) {
+    fun test_remove_by_other(account: signer) {
         let c = Collection::borrow_collection<TestR>({{alice}});
-        let r = Collection::remove<TestR>(account, &mut c, 0);
+        let r = Collection::remove<TestR>(&account, &mut c, 0);
         TestR::drop(r);
         Collection::return_collection(c);
     }
@@ -133,15 +133,15 @@ script {
     use 0x1::Signer;
     use {{default}}::TestR::{Self, TestR};
 
-    fun test_remove_by_owner(account: &signer) {
-        let addr = Signer::address_of(account);
+    fun test_remove_by_owner(account: signer) {
+        let addr = Signer::address_of(&account);
         let c = Collection::borrow_collection<TestR>(addr);
 
         let c_len = Collection::length<TestR>(&c);
         let i = 0;
         //remove all items.
         while (i < c_len) {
-            let r = Collection::remove(account, &mut c, 0);
+            let r = Collection::remove(&account, &mut c, 0);
             TestR::drop(r);
             i = i + 1;
         };
@@ -157,8 +157,8 @@ script {
     use 0x1::Signer;
     use {{default}}::TestR::{TestR};
 
-    fun test_remove_by_owner(account: &signer) {
-        let addr = Signer::address_of(account);
+    fun test_remove_by_owner(account: signer) {
+        let addr = Signer::address_of(&account);
         let c = Collection::borrow_collection<TestR>(addr);
         Collection::return_collection(c);
     }

@@ -50,6 +50,7 @@ impl<'a> IntoIterator for &'a StateSet {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Vec<(Vec<u8>, Vec<u8>)>> for StateSet {
     fn into(self) -> Vec<(Vec<u8>, Vec<u8>)> {
         self.0

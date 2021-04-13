@@ -3,8 +3,8 @@
 script {
 use 0x1::STC;
 
-fun main(signer: &signer) {
-    STC::initialize(signer, 500, 5000, 10, 600);
+fun main(signer: signer) {
+    STC::initialize(&signer, 500, 5000, 10, 600);
 }
 }
 
@@ -17,8 +17,8 @@ fun main(signer: &signer) {
 script {
 use 0x1::STC;
 
-fun main(signer: &signer) {
-    STC::initialize(signer, 500, 5000, 10, 600);
+fun main(signer: signer) {
+    STC::initialize(&signer, 500, 5000, 10, 600);
 }
 }
 

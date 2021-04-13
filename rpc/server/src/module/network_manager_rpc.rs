@@ -11,6 +11,7 @@ use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::types::StrView;
 use starcoin_rpc_api::FutureResult;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
+use std::borrow::Cow;
 use std::str::FromStr;
 
 pub struct NetworkManagerRpcImpl {
@@ -60,7 +61,7 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
     fn call_peer(
         &self,
         peer_id: String,
-        rpc_method: String,
+        rpc_method: Cow<'static, str>,
         message: StrView<Vec<u8>>,
     ) -> FutureResult<StrView<Vec<u8>>> {
         let service = self.service.clone();

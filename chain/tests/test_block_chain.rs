@@ -205,6 +205,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
 }
 
 #[stest::test(timeout = 120)]
+#[allow(clippy::vec_init_then_push)]
 fn test_uncle() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner();
@@ -224,6 +225,7 @@ fn test_uncle() {
 }
 
 #[stest::test(timeout = 120)]
+#[allow(clippy::vec_init_then_push)]
 fn test_uncle_exist() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -249,6 +251,7 @@ fn test_uncle_exist() {
 }
 
 #[stest::test(timeout = 120)]
+#[allow(clippy::vec_init_then_push)]
 fn test_uncle_son() {
     let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -266,6 +269,7 @@ fn test_uncle_son() {
 }
 
 #[stest::test(timeout = 120)]
+#[allow(clippy::vec_init_then_push)]
 fn test_random_uncle() {
     let (mut mock_chain, _, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -279,6 +283,7 @@ fn test_random_uncle() {
 }
 
 #[stest::test(timeout = 480)]
+#[allow(clippy::vec_init_then_push)]
 fn test_switch_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -317,6 +322,7 @@ fn test_switch_epoch() {
 }
 
 #[stest::test(timeout = 480)]
+#[allow(clippy::vec_init_then_push)]
 fn test_uncle_in_diff_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();

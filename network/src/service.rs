@@ -8,11 +8,11 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::FutureExt;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
-    ReportReputation, TransactionsMessage,
+    PeerReputations, ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{NetworkActor, PeerMessageHandler};
@@ -53,14 +53,14 @@ impl NetworkActorService {
     where
         H: PeerMessageHandler + 'static,
     {
-        let worker = build_network_worker(
+        let (self_info, worker) = build_network_worker(
             config.as_ref(),
-            chain_info.clone(),
+            chain_info,
             NotificationMessage::protocols(),
             rpc,
         )?;
         let service = worker.service().clone();
-        let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
+        //let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
         let inner = Inner::new(config, self_info, service, peer_message_handler)?;
         Ok(Self {
             worker: Some(worker),
@@ -108,7 +108,7 @@ impl ActorService for NetworkActorService {
 
 impl EventHandler<Self, SyncStatusChangeEvent> for NetworkActorService {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
-        self.inner.update_sync_status(msg.0);
+        self.inner.update_chain_status(msg.0);
     }
 }
 
@@ -120,15 +120,20 @@ impl EventHandler<Self, Event> for NetworkActorService {
             }
             Event::NotificationStreamOpened {
                 remote,
-                info,
                 protocol,
-                ..
+                info,
+                notif_protocols,
+                rpc_protocols,
             } => {
                 //TODO Refactor PeerEvent for handle protocol and substream.
                 // Currently, every notification stream open will trigger a PeerEvent, so it will trigger repeat event.
-                debug!("Connected peer {:?}, protocol: {}", remote, protocol);
+                debug!(
+                    "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
+                    remote, protocol, notif_protocols, rpc_protocols
+                );
                 let peer_event = PeerEvent::Open(remote.clone().into(), info.clone());
-                self.inner.on_peer_connected(remote.into(), *info);
+                self.inner
+                    .on_peer_connected(remote.into(), *info, notif_protocols, rpc_protocols);
                 ctx.broadcast(peer_event);
             }
             Event::NotificationStreamClosed { remote, .. } => {
@@ -216,6 +221,29 @@ impl ServiceHandler<Self, GetPeerSet> for NetworkActorService {
     }
 }
 
+impl ServiceHandler<Self, PeerReputations> for NetworkActorService {
+    fn handle(
+        &mut self,
+        msg: PeerReputations,
+        ctx: &mut ServiceContext<NetworkActorService>,
+    ) -> <PeerReputations as ServiceRequest>::Response {
+        let rx = self.inner.network_service.reputations(msg.threshold);
+        let fut = async move {
+            match rx.await {
+                Ok(t) => t
+                    .into_iter()
+                    .map(|(peer_id, score)| (PeerId::new(peer_id), score))
+                    .collect(),
+                Err(e) => {
+                    debug!("sth wrong {}", e);
+                    Vec::new()
+                }
+            }
+        };
+        ctx.exec(fut)
+    }
+}
+
 impl ServiceHandler<Self, GetPeerById> for NetworkActorService {
     fn handle(
         &mut self,
@@ -271,7 +299,6 @@ pub(crate) struct Inner {
     self_peer: Peer,
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
-    sync_status: Option<SyncStatus>,
     metrics: Option<NetworkMetrics>,
     score_handler: Arc<dyn Score<BlockBroadcastEntry> + 'static>,
 }
@@ -294,26 +321,17 @@ impl Inner {
             self_peer: Peer::new(self_info),
             peers: HashMap::new(),
             peer_message_handler: Arc::new(peer_message_handler),
-            sync_status: None,
             metrics,
             score_handler: Arc::new(LinearScore::new(10)),
         })
     }
 
-    pub(crate) fn is_synced(&self) -> bool {
-        match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
-            None => false,
-        }
-    }
-
-    pub(crate) fn update_sync_status(&mut self, sync_status: SyncStatus) {
+    pub(crate) fn update_chain_status(&mut self, sync_status: SyncStatus) {
         let chain_status = sync_status.chain_status().clone();
         self.self_peer
             .peer_info
             .update_chain_status(chain_status.clone());
         self.network_service.update_chain_status(chain_status);
-        self.sync_status = Some(sync_status);
     }
 
     pub(crate) fn handle_network_message(
@@ -383,12 +401,8 @@ impl Inner {
             };
 
             if let Some(notification) = notification {
-                if self.is_synced() {
-                    let peer_message = PeerMessage::new(peer_id.clone(), notification);
-                    self.peer_message_handler.handle_message(peer_message);
-                } else {
-                    debug!("Ignore notification message from peer: {}, protocol: {} , because node is not synchronized.", peer_id, protocol);
-                }
+                let peer_message = PeerMessage::new(peer_id.clone(), notification);
+                self.peer_message_handler.handle_message(peer_message);
                 BROADCAST_SCORE_METRICS.report_new(
                     peer_id,
                     self.score_handler
@@ -399,7 +413,7 @@ impl Inner {
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
-                BROADCAST_SCORE_METRICS.report_old(
+                BROADCAST_SCORE_METRICS.report_expire(
                     peer_id,
                     self.score_handler
                         .execute(BlockBroadcastEntry::new(false, HandleState::Succ)),
@@ -414,14 +428,27 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn on_peer_connected(&mut self, peer_id: PeerId, chain_info: ChainInfo) {
+    pub(crate) fn on_peer_connected(
+        &mut self,
+        peer_id: PeerId,
+        chain_info: ChainInfo,
+        notif_protocols: Vec<Cow<'static, str>>,
+        rpc_protocols: Vec<Cow<'static, str>>,
+    ) {
         self.peers
             .entry(peer_id.clone())
             .and_modify(|peer| {
                 peer.peer_info
                     .update_chain_status(chain_info.status().clone());
             })
-            .or_insert_with(|| Peer::new(PeerInfo::new(peer_id, chain_info)));
+            .or_insert_with(|| {
+                Peer::new(PeerInfo::new(
+                    peer_id,
+                    chain_info,
+                    notif_protocols,
+                    rpc_protocols,
+                ))
+            });
     }
 
     pub(crate) fn on_peer_disconnected(&mut self, peer_id: PeerId) {
@@ -464,32 +491,58 @@ impl Inner {
                     "update self network chain status, total_difficulty is {}, peer_info is {:?}",
                     total_difficulty, self.self_peer.peer_info
                 );
+                //Update chain status in two case:
+                //1. New Block broadcast
+                //2. Sync status change.
+                // may be update by repeat message, but can not find a more good way.
+                self.network_service.update_chain_status(ChainStatus::new(
+                    msg.compact_block.header.clone(),
+                    msg.block_info.clone(),
+                ));
+
                 self.self_peer.known_blocks.put(id, ());
                 let mut send_peer_count: usize = 0;
                 let (protocol_name, message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
+
+                let filtered_peer_ids = self
+                    .peers
+                    .values()
+                    .filter(|peer| {
+                        if peer.known_blocks.contains(&id) {
+                            trace!(
+                                "peer({:?}) know this block({:?}), so do not broadcast. ",
+                                peer.peer_info.peer_id(),
+                                id
+                            );
+                            false
+                        } else {
+                            true
+                        }
+                    })
+                    .map(|peer| peer.peer_info.peer_id())
+                    .collect::<Vec<_>>();
+                let peers_len = self.peers.len() as u32;
+
                 let selected_peers = select_random_peers(
-                    self.config.network.min_peers_to_propagate()
-                        ..=self.config.network.max_peers_to_propagate(),
-                    &self.peers,
+                    self.config
+                        .network
+                        .min_peers_to_propagate()
+                        .max(peers_len / 2)
+                        ..=self.config.network.max_peers_to_propagate().max(peers_len), // use max(max_peers_to_propagate,peers_len) to ensure range [min,max] , max > min.
+                    filtered_peer_ids.iter(),
                 );
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
-                    if peer.known_blocks.contains(&id)
-                        || peer.peer_info.total_difficulty() >= total_difficulty
-                    {
-                        debug!("peer({:?})'s total_difficulty is >= block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
-                    } else {
-                        send_peer_count = send_peer_count.saturating_add(1);
-                        peer.known_blocks.put(id, ());
+                    send_peer_count = send_peer_count.saturating_add(1);
+                    peer.known_blocks.put(id, ());
 
-                        self.network_service.write_notification(
-                            peer_id.clone().into(),
-                            protocol_name.clone(),
-                            message.clone(),
-                        )
-                    }
+                    self.network_service.write_notification(
+                        peer_id.into(),
+                        protocol_name.clone(),
+                        message.clone(),
+                    )
                 }
 
                 debug!(
@@ -509,7 +562,7 @@ impl Inner {
                 let selected_peers = select_random_peers(
                     self.config.network.min_peers_to_propagate()
                         ..=self.config.network.max_peers_to_propagate(),
-                    &self.peers,
+                    self.peers.keys(),
                 );
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
@@ -566,10 +619,10 @@ impl Inner {
     }
 }
 
-fn select_random_peers(
-    peer_num_range: RangeInclusive<u32>,
-    peers: &HashMap<PeerId, Peer>,
-) -> Vec<PeerId> {
+fn select_random_peers<'a, P>(peer_num_range: RangeInclusive<u32>, peers: P) -> Vec<PeerId>
+where
+    P: ExactSizeIterator<Item = &'a PeerId>,
+{
     let (min_peers, max_peers) = peer_num_range.into_inner();
     let peers_len = peers.len();
     // take sqrt(x) peers
@@ -577,7 +630,7 @@ fn select_random_peers(
     count = count.min(max_peers).max(min_peers);
 
     let mut random = rand::thread_rng();
-    let mut peer_ids: Vec<_> = peers.keys().cloned().collect();
+    let mut peer_ids: Vec<_> = peers.cloned().collect();
     peer_ids.shuffle(&mut random);
     peer_ids.truncate(count as usize);
     peer_ids
@@ -585,29 +638,37 @@ fn select_random_peers(
 
 #[cfg(test)]
 mod test {
-    use crate::service::{select_random_peers, Peer};
-    use network_api::{PeerId, PeerInfo};
-    use starcoin_types::startup_info::ChainInfo;
-    use std::collections::HashMap;
+    use crate::service::select_random_peers;
+    use network_api::PeerId;
 
-    fn create_peers(n: u32) -> HashMap<PeerId, Peer> {
-        (0..n)
-            .map(|_| {
-                let peer_id = PeerId::random();
-                let peer = Peer::new(PeerInfo::new(peer_id.clone(), ChainInfo::random()));
-                (peer_id, peer)
-            })
-            .collect()
+    fn create_peers(n: u32) -> Vec<PeerId> {
+        (0..n).map(|_| PeerId::random()).collect()
     }
 
     #[test]
     fn test_select_peer() {
-        assert_eq!(select_random_peers(1..=3, &create_peers(2)).len(), 1);
-        assert_eq!(select_random_peers(2..=5, &create_peers(9)).len(), 3);
-        assert_eq!(select_random_peers(8..=128, &create_peers(3)).len(), 3);
-        assert_eq!(select_random_peers(8..=128, &create_peers(4)).len(), 4);
-        assert_eq!(select_random_peers(8..=128, &create_peers(10)).len(), 8);
-        assert_eq!(select_random_peers(8..=128, &create_peers(25)).len(), 8);
-        assert_eq!(select_random_peers(8..=128, &create_peers(64)).len(), 8);
+        assert_eq!(select_random_peers(1..=3, create_peers(2).iter()).len(), 1);
+        assert_eq!(select_random_peers(2..=5, create_peers(9).iter()).len(), 3);
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(3).iter()).len(),
+            3
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(4).iter()).len(),
+            4
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(10).iter()).len(),
+            8
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(25).iter()).len(),
+            8
+        );
+        assert_eq!(
+            select_random_peers(8..=128, create_peers(64).iter()).len(),
+            8
+        );
+        assert_eq!(select_random_peers(3..=3, create_peers(3).iter()).len(), 3);
     }
 }

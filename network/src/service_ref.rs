@@ -5,6 +5,7 @@ use crate::service::NetworkActorService;
 use crate::worker::RPC_PROTOCOL_PREFIX;
 use crate::PeerMessage;
 use anyhow::{format_err, Result};
+use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::messages::NotificationMessage;
@@ -15,6 +16,7 @@ use network_rpc_core::RawRpcClient;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
+use std::borrow::Cow;
 use std::sync::Arc;
 
 //TODO Service registry should support custom service ref.
@@ -51,13 +53,20 @@ impl PeerProvider for NetworkServiceRef {
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
         self.service_ref.report_peer(peer_id, cost_benefit)
     }
+
+    fn reputations(
+        &self,
+        reputation_threshold: i32,
+    ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
+        self.service_ref.reputations(reputation_threshold)
+    }
 }
 
 impl RawRpcClient for NetworkServiceRef {
     fn send_raw_request(
         &self,
         peer_id: PeerId,
-        rpc_path: String,
+        rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>> {
         let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);

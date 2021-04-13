@@ -14,6 +14,7 @@ use structopt::StructOpt;
 /// Get tps for an epoch.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tps")]
+#[allow(clippy::upper_case_acronyms)]
 pub struct TPSOpt {
     #[structopt(
         name = "number",
@@ -24,6 +25,7 @@ pub struct TPSOpt {
     number: Option<BlockNumber>,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct TPSCommand;
 
 impl CommandAction for TPSCommand {

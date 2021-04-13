@@ -14,11 +14,11 @@ script {
     use 0x1::STC::STC;
     use 0x1::Signer;
 
-    fun transfer_some_token_to_alice_and_bob(signer: &signer) {
-        let balance = Account::balance<STC>(Signer::address_of(signer));
-        Account::pay_from<STC>(signer, {{alice}}, balance / 4);
-        Account::pay_from<STC>(signer, {{bob}}, balance / 4);
-        Account::pay_from<STC>(signer, {{carol}}, balance / 4);
+    fun transfer_some_token_to_alice_and_bob(signer: signer) {
+        let balance = Account::balance<STC>(Signer::address_of(&signer));
+        Account::pay_from<STC>(&signer, {{alice}}, balance / 4);
+        Account::pay_from<STC>(&signer, {{bob}}, balance / 4);
+        Account::pay_from<STC>(&signer, {{carol}}, balance / 4);
     }
 }
 // check: EXECUTED
@@ -28,7 +28,7 @@ script {
 script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
-    fun propose(signer: &signer) {
+    fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 101, 0, 0);
     }
 }
@@ -39,7 +39,7 @@ script {
 script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
-    fun propose(signer: &signer) {
+    fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
@@ -51,7 +51,7 @@ script {
 script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
-    fun propose(signer: &signer) {
+    fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
@@ -62,7 +62,7 @@ script {
 script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
-    fun propose(signer: &signer) {
+    fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
@@ -81,12 +81,12 @@ script {
     use 0x1::STC::STC;
     use 0x1::Dao;
     use 0x1::Account;
-    fun vote(signer: &signer) {
+    fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{bob}}, 1);
         assert(state == 2, (state as u64));
         {
-            let balance = Account::withdraw<STC>(signer, 10); // less than quorum_votes
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{bob}}, 1, balance, true);
+            let balance = Account::withdraw<STC>(&signer, 10); // less than quorum_votes
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{bob}}, 1, balance, true);
         }
     }
 }
@@ -101,13 +101,13 @@ script {
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::Dao;
-    fun vote(signer: &signer) {
+    fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 2, (state as u64));
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance / 2);
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, balance, true);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance / 2);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, balance, true);
         }
     }
 }
@@ -123,18 +123,18 @@ script {
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::Dao;
-    fun vote(signer: &signer) {
+    fun vote(signer: signer) {
         // flip
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, false);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, false);
 
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance / 2);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance / 2);
             // ERR_VOTE_STATE_MISMATCH
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, balance, true);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, balance, true);
         };
         // flip back
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, true);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, true);
     }
 }
 // check: "Keep(ABORTED { code: 360449"
@@ -148,11 +148,11 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun cast(signer: &signer) {
+    fun cast(signer: signer) {
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance / 2);
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{bob}}, 1, balance, true);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance / 2);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{bob}}, 1, balance, true);
         }
     }
 }
@@ -167,11 +167,11 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun cast(signer: &signer) {
+    fun cast(signer: signer) {
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance / 2);
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 1, balance, true);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance / 2);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 1, balance, true);
         }
     }
 }
@@ -186,12 +186,12 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun check_state_and_revoke(signer: &signer) {
+    fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 2, (state as u64));
-        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
-        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{bob}}, 1, pow / 2); // proposer should be alice
-        Account::deposit_to_self(signer, token);
+        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(&signer), {{alice}}, 0);
+        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{bob}}, 1, pow / 2); // proposer should be alice
+        Account::deposit_to_self(&signer, token);
     }
 }
 // check: "Keep(ABORTED { code: 359687"
@@ -205,12 +205,12 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun check_state_and_revoke(signer: &signer) {
+    fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 2, (state as u64));
-        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
-        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 1, pow / 2); // proposal id should be 0
-        Account::deposit_to_self(signer, token);
+        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(&signer), {{alice}}, 0);
+        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 1, pow / 2); // proposal id should be 0
+        Account::deposit_to_self(&signer, token);
     }
 }
 // check: "Keep(ABORTED { code: 359431"
@@ -222,9 +222,9 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun flip_vote(signer: &signer) {
+    fun flip_vote(signer: signer) {
         // flip
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{bob}}, 1, false);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{bob}}, 1, false);
     }
 }
 // check: "Keep(ABORTED { code: 359687"
@@ -236,9 +236,9 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun flip_vote(signer: &signer) {
+    fun flip_vote(signer: signer) {
         // flip
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, true);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, true);
     }
 }
 // check: EXECUTED
@@ -250,9 +250,9 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun flip_vote(signer: &signer) {
+    fun flip_vote(signer: signer) {
         // flip
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 1, false);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 1, false);
     }
 }
 // check: "Keep(ABORTED { code: 359431"
@@ -265,9 +265,9 @@ script {
     use 0x1::STC::STC;
     use 0x1::Dao;
     use 0x1::Account;
-    fun unstake_votes(signer: &signer) {
-        let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{bob}}, 1);
-        Account::deposit_to_self(signer, coin);
+    fun unstake_votes(signer: signer) {
+        let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{bob}}, 1);
+        Account::deposit_to_self(&signer, coin);
     }
 }
 // check: "Keep(ABORTED { code: 359169"
@@ -284,7 +284,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun check_state_and_revoke(_signer: &signer) {
+    fun check_state_and_revoke(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 4, (state as u64));
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{bob}}, 1);
@@ -301,9 +301,9 @@ script {
     use 0x1::STC::STC;
     use 0x1::Dao;
     use 0x1::Account;
-    fun unstake_votes(signer: &signer) {
-        let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{bob}}, 1);
-        Account::deposit_to_self(signer, coin);
+    fun unstake_votes(signer: signer) {
+        let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{bob}}, 1);
+        Account::deposit_to_self(&signer, coin);
     }
 }
 // check: "Keep(ABORTED { code: 359682"
@@ -317,13 +317,13 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun check_state_and_revoke(signer: &signer) {
+    fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 4, (state as u64));
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance);
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, balance, true);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, balance, true);
         }
     }
 }
@@ -336,10 +336,10 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun check_state_and_revoke(signer: &signer) {
+    fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 4, (state as u64));
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, false);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, false);
     }
 }
 // check: "Keep(ABORTED { code: 359169"
@@ -353,12 +353,12 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun check_state_and_revoke(signer: &signer) {
+    fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 4, (state as u64));
-        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
-        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, pow / 2);
-        Account::deposit_to_self(signer, token);
+        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(&signer), {{alice}}, 0);
+        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 0, pow / 2);
+        Account::deposit_to_self(&signer, token);
     }
 }
 // check: "Keep(ABORTED { code: 359169"
@@ -371,7 +371,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun queue_proposal(_signer: &signer) {
+    fun queue_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 4, (state as u64));
 
@@ -396,7 +396,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun execute_proposal_action(_signer: &signer) {
+    fun execute_proposal_action(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 6, (state as u64));
         ModifyDaoConfigProposal::execute<STC>({{alice}}, 0);
@@ -420,7 +420,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun cleanup_proposal(_signer: &signer) {
+    fun cleanup_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 7, (state as u64));
         Dao::destroy_terminated_proposal<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
@@ -435,7 +435,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun cleanup_proposal(_signer: &signer) {
+    fun cleanup_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{bob}}, 1);
         assert(state == 3, (state as u64));
         //ERR_PROPOSAL_STATE_INVALID
@@ -451,7 +451,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun cleanup_proposal(_signer: &signer) {
+    fun cleanup_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{bob}}, 1);
         assert(state == 3, (state as u64));
         Dao::destroy_terminated_proposal<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{bob}}, 1);
@@ -465,7 +465,7 @@ script {
 script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
-    fun propose(signer: &signer) {
+    fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
@@ -485,13 +485,13 @@ script {
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::Dao;
-    fun vote(signer: &signer) {
+    fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 2);
         assert(state == 2, (state as u64));
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance / 2);
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 2, balance, true);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance / 2);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 2, balance, true);
         }
     }
 }
@@ -506,12 +506,12 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun check_state_and_revoke(signer: &signer) {
+    fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 2);
         assert(state == 2, (state as u64));
-        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
-        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 2, pow / 2);
-        Account::deposit_to_self(signer, token);
+        let (_, pow) = Dao::vote_of<STC>(Signer::address_of(&signer), {{alice}}, 0);
+        let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 2, pow / 2);
+        Account::deposit_to_self(&signer, token);
     }
 }
 // check: "Keep(ABORTED { code: 360967"
@@ -524,9 +524,9 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     use 0x1::Dao;
-    fun flip_vote(signer: &signer) {
+    fun flip_vote(signer: signer) {
         // flip
-        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 2, false);
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 2, false);
     }
 }
 // check: "Keep(ABORTED { code: 360967"
@@ -540,13 +540,13 @@ script {
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::Dao;
-    fun vote(signer: &signer) {
+    fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 2);
         assert(state == 2, (state as u64));
         {
-            let balance = Account::balance<STC>(Signer::address_of(signer));
-            let balance = Account::withdraw<STC>(signer, balance / 2);
-            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 2, balance, false);
+            let balance = Account::balance<STC>(Signer::address_of(&signer));
+            let balance = Account::withdraw<STC>(&signer, balance / 2);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 2, balance, false);
         }
     }
 }
@@ -566,12 +566,12 @@ script {
     use 0x1::STC::STC;
     use 0x1::Dao;
     use 0x1::Account;
-    fun unstake_votes(signer: &signer) {
+    fun unstake_votes(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 2);
         assert(state == 3, (state as u64));
         // bob should unstake proposal [{{alice}}, 0]
-        let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 2);
-        Account::deposit_to_self(signer, coin);
+        let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, {{alice}}, 2);
+        Account::deposit_to_self(&signer, coin);
     }
 }
 

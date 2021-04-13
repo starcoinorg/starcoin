@@ -62,6 +62,7 @@ impl ServiceRequest for ChainRequest {
     type Response = Result<ChainResponse>;
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub enum ChainResponse {
     BlockTemplate(Box<BlockTemplate>),
     Block(Box<Block>),

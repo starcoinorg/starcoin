@@ -1,15 +1,15 @@
 [package]
 name = "starcoin-functional-tests"
-version = "1.0.0-alpha.1"
+version = "1.0.0-beta.4"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 tempfile = "3.1.0"
-datatest-stable = {git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+datatest-stable = {git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
 stdlib = { package="stdlib", path = "../stdlib"}
 once_cell = "1.7.2"
 regex = { version = "1.4.3", default-features = false, features = ["std", "perf"] }
@@ -30,17 +30,13 @@ executor = { package="starcoin-executor", path = "../../executor"}
 starcoin-genesis = { path = "../../genesis" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-account-api = { path = "../../account/api" }
-move-lang = { git = "https://github.com/starcoinorg/diem", rev="e3967fa3dd494bdf929ac99160f89751cac4c58b" }
+move-lang = { git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
 
 [dev-dependencies]
 starcoin-vm-types = { path = "../types"}
 
 [[test]]
 name = "testsuite"
-harness = false
-
-[[test]]
-name = "stdlib_sanity_check"
 harness = false
 
 [features]

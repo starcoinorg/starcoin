@@ -107,7 +107,7 @@ pub fn compile_sorce_string(
     source: &str,
     deps: &[String],
     sender: AccountAddress,
-) -> anyhow::Result<(FilesSourceText, CompiledUnit)> {
+) -> anyhow::Result<(FilesSourceText, Vec<CompiledUnit>)> {
     let (source_text, compiled_result) = compile_source_string_no_report(source, deps, sender)?;
     match compiled_result {
         Ok(c) => Ok((source_text, c)),
@@ -120,7 +120,7 @@ pub fn compile_source_string_no_report(
     source: &str,
     deps: &[String],
     sender: AccountAddress,
-) -> Result<(FilesSourceText, Result<CompiledUnit, Errors>)> {
+) -> Result<(FilesSourceText, Result<Vec<CompiledUnit>, Errors>)> {
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
     let sender = Address::new(sender.into());
@@ -131,8 +131,8 @@ pub fn compile_source_string_no_report(
         .expect("temp file path must is str.")
         .to_string()];
     move_compile(&targets, deps, Some(sender), None, true).map(|(f, u)| {
-        let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
-        (f, compiled_result)
+        // let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
+        (f, u)
     })
 }
 
@@ -292,10 +292,14 @@ mod tests {
             .unwrap()
             .1
             .unwrap()
+            .pop()
+            .unwrap()
             .serialize();
         let new_code = compile_source_string_no_report(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .1
+            .unwrap()
+            .pop()
             .unwrap()
             .serialize();
         let compatible = check_module_compat(pre_code.as_slice(), new_code.as_slice()).unwrap();

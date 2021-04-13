@@ -25,9 +25,8 @@ impl CommandAction for EpochUncleSummaryByNumberCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        Ok(ctx
-            .state()
+        ctx.state()
             .client()
-            .epoch_uncle_summary_by_number(ctx.opt().number)?)
+            .epoch_uncle_summary_by_number(ctx.opt().number)
     }
 }

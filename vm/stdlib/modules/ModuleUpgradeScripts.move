@@ -14,14 +14,14 @@ module ModuleUpgradeScripts {
     }
 
     public(script) fun propose_module_upgrade<Token: copy + drop + store>(
-        signer: &signer,
+        signer: signer,
         module_address: address,
         package_hash: vector<u8>,
         version: u64,
         exec_delay: u64,
     ) {
         UpgradeModuleDaoProposal::propose_module_upgrade<Token>(
-            signer,
+            &signer,
             module_address,
             package_hash,
             version,
@@ -31,19 +31,19 @@ module ModuleUpgradeScripts {
 
 
     public(script) fun update_module_upgrade_strategy(
-        signer: &signer,
+        signer: signer,
         strategy: u8,
     ) {
         // 1. check version
         if (strategy == PackageTxnManager::get_strategy_two_phase()) {
-            if (!Config::config_exist_by_address<Version::Version>(Signer::address_of(signer))) {
-                Config::publish_new_config<Version::Version>(signer, Version::new_version(1));
+            if (!Config::config_exist_by_address<Version::Version>(Signer::address_of(&signer))) {
+                Config::publish_new_config<Version::Version>(&signer, Version::new_version(1));
             }
         };
 
         // 2. update strategy
         PackageTxnManager::update_module_upgrade_strategy(
-            signer,
+            &signer,
             strategy,
             Option::none<u64>(),
         );
@@ -51,7 +51,7 @@ module ModuleUpgradeScripts {
 
 
     public(script) fun submit_module_upgrade_plan<Token: copy + drop + store>(
-        _signer: &signer,
+        _signer: signer,
         proposer_address: address,
         proposal_id: u64,
     ) {
@@ -59,9 +59,9 @@ module ModuleUpgradeScripts {
     }
 
     public(script) fun cancel_upgrade_plan(
-        signer: &signer,
+        signer: signer,
     ) {
-        PackageTxnManager::cancel_upgrade_plan(signer);
+        PackageTxnManager::cancel_upgrade_plan(&signer);
     }
 
     spec fun cancel_upgrade_plan {
