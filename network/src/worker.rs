@@ -13,7 +13,7 @@ use network_p2p::{
 };
 use network_p2p_types::{is_memory_addr, ProtocolRequest};
 use prometheus::default_registry;
-use starcoin_config::NodeConfig;
+use starcoin_config::NetworkConfig;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::RpcInfo;
@@ -26,14 +26,14 @@ const REQUEST_BUFFER_SIZE: usize = 128;
 pub const RPC_PROTOCOL_PREFIX: &str = "/starcoin/rpc/";
 
 pub fn build_network_worker(
-    node_config: &NodeConfig,
+    network_config: &NetworkConfig,
     chain_info: ChainInfo,
     protocols: Vec<Cow<'static, str>>,
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
 ) -> Result<(PeerInfo, NetworkWorker)> {
-    let node_name = node_config.node_name();
-    let discover_local = node_config.network.discover_local();
-    let transport_config = if is_memory_addr(&node_config.network.listen()) {
+    let node_name = network_config.node_name();
+    let discover_local = network_config.discover_local();
+    let transport_config = if is_memory_addr(&network_config.listen()) {
         TransportConfig::MemoryOnly
     } else {
         TransportConfig::Normal {
@@ -74,11 +74,11 @@ pub fn build_network_worker(
         None => vec![],
     };
     let allow_non_globals_in_dht = discover_local;
-    let boot_nodes = node_config.network.seeds();
+    let boot_nodes = network_config.seeds();
 
     info!("Final bootstrap seeds: {:?}", boot_nodes);
     let self_info = PeerInfo::new(
-        node_config.network.self_peer_id(),
+        network_config.self_peer_id(),
         chain_info.clone(),
         protocols.to_vec(),
         rpc_protocols
@@ -87,17 +87,17 @@ pub fn build_network_worker(
             .collect(),
     );
     let config = NetworkConfiguration {
-        listen_addresses: vec![node_config.network.listen()],
+        listen_addresses: vec![network_config.listen()],
         boot_nodes,
         node_key: {
             let secret = identity::ed25519::SecretKey::from_bytes(
-                &mut node_config.network.network_keypair().0.to_bytes(),
+                &mut network_config.network_keypair().0.to_bytes(),
             )
             .expect("decode network node key should success.");
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
-        in_peers: node_config.network.max_incoming_peers(),
-        out_peers: node_config.network.max_outgoing_peers(),
+        in_peers: network_config.max_incoming_peers(),
+        out_peers: network_config.max_outgoing_peers(),
         notifications_protocols: protocols,
         request_response_protocols: rpc_protocols,
         transport: transport_config,

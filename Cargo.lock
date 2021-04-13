@@ -8121,6 +8121,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-peer-watcher"
+version = "1.0.0-beta.4"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "futures 0.3.13",
+ "network-p2p",
+ "network-p2p-types",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-network",
+ "starcoin-storage",
+ "starcoin-types",
+ "structopt 0.3.21",
+]
+
+[[package]]
 name = "starcoin-proptest-helpers"
 version = "0.4.1"
 dependencies = [

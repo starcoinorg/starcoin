@@ -65,19 +65,26 @@ fn test_peer_selector() {
 #[test]
 fn test_better_peer() {
     let mut peers = Vec::new();
-    let random_peer = PeerInfo::random();
     for _ in 0..20 {
         peers.push(PeerInfo::random());
     }
 
+    let first_peer = peers.get(0).cloned().expect("first peer must exist.");
+
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
-    let better_selector = peer_selector.betters(random_peer.total_difficulty(), 10);
-    assert!(better_selector.is_some());
-
-    let better_selector = better_selector.unwrap();
-    assert!(!better_selector.contains(&random_peer));
-
-    better_selector.iter().for_each(|better_peer| {
-        assert!(better_peer.total_difficulty() >= random_peer.total_difficulty());
-    });
+    let better_selector = peer_selector.betters(first_peer.total_difficulty(), 10);
+    if let Some(better_selector) = better_selector {
+        assert!(!better_selector.contains(&first_peer));
+        better_selector.iter().for_each(|better_peer| {
+            assert!(better_peer.total_difficulty() >= first_peer.total_difficulty());
+        });
+    } else {
+        peer_selector
+            .bests(0.into())
+            .unwrap()
+            .iter()
+            .for_each(|peer| {
+                assert!(peer.total_difficulty() <= first_peer.total_difficulty());
+            })
+    }
 }

@@ -89,7 +89,8 @@ members = [
     "dataformat-generator",
     "cmd/indexer",
     "cmd/resource-exporter",
-    "cmd/merkle-generator"
+    "cmd/merkle-generator",
+    "cmd/peer-watcher"
 ]
 
 default-members = [
@@ -181,7 +182,8 @@ default-members = [
     "dataformat-generator",
     "cmd/indexer",
     "cmd/resource-exporter",
-    "cmd/merkle-generator"
+    "cmd/merkle-generator",
+    "cmd/peer-watcher"
 ]
 
 [profile.dev]
