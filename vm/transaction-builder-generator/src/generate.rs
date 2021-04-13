@@ -108,7 +108,7 @@ fn main() {
                     //     (None, parts[0])
                     // };
                     // buildgen::dart::output(&mut out, &abis, class_name).unwrap()
-                    panic!("Code generation in Java requires --target_source_dir");
+                    panic!("Code generation in dart requires --target_source_dir");
                 }
             }
             return;

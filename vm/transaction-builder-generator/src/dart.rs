@@ -30,8 +30,8 @@ pub fn write_source_files(
     package_name: &str,
     abis: &[ScriptABI],
 ) -> Result<()> {
-    write_script_call_files(install_dir.clone(), package_name, abis)?;
-    write_helper_file(install_dir, package_name, abis)
+    write_script_call_files(install_dir.clone(), "script", abis)?;
+    write_helper_file(install_dir.join("lib"), package_name, abis)
 }
 
 /// Output transaction helper functions for the given ABIs.
@@ -53,7 +53,7 @@ fn write_helper_file(
         package_name,
     };
     emitter.output_preamble()?;
-    writeln!(emitter.out, "\npublic class Helpers {{")?;
+    writeln!(emitter.out, "\nclass Helpers {{")?;
     emitter.out.indent();
 
     emitter.output_encode_method()?;
@@ -81,7 +81,9 @@ fn write_helper_file(
     emitter.output_decoding_helpers(abis)?;
 
     emitter.out.unindent();
-    writeln!(emitter.out, "\n}}\n")
+    writeln!(emitter.out, "\n}}\n")?;
+
+    emitter.output_map()
 }
 
 fn write_script_call_files(
@@ -89,7 +91,12 @@ fn write_script_call_files(
     package_name: &str,
     abis: &[ScriptABI],
 ) -> Result<()> {
-    //let external_definitions = crate::common::get_external_definitions("com.diem.types");
+    let mut external_definitions = BTreeMap::new();
+    external_definitions.insert(
+        "import".to_string(),
+        vec!["../starcoin_types/starcoin_types.dart".to_string()],
+    );
+
     let (transaction_script_abis, script_fun_abis): (Vec<_>, Vec<_>) = abis
         .iter()
         .cloned()
@@ -140,6 +147,7 @@ fn write_script_call_files(
 
     let config = CodeGeneratorConfig::new(package_name.to_string())
         .with_comments(comments)
+        .with_external_definitions(external_definitions)
         .with_serialization(false);
     dart::CodeGenerator::new(&config)
         .output(install_dir, &script_registry)
@@ -182,20 +190,9 @@ where
         writeln!(
             self.out,
             r#"
-import java.math.BigInteger;
-import java.lang.IllegalArgumentException;
-import java.lang.IndexOutOfBoundsException;
-import com.diem.types.AccountAddress;
-import com.diem.types.Script;
-import com.diem.types.ScriptFunction;
-import com.diem.types.TransactionPayload;
-import com.diem.types.Identifier;
-import com.diem.types.ModuleId;
-import com.diem.types.TransactionArgument;
-import com.diem.types.TypeTag;
-import com.novi.serde.Int128;
-import com.novi.serde.Unsigned;
-import com.novi.serde.Bytes;
+import '../serde/serde.dart';
+import '../script/script.dart';
+import '../starcoin_types/starcoin_types.dart';
 "#,
         )?;
         Ok(())
@@ -211,9 +208,9 @@ import com.novi.serde.Bytes;
  * @param call {{@link ScriptCall}} value to encode.
  * @return Encoded script.
  */
-public static Script encode_script(ScriptCall call) {{
-    ScriptEncodingHelper helper = TRANSACTION_SCRIPT_ENCODER_MAP.get(call.getClass());
-    return helper.encode(call);
+static Script encode_script(ScriptCall call) {{
+    ScriptEncodingHelper helper = TRANSACTION_SCRIPT_ENCODER_MAP[call.runtimeType.toString()];
+    return helper(call);
 }}"#
         )?;
         writeln!(
@@ -225,9 +222,9 @@ public static Script encode_script(ScriptCall call) {{
  * @param call {{@link ScriptFunctionCall}} value to encode.
  * @return Encoded TransactionPayload.
  */
-public static TransactionPayload encode_script_function(ScriptFunctionCall call) {{
-    ScriptFunctionEncodingHelper helper = SCRIPT_FUNCTION_ENCODER_MAP.get(call.getClass());
-    return helper.encode(call);
+static TransactionPayload encode_script_function(ScriptFunctionCall call) {{
+    ScriptFunctionEncodingHelper helper = SCRIPT_FUNCTION_ENCODER_MAP[call.runtimeType.toString()];
+    return helper(call);
 }}"#
         )
     }
@@ -242,12 +239,12 @@ public static TransactionPayload encode_script_function(ScriptFunctionCall call)
  * @param script {{@link com.diem.types.Script}} values to decode.
  * @return Decoded {{@link ScriptCall}} value.
  */
-public static ScriptCall decode_script(Script script) throws IllegalArgumentException, IndexOutOfBoundsException {{
-    TransactionScriptDecodingHelper helper = TRANSACTION_SCRIPT_DECODER_MAP.get(script.code);
+static ScriptCall decode_script(Script script)  {{
+    TransactionScriptDecodingHelper helper = TRANSACTION_SCRIPT_DECODER_MAP[script.code];
     if (helper == null) {{
-        throw new IllegalArgumentException("Unknown script bytecode");
+        throw new Exception("Unknown script bytecode");
     }}
-    return helper.decode(script);
+    return helper(script);
 }}
 "#
         )?;
@@ -261,16 +258,16 @@ public static ScriptCall decode_script(Script script) throws IllegalArgumentExce
  * @param payload {{@link com.diem.types.TransactionPayload}} values to decode.
  * @return Decoded {{@link ScriptFunctionCall}} value.
  */
-public static ScriptFunctionCall decode_script_function_payload(TransactionPayload payload) throws IllegalArgumentException, IndexOutOfBoundsException {{
-    if (payload instanceof TransactionPayload.ScriptFunction) {{
-        ScriptFunction script = ((TransactionPayload.ScriptFunction)payload).value;
-        ScriptFunctionDecodingHelper helper = SCRIPT_FUNCTION_DECODER_MAP.get(script.module.name.value + script.function.value);
+static ScriptFunctionCall decode_script_function_payload(TransactionPayload payload) {{
+    if (payload is TransactionPayloadScriptFunctionItem) {{
+        ScriptFunction script = (payload as TransactionPayloadScriptFunctionItem).value;
+        ScriptFunctionDecodingHelper helper = SCRIPT_FUNCTION_DECODER_MAP[script.module.name.value + script.function.value];
         if (helper == null) {{
-            throw new IllegalArgumentException("Unknown script function");
+            throw new Exception("Unknown script function");
         }}
-        return helper.decode(payload);
+        return helper(payload);
     }} else {{
-        throw new IllegalArgumentException("Unknown transaction payload");
+        throw new Exception("Unknown transaction payload");
     }}
 }}
 "#
@@ -287,7 +284,7 @@ public static ScriptFunctionCall decode_script_function_payload(TransactionPaylo
     ) -> Result<()> {
         writeln!(
             self.out,
-            "\n{}public static Script encode_{}_script({}) {{",
+            "\n{}static Script encode_{}_script({}) {{",
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
@@ -301,8 +298,8 @@ public static ScriptFunctionCall decode_script_function_payload(TransactionPaylo
             self.out,
             r#"Script.Builder builder = new Script.Builder();
 builder.code = new Bytes({}_CODE);
-builder.ty_args = java.util.Arrays.asList({});
-builder.args = java.util.Arrays.asList({});
+builder.ty_args = [{}];
+builder.args = [{}];
 return builder.build();"#,
             abi.name().to_shouty_snake_case(),
             Self::quote_type_arguments(abi.ty_args()),
@@ -322,7 +319,7 @@ return builder.build();"#,
     ) -> Result<()> {
         writeln!(
             self.out,
-            "\n{}public static TransactionPayload encode_{}_script_function({}) {{",
+            "\n{}static TransactionPayload encode_{}_script_function({}) {{",
             Self::quote_doc(
                 abi.doc(),
                 [quoted_type_params_doc, quoted_params_doc].concat(),
@@ -334,15 +331,12 @@ return builder.build();"#,
         self.out.indent();
         writeln!(
             self.out,
-            r#"ScriptFunction.Builder script_function_builder = new ScriptFunction.Builder();
-script_function_builder.ty_args = java.util.Arrays.asList({});
-script_function_builder.args = java.util.Arrays.asList({});
-script_function_builder.function = {};
-script_function_builder.module = {};
+            r#"var ty_args = [{}];
+var args = [{}];
+var function = {};
+var module = {};
 
-TransactionPayload.ScriptFunction.Builder builder = new TransactionPayload.ScriptFunction.Builder();
-builder.value = script_function_builder.build();
-return builder.build();"#,
+return TransactionPayloadScriptFunctionItem(ScriptFunction(module,function,ty_args,args));"#,
             Self::quote_type_arguments(abi.ty_args()),
             Self::quote_arguments(abi.args()),
             Self::quote_identifier(abi.name()),
@@ -361,7 +355,7 @@ return builder.build();"#,
         let quoted_type_params_doc: Vec<_> = abi
             .ty_args()
             .iter()
-            .map(|ty_arg| format!("{} {{@code TypeTag}} value", ty_arg.name()))
+            .map(|ty_arg| format!("{} {{TypeTag}} value", ty_arg.name()))
             .collect();
         let quoted_params: Vec<_> = abi
             .args()
@@ -373,7 +367,7 @@ return builder.build();"#,
             .iter()
             .map(|arg| {
                 format!(
-                    "{} {{@code {}}} value",
+                    "{} {{ {}}} value",
                     arg.name(),
                     Self::quote_type(arg.type_tag())
                 )
@@ -403,7 +397,7 @@ return builder.build();"#,
     ) -> Result<()> {
         writeln!(
             self.out,
-            "\nprivate static ScriptCall decode_{}_script(Script {}script) throws IllegalArgumentException, IndexOutOfBoundsException {{",
+            "\nstatic ScriptCall decode_{}_script(Script {}script) throws Exception, IndexOutOfBoundsException {{",
             abi.name(),
             // prevent warning "unused variable"
             if abi.ty_args().is_empty() && abi.args().is_empty() {
@@ -445,19 +439,19 @@ return builder.build();"#,
         // `payload` is always used, so don't need to add `"_"` prefix
         writeln!(
             self.out,
-            "\nprivate static ScriptFunctionCall decode_{}_script_function(TransactionPayload payload) throws IllegalArgumentException, IndexOutOfBoundsException {{",
+            "\nstatic ScriptFunctionCall decode_{}_script_function(TransactionPayload payload) {{",
             abi.name(),
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "if(!(payload instanceof TransactionPayload.ScriptFunction)) {{
-                throw new IllegalArgumentException(\"Transaction payload not a Script Function\");
+            "if(!(payload is TransactionPayloadScriptFunctionItem)) {{
+                throw new Exception(\"Transaction payload not a Script Function\");
         }}"
         )?;
         writeln!(
             self.out,
-            "ScriptFunction {}script = ((TransactionPayload.ScriptFunction)payload).value;",
+            "ScriptFunction {}script = (payload as TransactionPayloadScriptFunctionItem).value;",
             // prevent warning "unused variable"
             if abi.ty_args().is_empty() && abi.args().is_empty() {
                 "_"
@@ -465,15 +459,15 @@ return builder.build();"#,
                 ""
             }
         )?;
-        writeln!(
-            self.out,
-            "ScriptFunctionCall.{0}.Builder builder = new ScriptFunctionCall.{0}.Builder();",
-            abi.name().to_camel_case(),
-        )?;
+        // writeln!(
+        //     self.out,
+        //     "ScriptFunctionCall.{0}.Builder builder = new ScriptFunctionCall.{0}.Builder();",
+        //     abi.name().to_camel_case(),
+        // )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
                 self.out,
-                "builder.{} = script.ty_args.get({});",
+                "var {} = script.ty_args[{}];",
                 ty_arg.name(),
                 index,
             )?;
@@ -481,13 +475,27 @@ return builder.build();"#,
         for (index, arg) in abi.args().iter().enumerate() {
             writeln!(
                 self.out,
-                "builder.{} = Helpers.decode_{}_argument(script.args.get({}));",
+                "var {} = Helpers.decode_{}_argument(script.args[{}]);",
                 arg.name(),
                 common::mangle_type(arg.type_tag()),
                 index,
             )?;
         }
-        writeln!(self.out, "return builder.build();")?;
+        writeln!(
+            self.out,
+            "return ScriptFunctionCall{0}Item(",
+            abi.name().to_camel_case()
+        )?;
+        self.out.indent();
+
+        for (_, ty_arg) in abi.ty_args().iter().enumerate() {
+            writeln!(self.out, "{},", ty_arg.name(),)?;
+        }
+        for (_, arg) in abi.args().iter().enumerate() {
+            writeln!(self.out, "{},", arg.name(),)?;
+        }
+        self.out.unindent();
+        writeln!(self.out, ");")?;
         self.out.unindent();
         writeln!(self.out, "}}")?;
         Ok(())
@@ -500,18 +508,15 @@ return builder.build();"#,
         writeln!(
             self.out,
             r#"
-interface ScriptEncodingHelper {{
-    public Script encode(ScriptCall call);
-}}
 
-private static final java.util.Map<Class<?>, ScriptEncodingHelper> TRANSACTION_SCRIPT_ENCODER_MAP = initTransactionScriptEncoderMap();
+static final Map<String, ScriptEncodingHelper> TRANSACTION_SCRIPT_ENCODER_MAP = initTransactionScriptEncoderMap();
 
-private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScriptEncoderMap() {{"#
+static Map<String, ScriptEncodingHelper> initTransactionScriptEncoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<Class<?>, ScriptEncodingHelper> map = new java.util.HashMap<>();"
+            "Map<String, ScriptEncodingHelper> map = new Map();"
         )?;
         for abi in abis {
             let params = std::iter::empty()
@@ -522,10 +527,10 @@ private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScri
                 .join(", ");
             writeln!(
                 self.out,
-                "map.put(ScriptCall.{0}.class, (ScriptEncodingHelper)((call) -> {{
-    ScriptCall.{0} obj = (ScriptCall.{0})call;
+                "map[(ScriptCall{0}Item).toString()]=(call) {{
+    ScriptCall{0}Item obj = (ScriptCall{0}Item)call;
     return Helpers.encode_{1}_script({2});
-}}));",
+}};",
                 abi.name().to_camel_case(),
                 abi.name(),
                 params,
@@ -540,18 +545,15 @@ private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScri
         writeln!(
             self.out,
             r#"
-interface ScriptFunctionEncodingHelper {{
-    public TransactionPayload encode(ScriptFunctionCall call);
-}}
 
-private static final java.util.Map<Class<?>, ScriptFunctionEncodingHelper> SCRIPT_FUNCTION_ENCODER_MAP = initScriptFunctionEncoderMap();
+static final Map<String, ScriptFunctionEncodingHelper> SCRIPT_FUNCTION_ENCODER_MAP = initScriptFunctionEncoderMap();
 
-private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptFunctionEncoderMap() {{"#
+static Map<String, ScriptFunctionEncodingHelper> initScriptFunctionEncoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<Class<?>, ScriptFunctionEncodingHelper> map = new java.util.HashMap<>();"
+            "Map<String, ScriptFunctionEncodingHelper> map = new Map();"
         )?;
         for abi in abis {
             let params = std::iter::empty()
@@ -562,10 +564,10 @@ private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptF
                 .join(", ");
             writeln!(
                 self.out,
-                "map.put(ScriptFunctionCall.{0}.class, (ScriptFunctionEncodingHelper)((call) -> {{
-    ScriptFunctionCall.{0} obj = (ScriptFunctionCall.{0})call;
+                "map[(ScriptFunctionCall{0}Item).toString()]= (call) {{
+    ScriptFunctionCall{0}Item obj = call as ScriptFunctionCall{0}Item;
     return Helpers.encode_{1}_script_function({2});
-}}));",
+}};",
                 abi.name().to_camel_case(),
                 abi.name(),
                 params,
@@ -583,23 +585,20 @@ private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptF
         writeln!(
             self.out,
             r#"
-interface TransactionScriptDecodingHelper {{
-    public ScriptCall decode(Script script);
-}}
 
-private static final java.util.Map<Bytes, TransactionScriptDecodingHelper> TRANSACTION_SCRIPT_DECODER_MAP = initTransactionScriptDecoderMap();
+static final Map<Bytes, TransactionScriptDecodingHelper> TRANSACTION_SCRIPT_DECODER_MAP = initTransactionScriptDecoderMap();
 
-private static java.util.Map<Bytes, TransactionScriptDecodingHelper> initTransactionScriptDecoderMap() {{"#
+static Map<Bytes, TransactionScriptDecodingHelper> initTransactionScriptDecoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<Bytes, TransactionScriptDecodingHelper> map = new java.util.HashMap<>();"
+            "Map<Bytes, TransactionScriptDecodingHelper> map = new Map();"
         )?;
         for abi in abis {
             writeln!(
                 self.out,
-                "map.put(new Bytes({}_CODE), (TransactionScriptDecodingHelper)((script) -> Helpers.decode_{}_script(script)));",
+                "map[new Bytes({}_CODE)]=(script) => Helpers.decode_{}_script(script);",
                 abi.name().to_shouty_snake_case(),
                 abi.name()
             )?;
@@ -613,23 +612,20 @@ private static java.util.Map<Bytes, TransactionScriptDecodingHelper> initTransac
         writeln!(
             self.out,
             r#"
-interface ScriptFunctionDecodingHelper {{
-    public ScriptFunctionCall decode(TransactionPayload payload);
-}}
 
-private static final java.util.Map<String, ScriptFunctionDecodingHelper> SCRIPT_FUNCTION_DECODER_MAP = initDecoderMap();
+static final Map<String, ScriptFunctionDecodingHelper> SCRIPT_FUNCTION_DECODER_MAP = initDecoderMap();
 
-private static java.util.Map<String, ScriptFunctionDecodingHelper> initDecoderMap() {{"#
+static Map<String, ScriptFunctionDecodingHelper> initDecoderMap() {{"#
         )?;
         self.out.indent();
         writeln!(
             self.out,
-            "java.util.HashMap<String, ScriptFunctionDecodingHelper> map = new java.util.HashMap<>();"
+            "Map<String, ScriptFunctionDecodingHelper> map = new Map();"
         )?;
         for abi in abis {
             writeln!(
                 self.out,
-                "map.put(\"{0}{1}\", (ScriptFunctionDecodingHelper)((payload) -> Helpers.decode_{1}_script_function(payload)));",
+                "map[\"{0}{1}\"]=(payload) => Helpers.decode_{1}_script_function(payload);",
                 abi.module_name().name(),
                 abi.name()
             )?;
@@ -637,6 +633,25 @@ private static java.util.Map<String, ScriptFunctionDecodingHelper> initDecoderMa
         writeln!(self.out, "return map;")?;
         self.out.unindent();
         writeln!(self.out, "}}")
+    }
+
+    fn output_map(&mut self) -> Result<()> {
+        writeln!(
+            self.out,
+            r#"
+typedef ScriptFunctionEncodingHelper = TransactionPayload Function(
+      ScriptFunctionCall call);
+            
+typedef ScriptFunctionDecodingHelper = ScriptFunctionCall Function(
+      TransactionPayload call);
+
+typedef TransactionScriptDecodingHelper = ScriptCall Function(
+      Script script);
+
+typedef ScriptEncodingHelper = Script Function(
+      ScriptCall call);
+"#
+        )
     }
 
     fn output_decoding_helpers(&mut self, abis: &[ScriptABI]) -> Result<()> {
@@ -664,11 +679,11 @@ private static java.util.Map<String, ScriptFunctionDecodingHelper> initDecoderMa
         writeln!(
             self.out,
             r#"
-private static {} decode_{}_argument(TransactionArgument arg) {{
-    if (!(arg instanceof TransactionArgument.{})) {{
-        throw new IllegalArgumentException("Was expecting a {} argument");
+static {} decode_{}_argument(TransactionArgument arg) {{
+    if (!(arg is TransactionArgument{}Item)) {{
+        throw new Exception("Was expecting a {} argument");
     }}
-    return ((TransactionArgument.{}) arg).value{};
+    return (arg as TransactionArgument{}Item).value{};
 }}
 "#,
             Self::quote_type(type_tag),
@@ -683,7 +698,7 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
     fn output_code_constant(&mut self, abi: &TransactionScriptABI) -> Result<()> {
         writeln!(
             self.out,
-            "\nprivate static byte[] {}_CODE = {{{}}};",
+            "\nstatic byte[] {}_CODE = {{{}}};",
             abi.name().to_shouty_snake_case(),
             abi.code()
                 .iter()
@@ -700,7 +715,7 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
 
     fn quote_address(address: &AccountAddress) -> String {
         format!(
-            "AccountAddress.valueOf(new byte[] {{ {} }})",
+            "AccountAddress([ {} ])",
             address
                 .to_vec()
                 .iter()
@@ -749,10 +764,10 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
     fn quote_type(type_tag: &TypeTag) -> String {
         use TypeTag::*;
         match type_tag {
-            Bool => "Boolean".into(),
-            U8 => "@Unsigned Byte".into(),
-            U64 => "@Unsigned Long".into(),
-            U128 => "@Unsigned @Int128 BigInteger".into(),
+            Bool => "bool".into(),
+            U8 => "int".into(),
+            U64 => "int".into(),
+            U128 => "Int128".into(),
             Address => "AccountAddress".into(),
             Vector(type_tag) => match type_tag.as_ref() {
                 U8 => "Bytes".into(),
@@ -766,13 +781,13 @@ private static {} decode_{}_argument(TransactionArgument arg) {{
     fn quote_transaction_argument(type_tag: &TypeTag, name: &str) -> String {
         use TypeTag::*;
         match type_tag {
-            Bool => format!("new TransactionArgument.Bool({})", name),
-            U8 => format!("new TransactionArgument.U8({})", name),
-            U64 => format!("new TransactionArgument.U64({})", name),
-            U128 => format!("new TransactionArgument.U128({})", name),
-            Address => format!("new TransactionArgument.Address({})", name),
+            Bool => format!("new TransactionArgumentBoolItem({})", name),
+            U8 => format!("new TransactionArgumentU8Item({})", name),
+            U64 => format!("new TransactionArgumentU64Item({})", name),
+            U128 => format!("new TransactionArgumentU128Item({})", name),
+            Address => format!("new TransactionArgumentAddressItem({})", name),
             Vector(type_tag) => match type_tag.as_ref() {
-                U8 => format!("new TransactionArgument.U8Vector({})", name),
+                U8 => format!("new TransactionArgumentU8VectorItem({})", name),
                 _ => common::type_not_allowed(type_tag),
             },
 
