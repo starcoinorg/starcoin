@@ -230,9 +230,9 @@ where
     ) -> FutureResult<()> {
         let account_service = self.account.clone();
         let fut = async move {
-            Ok(account_service
+            account_service
                 .change_account_password(address, new_password)
-                .await?)
+                .await
         };
         Box::pin(fut.map_err(map_err).boxed())
     }

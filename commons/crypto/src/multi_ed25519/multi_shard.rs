@@ -145,6 +145,7 @@ impl MultiEd25519KeyShard {
 
 impl ValidCryptoMaterial for MultiEd25519KeyShard {
     /// Serialize a MultiEd25519PrivateKeyShard.
+    #[allow(clippy::vec_init_then_push)]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = vec![];
         bytes.push(self.public_keys.len() as u8);
@@ -320,6 +321,7 @@ impl MultiEd25519SignatureShard {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Vec<(Ed25519Signature, u8)>> for &MultiEd25519SignatureShard {
     fn into(self) -> Vec<(Ed25519Signature, u8)> {
         let signatures = self.signature.signatures();
@@ -339,6 +341,7 @@ impl Into<Vec<(Ed25519Signature, u8)>> for &MultiEd25519SignatureShard {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<MultiEd25519Signature> for MultiEd25519SignatureShard {
     fn into(self) -> MultiEd25519Signature {
         self.signature

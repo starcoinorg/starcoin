@@ -154,6 +154,7 @@ impl From<u8> for ChainId {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<u8> for ChainId {
     fn into(self) -> u8 {
         self.id

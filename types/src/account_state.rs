@@ -38,6 +38,7 @@ impl AccountState {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Vec<Option<HashValue>>> for AccountState {
     fn into(self) -> Vec<Option<HashValue>> {
         self.storage_roots

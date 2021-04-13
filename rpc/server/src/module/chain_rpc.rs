@@ -68,7 +68,7 @@ where
 
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
-            Ok(result.map(|b| b.try_into()).transpose()?)
+            result.map(|b| b.try_into()).transpose()
         }
         .map_err(map_err);
 
@@ -80,7 +80,7 @@ where
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
-            Ok(result.map(|b| b.try_into()).transpose()?)
+            result.map(|b| b.try_into()).transpose()
         }
         .map_err(map_err);
 
@@ -122,10 +122,10 @@ where
             }
             let block = service.main_blocks_by_number(number, count).await?;
 
-            Ok(block
+            block
                 .into_iter()
                 .map(|blk| BlockView::try_from_block(blk, true))
-                .collect::<Result<Vec<_>, _>>()?)
+                .collect::<Result<Vec<_>, _>>()
         }
         .map_err(map_err);
 

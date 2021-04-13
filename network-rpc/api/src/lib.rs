@@ -67,6 +67,7 @@ impl RpcRequest for GetBlockHeadersByNumber {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Vec<BlockNumber>> for GetBlockHeadersByNumber {
     fn into(self) -> Vec<BlockNumber> {
         let mut numbers = Vec::new();

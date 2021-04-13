@@ -647,6 +647,7 @@ impl KeyRotationCapability {
 
 /// Returns a transaction to transfer coin from one account to another (possibly new) one, with the
 /// given arguments.
+#[allow(clippy::vec_init_then_push)]
 pub fn peer_to_peer_txn(
     sender: &Account,
     receiver: &Account,
@@ -680,6 +681,7 @@ pub fn peer_to_peer_txn(
 }
 
 /// Returns a transaction to create a new account with the given arguments.
+#[allow(clippy::vec_init_then_push)]
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,
     seq_num: u64,

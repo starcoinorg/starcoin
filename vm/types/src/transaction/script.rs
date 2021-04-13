@@ -70,12 +70,14 @@ impl Sample for Script {
 
 /// How to call a particular Move script (aka. an "ABI").
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ScriptABI {
     TransactionScript(TransactionScriptABI),
     ScriptFunction(ScriptFunctionABI),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ScriptFunctionABI {
     /// The public name of the script.
     name: String,
@@ -90,6 +92,7 @@ pub struct ScriptFunctionABI {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct TransactionScriptABI {
     /// The public name of the script.
     name: String,
@@ -106,6 +109,7 @@ pub struct TransactionScriptABI {
 
 /// The description of a (regular) argument in a script.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct ArgumentABI {
     /// The name of the argument.
     name: String,
@@ -116,6 +120,7 @@ pub struct ArgumentABI {
 
 /// The description of a type argument in a script.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct TypeArgumentABI {
     /// The name of the argument.
     name: String,

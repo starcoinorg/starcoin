@@ -78,6 +78,7 @@ impl OnChainConfig for TransactionPublishOption {
 
 /// Defines all the on chain configuration data needed by VM.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct VMConfig {
     pub gas_schedule: CostTable,
 }
@@ -90,6 +91,7 @@ struct CostTableInner {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[allow(clippy::upper_case_acronyms)]
 struct VMConfigInner {
     pub gas_schedule: CostTableInner,
 }

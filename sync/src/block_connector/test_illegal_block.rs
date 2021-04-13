@@ -331,6 +331,7 @@ async fn test_verify_new_epoch_block_uncle_should_none_failed() {
 }
 
 #[stest::test]
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_can_not_be_uncle_is_member_failed() {
     let times = 5;
     let (mut writeable_block_chain_service, node_config, storage) =
@@ -362,6 +363,7 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
 }
 
 #[stest::test]
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     // 1. chain
     let times = 7;
@@ -418,6 +420,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     }
 }
 
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block> {
     let count = 5;
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -450,6 +453,7 @@ async fn test_verify_illegal_uncle_future_timestamp_failed() {
     }
 }
 
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.genesis_block_parameter =
@@ -570,6 +574,7 @@ async fn test_verify_block_used_gas_failed() {
 }
 
 #[stest::test]
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_txn_count_failed() {
     // TODO: fix me
     let (mut new_block, mut main) = new_block_and_main().await;
@@ -695,6 +700,7 @@ async fn test_verify_uncles_count_failed() {
     debug!("expect apply failed : {:?}", apply_failed.err().unwrap());
 }
 
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
     let count = 5;
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -731,6 +737,7 @@ async fn test_verify_uncles_number_failed() {
     }
 }
 
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     let count = 5;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -792,6 +799,7 @@ async fn test_verify_uncles_in_old_epoch_failed() {
 }
 
 #[stest::test]
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncles_uncle_exist_failed() {
     let count = 5;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -869,6 +877,7 @@ async fn test_some_uncles_in_block_failed() {
 }
 
 #[stest::test]
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncle_and_parent_number_failed() {
     let count = 5;
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -926,6 +935,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
 }
 
 #[stest::test]
+#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let count = TEST_CONFIG.consensus_config.epoch_block_count;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =

@@ -76,6 +76,7 @@ impl PeerId {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<network_p2p_types::PeerId> for PeerId {
     fn into(self) -> network_p2p_types::PeerId {
         self.0

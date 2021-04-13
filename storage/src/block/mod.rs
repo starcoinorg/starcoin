@@ -21,6 +21,7 @@ pub struct FailedBlock {
     failed: String,
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<(Block, Option<PeerId>, String)> for FailedBlock {
     fn into(self) -> (Block, Option<PeerId>, String) {
         (self.block, self.peer_id, self.failed)

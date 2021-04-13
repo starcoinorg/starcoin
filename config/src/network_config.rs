@@ -148,6 +148,7 @@ impl FromStr for Seeds {
         Ok(Seeds(seeds))
     }
 }
+#[allow(clippy::from_over_into)]
 impl Into<Vec<MultiaddrWithPeerId>> for Seeds {
     fn into(self) -> Vec<MultiaddrWithPeerId> {
         self.0

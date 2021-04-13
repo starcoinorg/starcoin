@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 use std::str::FromStr;
 
 #[derive(Copy, Clone, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum OutputFormat {
     JSON,
     TABLE,

@@ -63,6 +63,7 @@ pub enum ConnectBlockError {
     VerifyBlockFailed(VerifyBlockField, Error),
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<ReputationChange> for &ConnectBlockError {
     fn into(self) -> ReputationChange {
         match self {

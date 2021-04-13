@@ -56,6 +56,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 #[derive(Clone)]
+#[allow(clippy::upper_case_acronyms)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
     move_vm: Arc<MoveVMAdapter>,
@@ -609,13 +610,13 @@ impl StarcoinVM {
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
         BLOCK_UNCLES.observe(uncles as f64);
-        Ok(get_transaction_output(
+        get_transaction_output(
             &mut (),
             session,
             &cost_strategy,
             max_gas_amount,
             KeptVMStatus::Executed,
-        )?)
+        )
     }
 
     fn execute_user_transaction(

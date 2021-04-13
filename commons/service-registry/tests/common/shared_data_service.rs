@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 #[derive(Default)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct DB {
     data: Mutex<HashMap<String, String>>,
 }

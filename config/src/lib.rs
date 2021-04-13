@@ -127,6 +127,7 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum Connect {
     /// Connect by ipc file path, if Path is absent, use default ipc file.
     IPC(Option<PathBuf>),

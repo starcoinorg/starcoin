@@ -241,9 +241,9 @@ impl Genesis {
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
-        Ok(storage
+        storage
             .get_chain_info()?
-            .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))?)
+            .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
     }
 
     pub fn save<P>(&self, data_dir: P) -> Result<()>
