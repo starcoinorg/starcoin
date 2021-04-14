@@ -8,9 +8,11 @@ edition = "2018"
 
 [dev-dependencies]
 test-helper= {path = "../test-helper"}
+starcoin-state-api = {path = "../state/api"}
 starcoin-executor = {path = "../executor"}
 starcoin-vm-types = { path = "../vm/types"}
 starcoin-types = {path = "../types"}
+starcoin-crypto = {path = "../commons/crypto"}
 #starcoin-move-compiler= {path = "../vm/compiler"}
 stdlib = {path = "../vm/stdlib"}
 stest = {path = "../commons/stest"}
