@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.40"
 structopt = "0.3.21"
-ctrlc = { version = "3.1.8", features = ["termination"] }
+ctrlc = { version = "3.1.9", features = ["termination"] }
 futures = "0.3.12"
 tokio = { version = "0.2", features = ["full"] }
 starcoin-logger = { path = "../../commons/logger" }
