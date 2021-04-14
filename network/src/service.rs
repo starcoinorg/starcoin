@@ -54,7 +54,7 @@ impl NetworkActorService {
         H: PeerMessageHandler + 'static,
     {
         let (self_info, worker) = build_network_worker(
-            config.as_ref(),
+            &config.network,
             chain_info,
             NotificationMessage::protocols(),
             rpc,

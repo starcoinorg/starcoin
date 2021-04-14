@@ -1,0 +1,28 @@
+[package]
+name = "starcoin-peer-watcher"
+version = "1.0.0-beta.4"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[[bin]]
+name = "starcoin_peer_watcher"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.40"
+structopt = "0.3.21"
+async-std = "1.9"
+futures = "0.3.12"
+starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-config = { path = "../../config"}
+starcoin-genesis = { path = "../../genesis"}
+starcoin-types = { path = "../../types"}
+starcoin-logger = { path = "../../commons/logger" }
+network-p2p-types = {path = "../../network-p2p/types"}
+network-p2p = {path = "../../network-p2p"}
+starcoin-network = {path = "../../network"}
+starcoin-storage = {path = "../../storage"}
+
+
