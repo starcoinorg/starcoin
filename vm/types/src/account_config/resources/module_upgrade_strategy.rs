@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 pub const _STRATEGY_ARBITRARY: u8 = 0;
 pub const STRATEGY_TWO_PHASE: u8 = 1;
 pub const STRATEGY_NEW_MODULE: u8 = 2;
-pub const _STRATEGY_FREEZE: u8 = 3;
+pub const STRATEGY_ENFORCED: u8 = 3;
+pub const _STRATEGY_FREEZE: u8 = 4;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ModuleUpgradeStrategy {
@@ -23,6 +24,10 @@ impl ModuleUpgradeStrategy {
 
     pub fn two_phase(&self) -> bool {
         self.strategy == STRATEGY_TWO_PHASE
+    }
+
+    pub fn enforced(&self) -> bool {
+        self.strategy == STRATEGY_ENFORCED
     }
 }
 

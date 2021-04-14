@@ -29,7 +29,9 @@ address 0x1 {
         const STRATEGY_ARBITRARY: u8 = 0;
         const STRATEGY_TWO_PHASE: u8 = 1;
         const STRATEGY_NEW_MODULE: u8 = 2;
-        const STRATEGY_FREEZE: u8 = 3;
+        const STRATEGY_ENFORCED: u8 = 3;
+        const STRATEGY_FREEZE: u8 = 4;
+
         const DEFAULT_MIN_TIME_LIMIT: u64 = 86400000;// one day
 
         /// arbitary stragegy
@@ -40,6 +42,8 @@ address 0x1 {
         public fun get_strategy_new_module(): u8 { STRATEGY_NEW_MODULE }
         /// freezed strategy
         public fun get_strategy_freeze(): u8 { STRATEGY_FREEZE }
+        /// enforced strategy
+        public fun get_strategy_enforced(): u8 { STRATEGY_ENFORCED }
         /// default min time limit
         public fun get_default_min_time_limit(): u64 { DEFAULT_MIN_TIME_LIMIT }
 
@@ -50,13 +54,15 @@ address 0x1 {
         const ESTRATEGY_INCORRECT: u64 = 106;
         const ESTRATEGY_NOT_TWO_PHASE: u64 = 107;
         const EUNKNOWN_STRATEGY: u64 = 108;
+        const ESTRATEGY_ENFORCED: u64 = 109;
 
         /// module upgrade strategy
         struct ModuleUpgradeStrategy has key, store {
             /// 0 arbitrary
             /// 1 two phase upgrade
             /// 2 only new module
-            /// 3 freeze
+            /// 3 enforced upgrade
+            /// 4 freeze
             strategy: u8,
         }
 
@@ -73,6 +79,19 @@ address 0x1 {
             min_time_limit: u64,
         }
 
+        /// data of enforced strategy.
+        struct EnforcedUpgrade has key {
+            config: EnforcedUpgradeConfig,
+            plan: Option<UpgradePlan>,
+            version_cap: Config::ModifyConfigCapability<Version::Version>,
+            upgrade_event: Event::EventHandle<Self::UpgradeEvent>,
+        }
+
+        /// config of enforced strategy.
+        struct EnforcedUpgradeConfig has copy, drop, store {
+            min_time_limit: u64,
+        }
+
         /// module upgrade event.
         struct UpgradeEvent has drop, store {
             package_address: address,
@@ -81,15 +100,29 @@ address 0x1 {
         }
 
         /// Update account's ModuleUpgradeStrategy
-        public fun update_module_upgrade_strategy(account: &signer, strategy: u8, min_time: Option<u64>) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
-            assert(strategy == STRATEGY_ARBITRARY || strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_NEW_MODULE || strategy == STRATEGY_FREEZE, Errors::invalid_argument(EUNKNOWN_STRATEGY));
+        public fun update_module_upgrade_strategy(account: &signer, strategy: u8, min_time: Option<u64>) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, EnforcedUpgrade, UpgradePlanCapability{
+            assert(strategy == STRATEGY_ARBITRARY || strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_NEW_MODULE
+                    || strategy == STRATEGY_FREEZE || strategy == STRATEGY_ENFORCED, Errors::invalid_argument(EUNKNOWN_STRATEGY));
             let account_address = Signer::address_of(account);
             let previous_strategy = get_module_upgrade_strategy(account_address);
-            assert(strategy > previous_strategy, Errors::invalid_argument(ESTRATEGY_INCORRECT));
+            // enforced update strategy can go back two phase strategy
+            assert(strategy > previous_strategy || (previous_strategy == STRATEGY_ENFORCED && strategy == STRATEGY_TWO_PHASE), Errors::invalid_argument(ESTRATEGY_INCORRECT));
             if (exists<ModuleUpgradeStrategy>(account_address)) {
                 borrow_global_mut<ModuleUpgradeStrategy>(account_address).strategy = strategy;
             }else{
                 move_to(account, ModuleUpgradeStrategy{ strategy: strategy});
+            };
+            //clean enforced upgrade resource
+            if (previous_strategy == STRATEGY_ENFORCED){
+                let enforced_update = move_from<EnforcedUpgrade>(account_address);
+                let EnforcedUpgrade{plan:_, version_cap, upgrade_event, config: _} = enforced_update;
+                Event::destroy_handle<Self::UpgradeEvent>(upgrade_event);
+                Config::destroy_modify_config_capability<Version::Version>(version_cap);
+                // UpgradePlanCapability may be extracted
+                if (exists<UpgradePlanCapability>(account_address)){
+                    let cap = move_from<UpgradePlanCapability>(account_address);
+                    destroy_upgrade_plan_cap(cap);
+                };
             };
             if (strategy == STRATEGY_TWO_PHASE){
                 let version_cap = Config::extract_modify_config_capability<Version::Version>(account);
@@ -113,6 +146,18 @@ address 0x1 {
                     let cap = move_from<UpgradePlanCapability>(account_address);
                     destroy_upgrade_plan_cap(cap);
                 };
+            };
+
+            if (strategy == STRATEGY_ENFORCED){
+                let version_cap = Config::extract_modify_config_capability<Version::Version>(account);
+                let min_time_limit = Option::get_with_default(&min_time, DEFAULT_MIN_TIME_LIMIT);
+                move_to(account, UpgradePlanCapability{ account_address: account_address});
+                move_to(account, EnforcedUpgrade{
+                    config: EnforcedUpgradeConfig{min_time_limit: min_time_limit},
+                    plan: Option::none<UpgradePlan>(),
+                    version_cap: version_cap,
+                    upgrade_event: Event::new_event_handle<Self::UpgradeEvent>(account)}
+                );
             };
         }
 
@@ -148,7 +193,8 @@ address 0x1 {
         /// extract out UpgradePlanCapability from `signer`.
         public fun extract_submit_upgrade_plan_cap(account: &signer): UpgradePlanCapability acquires ModuleUpgradeStrategy, UpgradePlanCapability{
             let account_address = Signer::address_of(account);
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
+            let strategy = get_module_upgrade_strategy(account_address);
+            assert(strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_ENFORCED, Errors::invalid_argument(ESTRATEGY_INCORRECT));
             move_from<UpgradePlanCapability>(account_address)
         }
 
@@ -159,7 +205,7 @@ address 0x1 {
         }
 
         /// upgrade plan can override
-        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64) acquires TwoPhaseUpgrade,EnforcedUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
             submit_upgrade_plan_with_cap(cap, package_hash, version);
@@ -172,12 +218,19 @@ address 0x1 {
         }
 
         /// Submit a new upgrade plan.
-        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64) acquires TwoPhaseUpgrade,EnforcedUpgrade,ModuleUpgradeStrategy{
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
-            let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            let active_after_time = Timestamp::now_milliseconds() + tpu.config.min_time_limit;
-            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_time, version});
+            let strategy = get_module_upgrade_strategy(account_address);
+            assert(strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_ENFORCED, Errors::invalid_argument(ESTRATEGY_INCORRECT));
+            if (strategy == STRATEGY_TWO_PHASE) {
+                let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
+                let active_after_time = Timestamp::now_milliseconds() + tpu.config.min_time_limit;
+                tpu.plan = Option::some(UpgradePlan { package_hash, active_after_time, version });
+            } else if (strategy == STRATEGY_ENFORCED) {
+                let enforced_upgrade = borrow_global_mut<EnforcedUpgrade>(account_address);
+                let active_after_time = Timestamp::now_milliseconds() + enforced_upgrade.config.min_time_limit;
+                enforced_upgrade.plan = Option::some(UpgradePlan { package_hash, active_after_time, version });
+            };
         }
 
         spec fun submit_upgrade_plan_with_cap {
@@ -195,7 +248,7 @@ address 0x1 {
         }
 
         /// Cancel a module upgrade plan.
-        public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
+        public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,EnforcedUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
             cancel_upgrade_plan_with_cap(cap);
@@ -208,12 +261,20 @@ address 0x1 {
         }
 
         /// Cancel a module upgrade plan with given cap.
-        public fun cancel_upgrade_plan_with_cap(cap: &UpgradePlanCapability) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
+        public fun cancel_upgrade_plan_with_cap(cap: &UpgradePlanCapability) acquires TwoPhaseUpgrade,EnforcedUpgrade,ModuleUpgradeStrategy{
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
-            let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
-            tpu.plan = Option::none<UpgradePlan>();
+            let strategy = get_module_upgrade_strategy(account_address);
+            assert(strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_ENFORCED, Errors::invalid_argument(ESTRATEGY_INCORRECT));
+            if (strategy == STRATEGY_TWO_PHASE) {
+                let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
+                assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
+                tpu.plan = Option::none<UpgradePlan>();
+            };
+            if (strategy == STRATEGY_ENFORCED) {
+                let eu = borrow_global_mut<EnforcedUpgrade>(account_address);
+                assert(Option::is_some(&eu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
+                eu.plan = Option::none<UpgradePlan>();
+            };
         }
 
         spec fun cancel_upgrade_plan_with_cap {
@@ -271,19 +332,43 @@ address 0x1 {
             }
         }
 
+        /// Get two phase upgrade plan of an address.
+        public fun get_two_phase_upgrade_plan(module_address: address): Option<UpgradePlan> acquires TwoPhaseUpgrade {
+            if (exists<TwoPhaseUpgrade>(module_address)) {
+                *&borrow_global<TwoPhaseUpgrade>(module_address).plan
+            }else{
+                Option::none<UpgradePlan>()
+            }
+        }
+
+        /// Get enforced upgrade plan of an address.
+        public fun get_enforced_upgrade_plan(module_address: address): Option<UpgradePlan> acquires EnforcedUpgrade {
+            if (exists<EnforcedUpgrade>(module_address)) {
+                *&borrow_global<EnforcedUpgrade>(module_address).plan
+            }else{
+                Option::none<UpgradePlan>()
+            }
+        }
+
         /// Check againest on the given package data.
-        public fun check_package_txn(package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy{
+        public fun check_package_txn(package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgrade, EnforcedUpgrade, ModuleUpgradeStrategy{
             let strategy = get_module_upgrade_strategy(package_address);
             if (strategy == STRATEGY_ARBITRARY){
                 //do nothing
             }else if(strategy == STRATEGY_TWO_PHASE){
-                let plan_opt = get_upgrade_plan(package_address);
+                let plan_opt = get_two_phase_upgrade_plan(package_address);
                 assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE));
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
                 assert(plan.active_after_time <= Timestamp::now_milliseconds(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
-            }else if(strategy == STRATEGY_NEW_MODULE){
+            }else if(strategy == STRATEGY_NEW_MODULE) {
                 //do check at VM runtime.
+            }else if(strategy == STRATEGY_ENFORCED) {
+                let plan_opt = get_enforced_upgrade_plan(package_address);
+                assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE));
+                let plan = Option::borrow(&plan_opt);
+                assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
+                assert(plan.active_after_time <= Timestamp::now_milliseconds(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             }else if(strategy == STRATEGY_FREEZE){
                 abort(ESTRATEGY_FREEZED)
             };
@@ -334,8 +419,34 @@ address 0x1 {
             aborts_if Option::is_some(tpu.plan) && !exists<Config::Config<Version::Version>>(tpu.version_cap.account_address);
         }
 
+        fun finish_two_phase_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
+            let tpu = borrow_global_mut<TwoPhaseUpgrade>(package_address);
+            if (Option::is_some(&tpu.plan)) {
+                let plan = Option::borrow(&tpu.plan);
+                Config::set_with_capability<Version::Version>(&mut tpu.version_cap, Version::new_version(plan.version));
+                Event::emit_event<Self::UpgradeEvent>(&mut tpu.upgrade_event, UpgradeEvent {
+                    package_address: package_address,
+                    package_hash: *&plan.package_hash,
+                    version: plan.version});
+            };
+            tpu.plan = Option::none<UpgradePlan>();
+        }
+
+         fun finish_enforced_upgrade_plan(package_address: address) acquires EnforcedUpgrade {
+            let eu = borrow_global_mut<EnforcedUpgrade>(package_address);
+            if (Option::is_some(&eu.plan)) {
+                let plan = Option::borrow(&eu.plan);
+                Config::set_with_capability<Version::Version>(&mut eu.version_cap, Version::new_version(plan.version));
+                Event::emit_event<Self::UpgradeEvent>(&mut eu.upgrade_event, UpgradeEvent {
+                    package_address: package_address,
+                    package_hash: *&plan.package_hash,
+                    version: plan.version});
+            };
+            eu.plan = Option::none<UpgradePlan>();
+        }
+
         /// Prologue of package transaction.
-        public fun package_txn_prologue(account: &signer, package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
+        public fun package_txn_prologue(account: &signer, package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgrade, EnforcedUpgrade, ModuleUpgradeStrategy {
             // Can only be invoked by genesis account
             CoreAddresses::assert_genesis_address(account);
             check_package_txn(package_address, package_hash);
@@ -347,13 +458,18 @@ address 0x1 {
         }
 
         /// Package txn finished, and clean UpgradePlan
-        public fun package_txn_epilogue(account: &signer, _txn_sender: address, package_address: address, success: bool) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
+        public fun package_txn_epilogue(account: &signer, _txn_sender: address, package_address: address, success: bool) acquires TwoPhaseUpgrade, EnforcedUpgrade, ModuleUpgradeStrategy {
             // Can only be invoked by genesis account
             CoreAddresses::assert_genesis_address(account);
             let strategy = get_module_upgrade_strategy(package_address);
             if(strategy == STRATEGY_TWO_PHASE){
                 if (success) {
-                    finish_upgrade_plan(package_address);
+                    finish_two_phase_upgrade_plan(package_address);
+                };
+            };
+            if(strategy == STRATEGY_ENFORCED){
+                if (success) {
+                    finish_enforced_upgrade_plan(package_address);
                 };
             };
         }
