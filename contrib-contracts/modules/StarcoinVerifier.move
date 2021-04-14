@@ -7,7 +7,6 @@ address 0xA550C18 {
     }
     module StarcoinVerifier {
         use 0x1::Vector;
-        use 0x1::BCS;
         use 0xA550C18::Bit;
         use 0xA550C18::StructuredHash;
         use 0x1::Hash;
@@ -22,8 +21,8 @@ address 0xA550C18 {
         }
 
         const HASH_LEN_IN_BIT: u64 = 32 * 8;
-        const SparseMerkleLeafNode: vector<u8> = b"SparseMerkleLeafNode";
-        const SparseMerkleInternalNode: vector<u8> = b"SparseMerkleInternalNode";
+        const SPARSE_MERKLE_LEAF_NODE: vector<u8> = b"SparseMerkleLeafNode";
+        const SPARSE_MERKLE_INTERNAL_NODE: vector<u8> = b"SparseMerkleInternalNode";
         public fun create(signer: &signer, merkle_root: vector<u8>) {
             let s = StarcoinMerkle {
                 merkle_root
@@ -40,19 +39,19 @@ address 0xA550C18 {
 
         public fun verify(expected_root: vector<u8>, account_address: vector<u8>, account_state_root_hash: vector<u8>, proofs: vector<vector<u8>>): bool {
             let address_hash = Hash::sha3_256(account_address);
-            let leaf_node = BCS::to_bytes(&Node { hash1: copy address_hash, hash2: account_state_root_hash});
-            let current_hash = StructuredHash::hash(SparseMerkleLeafNode, leaf_node);
+            let leaf_node = Node { hash1: copy address_hash, hash2: account_state_root_hash};
+            let current_hash = StructuredHash::hash(SPARSE_MERKLE_LEAF_NODE, &leaf_node);
             let i = 0;
             let proof_length = Vector::length(&proofs);
             while (i < proof_length) {
                 let sibling = *Vector::borrow(&proofs, i);
                 let bit = Bit::get_bit(&address_hash, proof_length - i - 1);
                 let internal_node = if (bit) {
-                    BCS::to_bytes(&Node {hash1: sibling, hash2: current_hash})
+                    Node {hash1: sibling, hash2: current_hash}
                 } else {
-                    BCS::to_bytes(&Node {hash1: current_hash, hash2: sibling})
+                    Node {hash1: current_hash, hash2: sibling}
                 };
-                current_hash = StructuredHash::hash(SparseMerkleInternalNode, internal_node);
+                current_hash = StructuredHash::hash(SPARSE_MERKLE_INTERNAL_NODE, &internal_node);
                 i = i+1;
             };
             current_hash == expected_root
@@ -62,10 +61,12 @@ address 0xA550C18 {
     module StructuredHash {
         use 0x1::Hash;
         use 0x1::Vector;
+        use 0x1::BCS;
         const STARCOIN_HASH_PREFIX: vector<u8> = b"STARCOIN::";
-        public fun hash(structure: vector<u8>, data: vector<u8>): vector<u8> {
+        public fun hash<MoveValue: store>(structure: vector<u8>, data: &MoveValue): vector<u8> {
             let prefix_hash = Hash::sha3_256(concat(&STARCOIN_HASH_PREFIX, structure));
-            Hash::sha3_256(concat(&prefix_hash, data))
+            let bcs_bytes = BCS::to_bytes(data);
+            Hash::sha3_256(concat(&prefix_hash, bcs_bytes))
         }
 
         fun concat(v1: &vector<u8>, v2: vector<u8>): vector<u8> {
