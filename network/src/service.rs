@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::broadcast_score_metrics::BROADCAST_SCORE_METRICS;
-use crate::build_network_worker;
 use crate::network_metrics::NetworkMetrics;
+use crate::{build_network_worker, Announcement};
 use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
@@ -398,6 +398,25 @@ impl Inner {
                         Some(notification)
                     }
                 }
+                NotificationMessage::Announcement(Announcement::TXN(txn_ids)) => {
+                    let mut fresh_ids = Vec::new();
+                    for txn_id in txn_ids {
+                        peer_info.known_transactions.put(txn_id.clone(), ());
+
+                        if !self.self_peer.known_transactions.contains(txn_id) {
+                            self.self_peer.known_transactions.put(txn_id.clone(), ());
+                            fresh_ids.push(txn_id.clone());
+                        };
+                    }
+
+                    if fresh_ids.is_empty() {
+                        None
+                    } else {
+                        Some(NotificationMessage::Announcement(Announcement::TXN(
+                            fresh_ids,
+                        )))
+                    }
+                }
             };
 
             if let Some(notification) = notification {
@@ -469,6 +488,11 @@ impl Inner {
                 self.self_peer
                     .known_blocks
                     .put(block.compact_block.header.id(), ());
+            }
+            NotificationMessage::Announcement(Announcement::TXN(txn_ids)) => {
+                txn_ids.into_iter().for_each(|txn_id| {
+                    self.self_peer.known_transactions.put(txn_id, ());
+                })
             }
         };
         self.network_service
@@ -564,7 +588,13 @@ impl Inner {
                         ..=self.config.network.max_peers_to_propagate(),
                     self.peers.keys(),
                 );
-                for peer_id in selected_peers {
+                let peers = self
+                    .peers
+                    .keys()
+                    .map(|peer| peer.clone())
+                    .collect::<Vec<PeerId>>();
+                for peer_id in peers {
+                    let is_full = selected_peers.contains(&peer_id);
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
                     let txns_unhandled = msg
                         .txns
@@ -589,21 +619,27 @@ impl Inner {
                     }
                     send_peer_count = send_peer_count.saturating_add(1);
                     // if txn after known_transactions filter is same length with origin, just send origin message for avoid encode data again.
-                    if txns_unhandled.len() == origin_txn_len {
+                    if txns_unhandled.len() == origin_txn_len && is_full {
                         self.network_service.write_notification(
-                            peer_id.clone().into(),
+                            peer_id.into(),
                             protocol_name.clone(),
                             origin_message.clone(),
                         )
                     } else {
-                        let notification_after_filter = NotificationMessage::Transactions(
-                            TransactionsMessage::new(txns_unhandled.into_iter().cloned().collect()),
-                        );
+                        let notification_after_filter = if is_full {
+                            NotificationMessage::Transactions(TransactionsMessage::new(
+                                txns_unhandled.into_iter().cloned().collect(),
+                            ))
+                        } else {
+                            NotificationMessage::Announcement(Announcement::TXN(
+                                txns_unhandled.into_iter().map(|txn| txn.id()).collect(),
+                            ))
+                        };
                         let (protocol_name, data) = notification_after_filter
                             .encode_notification()
                             .expect("Encode notification message should ok");
                         self.network_service.write_notification(
-                            peer_id.clone().into(),
+                            peer_id.into(),
                             protocol_name,
                             data,
                         );
@@ -614,6 +650,9 @@ impl Inner {
                     msg.txns.len(),
                     send_peer_count
                 );
+            }
+            NotificationMessage::Announcement(_msg) => {
+                debug!("[network] can not broadcast announcement message directly.");
             }
         }
     }

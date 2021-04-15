@@ -17,7 +17,7 @@ use starcoin_network_rpc_api::{
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
-use starcoin_types::transaction::Transaction;
+use starcoin_types::transaction::{SignedUserTransaction, Transaction};
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
@@ -146,6 +146,52 @@ impl VerifiedRpcClient {
         self.peer_selector
             .select_peer()
             .ok_or_else(|| format_err!("No peers for send request."))
+    }
+
+    pub async fn get_txns_with_hash_from_pool(
+        &self,
+        peer_id: Option<PeerId>,
+        req: GetTxnsWithHash,
+    ) -> Result<(Vec<HashValue>, Vec<SignedUserTransaction>)> {
+        let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
+        let data = self
+            .client
+            .get_txns_with_hash_from_pool(peer_id.clone(), req.clone())
+            .await?;
+        if data.len() == req.len() {
+            let mut none_txn_vec = Vec::new();
+            let mut verified_txns: Vec<SignedUserTransaction> = Vec::new();
+            for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
+                match data {
+                    Some(txn) => {
+                        if id != txn.id() {
+                            return Err(RpcVerifyError::new(
+                                peer_id.clone(),
+                                format!(
+                                    "request txn with id: {} from peer {}, but got txn {:?}",
+                                    id, peer_id, txn
+                                ),
+                            )
+                            .into());
+                        }
+                        verified_txns.push(txn);
+                    }
+                    None => none_txn_vec.push(id),
+                }
+            }
+            Ok((none_txn_vec, verified_txns))
+        } else {
+            Err(RpcVerifyError::new(
+                peer_id.clone(),
+                format!(
+                    "Txn len mismatch {:?} : {:?} from peer : {:?}.",
+                    data.len(),
+                    req.len(),
+                    peer_id
+                ),
+            )
+            .into())
+        }
     }
 
     pub async fn get_txns(

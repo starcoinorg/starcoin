@@ -39,6 +39,7 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
@@ -225,7 +226,9 @@ impl NodeService {
         let block_relayer = registry.register::<BlockRelayer>().await?;
 
         registry.register::<NetworkRpcService>().await?;
-        NodePeerMessageHandler::new(txpool_service, block_relayer);
+        let announcement_service = registry.register::<AnnouncementService>().await?;
+
+        NodePeerMessageHandler::new(txpool_service, block_relayer, announcement_service);
 
         registry
             .register_by_factory::<NetworkActorService, NetworkServiceFactory>()

@@ -11,7 +11,7 @@ use crate::{
     pool_client::{NonceCache, PoolClient},
 };
 
-use crate::pool::TransactionQueue;
+use crate::pool::{Client, TransactionQueue};
 use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
@@ -73,6 +73,15 @@ impl TxPoolService {
     }
     pub(crate) fn get_inner(&self) -> Inner {
         self.inner.clone()
+    }
+
+    pub fn verify_transaction(
+        &self,
+        tx: SignedUserTransaction,
+    ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError> {
+        self.get_inner()
+            .get_pool_client()
+            .verify_transaction(tx.into())
     }
 }
 
