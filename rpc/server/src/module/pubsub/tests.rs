@@ -20,7 +20,7 @@ use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::RegistryAsyncService;
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_storage::BlockStore;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
@@ -71,8 +71,8 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         .create_block(block_template, net.time_service().as_ref())?;
     let executed_block = block_chain.apply(new_block.clone())?;
 
-    let reader = AccountStateReader::new(block_chain.chain_state_reader());
-    let balance = reader.get_balance(&account_address)?;
+    let reader = block_chain.chain_state_reader();
+    let balance = reader.get_balance(account_address)?;
     assert_eq!(balance, Some(10000));
 
     // now block is applied, we can emit events.

@@ -93,13 +93,14 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl(&mut self, state: &dyn StateView) -> Result<(), Error> {
+        let remote_storage = RemoteStorage::new(state);
         self.vm_config = Some(
-            VMConfig::fetch_config(RemoteStorage::new(state))?
+            VMConfig::fetch_config(&remote_storage)?
                 .ok_or_else(|| format_err!("Load VMConfig fail, VMConfig resource not exist."))?,
         );
 
         self.version = Some(
-            Version::fetch_config(RemoteStorage::new(state))?
+            Version::fetch_config(&remote_storage)?
                 .ok_or_else(|| format_err!("Load Version fail, Version resource not exist."))?,
         );
 

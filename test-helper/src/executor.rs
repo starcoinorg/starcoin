@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::{temp_path, ChainNetwork, GenesisConfig};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_state_api::{AccountStateReader, ChainState, StateView};
+use starcoin_state_api::{ChainState, StateReaderExt, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_types::account_config::{association_address, genesis_address};
 use starcoin_types::block_metadata::BlockMetadata;
@@ -82,18 +82,16 @@ pub fn current_block_number(state_view: &dyn StateView) -> u64 {
 }
 
 pub fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
-    let account_reader = AccountStateReader::new(chain_state.as_super());
-    account_reader
-        .get_account_resource(&addr)
+    chain_state
+        .get_account_resource(addr)
         .expect("read account state should ok")
         .map(|res| res.sequence_number())
         .unwrap_or_default()
 }
 
 pub fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u128 {
-    let account_reader = AccountStateReader::new(chain_state.as_super());
-    account_reader
-        .get_balance(&address)
+    chain_state
+        .get_balance(address)
         .expect("read balance resource should ok")
         .unwrap_or_default()
 }
