@@ -102,12 +102,6 @@ impl<'block> RemoteCache for StateViewCache<'block> {
     }
 }
 
-impl<'block> ConfigStorage for StateViewCache<'block> {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-        self.get(&access_path).ok()?
-    }
-}
-
 // Adapter to convert a `StateView` into a `RemoteCache`.
 pub struct RemoteStorage<'a>(&'a dyn StateView);
 

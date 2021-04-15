@@ -8,7 +8,7 @@ use starcoin_executor::{
     build_transfer_from_association, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
 };
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, account_config, U256};
 use std::{convert::TryInto, sync::Arc};
@@ -35,7 +35,7 @@ pub fn test_open_block() -> Result<()> {
         )?
     };
 
-    let account_reader = AccountStateReader::new(chain.chain_state_reader());
+    let account_reader = chain.chain_state_reader();
     let association_sequence_num =
         account_reader.get_sequence_number(account_config::association_address())?;
     let (receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -55,11 +55,11 @@ pub fn test_open_block() -> Result<()> {
 
     // check state changed
     {
-        let account_reader = AccountStateReader::new(opened_block.state_reader());
-        let account_balance = account_reader.get_balance(&receiver)?;
+        let account_reader = opened_block.state_reader();
+        let account_balance = account_reader.get_balance(receiver)?;
         assert_eq!(account_balance, Some(50_000_000));
 
-        let account_resource = account_reader.get_account_resource(&receiver)?.unwrap();
+        let account_resource = account_reader.get_account_resource(receiver)?.unwrap();
         assert_eq!(account_resource.sequence_number(), 0);
     }
 

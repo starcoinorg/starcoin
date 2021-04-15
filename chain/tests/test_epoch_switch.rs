@@ -7,7 +7,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::encode_create_account_script_function;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
@@ -426,8 +426,8 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
     //get first miner reward
     let begin_reward = chain.epoch_info()?.total_reward();
     chain.apply(create_new_block(&chain, &bob, vec![])?)?;
-    let account_state_reader = AccountStateReader::new(chain.chain_state_reader());
-    let balance = account_state_reader.get_balance(bob.address())?.unwrap();
+    let account_state_reader = chain.chain_state_reader();
+    let balance = account_state_reader.get_balance(*bob.address())?.unwrap();
     let end_reward = chain.epoch_info()?.total_reward();
     // get reward after modify delay
     let mut count = 0;
@@ -435,8 +435,8 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
         chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         count += 1;
     }
-    let account_state_reader = AccountStateReader::new(chain.chain_state_reader());
-    let after_balance = account_state_reader.get_balance(bob.address())?.unwrap();
+    let account_state_reader = chain.chain_state_reader();
+    let after_balance = account_state_reader.get_balance(*bob.address())?.unwrap();
     assert!(after_balance > balance);
     assert_eq!(after_balance, (balance + (end_reward - begin_reward)));
     Ok(())

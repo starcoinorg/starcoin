@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::genesis_address;
+use crate::state_view::StateView;
 use crate::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -92,6 +93,15 @@ pub trait ConfigStorage {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>>;
 }
 
+impl<V> ConfigStorage for V
+where
+    V: StateView,
+{
+    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
+        self.get(&access_path).ok().flatten()
+    }
+}
+
 /// Trait to be implemented by a Rust struct representation of an on-chain config
 /// that is stored in storage as a serialized byte array
 pub trait OnChainConfig: Send + Sync + DeserializeOwned {
@@ -119,7 +129,7 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
         Self::deserialize_default_impl(bytes)
     }
 
-    fn fetch_config<T>(storage: T) -> Result<Option<Self>>
+    fn fetch_config<T>(storage: &T) -> Result<Option<Self>>
     where
         T: ConfigStorage,
     {

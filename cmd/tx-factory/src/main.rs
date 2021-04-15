@@ -10,7 +10,7 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
@@ -101,12 +101,11 @@ fn get_account_or_default(
 
             let addr = default_account.clone().unwrap().address;
             let state_reader = RemoteStateReader::new(&client)?;
-            let account_state_reader = AccountStateReader::new(&state_reader);
-            let mut balance = account_state_reader.get_balance(&addr)?;
+            let mut balance = state_reader.get_balance(addr)?;
             // balance resource has not been created
             while balance.is_none() {
                 std::thread::sleep(Duration::from_millis(1000));
-                balance = account_state_reader.get_balance(&addr)?;
+                balance = state_reader.get_balance(addr)?;
                 info!("account balance is null.");
             }
             default_account.unwrap()
@@ -242,9 +241,8 @@ impl TxnMocker {
         watch_timeout: u32,
     ) -> Result<Self> {
         let state_reader = RemoteStateReader::new(&client)?;
-        let account_state_reader = AccountStateReader::new(&state_reader);
 
-        let account_resource = account_state_reader.get_account_resource(&account_address)?;
+        let account_resource = state_reader.get_account_resource(account_address)?;
         if account_resource.is_none() {
             bail!("account {} not exists, please faucet it", account_address);
         }
@@ -292,10 +290,8 @@ impl TxnMocker {
             Some(n) => n,
             None => {
                 let state_reader = RemoteStateReader::new(&self.client)?;
-                let account_state_reader = AccountStateReader::new(&state_reader);
 
-                let account_resource =
-                    account_state_reader.get_account_resource(&self.account_address)?;
+                let account_resource = state_reader.get_account_resource(self.account_address)?;
                 if account_resource.is_none() {
                     bail!(
                         "account {} not exists, please faucet it",
@@ -431,7 +427,6 @@ impl TxnMocker {
         let mut available_list = vec![];
         let mut index = 0;
         let state_reader = RemoteStateReader::new(&self.client)?;
-        let account_state_reader = AccountStateReader::new(&state_reader);
         while index < account_num {
             if let Some(account) = account_local.pop() {
                 if self
@@ -443,9 +438,7 @@ impl TxnMocker {
                     )
                     .is_ok()
                 {
-                    let balance = account_state_reader
-                        .get_balance(&account.address())
-                        .unwrap_or(None);
+                    let balance = state_reader.get_balance(*account.address()).unwrap_or(None);
                     if let Some(amount) = balance {
                         if amount > 0 {
                             available_list.push(account);
@@ -463,12 +456,11 @@ impl TxnMocker {
             info!("account lack: {}", lack_len);
             // account has enough STC
             let state_reader = RemoteStateReader::new(&self.client)?;
-            let account_state_reader = AccountStateReader::new(&state_reader);
             let start_balance = INITIAL_BALANCE * lack_len as u128;
-            let mut balance = account_state_reader.get_balance(&self.account_address)?;
+            let mut balance = state_reader.get_balance(self.account_address)?;
             while balance.unwrap() < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
-                balance = account_state_reader.get_balance(&self.account_address)?;
+                balance = state_reader.get_balance(self.account_address)?;
                 info!(
                     "account balance is {:?}, min is: {}",
                     balance, start_balance
@@ -476,10 +468,9 @@ impl TxnMocker {
             }
             let lack = self.create_accounts(lack_len, batch_size)?;
             let state_reader = RemoteStateReader::new(&self.client)?;
-            let account_state_reader = AccountStateReader::new(&state_reader);
             for account in lack {
-                let account_resource = account_state_reader
-                    .get_account_resource(&account.address())
+                let account_resource = state_reader
+                    .get_account_resource(*account.address())
                     .unwrap_or(None);
                 if account_resource.is_some() {
                     available_list.push(account);
@@ -535,11 +526,10 @@ impl TxnMocker {
         Ok(account_list)
     }
 
-    fn sequence_number(
-        &self,
-        account_state_reader: &AccountStateReader,
-        address: AccountAddress,
-    ) -> Result<Option<u64>> {
+    fn sequence_number<R>(&self, state_reader: &R, address: AccountAddress) -> Result<Option<u64>>
+    where
+        R: ChainStateReader,
+    {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
         info!(
             "seq_number_in_pool for address {:?} is {:?}",
@@ -548,7 +538,7 @@ impl TxnMocker {
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
-                let account_resource = account_state_reader.get_account_resource(&address)?;
+                let account_resource = state_reader.get_account_resource(address)?;
                 match account_resource {
                     None => None,
                     Some(resource) => {
@@ -569,13 +559,12 @@ impl TxnMocker {
             return Ok(());
         }
         let state_reader = RemoteStateReader::new(&self.client)?;
-        let account_state_reader = AccountStateReader::new(&state_reader);
 
         //unlock all account and get sequence
         let mut sequences = vec![];
         for account in &accounts {
             sequences.push(
-                self.sequence_number(&account_state_reader, account.address)
+                self.sequence_number(&state_reader, account.address)
                     .unwrap()
                     .unwrap(),
             );

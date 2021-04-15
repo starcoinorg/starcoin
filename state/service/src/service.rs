@@ -10,7 +10,7 @@ use starcoin_service_registry::{
 };
 use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
-    AccountStateReader, ChainStateReader, StateNodeStore, StateView, StateWithProof,
+    ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
 };
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
@@ -174,8 +174,7 @@ impl Inner {
     }
 
     pub fn adjust_time(&self) {
-        let reader = AccountStateReader::new(&self.state_db);
-        match reader.get_timestamp() {
+        match self.state_db.get_timestamp() {
             Ok(on_chain_time) => {
                 self.time_service.adjust(on_chain_time);
             }

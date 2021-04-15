@@ -18,12 +18,12 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::sips::SIP;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
-    move_resource::MoveResource,
-    on_chain_config::{ConfigStorage, OnChainConfig},
-    state_view::StateView,
+    move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -126,12 +126,6 @@ pub trait ChainStateReader: StateView {
     fn dump(&self) -> Result<ChainStateSet>;
 }
 
-impl ConfigStorage for &dyn ChainStateReader {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-        self.get(&access_path).ok().flatten()
-    }
-}
-
 pub trait ChainStateWriter {
     /// Sets state at access_path.
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()>;
@@ -215,70 +209,54 @@ impl<'a, T: 'a + StateView> IntoSuper<dyn StateView + 'a> for T {
     }
 }
 
-///TODO change AccountStateReader to a trait, and auto implements to ChainStateReader
-/// `AccountStateReader` is a helper struct for read account state.
-pub struct AccountStateReader<'a> {
-    //TODO add a cache.
-    reader: &'a dyn ChainStateReader,
-}
+impl<T: ?Sized> StateReaderExt for T where T: ChainStateReader {}
 
-impl<'a> AccountStateReader<'a> {
-    pub fn new(reader: &'a dyn ChainStateReader) -> Self {
-        Self { reader }
-    }
-
-    //TODO change to pass Address copy not ref.
+pub trait StateReaderExt: ChainStateReader {
     /// Get AccountResource by address
-    pub fn get_account_resource(
-        &self,
-        address: &AccountAddress,
-    ) -> Result<Option<AccountResource>> {
-        self.get_resource::<AccountResource>(*address)
+    fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
+        self.get_resource::<AccountResource>(address)
     }
 
-    /// Get Resource by type
-    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    /// Get Resource by type R
+    fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
     where
         R: MoveResource + DeserializeOwned,
     {
         let access_path = AccessPath::new(address, R::resource_path());
-        let r = self
-            .reader
-            .get(&access_path)
-            .and_then(|state| match state {
-                Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
-                None => Ok(None),
-            })?;
+        let r = self.get(&access_path).and_then(|state| match state {
+            Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
+            None => Ok(None),
+        })?;
         Ok(r)
     }
 
-    pub fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
-        self.get_account_resource(&address)?
+    fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
+        self.get_account_resource(address)?
             .map(|resource| resource.sequence_number())
             .ok_or_else(|| format_err!("Can not find account by address:{}", address))
     }
 
-    pub fn get_on_chain_config<C>(&self) -> Result<Option<C>>
+    fn get_on_chain_config<C>(&self) -> Result<Option<C>>
     where
         C: OnChainConfig,
+        Self: Sized,
     {
-        C::fetch_config(self.reader)
+        C::fetch_config(self)
     }
 
-    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u128>> {
+    fn get_balance(&self, address: AccountAddress) -> Result<Option<u128>> {
         self.get_balance_by_token_code(address, STC_TOKEN_CODE.clone())
     }
 
     /// Get balance by address and coin type
-    pub fn get_balance_by_type(
+    fn get_balance_by_type(
         &self,
-        address: &AccountAddress,
+        address: AccountAddress,
         type_tag: TypeTag,
     ) -> Result<Option<u128>> {
         Ok(self
-            .reader
             .get(&AccessPath::new(
-                *address,
+                address,
                 BalanceResource::access_path_for(type_tag),
             ))
             .and_then(|bytes| match bytes {
@@ -290,20 +268,20 @@ impl<'a> AccountStateReader<'a> {
             .map(|resource| resource.token()))
     }
 
-    pub fn get_balance_by_token_code(
+    fn get_balance_by_token_code(
         &self,
-        address: &AccountAddress,
+        address: AccountAddress,
         token_code: TokenCode,
     ) -> Result<Option<u128>> {
         self.get_balance_by_type(address, token_code.into())
     }
 
-    pub fn get_epoch(&self) -> Result<Epoch> {
+    fn get_epoch(&self) -> Result<Epoch> {
         self.get_resource::<Epoch>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))
     }
 
-    pub fn get_epoch_info(&self) -> Result<EpochInfo> {
+    fn get_epoch_info(&self) -> Result<EpochInfo> {
         let epoch = self
             .get_resource::<Epoch>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))?;
@@ -315,13 +293,101 @@ impl<'a> AccountStateReader<'a> {
         Ok(EpochInfo::new(epoch, epoch_data))
     }
 
-    pub fn get_timestamp(&self) -> Result<GlobalTimeOnChain> {
+    fn get_timestamp(&self) -> Result<GlobalTimeOnChain> {
         self.get_resource(genesis_address())?
             .ok_or_else(|| format_err!("Timestamp resource should exist."))
     }
 
-    pub fn get_chain_id(&self) -> Result<ChainId> {
+    fn get_chain_id(&self) -> Result<ChainId> {
         self.get_resource::<ChainId>(genesis_address())?
             .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
+    }
+
+    fn get_code(&self, module_id: ModuleId) -> Result<Option<Vec<u8>>> {
+        self.get(&AccessPath::from(&module_id))
+    }
+
+    /// Check the sip is activated. if the sip module exist, think it is activated.
+    fn is_activated(&self, sip: SIP) -> Result<bool> {
+        self.get_code(sip.module_id()).map(|code| code.is_some())
+    }
+}
+
+/// `AccountStateReader` is a helper struct for read account state.
+pub struct AccountStateReader<'a, Reader> {
+    //TODO add a cache.
+    reader: &'a Reader,
+}
+
+impl<'a, Reader> AccountStateReader<'a, Reader>
+where
+    Reader: ChainStateReader,
+{
+    pub fn new(reader: &'a Reader) -> Self {
+        Self { reader }
+    }
+
+    /// Get AccountResource by address
+    pub fn get_account_resource(
+        &self,
+        address: &AccountAddress,
+    ) -> Result<Option<AccountResource>> {
+        self.reader.get_account_resource(*address)
+    }
+
+    /// Get Resource by type
+    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    where
+        R: MoveResource + DeserializeOwned,
+    {
+        self.reader.get_resource(address)
+    }
+
+    pub fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
+        self.reader.get_sequence_number(address)
+    }
+
+    pub fn get_on_chain_config<C>(&self) -> Result<Option<C>>
+    where
+        C: OnChainConfig,
+    {
+        self.reader.get_on_chain_config()
+    }
+
+    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u128>> {
+        self.reader.get_balance(*address)
+    }
+
+    /// Get balance by address and coin type
+    pub fn get_balance_by_type(
+        &self,
+        address: &AccountAddress,
+        type_tag: TypeTag,
+    ) -> Result<Option<u128>> {
+        self.reader.get_balance_by_type(*address, type_tag)
+    }
+
+    pub fn get_balance_by_token_code(
+        &self,
+        address: &AccountAddress,
+        token_code: TokenCode,
+    ) -> Result<Option<u128>> {
+        self.reader.get_balance_by_token_code(*address, token_code)
+    }
+
+    pub fn get_epoch(&self) -> Result<Epoch> {
+        self.reader.get_epoch()
+    }
+
+    pub fn get_epoch_info(&self) -> Result<EpochInfo> {
+        self.reader.get_epoch_info()
+    }
+
+    pub fn get_timestamp(&self) -> Result<GlobalTimeOnChain> {
+        self.reader.get_timestamp()
+    }
+
+    pub fn get_chain_id(&self) -> Result<ChainId> {
+        self.reader.get_chain_id()
     }
 }
