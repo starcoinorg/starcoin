@@ -18,7 +18,9 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::sips::SIP;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
@@ -299,6 +301,15 @@ pub trait StateReaderExt: ChainStateReader {
     fn get_chain_id(&self) -> Result<ChainId> {
         self.get_resource::<ChainId>(genesis_address())?
             .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
+    }
+
+    fn get_code(&self, module_id: ModuleId) -> Result<Option<Vec<u8>>> {
+        self.get(&AccessPath::from(&module_id))
+    }
+
+    /// Check the sip is activated. if the sip module exist, think it is activated.
+    fn is_activated(&self, sip: SIP) -> Result<bool> {
+        self.get_code(sip.module_id()).map(|code| code.is_some())
     }
 }
 

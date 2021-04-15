@@ -4,3 +4,4 @@
 mod block_reward_test;
 mod module_upgrade_test;
 mod on_chain_config_test;
+mod sip_flag_test;
