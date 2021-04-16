@@ -111,23 +111,19 @@ pub trait SupportedRpcProtocol {
 }
 
 pub trait BroadcastProtocolFilter {
-    fn peer_set(&self) -> Vec<PeerId>;
+    fn peer_info(&self, peer_id: &PeerId) -> Option<PeerInfo>;
 
-    fn peer_info(&self, peer_id:&PeerId) -> Option<PeerInfo>;
-
-    fn filter(&self, notif_protocol: Cow<'static, str>) -> Option<Vec<PeerId>> {
+    fn filter(&self, peer_set: Vec<PeerId>, notif_protocol: Cow<'static, str>) -> Vec<PeerId> {
         let mut peers = Vec::new();
-        self.peer_set().iter().for_each(|peer_id| {
-            if let Some(peer_info) = self.peer_info(peer_id) {
+        peer_set.into_iter().for_each(|peer_id| {
+            if let Some(peer_info) = self.peer_info(&peer_id) {
                 if peer_info.is_support_notif_protocol(notif_protocol.clone()) {
-                    peers.push(peer_info.peer_id);
+                    peers.push(peer_id);
                 }
             }
         });
-
-        if peers.is_empty() {
-            return None
-        }
-        Some(peers)
+        peers
     }
+
+    fn is_supported(&self, peer_id: &PeerId, notif_protocol: Cow<'static, str>) -> bool;
 }

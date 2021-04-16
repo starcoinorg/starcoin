@@ -7,18 +7,18 @@ use crate::PeerMessage;
 use anyhow::{format_err, Result};
 use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
-use futures::{FutureExt};
+use futures::FutureExt;
+use log::debug;
 use network_api::messages::NotificationMessage;
 use network_api::{NetworkService, PeerProvider, ReputationChange, SupportedRpcProtocol};
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::{IfDisconnected, Multiaddr};
-use network_rpc_core::{RawRpcClient, NetRpcError};
+use network_rpc_core::{NetRpcError, RawRpcClient};
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::sync::Arc;
-use log::{debug};
 
 //TODO Service registry should support custom service ref.
 #[derive(Clone)]
@@ -67,11 +67,11 @@ impl SupportedRpcProtocol for NetworkServiceRef {
     fn is_supported(&self, peer_id: PeerId, protocol: Cow<'static, str>) -> BoxFuture<bool> {
         async move {
             if let Ok(Some(peer_info)) = self.get_peer(peer_id).await {
-                peer_info.is_support_rpc_protocol(protocol)
-            } else {
-                false
+                return peer_info.is_support_rpc_protocol(protocol);
             }
-        }.boxed()
+            false
+        }
+        .boxed()
     }
 }
 
@@ -84,22 +84,28 @@ impl RawRpcClient for NetworkServiceRef {
     ) -> BoxFuture<Result<Vec<u8>>> {
         let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);
         async move {
-            if self.is_supported(peer_id.clone(), protocol.clone().into()).await {
+            if self
+                .is_supported(peer_id.clone(), protocol.clone().into())
+                .await
+            {
                 self.network_service
                     .request(
                         peer_id.into(),
                         protocol,
                         message,
                         IfDisconnected::ImmediateError,
-                    ).await.map_err(|e| e.into())
+                    )
+                    .await
+                    .map_err(|e| e.into())
             } else {
                 debug!(
-                    "[network] remote peer: {:?} not support protocol :{:?}",
+                    "[network] remote peer: {:?} not support rpc protocol :{:?}",
                     peer_id, rpc_path
                 );
                 Err(NetRpcError::method_not_fount(rpc_path)).map_err(|e| e.into())
             }
-        }.boxed()
+        }
+        .boxed()
     }
 }
 
