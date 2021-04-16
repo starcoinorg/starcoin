@@ -15,7 +15,7 @@ use network_api::messages::{
     PeerReputations, ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
-use network_api::{NetworkActor, PeerMessageHandler};
+use network_api::{NetworkActor, PeerMessageHandler, BroadcastProtocolFilter};
 use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
@@ -301,6 +301,19 @@ pub(crate) struct Inner {
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
     score_handler: Arc<dyn Score<BlockBroadcastEntry> + 'static>,
+}
+
+impl BroadcastProtocolFilter for Inner {
+    fn peer_set(&self) -> Vec<PeerId> {
+        self.peers
+            .keys()
+            .map(|peer| peer.clone())
+            .collect::<Vec<PeerId>>()
+    }
+
+    fn peer_info(&self, peer_id:&PeerId) -> Option<PeerInfo> {
+        self.peers.get(peer_id).and_then(|peer:&Peer| -> Option<PeerInfo> {Some(peer.peer_info.clone())})
+    }
 }
 
 impl Inner {
