@@ -2,7 +2,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/
 
 kubectl annotate serviceaccount cluster-autoscaler \
   -n kube-system \
-  eks.amazonaws.com/role-arn=arn:aws:iam::576184071779:role/AmazonEKSClusterAutoscalerRole --overwrite
+  eks.amazonaws.com/role-arn=arn:aws:iam::576184071779:role/eksctl-starcoin2-addon-iamserviceaccount-kub-Role1-12GL6HE7ZIAI9 --overwrite
 
 kubectl patch deployment cluster-autoscaler \
   -n kube-system \
