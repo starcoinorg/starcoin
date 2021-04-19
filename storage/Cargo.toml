@@ -30,7 +30,7 @@ starcoin-metrics = { path = "../commons/metrics"}
 starcoin-config = { path = "../config"}
 starcoin-uint = { path = "../types/uint"}
 [dependencies.rocksdb]
-version = "0.15"
+version = "0.16"
 default-features = false
 features = ["lz4"]
 
