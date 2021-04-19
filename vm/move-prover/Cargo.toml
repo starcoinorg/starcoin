@@ -22,7 +22,7 @@ move-ir-types = { git = "https://github.com/starcoinorg/diem", rev="bfd7b336d148
 abigen = { git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
 
 # external dependencies
-async-trait = "0.1.48"
+async-trait = "0.1.50"
 anyhow = "1.0.40"
 clap = "2.33.3"
 codespan = "0.8.0"
