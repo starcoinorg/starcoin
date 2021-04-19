@@ -17,6 +17,8 @@ spec:
       labels:
         app: starcoin-indexer
     spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin-indexer
         image: starcoin/starcoin:latest
