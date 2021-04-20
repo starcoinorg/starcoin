@@ -105,6 +105,7 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
     //     assert!(status.success());
 }
 
+//ignore test for cc is oom killed by os.
 #[ignore]
 #[test]
 fn test_that_rust_code_compiles() {
