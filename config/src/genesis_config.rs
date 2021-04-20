@@ -911,7 +911,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(
             GenesisBlockParameter{
                 parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-                timestamp: 1606984483000,
+                timestamp: 1618880879000,
                 difficulty: 100.into(),
             }
         ),
@@ -919,7 +919,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         reward_delay: 7,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
+        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD/12,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
@@ -946,10 +946,10 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Version(1),
         dao_config: DaoConfig {
-            voting_delay: 60_000,          // 1min
-            voting_period: 60 * 60 * 1000, // 1h
+            voting_delay: 60 * 1000,          // 1 minute
+            voting_period: 30 * 60 * 1000, // 30 minute
             voting_quorum_rate: 2,
-            min_action_delay: 60 * 60 * 1000, // 1h
+            min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
     }
