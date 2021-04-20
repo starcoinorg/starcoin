@@ -6,8 +6,10 @@
 
 
 -  [Function `propose_module_upgrade`](#0x1_ModuleUpgradeScripts_propose_module_upgrade)
+-  [Function `propose_module_upgrade_v2`](#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2)
 -  [Function `update_module_upgrade_strategy`](#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy)
 -  [Function `submit_module_upgrade_plan`](#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan)
+-  [Function `submit_module_upgrade_plan_v2`](#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2)
 -  [Function `cancel_upgrade_plan`](#0x1_ModuleUpgradeScripts_cancel_upgrade_plan)
 -  [Specification](#@Specification_0)
     -  [Function `cancel_upgrade_plan`](#@Specification_0_cancel_upgrade_plan)
@@ -51,6 +53,44 @@
         package_hash,
         version,
         exec_delay,
+    );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ModuleUpgradeScripts_propose_module_upgrade_v2"></a>
+
+## Function `propose_module_upgrade_v2`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64, enforced: bool)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
+    signer: signer,
+    module_address: address,
+    package_hash: vector&lt;u8&gt;,
+    version: u64,
+    exec_delay: u64,
+    enforced: bool,
+) {
+    <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade_v2">UpgradeModuleDaoProposal::propose_module_upgrade_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(
+        &signer,
+        module_address,
+        package_hash,
+        version,
+        exec_delay,
+        enforced
     );
 }
 </code></pre>
@@ -119,6 +159,34 @@
     proposal_id: u64,
 ) {
     <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan">UpgradeModuleDaoProposal::submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(proposer_address, proposal_id);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2"></a>
+
+## Function `submit_module_upgrade_plan_v2`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2">submit_module_upgrade_plan_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: signer, proposer_address: address, proposal_id: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2">submit_module_upgrade_plan_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
+    _signer: signer,
+    proposer_address: address,
+    proposal_id: u64,
+) {
+    <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan_v2">UpgradeModuleDaoProposal::submit_module_upgrade_plan_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(proposer_address, proposal_id);
 }
 </code></pre>
 

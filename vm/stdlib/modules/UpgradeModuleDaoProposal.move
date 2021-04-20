@@ -14,6 +14,7 @@ module UpgradeModuleDaoProposal {
         pragma aborts_if_is_partial;
     }
 
+    const DEPRECATED_CODE: u64 = 200;
     const ERR_UNABLE_TO_UPGRADE: u64 = 400;
     const ERR_NOT_AUTHORIZED: u64 = 401;
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
@@ -28,6 +29,13 @@ module UpgradeModuleDaoProposal {
         module_address: address,
         package_hash: vector<u8>,
         version: u64,
+    }
+
+    struct UpgradeModuleV2 has copy, drop, store {
+        module_address: address,
+        package_hash: vector<u8>,
+        version: u64,
+        enforced: bool,
     }
 
     /// If this goverment can upgrade module, call this to register capability.
@@ -58,23 +66,38 @@ module UpgradeModuleDaoProposal {
 
     /// propose a module upgrade, called by proposer.
     public fun propose_module_upgrade<TokenT: copy + drop + store>(
+        _signer: &signer,
+        _module_address: address,
+        _package_hash: vector<u8>,
+        _version: u64,
+        _exec_delay: u64,
+    ) {
+        abort DEPRECATED_CODE
+    }
+
+    spec fun propose_module_upgrade {
+        pragma aborts_if_is_partial = true;
+    }
+
+    public fun propose_module_upgrade_v2<TokenT: copy + drop + store>(
         signer: &signer,
         module_address: address,
         package_hash: vector<u8>,
         version: u64,
         exec_delay: u64,
+        enforced: bool,
     ) acquires UpgradeModuleCapability {
         let cap = borrow_global<UpgradeModuleCapability<TokenT>>(Token::token_address<TokenT>());
         let account_address = PackageTxnManager::account_address(&cap.cap);
         assert(account_address == module_address, Errors::requires_capability(ERR_ADDRESS_MISSMATCH));
-        Dao::propose<TokenT, UpgradeModule>(
+        Dao::propose<TokenT, UpgradeModuleV2>(
             signer,
-            UpgradeModule { module_address, package_hash, version },
+            UpgradeModuleV2 { module_address, package_hash, version, enforced },
             exec_delay,
         );
     }
 
-    spec fun propose_module_upgrade {
+    spec fun propose_module_upgrade_v2 {
         pragma aborts_if_is_partial = true;
         include AbortIfUnableUpgrade<TokenT>;
     }
@@ -84,17 +107,18 @@ module UpgradeModuleDaoProposal {
         proposer_address: address,
         proposal_id: u64,
     ) acquires UpgradeModuleCapability {
-        let UpgradeModule { module_address, package_hash, version } = Dao::extract_proposal_action<
+        let UpgradeModuleV2 { module_address, package_hash, version, enforced } = Dao::extract_proposal_action<
             TokenT,
-            UpgradeModule,
+            UpgradeModuleV2,
         >(proposer_address, proposal_id);
         let cap = borrow_global<UpgradeModuleCapability<TokenT>>(Token::token_address<TokenT>());
         let account_address = PackageTxnManager::account_address(&cap.cap);
         assert(account_address == module_address, Errors::requires_capability(ERR_ADDRESS_MISSMATCH));
-        PackageTxnManager::submit_upgrade_plan_with_cap(
+        PackageTxnManager::submit_upgrade_plan_with_cap_v2(
             &cap.cap,
             package_hash,
             version,
+            enforced,
         );
     }
     spec fun submit_module_upgrade_plan {
