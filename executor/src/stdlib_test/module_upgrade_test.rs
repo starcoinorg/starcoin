@@ -35,13 +35,14 @@ fn test_dao_upgrade_module() -> Result<()> {
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
-        Identifier::new("propose_module_upgrade").unwrap(),
+        Identifier::new("propose_module_upgrade_v2").unwrap(),
         vec![stc_type_tag()],
         vec![
             bcs_ext::to_bytes(&genesis_address()).unwrap(),
             bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
             bcs_ext::to_bytes(&1u64).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
+            bcs_ext::to_bytes(&false).unwrap(),
         ],
     );
     let execute_script_function = ScriptFunction::new(
