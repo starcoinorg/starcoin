@@ -6,8 +6,8 @@ spec:
   template:
     spec:
       nodeSelector:
-        doks.digitalocean.com/node-pool: ci-pool2
-      image: starcoin/starcoin-runner:v2.276.1
+        starcoin/node-pool: ci-pool
+      image: starcoin/starcoin-runner:v2.777.1
       repository: starcoinorg/starcoin
       serviceAccountName: github-runner
       resources:

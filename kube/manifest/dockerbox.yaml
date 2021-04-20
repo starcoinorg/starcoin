@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: runner-debug-deployment
+  name: dockerbox-deployment
   labels:
-    app: runner-debug
+    app: dockerbox
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: runner-debug
+      app: dockerbox
   template:
     metadata:
       labels:
-        app: runner-debug
+        app: dockerbox
     spec:
       containers:
-        - name: runner
-          image: starcoin/starcoin-runner:v2.275.1.20210111
+        - name: dockerbox
+          image: jolestar/dockerbox:latest
           imagePullPolicy: Always
           command:
             - bash
@@ -24,4 +24,3 @@ spec:
           args:
             -
               while true; do sleep 10 ; echo "sleep"; done;
-      serviceAccountName: github-runner

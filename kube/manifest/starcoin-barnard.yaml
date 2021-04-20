@@ -35,6 +35,8 @@ spec:
         app: starcoin
         network: barnard
     spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
         image: starcoin/starcoin:v1.0.0-beta.4
@@ -50,7 +52,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n barnard --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data $node_key_flag;
+            RUST_LOG=txqueue=debug /starcoin/starcoin -n barnard --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data $node_key_flag;
         ports:
           - containerPort: 9840
             hostPort: 9840
@@ -67,19 +69,6 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: doks.digitalocean.com/node-pool
-                      operator: In
-                      values:
-                        - ci-pool
-                        - ci-pool2
-                topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

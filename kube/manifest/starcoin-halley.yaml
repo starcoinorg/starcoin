@@ -35,6 +35,8 @@ spec:
         app: starcoin
         network: halley
     spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
         image: starcoin/starcoin:master
@@ -77,19 +79,6 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: doks.digitalocean.com/node-pool
-                      operator: In
-                      values:
-                        - ci-pool
-                        - ci-pool2
-                topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

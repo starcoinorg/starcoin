@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: starcoin-indexer-deployment
+  namespace: starcoin-barnard
   labels:
     app: starcoin-indexer
 spec:
@@ -16,6 +17,8 @@ spec:
       labels:
         app: starcoin-indexer
     spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin-indexer
         image: starcoin/starcoin:latest
@@ -24,10 +27,10 @@ spec:
           - bash
           - -c
         args:
-          - "/starcoin/starcoin_indexer --es-url http://starcoin-elasticsearch-es-http:9200 --node-url http://starcoin-0:9850 --es-user elastic --es-password $(es_password)"
+          - "/starcoin/starcoin_indexer --es-url https://140e8d342fc14865a3d9698c3d3ef3d5.vpce.ap-northeast-1.aws.elastic-cloud.com:9243 --node-url http://starcoin-2.starcoin-svc.starcoin-barnard.svc.cluster.local:9850 --es-user elastic --es-password $(es_password)"
         env:
         - name: es_password
           valueFrom:
             secretKeyRef:
-              name: starcoin-elasticsearch-es-elastic-user
-              key: elastic
+              name: elasticsearch-pw-elastic
+              key: password
