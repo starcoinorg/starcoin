@@ -114,15 +114,17 @@ pub trait BroadcastProtocolFilter {
     fn peer_info(&self, peer_id: &PeerId) -> Option<PeerInfo>;
 
     fn filter(&self, peer_set: Vec<PeerId>, notif_protocol: Cow<'static, str>) -> Vec<PeerId> {
-        let mut peers = Vec::new();
-        peer_set.into_iter().for_each(|peer_id| {
-            if let Some(peer_info) = self.peer_info(&peer_id) {
-                if peer_info.is_support_notif_protocol(notif_protocol.clone()) {
-                    peers.push(peer_id);
+        peer_set
+            .into_iter()
+            .filter(|peer_id| {
+                if let Some(peer_info) = self.peer_info(peer_id) {
+                    if peer_info.is_support_notif_protocol(notif_protocol.clone()) {
+                        return true;
+                    }
                 }
-            }
-        });
-        peers
+                false
+            })
+            .collect()
     }
 
     fn is_supported(&self, peer_id: &PeerId, notif_protocol: Cow<'static, str>) -> bool;

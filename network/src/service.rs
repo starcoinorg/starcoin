@@ -8,11 +8,11 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
 use futures::FutureExt;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
-    GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
-    PeerReputations, ReportReputation, TransactionsMessage,
+    AnnouncementType, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent,
+    PeerMessage, PeerReputations, ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{BroadcastProtocolFilter, NetworkActor, PeerMessageHandler};
@@ -413,23 +413,28 @@ impl Inner {
                         Some(notification)
                     }
                 }
-                NotificationMessage::Announcement(Announcement::TXN(txn_ids)) => {
-                    let mut fresh_ids = Vec::new();
-                    for txn_id in txn_ids {
-                        peer_info.known_transactions.put(txn_id.clone(), ());
+                NotificationMessage::Announcement(announcement) => {
+                    if announcement.is_txn() {
+                        let mut fresh_ids = Vec::new();
+                        for txn_id in announcement.clone().ids() {
+                            peer_info.known_transactions.put(txn_id.clone(), ());
 
-                        if !self.self_peer.known_transactions.contains(txn_id) {
-                            self.self_peer.known_transactions.put(txn_id.clone(), ());
-                            fresh_ids.push(txn_id.clone());
-                        };
-                    }
+                            if !self.self_peer.known_transactions.contains(&txn_id) {
+                                self.self_peer.known_transactions.put(txn_id.clone(), ());
+                                fresh_ids.push(txn_id);
+                            };
+                        }
 
-                    if fresh_ids.is_empty() {
-                        None
+                        if !fresh_ids.is_empty() {
+                            None
+                        } else {
+                            Some(NotificationMessage::Announcement(Announcement::new(
+                                AnnouncementType::TXN,
+                                fresh_ids,
+                            )))
+                        }
                     } else {
-                        Some(NotificationMessage::Announcement(Announcement::TXN(
-                            fresh_ids,
-                        )))
+                        None
                     }
                 }
             };
@@ -494,7 +499,7 @@ impl Inner {
             .encode_notification()
             .expect("Encode notification message should ok");
         if !self.is_supported(&peer_id, protocol_name.clone()) {
-            warn!(
+            debug!(
                 "[network]protocol {:?} not supported by peer {:?}",
                 protocol_name, peer_id
             );
@@ -511,10 +516,12 @@ impl Inner {
                     .known_blocks
                     .put(block.compact_block.header.id(), ());
             }
-            NotificationMessage::Announcement(Announcement::TXN(txn_ids)) => {
-                txn_ids.into_iter().for_each(|txn_id| {
-                    self.self_peer.known_transactions.put(txn_id, ());
-                })
+            NotificationMessage::Announcement(announcement) => {
+                if announcement.is_txn() {
+                    announcement.ids().into_iter().for_each(|txn_id| {
+                        self.self_peer.known_transactions.put(txn_id, ());
+                    })
+                }
             }
         };
         self.network_service
@@ -654,7 +661,8 @@ impl Inner {
                             .encode_notification()
                             .expect("Encode notification Transactions message should ok")
                         } else {
-                            NotificationMessage::Announcement(Announcement::TXN(
+                            NotificationMessage::Announcement(Announcement::new(
+                                AnnouncementType::TXN,
                                 txns_unhandled.into_iter().map(|txn| txn.id()).collect(),
                             ))
                             .encode_notification()
@@ -681,7 +689,7 @@ impl Inner {
                 );
             }
             NotificationMessage::Announcement(_msg) => {
-                debug!("[network] can not broadcast announcement message directly.");
+                error!("[network] can not broadcast announcement message directly.");
             }
         }
     }

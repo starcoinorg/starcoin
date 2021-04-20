@@ -14,6 +14,7 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use std::borrow::Cow;
+use std::convert::{TryFrom, TryInto};
 
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
@@ -62,10 +63,54 @@ impl Sample for CompactBlockMessage {
     }
 }
 
+pub enum AnnouncementType {
+    TXN,
+}
+
+impl Into<u8> for AnnouncementType {
+    fn into(self) -> u8 {
+        match self {
+            AnnouncementType::TXN => 1,
+        }
+    }
+}
+
+impl TryFrom<u8> for AnnouncementType {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self> {
+        if value == 1 {
+            return Ok(AnnouncementType::TXN);
+        }
+        Err(format_err!("Wrong announcement type : {:?}", value))
+    }
+}
+
 /// Message of sending or receive Announcement notification
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub enum Announcement {
-    TXN(Vec<HashValue>),
+pub struct Announcement {
+    announcement_type: u8,
+    pub ids: Vec<HashValue>,
+}
+
+impl Announcement {
+    pub fn new(announcement_type: AnnouncementType, ids: Vec<HashValue>) -> Self {
+        Self {
+            announcement_type: announcement_type.into(),
+            ids,
+        }
+    }
+
+    pub fn is_txn(&self) -> bool {
+        match self.announcement_type.try_into() {
+            Ok(AnnouncementType::TXN) => true,
+            _ => false,
+        }
+    }
+
+    pub fn ids(self) -> Vec<HashValue> {
+        self.ids
+    }
 }
 
 /// Network notification protocol message, change this type, maybe break the network protocol compatibility.
