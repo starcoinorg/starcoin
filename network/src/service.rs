@@ -307,7 +307,7 @@ impl BroadcastProtocolFilter for Inner {
     fn peer_info(&self, peer_id: &PeerId) -> Option<PeerInfo> {
         self.peers
             .get(peer_id)
-            .and_then(|peer: &Peer| -> Option<PeerInfo> { Some(peer.peer_info.clone()) })
+            .map(|peer: &Peer| -> PeerInfo { peer.peer_info.clone() })
     }
 
     fn is_supported(&self, peer_id: &PeerId, notif_protocol: Cow<'static, str>) -> bool {
@@ -417,10 +417,10 @@ impl Inner {
                     if announcement.is_txn() {
                         let mut fresh_ids = Vec::new();
                         for txn_id in announcement.clone().ids() {
-                            peer_info.known_transactions.put(txn_id.clone(), ());
+                            peer_info.known_transactions.put(txn_id, ());
 
                             if !self.self_peer.known_transactions.contains(&txn_id) {
-                                self.self_peer.known_transactions.put(txn_id.clone(), ());
+                                self.self_peer.known_transactions.put(txn_id, ());
                                 fresh_ids.push(txn_id);
                             };
                         }
@@ -429,7 +429,7 @@ impl Inner {
                             None
                         } else {
                             Some(NotificationMessage::Announcement(Announcement::new(
-                                AnnouncementType::TXN,
+                                AnnouncementType::Txn,
                                 fresh_ids,
                             )))
                         }
@@ -619,12 +619,7 @@ impl Inner {
                         ..=self.config.network.max_peers_to_propagate(),
                     self.peers.keys(),
                 );
-                //let selected_peers = self.filter(random_peers, protocol_name.clone());
-                let peers = self
-                    .peers
-                    .keys()
-                    .map(|peer| peer.clone())
-                    .collect::<Vec<PeerId>>();
+                let peers = self.peers.keys().cloned().collect::<Vec<_>>();
                 for peer_id in peers {
                     let is_not_announcement = selected_peers.contains(&peer_id);
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
@@ -662,7 +657,7 @@ impl Inner {
                             .expect("Encode notification Transactions message should ok")
                         } else {
                             NotificationMessage::Announcement(Announcement::new(
-                                AnnouncementType::TXN,
+                                AnnouncementType::Txn,
                                 txns_unhandled.into_iter().map(|txn| txn.id()).collect(),
                             ))
                             .encode_notification()

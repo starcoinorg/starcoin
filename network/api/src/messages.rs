@@ -64,13 +64,14 @@ impl Sample for CompactBlockMessage {
 }
 
 pub enum AnnouncementType {
-    TXN,
+    Txn,
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<u8> for AnnouncementType {
     fn into(self) -> u8 {
         match self {
-            AnnouncementType::TXN => 1,
+            AnnouncementType::Txn => 1,
         }
     }
 }
@@ -80,7 +81,7 @@ impl TryFrom<u8> for AnnouncementType {
 
     fn try_from(value: u8) -> Result<Self> {
         if value == 1 {
-            return Ok(AnnouncementType::TXN);
+            return Ok(AnnouncementType::Txn);
         }
         Err(format_err!("Wrong announcement type : {:?}", value))
     }
@@ -102,10 +103,10 @@ impl Announcement {
     }
 
     pub fn is_txn(&self) -> bool {
-        match self.announcement_type.try_into() {
-            Ok(AnnouncementType::TXN) => true,
-            _ => false,
+        if let Ok(AnnouncementType::Txn) = self.announcement_type.try_into() {
+            return true;
         }
+        false
     }
 
     pub fn ids(self) -> Vec<HashValue> {
