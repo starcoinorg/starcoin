@@ -5,21 +5,25 @@ use async_std::task;
 use futures::stream::StreamExt;
 use futures_timer::Delay;
 use network_api::messages::{
-    CompactBlockMessage, NotificationMessage, PeerMessage, TransactionsMessage,
+    Announcement, AnnouncementType, CompactBlockMessage, NotificationMessage, PeerMessage,
+    TransactionsMessage, ANNOUNCEMENT_PROTOCOL_NAME,
 };
 use network_api::{Multiaddr, NetworkService};
 use network_p2p_types::MultiaddrWithPeerId;
 use starcoin_config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
 use starcoin_crypto::hash::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_network::build_network_worker;
+use starcoin_network::{build_network_worker, NetworkActorService};
 use starcoin_types::block::{AccumulatorInfo, Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::cmpact_block::CompactBlock;
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
+use std::borrow::Cow;
 use std::sync::Arc;
 use std::{thread, time::Duration};
+use test_helper::network::MockPeerMessageHandler;
 
 pub type NetworkComponent = (Arc<network_p2p::NetworkService>, NetworkConfig);
 
@@ -282,4 +286,127 @@ async fn test_event_broadcast() {
 
     let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver3.next()).await;
     assert!(msg_receive3.is_err());
+}
+
+fn build_network_service_with_protocol(
+    node_config: Arc<NodeConfig>,
+    chain_info: &ChainInfo,
+    broadcast_protocols: Vec<Cow<'static, str>>,
+) -> (NetworkActorService, PeerInfo, MockPeerMessageHandler) {
+    let (peer_info, service) = build_network_worker(
+        &node_config.network,
+        chain_info.clone(),
+        broadcast_protocols,
+        None,
+    )
+    .unwrap();
+    let peer_message_handler = MockPeerMessageHandler::default();
+    let network = NetworkActorService::new_with_network_for_test(
+        node_config,
+        peer_message_handler.clone(),
+        service,
+        peer_info.clone(),
+    )
+    .unwrap();
+    (network, peer_info, peer_message_handler)
+}
+
+#[stest::test]
+async fn test_send_announcement() {
+    let chain_info = ChainInfo::new(
+        BuiltinNetworkID::Test.chain_id(),
+        HashValue::random(),
+        ChainStatus::random(),
+    );
+    let node_config_1 = Arc::new(NodeConfig::random_for_test());
+    let (mut service1, peer_info_1, _peer_message_handler_1) = build_network_service_with_protocol(
+        node_config_1.clone(),
+        &chain_info,
+        NotificationMessage::protocols(),
+    );
+
+    let nodes = vec![MultiaddrWithPeerId::new(
+        node_config_1.network.listen(),
+        peer_info_1.peer_id().into(),
+    )];
+    let mut node_config_2 = NodeConfig::random_for_test();
+    node_config_2.network.seeds = nodes.into();
+    let node_config_2 = Arc::new(node_config_2);
+    let (_service2, peer_info_2, peer_message_handler_2) = build_network_service_with_protocol(
+        node_config_2,
+        &chain_info,
+        vec![ANNOUNCEMENT_PROTOCOL_NAME.into()],
+    );
+
+    thread::sleep(Duration::from_secs(2));
+
+    let ids = vec![HashValue::random()];
+    let announcement =
+        NotificationMessage::Announcement(Announcement::new(AnnouncementType::Txn, ids));
+    service1.send_peer_message_for_test(peer_info_2.peer_id(), announcement.clone());
+
+    let mut receiver2 = peer_message_handler_2.channel();
+
+    let msg_receive2 = receiver2.next().await.unwrap();
+    assert_eq!(announcement, msg_receive2.notification);
+}
+
+#[stest::test]
+async fn test_filter_protocol() {
+    let chain_info = ChainInfo::new(
+        BuiltinNetworkID::Test.chain_id(),
+        HashValue::random(),
+        ChainStatus::random(),
+    );
+    let node_config_1 = Arc::new(NodeConfig::random_for_test());
+    let (mut service1, peer_info_1, _peer_message_handler_1) = build_network_service_with_protocol(
+        node_config_1.clone(),
+        &chain_info,
+        NotificationMessage::protocols(),
+    );
+
+    let nodes = vec![MultiaddrWithPeerId::new(
+        node_config_1.network.listen(),
+        peer_info_1.peer_id().into(),
+    )];
+    let mut node_config_2 = NodeConfig::random_for_test();
+    node_config_2.network.seeds = nodes.into();
+    let node_config_2 = Arc::new(node_config_2);
+    let (_service2, peer_info_2, peer_message_handler_2) = build_network_service_with_protocol(
+        node_config_2.clone(),
+        &chain_info,
+        NotificationMessage::protocols(),
+    );
+
+    thread::sleep(Duration::from_secs(2));
+
+    let nodes = vec![
+        MultiaddrWithPeerId::new(node_config_1.network.listen(), peer_info_1.peer_id().into()),
+        MultiaddrWithPeerId::new(node_config_2.network.listen(), peer_info_2.peer_id().into()),
+    ];
+    let mut node_config_3 = NodeConfig::random_for_test();
+    node_config_3.network.seeds = nodes.into();
+    let node_config_3 = Arc::new(node_config_3);
+    let (_service3, _peer_info_3, peer_message_handler_3) = build_network_service_with_protocol(
+        node_config_3,
+        &chain_info,
+        vec![ANNOUNCEMENT_PROTOCOL_NAME.into()],
+    );
+
+    thread::sleep(Duration::from_secs(2));
+
+    let txns = vec![SignedUserTransaction::mock()];
+    let notification = NotificationMessage::Transactions(TransactionsMessage::new(txns));
+    service1.broadcast_for_test(notification.clone());
+
+    let mut receiver2 = peer_message_handler_2.channel();
+    let msg_receive2 = receiver2.next().await.unwrap();
+    assert_eq!(notification, msg_receive2.notification);
+
+    let mut receiver3 = peer_message_handler_3.channel();
+    let msg_receive3 = receiver3.next().await.unwrap();
+    assert_eq!(
+        ANNOUNCEMENT_PROTOCOL_NAME,
+        msg_receive3.notification.protocol_name()
+    );
 }

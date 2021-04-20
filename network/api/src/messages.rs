@@ -96,6 +96,7 @@ pub struct Announcement {
 
 impl Announcement {
     pub fn new(announcement_type: AnnouncementType, ids: Vec<HashValue>) -> Self {
+        debug_assert!(!ids.is_empty());
         Self {
             announcement_type: announcement_type.into(),
             ids,

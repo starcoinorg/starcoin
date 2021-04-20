@@ -69,8 +69,45 @@ impl NetworkActorService {
         })
     }
 
+    ///TODO: cfg test
+    pub fn new_with_network_for_test<H>(
+        config: Arc<NodeConfig>,
+        peer_message_handler: H,
+        network: NetworkWorker,
+        peer_info: PeerInfo,
+    ) -> Result<Self>
+    where
+        H: PeerMessageHandler + 'static,
+    {
+        let inner = Inner::new(
+            config,
+            peer_info,
+            network.service().clone(),
+            peer_message_handler,
+        )?;
+        Ok(Self {
+            worker: Some(network),
+            inner,
+            network_worker_handle: None,
+        })
+    }
+
     pub fn network_service(&self) -> Arc<network_p2p::NetworkService> {
         self.inner.network_service.clone()
+    }
+
+    ///TODO: cfg test
+    pub fn send_peer_message_for_test(
+        &mut self,
+        peer_id: PeerId,
+        notification: NotificationMessage,
+    ) {
+        self.inner.send_peer_message(peer_id, notification)
+    }
+
+    ///TODO: cfg test
+    pub fn broadcast_for_test(&mut self, notification: NotificationMessage) {
+        self.inner.broadcast(notification)
     }
 }
 
@@ -617,7 +654,12 @@ impl Inner {
                 let selected_peers = select_random_peers(
                     self.config.network.min_peers_to_propagate()
                         ..=self.config.network.max_peers_to_propagate(),
-                    self.peers.keys(),
+                    self.peers
+                        .keys()
+                        .filter(|id| self.is_supported(id, protocol_name.clone()))
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .iter(),
                 );
                 let peers = self.peers.keys().cloned().collect::<Vec<_>>();
                 for peer_id in peers {
@@ -663,7 +705,9 @@ impl Inner {
                             .encode_notification()
                             .expect("Encode notification Announcement message should ok")
                         };
-                    if !self.is_supported(&peer_id, real_protocol_name.clone()) {
+                    if !is_not_announcement
+                        && !self.is_supported(&peer_id, real_protocol_name.clone())
+                    {
                         debug!(
                             "[network]remote peer: {:?} not support broadcast protocol :{:?}",
                             peer_id, real_protocol_name
