@@ -52,7 +52,7 @@ starcoin-node-api = { path = "./api" }
 starcoin-dev = { path = "../vm/dev" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-rpc-client = { path = "../rpc/client" }
-
+starcoin-stratum = {path = "../stratum"}
 [dev-dependencies]
 stest = {path = "../commons/stest"}
 

@@ -90,7 +90,8 @@ members = [
     "cmd/indexer",
     "cmd/resource-exporter",
     "cmd/merkle-generator",
-    "cmd/peer-watcher"
+    "cmd/peer-watcher",
+    "stratum"
 ]
 
 default-members = [
@@ -183,7 +184,8 @@ default-members = [
     "cmd/indexer",
     "cmd/resource-exporter",
     "cmd/merkle-generator",
-    "cmd/peer-watcher"
+    "cmd/peer-watcher",
+    "stratum"
 ]
 
 [profile.dev]

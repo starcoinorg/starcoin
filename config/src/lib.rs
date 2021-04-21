@@ -36,11 +36,13 @@ mod miner_config;
 mod network_config;
 mod rpc_config;
 mod storage_config;
+mod stratum_config;
 mod sync_config;
 #[cfg(test)]
 mod tests;
 mod txpool_config;
 
+use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
 pub use available_port::{
@@ -210,6 +212,8 @@ pub struct StarcoinOpt {
     pub sync: SyncConfig,
     #[structopt(flatten)]
     pub vault: AccountVaultConfig,
+    #[structopt(flatten)]
+    pub stratum: StratumConfig,
 }
 
 impl std::fmt::Display for StarcoinOpt {
@@ -322,7 +326,7 @@ impl BaseConfig {
                 genesis_config
             }
             (None, ChainNetworkID::Custom(_net)) => {
-                let config_name_or_path = genesis_config_name.ok_or_else(||format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
+                let config_name_or_path = genesis_config_name.ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
                 let genesis_config = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
                 {
                     Ok(net) => net.genesis_config().clone(),
@@ -414,6 +418,7 @@ pub struct NodeConfig {
     pub vault: AccountVaultConfig,
     pub metrics: MetricsConfig,
     pub logger: LoggerConfig,
+    pub stratum: StratumConfig,
 }
 
 impl std::fmt::Display for NodeConfig {
@@ -472,7 +477,8 @@ impl NodeConfig {
         self.sync.merge_with_opt(opt, base.clone())?;
         self.vault.merge_with_opt(opt, base.clone())?;
         self.metrics.merge_with_opt(opt, base.clone())?;
-        self.logger.merge_with_opt(opt, base)?;
+        self.logger.merge_with_opt(opt, base.clone())?;
+        self.stratum.merge_with_opt(opt, base)?;
         Ok(())
     }
 }
