@@ -169,7 +169,7 @@ script {
     use {{alice}}::MyToken::MyToken;
 
     fun submit_module_upgrade_plan(_account: signer, proposer_address: address, proposal_id: u64) {
-        UpgradeModuleDaoProposal::submit_module_upgrade_plan_v2<MyToken>(proposer_address, proposal_id);
+        UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);
     }
 }
 // check: EXECUTED

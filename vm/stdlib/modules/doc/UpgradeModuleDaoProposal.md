@@ -14,10 +14,10 @@ UpgradeModuleDaoProposal is a proposal moudle used to upgrade contract codes und
 -  [Function `propose_module_upgrade`](#0x1_UpgradeModuleDaoProposal_propose_module_upgrade)
 -  [Function `propose_module_upgrade_v2`](#0x1_UpgradeModuleDaoProposal_propose_module_upgrade_v2)
 -  [Function `submit_module_upgrade_plan`](#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan)
--  [Function `submit_module_upgrade_plan_v2`](#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan_v2)
 -  [Specification](#@Specification_1)
     -  [Function `plugin`](#@Specification_1_plugin)
     -  [Function `propose_module_upgrade`](#@Specification_1_propose_module_upgrade)
+    -  [Function `propose_module_upgrade_v2`](#@Specification_1_propose_module_upgrade_v2)
     -  [Function `submit_module_upgrade_plan`](#@Specification_1_submit_module_upgrade_plan)
 
 
@@ -148,6 +148,15 @@ request of upgrading module contract code.
 ## Constants
 
 
+<a name="0x1_UpgradeModuleDaoProposal_DEPRECATED_CODE"></a>
+
+
+
+<pre><code><b>const</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_DEPRECATED_CODE">DEPRECATED_CODE</a>: u64 = 200;
+</code></pre>
+
+
+
 <a name="0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED"></a>
 
 
@@ -212,7 +221,7 @@ If this goverment can upgrade module, call this to register capability.
 propose a module upgrade, called by proposer.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(_signer: &signer, _module_address: address, _package_hash: vector&lt;u8&gt;, _version: u64, _exec_delay: u64)
 </code></pre>
 
 
@@ -222,20 +231,13 @@ propose a module upgrade, called by proposer.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(
-    signer: &signer,
-    module_address: address,
-    package_hash: vector&lt;u8&gt;,
-    version: u64,
-    exec_delay: u64,
-) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
-    <b>let</b> cap = borrow_global&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
-    <b>let</b> account_address = <a href="PackageTxnManager.md#0x1_PackageTxnManager_account_address">PackageTxnManager::account_address</a>(&cap.cap);
-    <b>assert</b>(account_address == module_address, <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_ADDRESS_MISSMATCH">ERR_ADDRESS_MISSMATCH</a>));
-    <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>&gt;(
-        signer,
-        <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash, version },
-        exec_delay,
-    );
+    _signer: &signer,
+    _module_address: address,
+    _package_hash: vector&lt;u8&gt;,
+    _version: u64,
+    _exec_delay: u64,
+) {
+    <b>abort</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_DEPRECATED_CODE">DEPRECATED_CODE</a>
 }
 </code></pre>
 
@@ -301,44 +303,6 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
-    <b>let</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash, version } = <a href="Dao.md#0x1_Dao_extract_proposal_action">Dao::extract_proposal_action</a>&lt;
-        TokenT,
-        <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>,
-    &gt;(proposer_address, proposal_id);
-    <b>let</b> cap = borrow_global&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
-    <b>let</b> account_address = <a href="PackageTxnManager.md#0x1_PackageTxnManager_account_address">PackageTxnManager::account_address</a>(&cap.cap);
-    <b>assert</b>(account_address == module_address, <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_ADDRESS_MISSMATCH">ERR_ADDRESS_MISSMATCH</a>));
-    <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">PackageTxnManager::submit_upgrade_plan_with_cap</a>(
-        &cap.cap,
-        package_hash,
-        version,
-    );
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan_v2"></a>
-
-## Function `submit_module_upgrade_plan_v2`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan_v2">submit_module_upgrade_plan_v2</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan_v2">submit_module_upgrade_plan_v2</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(
-    proposer_address: address,
-    proposal_id: u64,
-) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
     <b>let</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleV2">UpgradeModuleV2</a> { module_address, package_hash, version, enforced } = <a href="Dao.md#0x1_Dao_extract_proposal_action">Dao::extract_proposal_action</a>&lt;
         TokenT,
         <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleV2">UpgradeModuleV2</a>,
@@ -384,7 +348,7 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<a name="0x1_UpgradeModuleDaoProposal_sender$7"></a>
+<a name="0x1_UpgradeModuleDaoProposal_sender$6"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
 <b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(sender);
@@ -398,10 +362,10 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
 
 <pre><code><b>schema</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_AbortIfUnableUpgrade">AbortIfUnableUpgrade</a>&lt;TokenT&gt; {
     module_address: address;
-    <a name="0x1_UpgradeModuleDaoProposal_token_issuer$5"></a>
+    <a name="0x1_UpgradeModuleDaoProposal_token_issuer$4"></a>
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(token_issuer);
-    <a name="0x1_UpgradeModuleDaoProposal_cap$6"></a>
+    <a name="0x1_UpgradeModuleDaoProposal_cap$5"></a>
     <b>let</b> cap = <b>global</b>&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(token_issuer).cap;
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_account_address">PackageTxnManager::account_address</a>(cap) != module_address;
 }
@@ -414,7 +378,23 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
 ### Function `propose_module_upgrade`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(_signer: &signer, _module_address: address, _package_hash: vector&lt;u8&gt;, _version: u64, _exec_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_propose_module_upgrade_v2"></a>
+
+### Function `propose_module_upgrade_v2`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64, enforced: bool)
 </code></pre>
 
 
@@ -437,15 +417,15 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
 
 
 
-<a name="0x1_UpgradeModuleDaoProposal_expected_states$8"></a>
+<a name="0x1_UpgradeModuleDaoProposal_expected_states$7"></a>
 
 
 <pre><code><b>let</b> expected_states = singleton_vector(6);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">Dao::CheckProposalStates</a>&lt;TokenT, <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>&gt;{expected_states};
-<a name="0x1_UpgradeModuleDaoProposal_proposal$9"></a>
+<a name="0x1_UpgradeModuleDaoProposal_proposal$8"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>&gt;&gt;(proposer_address);
 <b>aborts_if</b> <a href="Option.md#0x1_Option_is_none">Option::is_none</a>(proposal.action);
-<a name="0x1_UpgradeModuleDaoProposal_action$10"></a>
+<a name="0x1_UpgradeModuleDaoProposal_action$9"></a>
 <b>let</b> action = proposal.action.vec[0];
 <b>include</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_AbortIfUnableUpgrade">AbortIfUnableUpgrade</a>&lt;TokenT&gt;{module_address: action.module_address};
 </code></pre>

@@ -7,8 +7,8 @@ The module provides strategies for module upgrading.
 
 
 -  [Struct `UpgradePlan`](#0x1_PackageTxnManager_UpgradePlan)
--  [Struct `UpgradePlanV2`](#0x1_PackageTxnManager_UpgradePlanV2)
 -  [Resource `UpgradePlanCapability`](#0x1_PackageTxnManager_UpgradePlanCapability)
+-  [Struct `UpgradePlanV2`](#0x1_PackageTxnManager_UpgradePlanV2)
 -  [Resource `ModuleUpgradeStrategy`](#0x1_PackageTxnManager_ModuleUpgradeStrategy)
 -  [Resource `TwoPhaseUpgrade`](#0x1_PackageTxnManager_TwoPhaseUpgrade)
 -  [Struct `TwoPhaseUpgradeConfig`](#0x1_PackageTxnManager_TwoPhaseUpgradeConfig)
@@ -42,6 +42,7 @@ The module provides strategies for module upgrading.
     -  [Function `update_module_upgrade_strategy`](#@Specification_1_update_module_upgrade_strategy)
     -  [Function `destroy_upgrade_plan_cap`](#@Specification_1_destroy_upgrade_plan_cap)
     -  [Function `extract_submit_upgrade_plan_cap`](#@Specification_1_extract_submit_upgrade_plan_cap)
+    -  [Function `convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2`](#@Specification_1_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2)
     -  [Function `submit_upgrade_plan_v2`](#@Specification_1_submit_upgrade_plan_v2)
     -  [Function `submit_upgrade_plan_with_cap_v2`](#@Specification_1_submit_upgrade_plan_with_cap_v2)
     -  [Function `cancel_upgrade_plan`](#@Specification_1_cancel_upgrade_plan)
@@ -107,6 +108,34 @@ module upgrade plan
 
 </details>
 
+<a name="0x1_PackageTxnManager_UpgradePlanCapability"></a>
+
+## Resource `UpgradePlanCapability`
+
+The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
+
+
+<pre><code><b>resource</b> <b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>account_address: address</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x1_PackageTxnManager_UpgradePlanV2"></a>
 
 ## Struct `UpgradePlanV2`
@@ -143,34 +172,6 @@ module upgrade plan
 </dd>
 <dt>
 <code>enforced: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_UpgradePlanCapability"></a>
-
-## Resource `UpgradePlanCapability`
-
-The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
-
-
-<pre><code><b>resource</b> <b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>account_address: address</code>
 </dt>
 <dd>
 
@@ -814,7 +815,7 @@ Submit a new upgrade plan.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2">convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2</a>(account: &signer, package_address: address)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2">convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2</a>(account: signer, package_address: address)
 </code></pre>
 
 
@@ -823,15 +824,15 @@ Submit a new upgrade plan.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2">convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2</a>(account: &signer, package_address: address) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a> {
-    <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    // sender should be package owner, <b>except</b> for genesis
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2">convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2</a>(account: signer, package_address: address) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a> {
+    <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&account);
+    // sender should be package owner
     <b>assert</b>(account_address == package_address, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_AND_PACKAGE_ADDRESS_MISMATCH">ESENDER_AND_PACKAGE_ADDRESS_MISMATCH</a>));
     <b>let</b> tpu = move_from&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(account_address);
     <b>let</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>{config, plan, version_cap, upgrade_event} = tpu;
     <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&plan)) {
         <b>let</b> old_plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&plan);
-        move_to(account, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>{
+        move_to(&account, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>{
             config: config,
             plan: <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanV2">UpgradePlanV2</a> {
                 package_hash: *&old_plan.package_hash,
@@ -842,7 +843,7 @@ Submit a new upgrade plan.
             upgrade_event: upgrade_event
         });
     } <b>else</b> {
-        move_to(account, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>{
+        move_to(&account, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>{
             config: config,
             plan: <a href="Option.md#0x1_Option_none">Option::none</a>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanV2">UpgradePlanV2</a>&gt;(),
             version_cap: version_cap,
@@ -914,6 +915,7 @@ Submit a new upgrade plan.
 
 ## Function `cancel_upgrade_plan`
 
+Cancel a module upgrade plan.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan">cancel_upgrade_plan</a>(account: &signer)
@@ -940,6 +942,7 @@ Submit a new upgrade plan.
 
 ## Function `cancel_upgrade_plan_with_cap`
 
+Cancel a module upgrade plan with given cap.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap">cancel_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)
@@ -1184,7 +1187,7 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>pragma</b> verify = <b>true</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
@@ -1201,7 +1204,8 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>aborts_if</b> strategy != 0 && strategy != 1 && strategy != 2 && strategy != 3;
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> strategy != 0 && strategy != 1 && strategy != 2 && strategy != 3;
 <b>aborts_if</b> <b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)) && strategy &lt;= <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).strategy;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)) && strategy == 0;
 <b>aborts_if</b> strategy == 1 && <b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
@@ -1250,6 +1254,22 @@ Package txn finished, and clean UpgradePlan
 
 
 
+<a name="@Specification_1_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2"></a>
+
+### Function `convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2`
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2">convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2</a>(account: signer, package_address: address)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
 <a name="@Specification_1_submit_upgrade_plan_v2"></a>
 
 ### Function `submit_upgrade_plan_v2`
@@ -1261,7 +1281,8 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).account_address};
 <b>ensures</b> <a href="Option.md#0x1_Option_is_some">Option::is_some</a>(<b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(<b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).account_address).plan);
 </code></pre>
@@ -1279,7 +1300,8 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: cap.account_address};
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: cap.account_address};
 <b>ensures</b> <a href="Option.md#0x1_Option_is_some">Option::is_some</a>(<b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(cap.account_address).plan);
 </code></pre>
 
@@ -1409,7 +1431,8 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1440,7 +1463,8 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIf">CheckPackageTxnAbortsIf</a>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIf">CheckPackageTxnAbortsIf</a>;
 </code></pre>
 
 
@@ -1492,7 +1516,8 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
 <a name="0x1_PackageTxnManager_tpu$26"></a>
 <b>let</b> tpu = <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
 <b>aborts_if</b> <a href="Option.md#0x1_Option_is_some">Option::is_some</a>(tpu.plan) && !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;&gt;(tpu.version_cap.account_address);

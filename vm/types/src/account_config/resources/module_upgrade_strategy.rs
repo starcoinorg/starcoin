@@ -3,9 +3,9 @@
 
 use crate::access_path::AccessPath;
 use crate::account_address::AccountAddress;
+use crate::event::EventHandle;
 use crate::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
-use crate::event::EventHandle;
 
 pub const _STRATEGY_ARBITRARY: u8 = 0;
 pub const STRATEGY_TWO_PHASE: u8 = 1;

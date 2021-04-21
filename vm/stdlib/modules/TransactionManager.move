@@ -20,7 +20,7 @@ module TransactionManager {
     use 0x1::Hash;
 
     spec module {
-        pragma verify = true;
+        pragma verify = false;
         pragma aborts_if_is_strict = true;
     }
 

@@ -28,7 +28,7 @@ fn test_starcoin_merkle() -> Result<()> {
 
         let package = Package::new(modules, None)?;
         association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::Package(package),
         )?;
@@ -51,7 +51,7 @@ fn test_starcoin_merkle() -> Result<()> {
                 .unwrap()],
         );
         association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;

@@ -5,14 +5,14 @@
 
 
 
+-  [Constants](#@Constants_0)
 -  [Function `propose_module_upgrade`](#0x1_ModuleUpgradeScripts_propose_module_upgrade)
 -  [Function `propose_module_upgrade_v2`](#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2)
 -  [Function `update_module_upgrade_strategy`](#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy)
 -  [Function `submit_module_upgrade_plan`](#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan)
--  [Function `submit_module_upgrade_plan_v2`](#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2)
 -  [Function `cancel_upgrade_plan`](#0x1_ModuleUpgradeScripts_cancel_upgrade_plan)
--  [Specification](#@Specification_0)
-    -  [Function `cancel_upgrade_plan`](#@Specification_0_cancel_upgrade_plan)
+-  [Specification](#@Specification_1)
+    -  [Function `cancel_upgrade_plan`](#@Specification_1_cancel_upgrade_plan)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
@@ -25,13 +25,27 @@
 
 
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_ModuleUpgradeScripts_DEPRECATED_CODE"></a>
+
+
+
+<pre><code><b>const</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_DEPRECATED_CODE">DEPRECATED_CODE</a>: u64 = 200;
+</code></pre>
+
+
+
 <a name="0x1_ModuleUpgradeScripts_propose_module_upgrade"></a>
 
 ## Function `propose_module_upgrade`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: signer, _module_address: address, _package_hash: vector&lt;u8&gt;, _version: u64, _exec_delay: u64)
 </code></pre>
 
 
@@ -41,19 +55,13 @@
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
-    signer: signer,
-    module_address: address,
-    package_hash: vector&lt;u8&gt;,
-    version: u64,
-    exec_delay: u64,
+    _signer: signer,
+    _module_address: address,
+    _package_hash: vector&lt;u8&gt;,
+    _version: u64,
+    _exec_delay: u64,
 ) {
-    <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">UpgradeModuleDaoProposal::propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(
-        &signer,
-        module_address,
-        package_hash,
-        version,
-        exec_delay,
-    );
+    <b>abort</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_DEPRECATED_CODE">DEPRECATED_CODE</a>
 }
 </code></pre>
 
@@ -166,34 +174,6 @@
 
 </details>
 
-<a name="0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2"></a>
-
-## Function `submit_module_upgrade_plan_v2`
-
-
-
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2">submit_module_upgrade_plan_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: signer, proposer_address: address, proposal_id: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan_v2">submit_module_upgrade_plan_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
-    _signer: signer,
-    proposer_address: address,
-    proposal_id: u64,
-) {
-    <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan_v2">UpgradeModuleDaoProposal::submit_module_upgrade_plan_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(proposer_address, proposal_id);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_ModuleUpgradeScripts_cancel_upgrade_plan"></a>
 
 ## Function `cancel_upgrade_plan`
@@ -220,7 +200,7 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
@@ -233,7 +213,7 @@
 
 
 
-<a name="@Specification_0_cancel_upgrade_plan"></a>
+<a name="@Specification_1_cancel_upgrade_plan"></a>
 
 ### Function `cancel_upgrade_plan`
 
