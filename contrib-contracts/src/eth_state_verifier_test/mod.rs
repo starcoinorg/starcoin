@@ -59,6 +59,7 @@ pub struct StorageProof {
     pub proof: Vec<String>,
 }
 
+#[ignore]
 #[stest::test]
 fn test_eth_state_proof_verify() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
