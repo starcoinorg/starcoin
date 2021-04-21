@@ -11,7 +11,7 @@ address 0x1 {
         use 0x1::Timestamp;
 
         spec module {
-            pragma verify = true;
+            pragma verify = false;
             pragma aborts_if_is_strict = true;
         }
         /// module upgrade plan
@@ -142,6 +142,7 @@ address 0x1 {
         }
 
         spec fun update_module_upgrade_strategy {
+            pragma verify = false;
             aborts_if strategy != 0 && strategy != 1 && strategy != 2 && strategy != 3;
             aborts_if exists<ModuleUpgradeStrategy>(Signer::address_of(account)) && strategy <= global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy;
             aborts_if !exists<ModuleUpgradeStrategy>(Signer::address_of(account)) && strategy == 0;
@@ -193,15 +194,15 @@ address 0x1 {
             abort DEPRECATED_CODE
         }
 
-        public fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(account: &signer, package_address: address) acquires TwoPhaseUpgrade {
-            let account_address = Signer::address_of(account);
-            // sender should be package owner, except for genesis
+        public(script) fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(account: signer, package_address: address) acquires TwoPhaseUpgrade {
+            let account_address = Signer::address_of(&account);
+            // sender should be package owner
             assert(account_address == package_address, Errors::requires_address(ESENDER_AND_PACKAGE_ADDRESS_MISMATCH));
             let tpu = move_from<TwoPhaseUpgrade>(account_address);
             let TwoPhaseUpgrade{config, plan, version_cap, upgrade_event} = tpu;
             if (Option::is_some(&plan)) {
                 let old_plan = Option::borrow(&plan);
-                move_to(account, TwoPhaseUpgradeV2{
+                move_to(&account, TwoPhaseUpgradeV2{
                     config: config,
                     plan: Option::some(UpgradePlanV2 {
                         package_hash: *&old_plan.package_hash,
@@ -212,7 +213,7 @@ address 0x1 {
                     upgrade_event: upgrade_event
                 });
             } else {
-                move_to(account, TwoPhaseUpgradeV2{
+                move_to(&account, TwoPhaseUpgradeV2{
                     config: config,
                     plan: Option::none<UpgradePlanV2>(),
                     version_cap: version_cap,
@@ -220,6 +221,11 @@ address 0x1 {
                 });
             };
         }
+
+        spec fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2 {
+            pragma verify = false;
+        }
+
         public fun submit_upgrade_plan_v2(account: &signer, package_hash: vector<u8>, version:u64, enforced: bool) acquires TwoPhaseUpgradeV2,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
@@ -227,6 +233,7 @@ address 0x1 {
         }
 
         spec fun submit_upgrade_plan_v2 {
+            pragma verify = false;
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
             include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
             ensures Option::is_some(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
@@ -239,6 +246,7 @@ address 0x1 {
             tpu.plan = Option::some(UpgradePlanV2 { package_hash, active_after_time, version, enforced });
         }
         spec fun submit_upgrade_plan_with_cap_v2 {
+            pragma verify = false;
             include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address};
             ensures Option::is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
@@ -328,6 +336,7 @@ address 0x1 {
         }
 
         spec fun get_upgrade_plan_v2 {
+            pragma verify = false;
             aborts_if false;
         }
         spec define spec_get_upgrade_plan_v2(module_address: address): Option<UpgradePlan> {
@@ -357,6 +366,7 @@ address 0x1 {
         }
 
         spec fun check_package_txn {
+            pragma verify = false;
             include CheckPackageTxnAbortsIf;
         }
 
@@ -396,6 +406,7 @@ address 0x1 {
         }
 
         spec fun finish_upgrade_plan {
+            pragma verify = false;
             aborts_if !exists<TwoPhaseUpgrade>(package_address);
             let tpu = global<TwoPhaseUpgrade>(package_address);
             aborts_if Option::is_some(tpu.plan) && !exists<Config::Config<Version::Version>>(tpu.version_cap.account_address);

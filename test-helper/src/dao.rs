@@ -139,10 +139,10 @@ fn execute_create_account(
             stc_type_tag(),
             alice.address(),
             alice.auth_key(),
-            pre_mint_amount / 2,
+            pre_mint_amount / 4,
         );
         association_execute(
-            net.genesis_config(),
+            net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;
@@ -152,10 +152,10 @@ fn execute_create_account(
             stc_type_tag(),
             bob.address(),
             bob.auth_key(),
-            pre_mint_amount / 4,
+            pre_mint_amount / 8,
         );
         association_execute(
-            net.genesis_config(),
+            net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;
@@ -220,6 +220,7 @@ fn execute_cast_vote(
     dao_action_type_tag: &TypeTag,
     block_number: u64,
     block_timestamp: u64,
+    proposal_id: u64,
 ) -> Result<()> {
     blockmeta_execute(
         &chain_state,
@@ -235,7 +236,7 @@ fn execute_cast_vote(
         ),
     )?;
     let proposer_address = *alice.address();
-    let proposer_id = 0u64;
+    let proposer_id = proposal_id;
     let voting_power = get_balance(*alice.address(), chain_state);
     println!("alice voting power: {}", voting_power);
     let script_function = ScriptFunction::new(
@@ -254,6 +255,7 @@ fn execute_cast_vote(
     );
     // vote first.
     account_execute(
+        net,
         &alice,
         chain_state,
         TransactionPayload::ScriptFunction(script_function),
@@ -266,7 +268,7 @@ fn execute_cast_vote(
         stc_type_tag(),
         dao_action_type_tag.clone(),
         *alice.address(),
-        0,
+        proposal_id,
     );
     assert_eq!(state, ACTIVE);
     Ok(())
@@ -411,6 +413,7 @@ pub fn dao_vote_test(
     vote_script: ScriptFunction,
     action_type_tag: TypeTag,
     execute_script: ScriptFunction,
+    proposal_id: u64,
 ) -> Result<ChainStateDB> {
     let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
@@ -446,6 +449,7 @@ pub fn dao_vote_test(
             ),
         )?;
         account_execute(
+            net,
             &alice,
             &chain_state,
             TransactionPayload::ScriptFunction(vote_script),
@@ -455,7 +459,7 @@ pub fn dao_vote_test(
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
-            0,
+            proposal_id,
         );
         assert_eq!(state, PENDING);
     }
@@ -470,6 +474,7 @@ pub fn dao_vote_test(
         &action_type_tag,
         block_number,
         block_timestamp,
+        proposal_id,
     )?;
 
     // block 4
@@ -494,7 +499,7 @@ pub fn dao_vote_test(
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
-            0,
+            proposal_id,
         );
         assert_eq!(state, ACTIVE);
     }
@@ -521,7 +526,7 @@ pub fn dao_vote_test(
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
-            0,
+            proposal_id,
         );
         assert_eq!(state, AGREED);
 
@@ -531,10 +536,11 @@ pub fn dao_vote_test(
             vec![stc_type_tag(), action_type_tag.clone()],
             vec![
                 bcs_ext::to_bytes(alice.address()).unwrap(),
-                bcs_ext::to_bytes(&0u64).unwrap(),
+                bcs_ext::to_bytes(&proposal_id).unwrap(),
             ],
         );
         account_execute(
+            net,
             &alice,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -544,7 +550,7 @@ pub fn dao_vote_test(
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
-            0,
+            proposal_id,
         );
         assert_eq!(state, QUEUED);
     }
@@ -571,10 +577,11 @@ pub fn dao_vote_test(
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
-            0,
+            proposal_id,
         );
         assert_eq!(state, EXECUTABLE);
         account_execute(
+            net,
             &alice,
             &chain_state,
             TransactionPayload::ScriptFunction(execute_script),
@@ -603,7 +610,7 @@ pub fn dao_vote_test(
             stc_type_tag(),
             action_type_tag,
             *alice.address(),
-            0,
+            proposal_id,
         );
         assert_eq!(state, EXTRACTED);
     }

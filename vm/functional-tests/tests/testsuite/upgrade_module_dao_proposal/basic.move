@@ -233,7 +233,7 @@ script {
         let proposer_address = {{alice}};
         let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(proposer_address, proposal_id);
         assert(state == 6, (state as u64));
-        UpgradeModuleDaoProposal::submit_module_upgrade_plan_v2<MyToken>(proposer_address, proposal_id);
+        UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);
     }
 }
 // check: EXECUTED

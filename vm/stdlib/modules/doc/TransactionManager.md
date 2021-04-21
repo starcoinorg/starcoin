@@ -310,7 +310,7 @@ The runtime always runs this before executing the transactions in a block.
 
 
 
-<pre><code><b>pragma</b> verify = <b>true</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 

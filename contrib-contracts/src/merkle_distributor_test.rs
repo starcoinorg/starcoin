@@ -38,7 +38,7 @@ fn test_merkle_distributor() -> Result<()> {
 
         let package = Package::new(modules, None)?;
         association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::Package(package),
         )?;
@@ -66,7 +66,7 @@ fn test_merkle_distributor() -> Result<()> {
         );
 
         association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;
@@ -133,7 +133,7 @@ fn test_merkle_distributor() -> Result<()> {
         );
 
         let result = association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         );
@@ -178,7 +178,7 @@ fn test_merkle_distributor() -> Result<()> {
             ],
         );
         association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;
