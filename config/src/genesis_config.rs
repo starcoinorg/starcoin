@@ -679,6 +679,9 @@ static MIN_BLOCK_TIME_TARGET: u64 = 5000;
 static MAX_BLOCK_TIME_TARGET: u64 = 60000;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
+pub static TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
+    Lazy::new(|| STCUnit::STC.value_of(318513600));
+
 //for Private funding
 static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(15925680));
@@ -784,7 +787,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         reward_delay: 1,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_mint_period: 3600,
+        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: TEST_GAS_SCHEDULE.clone(),
         },

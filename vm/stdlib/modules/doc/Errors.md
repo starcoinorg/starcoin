@@ -137,7 +137,7 @@ is exhausted.
 
 <a name="0x1_Errors_NOT_PUBLISHED"></a>
 
-A resource is required but not published. Example: access to non-existing AccountLimits resource.
+A resource is required but not published. Example: access to non-existing resource.
 
 
 <pre><code><b>const</b> <a href="Errors.md#0x1_Errors_NOT_PUBLISHED">NOT_PUBLISHED</a>: u8 = 5;

@@ -1,5 +1,6 @@
 use crate::execute_readonly_function;
 use anyhow::{format_err, Result};
+use starcoin_config::genesis_config::TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_state_api::StateView;
@@ -358,17 +359,14 @@ fn test_stdlib_upgrade() -> Result<()> {
     let init_script = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("PackageTxnManager").unwrap(),
+            Identifier::new("UpgradeScripts").unwrap(),
         ),
-        Identifier::new("convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2").unwrap(),
+        Identifier::new("upgrade_from_v1_to_v2").unwrap(),
         vec![],
-        vec![bcs_ext::to_bytes(&genesis_address()).unwrap()],
+        vec![bcs_ext::to_bytes(&TOTAL_STC_AMOUNT.scaling()).unwrap()],
     );
 
-    let package = build_stdlib_package_for_test(
-        StdLibOptions::Compiled(StdlibVersion::Latest),
-        Some(init_script),
-    )?;
+    let package = build_stdlib_package_for_test(StdLibOptions::Fresh, Some(init_script))?;
     let package_hash = package.crypto_hash();
 
     let vote_script_function = ScriptFunction::new(

@@ -7,6 +7,7 @@ module Dao {
     use 0x1::Config;
     use 0x1::Event;
     use 0x1::Errors;
+    use 0x1::Treasury;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -861,7 +862,9 @@ module Dao {
 
     /// Quorum votes to make proposal pass.
     public fun quorum_votes<TokenT: copy + drop + store>(): u128 {
-        let supply = Token::market_cap<TokenT>();
+        let market_cap = Token::market_cap<TokenT>();
+        let balance_in_treasury = Treasury::balance<TokenT>();
+        let supply = market_cap - balance_in_treasury;
         let rate = voting_quorum_rate<TokenT>();
         let rate = (rate as u128);
         supply * rate / 100
