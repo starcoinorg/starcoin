@@ -1,6 +1,6 @@
 on: [pull_request]
 
-name: benchmark pull requests
+name: 2. benchmark pull requests
 jobs:
   runBenchmark:
     name: run benchmark

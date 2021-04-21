@@ -1,4 +1,4 @@
-name: Code Coverage Report
+name: 3. Code Coverage Report
 on:
   workflow_dispatch:
   pull_request:
