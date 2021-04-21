@@ -27,7 +27,7 @@ starcoin-crypto = {path = "../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 
 fnv = "1.0.6"
-zeroize = "1.1.1"
+zeroize = "1.3.0"
 bitflags = "1.2.0"
 
 tempfile = "3.1.0"
