@@ -35,9 +35,11 @@ spec:
         app: starcoin
         network: proxima
     spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.9.3
+        image: starcoin/starcoin:master
         imagePullPolicy: Always
         command:
           - bash
@@ -48,9 +50,19 @@ spec:
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
-              node_key_flag="--node-key ${node_key}";
+            node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n proxima -d /sc-data --enable-mdns $node_key_flag --rpc-address 0.0.0.0;
+            /starcoin/starcoin -n proxima -d /sc-data --discover-local=true $node_key_flag;
+            ret=$?;
+            if [ $ret -ne 0 ]; then
+            echo "Node start fail, try to remove config.";
+            rm /sc-data/proxima/config.toml;
+            rm /sc-data/proxima/genesis_config.json;
+            fi;
+            if [ $ret -eq 120 ]; then
+            echo "Start failed with gensis mismatch code 120, clean data...";
+            rm -rf /sc-data/proxima/ &>/dev/null;
+            fi;
         ports:
           - containerPort: 9840
             hostPort: 9840
@@ -67,19 +79,6 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: doks.digitalocean.com/node-pool
-                      operator: In
-                      values:
-                        - ci-pool
-                        - ci-pool2
-                topologyKey: kubernetes.io/hostname
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

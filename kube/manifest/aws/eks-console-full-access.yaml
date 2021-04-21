@@ -41,6 +41,9 @@ subjects:
 - kind: User
   name: jolestar
   apiGroup: rbac.authorization.k8s.io
+- kind: User
+  name: chengsuoyuan
+  apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
   name: eks-console-dashboard-full-access-clusterrole

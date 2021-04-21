@@ -900,10 +900,10 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 });
 
 pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
+    vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
-         "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
-         "/dns4/proxima4.seed.starcoin.org/tcp/9840/p2p/12D3KooWRNmmZMDw1nyKhU6KDGCcF4Qx7BeZ7ugjdoGg8ud1V7Kb".parse().expect("parse multi addr should be ok"), ]
+         "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
+      ]
 });
 
 pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
