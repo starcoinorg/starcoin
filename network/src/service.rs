@@ -73,20 +73,15 @@ impl NetworkActorService {
     pub fn new_with_network_for_test<H>(
         config: Arc<NodeConfig>,
         peer_message_handler: H,
-        network: NetworkWorker,
+        network_service: Arc<network_p2p::NetworkService>,
         peer_info: PeerInfo,
     ) -> Result<Self>
     where
         H: PeerMessageHandler + 'static,
     {
-        let inner = Inner::new(
-            config,
-            peer_info,
-            network.service().clone(),
-            peer_message_handler,
-        )?;
+        let inner = Inner::new(config, peer_info, network_service, peer_message_handler)?;
         Ok(Self {
-            worker: Some(network),
+            worker: None,
             inner,
             network_worker_handle: None,
         })
