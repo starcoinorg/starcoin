@@ -354,15 +354,16 @@ async fn test_filter_protocol() {
     assert!(service1.service_ref.is_connected(service3.peer_id()).await);
     assert!(service3.service_ref.is_connected(service1.peer_id()).await);
 
+    let mut receiver2 = service2.message_handler.channel();
+    let mut receiver3 = service3.message_handler.channel();
+
     let txns = vec![SignedUserTransaction::mock()];
     let notification = NotificationMessage::Transactions(TransactionsMessage::new(txns));
     service1.service_ref.broadcast(notification.clone());
 
-    let mut receiver2 = service2.message_handler.channel();
     let msg_2 = receiver2.next().await.unwrap();
     assert_eq!(notification, msg_2.notification);
 
-    let mut receiver3 = service3.message_handler.channel();
     let msg_3 = receiver3.next().await.unwrap();
     assert_eq!(
         ANNOUNCEMENT_PROTOCOL_NAME,
