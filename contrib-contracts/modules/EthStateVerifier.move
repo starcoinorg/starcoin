@@ -18,9 +18,79 @@ module Bytes {
         result
     }
 }
+module RLP {
+    use 0x1::Vector;
+    use 0xa550c18::Bytes;
+    const INVALID_RLP_DATA: u64 = 100;
+    const DATA_TOO_SHORT: u64 = 101;
 
+    /// Decode data into array of bytes.
+    /// Nested arrays are not supported.
+    public fun decode_list(data: &vector<u8>): vector<vector<u8>> {
+        let (decoded, consumed) = decode(data, 0);
+        assert(consumed == Vector::length(data), INVALID_RLP_DATA);
+        decoded
+    }
+
+    fun decode(data: &vector<u8>, offset: u64): (vector<vector<u8>>, u64) {
+        let data_len = Vector::length(data);
+        assert(offset < data_len, DATA_TOO_SHORT);
+        let first_byte = *Vector::borrow(data, offset);
+        if (first_byte >= 248u8) { // 0xf8
+            let length_of_length = ((first_byte - 247u8) as u64);
+            assert(offset + length_of_length < data_len, DATA_TOO_SHORT);
+            let length = unarrayify_integer(data, offset + 1, (length_of_length as u8));
+            assert(offset + length_of_length + length < data_len, DATA_TOO_SHORT);
+            decode_children(data, offset, offset + 1 + length_of_length, length_of_length + length)
+        } else if (first_byte >= 192u8) { // 0xc0
+            let length = ((first_byte - 192u8) as u64);
+            assert(offset + length < data_len, DATA_TOO_SHORT);
+            decode_children(data, offset, offset + 1, length)
+        } else if (first_byte >= 184u8) { // 0xb8
+            let length_of_length = ((first_byte - 183u8) as u64);
+            assert(offset + length_of_length < data_len, DATA_TOO_SHORT);
+            let length = unarrayify_integer(data, offset + 1, (length_of_length as u8));
+            assert(offset + length_of_length + length < data_len, DATA_TOO_SHORT);
+
+            let bytes = Bytes::slice(data, offset + 1 + length_of_length, offset + 1 + length_of_length + length);
+            (Vector::singleton(bytes), 1+length_of_length+length)
+        } else if (first_byte >= 128u8) { // 0x80
+            let length = ((first_byte - 128u8) as u64);
+            assert(offset + length < data_len, DATA_TOO_SHORT);
+            let bytes = Bytes::slice(data, offset + 1, offset + 1 + length);
+            (Vector::singleton(bytes), 1+length)
+        } else {
+            let bytes = Bytes::slice(data, offset, offset + 1);
+            (Vector::singleton(bytes), 1)
+        }
+    }
+
+    fun decode_children(data: &vector<u8>, offset: u64, child_offset: u64, length: u64): (vector<vector<u8>>, u64) {
+        let result = Vector::empty();
+
+        while (child_offset < offset + 1 + length) {
+            let (decoded, consumed) = decode(data, child_offset);
+            Vector::append(&mut result, decoded);
+            child_offset = child_offset + consumed;
+            assert(child_offset <= offset + 1 + length, DATA_TOO_SHORT);
+        };
+        (result, 1 + length)
+    }
+
+
+    fun unarrayify_integer(data: &vector<u8>, offset: u64, length: u8): u64 {
+        let result = 0;
+        let i = 0u8;
+        while(i < length) {
+            result = result * 256 + (*Vector::borrow(data, offset + (i as u64)) as u64);
+            i = i + 1;
+        };
+        result
+    }
+
+}
 module EthStateVerifier {
-    use 0x1::RLP;
+    use 0xa550c18::RLP;
     use 0x1::Vector;
     use 0x1::Hash;
     use 0xa550c18::Bytes;
@@ -59,7 +129,7 @@ module EthStateVerifier {
         };
 
         let node = Vector::borrow(&proof, proof_index);
-        let dec = RLP::decode(*node);
+        let dec = RLP::decode_list(node);
         // trie root is always a hash
         if (key_index == 0 || Vector::length(node) >= 32u64) {
             if (Hash::keccak_256(*node) != expected_root) {

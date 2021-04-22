@@ -59,7 +59,6 @@ pub struct StorageProof {
     pub proof: Vec<String>,
 }
 
-#[ignore]
 #[stest::test]
 fn test_eth_state_proof_verify() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -136,8 +135,6 @@ fn test_eth_state_proof_verify() -> Result<()> {
             println!("proof: {:?}", storage_proof);
             let key = H256::from_uint(&storage_proof.key).as_bytes().to_vec();
             let value = storage_proof.value.rlp_bytes();
-            println!("key: {:?}", &key);
-            println!("value: {:?}", &value);
 
             let proofs: Vec<_> = storage_proof
                 .proof
