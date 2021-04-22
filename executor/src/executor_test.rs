@@ -224,7 +224,13 @@ fn test_package_txn() -> Result<()> {
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
-        account_execute(&net,&alice, &chain_state, TransactionPayload::Package(package)).unwrap();
+        account_execute(
+            &net,
+            &alice,
+            &chain_state,
+            TransactionPayload::Package(package),
+        )
+        .unwrap();
     }
 
     // now, upgrade to test module_1
@@ -264,7 +270,13 @@ fn test_package_txn() -> Result<()> {
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
-        account_execute(&net,&alice, &chain_state, TransactionPayload::Package(package)).unwrap();
+        account_execute(
+            &net,
+            &alice,
+            &chain_state,
+            TransactionPayload::Package(package),
+        )
+        .unwrap();
     }
 
     Ok(())

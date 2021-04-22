@@ -520,31 +520,33 @@ pub fn build_stdlib_package(
     Ok(package)
 }
 
-pub fn build_stdlib_package_for_test(
+pub fn build_package_with_stdlib_module(
     stdlib_option: StdLibOptions,
+    module_name: &str,
     init_script: Option<ScriptFunction>,
 ) -> Result<Package> {
     let modules = stdlib_modules(stdlib_option);
     let mut package = Package::new_with_modules(
         modules
             .iter()
-            .map(|m| {
+            .filter_map(|m| {
                 let mut blob = vec![];
                 m.serialize(&mut blob)
                     .expect("serializing stdlib must work");
                 let handle = &m.module_handles()[0];
-                debug!(
-                    "Add module: {}::{}",
-                    m.address_identifier_at(handle.address),
-                    m.identifier_at(handle.name)
-                );
-                Module::new(blob)
+                let name = m.identifier_at(handle.name).as_str();
+                if name == module_name {
+                    debug!("Added module: {}", name);
+                    Some(Module::new(blob))
+                } else {
+                    None
+                }
             })
             .collect(),
     )?;
     match init_script {
         Some(script_function) => package.set_init_script(script_function),
-        None => {},
+        None => {}
     }
     Ok(package)
 }

@@ -37,11 +37,7 @@ fn test_merkle_distributor() -> Result<()> {
         let modules = compile_modules_with_address(association_address(), source);
 
         let package = Package::new(modules, None)?;
-        association_execute(
-            &net,
-            &chain_state,
-            TransactionPayload::Package(package),
-        )?;
+        association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
     }
 
     // association: create the merkle distributor.
