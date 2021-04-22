@@ -69,6 +69,22 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
+    fn get_txns_with_hash_from_pool(
+        &self,
+        _peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>> {
+        let txpool = self.txpool_service.clone();
+        let fut = async move {
+            let mut data = vec![];
+            for id in req.ids {
+                data.push(txpool.find_txn(&id));
+            }
+            Ok(data)
+        };
+        Box::pin(fut)
+    }
+
     fn get_txns(
         &self,
         _peer_id: PeerId,

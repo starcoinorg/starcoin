@@ -134,17 +134,11 @@ pub async fn build_network_cluster(n: usize) -> Result<Vec<TestNetworkService>> 
     Ok(nodes)
 }
 
-pub async fn build_network(
-    seed: Option<MultiaddrWithPeerId>,
+pub async fn build_network_with_config(
+    node_config: Arc<NodeConfig>,
     rpc_service_mocker: Option<(RpcInfo, MockRpcHandler)>,
 ) -> Result<TestNetworkService> {
     let registry = RegistryService::launch();
-
-    let mut config = NodeConfig::random_for_test();
-    if let Some(seed) = seed {
-        config.network.seeds = vec![seed].into();
-    }
-    let node_config = Arc::new(config);
     let (storage, _chain_info, genesis) = Genesis::init_storage_for_test(node_config.net())?;
     registry.put_shared(genesis).await?;
     registry.put_shared(node_config.clone()).await?;
@@ -165,6 +159,17 @@ pub async fn build_network(
         config: node_config,
         registry,
     })
+}
+
+pub async fn build_network(
+    seed: Option<MultiaddrWithPeerId>,
+    rpc_service_mocker: Option<(RpcInfo, MockRpcHandler)>,
+) -> Result<TestNetworkService> {
+    let mut config = NodeConfig::random_for_test();
+    if let Some(seed) = seed {
+        config.network.seeds = vec![seed].into();
+    }
+    build_network_with_config(Arc::new(config), rpc_service_mocker).await
 }
 
 pub struct MockNetworkServiceFactory;

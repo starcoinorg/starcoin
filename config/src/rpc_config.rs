@@ -61,6 +61,10 @@ pub struct HttpConfiguration {
     #[structopt(name = "http-ip-headers", long, use_delimiter = true)]
     /// list of http header which identify a ip, Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "unsupported-rpc-protocols", long, use_delimiter = true)]
+    unsupported_rpc_protocols: Option<Vec<String>>,
 }
 
 impl HttpConfiguration {
@@ -106,7 +110,26 @@ impl HttpConfiguration {
             ip_headers.extend(o.ip_headers.clone().unwrap_or_default());
             self.ip_headers = Some(ip_headers.into_iter().collect());
         }
+        if o.unsupported_rpc_protocols.is_some() {
+            let mut protocols: HashSet<String> = self
+                .unsupported_rpc_protocols
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            protocols.extend(o.unsupported_rpc_protocols.clone().unwrap_or_default());
+            self.unsupported_rpc_protocols = Some(
+                protocols
+                    .into_iter()
+                    .map(|protocol| protocol.to_lowercase())
+                    .collect(),
+            );
+        }
         Ok(())
+    }
+
+    pub fn _unsupported_rpc_protocols(&self) -> Option<Vec<String>> {
+        self.unsupported_rpc_protocols.clone()
     }
 }
 

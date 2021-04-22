@@ -200,6 +200,13 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         req: GetTxnsWithSize,
     ) -> BoxFuture<Result<Vec<SignedUserTransaction>>>;
 
+    ///Get txns with hash from txpool
+    fn get_txns_with_hash_from_pool(
+        &self,
+        peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>>;
+
     fn get_txns(
         &self,
         peer_id: PeerId,
