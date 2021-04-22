@@ -22,11 +22,11 @@ log = "0.4.14"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "11f78a0332fab588d3a04f9d970f8c53e3640269" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "11f78a0332fab588d3a04f9d970f8c53e3640269" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "11f78a0332fab588d3a04f9d970f8c53e3640269" }
-vm = { git = "https://github.com/starcoinorg/diem", rev = "11f78a0332fab588d3a04f9d970f8c53e3640269"}
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "11f78a0332fab588d3a04f9d970f8c53e3640269" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "6b39e47b74ecd6fd6d5aa8606e0f899e87b37ead" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "6b39e47b74ecd6fd6d5aa8606e0f899e87b37ead" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "6b39e47b74ecd6fd6d5aa8606e0f899e87b37ead" }
+vm = { git = "https://github.com/starcoinorg/diem", rev = "6b39e47b74ecd6fd6d5aa8606e0f899e87b37ead"}
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "6b39e47b74ecd6fd6d5aa8606e0f899e87b37ead" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -37,7 +37,7 @@ forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { git = "https://github.com/starcoinorg/diem", rev = "11f78a0332fab588d3a04f9d970f8c53e3640269", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/diem", rev = "6b39e47b74ecd6fd6d5aa8606e0f899e87b37ead", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
