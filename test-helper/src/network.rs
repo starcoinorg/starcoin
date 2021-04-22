@@ -135,7 +135,7 @@ pub async fn build_network_cluster(n: usize) -> Result<Vec<TestNetworkService>> 
 }
 
 pub async fn build_network_with_config(
-    node_config:Arc<NodeConfig>,
+    node_config: Arc<NodeConfig>,
     rpc_service_mocker: Option<(RpcInfo, MockRpcHandler)>,
 ) -> Result<TestNetworkService> {
     let registry = RegistryService::launch();

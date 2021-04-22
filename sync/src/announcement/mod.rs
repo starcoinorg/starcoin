@@ -104,11 +104,54 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
+    use config::NodeConfig;
+    use futures::executor::block_on;
+    use network_api::messages::TXN_PROTOCOL_NAME;
+    use network_api::MultiaddrWithPeerId;
+    use starcoin_txpool_api::TxPoolSyncService;
+    use starcoin_types::transaction::SignedUserTransaction;
+    use std::time::Duration;
 
+    #[ignore]
     #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
+        let mut config_1 = NodeConfig::random_for_test();
+        config_1.miner.disable_miner_client = Some(false);
+        let config_1 = Arc::new(config_1);
+        let service1 = test_helper::run_node_by_config(config_1.clone()).unwrap();
 
+        std::thread::sleep(Duration::from_secs(1));
+        let network1 = service1.network();
+        let peer_1 = block_on(async { network1.get_self_peer().await.unwrap().peer_id() });
+        let network1 = service1.network();
+        let nodes = vec![MultiaddrWithPeerId::new(
+            config_1.network.listen(),
+            peer_1.clone().into(),
+        )];
+        let mut config_2 = NodeConfig::random_for_test();
+        config_2.network.seeds = nodes.into();
+        config_2.network.unsupported_protocols = Some(vec![TXN_PROTOCOL_NAME.to_string()]);
+        config_2.miner.disable_miner_client = Some(false);
+        let config_2 = Arc::new(config_2);
+        let service2 = test_helper::run_node_by_config(config_2).unwrap();
+
+        std::thread::sleep(Duration::from_secs(2));
+        let network2 = service2.network();
+        block_on(async move {
+            let peer_2 = network2.get_self_peer().await.unwrap().peer_id();
+            assert!(network2.is_connected(peer_1).await);
+            assert!(network1.is_connected(peer_2).await);
+        });
+        let txn = SignedUserTransaction::mock();
+        service1
+            .txpool()
+            .add_txns(vec![txn])
+            .into_iter()
+            .for_each(|r| r.unwrap());
+
+        std::thread::sleep(Duration::from_secs(2));
+        assert_eq!(service2.txpool().status().txn_count, 1);
     }
 }

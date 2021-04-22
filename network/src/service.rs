@@ -69,40 +69,8 @@ impl NetworkActorService {
         })
     }
 
-    ///TODO: cfg test
-    pub fn new_with_network_for_test<H>(
-        config: Arc<NodeConfig>,
-        peer_message_handler: H,
-        network_service: Arc<network_p2p::NetworkService>,
-        peer_info: PeerInfo,
-    ) -> Result<Self>
-    where
-        H: PeerMessageHandler + 'static,
-    {
-        let inner = Inner::new(config, peer_info, network_service, peer_message_handler)?;
-        Ok(Self {
-            worker: None,
-            inner,
-            network_worker_handle: None,
-        })
-    }
-
     pub fn network_service(&self) -> Arc<network_p2p::NetworkService> {
         self.inner.network_service.clone()
-    }
-
-    ///TODO: cfg test
-    pub fn send_peer_message_for_test(
-        &mut self,
-        peer_id: PeerId,
-        notification: NotificationMessage,
-    ) {
-        self.inner.send_peer_message(peer_id, notification)
-    }
-
-    ///TODO: cfg test
-    pub fn broadcast_for_test(&mut self, notification: NotificationMessage) {
-        self.inner.broadcast(notification)
     }
 }
 
@@ -446,6 +414,7 @@ impl Inner {
                     }
                 }
                 NotificationMessage::Announcement(announcement) => {
+                    debug!("announcement ids length: {:?}", announcement.ids.len());
                     if announcement.is_txn() {
                         let mut fresh_ids = Vec::new();
                         for txn_id in announcement.clone().ids() {
@@ -457,7 +426,7 @@ impl Inner {
                             };
                         }
 
-                        if !fresh_ids.is_empty() {
+                        if fresh_ids.is_empty() {
                             None
                         } else {
                             Some(NotificationMessage::Announcement(Announcement::new(
@@ -472,6 +441,7 @@ impl Inner {
             };
 
             if let Some(notification) = notification {
+                debug!("notification protocol : {:?}", notification.protocol_name());
                 let peer_message = PeerMessage::new(peer_id.clone(), notification);
                 self.peer_message_handler.handle_message(peer_message);
                 BROADCAST_SCORE_METRICS.report_new(
@@ -631,7 +601,6 @@ impl Inner {
                         message.clone(),
                     )
                 }
-
                 debug!(
                     "[network] broadcast new compact block message {:?} to {} peers",
                     id, send_peer_count

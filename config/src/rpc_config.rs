@@ -118,7 +118,12 @@ impl HttpConfiguration {
                 .into_iter()
                 .collect();
             protocols.extend(o.unsupported_rpc_protocols.clone().unwrap_or_default());
-            self.unsupported_rpc_protocols = Some(protocols.into_iter().map(|protocol| protocol.to_lowercase()).collect());
+            self.unsupported_rpc_protocols = Some(
+                protocols
+                    .into_iter()
+                    .map(|protocol| protocol.to_lowercase())
+                    .collect(),
+            );
         }
         Ok(())
     }

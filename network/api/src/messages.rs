@@ -161,10 +161,11 @@ impl NotificationMessage {
         }
     }
 
+    /// BLOCK_PROTOCOL_NAME must be first protocol
     pub fn protocols() -> Vec<Cow<'static, str>> {
         vec![
-            TXN_PROTOCOL_NAME.into(),
             BLOCK_PROTOCOL_NAME.into(),
+            TXN_PROTOCOL_NAME.into(),
             ANNOUNCEMENT_PROTOCOL_NAME.into(),
         ]
     }
