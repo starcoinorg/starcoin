@@ -151,7 +151,13 @@ pub fn account_execute(
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
-    user_execute(net,*account.address(), account.private_key(), state, payload)
+    user_execute(
+        net,
+        *account.address(),
+        account.private_key(),
+        state,
+        payload,
+    )
 }
 
 pub fn account_execute_with_output(
@@ -160,7 +166,13 @@ pub fn account_execute_with_output(
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> TransactionOutput {
-    let txn = build_signed_txn(net,*account.address(), account.private_key(), state, payload);
+    let txn = build_signed_txn(
+        net,
+        *account.address(),
+        account.private_key(),
+        state,
+        payload,
+    );
     execute_and_apply(state, Transaction::UserTransaction(txn))
 }
 

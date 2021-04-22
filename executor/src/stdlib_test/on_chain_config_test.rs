@@ -118,7 +118,7 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
     )?;
     //verify txn timeout
     {
-        assert!(account_execute(&net,&alice, &chain_state, empty_txn_payload()).is_err());
+        assert!(account_execute(&net, &alice, &chain_state, empty_txn_payload()).is_err());
     }
     Ok(())
 }
@@ -215,7 +215,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     )?;
 
     //get gas_used
-    let output = account_execute_with_output(&net,&bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
     let old_gas_used = output.gas_used();
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
