@@ -28,6 +28,7 @@ pub use peer_provider::{PeerProvider, PeerSelector, PeerStrategy};
 
 use futures::channel::oneshot::Receiver;
 pub use starcoin_types::peer_info::{PeerId, PeerInfo};
+use std::borrow::Cow;
 
 pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + PeerProvider {
     /// send notification message to a peer.
@@ -103,4 +104,28 @@ where
             warn!("Broadcast network notification error: {}.", e);
         }
     }
+}
+
+pub trait SupportedRpcProtocol {
+    fn is_supported(&self, peer_id: PeerId, rpc_protocol: Cow<'static, str>) -> BoxFuture<bool>;
+}
+
+pub trait BroadcastProtocolFilter {
+    fn peer_info(&self, peer_id: &PeerId) -> Option<PeerInfo>;
+
+    fn filter(&self, peer_set: Vec<PeerId>, notif_protocol: Cow<'static, str>) -> Vec<PeerId> {
+        peer_set
+            .into_iter()
+            .filter(|peer_id| {
+                if let Some(peer_info) = self.peer_info(peer_id) {
+                    if peer_info.is_support_notif_protocol(notif_protocol.clone()) {
+                        return true;
+                    }
+                }
+                false
+            })
+            .collect()
+    }
+
+    fn is_supported(&self, peer_id: &PeerId, notif_protocol: Cow<'static, str>) -> bool;
 }

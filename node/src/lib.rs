@@ -18,6 +18,7 @@ use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
 use starcoin_storage::Storage;
+use starcoin_txpool::TxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
@@ -161,6 +162,12 @@ impl NodeHandle {
     pub fn start_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
         block_on(async { node_addr.start_service(service_name).await })
+    }
+
+    pub fn txpool(&self) -> TxPoolService {
+        self.registry
+            .get_shared_sync::<TxPoolService>()
+            .expect("TxPoolService must exist.")
     }
 
     /// Just for test

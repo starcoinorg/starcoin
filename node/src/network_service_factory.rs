@@ -9,6 +9,7 @@ use starcoin_network::{NetworkActorService, NetworkServiceRef};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_sync::announcement::AnnouncementService;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::peer_info::RpcInfo;
 use std::sync::Arc;
@@ -23,7 +24,9 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
         let txpool_service = ctx.service_ref::<TxPoolActorService>()?.clone();
         let block_relayer = ctx.service_ref::<BlockRelayer>()?.clone();
         let network_rpc_service = ctx.service_ref::<NetworkRpcService>()?.clone();
-        let peer_message_handle = NodePeerMessageHandler::new(txpool_service, block_relayer);
+        let announcement_service = ctx.service_ref::<AnnouncementService>()?.clone();
+        let peer_message_handle =
+            NodePeerMessageHandler::new(txpool_service, block_relayer, announcement_service);
 
         let chain_info = storage
             .get_chain_info()?

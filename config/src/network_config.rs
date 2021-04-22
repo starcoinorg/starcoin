@@ -7,6 +7,7 @@ use crate::{
     ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
+use network_api::messages::{NotificationMessage, BLOCK_PROTOCOL_NAME};
 use network_p2p_types::{
     is_memory_addr, memory_addr,
     multiaddr::{Multiaddr, Protocol},
@@ -19,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerId;
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::num::NonZeroU32;
@@ -236,6 +238,10 @@ pub struct NetworkConfig {
     #[serde(skip)]
     #[structopt(skip)]
     generate_listen: Option<Multiaddr>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "unsupported-protocols", long, use_delimiter = true)]
+    pub unsupported_protocols: Option<Vec<String>>,
 }
 
 impl NetworkConfig {
@@ -375,6 +381,20 @@ impl NetworkConfig {
             self.generate_listen = Some(listen);
         }
     }
+
+    pub fn supported_network_protocols(&self) -> Vec<Cow<'static, str>> {
+        let protocols = NotificationMessage::protocols();
+        if let Some(unsupported_protocols) = &self.unsupported_protocols {
+            return protocols
+                .into_iter()
+                .filter(|protocol| {
+                    !unsupported_protocols.contains(&protocol.to_string())
+                        || protocol == BLOCK_PROTOCOL_NAME
+                })
+                .collect();
+        }
+        protocols
+    }
 }
 
 impl ConfigModule for NetworkConfig {
@@ -420,6 +440,28 @@ impl ConfigModule for NetworkConfig {
         }
         if opt.network.max_outgoing_peers.is_some() {
             self.max_outgoing_peers = opt.network.max_outgoing_peers;
+        }
+
+        if opt.network.unsupported_protocols.is_some() {
+            let mut protocols: HashSet<String> = self
+                .unsupported_protocols
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            protocols.extend(
+                opt.network
+                    .unsupported_protocols
+                    .clone()
+                    .unwrap_or_default(),
+            );
+            self.unsupported_protocols = Some(
+                protocols
+                    .into_iter()
+                    .filter(|protocol| !protocol.eq_ignore_ascii_case(BLOCK_PROTOCOL_NAME))
+                    .map(|protocol| protocol.to_lowercase())
+                    .collect(),
+            );
         }
 
         self.load_or_generate_keypair()?;
