@@ -44,3 +44,7 @@ max_count = 8192
 
 [vault]
 dir = "/data/my_starcoin_vault"
+
+[stratum]
+stratum_address = "127.0.0.1"
+stratum_port = 9890

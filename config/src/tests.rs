@@ -129,9 +129,13 @@ fn test_example_config_compact() -> Result<()> {
             //Vault
             "--vault-dir",
             "/data/my_starcoin_vault",
+            //Stratum
+            "--stratum-port",
+            "8090",
+            "--stratum-address",
+            "127.0.0.1",
         ];
         let opt = StarcoinOpt::from_iter_safe(args)?;
-
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(
