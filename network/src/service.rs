@@ -56,7 +56,7 @@ impl NetworkActorService {
         let (self_info, worker) = build_network_worker(
             &config.network,
             chain_info,
-            NotificationMessage::protocols(),
+            config.network.supported_network_protocols(),
             rpc,
         )?;
         let service = worker.service().clone();

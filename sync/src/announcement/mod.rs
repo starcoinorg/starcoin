@@ -102,3 +102,13 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
         });
     }
 }
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[stest::test]
+    fn test_get_txns_with_hash_from_pool() {
+
+    }
+}

@@ -26,6 +26,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use structopt::StructOpt;
+use network_api::messages::{NotificationMessage, BLOCK_PROTOCOL_NAME};
+use std::borrow::Cow;
 
 pub static DEFAULT_NETWORK_PORT: u16 = 9840;
 static NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key"));
@@ -236,6 +238,10 @@ pub struct NetworkConfig {
     #[serde(skip)]
     #[structopt(skip)]
     generate_listen: Option<Multiaddr>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "unsupported-protocols", long, use_delimiter = true)]
+    pub unsupported_protocols: Option<Vec<String>>,
 }
 
 impl NetworkConfig {
@@ -375,6 +381,14 @@ impl NetworkConfig {
             self.generate_listen = Some(listen);
         }
     }
+
+    pub fn supported_network_protocols(&self) -> Vec<Cow<'static, str>> {
+        let protocols = NotificationMessage::protocols();
+        if let Some(unsupported_protocols) = &self.unsupported_protocols {
+            return protocols.into_iter().filter(|protocol| !unsupported_protocols.contains(&protocol.to_string()) || protocol == BLOCK_PROTOCOL_NAME).collect()
+        }
+        protocols
+    }
 }
 
 impl ConfigModule for NetworkConfig {
@@ -420,6 +434,17 @@ impl ConfigModule for NetworkConfig {
         }
         if opt.network.max_outgoing_peers.is_some() {
             self.max_outgoing_peers = opt.network.max_outgoing_peers;
+        }
+
+        if opt.network.unsupported_protocols.is_some() {
+            let mut protocols: HashSet<String> = self
+                .unsupported_protocols
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            protocols.extend(opt.network.unsupported_protocols.clone().unwrap_or_default());
+            self.unsupported_protocols = Some(protocols.into_iter().filter(|protocol| !protocol.eq_ignore_ascii_case(BLOCK_PROTOCOL_NAME)).map(|protocol| protocol.to_lowercase()).collect());
         }
 
         self.load_or_generate_keypair()?;

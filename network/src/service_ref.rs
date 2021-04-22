@@ -144,4 +144,8 @@ impl NetworkServiceRef {
     pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
         self.network_service.get_address(peer_id.into()).await
     }
+
+    pub async fn is_connected(&self, peer_id: PeerId) -> bool {
+        self.network_service.is_connected(peer_id.into()).await
+    }
 }
