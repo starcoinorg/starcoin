@@ -297,7 +297,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     )
 }
 
-//this only work for DEV,
+//this only work for DEV or TEST
 pub fn create_signed_txn_with_association_account(
     payload: TransactionPayload,
     sequence_number: u64,
