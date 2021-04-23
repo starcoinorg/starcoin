@@ -669,6 +669,7 @@ impl Inner {
                             .encode_notification()
                             .expect("Encode notification Announcement message should ok")
                         };
+
                     if !is_not_announcement
                         && !self.is_supported(&peer_id, real_protocol_name.clone())
                     {

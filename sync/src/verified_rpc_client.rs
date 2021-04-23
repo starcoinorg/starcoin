@@ -153,7 +153,11 @@ impl VerifiedRpcClient {
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
     ) -> Result<(Vec<HashValue>, Vec<SignedUserTransaction>)> {
-        let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
+        let peer_id = if let Some(peer) = peer_id {
+            peer
+        } else {
+            self.select_a_peer()?
+        };
         let data = self
             .client
             .get_txns_with_hash_from_pool(peer_id.clone(), req.clone())

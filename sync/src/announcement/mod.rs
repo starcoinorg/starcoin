@@ -17,16 +17,11 @@ use txpool::TxPoolService;
 pub struct AnnouncementService {
     storage: Arc<Storage>,
     txpool: TxPoolService,
-    network: NetworkServiceRef,
 }
 
 impl AnnouncementService {
-    fn new(storage: Arc<Storage>, txpool: TxPoolService, network: NetworkServiceRef) -> Self {
-        AnnouncementService {
-            storage,
-            txpool,
-            network,
-        }
+    fn new(storage: Arc<Storage>, txpool: TxPoolService) -> Self {
+        AnnouncementService { storage, txpool }
     }
 }
 
@@ -36,9 +31,8 @@ impl ServiceFactory<Self> for AnnouncementService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<AnnouncementService> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
-        let network = ctx.get_shared::<NetworkServiceRef>()?;
 
-        Ok(Self::new(storage, txpool_service, network))
+        Ok(Self::new(storage, txpool_service))
     }
 }
 
@@ -50,8 +44,12 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
     ) {
         let txpool = self.txpool.clone();
         let storage = self.storage.clone();
-        let network = self.network.clone();
+        let network = ctx
+            .get_shared::<NetworkServiceRef>()
+            .expect("NetworkServiceRef not exist.");
         let peer_id = announcement_msg.peer_id.clone();
+        debug!("[sync] receive announcement msg : {:?}", announcement_msg);
+
         ctx.spawn(async move {
             if announcement_msg.message.is_txn() {
                 let fresh_ids = announcement_msg.message.ids().into_iter().filter(|txn_id| {
@@ -111,10 +109,8 @@ mod tests {
     use network_api::messages::TXN_PROTOCOL_NAME;
     use network_api::MultiaddrWithPeerId;
     use starcoin_txpool_api::TxPoolSyncService;
-    use starcoin_types::transaction::SignedUserTransaction;
     use std::time::Duration;
 
-    #[ignore]
     #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
         let mut config_1 = NodeConfig::random_for_test();
@@ -144,14 +140,14 @@ mod tests {
             assert!(network2.is_connected(peer_1).await);
             assert!(network1.is_connected(peer_2).await);
         });
-        let txn = SignedUserTransaction::mock();
-        service1
-            .txpool()
-            .add_txns(vec![txn])
+        let txpool = service1.txpool();
+        let txns = test_helper::txn::create_account(config_1.net(), 0, 1);
+        txpool
+            .add_txns(txns.into_iter().map(|(_, txn)| txn).collect())
             .into_iter()
             .for_each(|r| r.unwrap());
 
-        std::thread::sleep(Duration::from_secs(2));
+        std::thread::sleep(Duration::from_secs(1));
         assert_eq!(service2.txpool().status().txn_count, 1);
     }
 }
