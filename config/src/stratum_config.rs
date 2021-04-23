@@ -20,6 +20,7 @@ pub struct StratumConfig {
     /// Default tcp port is 9880
     pub port: Option<u16>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "stratum-address")]
     /// Stratum address, default is 0.0.0.0
     pub address: Option<IpAddr>,
