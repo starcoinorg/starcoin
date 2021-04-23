@@ -670,12 +670,6 @@ impl Inner {
                             .expect("Encode notification Announcement message should ok")
                         };
 
-                    debug!(
-                        "[network]broadcast Announcement message: {:?} : {:?} : {:?}",
-                        is_not_announcement,
-                        real_protocol_name,
-                        self.is_supported(&peer_id, real_protocol_name.clone())
-                    );
                     if !is_not_announcement
                         && !self.is_supported(&peer_id, real_protocol_name.clone())
                     {
