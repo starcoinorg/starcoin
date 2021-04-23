@@ -39,6 +39,8 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_stratum::service::{StratumService, StratumServiceFactory};
+use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync::SyncService;
@@ -265,6 +267,13 @@ impl NodeService {
         }
         // wait for service init.
         Delay::new(Duration::from_millis(1000)).await;
+
+        registry
+            .register_by_factory::<Stratum, StratumFactory>()
+            .await?;
+        registry
+            .register_by_factory::<StratumService, StratumServiceFactory>()
+            .await?;
 
         bus.broadcast(SystemStarted)?;
 

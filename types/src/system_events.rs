@@ -4,6 +4,7 @@
 use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
+use serde::{Deserialize, Serialize};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 
@@ -37,7 +38,7 @@ impl GenerateBlockEvent {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MintBlockEvent {
     pub strategy: ConsensusStrategy,
     pub minting_blob: Vec<u8>,

@@ -18,13 +18,14 @@ pub enum ConsensusVerifyError {
     #[error("Verify Difficulty Error, expect: {expect}, got: {real}")]
     VerifyDifficultyError { expect: U256, real: U256 },
     #[error(
-        "Verify Nonce Error, expect target: {target}, got: {real}, nonce: {nonce}, extra: {extra}"
+    "Verify Nonce Error, expect target: {target}, got: {real}, nonce: {nonce}, extra: {extra}, diff: {diff}"
     )]
     VerifyNonceError {
         target: U256,
         real: U256,
         nonce: u32,
         extra: BlockHeaderExtra,
+        diff: U256,
     },
 }
 
@@ -108,6 +109,7 @@ pub trait Consensus {
                 real: pow_hash,
                 nonce,
                 extra: *extra,
+                diff: difficulty,
             }
             .into());
         }
@@ -129,6 +131,7 @@ pub trait Consensus {
                 real: pow_hash,
                 nonce,
                 extra,
+                diff: difficulty,
             }
             .into());
         }
