@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starcoin-indexer-deployment
+  namespace: starcoin-barnard
+  labels:
+    app: starcoin-indexer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: starcoin-indexer
+  template:
+    metadata:
+      labels:
+        app: starcoin-indexer
+    spec:
+      nodeSelector:
+        starcoin/node-pool: seed-pool
+      containers:
+      - name: starcoin-indexer
+        image: starcoin/starcoin:master
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - "/starcoin/starcoin_indexer --es-url https://search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com --node-url http://starcoin-svc:9850 --es-user elastic --es-password $(es_password) --es-index-prefix barnard"
+        env:
+        - name: es_password
+          valueFrom:
+            secretKeyRef:
+              name: elasticsearch-pw-elastic
+              key: password
