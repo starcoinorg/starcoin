@@ -12,6 +12,7 @@ use structopt::StructOpt;
 #[serde(deny_unknown_fields)]
 pub struct SyncConfig {
     /// peer select strategy
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "peer-select-strategy",
         long,
@@ -20,6 +21,7 @@ pub struct SyncConfig {
     peer_select_strategy: Option<PeerStrategy>,
 
     /// max retry times, then sync task will failed
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
         name = "max-retry-times",
         long,

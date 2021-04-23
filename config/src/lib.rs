@@ -212,6 +212,7 @@ pub struct StarcoinOpt {
     pub sync: SyncConfig,
     #[structopt(flatten)]
     pub vault: AccountVaultConfig,
+    #[serde(default)]
     #[structopt(flatten)]
     pub stratum: StratumConfig,
 }
@@ -409,15 +410,25 @@ pub trait ConfigModule: Sized {
 pub struct NodeConfig {
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
+    #[serde(default)]
     pub network: NetworkConfig,
+    #[serde(default)]
     pub rpc: RpcConfig,
+    #[serde(default)]
     pub miner: MinerConfig,
+    #[serde(default)]
     pub storage: StorageConfig,
+    #[serde(default)]
     pub tx_pool: TxPoolConfig,
+    #[serde(default)]
     pub sync: SyncConfig,
+    #[serde(default)]
     pub vault: AccountVaultConfig,
+    #[serde(default)]
     pub metrics: MetricsConfig,
+    #[serde(default)]
     pub logger: LoggerConfig,
+    #[serde(default)]
     pub stratum: StratumConfig,
 }
 
