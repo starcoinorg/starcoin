@@ -175,7 +175,7 @@ pub fn initial_native_table() -> Vec<GasCost> {
     native_table
 }
 
-pub fn barnard_native_table() -> Vec<GasCost> {
+pub fn v1_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
         (N::SHA3_256, GasCost::new(64, 1)),
