@@ -335,8 +335,7 @@ impl PeerSelector {
 
     /// Retain the peer which supported rpc call.
     pub fn retain_rpc_peers(&self) {
-        //TODO enable retain when most node upgrade and send rpc protocol in handshake.
-        //self.retain_by_filter(|peer| peer.peer_info.is_support_rpc())
+        self.retain_by_filter(|peer| peer.peer_info.is_support_rpc())
     }
 
     pub fn remove_peer(&self, peer: &PeerId) -> usize {
