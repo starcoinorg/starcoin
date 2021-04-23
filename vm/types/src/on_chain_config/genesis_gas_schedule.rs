@@ -199,11 +199,10 @@ pub fn barnard_native_table() -> Vec<GasCost> {
         (N::TOKEN_NAME_OF, GasCost::new(2002, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
-    let native_table = raw_native_table
+    raw_native_table
         .into_iter()
         .map(|(_, cost)| cost)
-        .collect::<Vec<_>>();
-    native_table
+        .collect::<Vec<_>>()
 }
 
 pub fn init_cost_table(gas_constants: GasConstants) -> CostTable {
