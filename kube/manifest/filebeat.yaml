@@ -38,9 +38,135 @@ data:
           ignore_missing: true
 
     output.elasticsearch:
-      hosts: ['https://${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
+      hosts: ['https://${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:443}']
       username: ${ELASTICSEARCH_USERNAME}
       password: ${ELASTICSEARCH_PASSWORD}
+      pipeline: log_split
+    setup.template.enabled: false
+    setup.template.fields: "starcoin-fields.yml"
+  starcoin-fields.yml: |-
+    - key: kubernetes
+      title: Kubernetes
+      description: >
+        Kubernetes metadata added by the kubernetes processor
+      short_config: false
+      anchor: kubernetes-processor
+      fields:
+        - name: kubernetes
+          type: group
+          fields:
+            - name: pod.name
+              type: keyword
+              description: >
+                Kubernetes pod name
+
+            - name: pod.uid
+              type: keyword
+              description: >
+                Kubernetes Pod UID
+
+            - name: namespace
+              type: keyword
+              description: >
+                Kubernetes namespace
+
+            - name: node.name
+              type: keyword
+              description: >
+                Kubernetes node name
+
+            - name: node.hostname
+              type: keyword
+              description: >
+                Kubernetes hostname as reported by the node’s kernel
+
+            - name: labels.*
+              type: object
+              object_type: keyword
+              object_type_mapping_type: "*"
+              description: >
+                Kubernetes labels map
+
+            - name: annotations.*
+              type: object
+              object_type: keyword
+              object_type_mapping_type: "*"
+              description: >
+                Kubernetes annotations map
+
+            - name: service.selectors.*
+              type: object
+              object_type: keyword
+              object_type_mapping_type: "*"
+              description: >
+                Kubernetes Service selectors map
+
+            - name: replicaset.name
+              type: keyword
+              description: >
+                Kubernetes replicaset name
+
+            - name: deployment.name
+              type: keyword
+              description: >
+                Kubernetes deployment name
+
+            - name: statefulset.name
+              type: keyword
+              description: >
+                Kubernetes statefulset name
+
+            - name: container.name
+              type: keyword
+              description: >
+                Kubernetes container name
+
+            - name: container.image
+              type: keyword
+              description: >
+                Kubernetes container image
+
+    - name: container
+        title: Container
+        group: 2
+        description: 'Container fields are used for meta information about the specific
+          container that is the source of information.
+
+          These fields help correlate data based containers from any runtime.'
+        type: group
+        fields:
+        - name: id
+          level: core
+          type: keyword
+          ignore_above: 1024
+          description: Unique container id.
+        - name: image.name
+          level: extended
+          type: keyword
+          ignore_above: 1024
+          description: Name of the image the container was built on.
+        - name: image.tag
+          level: extended
+          type: keyword
+          ignore_above: 1024
+          description: Container image tags.
+        - name: labels
+          level: extended
+          type: object
+          object_type: keyword
+          description: Image labels.
+        - name: name
+          level: extended
+          type: keyword
+          ignore_above: 1024
+          description: Container name.
+        - name: runtime
+          level: extended
+          type: keyword
+          ignore_above: 1024
+          description: Runtime managing this container.
+          example: docker
+
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -64,17 +190,16 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: filebeat
-          image: docker.elastic.co/beats/filebeat:7.11.2
+          image: docker.elastic.co/beats/filebeat:7.10.2
           args: [
               "-c", "/etc/filebeat.yml",
               "-e",
           ]
           env:
             - name: ELASTICSEARCH_HOST
-              #modify to internal address
-              value: "140e8d342fc14865a3d9698c3d3ef3d5.vpce.ap-northeast-1.aws.elastic-cloud.com"
+              value: "search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com"
             - name: ELASTICSEARCH_PORT
-              value: "9243"
+              value: ""
             - name: ELASTICSEARCH_USERNAME
               value: elastic
             - name: ELASTICSEARCH_PASSWORD
