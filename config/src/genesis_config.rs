@@ -22,7 +22,8 @@ use starcoin_vm_types::gas_schedule::{
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
-    init_cost_table, ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
+    init_cost_table, initial_instruction_table, v1_native_table, ConsensusConfig, DaoConfig,
+    TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::{TimeService, TimeServiceType};
@@ -739,6 +740,12 @@ pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
 pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> =
     Lazy::new(|| init_cost_table(DEFAULT_GAS_CONSTANTS.clone()));
 
+pub static V1_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| CostTable {
+    instruction_table: initial_instruction_table(),
+    native_table: v1_native_table(),
+    gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+});
+
 pub static TEST_GAS_SCHEDULE: Lazy<CostTable> =
     Lazy::new(|| init_cost_table(TEST_GAS_CONSTANTS.clone()));
 
@@ -921,7 +928,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD/12,
         vm_config: VMConfig {
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            gas_schedule: V1_GAS_SCHEDULE.clone(),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -980,7 +987,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            gas_schedule: V1_GAS_SCHEDULE.clone(),
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {

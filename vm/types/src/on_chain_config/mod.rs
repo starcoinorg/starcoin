@@ -25,7 +25,9 @@ mod vm_config;
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
-    genesis_gas_schedule::init_cost_table,
+    genesis_gas_schedule::{
+        init_cost_table, initial_instruction_table, initial_native_table, v1_native_table,
+    },
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
     vm_config::{vm_config_type_tag, TransactionPublishOption, VMConfig, SCRIPT_HASH_LENGTH},
 };

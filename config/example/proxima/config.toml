@@ -37,6 +37,9 @@ apis = "chain,miner,node,pubsub,state,txpool,contract"
 [storage]
 max_open_files = 40960
 
+[stratum]
+port = 8090
+
 [sync]
 
 [tx_pool]
@@ -44,7 +47,3 @@ max_count = 8192
 
 [vault]
 dir = "/data/my_starcoin_vault"
-
-[stratum]
-stratum_address = "127.0.0.1"
-stratum_port = 9890

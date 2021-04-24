@@ -39,6 +39,10 @@ pub struct CompileOpt {
 
     #[structopt(name = "source", help = "source file path")]
     source_file: String,
+
+    /// Do not automatically run the bytecode verifier
+    #[structopt(long = "no-verify")]
+    pub no_verify: bool,
 }
 
 pub struct CompileCommand;
@@ -79,6 +83,26 @@ impl CommandAction for CompileCommand {
             &deps,
             sender,
         )?;
+
+        let compile_result = if ctx.opt().no_verify {
+            compile_result
+        } else {
+            compile_result.and_then(|units| {
+                let (units, errors) = units.into_iter().map(|unit| unit.verify()).fold(
+                    (vec![], vec![]),
+                    |(mut units, mut errors), (unit, error)| {
+                        units.push(unit);
+                        errors.extend(error);
+                        (units, errors)
+                    },
+                );
+                if !errors.is_empty() {
+                    Err(errors)
+                } else {
+                    Ok(units)
+                }
+            })
+        };
 
         let compile_unit = match compile_result {
             Ok(mut c) => c

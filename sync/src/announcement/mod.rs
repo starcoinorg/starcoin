@@ -114,7 +114,7 @@ mod tests {
     #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
         let mut config_1 = NodeConfig::random_for_test();
-        config_1.miner.disable_miner_client = Some(false);
+        config_1.miner.disable_miner_client = Some(true);
         let config_1 = Arc::new(config_1);
         let service1 = test_helper::run_node_by_config(config_1.clone()).unwrap();
 
@@ -129,7 +129,7 @@ mod tests {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = nodes.into();
         config_2.network.unsupported_protocols = Some(vec![TXN_PROTOCOL_NAME.to_string()]);
-        config_2.miner.disable_miner_client = Some(false);
+        config_2.miner.disable_miner_client = Some(true);
         let config_2 = Arc::new(config_2);
         let service2 = test_helper::run_node_by_config(config_2).unwrap();
 
@@ -147,7 +147,7 @@ mod tests {
             .into_iter()
             .for_each(|r| r.unwrap());
 
-        std::thread::sleep(Duration::from_secs(1));
+        std::thread::sleep(Duration::from_secs(5));
         assert_eq!(service2.txpool().status().txn_count, 1);
     }
 }

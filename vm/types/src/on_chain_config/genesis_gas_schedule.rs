@@ -14,7 +14,7 @@ use vm::{
     file_format_common::instruction_key,
 };
 
-fn initial_instruction_table() -> Vec<GasCost> {
+pub fn initial_instruction_table() -> Vec<GasCost> {
     use Bytecode::*;
     let mut instrs = vec![
         (MoveTo(StructDefinitionIndex::new(0)), GasCost::new(13, 1)),
@@ -138,7 +138,44 @@ fn initial_instruction_table() -> Vec<GasCost> {
     instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>()
 }
 
-fn initial_native_table() -> Vec<GasCost> {
+pub fn initial_native_table() -> Vec<GasCost> {
+    let mut raw_native_table = vec![
+        (N::SHA2_256, GasCost::new(21, 1)),
+        (N::SHA3_256, GasCost::new(64, 1)),
+        (N::ED25519_VERIFY, GasCost::new(61, 1)),
+        (N::ED25519_THRESHOLD_VERIFY, GasCost::new(3351, 1)),
+        (N::BCS_TO_BYTES, GasCost::new(181, 1)),
+        (N::LENGTH, GasCost::new(98, 1)),
+        (N::EMPTY, GasCost::new(84, 1)),
+        (N::BORROW, GasCost::new(1334, 1)),
+        (N::BORROW_MUT, GasCost::new(1902, 1)),
+        (N::PUSH_BACK, GasCost::new(53, 1)),
+        (N::POP_BACK, GasCost::new(227, 1)),
+        (N::DESTROY_EMPTY, GasCost::new(572, 1)),
+        (N::SWAP, GasCost::new(1436, 1)),
+        (N::ED25519_VALIDATE_KEY, GasCost::new(26, 1)),
+        (N::SIGNER_BORROW, GasCost::new(353, 1)),
+        (N::CREATE_SIGNER, GasCost::new(24, 1)),
+        (N::DESTROY_SIGNER, GasCost::new(212, 1)),
+        (N::EMIT_EVENT, GasCost::new(52, 1)),
+        (N::BCS_TO_ADDRESS, GasCost::new(26, 1)),
+        (N::TOKEN_NAME_OF, GasCost::new(2002, 1)),
+        (N::KECCAK_256, GasCost::new(64, 1)),
+    ];
+    raw_native_table.sort_by_key(|cost| cost.0 as u64);
+    let native_table = raw_native_table
+        .into_iter()
+        .map(|(_, cost)| cost)
+        .collect::<Vec<_>>();
+
+    debug_assert!(
+        native_table.len() == NUMBER_OF_NATIVE_FUNCTIONS,
+        "all native functions must be in the cost table"
+    );
+    native_table
+}
+
+pub fn v1_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
         (N::SHA3_256, GasCost::new(64, 1)),
@@ -162,16 +199,10 @@ fn initial_native_table() -> Vec<GasCost> {
         (N::TOKEN_NAME_OF, GasCost::new(2002, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
-    let native_table = raw_native_table
+    raw_native_table
         .into_iter()
         .map(|(_, cost)| cost)
-        .collect::<Vec<_>>();
-
-    debug_assert!(
-        native_table.len() == NUMBER_OF_NATIVE_FUNCTIONS,
-        "all native functions must be in the cost table"
-    );
-    native_table
+        .collect::<Vec<_>>()
 }
 
 pub fn init_cost_table(gas_constants: GasConstants) -> CostTable {
