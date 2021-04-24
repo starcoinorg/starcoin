@@ -69,7 +69,7 @@ fn test_eth_state_proof_verify() -> Result<()> {
 
         let package = Package::new(modules, None)?;
         association_execute(
-            net.genesis_config(),
+            &net,
             &chain_state,
             TransactionPayload::Package(package),
         )?;
