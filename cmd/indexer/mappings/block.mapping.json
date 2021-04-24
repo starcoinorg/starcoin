@@ -110,7 +110,7 @@
       },
       "header": {
         "properties": {
-          "txn_accumulator_root": {
+          "accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -129,6 +129,15 @@
             }
           },
           "author_auth_key": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "block_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -167,6 +176,18 @@
               }
             }
           },
+          "difficulty_number": {
+            "type": "long"
+          },
+          "extra": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
           "gas_used": {
             "type": "long"
           },
@@ -176,7 +197,7 @@
           "number": {
             "type": "long"
           },
-          "block_accumulator_root": {
+          "parent_block_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -205,6 +226,15 @@
           },
           "timestamp": {
             "type": "date"
+          },
+          "txn_accumulator_root": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
           }
         }
       },
@@ -229,11 +259,7 @@
             }
           },
           "chain_id": {
-            "properties": {
-              "id": {
-                "type": "long"
-              }
-            }
+            "type": "long"
           },
           "number": {
             "type": "long"
@@ -261,7 +287,7 @@
       "uncles": {
         "type": "nested",
         "properties": {
-          "txn_accumulator_root": {
+          "accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -280,6 +306,15 @@
             }
           },
           "author_auth_key": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "block_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -318,6 +353,15 @@
               }
             }
           },
+          "extra": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
           "gas_used": {
             "type": "long"
           },
@@ -327,7 +371,7 @@
           "number": {
             "type": "long"
           },
-          "block_accumulator_root": {
+          "parent_block_accumulator_root": {
             "type": "text",
             "fields": {
               "keyword": {
@@ -356,6 +400,15 @@
           },
           "timestamp": {
             "type": "date"
+          },
+          "txn_accumulator_root": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
           }
         }
       }
