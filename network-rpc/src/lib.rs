@@ -21,7 +21,7 @@ use starcoin_service_registry::{
 };
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::{Storage, Store};
-use starcoin_types::peer_info::PeerId;
+use starcoin_types::peer_info::{PeerId, RpcInfo};
 use std::sync::Arc;
 use txpool::TxPoolService;
 
@@ -105,12 +105,14 @@ impl EventHandler<Self, ProtocolRequest> for NetworkRpcService {
         let api_limiters = self.rpc_limiters.clone();
         ctx.spawn(async move {
             let protocol = msg.protocol;
+            let rpc_path =
+                RpcInfo::rpc_path(protocol).expect("get rpc path from protocol must success.");
             let peer = msg.request.peer.into();
-            let result = match api_limiters.check(&protocol.to_string(), Some(&peer)) {
+            let result = match api_limiters.check(&rpc_path, Some(&peer)) {
                 Err(e) => Err(NetRpcError::new(RpcErrorCode::RateLimited, e.to_string())),
                 Ok(_) => {
                     rpc_server
-                        .handle_raw_request(peer, protocol, msg.request.payload)
+                        .handle_raw_request(peer, rpc_path.into(), msg.request.payload)
                         .await
                 }
             };

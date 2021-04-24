@@ -11,7 +11,6 @@ use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::peer_info::RpcInfo;
 use std::sync::Arc;
 
 pub struct NetworkServiceFactory;
@@ -20,7 +19,7 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
     fn create(ctx: &mut ServiceContext<NetworkActorService>) -> Result<NetworkActorService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let rpc_info = RpcInfo::new(starcoin_network_rpc_api::gen_client::get_rpc_info());
+        let rpc_info = starcoin_network_rpc_api::RPC_INFO.clone();
         let txpool_service = ctx.service_ref::<TxPoolActorService>()?.clone();
         let block_relayer = ctx.service_ref::<BlockRelayer>()?.clone();
         let network_rpc_service = ctx.service_ref::<NetworkRpcService>()?.clone();

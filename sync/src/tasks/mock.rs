@@ -11,6 +11,7 @@ use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
+use network_api::messages::NotificationMessage;
 use network_api::{PeerInfo, PeerSelector, PeerStrategy};
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
@@ -19,6 +20,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_crypto::HashValue;
+use starcoin_network_rpc_api::RPC_INFO;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
@@ -144,7 +146,12 @@ impl SyncNodeMocker {
     ) -> Result<Self> {
         let chain = MockChain::new(net)?;
         let peer_id = PeerId::random();
-        let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![]);
+        let peer_info = PeerInfo::new(
+            peer_id.clone(),
+            chain.chain_info(),
+            NotificationMessage::protocols(),
+            RPC_INFO.clone().into_protocols(),
+        );
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
         Ok(Self::new_inner(
             peer_id,

@@ -23,7 +23,7 @@ use std::borrow::Cow;
 const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
 const MAX_RESPONSE_SIZE: u64 = 1024 * 1024 * 64;
 const REQUEST_BUFFER_SIZE: usize = 128;
-pub const RPC_PROTOCOL_PREFIX: &str = "/starcoin/rpc/";
+pub const RPC_PROTOCOL_PREFIX: &str = RpcInfo::RPC_PROTOCOL_PREFIX;
 
 pub fn build_network_worker(
     network_config: &NetworkConfig,
@@ -45,25 +45,23 @@ pub fn build_network_worker(
     //TODO define RequestResponseConfig by rpc api
     let rpc_protocols = match rpc_service {
         Some((rpc_info, rpc_service)) => rpc_info
+            .into_protocols()
             .into_iter()
-            .map(|rpc_path| {
-                //TODO define rpc path in rpc api, and add prefix.
-                let protocol_name: Cow<'static, str> =
-                    format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path.as_str()).into();
-                let rpc_path_for_stream: Cow<'static, str> = rpc_path.into();
+            .map(move |rpc_protocol| {
                 let (sender, receiver) = channel(REQUEST_BUFFER_SIZE);
+                let protocol_for_stream = rpc_protocol.clone();
                 let stream = receiver.map(move |request| ProtocolRequest {
-                    protocol: rpc_path_for_stream.clone(),
+                    protocol: protocol_for_stream.clone(),
                     request,
                 });
                 if let Err(e) = rpc_service.add_event_stream(stream) {
                     error!(
                         "Add request event stream for rpc {} fail: {:?}",
-                        protocol_name, e
+                        rpc_protocol, e
                     );
                 }
                 RequestResponseConfig {
-                    name: protocol_name,
+                    name: rpc_protocol,
                     max_request_size: MAX_REQUEST_SIZE,
                     max_response_size: MAX_RESPONSE_SIZE,
                     request_timeout: Duration::from_secs(30),
