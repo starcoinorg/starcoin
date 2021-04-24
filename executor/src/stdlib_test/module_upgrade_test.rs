@@ -266,13 +266,13 @@ fn test_init_script() -> Result<()> {
     Ok(())
 }
 
-fn read_two_phase_upgrade_v2_resource(state_view: &dyn StateView) -> Result<bool> {
-    let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(genesis_address());
-    match state_view.get(&two_phase_upgrade_v2_path)? {
-        Some(data) => Ok(bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced()),
-        _ => Err(format_err!("read two phase upgrade resource fail.")),
-    }
-}
+// fn read_two_phase_upgrade_v2_resource(state_view: &dyn StateView) -> Result<bool> {
+//     let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(genesis_address());
+//     match state_view.get(&two_phase_upgrade_v2_path)? {
+//         Some(data) => Ok(bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced()),
+//         _ => Err(format_err!("read two phase upgrade resource fail.")),
+//     }
+// }
 
 fn read_foo(state_view: &dyn StateView) -> u8 {
     let mut ret = execute_readonly_function(

@@ -23,7 +23,7 @@ globset = "0.4.6"
 regex = "1.4.3"
 rayon = "1.5.0"
 indexmap = "1.6.2"
-x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
-diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
-diem-x = { package="x", git = "https://github.com/starcoinorg/diem", rev="bfd7b336d14858d288e908636853949693642bcf" }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="e630621e3e41bf18236a3a17da5442c3eeb7ace1" }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="e630621e3e41bf18236a3a17da5442c3eeb7ace1" }
+diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="e630621e3e41bf18236a3a17da5442c3eeb7ace1" }
+diem-x = { package="x", git = "https://github.com/starcoinorg/diem", rev="e630621e3e41bf18236a3a17da5442c3eeb7ace1" }
