@@ -695,7 +695,7 @@ static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
 
 pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
-pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 60000;
+pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 
 /// For V1 all accounts will be ~800 bytes
 static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =

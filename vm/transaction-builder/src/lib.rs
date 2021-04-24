@@ -544,9 +544,8 @@ pub fn build_package_with_stdlib_module(
             })
             .collect(),
     )?;
-    match init_script {
-        Some(script_function) => package.set_init_script(script_function),
-        None => {}
+    if let Some(script_function) = init_script {
+        package.set_init_script(script_function);
     }
     Ok(package)
 }

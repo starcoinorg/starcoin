@@ -1,5 +1,5 @@
 use crate::execute_readonly_function;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_state_api::StateView;
@@ -211,10 +211,7 @@ fn test_init_script() -> Result<()> {
         ),
         Identifier::new("convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2").unwrap(),
         vec![],
-        vec![
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-        ],
+        vec![bcs_ext::to_bytes(&genesis_address()).unwrap()],
     );
 
     let module_name = "PackageTxnManager";
@@ -256,13 +253,13 @@ fn test_init_script() -> Result<()> {
         chain_state,
         &net,
         vote_script_function,
-        dao_action_type_tag.clone(),
+        dao_action_type_tag,
         execute_script_function,
         0,
     )?;
     association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
 
-    //assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
+    assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
     Ok(())
 }
 
