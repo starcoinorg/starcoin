@@ -130,12 +130,13 @@ script {
         let package_hash = x"1111111111111111";
         let version = 1;
         let exec_delay = 1;
-        UpgradeModuleDaoProposal::propose_module_upgrade<STC>(
+        UpgradeModuleDaoProposal::propose_module_upgrade_v2<STC>(
             &account,
             module_address, //ERR_ADDRESS_MISSMATCH
             copy package_hash,
             version,
-            exec_delay
+            exec_delay,
+            false,
         );
     }
 }
@@ -152,12 +153,13 @@ script {
         let package_hash = x"1111111111111111";
         let version = 1;
         let exec_delay = 60 * 60 * 1000;
-        UpgradeModuleDaoProposal::propose_module_upgrade<MyToken>(
+        UpgradeModuleDaoProposal::propose_module_upgrade_v2<MyToken>(
             &account,
             module_address,
             copy package_hash,
             version,
-            exec_delay
+            exec_delay,
+            false,
         );
     }
 }
@@ -180,11 +182,11 @@ script {
 
     fun vote_proposal(signer: signer) {
         let proposal_id = 0;
-        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModule>({{alice}}, proposal_id);
+        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>({{alice}}, proposal_id);
         assert(state == 2, (state as u64));
         let balance = Account::balance<MyToken>(Signer::address_of(&signer));
         let balance = Account::withdraw<MyToken>(&signer, balance / 2);
-        Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModule>(&signer, {{alice}}, proposal_id, balance, true);
+        Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(&signer, {{alice}}, proposal_id, balance, true);
     }
 }
 // check: EXECUTED
@@ -204,10 +206,10 @@ script {
 
     fun queue_proposal(_signer: signer) {
         let proposal_id = 0;
-        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModule>({{alice}}, proposal_id);
+        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>({{alice}}, proposal_id);
         assert(state == 4, (state as u64));
-        Dao::queue_proposal_action<MyToken, UpgradeModuleDaoProposal::UpgradeModule>({{alice}}, proposal_id);
-        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModule>({{alice}}, proposal_id);
+        Dao::queue_proposal_action<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>({{alice}}, proposal_id);
+        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>({{alice}}, proposal_id);
         assert(state == 5, (state as u64));
     }
 }
@@ -229,7 +231,7 @@ script {
     fun test_submit_plan(_account: signer) {
         let proposal_id = 0;
         let proposer_address = {{alice}};
-        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModule>(proposer_address, proposal_id);
+        let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(proposer_address, proposal_id);
         assert(state == 6, (state as u64));
         UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);
     }

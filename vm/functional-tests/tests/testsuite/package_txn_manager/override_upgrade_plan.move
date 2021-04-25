@@ -35,7 +35,7 @@ script {
 use 0x1::PackageTxnManager;
 fun main(account: signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::submit_upgrade_plan(&account, copy hash, 1);
+    PackageTxnManager::submit_upgrade_plan_v2(&account, copy hash, 1, false);
 }
 }
 
@@ -52,7 +52,7 @@ script {
 use 0x1::PackageTxnManager;
 fun main(account: signer) {
     let hash = x"2222222222222222";
-    PackageTxnManager::submit_upgrade_plan(&account, copy hash, 2);
+    PackageTxnManager::submit_upgrade_plan_v2(&account, copy hash, 2, false);
 }
 }
 

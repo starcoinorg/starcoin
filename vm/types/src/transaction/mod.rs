@@ -56,8 +56,6 @@ mod transaction_argument;
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
-pub const MAX_TRANSACTION_SIZE_IN_BYTES: usize = 4096;
-
 /// RawUserTransaction is the portion of a transaction that a client signs
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct RawUserTransaction {

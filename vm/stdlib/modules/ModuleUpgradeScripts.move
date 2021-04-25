@@ -7,6 +7,8 @@ module ModuleUpgradeScripts {
     use 0x1::Option;
     use 0x1::UpgradeModuleDaoProposal;
 
+    const DEPRECATED_CODE: u64 = 200;
+
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
         pragma aborts_if_is_partial = false;
@@ -14,22 +16,31 @@ module ModuleUpgradeScripts {
     }
 
     public(script) fun propose_module_upgrade<Token: copy + drop + store>(
+        _signer: signer,
+        _module_address: address,
+        _package_hash: vector<u8>,
+        _version: u64,
+        _exec_delay: u64,
+    ) {
+        abort DEPRECATED_CODE
+    }
+    public(script) fun propose_module_upgrade_v2<Token: copy + drop + store>(
         signer: signer,
         module_address: address,
         package_hash: vector<u8>,
         version: u64,
         exec_delay: u64,
+        enforced: bool,
     ) {
-        UpgradeModuleDaoProposal::propose_module_upgrade<Token>(
+        UpgradeModuleDaoProposal::propose_module_upgrade_v2<Token>(
             &signer,
             module_address,
             package_hash,
             version,
             exec_delay,
+            enforced
         );
     }
-
-
     public(script) fun update_module_upgrade_strategy(
         signer: signer,
         strategy: u8,

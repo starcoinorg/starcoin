@@ -38,7 +38,7 @@ fn test_sip_flags() -> Result<()> {
     let dao_action_type_tag = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModule").unwrap(),
+        name: Identifier::new("UpgradeModuleV2").unwrap(),
         type_params: vec![],
     });
 
@@ -53,13 +53,14 @@ fn test_sip_flags() -> Result<()> {
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
-        Identifier::new("propose_module_upgrade").unwrap(),
+        Identifier::new("propose_module_upgrade_v2").unwrap(),
         vec![stc_type_tag()],
         vec![
             bcs_ext::to_bytes(&genesis_address()).unwrap(),
             bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
             bcs_ext::to_bytes(&1u64).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
+            bcs_ext::to_bytes(&false).unwrap(),
         ],
     );
     let execute_script_function = ScriptFunction::new(
@@ -81,12 +82,9 @@ fn test_sip_flags() -> Result<()> {
         vote_script_function,
         dao_action_type_tag,
         execute_script_function,
+        0,
     )?;
-    association_execute(
-        net.genesis_config(),
-        &chain_state,
-        TransactionPayload::Package(package),
-    )?;
+    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert!(chain_state.is_activated(sip_10000)?);
     Ok(())

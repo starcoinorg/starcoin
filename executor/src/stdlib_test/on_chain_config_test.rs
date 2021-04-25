@@ -45,6 +45,7 @@ fn test_modify_on_chain_consensus_config() -> Result<()> {
         vote_script_consensus(&net, strategy),
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
+        0,
     )?;
     //get consensus config
     let module_id = ModuleId::new(genesis_address(), CONSENSUS_CONFIG_IDENTIFIER.clone());
@@ -81,6 +82,7 @@ fn test_modify_on_chain_reward_config() -> Result<()> {
         vote_reward_scripts(&net, reward_delay),
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
+        0,
     )?;
     //get RewardConfig
     let module_id = ModuleId::new(genesis_address(), Identifier::new("RewardConfig")?);
@@ -112,10 +114,11 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
         vote_txn_timeout_script(&net, duration_seconds),
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
+        0,
     )?;
     //verify txn timeout
     {
-        assert!(account_execute(&alice, &chain_state, empty_txn_payload()).is_err());
+        assert!(account_execute(&net, &alice, &chain_state, empty_txn_payload()).is_err());
     }
     Ok(())
 }
@@ -137,6 +140,7 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
         vote_script,
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
+        0,
     )?;
     // get TransactionPublishOption
     let module_id = ModuleId::new(
@@ -205,13 +209,13 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         pre_mint_amount / 8,
     );
     association_execute(
-        net.genesis_config(),
+        &net,
         &chain_state,
         TransactionPayload::ScriptFunction(script_function),
     )?;
 
     //get gas_used
-    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
     let old_gas_used = output.gas_used();
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
@@ -235,9 +239,10 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         vote_script,
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
+        0,
     )?;
     // get gas used of modified gas schedule
-    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
     assert!(output.gas_used() > old_gas_used);
     Ok(())
 }

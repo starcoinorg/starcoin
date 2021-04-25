@@ -88,18 +88,19 @@ script {
         let package_hash = x"1111111111111111";
         let version = 1;
         let exec_delay = 60 * 60 * 1000;
-        UpgradeModuleDaoProposal::propose_module_upgrade<MyToken>(
+        UpgradeModuleDaoProposal::propose_module_upgrade_v2<MyToken>(
             &account,
             module_address,
             copy package_hash,
             version,
-            exec_delay
+            exec_delay,
+            false,
         );
     }
 }
 // check: EXECUTED
 // check: gas_used
-// check: 192437
+// check: 194705
 
 //! block-prologue
 //! author: genesis
@@ -123,7 +124,7 @@ script {
         votes: u128,
     ) {
         let stake = Account::withdraw<MyToken>(&signer, votes);
-        Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModule>(&signer, proposer_address, proposal_id, stake, agree);
+        Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(&signer, proposer_address, proposal_id, stake, agree);
     }
 }
 // check: EXECUTED
@@ -147,7 +148,7 @@ script {
         proposer_address: address,
         proposal_id: u64
     ) {
-        Dao::queue_proposal_action<MyToken, UpgradeModuleDaoProposal::UpgradeModule>(proposer_address, proposal_id);
+        Dao::queue_proposal_action<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(proposer_address, proposal_id);
     }
 }
 // check: EXECUTED
@@ -173,4 +174,4 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 120872
+// check: 123307

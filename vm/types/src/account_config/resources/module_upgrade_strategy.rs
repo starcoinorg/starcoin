@@ -3,6 +3,7 @@
 
 use crate::access_path::AccessPath;
 use crate::account_address::AccountAddress;
+use crate::event::EventHandle;
 use crate::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
@@ -33,4 +34,59 @@ impl MoveResource for ModuleUpgradeStrategy {
 
 pub fn access_path_for_module_upgrade_strategy(address: AccountAddress) -> AccessPath {
     AccessPath::resource_access_path(address, ModuleUpgradeStrategy::struct_tag())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TwoPhaseUpgradeV2Resource {
+    config: TwoPhaseUpgradeConfigResource,
+    plan: Option<UpgradePlanV2Resource>,
+    version_cap: ModifyConfigCapabilityResource,
+    upgrade_event: EventHandle,
+}
+impl TwoPhaseUpgradeV2Resource {
+    pub fn enforced(&self) -> bool {
+        match &self.plan {
+            Some(plan) => plan.enforced,
+            None => false,
+        }
+    }
+}
+impl MoveResource for TwoPhaseUpgradeV2Resource {
+    const MODULE_NAME: &'static str = "PackageTxnManager";
+    const STRUCT_NAME: &'static str = "TwoPhaseUpgradeV2";
+}
+
+pub fn access_path_for_two_phase_upgrade_v2(address: AccountAddress) -> AccessPath {
+    AccessPath::resource_access_path(address, TwoPhaseUpgradeV2Resource::struct_tag())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TwoPhaseUpgradeConfigResource {
+    min_time_limit: u64,
+}
+impl MoveResource for TwoPhaseUpgradeConfigResource {
+    const MODULE_NAME: &'static str = "PackageTxnManager";
+    const STRUCT_NAME: &'static str = "TwoPhaseUpgradeConfig";
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpgradePlanV2Resource {
+    package_hash: Vec<u8>,
+    active_after_time: u64,
+    version: u64,
+    enforced: bool,
+}
+impl MoveResource for UpgradePlanV2Resource {
+    const MODULE_NAME: &'static str = "PackageTxnManager";
+    const STRUCT_NAME: &'static str = "UpgradePlanV2";
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ModifyConfigCapabilityResource {
+    account_address: AccountAddress,
+    events: EventHandle,
+}
+impl MoveResource for ModifyConfigCapabilityResource {
+    const MODULE_NAME: &'static str = "PackageTxnManager";
+    const STRUCT_NAME: &'static str = "ModifyConfigCapability";
 }

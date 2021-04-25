@@ -201,7 +201,7 @@ fn test_upgrade_module() {
         .chain_get_transaction_info(proposal_txn_id)
         .unwrap()
         .unwrap();
-    info!("txn status : {:?}", proposal_txn_info);
+    info!("step1 txn status : {:?}", proposal_txn_info);
     assert_eq!(proposal_txn_info.status, TransactionVMStatus::Executed);
 
     // 2. transfer
@@ -217,7 +217,7 @@ fn test_upgrade_module() {
     let proposal_id = 0;
     let mut type_tags: Vec<TypeTag> = Vec::new();
     let stc = parse_type_tag("0x1::STC::STC").unwrap();
-    let module = parse_type_tag("0x1::UpgradeModuleDaoProposal::UpgradeModule").unwrap();
+    let module = parse_type_tag("0x1::UpgradeModuleDaoProposal::UpgradeModuleV2").unwrap();
     type_tags.push(stc);
     type_tags.push(module);
     let mut args: Vec<TransactionArgument> = Vec::new();

@@ -5,7 +5,7 @@ use crate::Account;
 use crate::Genesis;
 use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
-use starcoin_config::{temp_path, ChainNetwork, GenesisConfig};
+use starcoin_config::{temp_path, ChainNetwork};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::{ChainState, StateReaderExt, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
@@ -36,7 +36,7 @@ pub const TEST_MODULE: &str = r#"
 pub const TEST_MODULE_1: &str = r#"
     module M {
         struct Foo { a: address }
-        public fun foo(): u8 { 1 }
+        public fun foo(): u8 { 2 }
     }
     "#;
 pub const TEST_MODULE_2: &str = r#"
@@ -53,6 +53,13 @@ pub fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
     let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
     Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     (chain_state, net)
+}
+
+pub fn prepare_customized_genesis(net: &ChainNetwork) -> ChainStateDB {
+    let chain_state = ChainStateDB::mock();
+    let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
+    Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
+    chain_state
 }
 
 pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
@@ -130,28 +137,42 @@ pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
 }
 
 pub fn association_execute(
-    config: &GenesisConfig,
+    net: &ChainNetwork,
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
-    let txn = build_raw_txn(association_address(), state, payload, ChainId::test());
-    let txn = config.sign_with_association(txn)?;
+    let txn = build_raw_txn(association_address(), state, payload, net.chain_id());
+    let txn = net.genesis_config().sign_with_association(txn)?;
     execute_signed_txn(state, txn)
 }
 pub fn account_execute(
+    net: &ChainNetwork,
     account: &Account,
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
-    user_execute(*account.address(), account.private_key(), state, payload)
+    user_execute(
+        net,
+        *account.address(),
+        account.private_key(),
+        state,
+        payload,
+    )
 }
 
 pub fn account_execute_with_output(
+    net: &ChainNetwork,
     account: &Account,
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> TransactionOutput {
-    let txn = build_signed_txn(*account.address(), account.private_key(), state, payload);
+    let txn = build_signed_txn(
+        net,
+        *account.address(),
+        account.private_key(),
+        state,
+        payload,
+    );
     execute_and_apply(state, Transaction::UserTransaction(txn))
 }
 
@@ -199,22 +220,24 @@ pub fn build_raw_txn(
 }
 
 fn user_execute(
+    net: &ChainNetwork,
     user_address: AccountAddress,
     prikey: &AccountPrivateKey,
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
-    let txn = build_signed_txn(user_address, prikey, state, payload);
+    let txn = build_signed_txn(net, user_address, prikey, state, payload);
     execute_signed_txn(state, txn)
 }
 
 fn build_signed_txn(
+    net: &ChainNetwork,
     user_address: AccountAddress,
     prikey: &AccountPrivateKey,
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> SignedUserTransaction {
-    let txn = build_raw_txn(user_address, state, payload, ChainId::test());
+    let txn = build_raw_txn(user_address, state, payload, net.chain_id());
     let signature = prikey.sign(&txn);
     signature.build_transaction(txn).unwrap()
 }

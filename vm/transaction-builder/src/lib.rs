@@ -520,6 +520,64 @@ pub fn build_stdlib_package(
     Ok(package)
 }
 
+pub fn build_package_with_stdlib_module(
+    stdlib_option: StdLibOptions,
+    module_name: &str,
+    init_script: Option<ScriptFunction>,
+) -> Result<Package> {
+    let modules = stdlib_modules(stdlib_option);
+    let mut package = Package::new_with_modules(
+        modules
+            .iter()
+            .filter_map(|m| {
+                let mut blob = vec![];
+                m.serialize(&mut blob)
+                    .expect("serializing stdlib must work");
+                let handle = &m.module_handles()[0];
+                let name = m.identifier_at(handle.name).as_str();
+                if name == module_name {
+                    debug!("Added module: {}", name);
+                    Some(Module::new(blob))
+                } else {
+                    None
+                }
+            })
+            .collect(),
+    )?;
+    if let Some(script_function) = init_script {
+        package.set_init_script(script_function);
+    }
+    Ok(package)
+}
+
+pub fn build_stdlib_package_for_test(
+    stdlib_option: StdLibOptions,
+    init_script: Option<ScriptFunction>,
+) -> Result<Package> {
+    let modules = stdlib_modules(stdlib_option);
+    let mut package = Package::new_with_modules(
+        modules
+            .iter()
+            .map(|m| {
+                let mut blob = vec![];
+                m.serialize(&mut blob)
+                    .expect("serializing stdlib must work");
+                let handle = &m.module_handles()[0];
+                debug!(
+                    "Add module: {}::{}",
+                    m.address_identifier_at(handle.address),
+                    m.identifier_at(handle.name)
+                );
+                Module::new(blob)
+            })
+            .collect(),
+    )?;
+    if let Some(script_function) = init_script {
+        package.set_init_script(script_function);
+    }
+    Ok(package)
+}
+
 pub fn build_module_upgrade_proposal(
     package: &Package,
     version: u64,
@@ -532,13 +590,14 @@ pub fn build_module_upgrade_proposal(
                 core_code_address(),
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
             ),
-            Identifier::new("propose_module_upgrade").unwrap(),
+            Identifier::new("propose_module_upgrade_v2").unwrap(),
             vec![stc_type_tag()],
             vec![
                 bcs_ext::to_bytes(&package.package_address()).unwrap(),
                 bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
                 bcs_ext::to_bytes(&version).unwrap(),
                 bcs_ext::to_bytes(&day).unwrap(),
+                bcs_ext::to_bytes(&false).unwrap(),
             ],
         ),
         package_hash,
@@ -570,7 +629,7 @@ pub fn build_module_upgrade_queue(
     let upgrade_module = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModule").unwrap(),
+        name: Identifier::new("UpgradeModuleV2").unwrap(),
         type_params: vec![],
     });
 

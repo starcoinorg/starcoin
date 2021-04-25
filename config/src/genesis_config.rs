@@ -696,6 +696,7 @@ static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
 pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
+pub static MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
 
 /// For V1 all accounts will be ~800 bytes
 static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
@@ -721,6 +722,22 @@ pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     }
 });
 
+pub static DEFAULT_GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
+    GasConstants {
+        global_memory_per_byte_cost: InternalGasUnits::new(4),
+        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
+        min_transaction_gas_units: InternalGasUnits::new(600),
+        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        intrinsic_gas_per_byte: InternalGasUnits::new(8),
+        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
+        min_price_per_gas_unit: GasPrice::new(1),
+        max_price_per_gas_unit: GasPrice::new(10_000),
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
+        gas_unit_scaling_factor: 1,
+        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+    }
+});
+
 pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
@@ -731,14 +748,14 @@ pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
         gas_unit_scaling_factor: 1,
         default_account_size: *DEFAULT_ACCOUNT_SIZE,
     }
 });
 
 pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| init_cost_table(DEFAULT_GAS_CONSTANTS.clone()));
+    Lazy::new(|| init_cost_table(DEFAULT_GAS_CONSTANTS_V2.clone()));
 
 pub static V1_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| CostTable {
     instruction_table: initial_instruction_table(),

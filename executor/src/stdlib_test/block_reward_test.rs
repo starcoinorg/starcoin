@@ -66,7 +66,7 @@ fn test_block_reward() -> Result<()> {
         assert_eq!(block_reward_event.block_number, 1);
         assert_eq!(block_reward_event.gas_fees, 0);
 
-        let output = account_execute_with_output(&alice, &chain_state, empty_txn_payload());
+        let output = account_execute_with_output(&net, &alice, &chain_state, empty_txn_payload());
         output.gas_used()
     };
     // alice mint another block
