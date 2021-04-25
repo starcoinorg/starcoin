@@ -562,13 +562,14 @@ pub fn build_module_upgrade_proposal(
                 core_code_address(),
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
             ),
-            Identifier::new("propose_module_upgrade").unwrap(),
+            Identifier::new("propose_module_upgrade_v2").unwrap(),
             vec![stc_type_tag()],
             vec![
                 bcs_ext::to_bytes(&package.package_address()).unwrap(),
                 bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
                 bcs_ext::to_bytes(&version).unwrap(),
                 bcs_ext::to_bytes(&day).unwrap(),
+                bcs_ext::to_bytes(&false).unwrap(),
             ],
         ),
         package_hash,
@@ -600,7 +601,7 @@ pub fn build_module_upgrade_queue(
     let upgrade_module = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModule").unwrap(),
+        name: Identifier::new("UpgradeModuleV2").unwrap(),
         type_params: vec![],
     });
 
