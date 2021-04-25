@@ -16,6 +16,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -336,6 +337,11 @@ impl PeerSelector {
     /// Retain the peer which supported rpc call.
     pub fn retain_rpc_peers(&self) {
         self.retain_by_filter(|peer| peer.peer_info.is_support_rpc())
+    }
+
+    /// Retain the peer which supported rpc call.
+    pub fn retain_rpc_peers_by_protocol(&self, protocols: &[Cow<'static, str>]) {
+        self.retain_by_filter(move |peer| peer.peer_info.is_support_rpc_protocols(protocols))
     }
 
     pub fn remove_peer(&self, peer: &PeerId) -> usize {

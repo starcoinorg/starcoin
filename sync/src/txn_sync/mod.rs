@@ -5,7 +5,7 @@ use network_api::{NetworkService, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::peer_info::PeerId;
+use starcoin_types::peer_info::{PeerId, RpcInfo};
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::sync::Arc;
 use txpool::TxPoolService;
@@ -78,6 +78,10 @@ impl Inner {
         // get all peers and sort by difficulty, try peer with max difficulty.
         let peers = self.peer_provider.peer_set().await?;
         let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+        peer_selector.retain_rpc_peers_by_protocol(
+            vec![format!("{}/{}", RpcInfo::RPC_PROTOCOL_PREFIX, "get_txns_from_pool").into()]
+                .as_slice(),
+        );
         let best_peers = peer_selector.top(10);
         if best_peers.is_empty() {
             info!("No peer to sync txn.");

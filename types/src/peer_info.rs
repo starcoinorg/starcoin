@@ -219,6 +219,15 @@ impl PeerInfo {
         self.rpc_protocols.contains(&protocol)
     }
 
+    pub fn is_support_rpc_protocols(&self, protocols: &[Cow<'static, str>]) -> bool {
+        for protocol in protocols {
+            if !self.is_support_rpc_protocol(protocol.clone()) {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn random() -> Self {
         Self {
             peer_id: PeerId::random(),

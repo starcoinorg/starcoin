@@ -8,7 +8,7 @@ use anyhow::{format_err, Result};
 use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use log::debug;
+use log::warn;
 use network_api::messages::NotificationMessage;
 use network_api::{NetworkService, PeerProvider, ReputationChange, SupportedRpcProtocol};
 use network_p2p_types::network_state::NetworkState;
@@ -98,9 +98,9 @@ impl RawRpcClient for NetworkServiceRef {
                     .await
                     .map_err(|e| e.into())
             } else {
-                debug!(
+                warn!(
                     "[network] remote peer: {:?} not support rpc protocol :{:?}",
-                    peer_id, rpc_path
+                    peer_id, protocol
                 );
                 Err(NetRpcError::method_not_fount(rpc_path)).map_err(|e| e.into())
             }
