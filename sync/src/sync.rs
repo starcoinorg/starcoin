@@ -203,7 +203,7 @@ impl SyncService {
                 SYNC_METRICS.sync_times.with_label_values(&["start"]).inc();
                 Ok(Some(fut.await?))
             } else {
-                debug!("[sync]No better peer to request.");
+                debug!("[sync]No best peer to request, current is beast.");
                 Ok(None)
             }
         };

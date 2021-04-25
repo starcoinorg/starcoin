@@ -71,6 +71,11 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 peers,
             }))
         } else {
+            debug!(
+                "get_best_target return None, total_peers_in_selector: {}, min_difficulty: {}",
+                self.peer_selector().len(),
+                min_difficulty
+            );
             Ok(None)
         }
     }
