@@ -11,7 +11,6 @@ use starcoin_network::PeerAnnouncementMessage;
 use starcoin_service_registry::ServiceRef;
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::time::duration_since_epoch;
 use std::sync::mpsc::TrySendError;
 
 pub struct NodePeerMessageHandler {

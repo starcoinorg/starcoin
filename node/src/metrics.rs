@@ -3,8 +3,6 @@
 
 use anyhow::Result;
 use starcoin_config::NodeConfig;
-use starcoin_crypto::_once_cell::sync::Lazy;
-use starcoin_metrics::{register_histogram, Histogram, PrometheusError};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
