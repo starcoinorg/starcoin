@@ -3,7 +3,7 @@
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 sudo apt-get update
-sudo apt-get install wget curl -y
+sudo apt-get install wget unzip curl -y
 
 echo "Installing CMake......"
 if which cmake &>/dev/null; then

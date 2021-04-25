@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sudo yum update
+sudo yum install -y wget unzip curl
+
 # Install Rust
 echo "Installing Rust......"
 if rustup --version &>/dev/null; then
@@ -9,8 +12,6 @@ else
   CARGO_ENV="$HOME/.cargo/env"
   source "$CARGO_ENV"
 fi
-
-sudo apt-get update
 
 echo "Installing CMake......"
 if which cmake &>/dev/null; then
