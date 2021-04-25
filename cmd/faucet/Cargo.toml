@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.40"
-tiny_http = "0.6"
+tiny_http = "0.8"
 futures = "0.3.12"
 hex = { version = "0.4.3", default-features = false }
 tokio = { version = "0.2", features = ["full"] }
