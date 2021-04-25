@@ -3,30 +3,10 @@
 
 use anyhow::Result;
 use starcoin_config::NodeConfig;
-use starcoin_crypto::_once_cell::sync::Lazy;
-use starcoin_metrics::{register_histogram, Histogram, PrometheusError};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-
-pub static NODE_METRICS: Lazy<NodeMetrics> = Lazy::new(|| NodeMetrics::register().unwrap());
-
-#[derive(Clone)]
-pub struct NodeMetrics {
-    pub block_latency: Histogram,
-}
-
-impl NodeMetrics {
-    pub fn register() -> Result<Self, PrometheusError> {
-        let request_block_latency =
-            register_histogram!("request_block_latency", "request_block_latency")?;
-
-        Ok(Self {
-            block_latency: request_block_latency,
-        })
-    }
-}
 
 #[derive(Clone)]
 pub struct MetricsActorService {

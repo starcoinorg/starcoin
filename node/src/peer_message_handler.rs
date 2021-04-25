@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metrics::NODE_METRICS;
 use network_api::messages::{
     NotificationMessage, PeerCompactBlockMessage, PeerMessage, PeerTransactionsMessage,
 };
@@ -12,7 +11,6 @@ use starcoin_network::PeerAnnouncementMessage;
 use starcoin_service_registry::ServiceRef;
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::time::duration_since_epoch;
 use std::sync::mpsc::TrySendError;
 
 pub struct NodePeerMessageHandler {
@@ -54,12 +52,6 @@ impl PeerMessageHandler for NodePeerMessageHandler {
                 }
             }
             NotificationMessage::CompactBlock(message) => {
-                let header_time = message.compact_block.header.timestamp();
-                NODE_METRICS.block_latency.observe(
-                    duration_since_epoch()
-                        .as_millis()
-                        .saturating_sub(header_time as u128) as f64,
-                );
                 if let Err(e) = self
                     .block_relayer
                     .notify(PeerCompactBlockMessage::new(peer_message.peer_id, *message))

@@ -1,0 +1,53 @@
+1.
+  PUT _ingest/pipeline/difficulty_transfer
+  {
+    "description": "convert difficulty",
+    "processors": [
+      {
+        "convert": {
+          "field": "header.difficulty",
+          "type": "long",
+          "target_field": "header.difficulty_number"
+        }
+      }
+    ]
+  }
+
+2.
+  PUT _component_template/blocks-settings
+  {
+    "template": {
+      "settings": {
+        "index.default_pipeline": "difficulty_transfer"
+      }
+    }
+  }
+
+3.
+PUT _component_template/block-mappings
+  {
+    "template": {
+      # copy block.mapping.json to here.
+    }
+  }
+
+ PUT _component_template/txn_info-mappings
+  {
+    "template": {
+      # copy txn_info.mapping.json to here.
+    }
+  }
+4.
+  PUT _index_template/blocks-template
+  {
+    "index_patterns": ["*.blocks"],
+    "priority": 500,
+    "composed_of": ["blocks-settings","block-mappings", "txn_info-mappings" ]
+  }
+
+  PUT _index_template/txn-template
+  {
+    "index_patterns": ["*.txn_infos"],
+    "priority": 500,
+    "composed_of": [ "txn_info-mappings" ]
+  }
