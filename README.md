@@ -38,8 +38,8 @@ More detailed test network info please read [Join starcoin test network](https:/
 ## Network deployment status
 
 1. halley: auto deploy latest code.
-2. proxima: v0.9.5
-3. barnard: v1.0.0.beta
+2. proxima: v1.0.0.beta.5
+3. barnard: v1.0.0.beta.5
 
 ## Contribution
 Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.
