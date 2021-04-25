@@ -37,7 +37,7 @@ PUT _component_template/block-mappings
       # copy txn_info.mapping.json to here.
     }
   }
-3.
+4.
   PUT _index_template/blocks-template
   {
     "index_patterns": ["*.blocks"],
