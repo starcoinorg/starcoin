@@ -359,7 +359,15 @@ async fn test_break_error() {
     assert!(result.is_err());
     let task_err = result.err().unwrap();
     assert!(task_err.is_break_error());
-    assert_eq!(break_at, counter.load(Ordering::SeqCst) + 1);
+    assert!(
+        (break_at as i32)
+            .saturating_sub(counter.load(Ordering::SeqCst) as i32)
+            .abs()
+            <= 1,
+        " break_at: {}, counter: {}",
+        break_at,
+        counter.load(Ordering::SeqCst)
+    );
 
     let report = event_handle.get_reports().pop().unwrap();
     debug!("{}", report);
