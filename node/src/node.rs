@@ -219,8 +219,6 @@ impl NodeService {
         registry.register::<ChainReaderService>().await?;
 
         registry.register::<ChainNotifyHandlerService>().await?;
-        //registry.register::<DownloadService>().await?;
-        //registry.register::<SyncService>().await?;
 
         registry.register::<BlockConnectorService>().await?;
         registry.register::<SyncService>().await?;
@@ -259,6 +257,10 @@ impl NodeService {
             info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
         }
 
+        registry
+            .register_by_factory::<Stratum, StratumFactory>()
+            .await?;
+
         registry.register::<GenerateBlockEventPacemaker>().await?;
 
         // start metrics push service
@@ -268,13 +270,6 @@ impl NodeService {
         // wait for service init.
         Delay::new(Duration::from_millis(1000)).await;
 
-        registry
-            .register_by_factory::<Stratum, StratumFactory>()
-            .await?;
-        registry
-            .register_by_factory::<StratumService, StratumServiceFactory>()
-            .await?;
-
         bus.broadcast(SystemStarted)?;
 
         registry
@@ -282,6 +277,9 @@ impl NodeService {
             .await?;
         registry
             .register_by_factory::<RpcService, RpcServiceFactory>()
+            .await?;
+        registry
+            .register_by_factory::<StratumService, StratumServiceFactory>()
             .await?;
 
         Ok((registry, node_service))

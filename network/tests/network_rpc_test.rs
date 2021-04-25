@@ -23,7 +23,7 @@ pub struct TestRequest {
 #[stest::test]
 async fn test_network_raw_rpc() {
     use std::time::Duration;
-    let rpc_info = RpcInfo::new(vec!["test".to_string()]);
+    let rpc_info = RpcInfo::new(vec!["test"]);
 
     let service1 = build_network(None, Some((rpc_info.clone(), MockRpcHandler::echo())))
         .await

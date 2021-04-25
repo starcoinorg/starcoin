@@ -65,6 +65,11 @@ impl ActorService for Stratum {
         ctx.subscribe::<MintBlockEvent>();
         Ok(())
     }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<MintBlockEvent>();
+        Ok(())
+    }
 }
 
 impl EventHandler<Self, MintBlockEvent> for Stratum {

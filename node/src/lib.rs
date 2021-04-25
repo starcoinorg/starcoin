@@ -18,6 +18,7 @@ use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
 use starcoin_storage::Storage;
+use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::Block;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
@@ -139,6 +140,10 @@ impl NodeHandle {
         self.registry
             .get_shared_sync::<NetworkServiceRef>()
             .expect("NetworkAsyncService must exist.")
+    }
+
+    pub fn sync_service(&self) -> Result<ServiceRef<SyncService>> {
+        block_on(async { self.registry.service_ref::<SyncService>().await })
     }
 
     pub fn rpc_service(&self) -> Result<ServiceRef<RpcService>> {

@@ -5,18 +5,19 @@ use crate::block::BlockHeader;
 use crate::block::BlockNumber;
 use crate::startup_info::{ChainInfo, ChainStatus};
 use crate::U256;
+use anyhow::{format_err, Result};
 use network_p2p_types::identity::PublicKey;
+use network_p2p_types::multihash::Error;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
 pub use network_p2p_types::multiaddr::Multiaddr;
-use network_p2p_types::multihash::Error;
 pub use network_p2p_types::multihash::Multihash;
-use std::borrow::Cow;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct PeerId(network_p2p_types::PeerId);
@@ -218,6 +219,15 @@ impl PeerInfo {
         self.rpc_protocols.contains(&protocol)
     }
 
+    pub fn is_support_rpc_protocols(&self, protocols: &[Cow<'static, str>]) -> bool {
+        for protocol in protocols {
+            if !self.is_support_rpc_protocol(protocol.clone()) {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn random() -> Self {
         Self {
             peer_id: PeerId::random(),
@@ -230,29 +240,56 @@ impl PeerInfo {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct RpcInfo {
-    paths: Vec<String>,
+    protocols: Vec<Cow<'static, str>>,
 }
 
 impl RpcInfo {
+    pub const RPC_PROTOCOL_PREFIX: &'static str = "/starcoin/rpc/";
+
     pub fn is_empty(&self) -> bool {
-        self.paths.is_empty()
+        self.protocols.is_empty()
     }
 
     pub fn empty() -> Self {
-        Self { paths: vec![] }
+        Self { protocols: vec![] }
     }
-    pub fn new(mut paths: Vec<String>) -> Self {
-        paths.sort();
+    pub fn new(mut paths: Vec<&'static str>) -> Self {
+        paths.sort_unstable();
         paths.dedup();
-        Self { paths }
+        let protocols = paths
+            .into_iter()
+            .map(|path| {
+                let protocol_name: Cow<'static, str> =
+                    format!("{}{}", Self::RPC_PROTOCOL_PREFIX, path).into();
+                protocol_name
+            })
+            .collect();
+        Self { protocols }
+    }
+
+    pub fn into_protocols(self) -> Vec<Cow<'static, str>> {
+        self.protocols
+    }
+
+    /// Get rpc path from protocol
+    pub fn rpc_path(protocol: Cow<'static, str>) -> Result<String> {
+        let path = protocol
+            .strip_prefix(Self::RPC_PROTOCOL_PREFIX)
+            .ok_or_else(|| {
+                format_err!(
+                    "Invalid rpc protocol {}, do not contains rpc protocol prefix",
+                    protocol
+                )
+            })?;
+        Ok(path.to_string())
     }
 }
 
 impl IntoIterator for RpcInfo {
-    type Item = String;
-    type IntoIter = std::vec::IntoIter<String>;
+    type Item = Cow<'static, str>;
+    type IntoIter = std::vec::IntoIter<Cow<'static, str>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.paths.into_iter()
+        self.protocols.into_iter()
     }
 }

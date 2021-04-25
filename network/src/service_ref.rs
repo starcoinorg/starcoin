@@ -8,11 +8,11 @@ use anyhow::{format_err, Result};
 use futures::channel::oneshot::Receiver;
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use log::debug;
+use log::warn;
 use network_api::messages::NotificationMessage;
 use network_api::{NetworkService, PeerProvider, ReputationChange, SupportedRpcProtocol};
 use network_p2p_types::network_state::NetworkState;
-use network_p2p_types::{IfDisconnected, Multiaddr};
+use network_p2p_types::{IfDisconnected, Multiaddr, RequestFailure};
 use network_rpc_core::{NetRpcError, RawRpcClient};
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::PeerId;
@@ -82,8 +82,11 @@ impl RawRpcClient for NetworkServiceRef {
         rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>> {
-        let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);
         async move {
+            if self.get_peer(peer_id.clone()).await?.is_none() {
+                return Err(RequestFailure::NotConnected.into());
+            }
+            let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);
             if self
                 .is_supported(peer_id.clone(), protocol.clone().into())
                 .await
@@ -98,9 +101,9 @@ impl RawRpcClient for NetworkServiceRef {
                     .await
                     .map_err(|e| e.into())
             } else {
-                debug!(
+                warn!(
                     "[network] remote peer: {:?} not support rpc protocol :{:?}",
-                    peer_id, rpc_path
+                    peer_id, protocol
                 );
                 Err(NetRpcError::method_not_fount(rpc_path)).map_err(|e| e.into())
             }

@@ -1,4 +1,7 @@
-use crate::{BaseConfig, ConfigModule, StarcoinOpt, StructOpt};
+use crate::{
+    get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, StarcoinOpt,
+    StructOpt,
+};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
@@ -31,12 +34,24 @@ pub struct StratumConfig {
 }
 
 impl StratumConfig {
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
     pub fn get_address(&self) -> Option<SocketAddr> {
         if self.disable {
             return None;
         }
+        let base = self.base();
         let address = self.address.unwrap_or(DEFAULT_STRATUM_ADDRESS).to_string();
-        let port = self.port.unwrap_or(DEFAULT_STRATUM_PORT);
+        let port = self.port.unwrap_or_else(|| {
+            if base.net().is_test() {
+                get_random_available_port()
+            } else if base.net().is_dev() {
+                get_available_port_from(DEFAULT_STRATUM_PORT)
+            } else {
+                DEFAULT_STRATUM_PORT
+            }
+        });
         format!("{}:{}", address, port).parse::<SocketAddr>().ok()
     }
 }

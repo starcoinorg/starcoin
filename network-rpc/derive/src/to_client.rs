@@ -72,8 +72,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         })
         .collect();
     let get_rpc_info_method = quote! {
-        pub fn get_rpc_info() -> Vec<String> {
-            vec![#(stringify!(#rpc_info).to_string()),*]
+        pub fn get_rpc_info() -> Vec<&'static str> {
+            vec![#(stringify!(#rpc_info)),*]
         }
     };
 

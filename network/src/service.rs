@@ -479,8 +479,15 @@ impl Inner {
         self.peers
             .entry(peer_id.clone())
             .and_modify(|peer| {
-                peer.peer_info
-                    .update_chain_status(chain_info.status().clone());
+                // avoid update chain status to old
+                // this many happend when multi protocol send repeat handhake.
+                //FIXME after PeerEvent refactor.
+                if chain_info.total_difficulty()
+                    > peer.peer_info.chain_info.status().info.total_difficulty
+                {
+                    peer.peer_info
+                        .update_chain_status(chain_info.status().clone());
+                }
             })
             .or_insert_with(|| {
                 Peer::new(PeerInfo::new(
@@ -556,7 +563,6 @@ impl Inner {
                 ));
 
                 self.self_peer.known_blocks.put(id, ());
-                let mut send_peer_count: usize = 0;
                 let (protocol_name, message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
@@ -578,7 +584,9 @@ impl Inner {
                     })
                     .map(|peer| peer.peer_info.peer_id())
                     .collect::<Vec<_>>();
+                let peers_after_known_hash_filter = unknown_peer_ids.len();
                 let filtered_peer_ids = self.filter(unknown_peer_ids, protocol_name.clone());
+                let peers_after_protocol_filter = filtered_peer_ids.len();
                 let peers_len = self.peers.len() as u32;
 
                 let selected_peers = select_random_peers(
@@ -589,10 +597,9 @@ impl Inner {
                         ..=self.config.network.max_peers_to_propagate().max(peers_len), // use max(max_peers_to_propagate,peers_len) to ensure range [min,max] , max > min.
                     filtered_peer_ids.iter(),
                 );
-
+                let peers_send_message = selected_peers.len();
                 for peer_id in selected_peers {
                     let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
-                    send_peer_count = send_peer_count.saturating_add(1);
                     peer.known_blocks.put(id, ());
 
                     self.network_service.write_notification(
@@ -602,8 +609,8 @@ impl Inner {
                     )
                 }
                 debug!(
-                    "[network] broadcast new compact block message {:?} to {} peers",
-                    id, send_peer_count
+                    "[network] broadcast new compact block message {:?} to {} peers, total_peers: {}, peers_after_known_hash_filter: {}, peers_after_protocol_filter: {}",
+                    id, peers_send_message, peers_len, peers_after_known_hash_filter, peers_after_protocol_filter
                 );
             }
             NotificationMessage::Transactions(msg) => {

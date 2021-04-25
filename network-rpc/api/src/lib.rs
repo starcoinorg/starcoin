@@ -5,6 +5,7 @@ use anyhow::Result;
 use futures::future::BoxFuture;
 use network_rpc_core::{NetRpcError, RpcErrorCode};
 use network_rpc_derive::*;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
@@ -15,7 +16,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::PeerId;
+use starcoin_types::peer_info::{PeerId, RpcInfo};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 
 mod remote_chain_state;
@@ -30,6 +31,8 @@ pub const MAX_BLOCK_HEADER_REQUEST_SIZE: u64 = 1000;
 pub const MAX_TXN_REQUEST_SIZE: u64 = 1000;
 pub const MAX_BLOCK_INFO_REQUEST_SIZE: u64 = 1000;
 pub const MAX_BLOCK_IDS_REQUEST_SIZE: u64 = 10000;
+
+pub static RPC_INFO: Lazy<RpcInfo> = Lazy::new(|| RpcInfo::new(gen_client::get_rpc_info()));
 
 pub trait RpcRequest {
     fn verify(&self) -> Result<()> {
