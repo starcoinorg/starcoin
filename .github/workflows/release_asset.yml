@@ -1,12 +1,15 @@
 name: Release asset bot
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 jobs:
   build:
     name: Build release asset
+    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - ubuntu-latest
