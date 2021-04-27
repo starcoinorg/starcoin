@@ -86,6 +86,7 @@ impl ServiceHandler<Self, Unsubscribe> for Stratum {
 
 impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
     fn handle(&mut self, msg: SubscribeJobEvent, ctx: &mut ServiceContext<Self>) {
+        info!(target: "stratum", "receive subscribe event {:?}", msg);
         let SubscribeJobEvent(subscriber, login) = msg;
         let (sender, receiver) = mpsc::unbounded();
         let sub_id = self.next_id();
@@ -127,7 +128,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
     fn handle(&mut self, msg: SubmitShareEvent, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         if let Some(current_mint_event) = self.sync_current_job()? {
             let submit_job_id = msg.0.job_id.clone();
-            let job_id = hex::encode(&current_mint_event.minting_blob);
+            let job_id = hex::encode(&current_mint_event.minting_blob[0..8]);
             if submit_job_id != job_id {
                 warn!(target: "stratum", "received job mismatch with current job,{},{}", submit_job_id, job_id);
                 return Ok(());
