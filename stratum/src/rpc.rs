@@ -144,6 +144,8 @@ pub struct LoginRequest {
     login: String,
     pass: String,
     agent: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    algo: Option<Vec<String>>,
 }
 
 impl LoginRequest {
@@ -185,7 +187,7 @@ impl StratumJobResponse {
                 height: 0,
                 id: worker_id,
                 target: difficulty_to_target_hex(e.difficulty),
-                job_id: hex::encode(&e.minting_blob),
+                job_id: hex::encode(&e.minting_blob[0..8]),
                 blob: hex::encode(&e.minting_blob),
             },
         }

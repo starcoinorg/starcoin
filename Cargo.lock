@@ -3662,7 +3662,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-core"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=89c874030be6ffb5a6efcac38b2e1481ee174feb#89c874030be6ffb5a6efcac38b2e1481ee174feb"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=ea1c05d445a8c9e2deef09d439674eb820489e0b#ea1c05d445a8c9e2deef09d439674eb820489e0b"
 dependencies = [
  "futures 0.3.13",
  "futures-executor",
@@ -3698,7 +3698,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-derive"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=89c874030be6ffb5a6efcac38b2e1481ee174feb#89c874030be6ffb5a6efcac38b2e1481ee174feb"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=ea1c05d445a8c9e2deef09d439674eb820489e0b#ea1c05d445a8c9e2deef09d439674eb820489e0b"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.26",
@@ -3755,7 +3755,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-pubsub"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=89c874030be6ffb5a6efcac38b2e1481ee174feb#89c874030be6ffb5a6efcac38b2e1481ee174feb"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=ea1c05d445a8c9e2deef09d439674eb820489e0b#ea1c05d445a8c9e2deef09d439674eb820489e0b"
 dependencies = [
  "futures 0.3.13",
  "jsonrpc-core 17.1.0",
@@ -3787,7 +3787,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-server-utils"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=89c874030be6ffb5a6efcac38b2e1481ee174feb#89c874030be6ffb5a6efcac38b2e1481ee174feb"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=ea1c05d445a8c9e2deef09d439674eb820489e0b#ea1c05d445a8c9e2deef09d439674eb820489e0b"
 dependencies = [
  "bytes 0.5.6",
  "futures 0.3.13",
@@ -3816,7 +3816,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-tcp-server"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=89c874030be6ffb5a6efcac38b2e1481ee174feb#89c874030be6ffb5a6efcac38b2e1481ee174feb"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=ea1c05d445a8c9e2deef09d439674eb820489e0b#ea1c05d445a8c9e2deef09d439674eb820489e0b"
 dependencies = [
  "jsonrpc-core 17.1.0",
  "jsonrpc-server-utils 17.1.0",
