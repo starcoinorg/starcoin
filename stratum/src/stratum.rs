@@ -29,8 +29,7 @@ impl Stratum {
         }
     }
     fn next_id(&self) -> SubscriptionId {
-        let id = self.uid.fetch_add(1, atomic::Ordering::SeqCst);
-        SubscriptionId::Number(id)
+        SubscriptionId::Number(1)
     }
     fn sync_current_job(&mut self) -> Result<Option<MintBlockEvent>> {
         let service = self.miner_service.clone();
@@ -126,6 +125,7 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
 
 impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
     fn handle(&mut self, msg: SubmitShareEvent, _ctx: &mut ServiceContext<Self>) -> Result<()> {
+        info!(target: "stratum", "received submit share event:{:?}", &msg.0);
         if let Some(current_mint_event) = self.sync_current_job()? {
             let submit_job_id = msg.0.job_id.clone();
             let job_id = hex::encode(&current_mint_event.minting_blob[0..8]);
