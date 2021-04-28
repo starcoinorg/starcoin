@@ -16,7 +16,9 @@ mod tests;
 mod upgrade_module_exe_cmd;
 mod upgrade_module_plan_cmd;
 mod upgrade_module_proposal_cmd;
+mod upgrade_module_proposal_v2_cmd;
 mod upgrade_module_queue_cmd;
+mod upgrade_module_queue_v2_cmd;
 
 pub use call_contract_cmd::*;
 pub use compile_cmd::*;
@@ -31,4 +33,6 @@ pub use subscribe_cmd::*;
 pub use upgrade_module_exe_cmd::*;
 pub use upgrade_module_plan_cmd::*;
 pub use upgrade_module_proposal_cmd::*;
+pub use upgrade_module_proposal_v2_cmd::*;
 pub use upgrade_module_queue_cmd::*;
+pub use upgrade_module_queue_v2_cmd::*;
