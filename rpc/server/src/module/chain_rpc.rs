@@ -113,7 +113,7 @@ where
             };
 
             let max_return_num = count
-                .min(end_block_number)
+                .min(end_block_number + 1)
                 .min(config.rpc.block_query_max_range());
             let block = service
                 .main_blocks_by_number(number, max_return_num)
