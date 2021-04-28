@@ -549,13 +549,13 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                         debug!("[network]Threshold reached for single address {:}, max connections {:?}, real connections {:?}", ip, self.max_connections_per_address, *connections);
                         return;
                     }
-                    *connections += 1;
+                    *connections.saturating_add(1);
                 } else {
                     self.connections.insert(ip, 1);
                 };
             }
         }
-        self.num_connections += 1;
+        self.num_connections.saturating_add(1);
         for k in self.kademlias.values_mut() {
             NetworkBehaviour::inject_connection_established(k, peer_id, conn, endpoint)
         }
@@ -573,14 +573,14 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
     ) {
-        self.num_connections -= 1;
+        self.num_connections.saturating_sub(1);
         if endpoint.is_listener() {
             if let Some(ip) = multiaddr_to_ip_address(endpoint.get_remote_address()) {
                 if let Some(connections) = self.connections.get_mut(&ip) {
-                    if *connections == 1_u8 {
-                        *connections -= 1;
-                    } else {
+                    if *connections <= 1_u8 {
                         self.connections.remove(&ip);
+                    } else {
+                        *connections.saturating_sub(1);
                     }
                 };
             }
