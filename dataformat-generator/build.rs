@@ -9,7 +9,12 @@ use starcoin_crypto::{
 // use starcoin_rpc_api::types::pubsub::Kind;
 use starcoin_types::access_path::{AccessPath, DataPath, DataType};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::AccountResource;
+use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;
+use starcoin_types::account_config::block::NewBlockEvent;
+use starcoin_types::account_config::{
+    AccountResource, BlockRewardEvent, BurnEvent, DepositEvent, MintEvent, ProposalCreatedEvent,
+    VoteChangedEvent, WithdrawEvent,
+};
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::contract_event::{ContractEvent, ContractEventV0};
 use starcoin_types::event::EventKey;
@@ -91,6 +96,23 @@ fn generate() -> Result<(), Error> {
     let registry = tracer.registry()?;
     let data = serde_yaml::to_string(&registry).unwrap();
     std::fs::write("../etc/starcoin_types.yml", &data).unwrap();
+
+    {
+        let mut tracer = Tracer::new(TracerConfig::default());
+        let samples = Samples::new();
+        tracer.trace_type::<WithdrawEvent>(&samples)?;
+        tracer.trace_type::<DepositEvent>(&samples)?;
+        tracer.trace_type::<AcceptTokenEvent>(&samples)?;
+        tracer.trace_type::<BlockRewardEvent>(&samples)?;
+        tracer.trace_type::<BurnEvent>(&samples)?;
+        tracer.trace_type::<MintEvent>(&samples)?;
+        tracer.trace_type::<ProposalCreatedEvent>(&samples)?;
+        tracer.trace_type::<VoteChangedEvent>(&samples)?;
+        tracer.trace_type::<NewBlockEvent>(&samples)?;
+        let registry = tracer.registry()?;
+        let data = serde_yaml::to_string(&registry).unwrap();
+        std::fs::write("../etc/onchain_events.yml", &data).unwrap();
+    }
     // println!("{}", data);
     Ok(())
 }

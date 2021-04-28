@@ -1,0 +1,68 @@
+---
+AcceptTokenEvent:
+  STRUCT:
+    - token_code:
+        TYPENAME: TokenCode
+AccountAddress:
+  NEWTYPESTRUCT:
+    TUPLEARRAY:
+      CONTENT: U8
+      SIZE: 16
+BlockRewardEvent:
+  STRUCT:
+    - block_number: U64
+    - block_reward: U128
+    - gas_fees: U128
+    - miner:
+        TYPENAME: AccountAddress
+BurnEvent:
+  STRUCT:
+    - amount: U128
+    - token_code:
+        TYPENAME: TokenCode
+DepositEvent:
+  STRUCT:
+    - amount: U128
+    - token_code:
+        TYPENAME: TokenCode
+    - metadata:
+        SEQ: U8
+MintEvent:
+  STRUCT:
+    - amount: U128
+    - token_code:
+        TYPENAME: TokenCode
+NewBlockEvent:
+  STRUCT:
+    - number: U64
+    - author:
+        TYPENAME: AccountAddress
+    - timestamp: U64
+    - uncles: U64
+ProposalCreatedEvent:
+  STRUCT:
+    - proposal_id: U64
+    - proposer:
+        TYPENAME: AccountAddress
+TokenCode:
+  STRUCT:
+    - address:
+        TYPENAME: AccountAddress
+    - module: STR
+    - name: STR
+VoteChangedEvent:
+  STRUCT:
+    - proposal_id: U64
+    - proposer:
+        TYPENAME: AccountAddress
+    - voter:
+        TYPENAME: AccountAddress
+    - agree: BOOL
+    - vote: U128
+WithdrawEvent:
+  STRUCT:
+    - amount: U128
+    - token_code:
+        TYPENAME: TokenCode
+    - metadata:
+        SEQ: U8

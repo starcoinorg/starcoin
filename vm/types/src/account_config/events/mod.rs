@@ -4,6 +4,7 @@
 pub mod accept_token_payment;
 pub mod account_deposit;
 pub mod account_withdraw;
+pub mod block;
 mod block_reward_event;
 pub mod burn;
 pub mod dao;

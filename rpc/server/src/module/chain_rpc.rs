@@ -111,16 +111,13 @@ where
                 Some(num) => num,
                 None => service.clone().main_head_header().await?.number(),
             };
-            let max_return_num = end_block_number.min(count);
-            let block_query_max_range = config.rpc.block_query_max_range();
-            if max_return_num > block_query_max_range {
-                return Err(jsonrpc_core::Error::invalid_params(format!(
-                    "would return too many blocks, please decrease count param to {}",
-                    block_query_max_range
-                ))
-                .into());
-            }
-            let block = service.main_blocks_by_number(number, count).await?;
+
+            let max_return_num = count
+                .min(end_block_number + 1)
+                .min(config.rpc.block_query_max_range());
+            let block = service
+                .main_blocks_by_number(number, max_return_num)
+                .await?;
 
             block
                 .into_iter()
