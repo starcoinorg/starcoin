@@ -179,6 +179,7 @@ fn test_upgrade_module() {
         &test_upgrade_module_package,
         2,
         dao_config.min_action_delay,
+        false,
     );
 
     let proposal_txn = _sign_txn_with_association_account_by_rpc_client(
