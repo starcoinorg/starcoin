@@ -71,6 +71,7 @@ use libp2p::swarm::{
     ProtocolsHandler,
 };
 use log::{debug, info, trace, warn};
+use std::net::IpAddr;
 use std::task::{Context, Poll};
 use std::{
     cmp,
@@ -98,6 +99,7 @@ pub struct DiscoveryConfig {
     enable_mdns: bool,
     kademlia_disjoint_query_paths: bool,
     protocol_ids: HashSet<ProtocolId>,
+    max_connections_per_address: u32,
 }
 
 impl DiscoveryConfig {
@@ -112,6 +114,7 @@ impl DiscoveryConfig {
             enable_mdns: false,
             kademlia_disjoint_query_paths: false,
             protocol_ids: HashSet::new(),
+            max_connections_per_address: 1,
         }
     }
 
@@ -163,6 +166,11 @@ impl DiscoveryConfig {
         self
     }
 
+    pub fn max_connections_per_address(&mut self, max_connections_per_address: u32) -> &mut Self {
+        self.max_connections_per_address = std::cmp::max(1, max_connections_per_address);
+        self
+    }
+
     /// Require iterative Kademlia DHT queries to use disjoint paths for increased resiliency in the
     /// presence of potentially adversarial nodes.
     pub fn use_kademlia_disjoint_query_paths(&mut self, value: bool) -> &mut Self {
@@ -181,6 +189,7 @@ impl DiscoveryConfig {
             enable_mdns,
             kademlia_disjoint_query_paths,
             protocol_ids,
+            max_connections_per_address,
         } = self;
 
         let kademlias = protocol_ids
@@ -215,6 +224,8 @@ impl DiscoveryConfig {
             pending_events: VecDeque::new(),
             local_peer_id,
             num_connections: 0,
+            max_connections_per_address,
+            connections: HashMap::new(),
             allow_private_ipv4,
             discovery_only_if_under_num,
             #[cfg(not(target_os = "unknown"))]
@@ -252,6 +263,10 @@ pub struct DiscoveryBehaviour {
     local_peer_id: PeerId,
     /// Number of nodes we're currently connected to.
     num_connections: u64,
+    /// Maximum number of connections from any single IP address
+    max_connections_per_address: u32,
+    /// Number of connections from any single IP address
+    connections: HashMap<IpAddr, u8>,
     /// If false, `addresses_of_peer` won't return any private IPv4 address, except for the ones
     /// stored in `user_defined`.
     allow_private_ipv4: bool,
@@ -527,7 +542,20 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
     ) {
-        self.num_connections += 1;
+        if endpoint.is_listener() {
+            if let Some(ip) = multiaddr_to_ip_address(endpoint.get_remote_address()) {
+                if let Some(connections) = self.connections.get_mut(&ip) {
+                    if self.max_connections_per_address <= (*connections as u32) {
+                        debug!("[network]Threshold reached for single address {:}, max connections {:?}, real connections {:?}", ip, self.max_connections_per_address, *connections);
+                        return;
+                    }
+                    let _ = connections.saturating_add(1_u8);
+                } else {
+                    self.connections.insert(ip, 1);
+                };
+            }
+        }
+        let _ = self.num_connections.saturating_add(1);
         for k in self.kademlias.values_mut() {
             NetworkBehaviour::inject_connection_established(k, peer_id, conn, endpoint)
         }
@@ -545,7 +573,18 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
     ) {
-        self.num_connections -= 1;
+        let _ = self.num_connections.saturating_sub(1);
+        if endpoint.is_listener() {
+            if let Some(ip) = multiaddr_to_ip_address(endpoint.get_remote_address()) {
+                if let Some(connections) = self.connections.get_mut(&ip) {
+                    if *connections <= 1_u8 {
+                        self.connections.remove(&ip);
+                    } else {
+                        let _ = connections.saturating_sub(1_u8);
+                    }
+                };
+            }
+        }
         for k in self.kademlias.values_mut() {
             NetworkBehaviour::inject_connection_closed(k, peer_id, conn, endpoint)
         }
@@ -1143,5 +1182,23 @@ mod tests {
                 .is_empty(),
             "Expected remote peer not to be added to `protocol_b` Kademlia instance.",
         );
+    }
+
+    #[test]
+    fn test_multiaddr_to_ip_address() {
+        use super::multiaddr_to_ip_address;
+
+        assert!(
+            multiaddr_to_ip_address(&"/ip4/127.0.0.1/udt/sctp/5678".parse().unwrap()).is_some()
+        );
+        assert!(multiaddr_to_ip_address(&"/memory/111".parse().unwrap()).is_none());
+    }
+}
+
+fn multiaddr_to_ip_address(multiaddr: &Multiaddr) -> Option<IpAddr> {
+    match multiaddr.iter().collect::<Vec<_>>()[0] {
+        Protocol::Ip4(ip4) => Some(ip4.into()),
+        Protocol::Ip6(ip6) => Some(ip6.into()),
+        _ => None,
     }
 }
