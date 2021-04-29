@@ -434,7 +434,7 @@ pub fn modules_diff(
 ) -> Vec<CompiledModule> {
     let mut update_modules = vec![];
     let first_modules = first_modules
-        .into_iter()
+        .iter()
         .map(|module| (module.self_id(), module.clone()))
         .collect::<BTreeMap<_, _>>();
     for module in second_modules {

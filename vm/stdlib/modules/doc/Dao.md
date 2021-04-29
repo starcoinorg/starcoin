@@ -82,6 +82,7 @@
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="Treasury.md#0x1_Treasury">0x1::Treasury</a>;
 </code></pre>
 
 
@@ -393,6 +394,15 @@ User vote info.
 ## Constants
 
 
+<a name="0x1_Dao_ERR_NOT_AUTHORIZED"></a>
+
+
+
+<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 1401;
+</code></pre>
+
+
+
 <a name="0x1_Dao_ACTIVE"></a>
 
 
@@ -443,15 +453,6 @@ User vote info.
 
 
 <pre><code><b>const</b> <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>: u64 = 1407;
-</code></pre>
-
-
-
-<a name="0x1_Dao_ERR_NOT_AUTHORIZED"></a>
-
-
-
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 1401;
 </code></pre>
 
 
@@ -1399,7 +1400,9 @@ Quorum votes to make proposal pass.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(): u128 {
-    <b>let</b> supply = <a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;TokenT&gt;();
+    <b>let</b> market_cap = <a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;TokenT&gt;();
+    <b>let</b> balance_in_treasury = <a href="Treasury.md#0x1_Treasury_balance">Treasury::balance</a>&lt;TokenT&gt;();
+    <b>let</b> supply = market_cap - balance_in_treasury;
     <b>let</b> rate = <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;();
     <b>let</b> rate = (rate <b>as</b> u128);
     supply * rate / 100

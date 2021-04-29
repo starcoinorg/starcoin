@@ -11,12 +11,14 @@ It uses apis defined in the <code><a href="Token.md#0x1_Token">Token</a></code> 
 -  [Resource `SharedBurnCapability`](#0x1_STC_SharedBurnCapability)
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_STC_initialize)
+-  [Function `upgrade_from_v1_to_v2`](#0x1_STC_upgrade_from_v1_to_v2)
 -  [Function `initialize_v2`](#0x1_STC_initialize_v2)
 -  [Function `is_stc`](#0x1_STC_is_stc)
 -  [Function `burn`](#0x1_STC_burn)
 -  [Function `token_address`](#0x1_STC_token_address)
 -  [Specification](#@Specification_1)
     -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `upgrade_from_v1_to_v2`](#@Specification_1_upgrade_from_v1_to_v2)
     -  [Function `initialize_v2`](#@Specification_1_initialize_v2)
     -  [Function `is_stc`](#@Specification_1_is_stc)
     -  [Function `burn`](#@Specification_1_burn)
@@ -24,6 +26,7 @@ It uses apis defined in the <code><a href="Token.md#0x1_Token">Token</a></code> 
 
 
 <pre><code><b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
 <b>use</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal">0x1::ModifyDaoConfigProposal</a>;
 <b>use</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
@@ -155,6 +158,37 @@ STC initialization.
     <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>, <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>&gt;(account);
     <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>, <a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;(account);
     <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>, <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig">TransactionTimeoutConfig::TransactionTimeoutConfig</a>&gt;(account);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_STC_upgrade_from_v1_to_v2"></a>
+
+## Function `upgrade_from_v1_to_v2`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_upgrade_from_v1_to_v2">upgrade_from_v1_to_v2</a>(account: &signer, total_amount: u128): <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_upgrade_from_v1_to_v2">upgrade_from_v1_to_v2</a>(account: &signer,total_amount: u128,): <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt; {
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
+
+    // Mint all stc, and destroy mint capability
+    <b>let</b> total_stc = <a href="Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, total_amount-<a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;());
+    <b>let</b> withdraw_cap = <a href="Treasury.md#0x1_Treasury_initialize">Treasury::initialize</a>(account, total_stc);
+    <b>let</b> mint_cap = <a href="Token.md#0x1_Token_remove_mint_capability">Token::remove_mint_capability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
+    <a href="Token.md#0x1_Token_destroy_mint_capability">Token::destroy_mint_capability</a>(mint_cap);
+    withdraw_cap
 }
 </code></pre>
 
@@ -325,6 +359,22 @@ Return STC token address.
 
 
 <pre><code><b>include</b> <a href="Token.md#0x1_Token_RegisterTokenAbortsIf">Token::RegisterTokenAbortsIf</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;{precision: <a href="STC.md#0x1_STC_PRECISION">PRECISION</a>};
+</code></pre>
+
+
+
+<a name="@Specification_1_upgrade_from_v1_to_v2"></a>
+
+### Function `upgrade_from_v1_to_v2`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_upgrade_from_v1_to_v2">upgrade_from_v1_to_v2</a>(account: &signer, total_amount: u128): <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
