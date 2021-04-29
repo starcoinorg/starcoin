@@ -139,7 +139,7 @@ ScriptFunction:
           TYPENAME: TypeTag
     - args:
         SEQ:
-          TYPENAME: TransactionArgument
+          TYPENAME: bytes
 SignedUserTransaction:
   STRUCT:
     - raw_txn:

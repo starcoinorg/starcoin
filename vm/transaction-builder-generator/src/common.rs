@@ -79,12 +79,12 @@ pub(crate) fn mangle_type(type_tag: &TypeTag) -> String {
     use TypeTag::*;
     match type_tag {
         Bool => "bool".into(),
-        U8 => "u8".into(),
-        U64 => "u64".into(),
-        U128 => "u128".into(),
-        Address => "address".into(),
+        U8 => "st.uint8".into(),
+        U64 => "st.uint64".into(),
+        U128 => "st.uint128".into(),
+        Address => "starcoin_types.AccountAddress".into(),
         Vector(type_tag) => match type_tag.as_ref() {
-            U8 => "u8vector".into(),
+            U8 => "bytes".into(),
             _ => type_not_allowed(type_tag),
         },
 
