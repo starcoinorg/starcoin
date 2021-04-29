@@ -16,6 +16,7 @@
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
 <b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
@@ -30,11 +31,11 @@
 ## Constants
 
 
-<a name="0x1_ModuleUpgradeScripts_DEPRECATED_CODE"></a>
+<a name="0x1_ModuleUpgradeScripts_EDEPRECATED_FUNCTION"></a>
 
 
 
-<pre><code><b>const</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_DEPRECATED_CODE">DEPRECATED_CODE</a>: u64 = 200;
+<pre><code><b>const</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 
@@ -61,7 +62,7 @@
     _version: u64,
     _exec_delay: u64,
 ) {
-    <b>abort</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_DEPRECATED_CODE">DEPRECATED_CODE</a>
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 

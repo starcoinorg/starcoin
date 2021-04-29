@@ -36,6 +36,7 @@ Rules to declare or use *error reason*:
 -  [Function `invalid_argument`](#0x1_Errors_invalid_argument)
 -  [Function `limit_exceeded`](#0x1_Errors_limit_exceeded)
 -  [Function `internal`](#0x1_Errors_internal)
+-  [Function `deprecated`](#0x1_Errors_deprecated)
 -  [Function `custom`](#0x1_Errors_custom)
 -  [Specification](#@Specification_1)
     -  [Function `make`](#@Specification_1_make)
@@ -48,6 +49,7 @@ Rules to declare or use *error reason*:
     -  [Function `invalid_argument`](#@Specification_1_invalid_argument)
     -  [Function `limit_exceeded`](#@Specification_1_limit_exceeded)
     -  [Function `internal`](#@Specification_1_internal)
+    -  [Function `deprecated`](#@Specification_1_deprecated)
     -  [Function `custom`](#@Specification_1_custom)
 
 
@@ -81,6 +83,16 @@ A custom error category for extension points.
 
 
 
+<a name="0x1_Errors_DEPRECATED"></a>
+
+deprecated code
+
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_DEPRECATED">DEPRECATED</a>: u8 = 11;
+</code></pre>
+
+
+
 <a name="0x1_Errors_INTERNAL"></a>
 
 An internal error (bug) has occurred.
@@ -104,7 +116,7 @@ An argument provided to an operation is invalid. Example: a signing key has the 
 <a name="0x1_Errors_INVALID_STATE"></a>
 
 The system is in a state where the performed operation is not allowed. Example: call to a function only allowed
-in genesis.
+in genesis
 
 
 <pre><code><b>const</b> <a href="Errors.md#0x1_Errors_INVALID_STATE">INVALID_STATE</a>: u8 = 1;
@@ -194,7 +206,7 @@ A function to create an error from from a category and a reason.
 
 ## Function `invalid_state`
 
-Create an error of invalid_state
+Create an error of <code>invalid_state</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_invalid_state">invalid_state</a>(reason: u64): u64
@@ -391,6 +403,29 @@ Create an error of <code>internal</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_internal">internal</a>(reason: u64): u64 { <a href="Errors.md#0x1_Errors_make">make</a>(<a href="Errors.md#0x1_Errors_INTERNAL">INTERNAL</a>, reason) }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Errors_deprecated"></a>
+
+## Function `deprecated`
+
+Create an error of <code>deprecated</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_deprecated">deprecated</a>(reason: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_deprecated">deprecated</a>(reason: u64): u64 { <a href="Errors.md#0x1_Errors_make">make</a>(<a href="Errors.md#0x1_Errors_DEPRECATED">DEPRECATED</a>, reason) }
 </code></pre>
 
 
@@ -609,6 +644,24 @@ Create an error of <code>custom</code>.
 <pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_INTERNAL">INTERNAL</a>;
+</code></pre>
+
+
+
+<a name="@Specification_1_deprecated"></a>
+
+### Function `deprecated`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_deprecated">deprecated</a>(reason: u64): u64
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>aborts_if</b> <b>false</b>;
+<b>ensures</b> result == <a href="Errors.md#0x1_Errors_DEPRECATED">DEPRECATED</a>;
 </code></pre>
 
 
