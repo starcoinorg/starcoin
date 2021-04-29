@@ -15,6 +15,7 @@ use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -693,6 +694,38 @@ pub fn build_module_upgrade_queue(
         vec![
             bcs_ext::to_bytes(&proposal_address).unwrap(),
             bcs_ext::to_bytes(&proposal_id).unwrap(),
+        ],
+    )
+}
+
+pub fn build_vm_config_upgrade_proposal(vm_config: VMConfig, exec_delay: u64) -> ScriptFunction {
+    let gas_constants = &vm_config.gas_schedule.gas_constants;
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_vm_config").unwrap(),
+        vec![],
+        vec![
+            bcs_ext::to_bytes(
+                &bcs_ext::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
+            )
+            .unwrap(),
+            bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap())
+                .unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit.get()).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.max_transaction_size_in_bytes).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.gas_unit_scaling_factor).unwrap(),
+            bcs_ext::to_bytes(&gas_constants.default_account_size.get()).unwrap(),
+            bcs_ext::to_bytes(&exec_delay).unwrap(),
         ],
     )
 }
