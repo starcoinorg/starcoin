@@ -583,10 +583,11 @@ pub fn build_stdlib_package_for_test(
     Ok(package)
 }
 
-pub fn build_module_upgrade_proposal(
+pub fn build_module_upgrade_proposal_v2(
     package: &Package,
     version: u64,
     day: u64,
+    enforced: bool,
 ) -> (ScriptFunction, HashValue) {
     let package_hash = package.crypto_hash();
     (
@@ -602,7 +603,32 @@ pub fn build_module_upgrade_proposal(
                 bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
                 bcs_ext::to_bytes(&version).unwrap(),
                 bcs_ext::to_bytes(&day).unwrap(),
-                bcs_ext::to_bytes(&false).unwrap(),
+                bcs_ext::to_bytes(&enforced).unwrap(),
+            ],
+        ),
+        package_hash,
+    )
+}
+
+pub fn build_module_upgrade_proposal(
+    package: &Package,
+    version: u64,
+    day: u64,
+) -> (ScriptFunction, HashValue) {
+    let package_hash = package.crypto_hash();
+    (
+        ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("ModuleUpgradeScripts").unwrap(),
+            ),
+            Identifier::new("propose_module_upgrade").unwrap(),
+            vec![stc_type_tag()],
+            vec![
+                bcs_ext::to_bytes(&package.package_address()).unwrap(),
+                bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
+                bcs_ext::to_bytes(&version).unwrap(),
+                bcs_ext::to_bytes(&day).unwrap(),
             ],
         ),
         package_hash,
@@ -627,7 +653,7 @@ pub fn build_module_upgrade_plan(
     )
 }
 
-pub fn build_module_upgrade_queue(
+pub fn build_module_upgrade_queue_v2(
     proposal_address: AccountAddress,
     proposal_id: u64,
 ) -> ScriptFunction {
@@ -635,6 +661,28 @@ pub fn build_module_upgrade_queue(
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModuleV2").unwrap(),
+        type_params: vec![],
+    });
+
+    ScriptFunction::new(
+        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+        Identifier::new("queue_proposal_action").unwrap(),
+        vec![stc_type_tag(), upgrade_module],
+        vec![
+            bcs_ext::to_bytes(&proposal_address).unwrap(),
+            bcs_ext::to_bytes(&proposal_id).unwrap(),
+        ],
+    )
+}
+
+pub fn build_module_upgrade_queue(
+    proposal_address: AccountAddress,
+    proposal_id: u64,
+) -> ScriptFunction {
+    let upgrade_module = TypeTag::Struct(StructTag {
+        address: genesis_address(),
+        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+        name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
     });
 

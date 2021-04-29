@@ -130,8 +130,10 @@ pub fn add_command(
                 .subcommand(dev::GenerateMultisigTxnCommand)
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)
                 .subcommand(dev::UpgradeModuleProposalCommand)
+                .subcommand(dev::UpgradeModuleProposalV2Command)
                 .subcommand(dev::UpgradeModulePlanCommand)
                 .subcommand(dev::UpgradeModuleQueueCommand)
+                .subcommand(dev::UpgradeModuleQueueV2Command)
                 .subcommand(dev::UpgradeModuleExeCommand)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(

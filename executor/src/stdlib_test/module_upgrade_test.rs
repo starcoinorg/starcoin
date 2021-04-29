@@ -18,6 +18,8 @@ use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::on_chain_config::TransactionPublishOption;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::VMValueCast;
+use std::fs::File;
+use std::io::Read;
 use test_helper::dao::dao_vote_test;
 use test_helper::executor::*;
 use test_helper::Account;
@@ -223,6 +225,74 @@ fn test_init_script() -> Result<()> {
         module_names,
         Some(init_script),
     )?;
+    let package_hash = package.crypto_hash();
+
+    let vote_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("propose_module_upgrade").unwrap(),
+        vec![stc_type_tag()],
+        vec![
+            bcs_ext::to_bytes(&genesis_address()).unwrap(),
+            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&1u64).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
+        ],
+    );
+    let execute_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("submit_module_upgrade_plan").unwrap(),
+        vec![stc_type_tag()],
+        vec![
+            bcs_ext::to_bytes(alice.address()).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
+        ],
+    );
+    let chain_state = dao_vote_test(
+        alice,
+        chain_state,
+        &net,
+        vote_script_function,
+        dao_action_type_tag,
+        execute_script_function,
+        0,
+    )?;
+    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+
+    assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
+    Ok(())
+}
+
+#[stest::test]
+fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
+    let alice = Account::new();
+    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    genesis_config.stdlib_version = StdlibVersion::Version(1);
+    let net = ChainNetwork::new_custom(
+        "test_stdlib_upgrade".to_string(),
+        ChainId::new(100),
+        genesis_config,
+    )?;
+    let chain_state = prepare_customized_genesis(&net);
+
+    let dao_action_type_tag = TypeTag::Struct(StructTag {
+        address: genesis_address(),
+        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+        name: Identifier::new("UpgradeModule").unwrap(),
+        type_params: vec![],
+    });
+    let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
+        .canonicalize()
+        .unwrap();
+    let mut bytes = vec![];
+    File::open(path)?.read_to_end(&mut bytes)?;
+    let package: Package = bcs_ext::from_bytes(&bytes)?;
+
     let package_hash = package.crypto_hash();
 
     let vote_script_function = ScriptFunction::new(

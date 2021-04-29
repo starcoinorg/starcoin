@@ -6,11 +6,18 @@
 use clap::{App, Arg};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::check_compiled_module_compat;
+use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::transaction::{
+    parse_transaction_argument, ScriptFunction, TransactionArgument,
+};
+use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{
     language_storage::ModuleId,
     transaction::{Module, Package},
 };
+use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
     build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, save_binary,
@@ -43,6 +50,7 @@ fn incremental_update_with_version(
     dest_dir: PathBuf,
     sub_dir: String,
     new_modules: &BTreeMap<String, CompiledModule>,
+    init_script: Option<ScriptFunction>,
 ) {
     if pre_dir.exists() {
         let pre_compiled_modules = compiled_modules(pre_dir);
@@ -87,7 +95,11 @@ fn incremental_update_with_version(
                 modules.push(Module::new(bytes));
                 std_path.pop();
             }
-            let package = Package::new_with_modules(modules).unwrap();
+            let mut package = Package::new_with_modules(modules).unwrap();
+            if let Some(script_function) = init_script {
+                package.set_init_script(script_function);
+            }
+
             let package_hash = package.crypto_hash();
             let mut package_path = base_path;
             package_path.push("stdlib");
@@ -150,23 +162,55 @@ fn replace_stdlib_by_path(
 // genesis, and everywhere else across the code-base unless otherwise specified.
 fn main() {
     // pass argument 'version' to generate new release
-    // for example, "cargo run -- --version 0.1"
+    // for example, "cargo run -- --version 1"
     let cli = App::new("stdlib")
         .name("Move standard library")
         .author("The Starcoin Core Contributors")
+        .after_help("this command can be used to generate an incremental package, with init script included.")
         .arg(
             Arg::with_name("version")
                 .short("v")
                 .long("version")
                 .takes_value(true)
                 .value_name("VERSION")
-                .help("version number for compiled stdlib: major.minor, don't forget to record the release note"),
+                .help("version number for compiled stdlib, for example 1. don't forget to record the release note"),
         )
         .arg(
             Arg::with_name("no-check-compatibility")
                 .short("n")
                 .long("no-check-compatibility")
                 .help("don't check compatibility between the old and new standard library"),
+        )
+        .arg(
+        Arg::with_name("init-script-module")
+            .short("m")
+            .long("init-script-module")
+            .takes_value(true)
+            .value_name("MODULE")
+            .help("module name of init script function"),
+        ).arg(
+        Arg::with_name("init-script-function")
+            .short("f")
+            .long("init-script-function")
+            .takes_value(true)
+            .value_name("FUNC")
+            .help("function name of init script function"),
+        ).arg(
+        Arg::with_name("init-script-type-args")
+            .short("t")
+            .long("init-script-type-args")
+            .multiple(true)
+            .takes_value(true)
+            .value_name("TYPE_ARGS")
+            .help("type args of init script function"),
+        ).arg(
+        Arg::with_name("init-script-args")
+            .short("a")
+            .long("init-script-args")
+            .multiple(true)
+            .takes_value(true)
+            .value_name("ARGS")
+            .help("args of init script function"),
         );
 
     let matches = cli.get_matches();
@@ -184,6 +228,47 @@ fn main() {
     };
 
     let no_check_compatibility = matches.is_present("no-check-compatibility");
+    let has_init_script =
+        matches.is_present("init-script-module") && matches.is_present("init-script-function");
+    let init_script = if has_init_script {
+        let module_name = matches.value_of("init-script-module").unwrap();
+        let function_name = matches.value_of("init-script-function").unwrap();
+        let type_args = if matches.is_present("init-script-type-args") {
+            let type_args_str: Vec<&str> = matches
+                .values_of("init-script-type-args")
+                .unwrap()
+                .collect();
+            let type_args: Vec<TypeTag> = type_args_str
+                .iter()
+                .map(|s| parse_type_tag(*s).unwrap())
+                .collect();
+            type_args
+        } else {
+            vec![]
+        };
+        let args = if matches.is_present("init-script-args") {
+            let args_strings: Vec<&str> = matches.values_of("init-script-args").unwrap().collect();
+            let args: Vec<TransactionArgument> = args_strings
+                .iter()
+                .map(|s| parse_transaction_argument(*s).unwrap())
+                .collect();
+            args
+        } else {
+            vec![]
+        };
+        println!("type_args {:?}", type_args);
+        println!("args {:?}", args);
+
+        let init_script = ScriptFunction::new(
+            ModuleId::new(core_code_address(), Identifier::new(module_name).unwrap()),
+            Identifier::new(function_name).unwrap(),
+            type_args,
+            convert_txn_args(&args),
+        );
+        Some(init_script)
+    } else {
+        None
+    };
 
     // Make sure that the current directory is `vm/stdlib` from now on.
     let exec_path = std::env::args().next().expect("path of the executable");
@@ -216,7 +301,13 @@ fn main() {
             let mut pre_version_dir = PathBuf::from(COMPILED_OUTPUT_PATH);
             pre_version_dir.push(format!("{}", pre_version));
             let sub_dir = format!("{}-{}", pre_version, version_number);
-            incremental_update_with_version(&mut pre_version_dir, dest_dir, sub_dir, &new_modules);
+            incremental_update_with_version(
+                &mut pre_version_dir,
+                dest_dir,
+                sub_dir,
+                &new_modules,
+                init_script,
+            );
         }
     }
     replace_stdlib_by_path(&mut module_path, new_modules);
