@@ -43,6 +43,7 @@ address 0x1 {
         /// default min time limit
         public fun get_default_min_time_limit(): u64 { DEFAULT_MIN_TIME_LIMIT }
 
+        const EDEPRECATED_FUNCTION: u64 = 19;
         const EUPGRADE_PLAN_IS_NONE: u64 = 102;
         const EPACKAGE_HASH_INCORRECT: u64 = 103;
         const EACTIVE_TIME_INCORRECT: u64 = 104;
@@ -51,7 +52,6 @@ address 0x1 {
         const ESTRATEGY_NOT_TWO_PHASE: u64 = 107;
         const EUNKNOWN_STRATEGY: u64 = 108;
         const ESENDER_AND_PACKAGE_ADDRESS_MISMATCH: u64 = 109;
-        const DEPRECATED_CODE: u64 = 200;
 
         struct UpgradePlanV2 has copy, drop, store {
             package_hash: vector<u8>,
@@ -186,12 +186,12 @@ address 0x1 {
 
         /// upgrade plan can override
         public fun submit_upgrade_plan(_account: &signer, _package_hash: vector<u8>, _version:u64) {
-            abort DEPRECATED_CODE
+            abort Errors::deprecated(EDEPRECATED_FUNCTION)
         }
 
         /// Submit a new upgrade plan.
         public fun submit_upgrade_plan_with_cap(_cap: &UpgradePlanCapability, _package_hash: vector<u8>, _version: u64) {
-            abort DEPRECATED_CODE
+            abort Errors::deprecated(EDEPRECATED_FUNCTION)
         }
 
         public(script) fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(account: signer, package_address: address) acquires TwoPhaseUpgrade {
@@ -370,6 +370,24 @@ address 0x1 {
             include CheckPackageTxnAbortsIf;
         }
 
+        public fun check_package_txn_v2(txn_sender: address, package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgradeV2, ModuleUpgradeStrategy{
+            let strategy = get_module_upgrade_strategy(package_address);
+            if (strategy == STRATEGY_ARBITRARY){
+                assert(txn_sender == package_address, Errors::requires_address(ESENDER_AND_PACKAGE_ADDRESS_MISMATCH));
+            }else if(strategy == STRATEGY_TWO_PHASE){
+                let plan_opt = get_upgrade_plan_v2(package_address);
+                assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE));
+                let plan = Option::borrow(&plan_opt);
+                assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
+                assert(plan.active_after_time <= Timestamp::now_milliseconds(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
+            }else if(strategy == STRATEGY_NEW_MODULE){
+                //do check at VM runtime.
+                assert(txn_sender == package_address, Errors::requires_address(ESENDER_AND_PACKAGE_ADDRESS_MISMATCH));
+            }else if(strategy == STRATEGY_FREEZE){
+                abort(ESTRATEGY_FREEZED)
+            };
+        }
+
         spec schema CheckPackageTxnAbortsIf {
             package_address: address;
             package_hash: vector<u8>;
@@ -422,6 +440,12 @@ address 0x1 {
         spec fun package_txn_prologue {
             aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
             include CheckPackageTxnAbortsIf{};
+        }
+
+        public fun package_txn_prologue_v2(account: &signer, txn_sender: address, package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgradeV2, ModuleUpgradeStrategy {
+            // Can only be invoked by genesis account
+            CoreAddresses::assert_genesis_address(account);
+            check_package_txn_v2(txn_sender, package_address, package_hash);
         }
 
         /// Package txn finished, and clean UpgradePlan

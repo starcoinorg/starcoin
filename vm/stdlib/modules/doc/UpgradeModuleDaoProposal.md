@@ -148,11 +148,11 @@ request of upgrading module contract code.
 ## Constants
 
 
-<a name="0x1_UpgradeModuleDaoProposal_DEPRECATED_CODE"></a>
+<a name="0x1_UpgradeModuleDaoProposal_EDEPRECATED_FUNCTION"></a>
 
 
 
-<pre><code><b>const</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_DEPRECATED_CODE">DEPRECATED_CODE</a>: u64 = 200;
+<pre><code><b>const</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 
@@ -237,7 +237,7 @@ propose a module upgrade, called by proposer.
     _version: u64,
     _exec_delay: u64,
 ) {
-    <b>abort</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_DEPRECATED_CODE">DEPRECATED_CODE</a>
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 

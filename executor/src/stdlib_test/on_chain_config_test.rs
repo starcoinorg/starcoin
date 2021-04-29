@@ -118,7 +118,11 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
     )?;
     //verify txn timeout
     {
-        assert!(account_execute(&net, &alice, &chain_state, empty_txn_payload()).is_err());
+        assert!(
+            account_execute(&net, &alice, &chain_state, empty_txn_payload())?
+                .status()
+                .is_discarded()
+        );
     }
     Ok(())
 }

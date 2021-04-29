@@ -17,12 +17,12 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionOutput, TransactionPayload,
 };
-use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress, transaction::Module, transaction::Transaction,
     transaction::TransactionStatus,
 };
 use starcoin_vm_types::values::VMValueCast;
+use starcoin_vm_types::vm_status::KeptVMStatus;
 use stdlib::restore_stdlib_in_dir;
 
 //TODO warp to A MockTxnExecutor
@@ -242,22 +242,18 @@ fn build_signed_txn(
     signature.build_transaction(txn).unwrap()
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn execute_signed_txn(
     state: &ChainStateDB,
     txn: SignedUserTransaction,
 ) -> Result<TransactionOutput> {
     let txn = Transaction::UserTransaction(txn);
-    let output = execute_and_apply(state, txn);
+    Ok(execute_and_apply(state, txn))
+}
 
-    match output.status() {
-        TransactionStatus::Discard(s) => {
-            bail!("txn discard, status: {:?}", s);
-        }
-        TransactionStatus::Keep(s) => {
-            if s != &KeptVMStatus::Executed {
-                bail!("txn executing error, {:?}", s)
-            }
-        }
+pub fn move_abort_code(status: KeptVMStatus) -> Option<u64> {
+    match status {
+        KeptVMStatus::MoveAbort(_, code) => Some(code),
+        _ => None,
     }
-    Ok(output)
 }
