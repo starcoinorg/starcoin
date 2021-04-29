@@ -7,6 +7,7 @@
 
 -  [Constants](#@Constants_0)
 -  [Function `peer_to_peer`](#0x1_TransferScripts_peer_to_peer)
+-  [Function `batch_peer_to_peer`](#0x1_TransferScripts_batch_peer_to_peer)
 -  [Function `peer_to_peer_batch`](#0x1_TransferScripts_peer_to_peer_batch)
 -  [Function `peer_to_peer_with_metadata`](#0x1_TransferScripts_peer_to_peer_with_metadata)
 
@@ -33,6 +34,15 @@
 
 
 
+<a name="0x1_TransferScripts_ELENGTH_MISMATCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="TransferScripts.md#0x1_TransferScripts_ELENGTH_MISMATCH">ELENGTH_MISMATCH</a>: u64 = 102;
+</code></pre>
+
+
+
 <a name="0x1_TransferScripts_peer_to_peer"></a>
 
 ## Function `peer_to_peer`
@@ -54,6 +64,45 @@
         <b>assert</b>(payee == created_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TransferScripts.md#0x1_TransferScripts_EADDRESS_AND_AUTH_KEY_MISMATCH">EADDRESS_AND_AUTH_KEY_MISMATCH</a>));
     };
     <a href="Account.md#0x1_Account_pay_from">Account::pay_from</a>&lt;TokenType&gt;(&account, payee, amount)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_TransferScripts_batch_peer_to_peer"></a>
+
+## Function `batch_peer_to_peer`
+
+Batch transfer token to others.
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TransferScripts.md#0x1_TransferScripts_batch_peer_to_peer">batch_peer_to_peer</a>&lt;TokenType&gt;(account: signer, payeees: vector&lt;address&gt;, payee_auth_keys: vector&lt;vector&lt;u8&gt;&gt;, amounts: vector&lt;u128&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TransferScripts.md#0x1_TransferScripts_batch_peer_to_peer">batch_peer_to_peer</a>&lt;TokenType: store&gt;(account: signer, payeees: vector&lt;address&gt;, payee_auth_keys: vector&lt;vector&lt;u8&gt;&gt;, amounts: vector&lt;u128&gt;) {
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&payeees);
+    <b>assert</b>(len == <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&payee_auth_keys), <a href="TransferScripts.md#0x1_TransferScripts_ELENGTH_MISMATCH">ELENGTH_MISMATCH</a>);
+    <b>assert</b>(len == <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&amounts), <a href="TransferScripts.md#0x1_TransferScripts_ELENGTH_MISMATCH">ELENGTH_MISMATCH</a>);
+    <b>let</b> i = 0;
+    <b>while</b> (i &lt; len){
+        <b>let</b> payee = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&payeees, i);
+        <b>let</b> payee_auth_key = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&payee_auth_keys, i);
+        <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(payee)) {
+            <b>let</b> created_address = <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;TokenType&gt;(payee_auth_key);
+            <b>assert</b>(payee == created_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TransferScripts.md#0x1_TransferScripts_EADDRESS_AND_AUTH_KEY_MISMATCH">EADDRESS_AND_AUTH_KEY_MISMATCH</a>));
+        };
+        <b>let</b> amount = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&amounts, i);
+        <a href="Account.md#0x1_Account_pay_from">Account::pay_from</a>&lt;TokenType&gt;(&account, payee, amount);
+        i = i + 1;
+    }
 }
 </code></pre>
 
