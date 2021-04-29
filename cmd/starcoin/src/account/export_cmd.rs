@@ -5,7 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::{ed25519, ValidCryptoMaterialStringExt};
+use starcoin_crypto::ValidCryptoMaterialStringExt;
+use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::convert::TryFrom;
 use std::path::PathBuf;
@@ -34,7 +35,7 @@ impl CommandAction for ExportCommand {
         let client = ctx.state().client();
         let opt: &ExportOpt = ctx.opt();
         let data = client.account_export(opt.account_address, opt.password.clone())?;
-        let private_key = ed25519::Ed25519PrivateKey::try_from(data.as_slice())?;
+        let private_key = AccountPrivateKey::try_from(data.as_slice())?;
         let encoded = private_key.to_encoded_string()?;
         if let Some(output_file) = &opt.output_file {
             if output_file.exists() {
