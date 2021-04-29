@@ -282,6 +282,65 @@ fn test_package_txn() -> Result<()> {
     Ok(())
 }
 
+#[stest::test(timeout = 360)]
+fn test_wrong_package_address() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let alice = test_helper::Account::new();
+    let bob = test_helper::Account::new();
+    let pre_mint_amount = net.genesis_config().pre_mine_amount;
+
+    // create alice, bob accounts
+    {
+        let script_function = encode_create_account_script_function(
+            net.stdlib_version(),
+            stc_type_tag(),
+            alice.address(),
+            alice.auth_key(),
+            pre_mint_amount / 4,
+        );
+        association_execute(
+            &net,
+            &chain_state,
+            TransactionPayload::ScriptFunction(script_function),
+        )?;
+
+        let script_function = encode_create_account_script_function(
+            net.stdlib_version(),
+            stc_type_tag(),
+            bob.address(),
+            bob.auth_key(),
+            pre_mint_amount / 4,
+        );
+        association_execute(
+            &net,
+            &chain_state,
+            TransactionPayload::ScriptFunction(script_function),
+        )?;
+    }
+
+    {
+        let module = compile_modules_with_address(*alice.address(), TEST_MODULE)
+            .pop()
+            .unwrap();
+        let package = Package::new_with_module(module)?;
+
+        // execute the package txn
+        let output = account_execute(
+            &net,
+            &bob, // sender is bob, not package address alice
+            &chain_state,
+            TransactionPayload::Package(package),
+        )?;
+        // MODULE_ADDRESS_DOES_NOT_MATCH_SENDER is converted to UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+        assert_eq!(
+            &TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
+            output.status()
+        );
+    }
+
+    Ok(())
+}
+
 #[stest::test(timeout = 200)]
 fn test_block_execute_gas_limit() -> Result<()> {
     let (chain_state, net) = prepare_genesis();

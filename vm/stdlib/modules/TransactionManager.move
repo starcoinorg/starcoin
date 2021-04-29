@@ -74,12 +74,16 @@ module TransactionManager {
             Errors::invalid_argument(EPROLOGUE_TRANSACTION_EXPIRED),
         );
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE) {
-            assert(
-                TransactionPublishOption::is_module_allowed(Signer::address_of(&account)),
-                Errors::invalid_argument(EPROLOGUE_MODULE_NOT_ALLOWED),
-            );
-            PackageTxnManager::package_txn_prologue(
+            // stdlib upgrade is not affected by PublishOption
+            if (txn_package_address != CoreAddresses::GENESIS_ADDRESS()) {
+                assert(
+                    TransactionPublishOption::is_module_allowed(Signer::address_of(&account)),
+                    Errors::invalid_argument(EPROLOGUE_MODULE_NOT_ALLOWED),
+                );
+            };
+            PackageTxnManager::package_txn_prologue_v2(
                 &account,
+                txn_sender,
                 txn_package_address,
                 txn_script_or_package_hash,
             );
@@ -114,7 +118,7 @@ module TransactionManager {
         include TransactionPublishOption::AbortsIfTxnPublishOptionNotExistWithBool {
             is_script_or_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE || txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT),
         };
-        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE && !TransactionPublishOption::spec_is_module_allowed(Signer::address_of(account));
+        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE && txn_package_address != CoreAddresses::GENESIS_ADDRESS() && !TransactionPublishOption::spec_is_module_allowed(Signer::address_of(account));
         aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT && !TransactionPublishOption::spec_is_script_allowed(Signer::address_of(account));
         include PackageTxnManager::CheckPackageTxnAbortsIfWithType{is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
     }

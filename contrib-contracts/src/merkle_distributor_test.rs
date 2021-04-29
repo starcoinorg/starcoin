@@ -9,7 +9,9 @@ use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use starcoin_vm_types::values::VMValueCast;
-use test_helper::executor::{association_execute, compile_modules_with_address, prepare_genesis};
+use test_helper::executor::{
+    association_execute, compile_modules_with_address, move_abort_code, prepare_genesis,
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DataProof {
@@ -132,8 +134,10 @@ fn test_merkle_distributor() -> Result<()> {
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
-        );
-        assert!(result.is_err(), "claim more that what you get should error");
+        )?;
+        let status = result.status().status().unwrap();
+        // INVALID_PROOF
+        assert_eq!(Some(511), move_abort_code(status));
     }
 
     // claim ok.

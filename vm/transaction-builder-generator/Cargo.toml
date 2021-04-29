@@ -19,7 +19,7 @@ serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="6
 serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="694048797338ff7385006d968e786b6d9dbdeb8b"}
 
 starcoin-vm-types = { path = "../types"}
-move-core-types = {git = "https://github.com/starcoinorg/diem", rev="5b1728bcaaf19fe7a26d4e30ff16091408eb97c3" }
+move-core-types = {git = "https://github.com/starcoinorg/diem", rev="6e1cc95897557ce8328c3d08037196b6445d5be8" }
 bcs = "0.1.2"
 
 [dev-dependencies]

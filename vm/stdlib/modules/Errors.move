@@ -40,7 +40,7 @@ module Errors {
     }
 
     /// The system is in a state where the performed operation is not allowed. Example: call to a function only allowed
-    /// in genesis.
+    /// in genesis
     const INVALID_STATE: u8 = 1;
 
     /// The signer of a transaction does not have the expected address for this operation. Example: a call to a function
@@ -71,10 +71,13 @@ module Errors {
     /// An internal error (bug) has occurred.
     const INTERNAL: u8 = 10;
 
+    /// deprecated code
+    const DEPRECATED: u8 = 11;
+
     /// A custom error category for extension points.
     const CUSTOM: u8 = 255;
 
-    /// Create an error of invalid_state
+    /// Create an error of `invalid_state`
     public fun invalid_state(reason: u64): u64 { make(INVALID_STATE, reason) }
     spec fun invalid_state {
         pragma opaque = true;
@@ -144,6 +147,14 @@ module Errors {
         pragma opaque = true;
         aborts_if false;
         ensures result == INTERNAL;
+    }
+
+    /// Create an error of `deprecated`.
+    public fun deprecated(reason: u64): u64 { make(DEPRECATED, reason) }
+    spec fun deprecated {
+        pragma opaque = true;
+        aborts_if false;
+        ensures result == DEPRECATED;
     }
 
     /// Create an error of `custom`.

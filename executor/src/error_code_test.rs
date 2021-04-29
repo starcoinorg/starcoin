@@ -4,24 +4,34 @@
 use crate::account::{create_account_txn_sent_as_association, Account};
 use anyhow::Result;
 use once_cell::sync::Lazy;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_transaction_builder::{
     encode_transfer_script_by_token_code, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::ModuleId;
+use starcoin_types::transaction::ScriptFunction;
 use starcoin_types::{
     block_metadata::BlockMetadata, transaction::Transaction, transaction::TransactionStatus,
 };
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::Package;
 use starcoin_vm_types::transaction::RawUserTransaction;
 use starcoin_vm_types::transaction::TransactionPayload;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::StatusCode;
 use std::str::FromStr;
 use stdlib::StdlibVersion;
-use test_helper::executor::{execute_and_apply, prepare_genesis};
+use test_helper::executor::*;
+use test_helper::executor::{
+    association_execute, execute_and_apply, move_abort_code, prepare_genesis,
+};
 
 pub static WRONG_TOKEN_CODE_FOR_TEST: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str("0x1::ABC::ABC").expect("Parse wrong token code should success.")
@@ -214,4 +224,36 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
             token_code.address, token_code.module, token_code.name
         ),
     )
+}
+
+#[stest::test]
+fn test_call_deprecated_function() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let module = compile_modules_with_address(genesis_address(), TEST_MODULE)
+        .pop()
+        .unwrap();
+    let package = Package::new_with_module(module)?;
+    let package_hash = package.crypto_hash();
+    let propose_module_upgrade_script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("ModuleUpgradeScripts").unwrap(),
+        ),
+        Identifier::new("propose_module_upgrade").unwrap(),
+        vec![stc_type_tag()],
+        vec![
+            bcs_ext::to_bytes(&genesis_address()).unwrap(),
+            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&1u64).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
+        ],
+    );
+    let output = association_execute(
+        &net,
+        &chain_state,
+        TransactionPayload::ScriptFunction(propose_module_upgrade_script_function),
+    )?;
+    let status = output.status().status().unwrap();
+    assert_eq!(Some(4875), move_abort_code(status));
+    Ok(())
 }

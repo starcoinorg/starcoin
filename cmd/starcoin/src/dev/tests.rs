@@ -452,7 +452,7 @@ fn test_only_new_module() {
             .pop()
             .unwrap();
     let test_upgrade_module_package_1 = Package::new_with_module(test_upgrade_module_1).unwrap();
-    let package_txn_1 = _sign_txn_with_association_account_by_rpc_client(
+    let package_txn_1 = _sign_txn_with_default_account_by_rpc_client(
         &cli_state,
         1_000_000,
         1,
@@ -493,7 +493,7 @@ fn test_only_new_module() {
             .pop()
             .unwrap();
     let test_upgrade_module_package_2 = Package::new_with_module(test_upgrade_module_2).unwrap();
-    let package_txn_2 = _sign_txn_with_association_account_by_rpc_client(
+    let package_txn_2 = _sign_txn_with_default_account_by_rpc_client(
         &cli_state,
         1_000_000,
         1,

@@ -522,7 +522,7 @@ pub fn build_stdlib_package(
 
 pub fn build_package_with_stdlib_module(
     stdlib_option: StdLibOptions,
-    module_name: &str,
+    module_names: Vec<&str>,
     init_script: Option<ScriptFunction>,
 ) -> Result<Package> {
     let modules = stdlib_modules(stdlib_option);
@@ -535,8 +535,13 @@ pub fn build_package_with_stdlib_module(
                     .expect("serializing stdlib must work");
                 let handle = &m.module_handles()[0];
                 let name = m.identifier_at(handle.name).as_str();
-                if name == module_name {
-                    debug!("Added module: {}", name);
+                let mut found = false;
+                for module in module_names.iter() {
+                    if name == *module {
+                        found = true;
+                    }
+                }
+                if found {
                     Some(Module::new(blob))
                 } else {
                     None

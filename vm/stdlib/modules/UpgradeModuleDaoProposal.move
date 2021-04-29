@@ -14,7 +14,7 @@ module UpgradeModuleDaoProposal {
         pragma aborts_if_is_partial;
     }
 
-    const DEPRECATED_CODE: u64 = 200;
+    const EDEPRECATED_FUNCTION: u64 = 19;
     const ERR_UNABLE_TO_UPGRADE: u64 = 400;
     const ERR_NOT_AUTHORIZED: u64 = 401;
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
@@ -72,7 +72,7 @@ module UpgradeModuleDaoProposal {
         _version: u64,
         _exec_delay: u64,
     ) {
-        abort DEPRECATED_CODE
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun propose_module_upgrade {
