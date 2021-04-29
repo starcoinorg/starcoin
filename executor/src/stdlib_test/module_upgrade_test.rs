@@ -286,10 +286,11 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
     });
-
+    let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
+        .canonicalize()
+        .unwrap();
     let mut bytes = vec![];
-    File::open("/Users/greg/work/starcoin/vm/stdlib/compiled/2/1-2/stdlib.blob")?
-        .read_to_end(&mut bytes)?;
+    File::open(path)?.read_to_end(&mut bytes)?;
     let package: Package = bcs_ext::from_bytes(&bytes)?;
 
     let package_hash = package.crypto_hash();
