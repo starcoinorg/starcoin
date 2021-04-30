@@ -194,15 +194,15 @@ address 0x1 {
             abort Errors::deprecated(EDEPRECATED_FUNCTION)
         }
 
-        public fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(account: &signer, package_address: address) acquires TwoPhaseUpgrade {
-            let account_address = Signer::address_of(account);
+        public(script) fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(account: signer, package_address: address) acquires TwoPhaseUpgrade {
+            let account_address = Signer::address_of(&account);
             // sender should be package owner
             assert(account_address == package_address, Errors::requires_address(ESENDER_AND_PACKAGE_ADDRESS_MISMATCH));
             let tpu = move_from<TwoPhaseUpgrade>(account_address);
             let TwoPhaseUpgrade{config, plan, version_cap, upgrade_event} = tpu;
             if (Option::is_some(&plan)) {
                 let old_plan = Option::borrow(&plan);
-                move_to(account, TwoPhaseUpgradeV2{
+                move_to(&account, TwoPhaseUpgradeV2{
                     config: config,
                     plan: Option::some(UpgradePlanV2 {
                         package_hash: *&old_plan.package_hash,
@@ -213,7 +213,7 @@ address 0x1 {
                     upgrade_event: upgrade_event
                 });
             } else {
-                move_to(account, TwoPhaseUpgradeV2{
+                move_to(&account, TwoPhaseUpgradeV2{
                     config: config,
                     plan: Option::none<UpgradePlanV2>(),
                     version_cap: version_cap,

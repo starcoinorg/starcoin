@@ -3,10 +3,8 @@ use anyhow::{format_err, Result};
 use starcoin_config::genesis_config::TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_state_api::StateView;
-use starcoin_transaction_builder::{
-    build_package_with_stdlib_module, build_stdlib_package_for_test, StdLibOptions,
-};
+use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
+use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
 use starcoin_types::account_config::{
     access_path_for_two_phase_upgrade_v2, TwoPhaseUpgradeV2Resource,
 };
@@ -21,6 +19,7 @@ use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::VMValueCast;
 use std::fs::File;
 use std::io::Read;
+use stdlib::{load_upgrade_package, StdlibCompat, STDLIB_VERSIONS};
 use test_helper::dao::dao_vote_test;
 use test_helper::executor::*;
 use test_helper::Account;
@@ -69,9 +68,9 @@ fn test_dao_upgrade_module() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag,
@@ -128,9 +127,9 @@ fn test_dao_upgrade_module_enforced() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag.clone(),
@@ -176,9 +175,9 @@ fn test_dao_upgrade_module_enforced() -> Result<()> {
             bcs_ext::to_bytes(&1u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag,
@@ -254,9 +253,9 @@ fn test_init_script() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag,
@@ -322,9 +321,9 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag,
@@ -339,74 +338,93 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
 
 #[stest::test]
 fn test_stdlib_upgrade() -> Result<()> {
-    let alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    genesis_config.stdlib_version = StdlibVersion::Version(1);
+    let stdlib_versions = STDLIB_VERSIONS.clone();
+    let mut current_version = stdlib_versions[0];
+    genesis_config.stdlib_version = current_version;
     let net = ChainNetwork::new_custom(
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
     )?;
     let chain_state = prepare_customized_genesis(&net);
+    let mut proposal_id: u64 = 0;
+    for new_version in stdlib_versions.into_iter().skip(1) {
+        verify_version_state(current_version, &chain_state)?;
 
-    let dao_action_type_tag = TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModule").unwrap(),
-        type_params: vec![],
-    });
+        let alice = Account::new();
 
-    let init_script = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("UpgradeScripts").unwrap(),
-        ),
-        Identifier::new("upgrade_from_v1_to_v2").unwrap(),
-        vec![],
-        vec![bcs_ext::to_bytes(&TOTAL_STC_AMOUNT.scaling()).unwrap()],
-    );
+        let dao_action_type_tag = new_version.upgrade_module_type_tag();
+        let package = match load_upgrade_package(current_version, new_version)? {
+            Some(package) => package,
+            None => {
+                info!(
+                    "{:?} is same as {:?}, continue",
+                    current_version, new_version
+                );
+                continue;
+            }
+        };
+        let package_hash = package.crypto_hash();
 
-    let package = build_stdlib_package_for_test(StdLibOptions::Fresh, Some(init_script))?;
-    let package_hash = package.crypto_hash();
+        let vote_script_function = new_version.propose_module_upgrade_function(
+            stc_type_tag(),
+            genesis_address(),
+            package_hash,
+            0,
+            false,
+        );
 
-    let vote_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("propose_module_upgrade").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&genesis_address()).unwrap(),
-            bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&1u64).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    );
-    let execute_script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
-        ),
-        Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(alice.address()).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
-        &net,
-        vote_script_function,
-        dao_action_type_tag,
-        execute_script_function,
-        0,
-    )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        let execute_script_function = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("ModuleUpgradeScripts").unwrap(),
+            ),
+            Identifier::new("submit_module_upgrade_plan").unwrap(),
+            vec![stc_type_tag()],
+            vec![
+                bcs_ext::to_bytes(alice.address()).unwrap(),
+                bcs_ext::to_bytes(&proposal_id).unwrap(),
+            ],
+        );
+        dao_vote_test(
+            &alice,
+            &chain_state,
+            &net,
+            vote_script_function,
+            dao_action_type_tag,
+            execute_script_function,
+            proposal_id,
+        )?;
+        association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        proposal_id += 1;
+        current_version = new_version;
+    }
 
-    assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
+    Ok(())
+}
+
+fn verify_version_state<R>(version: StdlibVersion, chain_state: &R) -> Result<()>
+where
+    R: ChainStateReader,
+{
+    match version {
+        StdlibVersion::Version(1) => {
+            //TODO
+        }
+        StdlibVersion::Version(2) => {
+            assert_eq!(read_two_phase_upgrade_v2_resource(chain_state)?, false);
+        }
+        StdlibVersion::Version(3) => {
+            assert_eq!(
+                chain_state.get_stc_info().unwrap().unwrap().total_value,
+                TOTAL_STC_AMOUNT.scaling()
+            );
+        }
+        _ => {
+            //do nothing.
+        }
+    }
     Ok(())
 }
 
@@ -461,9 +479,9 @@ fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag,

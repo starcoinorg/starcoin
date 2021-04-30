@@ -5,7 +5,6 @@ use anyhow::Result;
 use starcoin_config::{genesis_config::TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
@@ -23,6 +22,7 @@ use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
     TransactionPayload,
 };
+use stdlib::stdlib_package;
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -321,37 +321,12 @@ pub fn create_signed_txn_with_association_account(
         .expect("Sign txn should work.")
 }
 
-pub fn build_stdlib_package(
-    net: &ChainNetwork,
-    stdlib_option: StdLibOptions,
-    with_init_script: bool,
-) -> Result<Package> {
-    let modules = stdlib_modules(stdlib_option);
-    let mut package = Package::new_with_modules(
-        modules
-            .iter()
-            .map(|m| {
-                let mut blob = vec![];
-                m.serialize(&mut blob)
-                    .expect("serializing stdlib must work");
-                let handle = &m.module_handles()[0];
-                debug!(
-                    "Add module: {}::{}",
-                    m.address_identifier_at(handle.address),
-                    m.identifier_at(handle.name)
-                );
-                Module::new(blob)
-            })
-            .collect(),
-    )?;
-    if with_init_script {
-        let init_script = match net.genesis_config().stdlib_version {
-            StdlibVersion::Version(1) => build_init_script_v1(net),
-            _ => build_init_script_v2(net),
-        };
-        package.set_init_script(init_script);
-    }
-    Ok(package)
+pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
+    let init_script = match net.genesis_config().stdlib_version {
+        StdlibVersion::Version(1) => build_init_script_v1(net),
+        _ => build_init_script_v2(net),
+    };
+    stdlib_package(stdlib_option, Some(init_script))
 }
 
 pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
@@ -738,28 +713,7 @@ pub fn build_stdlib_package_for_test(
     stdlib_option: StdLibOptions,
     init_script: Option<ScriptFunction>,
 ) -> Result<Package> {
-    let modules = stdlib_modules(stdlib_option);
-    let mut package = Package::new_with_modules(
-        modules
-            .iter()
-            .map(|m| {
-                let mut blob = vec![];
-                m.serialize(&mut blob)
-                    .expect("serializing stdlib must work");
-                let handle = &m.module_handles()[0];
-                debug!(
-                    "Add module: {}::{}",
-                    m.address_identifier_at(handle.address),
-                    m.identifier_at(handle.name)
-                );
-                Module::new(blob)
-            })
-            .collect(),
-    )?;
-    if let Some(script_function) = init_script {
-        package.set_init_script(script_function);
-    }
-    Ok(package)
+    stdlib_package(stdlib_option, init_script)
 }
 
 pub fn build_module_upgrade_proposal_v2(

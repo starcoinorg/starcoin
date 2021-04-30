@@ -44,7 +44,7 @@ fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledMod
     }
     compiled_modules
 }
-
+//TODO refactor this with module diff.
 fn incremental_update_with_version(
     pre_dir: &mut PathBuf,
     dest_dir: PathBuf,

@@ -38,9 +38,9 @@ fn test_modify_on_chain_consensus_config() -> Result<()> {
     let action_type_tag = consensus_config_type_tag();
     let strategy = 2u8;
 
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_consensus(&net, strategy),
         on_chain_config_type_tag(action_type_tag.clone()),
@@ -75,9 +75,9 @@ fn test_modify_on_chain_reward_config() -> Result<()> {
     let action_type_tag = reward_config_type_tag();
     let reward_delay: u64 = 100;
 
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_reward_scripts(&net, reward_delay),
         on_chain_config_type_tag(action_type_tag.clone()),
@@ -107,9 +107,9 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
     let action_type_tag = transasction_timeout_type_tag();
     let duration_seconds: u64 = 3000;
 
-    let chain_state = dao_vote_test(
-        alice.clone(),
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_txn_timeout_script(&net, duration_seconds),
         on_chain_config_type_tag(action_type_tag.clone()),
@@ -137,9 +137,9 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
     let vote_script =
         vote_txn_publish_option_script(&net, script_allowed, module_publishing_allowed);
 
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script,
         on_chain_config_type_tag(action_type_tag.clone()),
@@ -236,9 +236,9 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         .global_memory_per_byte_write_cost = InternalGasUnits::new(12);
     let vote_script = vote_vm_config_script(&net, vm_config);
 
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script,
         on_chain_config_type_tag(action_type_tag.clone()),
