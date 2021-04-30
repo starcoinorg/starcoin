@@ -29,7 +29,8 @@ impl Stratum {
         }
     }
     fn next_id(&self) -> SubscriptionId {
-        SubscriptionId::Number(1)
+        let id = self.uid.fetch_add(1, atomic::Ordering::SeqCst);
+        SubscriptionId::Number(id)
     }
     fn sync_current_job(&mut self) -> Result<Option<MintBlockEvent>> {
         let service = self.miner_service.clone();
