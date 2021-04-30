@@ -1,6 +1,6 @@
 [package]
 name = "move-coverage"
-version = "1.0.0-beta.5"
+version = "1.0.0-beta.6"
 authors = ["Diem Association <opensource@diem.org>", "Starcoin Core Dev <dev@starcoin.org>"]
 description = "starcoin Move VM code coverage"
 license = "Apache-2.0"
