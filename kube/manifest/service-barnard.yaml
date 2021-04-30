@@ -8,6 +8,10 @@ spec:
     app: starcoin
   ports:
     - protocol: TCP
+      port: 80
+      targetPort: 9850
+      name: http-rpc-80
+    - protocol: TCP
       port: 9850
       targetPort: 9850
       name: http-rpc
@@ -15,6 +19,7 @@ spec:
       port: 9870
       targetPort: 9870
       name: ws-rpc
+  type: LoadBalancer
 ---
 apiVersion: v1
 kind: Service
