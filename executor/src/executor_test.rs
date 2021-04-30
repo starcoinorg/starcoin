@@ -138,6 +138,50 @@ fn test_gen_accounts() -> Result<()> {
 }
 
 #[stest::test]
+fn test_batch_transfer() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let alice = Account::new();
+    let bob = Account::new();
+    let mut addresses = vec![];
+    let mut auth_keys = vec![];
+    addresses.push(*alice.address());
+    addresses.push(*bob.address());
+    auth_keys.push(alice.auth_key().to_vec());
+    auth_keys.push(bob.auth_key().to_vec());
+
+    (1..30).for_each(|_| {
+        let account = Account::new();
+        addresses.push(*account.address());
+        auth_keys.push(account.auth_key().to_vec());
+    });
+
+    let len = addresses.len();
+    let addresses = MoveValue::Vector(addresses.into_iter().map(MoveValue::Address).collect());
+    let auth_keys = MoveValue::Vector(auth_keys.into_iter().map(MoveValue::vector_u8).collect());
+    let amounts = MoveValue::Vector((0..len).map(|_| MoveValue::U128(1)).collect());
+
+    let script_function = ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("batch_peer_to_peer").unwrap(),
+        vec![stc_type_tag()],
+        vec![
+            addresses.simple_serialize().unwrap(),
+            auth_keys.simple_serialize().unwrap(),
+            amounts.simple_serialize().unwrap(),
+        ],
+    );
+    association_execute(
+        &net,
+        &chain_state,
+        TransactionPayload::ScriptFunction(script_function),
+    )?;
+    Ok(())
+}
+
+#[stest::test]
 fn test_txn_verify_err_case() -> Result<()> {
     let (_chain_state, net) = prepare_genesis();
     let mut vm = StarcoinVM::new();
