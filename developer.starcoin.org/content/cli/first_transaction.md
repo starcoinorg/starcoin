@@ -96,8 +96,8 @@ starcoin% account transfer -s 0x1d8133a0c1a07366de459fb08d28d2a6 -r 0xbfbed907d7
 +-----------------+------------------------------------------------------------------+
 ```
 
-- `-f 0x1d8133a0c1a07366de459fb08d28d2a6`: is Alice's account address.
-- `-t 0xbfbed907d7ba364e1445b971f9182949`: is Bob's account address.
+- `-s 0x1d8133a0c1a07366de459fb08d28d2a6`: is Alice's account address.
+- `-r 0xbfbed907d7ba364e1445b971f9182949`: is Bob's account address.
 - `-k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`: is the public key of Bob.
 
 > If, Bob's account does not yet exist on the chain, then his public key should be provided, the transfer transaction will automatically create Bob's account on the chain.
