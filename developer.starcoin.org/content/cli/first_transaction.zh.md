@@ -100,8 +100,8 @@ starcoin% account transfer -s 0x1d8133a0c1a07366de459fb08d28d2a6 -r 0xbfbed907d7
 
 其中：
 
-- `-f 0x1d8133a0c1a07366de459fb08d28d2a6`: 是 Alice 的账户地址。
-- `-t 0xbfbed907d7ba364e1445b971f9182949`：是 Bob 的账户地址。
+- `-s 0x1d8133a0c1a07366de459fb08d28d2a6`: 是 Alice 的账户地址。
+- `-r 0xbfbed907d7ba364e1445b971f9182949`：是 Bob 的账户地址。
 - `-k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`：是 Bob 的公钥。
 
 > 如果，Bob 的账户在链上还不存在，需要提供他的公钥，转账交易会自动在链上创建 Bob 的账户。
