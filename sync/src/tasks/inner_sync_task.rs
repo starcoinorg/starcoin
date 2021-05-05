@@ -10,9 +10,10 @@ use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
 use starcoin_types::time::TimeService;
+use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{
-    CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle,
+    CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle, TaskState,
 };
 
 pub struct InnerSyncTask<H, F, N>
@@ -91,9 +92,15 @@ where
             100,
         )
         .map_err(TaskError::BreakError)?;
-        let sub_accumulator_task = TaskGenerator::new(
-            accumulator_sync_task,
+        let acc_buffer_size = min(
+            accumulator_sync_task
+                .total_items()
+                .expect("total_items must exist") as usize,
             buffer_size,
+        );
+        let sub_accumulator_task = TaskGenerator::new(
+            accumulator_sync_task.clone(),
+            acc_buffer_size,
             max_retry_times,
             delay_milliseconds_on_error,
             AccumulatorCollector::new(
