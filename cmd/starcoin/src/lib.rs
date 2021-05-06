@@ -136,6 +136,7 @@ pub fn add_command(
                 .subcommand(dev::UpgradeModuleQueueV2Command)
                 .subcommand(dev::UpgradeModuleExeCommand)
                 .subcommand(dev::UpgradeVMConfigProposalCommand)
+                .subcommand(dev::PackageCmd)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(
                     Command::with_name("subscribe")
