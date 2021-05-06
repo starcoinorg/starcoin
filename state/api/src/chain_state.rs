@@ -22,6 +22,7 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::sips::SIP;
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::token::token_info::TokenInfo;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
 };
@@ -223,6 +224,13 @@ pub trait StateReaderExt: ChainStateReader {
         R: MoveResource + DeserializeOwned,
     {
         let access_path = AccessPath::new(address, R::resource_path());
+        self.get_resource_by_access_path(access_path)
+    }
+
+    fn get_resource_by_access_path<R>(&self, access_path: AccessPath) -> Result<Option<R>>
+    where
+        R: MoveResource + DeserializeOwned,
+    {
         let r = self.get(&access_path).and_then(|state| match state {
             Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
             None => Ok(None),
@@ -310,6 +318,15 @@ pub trait StateReaderExt: ChainStateReader {
     /// Check the sip is activated. if the sip module exist, think it is activated.
     fn is_activated(&self, sip: SIP) -> Result<bool> {
         self.get_code(sip.module_id()).map(|code| code.is_some())
+    }
+
+    fn get_token_info(&self, token_code: TokenCode) -> Result<Option<TokenInfo>> {
+        let access_path = TokenInfo::resource_path_for(token_code);
+        self.get_resource_by_access_path(access_path)
+    }
+
+    fn get_stc_info(&self) -> Result<Option<TokenInfo>> {
+        self.get_token_info(STC_TOKEN_CODE.clone())
     }
 }
 
