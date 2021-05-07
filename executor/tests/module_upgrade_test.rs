@@ -1,22 +1,24 @@
-use crate::execute_readonly_function;
-use anyhow::{format_err, Result};
+use anyhow::Result;
+use logger::prelude::*;
 use starcoin_config::genesis_config::TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_executor::execute_readonly_function;
 use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
-use starcoin_types::account_config::{
-    access_path_for_two_phase_upgrade_v2, TwoPhaseUpgradeV2Resource,
-};
+use starcoin_types::account_config::TwoPhaseUpgradeV2Resource;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::ScriptFunction;
-use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::account_config::{association_address, core_code_address};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::on_chain_config::TransactionPublishOption;
+use starcoin_vm_types::on_chain_resource::LinearTimeWithdrawCapability;
+use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::VMValueCast;
+use statedb::ChainStateDB;
 use std::fs::File;
 use std::io::Read;
 use stdlib::{load_upgrade_package, StdlibCompat, STDLIB_VERSIONS};
@@ -397,10 +399,46 @@ fn test_stdlib_upgrade() -> Result<()> {
             proposal_id,
         )?;
         association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        ext_execute_after_upgrade(new_version, &net, &chain_state)?;
         proposal_id += 1;
         current_version = new_version;
     }
 
+    Ok(())
+}
+
+fn ext_execute_after_upgrade(
+    version: StdlibVersion,
+    net: &ChainNetwork,
+    chain_state: &ChainStateDB,
+) -> Result<()> {
+    match version {
+        StdlibVersion::Version(1) => {
+            //do nothing
+        }
+        StdlibVersion::Version(2) => {
+            //do nothing
+        }
+        StdlibVersion::Version(3) => {
+            let take_liner_time_capability = ScriptFunction::new(
+                ModuleId::new(
+                    core_code_address(),
+                    Identifier::new("StdlibUpgradeScripts").unwrap(),
+                ),
+                Identifier::new("take_linear_withdraw_capability").unwrap(),
+                vec![],
+                vec![],
+            );
+            association_execute(
+                net,
+                chain_state,
+                TransactionPayload::ScriptFunction(take_liner_time_capability),
+            )?;
+        }
+        _ => {
+            //do nothing.
+        }
+    }
     Ok(())
 }
 
@@ -427,6 +465,17 @@ where
             assert_eq!(
                 chain_state.get_stc_info().unwrap().unwrap().total_value,
                 TOTAL_STC_AMOUNT.scaling()
+            );
+            let withdraw_cap = chain_state
+                .get_resource_by_access_path::<LinearTimeWithdrawCapability>(
+                    LinearTimeWithdrawCapability::resource_path_for(
+                        association_address(),
+                        STC_TOKEN_CODE.clone(),
+                    ),
+                )?;
+            assert!(
+                withdraw_cap.is_some(),
+                "expect LinearTimeWithdrawCapability exist at association_address"
             );
         }
         _ => {
@@ -502,12 +551,14 @@ fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
     Ok(())
 }
 
-fn read_two_phase_upgrade_v2_resource(state_view: &dyn StateView) -> Result<bool> {
-    let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(genesis_address());
-    match state_view.get(&two_phase_upgrade_v2_path)? {
-        Some(data) => Ok(bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced()),
-        _ => Err(format_err!("read two phase upgrade resource fail.")),
-    }
+fn read_two_phase_upgrade_v2_resource<R>(state_reader: &R) -> Result<bool>
+where
+    R: ChainStateReader,
+{
+    Ok(state_reader
+        .get_resource::<TwoPhaseUpgradeV2Resource>(genesis_address())?
+        .map(|tpu| tpu.enforced())
+        .unwrap_or(false))
 }
 
 fn read_foo(state_view: &dyn StateView) -> u8 {
