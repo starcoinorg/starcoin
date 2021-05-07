@@ -14,7 +14,7 @@ use starcoin_vm_types::account_config::{association_address, core_code_address};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::on_chain_config::TransactionPublishOption;
-use starcoin_vm_types::on_chain_resource::LinearTimeWithdrawCapability;
+use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::VMValueCast;
@@ -467,15 +467,15 @@ where
                 TOTAL_STC_AMOUNT.scaling()
             );
             let withdraw_cap = chain_state
-                .get_resource_by_access_path::<LinearTimeWithdrawCapability>(
-                    LinearTimeWithdrawCapability::resource_path_for(
+                .get_resource_by_access_path::<LinearWithdrawCapability>(
+                    LinearWithdrawCapability::resource_path_for(
                         association_address(),
                         STC_TOKEN_CODE.clone(),
                     ),
                 )?;
             assert!(
                 withdraw_cap.is_some(),
-                "expect LinearTimeWithdrawCapability exist at association_address"
+                "expect LinearWithdrawCapability exist at association_address"
             );
         }
         _ => {

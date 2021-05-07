@@ -25,7 +25,7 @@ module Treasury {
     struct WithdrawCapability<TokenT> has key, store { }
     
     /// A linear time withdraw capability which can withdraw token from Treasury in a period by time-based linear release.
-    struct LinearTimeWithdrawCapability<TokenT> has key, store { total: u128, withdraw: u128, start_time: u64, period: u64 }
+    struct LinearWithdrawCapability<TokenT> has key, store { total: u128, withdraw: u128, start_time: u64, period: u64 }
     
     /// Message for treasury withdraw event.
     struct WithdrawEvent has drop, store {
@@ -116,31 +116,31 @@ module Treasury {
         aborts_if !exists<Treasury<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
 
-    /// Withdraw tokens with given `LinearTimeWithdrawCapability`.
-    public fun withdraw_with_cap<TokenT:store>(_cap: &mut WithdrawCapability<TokenT>, amount: u128): Token<TokenT> acquires Treasury {
+    /// Withdraw tokens with given `LinearWithdrawCapability`.
+    public fun withdraw_with_capability<TokenT:store>(_cap: &mut WithdrawCapability<TokenT>, amount: u128): Token<TokenT> acquires Treasury {
         let token = do_withdraw(amount);
         token
     }
 
-    spec fun withdraw_with_cap {
+    spec fun withdraw_with_capability {
     }
 
     /// Withdraw from TokenT's  treasury, the signer must have WithdrawCapability<TokenT>
     public fun withdraw<TokenT:store>(signer: &signer, amount: u128) : Token<TokenT> acquires Treasury, WithdrawCapability{
         let cap = borrow_global_mut<WithdrawCapability<TokenT>>(Signer::address_of(signer));
-        Self::withdraw_with_cap(cap, amount)
+        Self::withdraw_with_capability(cap, amount)
     }
 
     spec fun withdraw {
     }
   
-    /// Issue a `LinearTimeWithdrawCapability` with given `WithdrawCapability`.
+    /// Issue a `LinearWithdrawCapability` with given `WithdrawCapability`.
     public fun issue_linear_withdraw_capability<TokenT: store>( _capability: &mut WithdrawCapability<TokenT>,
-                                                amount: u128, period: u64): LinearTimeWithdrawCapability<TokenT>{
+                                                amount: u128, period: u64): LinearWithdrawCapability<TokenT>{
         assert(period > 0, Errors::invalid_argument(ERR_INVALID_PERIOD));
         assert(amount > 0, Errors::invalid_argument(ERR_INVALID_AMOUNT));
         let start_time = Timestamp::now_seconds();
-        LinearTimeWithdrawCapability<TokenT> {
+        LinearWithdrawCapability<TokenT> {
             total: amount,
             withdraw: 0,
             start_time,
@@ -154,33 +154,33 @@ module Treasury {
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
     
-    /// Withdraw tokens with given `LinearTimeWithdrawCapability`.
-    public fun withdraw_with_linear_cap<TokenT: store>(cap: &mut LinearTimeWithdrawCapability<TokenT>): Token<TokenT> acquires Treasury {
+    /// Withdraw tokens with given `LinearWithdrawCapability`.
+    public fun withdraw_with_linear_capability<TokenT: store>(cap: &mut LinearWithdrawCapability<TokenT>): Token<TokenT> acquires Treasury {
         let amount = withdraw_amount_of_linear_cap(cap);
         let token = do_withdraw(amount);
         cap.withdraw = cap.withdraw + amount;
         token
     }
 
-    spec fun withdraw_with_linear_cap {
+    spec fun withdraw_with_linear_capability {
         pragma verify = false; //timeout, fix later
     }
 
-    /// Withdraw from TokenT's  treasury, the signer must have LinearTimeWithdrawCapability<TokenT>
-    public fun withdraw_by_linear<TokenT:store>(signer: &signer) : Token<TokenT> acquires Treasury, LinearTimeWithdrawCapability{
-        let cap = borrow_global_mut<LinearTimeWithdrawCapability<TokenT>>(Signer::address_of(signer));
-        Self::withdraw_with_linear_cap(cap)
+    /// Withdraw from TokenT's  treasury, the signer must have LinearWithdrawCapability<TokenT>
+    public fun withdraw_by_linear<TokenT:store>(signer: &signer) : Token<TokenT> acquires Treasury, LinearWithdrawCapability{
+        let cap = borrow_global_mut<LinearWithdrawCapability<TokenT>>(Signer::address_of(signer));
+        Self::withdraw_with_linear_capability(cap)
     }
     
-    /// Split the given `LinearTimeWithdrawCapability`.
-    public fun split_linear_withdraw_cap<TokenT: store>(cap: &mut LinearTimeWithdrawCapability<TokenT>, amount: u128): (Token<TokenT>, LinearTimeWithdrawCapability<TokenT>) acquires Treasury {
+    /// Split the given `LinearWithdrawCapability`.
+    public fun split_linear_withdraw_cap<TokenT: store>(cap: &mut LinearWithdrawCapability<TokenT>, amount: u128): (Token<TokenT>, LinearWithdrawCapability<TokenT>) acquires Treasury {
         assert(amount > 0, Errors::invalid_argument(ERR_INVALID_AMOUNT));
-        let token = Self::withdraw_with_linear_cap(cap);
+        let token = Self::withdraw_with_linear_capability(cap);
         assert((cap.withdraw + amount) <= cap.total, Errors::invalid_argument(ERR_INVALID_AMOUNT));
         cap.total = cap.total - amount;
         let start_time = Timestamp::now_seconds();
         let new_period = cap.start_time + cap.period - start_time;
-        let new_key = LinearTimeWithdrawCapability<TokenT> {
+        let new_key = LinearWithdrawCapability<TokenT> {
             total: amount,
             withdraw: 0,
             start_time,
@@ -194,8 +194,8 @@ module Treasury {
     }
         
         
-    /// Returns the amount of the LinearTimeWithdrawCapability can mint now.
-    public fun withdraw_amount_of_linear_cap<TokenT: store>(cap: &LinearTimeWithdrawCapability<TokenT>): u128 {
+    /// Returns the amount of the LinearWithdrawCapability can mint now.
+    public fun withdraw_amount_of_linear_cap<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>): u128 {
         let now = Timestamp::now_seconds();
         let elapsed_time = now - cap.start_time;
         if (elapsed_time >= cap.period) {
@@ -213,8 +213,8 @@ module Treasury {
         aborts_if [abstract] Timestamp::spec_now_seconds() - cap.start_time < cap.period && Math::spec_mul_div() < cap.withdraw;
     }
     
-    /// Check if the given `LinearTimeWithdrawCapability` is empty.
-    public fun is_empty_linear_withdraw_cap<TokenT:store>(key: &LinearTimeWithdrawCapability<TokenT>) : bool {
+    /// Check if the given `LinearWithdrawCapability` is empty.
+    public fun is_empty_linear_withdraw_cap<TokenT:store>(key: &LinearWithdrawCapability<TokenT>) : bool {
         key.total == key.withdraw
     }
 
@@ -251,43 +251,43 @@ module Treasury {
     spec fun destroy_withdraw_capability {
     }
 
-    /// Add LinearTimeWithdrawCapability to `signer`, a address only can have one LinearTimeWithdrawCapability<T>
-    public fun add_linear_withdraw_capability<TokenT: store>(signer: &signer, cap: LinearTimeWithdrawCapability<TokenT>){
+    /// Add LinearWithdrawCapability to `signer`, a address only can have one LinearWithdrawCapability<T>
+    public fun add_linear_withdraw_capability<TokenT: store>(signer: &signer, cap: LinearWithdrawCapability<TokenT>){
         move_to(signer, cap)
     }
 
-    /// Remove LinearTimeWithdrawCapability from `signer`.
-    public fun remove_linear_withdraw_capability<TokenT: store>(signer: &signer): LinearTimeWithdrawCapability<TokenT>
-    acquires LinearTimeWithdrawCapability {
-        move_from<LinearTimeWithdrawCapability<TokenT>>(Signer::address_of(signer))
+    /// Remove LinearWithdrawCapability from `signer`.
+    public fun remove_linear_withdraw_capability<TokenT: store>(signer: &signer): LinearWithdrawCapability<TokenT>
+    acquires LinearWithdrawCapability {
+        move_from<LinearWithdrawCapability<TokenT>>(Signer::address_of(signer))
     }
 
-    /// Destroy LinearTimeWithdrawCapability.
-    public fun destroy_linear_withdraw_capability<TokenT: store>(cap: LinearTimeWithdrawCapability<TokenT>) {
-        let LinearTimeWithdrawCapability{ total: _, withdraw: _, start_time: _, period: _ } = cap;
+    /// Destroy LinearWithdrawCapability.
+    public fun destroy_linear_withdraw_capability<TokenT: store>(cap: LinearWithdrawCapability<TokenT>) {
+        let LinearWithdrawCapability{ total: _, withdraw: _, start_time: _, period: _ } = cap;
     }
 
-    public fun is_empty_linear_withdraw_capability<TokenT: store>(cap: &LinearTimeWithdrawCapability<TokenT>):bool {
+    public fun is_empty_linear_withdraw_capability<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>):bool {
         cap.total == cap.withdraw
     }
 
-    /// Get LinearTimeWithdrawCapability total amount
-    public fun get_linear_withdraw_capability_total<TokenT: store>(cap: &LinearTimeWithdrawCapability<TokenT>):u128 {
+    /// Get LinearWithdrawCapability total amount
+    public fun get_linear_withdraw_capability_total<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>):u128 {
         cap.total
     }
 
-    /// Get LinearTimeWithdrawCapability withdraw amount
-    public fun get_linear_withdraw_capability_withdraw<TokenT: store>(cap: &LinearTimeWithdrawCapability<TokenT>):u128 {
+    /// Get LinearWithdrawCapability withdraw amount
+    public fun get_linear_withdraw_capability_withdraw<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>):u128 {
         cap.withdraw
     }
 
-    /// Get LinearTimeWithdrawCapability period in seconds
-    public fun get_linear_withdraw_capability_period<TokenT: store>(cap: &LinearTimeWithdrawCapability<TokenT>):u64 {
+    /// Get LinearWithdrawCapability period in seconds
+    public fun get_linear_withdraw_capability_period<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>):u64 {
         cap.period
     }
 
-    /// Get LinearTimeWithdrawCapability start_time in seconds
-    public fun get_linear_withdraw_capability_start_time<TokenT: store>(cap: &LinearTimeWithdrawCapability<TokenT>):u64 {
+    /// Get LinearWithdrawCapability start_time in seconds
+    public fun get_linear_withdraw_capability_start_time<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>):u64 {
         cap.start_time
     }
 }

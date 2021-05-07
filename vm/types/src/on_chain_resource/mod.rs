@@ -10,4 +10,4 @@ mod treasury;
 pub use block_metadata::BlockMetadata;
 pub use epoch::{Epoch, EpochData, EpochInfo};
 pub use global_time::GlobalTimeOnChain;
-pub use treasury::{LinearTimeWithdrawCapability, Treasury};
+pub use treasury::{LinearWithdrawCapability, Treasury};

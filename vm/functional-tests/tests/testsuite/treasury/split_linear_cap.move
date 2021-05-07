@@ -46,10 +46,10 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::Treasury::{Self, LinearTimeWithdrawCapability};
+    use 0x1::Treasury::{Self, LinearWithdrawCapability};
 
     fun alice_take_linear_key_from_offer(account: signer) {
-        let cap = Offer::redeem<LinearTimeWithdrawCapability<STC>>(&account, {{association}});
+        let cap = Offer::redeem<LinearWithdrawCapability<STC>>(&account, {{association}});
         assert(Treasury::get_linear_withdraw_capability_total(&cap)==47777040000000000/2, 1002);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }

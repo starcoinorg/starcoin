@@ -41,19 +41,19 @@ impl Treasury {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LinearTimeWithdrawCapability {
+pub struct LinearWithdrawCapability {
     pub total: u128,
     pub withdraw: u128,
     pub start_time: u64,
     pub period: u64,
 }
 
-impl MoveResource for LinearTimeWithdrawCapability {
+impl MoveResource for LinearWithdrawCapability {
     const MODULE_NAME: &'static str = "Treasury";
-    const STRUCT_NAME: &'static str = "LinearTimeWithdrawCapability";
+    const STRUCT_NAME: &'static str = "LinearWithdrawCapability";
 }
 
-impl LinearTimeWithdrawCapability {
+impl LinearWithdrawCapability {
     pub fn struct_tag_for(token_code: TokenCode) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,

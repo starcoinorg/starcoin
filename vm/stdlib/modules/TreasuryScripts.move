@@ -11,7 +11,7 @@ module TreasuryScripts {
         amount: u128,
         lock_period: u64,
     ) {
-        // 1. take cap: LinearTimeWithdrawCapability<TokenT>
+        // 1. take cap: LinearWithdrawCapability<TokenT>
         let cap = Treasury::remove_linear_withdraw_capability<TokenT>(&signer);
 
         // 2. withdraw token and split
@@ -42,7 +42,7 @@ module TreasuryScripts {
         let cap = Treasury::remove_linear_withdraw_capability<TokenT>(&signer);
 
         // 2. withdraw token
-        let tokens = Treasury::withdraw_with_linear_cap(&mut cap);
+        let tokens = Treasury::withdraw_with_linear_capability(&mut cap);
 
         // 3. deposit
         Account::deposit_to_self(&signer, tokens);

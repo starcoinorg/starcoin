@@ -6,7 +6,7 @@ module StdlibUpgradeScripts {
         use 0x1::STC::{Self, STC};
         use 0x1::Token::{Self, LinearTimeMintKey};
         use 0x1::TreasuryWithdrawDaoProposal;
-        use 0x1::Treasury::{Self, LinearTimeWithdrawCapability};
+        use 0x1::Treasury::{Self, LinearWithdrawCapability};
         use 0x1::Offer;
         use 0x1::Timestamp;
         use 0x1::Collection;
@@ -32,7 +32,7 @@ module StdlibUpgradeScripts {
 
         /// association account should call this script after upgrade from v2 to v3.
         public(script) fun take_linear_withdraw_capability(signer: signer){
-            let offered = Offer::redeem<LinearTimeWithdrawCapability<STC>>(&signer, CoreAddresses::GENESIS_ADDRESS());
+            let offered = Offer::redeem<LinearWithdrawCapability<STC>>(&signer, CoreAddresses::GENESIS_ADDRESS());
             Treasury::add_linear_withdraw_capability(&signer, offered);
             let mint_key = Collection::take<LinearTimeMintKey<STC>>(&signer);
             Token::destroy_linear_time_key(mint_key);

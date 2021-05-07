@@ -9,7 +9,7 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_resource::dao::WithdrawToken;
-use starcoin_vm_types::on_chain_resource::LinearTimeWithdrawCapability;
+use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::token::stc::{STCUnit, STC_TOKEN_CODE};
 use starcoin_vm_types::transaction::ScriptFunction;
 use test_helper::dao::dao_vote_test;
@@ -64,10 +64,10 @@ fn test_treasury_withdraw() -> Result<()> {
         proposal_id,
     )?;
 
-    let cap = chain_state.get_resource_by_access_path::<LinearTimeWithdrawCapability>(
-        LinearTimeWithdrawCapability::resource_path_for(*alice.address(), STC_TOKEN_CODE.clone()),
+    let cap = chain_state.get_resource_by_access_path::<LinearWithdrawCapability>(
+        LinearWithdrawCapability::resource_path_for(*alice.address(), STC_TOKEN_CODE.clone()),
     )?;
-    assert!(cap.is_some(), "expect LinearTimeWithdrawCapability exist.");
+    assert!(cap.is_some(), "expect LinearWithdrawCapability exist.");
     let cap = cap.unwrap();
     assert_eq!(cap.total, withdraw_amount.scaling());
     assert_eq!(cap.period, period);

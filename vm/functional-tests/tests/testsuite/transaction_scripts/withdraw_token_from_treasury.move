@@ -47,7 +47,7 @@ script {
     use 0x1::Treasury;
 
     fun redeem_offer(account: signer) {
-        let cap = Offer::redeem<Treasury::LinearTimeWithdrawCapability<STC>>(&account, {{association}});
+        let cap = Offer::redeem<Treasury::LinearWithdrawCapability<STC>>(&account, {{association}});
         Treasury::add_linear_withdraw_capability(&account,cap);
     }
 }

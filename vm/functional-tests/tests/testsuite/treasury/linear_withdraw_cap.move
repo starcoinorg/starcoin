@@ -33,7 +33,7 @@ script {
 
     fun mint(account: signer) {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = Treasury::withdraw_with_linear_cap(&mut linear_cap);
+        let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
         Debug::print(&Token::value(&token));
         assert(Token::value(&token) == 1818000000000, 1004);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
@@ -59,7 +59,7 @@ script {
 
     fun mint(account: signer) {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = Treasury::withdraw_with_linear_cap(&mut linear_cap);
+        let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
         //Debug::print(&Token::value(&token));
         assert(Token::value(&token) == 1818000000000, 1005);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
@@ -85,7 +85,7 @@ script {
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = Treasury::withdraw_with_linear_cap(&mut cap);
+        let token = Treasury::withdraw_with_linear_capability(&mut cap);
         //Debug::print(&Token::value(&token));
         assert(Token::value(&token) == (47777040000000000 - 1818000000000*2), 1006);
         Account::deposit_to_self(&account, token);

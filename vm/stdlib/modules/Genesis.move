@@ -305,7 +305,7 @@ module Genesis {
         DummyToken::initialize(&genesis_account);
 
         if (pre_mine_stc_amount > 0) {
-            let stc = Treasury::withdraw_with_cap<STC>(&mut withdraw_cap, pre_mine_stc_amount);
+            let stc = Treasury::withdraw_with_capability<STC>(&mut withdraw_cap, pre_mine_stc_amount);
             Account::deposit(Signer::address_of(&association), stc);
         };
         if (time_mint_stc_amount > 0) {

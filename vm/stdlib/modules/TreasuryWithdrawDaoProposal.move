@@ -108,7 +108,7 @@ module TreasuryWithdrawDaoProposal {
     public fun withdraw_for_block_reward<TokenT: store>(signer: &signer, reward: u128):Token<TokenT> acquires WrappedWithdrawCapability  {
         CoreAddresses::assert_genesis_address(signer);
         let cap = borrow_global_mut<WrappedWithdrawCapability<TokenT>>(Signer::address_of(signer));
-        Treasury::withdraw_with_cap(&mut cap.cap, reward)
+        Treasury::withdraw_with_capability(&mut cap.cap, reward)
     }
 }
 }
