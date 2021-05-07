@@ -19,7 +19,10 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::dao::{Proposal, ProposalAction};
+use starcoin_vm_types::on_chain_resource::{
+    Epoch, EpochData, EpochInfo, GlobalTimeOnChain, Treasury,
+};
 use starcoin_vm_types::sips::SIP;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::token::token_info::TokenInfo;
@@ -327,6 +330,30 @@ pub trait StateReaderExt: ChainStateReader {
 
     fn get_stc_info(&self) -> Result<Option<TokenInfo>> {
         self.get_token_info(STC_TOKEN_CODE.clone())
+    }
+
+    fn get_treasury(&self, token_code: TokenCode) -> Result<Option<Treasury>> {
+        let access_path = Treasury::resource_path_for(token_code);
+        self.get_resource_by_access_path(access_path)
+    }
+
+    fn get_stc_treasury(&self) -> Result<Option<Treasury>> {
+        self.get_treasury(STC_TOKEN_CODE.clone())
+    }
+
+    fn get_proposal<A>(&self, token_code: TokenCode) -> Result<Option<Proposal<A>>>
+    where
+        A: ProposalAction + DeserializeOwned,
+    {
+        let access_path = Proposal::<A>::resource_path_for(token_code);
+        self.get_resource_by_access_path(access_path)
+    }
+
+    fn get_stc_proposal<A>(&self) -> Result<Option<Proposal<A>>>
+    where
+        A: ProposalAction + DeserializeOwned,
+    {
+        self.get_proposal(STC_TOKEN_CODE.clone())
     }
 }
 

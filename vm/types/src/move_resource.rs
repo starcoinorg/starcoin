@@ -36,6 +36,10 @@ pub trait MoveResource {
         }
     }
 
+    fn type_tag() -> TypeTag {
+        TypeTag::Struct(Self::struct_tag())
+    }
+
     fn resource_path() -> DataPath {
         DataPath::Resource(Self::struct_tag())
     }

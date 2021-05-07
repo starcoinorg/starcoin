@@ -36,6 +36,10 @@ impl StdlibVersion {
             StdlibVersion::Version(version) => *version,
         }
     }
+
+    pub fn is_latest(&self) -> bool {
+        matches!(self, StdlibVersion::Latest)
+    }
 }
 
 impl PartialOrd for StdlibVersion {
