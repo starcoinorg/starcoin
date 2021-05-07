@@ -278,7 +278,7 @@ The module for init Genesis
     // transaction timeout config
     transaction_timeout: u64,
 ) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), 1);
+    <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
     // create genesis account
     <b>let</b> genesis_account = <a href="Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     //Init <b>global</b> time
