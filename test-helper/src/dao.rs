@@ -45,13 +45,18 @@ pub fn proposal_state(
         state_view,
         &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
         &Identifier::new("proposal_state").unwrap(),
-        vec![token, action_ty],
+        vec![token, action_ty.clone()],
         serialize_values(&vec![
             MoveValue::Address(proposer_address),
             MoveValue::U64(proposal_id),
         ]),
     )
-    .unwrap();
+    .unwrap_or_else(|e| {
+        panic!(
+            "read proposal_state failed, action_ty: {:?}, proposer_address:{}, proposal_id:{}, vm_status: {:?}", action_ty,
+            proposer_address, proposal_id, e
+        )
+    });
     assert_eq!(ret.len(), 1);
     ret.pop().unwrap().1.cast().unwrap()
 }
@@ -407,24 +412,24 @@ pub fn empty_txn_payload() -> TransactionPayload {
 }
 
 pub fn dao_vote_test(
-    alice: Account,
-    chain_state: ChainStateDB,
+    alice: &Account,
+    chain_state: &ChainStateDB,
     net: &ChainNetwork,
     vote_script: ScriptFunction,
     action_type_tag: TypeTag,
     execute_script: ScriptFunction,
     proposal_id: u64,
-) -> Result<ChainStateDB> {
+) -> Result<()> {
     let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
-    let block_number = current_block_number(&chain_state) + 1;
+    let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     execute_create_account(
-        &chain_state,
+        chain_state,
         &net,
-        &alice,
+        alice,
         &bob,
         pre_mint_amount,
         block_number,
@@ -432,11 +437,11 @@ pub fn dao_vote_test(
     )?;
 
     // block 2
-    let block_number = current_block_number(&chain_state) + 1;
+    let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     {
         blockmeta_execute(
-            &chain_state,
+            chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
                 block_timestamp,
@@ -450,12 +455,12 @@ pub fn dao_vote_test(
         )?;
         account_execute(
             net,
-            &alice,
-            &chain_state,
+            alice,
+            chain_state,
             TransactionPayload::ScriptFunction(vote_script),
         )?;
         let state = proposal_state(
-            &chain_state,
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -465,12 +470,12 @@ pub fn dao_vote_test(
     }
 
     // block 3
-    let block_number = current_block_number(&chain_state) + 1;
-    let block_timestamp = block_timestamp + voting_delay(&chain_state, stc_type_tag()) + 10000;
+    let block_number = current_block_number(chain_state) + 1;
+    let block_timestamp = block_timestamp + voting_delay(chain_state, stc_type_tag()) + 10000;
     execute_cast_vote(
         &net,
-        &chain_state,
-        &alice,
+        chain_state,
+        alice,
         &action_type_tag,
         block_number,
         block_timestamp,
@@ -478,11 +483,11 @@ pub fn dao_vote_test(
     )?;
 
     // block 4
-    let block_number = current_block_number(&chain_state) + 1;
-    let block_timestamp = block_timestamp + voting_period(&chain_state, stc_type_tag()) - 10 * 1000;
+    let block_number = current_block_number(chain_state) + 1;
+    let block_timestamp = block_timestamp + voting_period(chain_state, stc_type_tag()) - 10 * 1000;
     {
         blockmeta_execute(
-            &chain_state,
+            chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
                 block_timestamp,
@@ -495,7 +500,7 @@ pub fn dao_vote_test(
             ),
         )?;
         let state = proposal_state(
-            &chain_state,
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -505,11 +510,11 @@ pub fn dao_vote_test(
     }
 
     // block 5
-    let block_number = current_block_number(&chain_state) + 1;
+    let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = block_timestamp + 20 * 1000;
     {
         blockmeta_execute(
-            &chain_state,
+            chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
                 block_timestamp,
@@ -522,7 +527,7 @@ pub fn dao_vote_test(
             ),
         )?;
         let state = proposal_state(
-            &chain_state,
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -541,12 +546,12 @@ pub fn dao_vote_test(
         );
         account_execute(
             net,
-            &alice,
-            &chain_state,
+            alice,
+            chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;
         let state = proposal_state(
-            &chain_state,
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -556,11 +561,11 @@ pub fn dao_vote_test(
     }
 
     // block 6
-    let block_number = current_block_number(&chain_state) + 1;
-    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag());
+    let block_number = current_block_number(chain_state) + 1;
+    let block_timestamp = block_timestamp + min_action_delay(chain_state, stc_type_tag());
     {
         blockmeta_execute(
-            &chain_state,
+            chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
                 block_timestamp,
@@ -573,7 +578,7 @@ pub fn dao_vote_test(
             ),
         )?;
         let state = proposal_state(
-            &chain_state,
+            chain_state,
             stc_type_tag(),
             action_type_tag.clone(),
             *alice.address(),
@@ -582,18 +587,18 @@ pub fn dao_vote_test(
         assert_eq!(state, EXECUTABLE);
         account_execute(
             net,
-            &alice,
-            &chain_state,
+            alice,
+            chain_state,
             TransactionPayload::ScriptFunction(execute_script),
         )?;
     }
 
     // block 7
-    let block_number = current_block_number(&chain_state) + 1;
+    let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = block_timestamp + 1000;
     {
         blockmeta_execute(
-            &chain_state,
+            chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
                 block_timestamp,
@@ -606,7 +611,7 @@ pub fn dao_vote_test(
             ),
         )?;
         let state = proposal_state(
-            &chain_state,
+            chain_state,
             stc_type_tag(),
             action_type_tag,
             *alice.address(),
@@ -614,6 +619,5 @@ pub fn dao_vote_test(
         );
         assert_eq!(state, EXTRACTED);
     }
-    // return chain state for verify
-    Ok(chain_state)
+    Ok(())
 }

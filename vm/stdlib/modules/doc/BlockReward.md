@@ -25,6 +25,7 @@ The module provide block rewarding calculation logic.
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal">0x1::TreasuryWithdrawDaoProposal</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
@@ -294,7 +295,7 @@ Process the given block rewards.
             <b>let</b> total_reward = gas_fees;
             // add block reward <b>to</b> total.
             <b>if</b> (block_reward &gt; 0) {
-                <b>let</b> reward = <a href="Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, block_reward);
+                <b>let</b> reward = <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_withdraw_for_block_reward">TreasuryWithdrawDaoProposal::withdraw_for_block_reward</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, block_reward);
                 <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> total_reward, reward);
             };
             // distribute total.

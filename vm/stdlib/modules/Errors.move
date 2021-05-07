@@ -54,7 +54,7 @@ module Errors {
     /// The signer of a transaction does not have a required capability.
     const REQUIRES_CAPABILITY: u8 = 4;
 
-    /// A resource is required but not published. Example: access to non-existing AccountLimits resource.
+    /// A resource is required but not published. Example: access to non-existing resource.
     const NOT_PUBLISHED: u8 = 5;
 
     /// Attempting to publish a resource that is already published. Example: calling an initialization function

@@ -34,11 +34,16 @@ impl OnChainConfig for ConsensusConfig {
     const CONF_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
 }
 
+impl ConsensusConfig {
+    pub fn type_tag() -> TypeTag {
+        TypeTag::Struct(StructTag {
+            address: CORE_CODE_ADDRESS,
+            module: CONSENSUS_CONFIG_IDENTIFIER.clone(),
+            name: CONSENSUS_CONFIG_IDENTIFIER.clone(),
+            type_params: vec![],
+        })
+    }
+}
 pub fn consensus_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
-        address: CORE_CODE_ADDRESS,
-        module: CONSENSUS_CONFIG_IDENTIFIER.clone(),
-        name: CONSENSUS_CONFIG_IDENTIFIER.clone(),
-        type_params: vec![],
-    })
+    ConsensusConfig::type_tag()
 }

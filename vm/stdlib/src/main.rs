@@ -4,6 +4,7 @@
 #![forbid(unsafe_code)]
 
 use clap::{App, Arg};
+use itertools::Itertools;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
@@ -20,15 +21,10 @@ use starcoin_vm_types::{
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
-    build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, save_binary,
-    COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, COMPILED_SCRIPTS_ABI_DIR,
-    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR,
+    build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map,
+    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
+    COMPILED_SCRIPTS_ABI_DIR, LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR,
 };
-
-fn latest_compiled_modules() -> BTreeMap<ModuleId, CompiledModule> {
-    let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-    compiled_modules(&mut module_path)
-}
 
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
     let mut compiled_modules = BTreeMap::new();
@@ -44,7 +40,7 @@ fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledMod
     }
     compiled_modules
 }
-
+//TODO refactor this with module diff.
 fn incremental_update_with_version(
     pre_dir: &mut PathBuf,
     dest_dir: PathBuf,
@@ -284,13 +280,45 @@ fn main() {
     let new_modules = build_stdlib();
 
     if !no_check_compatibility {
-        let old_compiled_modules = latest_compiled_modules();
-        for module in new_modules.values() {
-            // extract new linking/layout API and check compatibility with old
-            let new_module_id = module.self_id();
-            if let Some(old_module) = old_compiled_modules.get(&new_module_id) {
-                let compatibility = check_compiled_module_compat(old_module, module);
-                assert!(compatibility, "Stdlib {:?} is incompatible!", new_module_id);
+        if let Some((latest_stable_version, latest_stable_modules)) =
+            load_latest_stable_compiled_modules()
+        {
+            println!(
+                "Check compat with latest stable version: {}",
+                latest_stable_version
+            );
+            let latest_stable_modules = latest_stable_modules
+                .into_iter()
+                .map(|module| (module.self_id(), module))
+                .collect::<BTreeMap<_, _>>();
+            let incompatible_module_ids = new_modules
+                .values()
+                .into_iter()
+                .filter_map(|module| {
+                    let module_id = module.self_id();
+                    if let Some(old_module) = latest_stable_modules.get(&module_id) {
+                        let compatibility = check_compiled_module_compat(old_module, module);
+                        if !compatibility {
+                            Some(module_id)
+                        } else {
+                            None
+                        }
+                    } else {
+                        println!("Module {:?} is new module.", module_id);
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            if !incompatible_module_ids.is_empty() {
+                eprintln!(
+                    "Modules {} is incompatible with version: {}!",
+                    incompatible_module_ids
+                        .into_iter()
+                        .map(|module_id| module_id.to_string())
+                        .join(","),
+                    latest_stable_version
+                );
+                std::process::exit(1);
             }
         }
     }

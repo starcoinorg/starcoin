@@ -411,7 +411,12 @@ impl StarcoinVM {
                 } else {
                     txn_data.sender
                 };
-                debug!("execute init script by account {:?}", sender);
+                debug!(
+                    "execute init script({}::{}) by account {:?}",
+                    init_script.module(),
+                    init_script.function(),
+                    sender
+                );
                 session
                     .execute_script_function(
                         init_script.module(),

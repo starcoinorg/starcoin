@@ -75,9 +75,9 @@ fn test_sip_flags() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
+    dao_vote_test(
+        &alice,
+        &chain_state,
         &net,
         vote_script_function,
         dao_action_type_tag,

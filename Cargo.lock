@@ -8984,6 +8984,7 @@ dependencies = [
  "datatest-stable",
  "fs_extra",
  "include_dir",
+ "itertools 0.10.0",
  "log 0.4.14",
  "move-prover",
  "once_cell",

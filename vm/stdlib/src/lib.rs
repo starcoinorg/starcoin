@@ -3,18 +3,22 @@
 
 #![forbid(unsafe_code)]
 
+use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
-use log::LevelFilter;
+use log::{debug, info, LevelFilter};
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::{
     compiled_unit::CompiledUnit, move_compile_and_report, shared::Address,
 };
+use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
 use std::str::FromStr;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -22,6 +26,9 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
 };
+
+mod compat;
+pub use compat::*;
 
 pub const STD_LIB_DIR: &str = "modules";
 pub const MOVE_EXTENSION: &str = "move";
@@ -64,56 +71,41 @@ pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("compiled");
 const COMPILED_TRANSACTION_SCRIPTS_DIR: &str = "compiled/latest/transaction_scripts";
 pub const LATEST_VERSION: &str = "latest";
 
-static CHAIN_NETWORK_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
-    COMPILED_MOVE_CODE_DIR
+pub static STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
+    let mut versions = COMPILED_MOVE_CODE_DIR
         .dirs()
         .iter()
         .map(|dir| {
             StdlibVersion::from_str(dir.path().file_name().unwrap().to_str().unwrap()).unwrap()
         })
-        .collect()
+        .collect::<Vec<_>>();
+    versions.sort();
+    versions
 });
 
-static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<CompiledModule>>> =
-    Lazy::new(|| {
-        let mut map = HashMap::new();
-        for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
-            let sub_dir = format!("{}/{}", version.as_string(), STDLIB_DIR_NAME);
-            let mut modules: Vec<(String, CompiledModule)> = COMPILED_MOVE_CODE_DIR
-                .get_dir(Path::new(sub_dir.as_str()))
-                .unwrap()
-                .files()
-                .iter()
-                .map(|file| {
-                    (
-                        file.path().to_str().unwrap().to_string(),
-                        CompiledModule::deserialize(&file.contents()).unwrap(),
-                    )
-                })
-                .collect();
-
-            // We need to verify modules based on their dependency order.
-            modules.sort_by_key(|(module_name, _)| module_name.clone());
-
-            let mut verified_modules = vec![];
-            for (_, module) in modules.into_iter() {
-                verify_module(&module).expect("stdlib module failed to verify");
-                dependencies::verify_module(&module, &verified_modules)
-                    .expect("stdlib module dependency failed to verify");
-                verified_modules.push(module)
-            }
-            map.insert((*version, StdlibType::Stdlib), verified_modules);
-        }
-        map
-    });
+static COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<CompiledModule>>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    for version in &*STDLIB_VERSIONS {
+        let verified_modules = load_compiled_modules(*version);
+        map.insert(*version, verified_modules);
+    }
+    map
+});
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
-#[derive(Debug, Eq, Hash, PartialEq)]
-pub enum StdlibType {
-    Stdlib,
-    InitScripts,
-    TransactionScripts,
+/// Return all versions of stdlib, include latest.
+pub fn stdlib_versions() -> Vec<StdlibVersion> {
+    STDLIB_VERSIONS.clone()
+}
+
+/// Return the latest stable version of stdlib.
+pub fn stdlib_latest_stable_version() -> Option<StdlibVersion> {
+    STDLIB_VERSIONS
+        .iter()
+        .filter(|version| !version.is_latest())
+        .last()
+        .cloned()
 }
 
 /// An enum specifying whether the compiled stdlib/scripts should be used or freshly built versions
@@ -130,10 +122,42 @@ pub enum StdLibOptions {
 pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
     match option {
         StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
-        StdLibOptions::Compiled(version) => &*COMPILED_MOVELANG_STDLIB
-            .get(&(version, StdlibType::Stdlib))
+        StdLibOptions::Compiled(version) => &*COMPILED_STDLIB
+            .get(&version)
             .expect("compiled modules should not be none"),
     }
+}
+
+pub fn stdlib_package(
+    stdlib_option: StdLibOptions,
+    init_script: Option<ScriptFunction>,
+) -> Result<Package> {
+    let modules = stdlib_modules(stdlib_option);
+    module_to_package(modules, init_script)
+}
+
+fn module_to_package(
+    modules: &[CompiledModule],
+    init_script: Option<ScriptFunction>,
+) -> Result<Package> {
+    Package::new(
+        modules
+            .iter()
+            .map(|m| {
+                let mut blob = vec![];
+                m.serialize(&mut blob)
+                    .expect("serializing stdlib must work");
+                let handle = &m.module_handles()[0];
+                debug!(
+                    "Add module: {}::{}",
+                    m.address_identifier_at(handle.address),
+                    m.identifier_at(handle.name)
+                );
+                Module::new(blob)
+            })
+            .collect(),
+        init_script,
+    )
 }
 
 pub fn filter_compiled_mv_files(
@@ -384,4 +408,116 @@ pub fn save_scripts(scripts: HashMap<String, (HashValue, Vec<u8>)>, dest_dir: Pa
 fn file_name_without_extension(file_name: &str) -> String {
     let tmp: Vec<&str> = file_name.split('.').collect();
     tmp.get(0).unwrap().to_string()
+}
+
+pub fn load_latest_stable_compiled_modules() -> Option<(StdlibVersion, Vec<CompiledModule>)> {
+    stdlib_latest_stable_version().map(|version| (version, load_compiled_modules(version)))
+}
+
+fn load_latest_compiled_modules() -> Vec<CompiledModule> {
+    load_compiled_modules(StdlibVersion::Latest)
+}
+
+fn load_compiled_modules(stdlib_version: StdlibVersion) -> Vec<CompiledModule> {
+    let sub_dir = format!("{}/{}", stdlib_version.as_string(), STDLIB_DIR_NAME);
+    let mut modules: Vec<(String, CompiledModule)> = COMPILED_MOVE_CODE_DIR
+        .get_dir(Path::new(sub_dir.as_str()))
+        .unwrap()
+        .files()
+        .iter()
+        .map(|file| {
+            (
+                file.path().to_str().unwrap().to_string(),
+                CompiledModule::deserialize(&file.contents()).unwrap(),
+            )
+        })
+        .collect();
+
+    // We need to verify modules based on their dependency order.
+    modules.sort_by_key(|(module_name, _)| module_name.clone());
+
+    let mut verified_modules = vec![];
+    for (_, module) in modules.into_iter() {
+        verify_module(&module).expect("stdlib module failed to verify");
+        dependencies::verify_module(&module, &verified_modules)
+            .expect("stdlib module dependency failed to verify");
+        verified_modules.push(module)
+    }
+    verified_modules
+}
+
+pub fn modules_diff(
+    first_modules: &[CompiledModule],
+    second_modules: &[CompiledModule],
+) -> Vec<CompiledModule> {
+    let mut update_modules = vec![];
+    let first_modules = first_modules
+        .iter()
+        .map(|module| (module.self_id(), module.clone()))
+        .collect::<BTreeMap<_, _>>();
+    for module in second_modules {
+        let module_id = module.self_id();
+        let is_new = if let Some(old_module) = first_modules.get(&module_id) {
+            old_module != module
+        } else {
+            true
+        };
+        if is_new {
+            update_modules.push(module.clone());
+        }
+    }
+    update_modules
+}
+
+pub fn load_upgrade_package(
+    current_version: StdlibVersion,
+    new_version: StdlibVersion,
+) -> Result<Option<Package>> {
+    let package = match (current_version, new_version) {
+        (StdlibVersion::Version(previous_version), StdlibVersion::Version(new_version)) => {
+            ensure!(
+                previous_version < new_version,
+                "previous version should < new version"
+            );
+
+            let package_file = format!(
+                "{}/{}-{}/stdlib.blob",
+                new_version, previous_version, new_version
+            );
+            let package = COMPILED_MOVE_CODE_DIR
+                .get_file(package_file)
+                .map(|file| {
+                    bcs_ext::from_bytes::<Package>(&file.contents())
+                        .expect("Decode package should success")
+                })
+                .ok_or_else(|| {
+                    format_err!(
+                        "Can not find upgrade package between version {} and {}",
+                        current_version,
+                        new_version
+                    )
+                })?;
+            Some(package)
+        }
+        (current_version @ StdlibVersion::Version(_), StdlibVersion::Latest) => {
+            let current_modules = load_compiled_modules(current_version);
+            let latest_modules = load_latest_compiled_modules();
+            let diff = modules_diff(&current_modules, &latest_modules);
+            if diff.is_empty() {
+                None
+            } else {
+                Some(module_to_package(diff.as_slice(), None)?)
+            }
+        }
+        (StdlibVersion::Latest, _) => {
+            bail!("Current version is latest, can not upgrade.");
+        }
+    };
+    info!(
+        "load_upgrade_package({:?},{:?}), hash: {:?}",
+        current_version,
+        new_version,
+        package.as_ref().map(|package| package.crypto_hash())
+    );
+    Ok(package)
 }

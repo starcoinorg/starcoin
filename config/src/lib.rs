@@ -28,7 +28,7 @@ mod account_vault_config;
 mod api_config;
 mod api_quota;
 mod available_port;
-mod genesis_config;
+pub mod genesis_config;
 mod helper;
 mod logger_config;
 mod metrics_config;

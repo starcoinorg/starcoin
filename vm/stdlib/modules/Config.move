@@ -157,6 +157,7 @@ module Config {
     /// Extract account's ModifyConfigCapability for ConfigValue type
     public fun extract_modify_config_capability<ConfigValue: copy + drop + store>(account: &signer): ModifyConfigCapability<ConfigValue> acquires ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);
+        assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
         Option::extract(&mut cap_holder.cap)
     }

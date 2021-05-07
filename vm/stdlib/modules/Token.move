@@ -4,7 +4,6 @@ module Token {
     use 0x1::Event;
     use 0x1::Signer;
     use 0x1::Errors;
-    use 0x1::Timestamp;
     use 0x1::Math;
 
     spec module {
@@ -72,8 +71,11 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
+    const EDEPRECATED_FUNCTION: u64 = 11;
+
     const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
     const EINVALID_ARGUMENT: u64 = 18;
+
     /// Token register's address should same as TokenType's address.
     const ETOKEN_REGISTER: u64 = 101;
 
@@ -245,168 +247,110 @@ module Token {
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
     }
 
+    /// Deprecated since @v3
     /// Issue a `FixedTimeMintKey` with given `MintCapability`.
     public fun issue_fixed_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
-                                     amount: u128, period: u64): FixedTimeMintKey<TokenType>{
-        assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
-        assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
-        let now = Timestamp::now_seconds();
-        let end_time = now + period;
-        FixedTimeMintKey{
-            total: amount,
-            end_time,
-        }
+                                     _amount: u128, _period: u64): FixedTimeMintKey<TokenType>{
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun issue_fixed_mint_key {
-        aborts_if period == 0;
-        aborts_if amount == 0;
-        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if Timestamp::spec_now_seconds() + period > MAX_U64;
     }
 
+    /// Deprecated since @v3
     /// Issue a `LinearTimeMintKey` with given `MintCapability`.
     public fun issue_linear_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
-                                                amount: u128, period: u64): LinearTimeMintKey<TokenType>{
-        assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
-        assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
-        let start_time = Timestamp::now_seconds();
-        LinearTimeMintKey<TokenType> {
-            total: amount,
-            minted: 0,
-            start_time,
-            period
-        }
+                                                _amount: u128, _period: u64): LinearTimeMintKey<TokenType>{
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun issue_linear_mint_key {
-        aborts_if period == 0;
-        aborts_if amount == 0;
-        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    /// Deprecated since @v3
     /// Mint tokens with given `FixedTimeMintKey`.
-    public fun mint_with_fixed_key<TokenType: store>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
-        let amount = mint_amount_of_fixed_key(&key);
-        assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
-        let FixedTimeMintKey { total, end_time:_} = key;
-        do_mint(total)
+    public fun mint_with_fixed_key<TokenType: store>(_key: FixedTimeMintKey<TokenType>): Token<TokenType> {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun mint_with_fixed_key {
-        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if spec_mint_amount_of_fixed_key<TokenType>(key) == 0;
-        aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
-        aborts_if spec_abstract_total_value<TokenType>() + key.total > MAX_U128;
     }
 
+    /// Deprecated since @v3
     /// Mint tokens with given `LinearTimeMintKey`.
-    public fun mint_with_linear_key<TokenType: store>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
-        let amount = mint_amount_of_linear_key(key);
-        assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
-        let token = do_mint(amount);
-        key.minted = key.minted + amount;
-        token
+    public fun mint_with_linear_key<TokenType: store>(_key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun mint_with_linear_key {
         pragma verify = false; //timeout, fix later
     }
 
+    /// Deprecated since @v3
     /// Split the given `LinearTimeMintKey`.
-    public fun split_linear_key<TokenType: store>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
-        let token = Self::mint_with_linear_key(key);
-        assert(!Self::is_empty_key(key), Errors::invalid_state(EEMPTY_KEY));
-        assert((key.minted + amount) <= key.total, Errors::invalid_state(ESPLIT));
-        key.total = key.total - amount;
-        let start_time = Timestamp::now_seconds();
-        let new_period = key.start_time + key.period - start_time;
-        let new_key = LinearTimeMintKey<TokenType> {
-            total: amount,
-            minted: 0,
-            start_time,
-            period: new_period
-        };
-        (token, new_key)
+    public fun split_linear_key<TokenType: store>(_key: &mut LinearTimeMintKey<TokenType>, _amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun split_linear_key {
-        pragma verify = false; //timeout, fix later
     }
 
+    /// Deprecated since @v3
     /// Split the given `FixedTimeMintKey`.
-    public fun split_fixed_key<TokenType: store>(key: &mut FixedTimeMintKey<TokenType>, amount: u128): FixedTimeMintKey<TokenType> {
-        assert(key.total >= amount, Errors::invalid_state(ESPLIT));
-        key.total = key.total - amount;
-        FixedTimeMintKey{
-            total: amount,
-            end_time: key.end_time,
-        }
+    public fun split_fixed_key<TokenType: store>(_key: &mut FixedTimeMintKey<TokenType>, _amount: u128): FixedTimeMintKey<TokenType> {
+       abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun split_fixed_key {
-        aborts_if key.total < amount;
     }
 
+    /// Deprecated since @v3
     /// Returns the amount of the LinearTimeMintKey can mint now.
-    public fun mint_amount_of_linear_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>): u128 {
-        let now = Timestamp::now_seconds();
-        let elapsed_time = now - key.start_time;
-        if (elapsed_time >= key.period) {
-            key.total - key.minted
-        }else {
-            Math::mul_div(key.total, (elapsed_time as u128), (key.period as u128)) - key.minted
-        }
+    public fun mint_amount_of_linear_key<TokenType: store>(_key: &LinearTimeMintKey<TokenType>): u128 {
+       abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun mint_amount_of_linear_key {
-        pragma verify = false; //timeout, fix later
-        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if Timestamp::spec_now_seconds() < key.start_time;
-        aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.period && key.total < key.minted;
-        aborts_if [abstract] Timestamp::spec_now_seconds() - key.start_time < key.period && Math::spec_mul_div() < key.minted;
     }
 
+    /// Deprecated since @v3
     /// Returns the mint amount of the FixedTimeMintKey.
-    public fun mint_amount_of_fixed_key<TokenType: store>(key: &FixedTimeMintKey<TokenType>): u128 {
-        let now = Timestamp::now_seconds();
-        if (now >= key.end_time) {
-            key.total
-        }else{
-            0
-        }
+    public fun mint_amount_of_fixed_key<TokenType: store>(_key: &FixedTimeMintKey<TokenType>): u128 {
+         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun mint_amount_of_fixed_key {
-        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
-    spec define spec_mint_amount_of_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): u128 {
-        if (Timestamp::spec_now_seconds() >= key.end_time) {
-            key.total
-        }else{
-            0
-        }
-    }
-
+    /// Deprecated since @v3
     /// Return the end time of the given `FixedTimeMintKey`.
-    public fun end_time_of_key<TokenType: store>(key: &FixedTimeMintKey<TokenType>): u64 {
-        key.end_time
+    public fun end_time_of_key<TokenType: store>(_key: &FixedTimeMintKey<TokenType>): u64 {
+       abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
-    /// Destory a empty `LinearTimeMintKey`.
-    public fun destroy_empty_key<TokenType: store>(key: LinearTimeMintKey<TokenType>) {
-        let LinearTimeMintKey<TokenType> { total, minted, start_time: _, period: _ } = key;
-        assert(total == minted, Errors::invalid_argument(EDESTROY_KEY_NOT_EMPTY));
+    /// Destroy `LinearTimeMintKey`, for deprecated
+    public fun destroy_linear_time_key<TokenType: store>(key: LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
+        let LinearTimeMintKey<TokenType> { total, minted, start_time, period} = key;
+        (total, minted, start_time, period)
+    }
+
+    public fun read_linear_time_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
+        (key.total, key.minted, key.start_time, key.period)
+    }
+
+    /// Deprecated since @v3
+    /// Destroy a empty `LinearTimeMintKey`.
+    public fun destroy_empty_key<TokenType: store>(_key: LinearTimeMintKey<TokenType>) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun destroy_empty_key {
-        aborts_if key.total != key.minted;
     }
 
+    /// Deprecated since @v3
     /// Check if the given `LinearTimeMintKey` is empty.
-    public fun is_empty_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>) : bool {
-        key.total == key.minted
+    public fun is_empty_key<TokenType: store>(_key: &LinearTimeMintKey<TokenType>) : bool {
+         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun is_empty_key {

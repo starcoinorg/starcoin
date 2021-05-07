@@ -146,7 +146,6 @@ impl Genesis {
             } else {
                 StdLibOptions::Compiled(net.stdlib_version())
             },
-            true,
         )?;
         let txn = RawUserTransaction::new_with_default_gas_token(
             CORE_CODE_ADDRESS,

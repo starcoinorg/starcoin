@@ -5,11 +5,12 @@ use crate::move_resource::MoveResource;
 use anyhow::{format_err, Result};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::cmp::Ordering;
 use std::fmt::{self, Formatter};
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum StdlibVersion {
     Latest,
     Version(VersionNumber),
@@ -35,6 +36,29 @@ impl StdlibVersion {
             StdlibVersion::Version(version) => *version,
         }
     }
+
+    pub fn is_latest(&self) -> bool {
+        matches!(self, StdlibVersion::Latest)
+    }
+}
+
+impl PartialOrd for StdlibVersion {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for StdlibVersion {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (StdlibVersion::Latest, StdlibVersion::Latest) => Ordering::Equal,
+            (StdlibVersion::Latest, _) => Ordering::Greater,
+            (_, StdlibVersion::Latest) => Ordering::Less,
+            (StdlibVersion::Version(self_v), StdlibVersion::Version(other_v)) => {
+                self_v.cmp(other_v)
+            }
+        }
+    }
 }
 
 impl Default for StdlibVersion {
@@ -50,6 +74,15 @@ impl FromStr for StdlibVersion {
         match s {
             "latest" => Ok(StdlibVersion::Latest),
             s => Ok(Self::new(s.parse()?)),
+        }
+    }
+}
+
+impl Display for StdlibVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StdlibVersion::Latest => f.write_str("latest"),
+            StdlibVersion::Version(version) => f.write_str(version.to_string().as_str()),
         }
     }
 }
