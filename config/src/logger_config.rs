@@ -9,6 +9,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 static LOGGER_FILE_NAME: &str = "starcoin.log";
+static DEFAULT_SLOGGER_FILE_NAME: &str = "sc_slog.log";
 
 const DEFAULT_MAX_FILE_SIZE: u64 = 1024 * 1024 * 1024;
 const MAX_FILE_SIZE_FOR_TEST: u64 = 10 * 1024 * 1024;
@@ -33,6 +34,14 @@ pub struct LoggerConfig {
     #[structopt(name = "logger-max-backup", long)]
     pub max_backup: Option<u32>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "slog-is-sync", long, help = "slog is sync")]
+    pub slog_is_sync: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "slog-chan-size", long)]
+    pub slog_chan_size: Option<usize>,
+
     #[structopt(skip)]
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -48,6 +57,21 @@ impl LoggerConfig {
             return None;
         }
         Some(self.base().data_dir.join(LOGGER_FILE_NAME))
+    }
+
+    pub fn get_slog_path(&self) -> Option<PathBuf> {
+        if self.disable_file() {
+            return None;
+        }
+        Some(self.base().data_dir.join(DEFAULT_SLOGGER_FILE_NAME))
+    }
+
+    pub fn get_slog_is_sync(&self) -> bool {
+        self.slog_is_sync.unwrap_or(false)
+    }
+
+    pub fn get_slog_chan_size(&self) -> usize {
+        self.slog_chan_size.unwrap_or(256)
     }
 
     pub fn enable_file(&self) -> bool {

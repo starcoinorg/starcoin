@@ -23,10 +23,14 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
 
+pub mod structured_log;
+
 /// Logger prelude which includes all logging macros.
 pub mod prelude {
     pub use crate::stacktrace;
+    pub use crate::{sl_crit, sl_debug, sl_error, sl_info, sl_trace, sl_warn};
     pub use log::{debug, error, info, log_enabled, trace, warn, Level, LevelFilter};
+    pub use slog::{slog_crit, slog_debug, slog_error, slog_info, slog_trace, slog_warn};
 }
 
 pub fn stacktrace(err: anyhow::Error) {
@@ -121,6 +125,9 @@ struct LoggerConfigArg {
     // sub path level
     module_levels: HashMap<String, LevelFilter>,
     log_path: Option<PathBuf>,
+    slog_path: Option<PathBuf>,
+    slog_is_sync: Option<bool>,
+    slog_chan_size: Option<usize>,
     max_file_size: u64,
     max_backup: u32,
     pattern: LogPattern,
@@ -148,6 +155,9 @@ impl LoggerConfigArg {
             level,
             module_levels: default_module_levels,
             log_path: None,
+            slog_path: None,
+            slog_is_sync: None,
+            slog_chan_size: None,
             max_file_size: 0,
             max_backup: 0,
             pattern: pattern.unwrap_or_else(|| LogPattern::by_level(level)),
@@ -237,9 +247,13 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         level,
         module_levels,
         log_path,
+        // slog_path,
+        // slog_is_sync,
+        // slog_chan_size,
         max_file_size,
         max_backup,
         pattern,
+        ..
     } = arg;
     if !enable_stderr && log_path.is_none() {
         println!("Logger is disabled.");
@@ -418,19 +432,42 @@ fn parse_spec(spec: &str) -> LogLevelSpec {
     if filter.is_some() {
         eprintln!("warning: filter by regexp is not supported yet");
     }
-    // let filter = filter.map_or(None, |filter| match inner::Filter::new(filter) {
-    //     Ok(re) => Some(re),
-    //     Err(e) => {
-    //         eprintln!("warning: invalid regex filter - {}", e);
-    //         None
-    //     }
-    // });
-
     LogLevelSpec {
         global_level: global_fallback_level,
         module_levels: dirs,
     }
 }
+
+/// Log a critical level message using current logger
+#[macro_export]
+macro_rules! sl_crit( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_crit![logger, $($args)+])
+};);
+/// Log a error level message using current logger
+#[macro_export]
+macro_rules! sl_error( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_error![logger, $($args)+])
+};);
+/// Log a warning level message using current logger
+#[macro_export]
+macro_rules! sl_warn( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_warn![logger, $($args)+])
+};);
+/// Log a info level message using current logger
+#[macro_export]
+macro_rules! sl_info( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_info![logger, $($args)+])
+};);
+/// Log a debug level message using current logger
+#[macro_export]
+macro_rules! sl_debug( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_debug![logger, $($args)+])
+};);
+/// Log a trace level message using current logger
+#[macro_export]
+macro_rules! sl_trace( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_trace![logger, $($args)+])
+};);
 
 #[cfg(test)]
 mod tests;

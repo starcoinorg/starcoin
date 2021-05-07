@@ -18,6 +18,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
+use starcoin_logger::structured_log::set_global_logger;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
@@ -132,6 +133,20 @@ impl NodeService {
                 config.logger.max_backup(),
             );
         }
+        //config slog
+        if let Some(slog_path) = config.logger.get_slog_path() {
+            info!("Write slog to file: {:?}", slog_path);
+            if let Ok(_) = set_global_logger(
+                config.logger.get_slog_is_sync(),
+                Some(config.logger.get_slog_chan_size()),
+                slog_path,
+            ) {
+                info!("slog config success.");
+            } else {
+                warn!("slog config error.");
+            }
+        }
+
         if config.logger.disable_stderr() {
             logger_handle.disable_stderr();
         } else {
