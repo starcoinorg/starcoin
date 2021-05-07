@@ -413,9 +413,17 @@ where
             //TODO
         }
         StdlibVersion::Version(2) => {
+            assert!(
+                chain_state.get_stc_treasury()?.is_none(),
+                "expect treasury is none."
+            );
             assert_eq!(read_two_phase_upgrade_v2_resource(chain_state)?, false);
         }
         StdlibVersion::Version(3) => {
+            assert!(
+                chain_state.get_stc_treasury()?.is_some(),
+                "expect treasury is some."
+            );
             assert_eq!(
                 chain_state.get_stc_info().unwrap().unwrap().total_value,
                 TOTAL_STC_AMOUNT.scaling()
