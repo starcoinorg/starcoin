@@ -3,6 +3,7 @@
 
 # Module `0x1::Collection`
 
+Deprecated since @v3 please use Collection2
 Provide a account based vector for save resource.
 
 
@@ -112,6 +113,15 @@ Collection in global store.
 ## Constants
 
 
+<a name="0x1_Collection_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 11;
+</code></pre>
+
+
+
 <a name="0x1_Collection_ECOLLECTION_NOT_EXIST"></a>
 
 
@@ -186,11 +196,12 @@ Aborts if <code>i</code> is out of bounds.
 
 ## Function `push_back`
 
+Deprecated since @v3
 Add item <code>v</code> to the end of the collection <code>c</code>.
 require owner of Collection.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_push_back">push_back</a>&lt;T&gt;(account: &signer, c: &<b>mut</b> <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;, t: T)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_push_back">push_back</a>&lt;T&gt;(_account: &signer, _c: &<b>mut</b> <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;, _t: T)
 </code></pre>
 
 
@@ -199,9 +210,8 @@ require owner of Collection.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_push_back">push_back</a>&lt;T&gt;(account: &signer, c: &<b>mut</b> <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt;, t: T){
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == c.owner, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Collection.md#0x1_Collection_ECOLLECTION_NOT_OWNER">ECOLLECTION_NOT_OWNER</a>));
-    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>&lt;T&gt;(&<b>mut</b> c.items, t);
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_push_back">push_back</a>&lt;T&gt;(_account: &signer, _c: &<b>mut</b> <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt;, _t: T){
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -292,9 +302,10 @@ Aborts if <code>v</code> is empty.
 
 ## Function `append`
 
+Deprecated since @v3
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append">append</a>&lt;T&gt;(account: &signer, c: &<b>mut</b> <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;, other: T)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append">append</a>&lt;T&gt;(_account: &signer, _c: &<b>mut</b> <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;, _other: T)
 </code></pre>
 
 
@@ -303,9 +314,8 @@ Aborts if <code>v</code> is empty.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append">append</a>&lt;T&gt;(account: &signer, c: &<b>mut</b> <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt;, other: T) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == c.owner, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Collection.md#0x1_Collection_ECOLLECTION_NOT_OWNER">ECOLLECTION_NOT_OWNER</a>));
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>&lt;T&gt;(&<b>mut</b> c.items, <a href="Vector.md#0x1_Vector_singleton">Vector::singleton</a>(other))
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append">append</a>&lt;T&gt;(_account: &signer, _c: &<b>mut</b> <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt;, _other: T) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -317,9 +327,10 @@ Aborts if <code>v</code> is empty.
 
 ## Function `append_all`
 
+Deprecated since @v3
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append_all">append_all</a>&lt;T&gt;(account: &signer, c: &<b>mut</b> <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;, other: vector&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append_all">append_all</a>&lt;T&gt;(_account: &signer, _c: &<b>mut</b> <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;, _other: vector&lt;T&gt;)
 </code></pre>
 
 
@@ -328,9 +339,8 @@ Aborts if <code>v</code> is empty.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append_all">append_all</a>&lt;T&gt;(account: &signer, c: &<b>mut</b> <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt;, other: vector&lt;T&gt;) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == c.owner, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Collection.md#0x1_Collection_ECOLLECTION_NOT_OWNER">ECOLLECTION_NOT_OWNER</a>));
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>&lt;T&gt;(&<b>mut</b> c.items, other)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_append_all">append_all</a>&lt;T&gt;(_account: &signer, _c: &<b>mut</b> <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt;, _other: vector&lt;T&gt;) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -393,10 +403,11 @@ check the Collection exists in <code>addr</code>
 
 ## Function `put`
 
+Deprecated since @v3
 Put items to account's Collection last position.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(account: &signer, item: T)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(_account: &signer, _item: T)
 </code></pre>
 
 
@@ -405,14 +416,8 @@ Put items to account's Collection last position.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T: store&gt;(account: &signer, item: T) <b>acquires</b> <a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>{
-    <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>if</b> (<a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T&gt;(addr)) {
-        <b>let</b> c = borrow_global_mut&lt;<a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T&gt;&gt;(addr);
-        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(<a href="Option.md#0x1_Option_borrow_mut">Option::borrow_mut</a>(&<b>mut</b> c.items), item);
-    }<b>else</b>{
-        move_to(account, <a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T&gt;{items: <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="Vector.md#0x1_Vector_singleton">Vector::singleton</a>(item))});
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T: store&gt;(_account: &signer, _item: T) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -424,10 +429,11 @@ Put items to account's Collection last position.
 
 ## Function `put_all`
 
+Deprecated since @v3
 Put itemss to account's box last position.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put_all">put_all</a>&lt;T&gt;(account: &signer, items: vector&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put_all">put_all</a>&lt;T&gt;(_account: &signer, _items: vector&lt;T&gt;)
 </code></pre>
 
 
@@ -436,14 +442,8 @@ Put itemss to account's box last position.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put_all">put_all</a>&lt;T: store&gt;(account: &signer, items: vector&lt;T&gt;) <b>acquires</b> <a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>{
-    <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>if</b> (<a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T&gt;(addr)) {
-        <b>let</b> c = borrow_global_mut&lt;<a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T&gt;&gt;(addr);
-        <a href="Vector.md#0x1_Vector_append">Vector::append</a>(<a href="Option.md#0x1_Option_borrow_mut">Option::borrow_mut</a>(&<b>mut</b> c.items), items);
-    }<b>else</b>{
-        move_to(account, <a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T&gt;{items: <a href="Option.md#0x1_Option_some">Option::some</a>(items)});
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put_all">put_all</a>&lt;T: store&gt;(_account: &signer, _items: vector&lt;T&gt;) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -618,7 +618,7 @@ Return the Collection of T
 ### Function `put`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(account: &signer, item: T)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(_account: &signer, _item: T)
 </code></pre>
 
 
@@ -634,7 +634,7 @@ Return the Collection of T
 ### Function `put_all`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put_all">put_all</a>&lt;T&gt;(account: &signer, items: vector&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put_all">put_all</a>&lt;T&gt;(_account: &signer, _items: vector&lt;T&gt;)
 </code></pre>
 
 

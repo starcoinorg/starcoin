@@ -10,12 +10,12 @@ TreasuryWithdrawDaoProposal is a dao proposal for withdraw Token from Treasury.
 -  [Struct `WithdrawToken`](#0x1_TreasuryWithdrawDaoProposal_WithdrawToken)
 -  [Constants](#@Constants_0)
 -  [Function `plugin`](#0x1_TreasuryWithdrawDaoProposal_plugin)
--  [Function `propose_withdraw_to`](#0x1_TreasuryWithdrawDaoProposal_propose_withdraw_to)
+-  [Function `propose_withdraw`](#0x1_TreasuryWithdrawDaoProposal_propose_withdraw)
 -  [Function `execute_withdraw_proposal`](#0x1_TreasuryWithdrawDaoProposal_execute_withdraw_proposal)
 -  [Function `withdraw_for_block_reward`](#0x1_TreasuryWithdrawDaoProposal_withdraw_for_block_reward)
 -  [Specification](#@Specification_1)
     -  [Function `plugin`](#@Specification_1_plugin)
-    -  [Function `propose_withdraw_to`](#@Specification_1_propose_withdraw_to)
+    -  [Function `propose_withdraw`](#@Specification_1_propose_withdraw)
     -  [Function `execute_withdraw_proposal`](#@Specification_1_execute_withdraw_proposal)
 
 
@@ -149,14 +149,14 @@ Should be called by token issuer.
 
 </details>
 
-<a name="0x1_TreasuryWithdrawDaoProposal_propose_withdraw_to"></a>
+<a name="0x1_TreasuryWithdrawDaoProposal_propose_withdraw"></a>
 
-## Function `propose_withdraw_to`
+## Function `propose_withdraw`
 
 Entrypoint for the proposal.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw_to">propose_withdraw_to</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -165,7 +165,7 @@ Entrypoint for the proposal.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw_to">propose_withdraw_to</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
     <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a>&gt;(
         signer,
         <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a> { receiver, amount, period },
@@ -279,12 +279,12 @@ This approach is not graceful, but restricts the operation to genesis accounts o
 
 
 
-<a name="@Specification_1_propose_withdraw_to"></a>
+<a name="@Specification_1_propose_withdraw"></a>
 
-### Function `propose_withdraw_to`
+### Function `propose_withdraw`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw_to">propose_withdraw_to</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
 </code></pre>
 
 

@@ -382,7 +382,7 @@ User vote info.
 <code>agree: bool</code>
 </dt>
 <dd>
- vote for or vote againest.
+ vote for or vote against.
 </dd>
 </dl>
 

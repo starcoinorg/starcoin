@@ -379,6 +379,15 @@ module upgrade event.
 ## Constants
 
 
+<a name="0x1_PackageTxnManager_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
+</code></pre>
+
+
+
 <a name="0x1_PackageTxnManager_DEFAULT_MIN_TIME_LIMIT"></a>
 
 
@@ -393,15 +402,6 @@ module upgrade event.
 
 
 <pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>: u64 = 104;
-</code></pre>
-
-
-
-<a name="0x1_PackageTxnManager_EDEPRECATED_FUNCTION"></a>
-
-
-
-<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 

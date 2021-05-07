@@ -20,7 +20,7 @@
     -  [Function `take_offer`](#@Specification_1_take_offer)
 
 
-<pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
+<pre><code><b>use</b> <a href="Collection2.md#0x1_Collection2">0x1::Collection2</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
@@ -209,6 +209,7 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 ## Function `take_offer`
 
+Take Offer and put to signer's Collection<Offered>.
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: signer, offer_address: address)
@@ -225,7 +226,7 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
     offer_address: address,
 ) <b>acquires</b> <a href="Offer.md#0x1_Offer">Offer</a> {
     <b>let</b> offered = <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(&signer, offer_address);
-    <a href="Collection.md#0x1_Collection_put">Collection::put</a>(&signer, offered);
+    <a href="Collection2.md#0x1_Collection2_put">Collection2::put</a>(&signer, <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&signer), offered);
 }
 </code></pre>
 
