@@ -238,7 +238,7 @@ module Genesis {
         // transaction timeout config
         transaction_timeout: u64,
     ) {
-        assert(Timestamp::is_genesis(), 1);
+        Timestamp::assert_genesis();
         // create genesis account
         let genesis_account = Account::create_genesis_account(CoreAddresses::GENESIS_ADDRESS());
         //Init global time
