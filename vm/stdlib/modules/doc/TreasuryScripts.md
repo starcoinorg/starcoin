@@ -46,7 +46,7 @@
     amount: u128,
     lock_period: u64,
 ) {
-    // 1. take cap: LinearTimeWithdrawCapability&lt;TokenT&gt;
+    // 1. take cap: LinearWithdrawCapability&lt;TokenT&gt;
     <b>let</b> cap = <a href="Treasury.md#0x1_Treasury_remove_linear_withdraw_capability">Treasury::remove_linear_withdraw_capability</a>&lt;TokenT&gt;(&signer);
 
     // 2. withdraw token and split
@@ -93,7 +93,7 @@
     <b>let</b> cap = <a href="Treasury.md#0x1_Treasury_remove_linear_withdraw_capability">Treasury::remove_linear_withdraw_capability</a>&lt;TokenT&gt;(&signer);
 
     // 2. withdraw token
-    <b>let</b> tokens = <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_cap">Treasury::withdraw_with_linear_cap</a>(&<b>mut</b> cap);
+    <b>let</b> tokens = <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">Treasury::withdraw_with_linear_capability</a>(&<b>mut</b> cap);
 
     // 3. deposit
     <a href="Account.md#0x1_Account_deposit_to_self">Account::deposit_to_self</a>(&signer, tokens);

@@ -235,7 +235,7 @@ This approach is not graceful, but restricts the operation to genesis accounts o
 <pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_withdraw_for_block_reward">withdraw_for_block_reward</a>&lt;TokenT: store&gt;(signer: &signer, reward: u128):<a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WrappedWithdrawCapability">WrappedWithdrawCapability</a>  {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(signer);
     <b>let</b> cap = borrow_global_mut&lt;<a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WrappedWithdrawCapability">WrappedWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <a href="Treasury.md#0x1_Treasury_withdraw_with_cap">Treasury::withdraw_with_cap</a>(&<b>mut</b> cap.cap, reward)
+    <a href="Treasury.md#0x1_Treasury_withdraw_with_capability">Treasury::withdraw_with_capability</a>(&<b>mut</b> cap.cap, reward)
 }
 </code></pre>
 

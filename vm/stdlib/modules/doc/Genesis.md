@@ -345,7 +345,7 @@ The module for init Genesis
     <a href="DummyToken.md#0x1_DummyToken_initialize">DummyToken::initialize</a>(&genesis_account);
 
     <b>if</b> (pre_mine_stc_amount &gt; 0) {
-        <b>let</b> stc = <a href="Treasury.md#0x1_Treasury_withdraw_with_cap">Treasury::withdraw_with_cap</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&<b>mut</b> withdraw_cap, pre_mine_stc_amount);
+        <b>let</b> stc = <a href="Treasury.md#0x1_Treasury_withdraw_with_capability">Treasury::withdraw_with_capability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&<b>mut</b> withdraw_cap, pre_mine_stc_amount);
         <a href="Account.md#0x1_Account_deposit">Account::deposit</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
     };
     <b>if</b> (time_mint_stc_amount &gt; 0) {

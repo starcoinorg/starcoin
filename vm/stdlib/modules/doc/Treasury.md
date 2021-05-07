@@ -8,7 +8,7 @@ The module for the Treasury of DAO, which can hold the token of DAO.
 
 -  [Resource `Treasury`](#0x1_Treasury_Treasury)
 -  [Resource `WithdrawCapability`](#0x1_Treasury_WithdrawCapability)
--  [Resource `LinearTimeWithdrawCapability`](#0x1_Treasury_LinearTimeWithdrawCapability)
+-  [Resource `LinearWithdrawCapability`](#0x1_Treasury_LinearWithdrawCapability)
 -  [Struct `WithdrawEvent`](#0x1_Treasury_WithdrawEvent)
 -  [Struct `DepositEvent`](#0x1_Treasury_DepositEvent)
 -  [Constants](#@Constants_0)
@@ -17,10 +17,10 @@ The module for the Treasury of DAO, which can hold the token of DAO.
 -  [Function `balance`](#0x1_Treasury_balance)
 -  [Function `deposit`](#0x1_Treasury_deposit)
 -  [Function `do_withdraw`](#0x1_Treasury_do_withdraw)
--  [Function `withdraw_with_cap`](#0x1_Treasury_withdraw_with_cap)
+-  [Function `withdraw_with_capability`](#0x1_Treasury_withdraw_with_capability)
 -  [Function `withdraw`](#0x1_Treasury_withdraw)
 -  [Function `issue_linear_withdraw_capability`](#0x1_Treasury_issue_linear_withdraw_capability)
--  [Function `withdraw_with_linear_cap`](#0x1_Treasury_withdraw_with_linear_cap)
+-  [Function `withdraw_with_linear_capability`](#0x1_Treasury_withdraw_with_linear_capability)
 -  [Function `withdraw_by_linear`](#0x1_Treasury_withdraw_by_linear)
 -  [Function `split_linear_withdraw_cap`](#0x1_Treasury_split_linear_withdraw_cap)
 -  [Function `withdraw_amount_of_linear_cap`](#0x1_Treasury_withdraw_amount_of_linear_cap)
@@ -42,10 +42,10 @@ The module for the Treasury of DAO, which can hold the token of DAO.
     -  [Function `balance`](#@Specification_1_balance)
     -  [Function `deposit`](#@Specification_1_deposit)
     -  [Function `do_withdraw`](#@Specification_1_do_withdraw)
-    -  [Function `withdraw_with_cap`](#@Specification_1_withdraw_with_cap)
+    -  [Function `withdraw_with_capability`](#@Specification_1_withdraw_with_capability)
     -  [Function `withdraw`](#@Specification_1_withdraw)
     -  [Function `issue_linear_withdraw_capability`](#@Specification_1_issue_linear_withdraw_capability)
-    -  [Function `withdraw_with_linear_cap`](#@Specification_1_withdraw_with_linear_cap)
+    -  [Function `withdraw_with_linear_capability`](#@Specification_1_withdraw_with_linear_capability)
     -  [Function `split_linear_withdraw_cap`](#@Specification_1_split_linear_withdraw_cap)
     -  [Function `withdraw_amount_of_linear_cap`](#@Specification_1_withdraw_amount_of_linear_cap)
     -  [Function `is_empty_linear_withdraw_cap`](#@Specification_1_is_empty_linear_withdraw_cap)
@@ -131,14 +131,14 @@ A withdraw capability allows tokens of type <code>TokenT</code> to be withdraw f
 
 </details>
 
-<a name="0x1_Treasury_LinearTimeWithdrawCapability"></a>
+<a name="0x1_Treasury_LinearWithdrawCapability"></a>
 
-## Resource `LinearTimeWithdrawCapability`
+## Resource `LinearWithdrawCapability`
 
 A linear time withdraw capability which can withdraw token from Treasury in a period by time-based linear release.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;
+<pre><code><b>resource</b> <b>struct</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -433,14 +433,14 @@ if the Treasury do not exists, return 0.
 
 </details>
 
-<a name="0x1_Treasury_withdraw_with_cap"></a>
+<a name="0x1_Treasury_withdraw_with_capability"></a>
 
-## Function `withdraw_with_cap`
+## Function `withdraw_with_capability`
 
-Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a></code>.
+Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_cap">withdraw_with_cap</a>&lt;TokenT&gt;(_cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenT&gt;(_cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -449,7 +449,7 @@ Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWit
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_cap">withdraw_with_cap</a>&lt;TokenT:store&gt;(_cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenT:store&gt;(_cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
     <b>let</b> token = <a href="Treasury.md#0x1_Treasury_do_withdraw">do_withdraw</a>(amount);
     token
 }
@@ -477,7 +477,7 @@ Withdraw from TokenT's  treasury, the signer must have WithdrawCapability<TokenT
 
 <pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw">withdraw</a>&lt;TokenT:store&gt;(signer: &signer, amount: u128) : <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a>, <a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a>{
     <b>let</b> cap = borrow_global_mut&lt;<a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <a href="Treasury.md#0x1_Treasury_withdraw_with_cap">Self::withdraw_with_cap</a>(cap, amount)
+    <a href="Treasury.md#0x1_Treasury_withdraw_with_capability">Self::withdraw_with_capability</a>(cap, amount)
 }
 </code></pre>
 
@@ -489,10 +489,10 @@ Withdraw from TokenT's  treasury, the signer must have WithdrawCapability<TokenT
 
 ## Function `issue_linear_withdraw_capability`
 
-Issue a <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a></code> with given <code><a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a></code>.
+Issue a <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a></code> with given <code><a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_issue_linear_withdraw_capability">issue_linear_withdraw_capability</a>&lt;TokenT&gt;(_capability: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_issue_linear_withdraw_capability">issue_linear_withdraw_capability</a>&lt;TokenT&gt;(_capability: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -502,11 +502,11 @@ Issue a <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Li
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_issue_linear_withdraw_capability">issue_linear_withdraw_capability</a>&lt;TokenT: store&gt;( _capability: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt;,
-                                            amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;{
+                                            amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;{
     <b>assert</b>(period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_PERIOD">ERR_INVALID_PERIOD</a>));
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt; {
+    <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt; {
         total: amount,
         withdraw: 0,
         start_time,
@@ -519,14 +519,14 @@ Issue a <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Li
 
 </details>
 
-<a name="0x1_Treasury_withdraw_with_linear_cap"></a>
+<a name="0x1_Treasury_withdraw_with_linear_capability"></a>
 
-## Function `withdraw_with_linear_cap`
+## Function `withdraw_with_linear_capability`
 
-Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a></code>.
+Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_cap">withdraw_with_linear_cap</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">withdraw_with_linear_capability</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -535,7 +535,7 @@ Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWit
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_cap">withdraw_with_linear_cap</a>&lt;TokenT: store&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">withdraw_with_linear_capability</a>&lt;TokenT: store&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
     <b>let</b> amount = <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>(cap);
     <b>let</b> token = <a href="Treasury.md#0x1_Treasury_do_withdraw">do_withdraw</a>(amount);
     cap.withdraw = cap.withdraw + amount;
@@ -551,7 +551,7 @@ Withdraw tokens with given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWit
 
 ## Function `withdraw_by_linear`
 
-Withdraw from TokenT's  treasury, the signer must have LinearTimeWithdrawCapability<TokenT>
+Withdraw from TokenT's  treasury, the signer must have LinearWithdrawCapability<TokenT>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_by_linear">withdraw_by_linear</a>&lt;TokenT&gt;(signer: &signer): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
@@ -563,9 +563,9 @@ Withdraw from TokenT's  treasury, the signer must have LinearTimeWithdrawCapabil
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_by_linear">withdraw_by_linear</a>&lt;TokenT:store&gt;(signer: &signer) : <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a>, <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>{
-    <b>let</b> cap = borrow_global_mut&lt;<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_cap">Self::withdraw_with_linear_cap</a>(cap)
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_by_linear">withdraw_by_linear</a>&lt;TokenT:store&gt;(signer: &signer) : <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a>, <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>{
+    <b>let</b> cap = borrow_global_mut&lt;<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
+    <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">Self::withdraw_with_linear_capability</a>(cap)
 }
 </code></pre>
 
@@ -577,10 +577,10 @@ Withdraw from TokenT's  treasury, the signer must have LinearTimeWithdrawCapabil
 
 ## Function `split_linear_withdraw_cap`
 
-Split the given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a></code>.
+Split the given <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;)
 </code></pre>
 
 
@@ -589,14 +589,14 @@ Split the given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapabi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT: store&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;) <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT: store&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;) <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
-    <b>let</b> token = <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_cap">Self::withdraw_with_linear_cap</a>(cap);
+    <b>let</b> token = <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">Self::withdraw_with_linear_capability</a>(cap);
     <b>assert</b>((cap.withdraw + amount) &lt;= cap.total, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
     cap.total = cap.total - amount;
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> new_period = cap.start_time + cap.period - start_time;
-    <b>let</b> new_key = <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt; {
+    <b>let</b> new_key = <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt; {
         total: amount,
         withdraw: 0,
         start_time,
@@ -614,10 +614,10 @@ Split the given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapabi
 
 ## Function `withdraw_amount_of_linear_cap`
 
-Returns the amount of the LinearTimeWithdrawCapability can mint now.
+Returns the amount of the LinearWithdrawCapability can mint now.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): u128
 </code></pre>
 
 
@@ -626,7 +626,7 @@ Returns the amount of the LinearTimeWithdrawCapability can mint now.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;): u128 {
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> elapsed_time = now - cap.start_time;
     <b>if</b> (elapsed_time &gt;= cap.period) {
@@ -645,10 +645,10 @@ Returns the amount of the LinearTimeWithdrawCapability can mint now.
 
 ## Function `is_empty_linear_withdraw_cap`
 
-Check if the given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a></code> is empty.
+Check if the given <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a></code> is empty.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_cap">is_empty_linear_withdraw_cap</a>&lt;TokenT&gt;(key: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_cap">is_empty_linear_withdraw_cap</a>&lt;TokenT&gt;(key: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): bool
 </code></pre>
 
 
@@ -657,7 +657,7 @@ Check if the given <code><a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCap
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_cap">is_empty_linear_withdraw_cap</a>&lt;TokenT:store&gt;(key: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;) : bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_cap">is_empty_linear_withdraw_cap</a>&lt;TokenT:store&gt;(key: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;) : bool {
     key.total == key.withdraw
 }
 </code></pre>
@@ -746,10 +746,10 @@ Destroy the given mint capability.
 
 ## Function `add_linear_withdraw_capability`
 
-Add LinearTimeWithdrawCapability to <code>signer</code>, a address only can have one LinearTimeWithdrawCapability<T>
+Add LinearWithdrawCapability to <code>signer</code>, a address only can have one LinearWithdrawCapability<T>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_add_linear_withdraw_capability">add_linear_withdraw_capability</a>&lt;TokenT&gt;(signer: &signer, cap: <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_add_linear_withdraw_capability">add_linear_withdraw_capability</a>&lt;TokenT&gt;(signer: &signer, cap: <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;)
 </code></pre>
 
 
@@ -758,7 +758,7 @@ Add LinearTimeWithdrawCapability to <code>signer</code>, a address only can have
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_add_linear_withdraw_capability">add_linear_withdraw_capability</a>&lt;TokenT: store&gt;(signer: &signer, cap: <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;){
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_add_linear_withdraw_capability">add_linear_withdraw_capability</a>&lt;TokenT: store&gt;(signer: &signer, cap: <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;){
     move_to(signer, cap)
 }
 </code></pre>
@@ -771,10 +771,10 @@ Add LinearTimeWithdrawCapability to <code>signer</code>, a address only can have
 
 ## Function `remove_linear_withdraw_capability`
 
-Remove LinearTimeWithdrawCapability from <code>signer</code>.
+Remove LinearWithdrawCapability from <code>signer</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_remove_linear_withdraw_capability">remove_linear_withdraw_capability</a>&lt;TokenT&gt;(signer: &signer): <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_remove_linear_withdraw_capability">remove_linear_withdraw_capability</a>&lt;TokenT&gt;(signer: &signer): <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -783,9 +783,9 @@ Remove LinearTimeWithdrawCapability from <code>signer</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_remove_linear_withdraw_capability">remove_linear_withdraw_capability</a>&lt;TokenT: store&gt;(signer: &signer): <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;
-<b>acquires</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a> {
-    move_from&lt;<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_remove_linear_withdraw_capability">remove_linear_withdraw_capability</a>&lt;TokenT: store&gt;(signer: &signer): <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;
+<b>acquires</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a> {
+    move_from&lt;<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))
 }
 </code></pre>
 
@@ -797,10 +797,10 @@ Remove LinearTimeWithdrawCapability from <code>signer</code>.
 
 ## Function `destroy_linear_withdraw_capability`
 
-Destroy LinearTimeWithdrawCapability.
+Destroy LinearWithdrawCapability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_destroy_linear_withdraw_capability">destroy_linear_withdraw_capability</a>&lt;TokenT&gt;(cap: <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_destroy_linear_withdraw_capability">destroy_linear_withdraw_capability</a>&lt;TokenT&gt;(cap: <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;)
 </code></pre>
 
 
@@ -809,8 +809,8 @@ Destroy LinearTimeWithdrawCapability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_destroy_linear_withdraw_capability">destroy_linear_withdraw_capability</a>&lt;TokenT: store&gt;(cap: <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;) {
-    <b>let</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>{ total: _, withdraw: _, start_time: _, period: _ } = cap;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_destroy_linear_withdraw_capability">destroy_linear_withdraw_capability</a>&lt;TokenT: store&gt;(cap: <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;) {
+    <b>let</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>{ total: _, withdraw: _, start_time: _, period: _ } = cap;
 }
 </code></pre>
 
@@ -824,7 +824,7 @@ Destroy LinearTimeWithdrawCapability.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_capability">is_empty_linear_withdraw_capability</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_capability">is_empty_linear_withdraw_capability</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): bool
 </code></pre>
 
 
@@ -833,7 +833,7 @@ Destroy LinearTimeWithdrawCapability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_capability">is_empty_linear_withdraw_capability</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;):bool {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_capability">is_empty_linear_withdraw_capability</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;):bool {
     cap.total == cap.withdraw
 }
 </code></pre>
@@ -846,10 +846,10 @@ Destroy LinearTimeWithdrawCapability.
 
 ## Function `get_linear_withdraw_capability_total`
 
-Get LinearTimeWithdrawCapability total amount
+Get LinearWithdrawCapability total amount
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_total">get_linear_withdraw_capability_total</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_total">get_linear_withdraw_capability_total</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): u128
 </code></pre>
 
 
@@ -858,7 +858,7 @@ Get LinearTimeWithdrawCapability total amount
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_total">get_linear_withdraw_capability_total</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;):u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_total">get_linear_withdraw_capability_total</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;):u128 {
     cap.total
 }
 </code></pre>
@@ -871,10 +871,10 @@ Get LinearTimeWithdrawCapability total amount
 
 ## Function `get_linear_withdraw_capability_withdraw`
 
-Get LinearTimeWithdrawCapability withdraw amount
+Get LinearWithdrawCapability withdraw amount
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_withdraw">get_linear_withdraw_capability_withdraw</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_withdraw">get_linear_withdraw_capability_withdraw</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): u128
 </code></pre>
 
 
@@ -883,7 +883,7 @@ Get LinearTimeWithdrawCapability withdraw amount
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_withdraw">get_linear_withdraw_capability_withdraw</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;):u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_withdraw">get_linear_withdraw_capability_withdraw</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;):u128 {
     cap.withdraw
 }
 </code></pre>
@@ -896,10 +896,10 @@ Get LinearTimeWithdrawCapability withdraw amount
 
 ## Function `get_linear_withdraw_capability_period`
 
-Get LinearTimeWithdrawCapability period in seconds
+Get LinearWithdrawCapability period in seconds
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_period">get_linear_withdraw_capability_period</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_period">get_linear_withdraw_capability_period</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): u64
 </code></pre>
 
 
@@ -908,7 +908,7 @@ Get LinearTimeWithdrawCapability period in seconds
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_period">get_linear_withdraw_capability_period</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;):u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_period">get_linear_withdraw_capability_period</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;):u64 {
     cap.period
 }
 </code></pre>
@@ -921,10 +921,10 @@ Get LinearTimeWithdrawCapability period in seconds
 
 ## Function `get_linear_withdraw_capability_start_time`
 
-Get LinearTimeWithdrawCapability start_time in seconds
+Get LinearWithdrawCapability start_time in seconds
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_start_time">get_linear_withdraw_capability_start_time</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_start_time">get_linear_withdraw_capability_start_time</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): u64
 </code></pre>
 
 
@@ -933,7 +933,7 @@ Get LinearTimeWithdrawCapability start_time in seconds
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_start_time">get_linear_withdraw_capability_start_time</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">LinearTimeWithdrawCapability</a>&lt;TokenT&gt;):u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_get_linear_withdraw_capability_start_time">get_linear_withdraw_capability_start_time</a>&lt;TokenT: store&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;):u64 {
     cap.start_time
 }
 </code></pre>
@@ -1014,12 +1014,12 @@ Get LinearTimeWithdrawCapability start_time in seconds
 
 
 
-<a name="@Specification_1_withdraw_with_cap"></a>
+<a name="@Specification_1_withdraw_with_capability"></a>
 
-### Function `withdraw_with_cap`
+### Function `withdraw_with_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_cap">withdraw_with_cap</a>&lt;TokenT&gt;(_cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenT&gt;(_cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -1041,7 +1041,7 @@ Get LinearTimeWithdrawCapability start_time in seconds
 ### Function `issue_linear_withdraw_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_issue_linear_withdraw_capability">issue_linear_withdraw_capability</a>&lt;TokenT&gt;(_capability: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_issue_linear_withdraw_capability">issue_linear_withdraw_capability</a>&lt;TokenT&gt;(_capability: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">Treasury::WithdrawCapability</a>&lt;TokenT&gt;, amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -1054,12 +1054,12 @@ Get LinearTimeWithdrawCapability start_time in seconds
 
 
 
-<a name="@Specification_1_withdraw_with_linear_cap"></a>
+<a name="@Specification_1_withdraw_with_linear_capability"></a>
 
-### Function `withdraw_with_linear_cap`
+### Function `withdraw_with_linear_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_cap">withdraw_with_linear_cap</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">withdraw_with_linear_capability</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -1075,7 +1075,7 @@ Get LinearTimeWithdrawCapability start_time in seconds
 ### Function `split_linear_withdraw_cap`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;)
 </code></pre>
 
 
@@ -1091,7 +1091,7 @@ Get LinearTimeWithdrawCapability start_time in seconds
 ### Function `withdraw_amount_of_linear_cap`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_withdraw_amount_of_linear_cap">withdraw_amount_of_linear_cap</a>&lt;TokenT&gt;(cap: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): u128
 </code></pre>
 
 
@@ -1111,7 +1111,7 @@ Get LinearTimeWithdrawCapability start_time in seconds
 ### Function `is_empty_linear_withdraw_cap`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_cap">is_empty_linear_withdraw_cap</a>&lt;TokenT&gt;(key: &<a href="Treasury.md#0x1_Treasury_LinearTimeWithdrawCapability">Treasury::LinearTimeWithdrawCapability</a>&lt;TokenT&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_is_empty_linear_withdraw_cap">is_empty_linear_withdraw_cap</a>&lt;TokenT&gt;(key: &<a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Treasury::LinearWithdrawCapability</a>&lt;TokenT&gt;): bool
 </code></pre>
 
 
