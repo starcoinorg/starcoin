@@ -1,4 +1,5 @@
 address 0x1 {
+/// Deprecated since @v3 please use Collection2
 /// Provide a account based vector for save resource.
 module Collection {
     use 0x1::Signer;
@@ -25,6 +26,8 @@ module Collection {
         items: Option<vector<T>>,
     }
 
+    const EDEPRECATED_FUNCTION: u64 = 11;
+
     const ECOLLECTION_NOT_EXIST: u64 = 101;
     /// The operator require the collection owner.
     const ECOLLECTION_NOT_OWNER: u64 = 102;
@@ -42,11 +45,11 @@ module Collection {
         Vector::borrow(&c.items, i)
     }
 
+    /// Deprecated since @v3
     /// Add item `v` to the end of the collection `c`.
     /// require owner of Collection.
-    public fun push_back<T>(account: &signer, c: &mut Collection<T>, t: T){
-        assert(Signer::address_of(account) == c.owner, Errors::requires_address(ECOLLECTION_NOT_OWNER));
-        Vector::push_back<T>(&mut c.items, t);
+    public fun push_back<T>(_account: &signer, _c: &mut Collection<T>, _t: T){
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     /// Return a mutable reference to the `i`th item in the Collection `c`.
@@ -68,14 +71,14 @@ module Collection {
         Vector::remove<T>(&mut c.items, i)
     }
 
-    public fun append<T>(account: &signer, c: &mut Collection<T>, other: T) {
-        assert(Signer::address_of(account) == c.owner, Errors::requires_address(ECOLLECTION_NOT_OWNER));
-        Vector::append<T>(&mut c.items, Vector::singleton(other))
+    /// Deprecated since @v3
+    public fun append<T>(_account: &signer, _c: &mut Collection<T>, _other: T) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
-    public fun append_all<T>(account: &signer, c: &mut Collection<T>, other: vector<T>) {
-        assert(Signer::address_of(account) == c.owner, Errors::requires_address(ECOLLECTION_NOT_OWNER));
-        Vector::append<T>(&mut c.items, other)
+    /// Deprecated since @v3
+    public fun append_all<T>(_account: &signer, _c: &mut Collection<T>, _other: vector<T>) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     /// Check if the addr has T
@@ -92,28 +95,18 @@ module Collection {
     spec fun exists_at {aborts_if false;}
 
 
+    /// Deprecated since @v3
     /// Put items to account's Collection last position.
-    public fun put<T: store>(account: &signer, item: T) acquires CollectionStore{
-        let addr = Signer::address_of(account);
-        if (exists_at<T>(addr)) {
-            let c = borrow_global_mut<CollectionStore<T>>(addr);
-            Vector::push_back(Option::borrow_mut(&mut c.items), item);
-        }else{
-            move_to(account, CollectionStore<T>{items: Option::some(Vector::singleton(item))});
-        }
+    public fun put<T: store>(_account: &signer, _item: T) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun put {aborts_if false;}
 
+    /// Deprecated since @v3
     /// Put itemss to account's box last position.
-    public fun put_all<T: store>(account: &signer, items: vector<T>) acquires CollectionStore{
-        let addr = Signer::address_of(account);
-        if (exists_at<T>(addr)) {
-            let c = borrow_global_mut<CollectionStore<T>>(addr);
-            Vector::append(Option::borrow_mut(&mut c.items), items);
-        }else{
-            move_to(account, CollectionStore<T>{items: Option::some(items)});
-        }
+    public fun put_all<T: store>(_account: &signer, _items: vector<T>) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     spec fun put_all {aborts_if false;}

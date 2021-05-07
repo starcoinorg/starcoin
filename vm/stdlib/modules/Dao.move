@@ -109,7 +109,7 @@ module Dao {
         id: u64,
         /// how many tokens to stake.
         stake: Token::Token<TokenT>,
-        /// vote for or vote againest.
+        /// vote for or vote against.
         agree: bool,
     }
 

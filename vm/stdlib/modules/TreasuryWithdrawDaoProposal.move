@@ -54,14 +54,14 @@ module TreasuryWithdrawDaoProposal {
 
 
     /// Entrypoint for the proposal.
-    public fun propose_withdraw_to<TokenT: copy + drop + store>(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
+    public fun propose_withdraw<TokenT: copy + drop + store>(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
         Dao::propose<TokenT, WithdrawToken>(
             signer,
             WithdrawToken { receiver, amount, period },
             exec_delay,
         );
     }
-    spec fun propose_withdraw_to {
+    spec fun propose_withdraw {
         use 0x1::Timestamp;
         use 0x1::CoreAddresses;
         pragma aborts_if_is_partial = false;

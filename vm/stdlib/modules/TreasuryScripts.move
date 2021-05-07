@@ -3,6 +3,7 @@ module TreasuryScripts {
     use 0x1::Treasury;
     use 0x1::Account;
     use 0x1::Offer;
+    use 0x1::TreasuryWithdrawDaoProposal;
 
     public(script) fun withdraw_and_split_lt_withdraw_cap<TokenT: store>(
         signer: signer,
@@ -57,5 +58,22 @@ module TreasuryScripts {
     spec fun withdraw_token_with_linear_withdraw_capability {
         pragma verify = false;
     }
+
+    public(script) fun propose_withdraw<TokenT: copy + drop + store>(signer: signer, receiver: address, amount: u128, period: u64, exec_delay: u64){
+        TreasuryWithdrawDaoProposal::propose_withdraw<TokenT>(&signer, receiver, amount, period, exec_delay)
+    }
+
+    spec fun propose_withdraw {
+        pragma verify = false;
+    }
+
+    public(script) fun execute_withdraw_proposal<TokenT:copy + drop + store>(signer: signer, proposer_address: address,
+                                                                       proposal_id: u64,){
+        TreasuryWithdrawDaoProposal::execute_withdraw_proposal<TokenT>(&signer, proposer_address, proposal_id);
+    }
+
+     spec fun execute_withdraw_proposal {
+         pragma verify = false;
+     }
 }
 }
