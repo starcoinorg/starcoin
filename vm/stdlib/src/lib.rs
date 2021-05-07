@@ -94,6 +94,20 @@ static COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<CompiledModule>>> = Lazy
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
+/// Return all versions of stdlib, include latest.
+pub fn stdlib_versions() -> Vec<StdlibVersion> {
+    STDLIB_VERSIONS.clone()
+}
+
+/// Return the latest stable version of stdlib.
+pub fn stdlib_latest_stable_version() -> Option<StdlibVersion> {
+    STDLIB_VERSIONS
+        .iter()
+        .filter(|version| !version.is_latest())
+        .last()
+        .cloned()
+}
+
 /// An enum specifying whether the compiled stdlib/scripts should be used or freshly built versions
 /// should be used.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -394,6 +408,10 @@ pub fn save_scripts(scripts: HashMap<String, (HashValue, Vec<u8>)>, dest_dir: Pa
 fn file_name_without_extension(file_name: &str) -> String {
     let tmp: Vec<&str> = file_name.split('.').collect();
     tmp.get(0).unwrap().to_string()
+}
+
+pub fn load_latest_stable_compiled_modules() -> Option<(StdlibVersion, Vec<CompiledModule>)> {
+    stdlib_latest_stable_version().map(|version| (version, load_compiled_modules(version)))
 }
 
 fn load_latest_compiled_modules() -> Vec<CompiledModule> {
