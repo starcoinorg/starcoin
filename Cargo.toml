@@ -91,6 +91,7 @@ members = [
     "cmd/resource-exporter",
     "cmd/merkle-generator",
     "cmd/peer-watcher",
+    "cmd/airdrop",
     "stratum"
 ]
 
@@ -184,6 +185,7 @@ default-members = [
     "cmd/resource-exporter",
     "cmd/merkle-generator",
     "cmd/peer-watcher",
+    "cmd/airdrop",
     "stratum"
 ]
 
