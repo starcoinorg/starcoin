@@ -11,7 +11,7 @@ use starcoin_rpc_api::{
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{
-    account_struct_tag, association_address, genesis_address, stc_type_tag, AccountResource,
+    account_struct_tag, genesis_address, stc_type_tag, AccountResource,
 };
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::Identifier;
@@ -20,6 +20,7 @@ use starcoin_types::transaction::authenticator::{AccountPrivateKey, Authenticati
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
 use starcoin_vm_types::value::MoveValue;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::time::Duration;
 
 #[derive(Clap, Debug, Clone)]
@@ -75,11 +76,23 @@ async fn main() -> Result<()> {
     };
 
     let private_key: AccountPrivateKey = {
-        let pass =
-            rpassword::prompt_password_stdout("Please Input Starcoin Association Private Key: ")?;
+        let pass = rpassword::prompt_password_stdout("Please Input Private Key: ")?;
         AccountPrivateKey::from_encoded_string(pass.trim())?
     };
-    let sender = association_address();
+    let sender: AccountAddress = {
+        let default_address = private_key.public_key().derived_address();
+        let address = rpassword::prompt_password_stdout(&format!(
+            "Please Input Account Address(default {}): ",
+            &default_address
+        ))?;
+        if address.trim().is_empty() {
+            default_address
+        } else {
+            AccountAddress::from_str(address.as_str())?
+        }
+    };
+    println!("Will act as sender {}", sender);
+
     // read from onchain
     let account_sequence_number = {
         let ap = AccessPath::new(sender, DataPath::Resource(account_struct_tag()));
