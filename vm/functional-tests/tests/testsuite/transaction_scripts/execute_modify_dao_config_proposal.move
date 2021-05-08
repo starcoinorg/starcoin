@@ -1,5 +1,5 @@
-//! account: alice, 15925680000000000 0x1::STC::STC
-//! account: bob, 15925680000000000 0x1::STC::STC
+//! account: alice, 159256800000000000 0x1::STC::STC
+//! account: bob, 159256800000000000 0x1::STC::STC
 
 //! block-prologue
 //! author: genesis
@@ -33,7 +33,7 @@ script {
 
 //! new-transaction
 //! sender: bob
-//! args: {{alice}}, 0, true, 3981420001000000u128
+//! args: {{alice}}, 0, true, 39814200010000000u128
 script {
     use 0x1::DaoVoteScripts;
     use 0x1::STC::STC;

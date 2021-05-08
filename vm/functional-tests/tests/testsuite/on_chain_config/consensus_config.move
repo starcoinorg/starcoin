@@ -42,7 +42,7 @@ script {
 
     fun compute_reward_per_block() {
         let block_time_target = 10000; // equal to default block_time_target
-        let default_reward_per_block = 1000000000; // should be consistent with genesis config
+        let default_reward_per_block = 10000000000; // should be consistent with genesis config
         let reward_per_block = ConsensusConfig::compute_reward_per_block(block_time_target);
         assert(reward_per_block == default_reward_per_block, 102);
     }
