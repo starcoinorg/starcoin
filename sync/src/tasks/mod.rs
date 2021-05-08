@@ -32,11 +32,6 @@ use stream_task::{
     TaskHandle,
 };
 
-struct InnerTarget {
-    block_info: BlockInfo,
-    target: BlockIdAndNumber,
-}
-
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
     fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
@@ -106,7 +101,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 });
 
                 let mut peers = Vec::new();
-                let mut target: Option<InnerTarget> = None;
+                let mut target: Option<(BlockInfo, BlockIdAndNumber)> = None;
                 for better_peer in better_peers.iter() {
                     if peers.len() >= max_peers as usize {
                         break;
@@ -120,14 +115,13 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 better_peer.block_number(),
                             );
                             if best_target.peers.contains(&better_peer.peer_id()) {
-                                let inner_target = InnerTarget {
-                                    block_info: better_peer.chain_info.status().info().clone(),
-                                    target: BlockIdAndNumber {
+                                target = Some((
+                                    better_peer.chain_info.status().info().clone(),
+                                    BlockIdAndNumber {
                                         number: better_peer.latest_header().number(),
                                         id: better_peer.latest_header().id(),
                                     },
-                                };
-                                target = Some(inner_target);
+                                ));
                                 eligible = true;
                             } else if let Some(block_id) = self
                                 .fetch_block_id(
@@ -156,14 +150,13 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
 
                                 if let Some(info) = block_info {
                                     eligible = true;
-                                    let inner_target = InnerTarget {
-                                        block_info: info,
-                                        target: BlockIdAndNumber {
+                                    target = Some((
+                                        info,
+                                        BlockIdAndNumber {
                                             number: maybe_target_number,
                                             id: block_id,
                                         },
-                                    };
-                                    target = Some(inner_target);
+                                    ));
                                 }
                             }
                         }
@@ -186,10 +179,10 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                     }
                 }
 
-                if let Some(inner) = target {
+                if let Some((block_info, target)) = target {
                     return Ok(SyncTarget {
-                        target_id: inner.target,
-                        block_info: inner.block_info,
+                        target_id: target,
+                        block_info,
                         peers,
                     });
                 }
