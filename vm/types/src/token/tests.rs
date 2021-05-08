@@ -90,3 +90,16 @@ pub fn test_stc_unit_parse_decimal_ok() {
         );
     }
 }
+
+#[test]
+pub fn test_stc_uint_scaling() {
+    assert_eq!(1000000000u128, STCUnit::STC.value_of(1).scaling());
+    assert_eq!(
+        111111111000000000u128,
+        STCUnit::STC.value_of(111111111).scaling()
+    );
+    assert_eq!(
+        1111111111000000000,
+        STCUnit::STC.value_of(1111111111).scaling()
+    );
+}

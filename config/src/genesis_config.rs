@@ -670,7 +670,6 @@ impl GenesisConfig {
     }
 }
 
-// UNCLE_RATE = UNCLE_RATE_TARGET/1000
 static UNCLE_RATE_TARGET: u64 = 240;
 static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
@@ -680,21 +679,21 @@ static MAX_BLOCK_TIME_TARGET: u64 = 60000;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(318513600));
+    Lazy::new(|| STCUnit::STC.value_of(3185136000));
 
 //for Private funding
 static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(15925680));
+    Lazy::new(|| STCUnit::STC.value_of(159256800));
 
 //for Starcoin Foundation + DevTeam time lock release.
 static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(8504313 * 3 + 7421367 * 3));
+    Lazy::new(|| STCUnit::STC.value_of(85043130 * 3 + 74213670 * 3));
 
 //three years.
 static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(1));
+    Lazy::new(|| STCUnit::STC.value_of(10));
 
 pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
@@ -1003,8 +1002,8 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         }),
         version: Version { major: 1 },
         reward_delay: 7,
-        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        pre_mine_amount: STCUnit::STC.value_of(15925680).scaling(),
+        time_mint_amount: STCUnit::STC.value_of(47777040).scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: V1_GAS_SCHEDULE.clone(),
@@ -1013,7 +1012,7 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         consensus_config: ConsensusConfig {
             uncle_rate_target: 500,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            base_reward_per_block: STCUnit::STC.value_of(1).scaling(),
             epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
             base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
             base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
