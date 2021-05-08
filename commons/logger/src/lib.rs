@@ -190,9 +190,16 @@ impl LoggerHandle {
         self.update_logger(arg);
     }
 
-    pub fn enable_file(&self, log_path: PathBuf, max_file_size: u64, max_backup: u32) {
+    pub fn enable_file(
+        &self,
+        log_path: PathBuf,
+        slog_path: PathBuf,
+        max_file_size: u64,
+        max_backup: u32,
+    ) {
         let mut arg = self.arg.lock().clone();
         arg.log_path = Some(log_path);
+        arg.slog_path = Some(slog_path);
         arg.max_file_size = max_file_size;
         arg.max_backup = max_backup;
         self.update_logger(arg);
@@ -247,7 +254,7 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         level,
         module_levels,
         log_path,
-        // slog_path,
+        slog_path,
         // slog_is_sync,
         // slog_chan_size,
         max_file_size,
@@ -271,27 +278,24 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         root_builder = root_builder.appender("stderr");
     }
     if let Some(log_path) = log_path {
-        let log_file_backup_pattern =
-            format!("{}.{{}}.gz", log_path.to_str().expect("invalid log_path"));
-        let file_appender = RollingFileAppender::builder()
-            .encoder(Box::new(PatternEncoder::new(
-                pattern.get_pattern().as_str(),
-            )))
-            .build(
-                log_path,
-                Box::new(CompoundPolicy::new(
-                    Box::new(SizeTrigger::new(max_file_size)),
-                    Box::new(
-                        FixedWindowRoller::builder()
-                            .build(log_file_backup_pattern.as_str(), max_backup)
-                            .map_err(|e| format_err!("{:?}", e))?,
-                    ),
-                )),
-            )
-            .expect("build file logger fail.");
-
-        builder = builder.appender(Appender::builder().build("file", Box::new(file_appender)));
-        root_builder = root_builder.appender("file");
+        let appender = rolling_file_append(
+            "log_file",
+            max_file_size,
+            max_backup,
+            pattern.clone(),
+            log_path,
+        )?;
+        builder = builder.appender(appender);
+        root_builder = root_builder.appender("log_file");
+    }
+    if let Some(log_path) = slog_path {
+        let appender = rolling_file_append("slog", max_file_size, max_backup, pattern, log_path)?;
+        builder = builder.appender(appender).logger(
+            Logger::builder()
+                .appender("slog")
+                .additive(false)
+                .build("slog", LevelFilter::Off),
+        );
     }
 
     builder = builder.loggers(
@@ -303,6 +307,34 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
     builder
         .build(root_builder.build(level))
         .map_err(|e| e.into())
+}
+
+fn rolling_file_append(
+    append_name: &str,
+    max_file_size: u64,
+    max_backup: u32,
+    pattern: LogPattern,
+    log_path: PathBuf,
+) -> Result<Appender> {
+    let log_file_backup_pattern =
+        format!("{}.{{}}.gz", log_path.to_str().expect("invalid log_path"));
+    let file_appender = RollingFileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new(
+            pattern.get_pattern().as_str(),
+        )))
+        .build(
+            log_path,
+            Box::new(CompoundPolicy::new(
+                Box::new(SizeTrigger::new(max_file_size)),
+                Box::new(
+                    FixedWindowRoller::builder()
+                        .build(log_file_backup_pattern.as_str(), max_backup)
+                        .map_err(|e| format_err!("{:?}", e))?,
+                ),
+            )),
+        )
+        .expect("build file logger fail.");
+    Ok(Appender::builder().build(append_name, Box::new(file_appender)))
 }
 
 /// read log level filters from `RUST_LOG` env.

@@ -52,18 +52,14 @@ impl LoggerConfig {
         self.base.as_ref().expect("Config should init.")
     }
 
-    pub fn get_log_path(&self) -> Option<PathBuf> {
+    pub fn get_log_path(&self) -> Option<(PathBuf, PathBuf)> {
         if self.disable_file() {
             return None;
         }
-        Some(self.base().data_dir.join(LOGGER_FILE_NAME))
-    }
-
-    pub fn get_slog_path(&self) -> Option<PathBuf> {
-        if self.disable_file() {
-            return None;
-        }
-        Some(self.base().data_dir.join(DEFAULT_SLOGGER_FILE_NAME))
+        Some((
+            self.base().data_dir.join(LOGGER_FILE_NAME),
+            self.base().data_dir.join(DEFAULT_SLOGGER_FILE_NAME),
+        ))
     }
 
     pub fn get_slog_is_sync(&self) -> bool {
