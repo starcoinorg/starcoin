@@ -117,7 +117,7 @@ Collection in global store.
 
 
 
-<pre><code><b>const</b> <a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 11;
+<pre><code><b>const</b> <a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 

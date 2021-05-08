@@ -31,7 +31,7 @@
 
 
 
-<pre><code><b>const</b> <a href="MintScripts.md#0x1_MintScripts_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 11;
+<pre><code><b>const</b> <a href="MintScripts.md#0x1_MintScripts_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 

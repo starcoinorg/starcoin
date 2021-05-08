@@ -25,6 +25,7 @@ The module provide block rewarding calculation logic.
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="Treasury.md#0x1_Treasury">0x1::Treasury</a>;
 <b>use</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal">0x1::TreasuryWithdrawDaoProposal</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
@@ -295,8 +296,15 @@ Process the given block rewards.
             <b>let</b> total_reward = gas_fees;
             // add block reward <b>to</b> total.
             <b>if</b> (block_reward &gt; 0) {
-                <b>let</b> reward = <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_withdraw_for_block_reward">TreasuryWithdrawDaoProposal::withdraw_for_block_reward</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, block_reward);
-                <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> total_reward, reward);
+                // <b>if</b> no <a href="STC.md#0x1_STC">STC</a> in <a href="Treasury.md#0x1_Treasury">Treasury</a>, <a href="BlockReward.md#0x1_BlockReward">BlockReward</a> will been 0.
+                <b>let</b> treasury_balance = <a href="Treasury.md#0x1_Treasury_balance">Treasury::balance</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;();
+                <b>if</b> (treasury_balance &lt; block_reward) {
+                    block_reward = treasury_balance;
+                };
+                <b>if</b> (block_reward &gt; 0) {
+                    <b>let</b> reward = <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_withdraw_for_block_reward">TreasuryWithdrawDaoProposal::withdraw_for_block_reward</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, block_reward);
+                    <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> total_reward, reward);
+                };
             };
             // distribute total.
             <b>if</b> (<a href="Token.md#0x1_Token_value">Token::value</a>(&total_reward) &gt; 0) {
