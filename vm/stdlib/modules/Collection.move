@@ -26,7 +26,7 @@ module Collection {
         items: Option<vector<T>>,
     }
 
-    const EDEPRECATED_FUNCTION: u64 = 11;
+    const EDEPRECATED_FUNCTION: u64 = 19;
 
     const ECOLLECTION_NOT_EXIST: u64 = 101;
     /// The operator require the collection owner.

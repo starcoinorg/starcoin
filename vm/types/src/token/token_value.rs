@@ -17,17 +17,6 @@ pub trait TokenUnit: Clone + Copy {
         self.scaling_factor() * value
     }
 
-    fn split(&self, value: u128) -> (u128, u128) {
-        let scaling_factor = self.scaling_factor();
-        if value >= scaling_factor {
-            let h = value / scaling_factor;
-            let l = value - (h * scaling_factor);
-            (h, l)
-        } else {
-            (value, 0)
-        }
-    }
-
     fn parse(&self, input: &str) -> Result<TokenValue<Self>> {
         ensure!(!input.is_empty(), "Empty input not allowed for token unit");
         let symbol = self.symbol();
@@ -113,8 +102,11 @@ where
     U: TokenUnit,
 {
     pub fn new(value: u128, unit: U) -> Self {
-        let (h, l) = unit.split(value);
-        Self { h, l, unit }
+        Self {
+            h: value,
+            l: 0,
+            unit,
+        }
     }
 
     pub fn new_with_parts(h: u128, l: u128, unit: U) -> Result<Self> {
@@ -138,7 +130,11 @@ where
     }
 
     pub fn scaling(&self) -> u128 {
-        self.h * self.unit.scaling_factor() + self.l
+        // h * scaling_factor + l
+        self.h
+            .checked_mul(self.unit.scaling_factor())
+            .and_then(|v| v.checked_add(self.l))
+            .expect("Scaling overflow.")
     }
 
     pub fn convert(self, unit: U) -> Self {

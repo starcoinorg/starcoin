@@ -238,20 +238,11 @@ Message for treasury deposit event.
 ## Constants
 
 
-<a name="0x1_Treasury_ERR_INVALID_AMOUNT"></a>
-
-
-
-<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x1_Treasury_ERR_INVALID_PERIOD"></a>
 
 
 
-<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_INVALID_PERIOD">ERR_INVALID_PERIOD</a>: u64 = 1;
+<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_INVALID_PERIOD">ERR_INVALID_PERIOD</a>: u64 = 101;
 </code></pre>
 
 
@@ -260,7 +251,16 @@ Message for treasury deposit event.
 
 
 
-<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 3;
+<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_Treasury_ERR_TOO_BIG_AMOUNT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_TOO_BIG_AMOUNT">ERR_TOO_BIG_AMOUNT</a>: u64 = 103;
 </code></pre>
 
 
@@ -269,7 +269,16 @@ Message for treasury deposit event.
 
 
 
-<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>: u64 = 4;
+<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>: u64 = 105;
+</code></pre>
+
+
+
+<a name="0x1_Treasury_ERR_ZERO_AMOUNT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Treasury.md#0x1_Treasury_ERR_ZERO_AMOUNT">ERR_ZERO_AMOUNT</a>: u64 = 102;
 </code></pre>
 
 
@@ -414,11 +423,11 @@ if the Treasury do not exists, return 0.
 
 
 <pre><code><b>fun</b> <a href="Treasury.md#0x1_Treasury_do_withdraw">do_withdraw</a>&lt;TokenT:store&gt;(amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_ZERO_AMOUNT">ERR_ZERO_AMOUNT</a>));
     <b>assert</b>(<a href="Treasury.md#0x1_Treasury_exists_at">exists_at</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_not_published">Errors::not_published</a>(<a href="Treasury.md#0x1_Treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>));
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
     <b>let</b> treasury = borrow_global_mut&lt;<a href="Treasury.md#0x1_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(token_address);
-    <b>assert</b>(amount &lt;= <a href="Token.md#0x1_Token_value">Token::value</a>(&treasury.balance) , <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
+    <b>assert</b>(amount &lt;= <a href="Token.md#0x1_Token_value">Token::value</a>(&treasury.balance) , <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_TOO_BIG_AMOUNT">ERR_TOO_BIG_AMOUNT</a>));
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
         &<b>mut</b> treasury.withdraw_events,
         <a href="Treasury.md#0x1_Treasury_WithdrawEvent">WithdrawEvent</a> {
@@ -504,7 +513,7 @@ Issue a <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">Linear
 <pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_issue_linear_withdraw_capability">issue_linear_withdraw_capability</a>&lt;TokenT: store&gt;( _capability: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt;,
                                             amount: u128, period: u64): <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;{
     <b>assert</b>(period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_PERIOD">ERR_INVALID_PERIOD</a>));
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_ZERO_AMOUNT">ERR_ZERO_AMOUNT</a>));
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt; {
         total: amount,
@@ -590,9 +599,9 @@ Split the given <code><a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Treasury.md#0x1_Treasury_split_linear_withdraw_cap">split_linear_withdraw_cap</a>&lt;TokenT: store&gt;(cap: &<b>mut</b> <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenT&gt;, <a href="Treasury.md#0x1_Treasury_LinearWithdrawCapability">LinearWithdrawCapability</a>&lt;TokenT&gt;) <b>acquires</b> <a href="Treasury.md#0x1_Treasury">Treasury</a> {
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_ZERO_AMOUNT">ERR_ZERO_AMOUNT</a>));
     <b>let</b> token = <a href="Treasury.md#0x1_Treasury_withdraw_with_linear_capability">Self::withdraw_with_linear_capability</a>(cap);
-    <b>assert</b>((cap.withdraw + amount) &lt;= cap.total, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_INVALID_AMOUNT">ERR_INVALID_AMOUNT</a>));
+    <b>assert</b>((cap.withdraw + amount) &lt;= cap.total, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Treasury.md#0x1_Treasury_ERR_TOO_BIG_AMOUNT">ERR_TOO_BIG_AMOUNT</a>));
     cap.total = cap.total - amount;
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> new_period = cap.start_time + cap.period - start_time;

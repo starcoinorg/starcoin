@@ -29,9 +29,9 @@ module TreasuryWithdrawDaoProposal {
         period: u64,
     }
 
-    const ERR_NOT_AUTHORIZED: u64 = 1;
+    const ERR_NOT_AUTHORIZED: u64 = 101;
     /// Only receiver can execute TreasuryWithdrawDaoProposal
-    const ERR_NEED_RECEIVER_TO_EXECUTE: u64 = 2;
+    const ERR_NEED_RECEIVER_TO_EXECUTE: u64 = 102;
 
     /// Plugin method of the module.
     /// Should be called by token issuer.

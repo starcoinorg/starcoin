@@ -9,7 +9,7 @@ script {
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        assert(Treasury::get_linear_withdraw_capability_total(&cap) == 47777040000000000, 1000);
+        assert(Treasury::get_linear_withdraw_capability_total(&cap) == 477770400000000000, 1000);
         assert(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
         assert(Treasury::get_linear_withdraw_capability_start_time(&cap) == 0, 1002);
         assert(Treasury::get_linear_withdraw_capability_period(&cap) ==94608000, 1003);
@@ -35,7 +35,7 @@ script {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
         Debug::print(&Token::value(&token));
-        assert(Token::value(&token) == 1818000000000, 1004);
+        assert(Token::value(&token) == 18180000000000, 1004);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
         Account::deposit_to_self(&account, token);
     }
@@ -61,7 +61,7 @@ script {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
         //Debug::print(&Token::value(&token));
-        assert(Token::value(&token) == 1818000000000, 1005);
+        assert(Token::value(&token) == 18180000000000, 1005);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
         Account::deposit_to_self(&account, token);
     }
@@ -87,7 +87,7 @@ script {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut cap);
         //Debug::print(&Token::value(&token));
-        assert(Token::value(&token) == (47777040000000000 - 1818000000000*2), 1006);
+        assert(Token::value(&token) == (477770400000000000 - 18180000000000*2), 1006);
         Account::deposit_to_self(&account, token);
         assert(Treasury::get_linear_withdraw_capability_withdraw(&cap) == Treasury::get_linear_withdraw_capability_total(&cap), 1007);
         Treasury::destroy_linear_withdraw_capability(cap);

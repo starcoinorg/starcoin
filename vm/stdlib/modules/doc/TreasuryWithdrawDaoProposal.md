@@ -106,7 +106,7 @@ WithdrawToken request.
 
 
 
-<pre><code><b>const</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 101;
 </code></pre>
 
 
@@ -116,7 +116,7 @@ WithdrawToken request.
 Only receiver can execute TreasuryWithdrawDaoProposal
 
 
-<pre><code><b>const</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_ERR_NEED_RECEIVER_TO_EXECUTE">ERR_NEED_RECEIVER_TO_EXECUTE</a>: u64 = 2;
+<pre><code><b>const</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_ERR_NEED_RECEIVER_TO_EXECUTE">ERR_NEED_RECEIVER_TO_EXECUTE</a>: u64 = 102;
 </code></pre>
 
 

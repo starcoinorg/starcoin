@@ -71,7 +71,7 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
-    const EDEPRECATED_FUNCTION: u64 = 11;
+    const EDEPRECATED_FUNCTION: u64 = 19;
 
     const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
     const EINVALID_ARGUMENT: u64 = 18;

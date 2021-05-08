@@ -444,7 +444,7 @@ Token information.
 
 
 
-<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 11;
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 
