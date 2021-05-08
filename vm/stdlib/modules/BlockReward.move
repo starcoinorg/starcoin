@@ -13,6 +13,7 @@ module BlockReward {
     use 0x1::Config;
     use 0x1::Authenticator;
     use 0x1::Event;
+    use 0x1::Treasury;
     use 0x1::TreasuryWithdrawDaoProposal;
 
     spec module {
@@ -116,8 +117,15 @@ module BlockReward {
                 let total_reward = gas_fees;
                 // add block reward to total.
                 if (block_reward > 0) {
-                    let reward = TreasuryWithdrawDaoProposal::withdraw_for_block_reward<STC>(account, block_reward);
-                    Token::deposit(&mut total_reward, reward);
+                    // if no STC in Treasury, BlockReward will been 0.
+                    let treasury_balance = Treasury::balance<STC>();
+                    if (treasury_balance < block_reward) {
+                        block_reward = treasury_balance;
+                    };
+                    if (block_reward > 0) {
+                        let reward = TreasuryWithdrawDaoProposal::withdraw_for_block_reward<STC>(account, block_reward);
+                        Token::deposit(&mut total_reward, reward);
+                    };
                 };
                 // distribute total.
                 if (Token::value(&total_reward) > 0) {

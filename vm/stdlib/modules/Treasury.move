@@ -36,10 +36,12 @@ module Treasury {
         amount: u128,
     }
 
-    const ERR_INVALID_PERIOD: u64 = 1;
-    const ERR_INVALID_AMOUNT: u64 = 2;
-    const ERR_NOT_AUTHORIZED: u64 = 3;
-    const ERR_TREASURY_NOT_EXIST: u64 = 4;
+    const ERR_INVALID_PERIOD: u64 = 101;
+    const ERR_ZERO_AMOUNT: u64 = 102;
+    const ERR_TOO_BIG_AMOUNT: u64 = 103;
+    const ERR_NOT_AUTHORIZED: u64 = 104;
+    const ERR_TREASURY_NOT_EXIST: u64 = 105;
+    
 
     /// Init a Treasury for TokenT,can only be called by token issuer.
     public fun initialize<TokenT:store>(signer: &signer, init_token: Token<TokenT>) :WithdrawCapability<TokenT> {
@@ -98,11 +100,11 @@ module Treasury {
     }
 
     fun do_withdraw<TokenT:store>(amount: u128): Token<TokenT> acquires Treasury {
-        assert(amount > 0, Errors::invalid_argument(ERR_INVALID_AMOUNT));
+        assert(amount > 0, Errors::invalid_argument(ERR_ZERO_AMOUNT));
         assert(exists_at<TokenT>(), Errors::not_published(ERR_TREASURY_NOT_EXIST));
         let token_address = Token::token_address<TokenT>();
         let treasury = borrow_global_mut<Treasury<TokenT>>(token_address);
-        assert(amount <= Token::value(&treasury.balance) , Errors::invalid_argument(ERR_INVALID_AMOUNT));
+        assert(amount <= Token::value(&treasury.balance) , Errors::invalid_argument(ERR_TOO_BIG_AMOUNT));
         Event::emit_event(
             &mut treasury.withdraw_events,
             WithdrawEvent {
@@ -138,7 +140,7 @@ module Treasury {
     public fun issue_linear_withdraw_capability<TokenT: store>( _capability: &mut WithdrawCapability<TokenT>,
                                                 amount: u128, period: u64): LinearWithdrawCapability<TokenT>{
         assert(period > 0, Errors::invalid_argument(ERR_INVALID_PERIOD));
-        assert(amount > 0, Errors::invalid_argument(ERR_INVALID_AMOUNT));
+        assert(amount > 0, Errors::invalid_argument(ERR_ZERO_AMOUNT));
         let start_time = Timestamp::now_seconds();
         LinearWithdrawCapability<TokenT> {
             total: amount,
@@ -174,9 +176,9 @@ module Treasury {
     
     /// Split the given `LinearWithdrawCapability`.
     public fun split_linear_withdraw_cap<TokenT: store>(cap: &mut LinearWithdrawCapability<TokenT>, amount: u128): (Token<TokenT>, LinearWithdrawCapability<TokenT>) acquires Treasury {
-        assert(amount > 0, Errors::invalid_argument(ERR_INVALID_AMOUNT));
+        assert(amount > 0, Errors::invalid_argument(ERR_ZERO_AMOUNT));
         let token = Self::withdraw_with_linear_capability(cap);
-        assert((cap.withdraw + amount) <= cap.total, Errors::invalid_argument(ERR_INVALID_AMOUNT));
+        assert((cap.withdraw + amount) <= cap.total, Errors::invalid_argument(ERR_TOO_BIG_AMOUNT));
         cap.total = cap.total - amount;
         let start_time = Timestamp::now_seconds();
         let new_period = cap.start_time + cap.period - start_time;

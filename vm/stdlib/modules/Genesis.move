@@ -297,7 +297,6 @@ module Genesis {
         BlockReward::initialize(&genesis_account, reward_delay);
 
         // stc should be initialized after genesis_account's module upgrade strategy set and all on chain config init.
-
         let withdraw_cap = STC::initialize_v2(&genesis_account, total_stc_amount, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
         Account::do_accept_token<STC>(&genesis_account);
         Account::do_accept_token<STC>(&association);
