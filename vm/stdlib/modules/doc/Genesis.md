@@ -337,7 +337,6 @@ The module for init Genesis
     <a href="BlockReward.md#0x1_BlockReward_initialize">BlockReward::initialize</a>(&genesis_account, reward_delay);
 
     // stc should be initialized after genesis_account's <b>module</b> upgrade strategy set and all on chain config init.
-
     <b>let</b> withdraw_cap = <a href="STC.md#0x1_STC_initialize_v2">STC::initialize_v2</a>(&genesis_account, total_stc_amount, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
     <a href="Account.md#0x1_Account_do_accept_token">Account::do_accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&genesis_account);
     <a href="Account.md#0x1_Account_do_accept_token">Account::do_accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&association);

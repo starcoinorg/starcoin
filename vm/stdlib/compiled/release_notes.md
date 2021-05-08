@@ -11,4 +11,4 @@ Version 2
 
 Version 3
 
-    - init_script: "cargo run -- -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 318513600000000000u128"
+    - init_script: "cargo run -- -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128"
