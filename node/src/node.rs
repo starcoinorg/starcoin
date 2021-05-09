@@ -135,11 +135,13 @@ impl NodeService {
             );
             //config slog
             info!("Write slog to file: {:?}", slog_path);
-            if let Ok(_) = set_global_logger(
+            if set_global_logger(
                 config.logger.get_slog_is_sync(),
                 Some(config.logger.get_slog_chan_size()),
                 slog_path,
-            ) {
+            )
+            .is_ok()
+            {
                 info!("slog config success.");
             } else {
                 warn!("slog config error.");
