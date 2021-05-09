@@ -114,7 +114,9 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 begin_number.saturating_add(1000),
                                 better_peer.block_number(),
                             );
-                            if best_target.peers.contains(&better_peer.peer_id()) {
+                            if maybe_target_number == better_peer.block_number()
+                                && best_target.peers.contains(&better_peer.peer_id())
+                            {
                                 target = Some((
                                     better_peer.chain_info.status().info().clone(),
                                     BlockIdAndNumber {
