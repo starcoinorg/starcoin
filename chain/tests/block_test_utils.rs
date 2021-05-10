@@ -33,7 +33,7 @@ fn get_storage() -> impl Strategy<Value = Storage> {
 /// This produces the genesis block
 pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
     let net = &ChainNetwork::new_test();
-    let genesis = Genesis::load(net).unwrap();
+    let genesis = Genesis::load_or_build(net).unwrap();
     genesis.execute_genesis_block(net, storage).unwrap();
     Just(genesis.block().clone())
 }

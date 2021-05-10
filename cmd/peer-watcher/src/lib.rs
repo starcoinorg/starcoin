@@ -14,7 +14,7 @@ pub fn build_lighting_network(
     net: &ChainNetwork,
     network_config: &NetworkConfig,
 ) -> Result<(PeerInfo, NetworkWorker)> {
-    let genesis = starcoin_genesis::Genesis::load(net)?;
+    let genesis = starcoin_genesis::Genesis::load_or_build(net)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
     let chain_info = genesis.execute_genesis_block(net, storage)?;
     build_network_worker(
