@@ -45,6 +45,8 @@ impl ReceiptIdentifier {
         }
     }
     pub fn decode(s: impl AsRef<str>) -> Result<ReceiptIdentifier> {
+        #![allow(clippy::integer_arithmetic)]
+
         let (hrp, data, variant) = bech32::decode(s.as_ref()).unwrap();
 
         anyhow::ensure!(variant == bech32::Variant::Bech32, "expect bech32 encoding");

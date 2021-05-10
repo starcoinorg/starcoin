@@ -39,12 +39,12 @@ starcoin% dev deploy examples/MyToken.mv
 
 First, use the default account init module.
 ```bash
-starcoin% dev execute examples/init.mv --blocking
+starcoin% account execute-script examples/init.mv --blocking
 ```
 
 Second, use the default account mint some MyToken.
 ```bash
-starcoin% dev execute examples/mint.mv --arg 1000000u128 --blocking
+starcoin% account execute-script examples/mint.mv --arg 1000000u128 --blocking
 ```
 
 Third, the second account accept the new Token. An account can accept the Token only if has adopted the Token.

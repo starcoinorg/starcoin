@@ -28,7 +28,7 @@ starcoin% dev call --module-address <module address> --module-name Dao --func-na
 
 5. anyone can vote proposal when the proposal state is ACTIVE.
 ```bash
-starcoin% dev execute -s <account address> -b --script cast_vote -t 0x1::STC::STC -t 0x1::UpgradeModuleDaoProposal::UpgradeModule --arg <proposal address> --arg <proposal number> --arg <agree> --arg <votes>u128
+starcoin% dev execute-function -s <account address> -b --function 0x1::DaoVoteScripts::cast_vote -t 0x1::STC::STC -t 0x1::UpgradeModuleDaoProposal::UpgradeModule --arg <proposal address> --arg <proposal number> --arg <agree> --arg <votes>u128
 ```
 
 6. anyone can queue proposal when the proposal state is AGREED.
