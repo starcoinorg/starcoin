@@ -14,7 +14,6 @@ module UpgradeModuleDaoProposal {
         pragma aborts_if_is_partial;
     }
 
-    const EDEPRECATED_FUNCTION: u64 = 19;
     const ERR_UNABLE_TO_UPGRADE: u64 = 400;
     const ERR_NOT_AUTHORIZED: u64 = 401;
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
@@ -62,21 +61,6 @@ module UpgradeModuleDaoProposal {
         aborts_if !exists<UpgradeModuleCapability<TokenT>>(token_issuer);
         let cap = global<UpgradeModuleCapability<TokenT>>(token_issuer).cap;
         aborts_if PackageTxnManager::account_address(cap) != module_address;
-    }
-
-    /// propose a module upgrade, called by proposer.
-    public fun propose_module_upgrade<TokenT: copy + drop + store>(
-        _signer: &signer,
-        _module_address: address,
-        _package_hash: vector<u8>,
-        _version: u64,
-        _exec_delay: u64,
-    ) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun propose_module_upgrade {
-        pragma aborts_if_is_partial = true;
     }
 
     public fun propose_module_upgrade_v2<TokenT: copy + drop + store>(
