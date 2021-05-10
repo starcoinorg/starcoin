@@ -30,6 +30,7 @@ pub struct StringView {
 pub struct AccountWithStateView {
     pub account: AccountInfo,
     pub auth_key: String,
+    pub receipt_identifier: String,
     pub sequence_number: Option<u64>,
     pub balances: HashMap<String, u128>,
 }
