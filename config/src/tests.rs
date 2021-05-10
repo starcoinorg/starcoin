@@ -137,7 +137,9 @@ fn test_example_config_compact() -> Result<()> {
             "--slog-chan-size",
             "256",
             "--slog-is-sync",
-            "true"
+            "true",
+            "--slog-separate-store",
+            "true",
         ];
         let opt = StarcoinOpt::from_iter_safe(args)?;
         let config = NodeConfig::load_with_opt(&opt)?;

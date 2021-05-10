@@ -277,7 +277,7 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         builder = builder.appender(Appender::builder().build("stderr", Box::new(stderr)));
         root_builder = root_builder.appender("stderr");
     }
-    if let Some(log_path) = log_path {
+    if let Some(log_path) = log_path.clone() {
         let appender = rolling_file_append(
             "log_file",
             max_file_size,
@@ -288,14 +288,18 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         builder = builder.appender(appender);
         root_builder = root_builder.appender("log_file");
     }
-    if let Some(log_path) = slog_path {
-        let appender = rolling_file_append("slog", max_file_size, max_backup, pattern, log_path)?;
-        builder = builder.appender(appender).logger(
-            Logger::builder()
-                .appender("slog")
-                .additive(false)
-                .build("slog", LevelFilter::Off),
-        );
+    if slog_path != log_path {
+        if let Some(log_path) = slog_path {
+            let appender =
+                rolling_file_append("slog", max_file_size, max_backup, pattern, log_path)?;
+            builder = builder.appender(appender);
+            builder = builder.logger(
+                Logger::builder()
+                    .additive(false)
+                    .appender("slog")
+                    .build("slog", LevelFilter::Off),
+            );
+        }
     }
 
     builder = builder.loggers(

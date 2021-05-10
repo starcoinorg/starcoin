@@ -35,6 +35,14 @@ pub struct LoggerConfig {
     pub max_backup: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(
+        name = "slog-separate-store",
+        long,
+        help = "slog separate store to a new file"
+    )]
+    pub slog_separate_store: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "slog-is-sync", long, help = "slog is sync")]
     pub slog_is_sync: Option<bool>,
 
@@ -56,12 +64,17 @@ impl LoggerConfig {
         if self.disable_file() {
             return None;
         }
-        Some((
-            self.base().data_dir.join(LOGGER_FILE_NAME),
-            self.base().data_dir.join(DEFAULT_SLOGGER_FILE_NAME),
-        ))
+        let log_path = self.base().data_dir.join(LOGGER_FILE_NAME);
+        let mut slog_path = log_path.clone();
+        if self.get_slog_separate_store() {
+            slog_path = self.base().data_dir.join(DEFAULT_SLOGGER_FILE_NAME);
+        }
+        Some((log_path, slog_path))
     }
 
+    pub fn get_slog_separate_store(&self) -> bool {
+        self.slog_separate_store.unwrap_or(false)
+    }
     pub fn get_slog_is_sync(&self) -> bool {
         self.slog_is_sync.unwrap_or(false)
     }
@@ -122,6 +135,15 @@ impl ConfigModule for LoggerConfig {
         }
         if opt.logger.max_backup.is_some() {
             self.max_backup = opt.logger.max_backup;
+        }
+        if opt.logger.slog_separate_store.is_some() {
+            self.slog_separate_store = opt.logger.slog_separate_store;
+        }
+        if opt.logger.slog_is_sync.is_some() {
+            self.slog_is_sync = opt.logger.slog_is_sync;
+        }
+        if opt.logger.slog_chan_size.is_some() {
+            self.slog_chan_size = opt.logger.slog_chan_size;
         }
         Ok(())
     }

@@ -1,5 +1,8 @@
 [logger]
 max_backup = 100
+slog_chan_size = 256
+slog_is_sync = true
+slog_separate_store = true
 
 [metrics]
 address = "127.0.0.1"
