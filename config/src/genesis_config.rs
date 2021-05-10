@@ -1042,16 +1042,13 @@ pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new)
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
-    let stdlib_version = StdlibVersion::Latest;
+    let stdlib_version = StdlibVersion::Version(3);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(
-            //TODO conform init parameter.
-            FutureBlockParameter {
-                network: BuiltinNetworkID::Barnard,
-                block_number: 100000,
-            },
-        ),
+        genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
+            network: BuiltinNetworkID::Barnard,
+            block_number: 310000,
+        }),
         version: Version { major: 1 },
         reward_delay: 7,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
@@ -1080,7 +1077,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         stdlib_version,
         dao_config: DaoConfig {
             voting_delay: 60 * 60 * 1000,           // 1h
-            voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
+            voting_period: 60 * 60 * 24 * 7 * 1000, // 7d
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },

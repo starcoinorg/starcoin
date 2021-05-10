@@ -192,12 +192,13 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
 mod tests {
     use super::*;
 
+    #[ignore]
     #[stest::test]
     fn test_genesis_parameter_resolver() {
         let resolver = RpcFutureBlockParameterResolver::new(BuiltinNetworkID::Main.into());
         let parameter = FutureBlockParameter {
             network: BuiltinNetworkID::Barnard,
-            block_number: 300000,
+            block_number: 310000,
         };
         let genesis_parameter = resolver.resolve(&parameter).unwrap();
         debug!("{:?}", genesis_parameter);
