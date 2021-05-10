@@ -18,6 +18,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
+use starcoin_logger::structured_log::set_global_logger;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
@@ -124,14 +125,29 @@ impl NodeService {
         logger_handle: Arc<LoggerHandle>,
     ) -> Result<NodeHandle, NodeStartError> {
         info!("Final data-dir is : {:?}", config.data_dir());
-        if let Some(file_log_path) = config.logger.get_log_path() {
-            info!("Write log to file: {:?}", file_log_path);
+        if let Some((log_path, slog_path)) = config.logger.get_log_path() {
+            info!("Write log to file: {:?}", log_path);
             logger_handle.enable_file(
-                file_log_path,
+                log_path,
+                slog_path.clone(),
                 config.logger.max_file_size(),
                 config.logger.max_backup(),
             );
+            //config slog
+            info!("Write slog to file: {:?}", slog_path);
+            if set_global_logger(
+                config.logger.get_slog_is_sync(),
+                Some(config.logger.get_slog_chan_size()),
+                slog_path,
+            )
+            .is_ok()
+            {
+                info!("slog config success.");
+            } else {
+                warn!("slog config error.");
+            }
         }
+
         if config.logger.disable_stderr() {
             logger_handle.disable_stderr();
         } else {

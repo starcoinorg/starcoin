@@ -9,6 +9,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 static LOGGER_FILE_NAME: &str = "starcoin.log";
+static DEFAULT_SLOGGER_FILE_NAME: &str = "sc_slog.log";
 
 const DEFAULT_MAX_FILE_SIZE: u64 = 1024 * 1024 * 1024;
 const MAX_FILE_SIZE_FOR_TEST: u64 = 10 * 1024 * 1024;
@@ -33,6 +34,22 @@ pub struct LoggerConfig {
     #[structopt(name = "logger-max-backup", long)]
     pub max_backup: Option<u32>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(
+        name = "slog-separate-store",
+        long,
+        help = "slog separate store to a new file"
+    )]
+    pub slog_separate_store: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "slog-is-sync", long, help = "slog is sync")]
+    pub slog_is_sync: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "slog-chan-size", long)]
+    pub slog_chan_size: Option<usize>,
+
     #[structopt(skip)]
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -43,11 +60,27 @@ impl LoggerConfig {
         self.base.as_ref().expect("Config should init.")
     }
 
-    pub fn get_log_path(&self) -> Option<PathBuf> {
+    pub fn get_log_path(&self) -> Option<(PathBuf, PathBuf)> {
         if self.disable_file() {
             return None;
         }
-        Some(self.base().data_dir.join(LOGGER_FILE_NAME))
+        let log_path = self.base().data_dir.join(LOGGER_FILE_NAME);
+        let mut slog_path = log_path.clone();
+        if self.get_slog_separate_store() {
+            slog_path = self.base().data_dir.join(DEFAULT_SLOGGER_FILE_NAME);
+        }
+        Some((log_path, slog_path))
+    }
+
+    pub fn get_slog_separate_store(&self) -> bool {
+        self.slog_separate_store.unwrap_or(false)
+    }
+    pub fn get_slog_is_sync(&self) -> bool {
+        self.slog_is_sync.unwrap_or(false)
+    }
+
+    pub fn get_slog_chan_size(&self) -> usize {
+        self.slog_chan_size.unwrap_or(256)
     }
 
     pub fn enable_file(&self) -> bool {
@@ -102,6 +135,15 @@ impl ConfigModule for LoggerConfig {
         }
         if opt.logger.max_backup.is_some() {
             self.max_backup = opt.logger.max_backup;
+        }
+        if opt.logger.slog_separate_store.is_some() {
+            self.slog_separate_store = opt.logger.slog_separate_store;
+        }
+        if opt.logger.slog_is_sync.is_some() {
+            self.slog_is_sync = opt.logger.slog_is_sync;
+        }
+        if opt.logger.slog_chan_size.is_some() {
+            self.slog_chan_size = opt.logger.slog_chan_size;
         }
         Ok(())
     }

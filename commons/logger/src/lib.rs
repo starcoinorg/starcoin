@@ -23,10 +23,14 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
 
+pub mod structured_log;
+
 /// Logger prelude which includes all logging macros.
 pub mod prelude {
     pub use crate::stacktrace;
+    pub use crate::{sl_crit, sl_debug, sl_error, sl_info, sl_trace, sl_warn};
     pub use log::{debug, error, info, log_enabled, trace, warn, Level, LevelFilter};
+    pub use slog::{slog_crit, slog_debug, slog_error, slog_info, slog_trace, slog_warn};
 }
 
 pub fn stacktrace(err: anyhow::Error) {
@@ -121,6 +125,9 @@ struct LoggerConfigArg {
     // sub path level
     module_levels: HashMap<String, LevelFilter>,
     log_path: Option<PathBuf>,
+    slog_path: Option<PathBuf>,
+    slog_is_sync: Option<bool>,
+    slog_chan_size: Option<usize>,
     max_file_size: u64,
     max_backup: u32,
     pattern: LogPattern,
@@ -148,6 +155,9 @@ impl LoggerConfigArg {
             level,
             module_levels: default_module_levels,
             log_path: None,
+            slog_path: None,
+            slog_is_sync: None,
+            slog_chan_size: None,
             max_file_size: 0,
             max_backup: 0,
             pattern: pattern.unwrap_or_else(|| LogPattern::by_level(level)),
@@ -180,9 +190,16 @@ impl LoggerHandle {
         self.update_logger(arg);
     }
 
-    pub fn enable_file(&self, log_path: PathBuf, max_file_size: u64, max_backup: u32) {
+    pub fn enable_file(
+        &self,
+        log_path: PathBuf,
+        slog_path: PathBuf,
+        max_file_size: u64,
+        max_backup: u32,
+    ) {
         let mut arg = self.arg.lock().clone();
         arg.log_path = Some(log_path);
+        arg.slog_path = Some(slog_path);
         arg.max_file_size = max_file_size;
         arg.max_backup = max_backup;
         self.update_logger(arg);
@@ -237,9 +254,13 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         level,
         module_levels,
         log_path,
+        slog_path,
+        // slog_is_sync,
+        // slog_chan_size,
         max_file_size,
         max_backup,
         pattern,
+        ..
     } = arg;
     if !enable_stderr && log_path.is_none() {
         println!("Logger is disabled.");
@@ -256,28 +277,29 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         builder = builder.appender(Appender::builder().build("stderr", Box::new(stderr)));
         root_builder = root_builder.appender("stderr");
     }
-    if let Some(log_path) = log_path {
-        let log_file_backup_pattern =
-            format!("{}.{{}}.gz", log_path.to_str().expect("invalid log_path"));
-        let file_appender = RollingFileAppender::builder()
-            .encoder(Box::new(PatternEncoder::new(
-                pattern.get_pattern().as_str(),
-            )))
-            .build(
-                log_path,
-                Box::new(CompoundPolicy::new(
-                    Box::new(SizeTrigger::new(max_file_size)),
-                    Box::new(
-                        FixedWindowRoller::builder()
-                            .build(log_file_backup_pattern.as_str(), max_backup)
-                            .map_err(|e| format_err!("{:?}", e))?,
-                    ),
-                )),
-            )
-            .expect("build file logger fail.");
-
-        builder = builder.appender(Appender::builder().build("file", Box::new(file_appender)));
-        root_builder = root_builder.appender("file");
+    if let Some(log_path) = log_path.clone() {
+        let appender = rolling_file_append(
+            "log_file",
+            max_file_size,
+            max_backup,
+            pattern.clone(),
+            log_path,
+        )?;
+        builder = builder.appender(appender);
+        root_builder = root_builder.appender("log_file");
+    }
+    if slog_path != log_path {
+        if let Some(log_path) = slog_path {
+            let appender =
+                rolling_file_append("slog", max_file_size, max_backup, pattern, log_path)?;
+            builder = builder.appender(appender);
+            builder = builder.logger(
+                Logger::builder()
+                    .additive(false)
+                    .appender("slog")
+                    .build("slog", LevelFilter::Off),
+            );
+        }
     }
 
     builder = builder.loggers(
@@ -289,6 +311,34 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
     builder
         .build(root_builder.build(level))
         .map_err(|e| e.into())
+}
+
+fn rolling_file_append(
+    append_name: &str,
+    max_file_size: u64,
+    max_backup: u32,
+    pattern: LogPattern,
+    log_path: PathBuf,
+) -> Result<Appender> {
+    let log_file_backup_pattern =
+        format!("{}.{{}}.gz", log_path.to_str().expect("invalid log_path"));
+    let file_appender = RollingFileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new(
+            pattern.get_pattern().as_str(),
+        )))
+        .build(
+            log_path,
+            Box::new(CompoundPolicy::new(
+                Box::new(SizeTrigger::new(max_file_size)),
+                Box::new(
+                    FixedWindowRoller::builder()
+                        .build(log_file_backup_pattern.as_str(), max_backup)
+                        .map_err(|e| format_err!("{:?}", e))?,
+                ),
+            )),
+        )
+        .expect("build file logger fail.");
+    Ok(Appender::builder().build(append_name, Box::new(file_appender)))
 }
 
 /// read log level filters from `RUST_LOG` env.
@@ -418,19 +468,42 @@ fn parse_spec(spec: &str) -> LogLevelSpec {
     if filter.is_some() {
         eprintln!("warning: filter by regexp is not supported yet");
     }
-    // let filter = filter.map_or(None, |filter| match inner::Filter::new(filter) {
-    //     Ok(re) => Some(re),
-    //     Err(e) => {
-    //         eprintln!("warning: invalid regex filter - {}", e);
-    //         None
-    //     }
-    // });
-
     LogLevelSpec {
         global_level: global_fallback_level,
         module_levels: dirs,
     }
 }
+
+/// Log a critical level message using current logger
+#[macro_export]
+macro_rules! sl_crit( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_crit![logger, $($args)+])
+};);
+/// Log a error level message using current logger
+#[macro_export]
+macro_rules! sl_error( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_error![logger, $($args)+])
+};);
+/// Log a warning level message using current logger
+#[macro_export]
+macro_rules! sl_warn( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_warn![logger, $($args)+])
+};);
+/// Log a info level message using current logger
+#[macro_export]
+macro_rules! sl_info( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_info![logger, $($args)+])
+};);
+/// Log a debug level message using current logger
+#[macro_export]
+macro_rules! sl_debug( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_debug![logger, $($args)+])
+};);
+/// Log a trace level message using current logger
+#[macro_export]
+macro_rules! sl_trace( ($($args:tt)+) => {
+    $crate::structured_log::with_logger(|logger| slog_trace![logger, $($args)+])
+};);
 
 #[cfg(test)]
 mod tests;

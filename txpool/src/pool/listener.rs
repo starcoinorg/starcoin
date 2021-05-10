@@ -6,25 +6,24 @@ use std::{fmt, sync::Arc};
 use super::{TxStatus, VerifiedTransaction as Transaction};
 use crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
+use starcoin_logger::prelude::*;
 use transaction_pool as tx_pool;
 use tx_pool::VerifiedTransaction;
-
 /// Transaction pool logger.
 #[derive(Default, Debug)]
 pub struct Logger;
 
 impl tx_pool::Listener<Transaction> for Logger {
     fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
-        debug!(
-            target: "txqueue",
-            "Txn added. [{hash:?}] Sender: {sender}, nonce: {nonce}, gasPrice: {gas_price}, gas: {gas}, expiration_timestamp_secs: {expiration_timestamp_secs}, dataLen: {data:?}))",
-            hash = tx.hash(),
-            sender = tx.sender(),
+        sl_info!(
+            "{action} {hash} {sender} {nonce} {gas_price} {gas} {expiration_timestamp_secs}",
             nonce = tx.signed().sequence_number(),
             gas_price = tx.signed().gas_unit_price(),
             gas = tx.signed().max_gas_amount(),
             expiration_timestamp_secs = tx.signed().expiration_timestamp_secs(),
-            data = tx.signed().payload(),
+            sender = tx.sender().to_hex(),
+            hash = tx.hash().to_hex(),
+            action = "add",
         );
         if let Some(old) = old {
             debug!(target: "txqueue", "[{:?}] Dropped. Replaced by [{:?}]", old.hash(), tx.hash());
@@ -36,15 +35,29 @@ impl tx_pool::Listener<Transaction> for Logger {
         tx: &Arc<Transaction>,
         reason: &tx_pool::Error<H>,
     ) {
-        debug!(target: "txqueue", "[{hash:?}] Rejected. {reason}.",  hash = tx.hash(), reason = reason);
+        sl_info!(
+            "{action} {hash} {reason}",
+            reason = format!("{}", reason),
+            hash = tx.hash().to_hex(),
+            action = "reject",
+        );
     }
 
     fn dropped(&mut self, tx: &Arc<Transaction>, new: Option<&Transaction>) {
         match new {
             Some(new) => {
-                debug!(target: "txqueue", "[{:?}] Pushed out by [{:?}]", tx.hash(), new.hash())
+                sl_info!(
+                    "{action} {hash} {new_hash}",
+                    new_hash = new.hash().to_hex(),
+                    hash = tx.hash().to_hex(),
+                    action = "drop",
+                )
             }
-            None => debug!(target: "txqueue", "[{:?}] Dropped.", tx.hash()),
+            None => sl_info!(
+                "{action} {hash}",
+                hash = tx.hash().to_hex(),
+                action = "drop",
+            ),
         }
     }
 
@@ -53,11 +66,19 @@ impl tx_pool::Listener<Transaction> for Logger {
     }
 
     fn canceled(&mut self, tx: &Arc<Transaction>) {
-        debug!(target: "txqueue", "[{:?}] Canceled by the user.", tx.hash());
+        sl_info!(
+            "{action} {hash}",
+            hash = tx.hash().to_hex(),
+            action = "cancel",
+        );
     }
 
     fn culled(&mut self, tx: &Arc<Transaction>) {
-        debug!(target: "txqueue", "[{:?}] Culled or mined.", tx.hash());
+        sl_info!(
+            "{action} {hash}",
+            hash = tx.hash().to_hex(),
+            action = "cull",
+        );
     }
 }
 

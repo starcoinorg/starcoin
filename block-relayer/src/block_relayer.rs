@@ -263,6 +263,12 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         let time = current_timestamp.saturating_sub(block_timestamp);
         let time_sec = (time as f64) / 1000_f64;
         BLOCK_RELAYER_METRICS.block_broadcast_time.observe(time_sec);
+        sl_info!(
+            "{action} {hash} {time_sec}",
+            time_sec = time_sec,
+            hash = compact_block_msg.message.compact_block.header.id().to_hex(),
+            action = "sync_broadcast_time",
+        );
         //TODO should filter too old block?
 
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
