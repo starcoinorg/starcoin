@@ -85,6 +85,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
         min_difficulty: U256,
         best_target: SyncTarget,
         max_peers: u64,
+        begin_number: u64,
     ) -> BoxFuture<Result<SyncTarget>> {
         let fut = async move {
             if min_difficulty >= best_target.block_info.total_difficulty {
@@ -100,39 +101,78 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                 });
 
                 let mut peers = Vec::new();
-                let mut target_peer = None;
+                let mut target: Option<(BlockInfo, BlockIdAndNumber)> = None;
                 for better_peer in better_peers.iter() {
                     if peers.len() >= max_peers as usize {
                         break;
                     }
 
                     let mut eligible = false;
-                    match target_peer.as_ref() {
+                    match target.as_ref() {
                         None => {
-                            if best_target.peers.contains(&better_peer.peer_id()) {
-                                target_peer = Some(better_peer.clone());
+                            let maybe_target_number = std::cmp::min(
+                                begin_number.saturating_add(1000),
+                                better_peer.block_number(),
+                            );
+                            if maybe_target_number == better_peer.block_number()
+                                && best_target.peers.contains(&better_peer.peer_id())
+                            {
+                                target = Some((
+                                    better_peer.chain_info.status().info().clone(),
+                                    BlockIdAndNumber {
+                                        number: better_peer.latest_header().number(),
+                                        id: better_peer.latest_header().id(),
+                                    },
+                                ));
                                 eligible = true;
                             } else if let Some(block_id) = self
                                 .fetch_block_id(
                                     best_target.peers.first().cloned(),
-                                    better_peer.block_number(),
+                                    maybe_target_number,
                                 )
                                 .await?
                             {
+                                let mut block_info = None;
                                 if block_id == better_peer.block_id() {
-                                    target_peer = Some(better_peer.clone());
+                                    block_info =
+                                        Some(better_peer.chain_info.status().info().clone());
+                                } else if let Some(better_block_id) = self
+                                    .fetch_block_id(
+                                        Some(better_peer.peer_id()),
+                                        maybe_target_number,
+                                    )
+                                    .await?
+                                {
+                                    if block_id == better_block_id {
+                                        block_info = self
+                                            .fetch_block_info(Some(better_peer.peer_id()), block_id)
+                                            .await?;
+                                    }
+                                }
+
+                                if let Some(info) = block_info {
                                     eligible = true;
+                                    target = Some((
+                                        info,
+                                        BlockIdAndNumber {
+                                            number: maybe_target_number,
+                                            id: block_id,
+                                        },
+                                    ));
                                 }
                             }
                         }
-                        Some(peer) => {
+                        Some((_, target_id_number)) => {
                             if best_target.peers.contains(&better_peer.peer_id()) {
                                 eligible = true;
                             } else if let Some(block_id) = self
-                                .fetch_block_id(Some(better_peer.peer_id()), peer.block_number())
+                                .fetch_block_id(
+                                    Some(better_peer.peer_id()),
+                                    target_id_number.number,
+                                )
                                 .await?
                             {
-                                if block_id == peer.block_id() {
+                                if block_id == target_id_number.id {
                                     eligible = true;
                                 }
                             }
@@ -144,13 +184,10 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                     }
                 }
 
-                if let Some(peer) = target_peer {
+                if let Some((block_info, id_number)) = target {
                     return Ok(SyncTarget {
-                        target_id: BlockIdAndNumber::new(
-                            peer.latest_header().id(),
-                            peer.latest_header().number(),
-                        ),
-                        block_info: peer.chain_info().status().info().clone(),
+                        target_id: id_number,
+                        block_info,
                         peers,
                     });
                 }
@@ -577,6 +614,7 @@ where
                     ancestor_block_info.total_difficulty,
                     target.clone(),
                     max_peers,
+                    latest_ancestor.number,
                 )
                 .await
                 .map_err(TaskError::BreakError)?;
