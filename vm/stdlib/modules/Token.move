@@ -71,6 +71,8 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
+    const EDEPRECATED_FUNCTION: u64 = 19;
+
     const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
     const EINVALID_ARGUMENT: u64 = 18;
 
@@ -243,6 +245,26 @@ module Token {
     spec fun do_mint {
         aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
+    }
+
+    /// Deprecated since @v3
+    /// Issue a `FixedTimeMintKey` with given `MintCapability`.
+    public fun issue_fixed_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
+                                     _amount: u128, _period: u64): FixedTimeMintKey<TokenType>{
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
+    }
+
+    spec fun issue_fixed_mint_key {
+    }
+
+    /// Deprecated since @v3
+    /// Issue a `LinearTimeMintKey` with given `MintCapability`.
+    public fun issue_linear_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
+                                                _amount: u128, _period: u64): LinearTimeMintKey<TokenType>{
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
+    }
+
+    spec fun issue_linear_mint_key {
     }
 
     /// Destroy `LinearTimeMintKey`, for deprecated

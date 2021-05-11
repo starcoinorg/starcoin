@@ -26,6 +26,8 @@ Token implementation of Starcoin.
 -  [Function `mint`](#0x1_Token_mint)
 -  [Function `mint_with_capability`](#0x1_Token_mint_with_capability)
 -  [Function `do_mint`](#0x1_Token_do_mint)
+-  [Function `issue_fixed_mint_key`](#0x1_Token_issue_fixed_mint_key)
+-  [Function `issue_linear_mint_key`](#0x1_Token_issue_linear_mint_key)
 -  [Function `destroy_linear_time_key`](#0x1_Token_destroy_linear_time_key)
 -  [Function `read_linear_time_key`](#0x1_Token_read_linear_time_key)
 -  [Function `burn`](#0x1_Token_burn)
@@ -56,6 +58,8 @@ Token implementation of Starcoin.
     -  [Function `mint`](#@Specification_1_mint)
     -  [Function `mint_with_capability`](#@Specification_1_mint_with_capability)
     -  [Function `do_mint`](#@Specification_1_do_mint)
+    -  [Function `issue_fixed_mint_key`](#@Specification_1_issue_fixed_mint_key)
+    -  [Function `issue_linear_mint_key`](#@Specification_1_issue_linear_mint_key)
     -  [Function `burn`](#@Specification_1_burn)
     -  [Function `burn_with_capability`](#@Specification_1_burn_with_capability)
     -  [Function `zero`](#@Specification_1_zero)
@@ -415,6 +419,15 @@ Token information.
 
 
 <pre><code><b>const</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_Token_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 
@@ -803,6 +816,60 @@ Only the Association account can acquire such a reference, and it can do so only
         },
     );
     <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_issue_fixed_mint_key"></a>
+
+## Function `issue_fixed_mint_key`
+
+Deprecated since @v3
+Issue a <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code> with given <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType: store&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
+                                 _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Token.md#0x1_Token_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_issue_linear_mint_key"></a>
+
+## Function `issue_linear_mint_key`
+
+Deprecated since @v3
+Issue a <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code> with given <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType: store&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
+                                            _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Token.md#0x1_Token_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -1531,6 +1598,28 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>());
 <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + amount &gt; MAX_U128;
 </code></pre>
+
+
+
+<a name="@Specification_1_issue_fixed_mint_key"></a>
+
+### Function `issue_fixed_mint_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<a name="@Specification_1_issue_linear_mint_key"></a>
+
+### Function `issue_linear_mint_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
 
 
 

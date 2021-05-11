@@ -13,12 +13,14 @@ Provide a account based vector for save resource.
 -  [Function `borrow`](#0x1_Collection_borrow)
 -  [Function `pop_back`](#0x1_Collection_pop_back)
 -  [Function `exists_at`](#0x1_Collection_exists_at)
+-  [Function `put`](#0x1_Collection_put)
 -  [Function `take`](#0x1_Collection_take)
 -  [Function `borrow_collection`](#0x1_Collection_borrow_collection)
 -  [Function `return_collection`](#0x1_Collection_return_collection)
 -  [Function `destroy_empty`](#0x1_Collection_destroy_empty)
 -  [Specification](#@Specification_1)
     -  [Function `exists_at`](#@Specification_1_exists_at)
+    -  [Function `put`](#@Specification_1_put)
     -  [Function `take`](#@Specification_1_take)
     -  [Function `borrow_collection`](#@Specification_1_borrow_collection)
     -  [Function `return_collection`](#@Specification_1_return_collection)
@@ -99,6 +101,15 @@ Collection in global store.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x1_Collection_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
+</code></pre>
+
 
 
 <a name="0x1_Collection_ECOLLECTION_NOT_EXIST"></a>
@@ -191,6 +202,32 @@ check the Collection exists in <code>addr</code>
 
 <pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T: store&gt;(addr: address): bool{
     <b>exists</b>&lt;<a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T&gt;&gt;(addr)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Collection_put"></a>
+
+## Function `put`
+
+Deprecated since @v3
+Put items to account's Collection last position.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(_account: &signer, _item: T)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T: store&gt;(_account: &signer, _item: T) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Collection.md#0x1_Collection_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -334,6 +371,22 @@ Return the Collection of T
 
 
 <pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T&gt;(addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_put"></a>
+
+### Function `put`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(_account: &signer, _item: T)
 </code></pre>
 
 

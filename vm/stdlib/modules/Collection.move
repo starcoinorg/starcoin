@@ -26,6 +26,8 @@ module Collection {
         items: Option<vector<T>>,
     }
 
+    const EDEPRECATED_FUNCTION: u64 = 19;
+
     const ECOLLECTION_NOT_EXIST: u64 = 101;
     /// The operator require the collection owner.
     const ECOLLECTION_NOT_OWNER: u64 = 102;
@@ -49,6 +51,14 @@ module Collection {
     }
 
     spec fun exists_at {aborts_if false;}
+
+    /// Deprecated since @v3
+    /// Put items to account's Collection last position.
+    public fun put<T: store>(_account: &signer, _item: T) {
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
+    }
+
+    spec fun put {aborts_if false;}
 
     /// Take last item from account's Collection of T.
     public fun take<T: store>(account: &signer): T acquires CollectionStore{

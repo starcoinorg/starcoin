@@ -18,7 +18,6 @@ pub trait StdlibCompat {
         module_address: AccountAddress,
         package_hash: HashValue,
         exec_delay: u64,
-        enforced: bool,
     ) -> ScriptFunction;
 }
 
@@ -43,30 +42,45 @@ impl StdlibCompat for StdlibVersion {
         module_address: AccountAddress,
         package_hash: HashValue,
         exec_delay: u64,
-        enforced: bool,
     ) -> ScriptFunction {
         // propose_module_upgrade_v2 is available after v2 upgrade.
-        let (function_name, args) = if self > &StdlibVersion::Version(2) {
-            (
-                "propose_module_upgrade_v2",
-                vec![
-                    bcs_ext::to_bytes(&module_address).unwrap(),
-                    bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-                    bcs_ext::to_bytes(&self.version()).unwrap(),
-                    bcs_ext::to_bytes(&exec_delay).unwrap(),
-                    bcs_ext::to_bytes(&enforced).unwrap(),
-                ],
-            )
-        } else {
-            (
-                "propose_module_upgrade",
-                vec![
-                    bcs_ext::to_bytes(&module_address).unwrap(),
-                    bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-                    bcs_ext::to_bytes(&self.version()).unwrap(),
-                    bcs_ext::to_bytes(&exec_delay).unwrap(),
-                ],
-            )
+        let (function_name, args) = match self {
+            StdlibVersion::Version(1) | StdlibVersion::Version(2) => {
+                (
+                    "propose_module_upgrade",
+                    vec![
+                        bcs_ext::to_bytes(&module_address).unwrap(),
+                        bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+                        bcs_ext::to_bytes(&self.version()).unwrap(),
+                        bcs_ext::to_bytes(&exec_delay).unwrap(),
+                    ],
+                )
+            },
+            StdlibVersion::Version(3) | StdlibVersion::Latest => {
+                (
+                    "propose_module_upgrade_v2",
+                    vec![
+                        bcs_ext::to_bytes(&module_address).unwrap(),
+                        bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+                        bcs_ext::to_bytes(&self.version()).unwrap(),
+                        bcs_ext::to_bytes(&exec_delay).unwrap(),
+                        bcs_ext::to_bytes(&false).unwrap(),
+                    ],
+                )
+            },
+            // 3->4 is incompatible
+            _ => {
+                (
+                    "propose_module_upgrade_v2",
+                    vec![
+                        bcs_ext::to_bytes(&module_address).unwrap(),
+                        bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+                        bcs_ext::to_bytes(&self.version()).unwrap(),
+                        bcs_ext::to_bytes(&exec_delay).unwrap(),
+                        bcs_ext::to_bytes(&true).unwrap(),
+                    ],
+                )
+            },
         };
 
         ScriptFunction::new(
