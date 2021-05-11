@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::HashValue;
-use starcoin_rpc_api::types::FunctionIdView;
+use starcoin_dev::playground;
+use starcoin_rpc_api::types::{FunctionIdView, TransactionOutputView, TransactionVMStatus};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::{
-    parse_transaction_argument, RawUserTransaction, TransactionArgument,
+    parse_transaction_argument, DryRunTransaction, RawUserTransaction, TransactionArgument,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::ScriptFunction;
@@ -24,10 +25,6 @@ pub struct ExecuteScriptFunctionOpt {
     #[structopt(short = "s")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
-
-    #[structopt(long = "function", name = "script-function")]
-    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
-    script_function: FunctionIdView,
 
     #[structopt(
     short = "t",
@@ -73,6 +70,14 @@ pub struct ExecuteScriptFunctionOpt {
         help = "blocking wait txn mined"
     )]
     blocking: bool,
+
+    #[structopt(long = "dry-run")]
+    /// dry-run script, only get transaction output, no state change to chain
+    dry_run: bool,
+
+    #[structopt(long = "function", name = "script-function")]
+    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
+    script_function: FunctionIdView,
 }
 
 pub struct ExecuteScriptFunctionCmd;
@@ -81,7 +86,7 @@ impl CommandAction for ExecuteScriptFunctionCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ExecuteScriptFunctionOpt;
-    type ReturnItem = HashValue;
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -120,13 +125,41 @@ impl CommandAction for ExecuteScriptFunctionCmd {
 
         let signed_txn = client.account_sign_txn(script_txn)?;
         let txn_hash = signed_txn.id();
-        client.submit_transaction(signed_txn)?;
-        println!("txn {:#x} submitted.", txn_hash);
-
-        if opt.blocking {
-            ctx.state().watch_txn(txn_hash)?;
+        let output: TransactionOutputView = {
+            let state_view = RemoteStateReader::new(client)?;
+            playground::dry_run(
+                &state_view,
+                DryRunTransaction {
+                    public_key: signed_txn.authenticator().public_key(),
+                    raw_txn: signed_txn.raw_txn().clone(),
+                },
+            )
+            .map(|(_, b)| b.into())?
+        };
+        match output.status {
+            TransactionVMStatus::Discard { status_code } => {
+                bail!("TransactionStatus is discard: {:?}", status_code)
+            }
+            TransactionVMStatus::Executed => {}
+            s => {
+                bail!("pre-run failed, status: {:?}", s);
+            }
         }
+        if !opt.dry_run {
+            client.submit_transaction(signed_txn)?;
 
-        Ok(txn_hash)
+            println!("txn {:#x} submitted.", txn_hash);
+
+            let mut output_view = ExecutionOutputView::new(txn_hash);
+
+            if opt.blocking {
+                let block = ctx.state().watch_txn(txn_hash)?.0;
+                output_view.block_number = Some(block.header.number.0);
+                output_view.block_id = Some(block.header.block_hash);
+            }
+            Ok(ExecuteResultView::Run(output_view))
+        } else {
+            Ok(ExecuteResultView::DryRun(output.into()))
+        }
     }
 }

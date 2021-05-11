@@ -6,30 +6,24 @@ use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_config::temp_path;
 use starcoin_dev::playground;
-use starcoin_move_compiler::{
-    compile_source_string_no_report, errors, load_bytecode_file, CompiledUnit, MOVE_EXTENSION,
-};
-use starcoin_rpc_api::types::{
-    DryRunTransactionRequest, FunctionIdView, StrView, TransactionVMStatus,
-};
+use starcoin_move_compiler::load_bytecode_file;
+use starcoin_rpc_api::types::{TransactionOutputView, TransactionVMStatus};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::{
-    parse_transaction_argument, DryRunTransaction, Module, Package, RawUserTransaction, Script,
-    ScriptFunction, TransactionArgument, TransactionPayload,
+    parse_transaction_argument, DryRunTransaction, RawUserTransaction, Script, TransactionArgument,
+    TransactionPayload,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
-use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "execute")]
-pub struct ExecuteOpt {
+#[structopt(name = "execute-script")]
+pub struct ExecuteScriptOpt {
     #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
     sender: Option<AccountAddress>,
@@ -81,33 +75,17 @@ pub struct ExecuteOpt {
     /// dry-run script, only get transaction output, no state change to chain
     dry_run: bool,
 
-    #[structopt(long = "local")]
-    /// Whether dry-run in local cli or remote node.
-    local_mode: bool,
-
-    #[structopt(long = "function", name = "script-function")]
-    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
-    script_function: Option<FunctionIdView>,
-
-    #[structopt(
-        name = "move_file",
-        parse(from_os_str),
-        required_unless = "script-function"
-    )]
-    /// bytecode file or move script source file
-    move_file: Option<PathBuf>,
-
-    #[structopt(name = "dependency_path", long = "dep")]
-    /// path of dependency used to build, only used when using move source file
-    deps: Option<Vec<String>>,
+    #[structopt(name = "mv_file", parse(from_os_str))]
+    /// bytecode file of the script to execute.
+    mv_file: PathBuf,
 }
 
-pub struct ExecuteCommand;
+pub struct ExecuteScriptCommand;
 
-impl CommandAction for ExecuteCommand {
+impl CommandAction for ExecuteScriptCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ExecuteOpt;
+    type Opt = ExecuteScriptOpt;
     type ReturnItem = ExecuteResultView;
 
     fn run(
@@ -124,79 +102,19 @@ impl CommandAction for ExecuteCommand {
         let type_tags = opt.type_tags.clone().unwrap_or_default();
         let args = opt.args.clone().unwrap_or_default();
 
-        let script_function_id = opt.script_function.clone().map(|id| id.0);
-        let bytedata = if let Some(move_file_path) = ctx.opt().move_file.as_ref() {
-            let ext = move_file_path
-                .as_path()
-                .extension()
-                .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
-                .unwrap_or_else(|| "");
-            if ext == MOVE_EXTENSION {
-                let temp_path = temp_path();
-                let mut deps = restore_stdlib_in_dir(temp_path.path())?;
-                // add extra deps
-                deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
-                let (sources, compile_result) = compile_source_string_no_report(
-                    std::fs::read_to_string(move_file_path.as_path())?.as_str(),
-                    &deps,
-                    sender,
-                )?;
-                let mut compile_units = match compile_result {
-                    Ok(c) => c,
-                    Err(e) => {
-                        eprintln!(
-                            "{}",
-                            String::from_utf8_lossy(
-                                errors::report_errors_to_color_buffer(sources, e).as_slice()
-                            )
-                        );
-                        bail!("compile error")
-                    }
-                };
-                let compile_unit = compile_units.pop().ok_or_else(|| {
-                    anyhow::anyhow!("file should at least contain one compile unit")
-                })?;
-                let is_script = match compile_unit {
-                    CompiledUnit::Module { .. } => false,
-                    CompiledUnit::Script { .. } => true,
-                };
-                Some((compile_unit.serialize(), is_script))
-            } else {
-                Some(load_bytecode_file(move_file_path.as_path())?)
-            }
-        } else {
-            None
+        let bytedata = {
+            let move_file_path = opt.mv_file.clone();
+            load_bytecode_file(move_file_path.as_path())?
         };
-        let txn_payload = match (bytedata, script_function_id) {
-            // package deploy
-            (Some((bytecode, false)), function_id) => {
-                let module_init_script_function = function_id.map(|id| {
-                    ScriptFunction::new(id.module, id.function, type_tags, convert_txn_args(&args))
-                });
-                let package =
-                    Package::new(vec![Module::new(bytecode)], module_init_script_function)?;
-                TransactionPayload::Package(package)
-            }
+
+        let txn_payload = match bytedata {
             // script
-            (Some((bytecode, true)), None) => {
+            (bytecode, true) => {
                 let script = Script::new(bytecode, type_tags, convert_txn_args(&args));
                 TransactionPayload::Script(script)
             }
-            (Some((_bytecode, true)), Some(_)) => {
-                bail!("should only provide script function or script file, not both");
-            }
-            // script function
-            (None, Some(function_id)) => {
-                let script_function = ScriptFunction::new(
-                    function_id.module,
-                    function_id.function,
-                    type_tags,
-                    convert_txn_args(&args),
-                );
-                TransactionPayload::ScriptFunction(script_function)
-            }
-            (None, None) => {
-                bail!("this should not happen, bug here!");
+            _ => {
+                bail!("bytecode is not a script!");
             }
         };
 
@@ -229,7 +147,7 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.account_sign_txn(raw_txn)?;
         let txn_hash = signed_txn.id();
-        let output = if opt.local_mode {
+        let output: TransactionOutputView = {
             let state_view = RemoteStateReader::new(client)?;
             playground::dry_run(
                 &state_view,
@@ -239,11 +157,6 @@ impl CommandAction for ExecuteCommand {
                 },
             )
             .map(|(_, b)| b.into())?
-        } else {
-            client.dry_run(DryRunTransactionRequest {
-                sender_public_key: Some(StrView(signed_txn.authenticator().public_key())),
-                transaction: signed_txn.raw_txn().clone().into(),
-            })?
         };
         match output.status {
             TransactionVMStatus::Discard { status_code } => {

@@ -9,6 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use structopt::StructOpt;
@@ -73,9 +74,10 @@ impl CommandAction for ShowCommand {
             }
         }
         let auth_key = account.public_key.authentication_key();
-
+        let receipt_id = ReceiptIdentifier::v1(account_address, auth_key);
         Ok(AccountWithStateView {
             auth_key: auth_key.to_encoded_string()?,
+            receipt_identifier: receipt_id.to_string(),
             account,
             sequence_number,
             balances,

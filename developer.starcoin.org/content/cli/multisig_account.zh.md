@@ -116,7 +116,7 @@ starcoin% dev derive-address -t 2 -p ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0
 
 ```bash
 # 从默认地址账户发起交易，创建多签账户，并给这个多签账户转账 1000 STC。
-starcoin% dev execute -b --script create_account -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9 --arg x"e0d3d4c38cb2c3fda21425bbca8822c1bee64e38f075031e6a508459213d2461" --arg 10000000u128
+starcoin% account execute-function -b --function 0x1::TransferScripts::peer_to_peer -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9 --arg x"e0d3d4c38cb2c3fda21425bbca8822c1bee64e38f075031e6a508459213d2461" --arg 10000000u128
 
 txn becac3e5f1605255e6274b7b0a7c8f17262439c123f96f584cbce8d667f0800d submitted.
 txn mined in block hight: 5, hash: c20a82c741f5f552b622e797769567dabf577eb00c466d81dff8f9cada5fda45

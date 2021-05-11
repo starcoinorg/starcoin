@@ -10,6 +10,7 @@ use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -22,11 +23,18 @@ pub struct TransferOpt {
     #[structopt(short = "s")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
-    #[structopt(short = "r")]
-    receiver: AccountAddress,
+
+    #[structopt(long = "receipt", name = "receipt")]
+    /// receipt identifier
+    receipt_identifier: Option<ReceiptIdentifier>,
+
+    #[structopt(short = "r", required_unless = "receipt")]
+    /// if receipt is absent, receiver must be provided.
+    receiver: Option<AccountAddress>,
     #[structopt(short = "k")]
     /// if `to` account not exist on chain, must provide public_key of the account.
     public_key: Option<String>,
+
     #[structopt(short = "v")]
     amount: u128,
     #[structopt(
@@ -86,28 +94,43 @@ impl CommandAction for TransferCommand {
                 format_err!("Can not find default account, Please input from account.")
             })?,
         };
-        let receiver = opt.receiver;
 
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let receiver_exist_on_chain = account_state_reader
-            .get_account_resource(&receiver)?
-            .is_some();
-        let receiver_auth_key = if receiver_exist_on_chain {
-            None
-        } else {
-            let k = opt
-                .public_key
-                .as_ref()
-                .ok_or_else(|| {
-                    format_err!(
-                        "To account {} not exist on chain, please provide public_key",
-                        receiver
-                    )
-                })
-                .and_then(|pubkey_str| Ok(Ed25519PublicKey::from_encoded_string(pubkey_str)?))?;
-            Some(k)
+
+        let (receiver_address, receiver_auth_key) = match opt.receipt_identifier {
+            None => {
+                let receiver = opt.receiver.unwrap();
+                let receiver_exist_on_chain = account_state_reader
+                    .get_account_resource(&receiver)?
+                    .is_some();
+                let receiver_public_key = if receiver_exist_on_chain {
+                    None
+                } else {
+                    let k = opt
+                        .public_key
+                        .as_ref()
+                        .ok_or_else(|| {
+                            format_err!(
+                                "receiver account {} not exist on chain, please provide public_key",
+                                receiver
+                            )
+                        })
+                        .and_then(|pubkey_str| {
+                            Ok(Ed25519PublicKey::from_encoded_string(pubkey_str)?)
+                        })?;
+                    Some(k)
+                };
+                let receiver_auth_key = receiver_public_key
+                    .as_ref()
+                    .map(|k| AuthenticationKey::ed25519(k));
+                (receiver, receiver_auth_key)
+            }
+            Some(receipt_id) => match receipt_id {
+                ReceiptIdentifier::V1(addr, auth_key) => (addr, auth_key),
+            },
         };
+
         let account_resource = account_state_reader
             .get_account_resource(sender.address())?
             .ok_or_else(|| {
@@ -122,10 +145,8 @@ impl CommandAction for TransferCommand {
             .unwrap_or_else(|| STC_TOKEN_CODE.clone());
         let raw_txn = starcoin_executor::build_transfer_txn_by_token_type(
             sender.address,
-            receiver,
-            receiver_auth_key
-                .as_ref()
-                .map(|k| AuthenticationKey::ed25519(k)),
+            receiver_address,
+            receiver_auth_key,
             account_resource.sequence_number(),
             opt.amount,
             opt.gas_price,
