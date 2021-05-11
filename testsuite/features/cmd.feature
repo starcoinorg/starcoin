@@ -138,11 +138,11 @@ Feature: cmd integration test
     Then cmd: "dev deploy --blocking @$.result@"
     Then cmd: "account show"
     Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples -s @$.account.address@"
-    Then cmd: "dev execute --blocking @$.result@"
+    Then cmd: "account execute-script --blocking @$.result@"
     Then cmd: "chain get_txn @$.txn_hash@"
     Then cmd: "account show"
     Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples -s @$.account.address@"
-    Then cmd: "dev execute @$.result@ --blocking --arg 1000000u128"
+    Then cmd: "account execute-script @$.result@ --blocking --arg 1000000u128"
 #    Then assert: "$.status Executed"
     Then cmd: "chain get_txn @$.txn_hash@"
     Then stop
