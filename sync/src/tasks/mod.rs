@@ -162,14 +162,17 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                 }
                             }
                         }
-                        Some(inner) => {
+                        Some((_, target_id_number)) => {
                             if best_target.peers.contains(&better_peer.peer_id()) {
                                 eligible = true;
                             } else if let Some(block_id) = self
-                                .fetch_block_id(Some(better_peer.peer_id()), inner.target.number)
+                                .fetch_block_id(
+                                    Some(better_peer.peer_id()),
+                                    target_id_number.number,
+                                )
                                 .await?
                             {
-                                if block_id == inner.target.id {
+                                if block_id == target_id_number.id {
                                     eligible = true;
                                 }
                             }
@@ -181,9 +184,9 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                     }
                 }
 
-                if let Some((block_info, target)) = target {
+                if let Some((block_info, id_number)) = target {
                     return Ok(SyncTarget {
-                        target_id: target,
+                        target_id: id_number,
                         block_info,
                         peers,
                     });
