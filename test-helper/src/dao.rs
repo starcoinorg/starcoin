@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::executor::{
-    account_execute_should_success, association_execute_should_success, blockmeta_execute, current_block_number, get_balance,
+    account_execute_should_success, association_execute_should_success, blockmeta_execute,
+    current_block_number, get_balance,
 };
 use crate::Account;
 use anyhow::Result;

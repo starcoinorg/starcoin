@@ -26,8 +26,8 @@ use test_helper::dao::{
     vote_txn_timeout_script, vote_vm_config_script,
 };
 use test_helper::executor::{
-    account_execute, account_execute_with_output,
-    association_execute_should_success, blockmeta_execute, current_block_number, prepare_genesis,
+    account_execute, account_execute_with_output, association_execute_should_success,
+    blockmeta_execute, current_block_number, prepare_genesis,
 };
 use test_helper::Account;
 
