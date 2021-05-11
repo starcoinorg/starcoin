@@ -25,7 +25,16 @@ module Treasury {
     struct WithdrawCapability<TokenT> has key, store { }
     
     /// A linear time withdraw capability which can withdraw token from Treasury in a period by time-based linear release.
-    struct LinearWithdrawCapability<TokenT> has key, store { total: u128, withdraw: u128, start_time: u64, period: u64 }
+    struct LinearWithdrawCapability<TokenT> has key, store {
+        /// The total amount of tokens that can be withdrawn by this capability
+        total: u128,
+        /// The amount of tokens that have been withdrawn by this capability
+        withdraw: u128,
+        /// The time-based linear release start time, timestamp in seconds.
+        start_time: u64,
+        ///  The time-based linear release period in seconds
+        period: u64
+    }
     
     /// Message for treasury withdraw event.
     struct WithdrawEvent has drop, store {

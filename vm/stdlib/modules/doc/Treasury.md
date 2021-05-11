@@ -152,25 +152,25 @@ A linear time withdraw capability which can withdraw token from Treasury in a pe
 <code>total: u128</code>
 </dt>
 <dd>
-
+ The total amount of tokens that can be withdrawn by this capability
 </dd>
 <dt>
 <code>withdraw: u128</code>
 </dt>
 <dd>
-
+ The amount of tokens that have been withdrawn by this capability
 </dd>
 <dt>
 <code>start_time: u64</code>
 </dt>
 <dd>
-
+ The time-based linear release start time, timestamp in seconds.
 </dd>
 <dt>
 <code>period: u64</code>
 </dt>
 <dd>
-
+  The time-based linear release period in seconds
 </dd>
 </dl>
 
