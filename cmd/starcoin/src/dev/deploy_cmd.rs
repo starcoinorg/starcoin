@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::HashValue;
+use starcoin_dev::playground;
+use starcoin_rpc_api::types::{TransactionOutputView, TransactionVMStatus};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::transaction::{Module, RawUserTransaction};
+use starcoin_types::transaction::{DryRunTransaction, Module, RawUserTransaction};
 use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -48,6 +50,10 @@ pub struct DeployOpt {
     )]
     blocking: bool,
 
+    #[structopt(long = "dry-run")]
+    /// dry-run mode, only get transaction output, no state change to chain
+    dry_run: bool,
+
     #[structopt(name = "bytecode_file", help = "module bytecode file path")]
     bytecode_file: String,
 }
@@ -58,7 +64,7 @@ impl CommandAction for DeployCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = DeployOpt;
-    type ReturnItem = HashValue;
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -107,14 +113,43 @@ impl CommandAction for DeployCommand {
 
         let signed_txn = client.account_sign_txn(deploy_txn)?;
         let txn_hash = signed_txn.id();
-        client.submit_transaction(signed_txn)?;
 
-        println!("txn {:#x} submitted.", txn_hash);
-
-        if opt.blocking {
-            ctx.state().watch_txn(txn_hash)?;
+        let output: TransactionOutputView = {
+            let state_view = RemoteStateReader::new(client)?;
+            playground::dry_run(
+                &state_view,
+                DryRunTransaction {
+                    public_key: signed_txn.authenticator().public_key(),
+                    raw_txn: signed_txn.raw_txn().clone(),
+                },
+            )
+            .map(|(_, b)| b.into())?
+        };
+        match output.status {
+            TransactionVMStatus::Discard { status_code } => {
+                bail!("TransactionStatus is discard: {:?}", status_code)
+            }
+            TransactionVMStatus::Executed => {}
+            s => {
+                bail!("pre-run failed, status: {:?}", s);
+            }
         }
 
-        Ok(txn_hash)
+        if !opt.dry_run {
+            client.submit_transaction(signed_txn)?;
+
+            println!("txn {:#x} submitted.", txn_hash);
+
+            let mut output_view = ExecutionOutputView::new(txn_hash);
+
+            if opt.blocking {
+                let block = ctx.state().watch_txn(txn_hash)?.0;
+                output_view.block_number = Some(block.header.number.0);
+                output_view.block_id = Some(block.header.block_hash);
+            }
+            Ok(ExecuteResultView::Run(output_view))
+        } else {
+            Ok(ExecuteResultView::DryRun(output.into()))
+        }
     }
 }

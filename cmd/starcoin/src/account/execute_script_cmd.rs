@@ -8,7 +8,7 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_dev::playground;
 use starcoin_move_compiler::load_bytecode_file;
-use starcoin_rpc_api::types::{DryRunTransactionRequest, StrView, TransactionVMStatus};
+use starcoin_rpc_api::types::{TransactionOutputView, TransactionVMStatus};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::{
@@ -74,10 +74,6 @@ pub struct ExecuteScriptOpt {
     #[structopt(long = "dry-run")]
     /// dry-run script, only get transaction output, no state change to chain
     dry_run: bool,
-
-    #[structopt(long = "local")]
-    /// Whether dry-run in local cli or remote node.
-    local_mode: bool,
 
     #[structopt(name = "mv_file", parse(from_os_str))]
     /// bytecode file of the script to execute.
@@ -151,7 +147,7 @@ impl CommandAction for ExecuteScriptCommand {
 
         let signed_txn = client.account_sign_txn(raw_txn)?;
         let txn_hash = signed_txn.id();
-        let output = if opt.local_mode {
+        let output: TransactionOutputView = {
             let state_view = RemoteStateReader::new(client)?;
             playground::dry_run(
                 &state_view,
@@ -161,11 +157,6 @@ impl CommandAction for ExecuteScriptCommand {
                 },
             )
             .map(|(_, b)| b.into())?
-        } else {
-            client.dry_run(DryRunTransactionRequest {
-                sender_public_key: Some(StrView(signed_txn.authenticator().public_key())),
-                transaction: signed_txn.raw_txn().clone().into(),
-            })?
         };
         match output.status {
             TransactionVMStatus::Discard { status_code } => {
