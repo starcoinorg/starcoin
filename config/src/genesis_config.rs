@@ -385,7 +385,7 @@ impl ChainNetworkID {
 
     pub fn limit_peers(&self) -> u8 {
         match self {
-            Self::Builtin(BuiltinNetworkID::Main) => 5,
+            Self::Builtin(BuiltinNetworkID::Main) => 3,
             _ => 1,
         }
     }
@@ -1054,7 +1054,7 @@ pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key
     let (_association_private_key, association_public_key) = genesis_multi_key_pair();
-    let stdlib_version = StdlibVersion::Version(3);
+    let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
