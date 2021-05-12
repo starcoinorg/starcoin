@@ -32,7 +32,7 @@ use std::time;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 /// Current protocol version.
-pub(crate) const CURRENT_VERSION: u32 = 1;
+pub(crate) const CURRENT_VERSION: u32 = 2;
 /// Lowest version we support
 pub(crate) const MIN_VERSION: u32 = 1;
 
