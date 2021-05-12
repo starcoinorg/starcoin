@@ -17,5 +17,5 @@ lazy_static = "1.4.0"
 arc-swap = "1.2.0"
 log4rs = { version="1.0.0", features = ["background_rotation", "gzip"]}
 once_cell = "1.7.2"
-serde = { version = "1.0.125", features = ["derive"] }
+serde = { version = "1.0.126", features = ["derive"] }
 parking_lot = "0.11.1"
