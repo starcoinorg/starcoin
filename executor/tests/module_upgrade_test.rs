@@ -374,6 +374,7 @@ fn test_stdlib_upgrade() -> Result<()> {
             genesis_address(),
             package_hash,
             0,
+            !compatible_with_previous(&new_version),
         );
 
         let execute_script_function = ScriptFunction::new(
@@ -408,6 +409,10 @@ fn test_stdlib_upgrade() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn compatible_with_previous(version: &StdlibVersion) -> bool {
+    !matches!(version, StdlibVersion::Version(4))
 }
 
 fn ext_execute_after_upgrade(
