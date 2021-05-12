@@ -267,67 +267,6 @@ module Token {
     spec fun issue_linear_mint_key {
     }
 
-    /// Deprecated since @v3
-    /// Mint tokens with given `FixedTimeMintKey`.
-    public fun mint_with_fixed_key<TokenType: store>(_key: FixedTimeMintKey<TokenType>): Token<TokenType> {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun mint_with_fixed_key {
-    }
-
-    /// Deprecated since @v3
-    /// Mint tokens with given `LinearTimeMintKey`.
-    public fun mint_with_linear_key<TokenType: store>(_key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun mint_with_linear_key {
-        pragma verify = false; //timeout, fix later
-    }
-
-    /// Deprecated since @v3
-    /// Split the given `LinearTimeMintKey`.
-    public fun split_linear_key<TokenType: store>(_key: &mut LinearTimeMintKey<TokenType>, _amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun split_linear_key {
-    }
-
-    /// Deprecated since @v3
-    /// Split the given `FixedTimeMintKey`.
-    public fun split_fixed_key<TokenType: store>(_key: &mut FixedTimeMintKey<TokenType>, _amount: u128): FixedTimeMintKey<TokenType> {
-       abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun split_fixed_key {
-    }
-
-    /// Deprecated since @v3
-    /// Returns the amount of the LinearTimeMintKey can mint now.
-    public fun mint_amount_of_linear_key<TokenType: store>(_key: &LinearTimeMintKey<TokenType>): u128 {
-       abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun mint_amount_of_linear_key {
-    }
-
-    /// Deprecated since @v3
-    /// Returns the mint amount of the FixedTimeMintKey.
-    public fun mint_amount_of_fixed_key<TokenType: store>(_key: &FixedTimeMintKey<TokenType>): u128 {
-         abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun mint_amount_of_fixed_key {
-    }
-
-    /// Deprecated since @v3
-    /// Return the end time of the given `FixedTimeMintKey`.
-    public fun end_time_of_key<TokenType: store>(_key: &FixedTimeMintKey<TokenType>): u64 {
-       abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
     /// Destroy `LinearTimeMintKey`, for deprecated
     public fun destroy_linear_time_key<TokenType: store>(key: LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time, period} = key;
@@ -336,25 +275,6 @@ module Token {
 
     public fun read_linear_time_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
         (key.total, key.minted, key.start_time, key.period)
-    }
-
-    /// Deprecated since @v3
-    /// Destroy a empty `LinearTimeMintKey`.
-    public fun destroy_empty_key<TokenType: store>(_key: LinearTimeMintKey<TokenType>) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun destroy_empty_key {
-    }
-
-    /// Deprecated since @v3
-    /// Check if the given `LinearTimeMintKey` is empty.
-    public fun is_empty_key<TokenType: store>(_key: &LinearTimeMintKey<TokenType>) : bool {
-         abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun is_empty_key {
-        aborts_if false;
     }
 
     /// Burn some tokens of `signer`.

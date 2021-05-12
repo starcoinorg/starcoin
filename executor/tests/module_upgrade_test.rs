@@ -79,7 +79,7 @@ fn test_dao_upgrade_module() -> Result<()> {
         execute_script_function,
         0,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert_eq!(read_foo(&chain_state), 1);
     Ok(())
@@ -138,7 +138,7 @@ fn test_dao_upgrade_module_enforced() -> Result<()> {
         execute_script_function,
         0,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert_eq!(read_foo(&chain_state), 1);
 
@@ -186,7 +186,7 @@ fn test_dao_upgrade_module_enforced() -> Result<()> {
         execute_script_function,
         1,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert_eq!(read_foo(&chain_state), 2);
     Ok(())
@@ -223,7 +223,7 @@ fn test_init_script() -> Result<()> {
 
     let module_names = vec!["Errors", "PackageTxnManager"];
     let package = build_package_with_stdlib_module(
-        StdLibOptions::Compiled(StdlibVersion::Latest),
+        StdLibOptions::Compiled(StdlibVersion::Version(3)),
         module_names,
         Some(init_script),
     )?;
@@ -264,7 +264,7 @@ fn test_init_script() -> Result<()> {
         execute_script_function,
         0,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
     Ok(())
@@ -332,7 +332,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
         execute_script_function,
         0,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
     Ok(())
@@ -374,7 +374,7 @@ fn test_stdlib_upgrade() -> Result<()> {
             genesis_address(),
             package_hash,
             0,
-            false,
+            !StdlibVersion::compatible_with_previous(&new_version),
         );
 
         let execute_script_function = ScriptFunction::new(
@@ -398,7 +398,11 @@ fn test_stdlib_upgrade() -> Result<()> {
             execute_script_function,
             proposal_id,
         )?;
-        association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        association_execute_should_success(
+            &net,
+            &chain_state,
+            TransactionPayload::Package(package),
+        )?;
         ext_execute_after_upgrade(new_version, &net, &chain_state)?;
         proposal_id += 1;
         current_version = new_version;
@@ -429,7 +433,7 @@ fn ext_execute_after_upgrade(
                 vec![],
                 vec![],
             );
-            association_execute(
+            association_execute_should_success(
                 net,
                 chain_state,
                 TransactionPayload::ScriptFunction(take_liner_time_capability),
@@ -545,7 +549,7 @@ fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
         execute_script_function,
         0,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert_eq!(read_foo(&chain_state), 1);
     Ok(())

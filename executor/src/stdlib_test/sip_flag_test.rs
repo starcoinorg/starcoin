@@ -84,7 +84,7 @@ fn test_sip_flags() -> Result<()> {
         execute_script_function,
         0,
     )?;
-    association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+    association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
     assert!(chain_state.is_activated(sip_10000)?);
     Ok(())

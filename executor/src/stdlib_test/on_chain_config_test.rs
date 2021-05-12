@@ -26,8 +26,8 @@ use test_helper::dao::{
     vote_txn_timeout_script, vote_vm_config_script,
 };
 use test_helper::executor::{
-    account_execute, account_execute_with_output, association_execute, blockmeta_execute,
-    current_block_number, prepare_genesis,
+    account_execute, account_execute_with_output, association_execute_should_success,
+    blockmeta_execute, current_block_number, prepare_genesis,
 };
 use test_helper::Account;
 
@@ -212,7 +212,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         bob.auth_key(),
         pre_mint_amount / 8,
     );
-    association_execute(
+    association_execute_should_success(
         &net,
         &chain_state,
         TransactionPayload::ScriptFunction(script_function),

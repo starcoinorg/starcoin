@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::executor::{
-    account_execute, association_execute, blockmeta_execute, current_block_number, get_balance,
+    account_execute_should_success, association_execute_should_success, blockmeta_execute,
+    current_block_number, get_balance,
 };
 use crate::Account;
 use anyhow::Result;
@@ -120,7 +121,7 @@ fn execute_create_account(
     chain_state: &ChainStateDB,
     net: &ChainNetwork,
     alice: &Account,
-    bob: &Account,
+    _bob: &Account,
     pre_mint_amount: u128,
     block_number: u64,
     block_timestamp: u64,
@@ -146,24 +147,24 @@ fn execute_create_account(
             alice.auth_key(),
             pre_mint_amount / 4,
         );
-        association_execute(
+        association_execute_should_success(
             net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
         )?;
 
-        let script_function = encode_create_account_script_function(
-            net.stdlib_version(),
-            stc_type_tag(),
-            bob.address(),
-            bob.auth_key(),
-            pre_mint_amount / 8,
-        );
-        association_execute(
-            net,
-            &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
-        )?;
+        // let script_function = encode_create_account_script_function(
+        //     net.stdlib_version(),
+        //     stc_type_tag(),
+        //     bob.address(),
+        //     bob.auth_key(),
+        //     pre_mint_amount / 8,
+        // );
+        // association_execute_should_success(
+        //     net,
+        //     &chain_state,
+        //     TransactionPayload::ScriptFunction(script_function),
+        // )?;
         Ok(())
     }
 }
@@ -259,7 +260,7 @@ fn execute_cast_vote(
         ],
     );
     // vote first.
-    account_execute(
+    account_execute_should_success(
         net,
         &alice,
         chain_state,
@@ -435,7 +436,6 @@ pub fn dao_vote_test(
         block_number,
         block_timestamp,
     )?;
-
     // block 2
     let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
@@ -453,7 +453,7 @@ pub fn dao_vote_test(
                 0,
             ),
         )?;
-        account_execute(
+        account_execute_should_success(
             net,
             alice,
             chain_state,
@@ -544,7 +544,7 @@ pub fn dao_vote_test(
                 bcs_ext::to_bytes(&proposal_id).unwrap(),
             ],
         );
-        account_execute(
+        account_execute_should_success(
             net,
             alice,
             chain_state,
@@ -585,7 +585,7 @@ pub fn dao_vote_test(
             proposal_id,
         );
         assert_eq!(state, EXECUTABLE);
-        account_execute(
+        account_execute_should_success(
             net,
             alice,
             chain_state,

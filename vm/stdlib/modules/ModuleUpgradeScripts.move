@@ -2,13 +2,10 @@ address 0x1 {
 module ModuleUpgradeScripts {
     use 0x1::PackageTxnManager;
     use 0x1::Config;
-    use 0x1::Errors;
     use 0x1::Signer;
     use 0x1::Version;
     use 0x1::Option;
     use 0x1::UpgradeModuleDaoProposal;
-
-    const EDEPRECATED_FUNCTION: u64 = 19;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -16,15 +13,6 @@ module ModuleUpgradeScripts {
         pragma aborts_if_is_strict = true;
     }
 
-    public(script) fun propose_module_upgrade<Token: copy + drop + store>(
-        _signer: signer,
-        _module_address: address,
-        _package_hash: vector<u8>,
-        _version: u64,
-        _exec_delay: u64,
-    ) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
     public(script) fun propose_module_upgrade_v2<Token: copy + drop + store>(
         signer: signer,
         module_address: address,

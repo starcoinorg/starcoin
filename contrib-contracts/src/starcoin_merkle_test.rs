@@ -10,7 +10,9 @@ use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use starcoin_vm_types::values::VMValueCast;
-use test_helper::executor::{association_execute, compile_modules_with_address, prepare_genesis};
+use test_helper::executor::{
+    association_execute_should_success, compile_modules_with_address, prepare_genesis,
+};
 #[stest::test]
 fn test_starcoin_merkle() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -27,7 +29,11 @@ fn test_starcoin_merkle() -> Result<()> {
         let modules = compile_modules_with_address(association_address(), source);
 
         let package = Package::new(modules, None)?;
-        association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        association_execute_should_success(
+            &net,
+            &chain_state,
+            TransactionPayload::Package(package),
+        )?;
         chain_state.commit()?;
         chain_state.flush()?;
     }
@@ -46,7 +52,7 @@ fn test_starcoin_merkle() -> Result<()> {
                 .simple_serialize()
                 .unwrap()],
         );
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),

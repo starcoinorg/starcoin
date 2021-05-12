@@ -11,7 +11,9 @@ use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::transaction::Package;
 use starcoin_vm_types::value::MoveValue;
 use starcoin_vm_types::values::VMValueCast;
-use test_helper::executor::{association_execute, compile_modules_with_address, prepare_genesis};
+use test_helper::executor::{
+    association_execute_should_success, compile_modules_with_address, prepare_genesis,
+};
 
 /// Basic account type.
 #[derive(Debug, Clone, PartialEq, Eq, RlpEncodable, RlpDecodable)]
@@ -68,7 +70,11 @@ fn test_eth_state_proof_verify() -> Result<()> {
         let modules = compile_modules_with_address(association_address(), source);
 
         let package = Package::new(modules, None)?;
-        association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        association_execute_should_success(
+            &net,
+            &chain_state,
+            TransactionPayload::Package(package),
+        )?;
     }
 
     // load the example proof
