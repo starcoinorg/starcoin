@@ -40,6 +40,12 @@ impl StdlibVersion {
     pub fn is_latest(&self) -> bool {
         matches!(self, StdlibVersion::Latest)
     }
+
+    pub fn compatible_with_previous(version: &StdlibVersion) -> bool {
+        // currently only 4 is not compatible with previous version
+        // Todo: need a better solution
+        !matches!(version, StdlibVersion::Version(4))
+    }
 }
 
 impl PartialOrd for StdlibVersion {

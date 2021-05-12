@@ -43,7 +43,6 @@ address 0x1 {
         /// default min time limit
         public fun get_default_min_time_limit(): u64 { DEFAULT_MIN_TIME_LIMIT }
 
-        const EDEPRECATED_FUNCTION: u64 = 19;
         const EUPGRADE_PLAN_IS_NONE: u64 = 102;
         const EPACKAGE_HASH_INCORRECT: u64 = 103;
         const EACTIVE_TIME_INCORRECT: u64 = 104;
@@ -182,16 +181,6 @@ address 0x1 {
             aborts_if !exists<ModuleUpgradeStrategy>(Signer::address_of(account));
             aborts_if global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy != 1;
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
-        }
-
-        /// upgrade plan can override
-        public fun submit_upgrade_plan(_account: &signer, _package_hash: vector<u8>, _version:u64) {
-            abort Errors::deprecated(EDEPRECATED_FUNCTION)
-        }
-
-        /// Submit a new upgrade plan.
-        public fun submit_upgrade_plan_with_cap(_cap: &UpgradePlanCapability, _package_hash: vector<u8>, _version: u64) {
-            abort Errors::deprecated(EDEPRECATED_FUNCTION)
         }
 
         public(script) fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(account: signer, package_address: address) acquires TwoPhaseUpgrade {

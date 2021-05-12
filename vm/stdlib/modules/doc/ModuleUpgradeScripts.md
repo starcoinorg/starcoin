@@ -5,18 +5,15 @@
 
 
 
--  [Constants](#@Constants_0)
--  [Function `propose_module_upgrade`](#0x1_ModuleUpgradeScripts_propose_module_upgrade)
 -  [Function `propose_module_upgrade_v2`](#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2)
 -  [Function `update_module_upgrade_strategy`](#0x1_ModuleUpgradeScripts_update_module_upgrade_strategy)
 -  [Function `submit_module_upgrade_plan`](#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan)
 -  [Function `cancel_upgrade_plan`](#0x1_ModuleUpgradeScripts_cancel_upgrade_plan)
--  [Specification](#@Specification_1)
-    -  [Function `cancel_upgrade_plan`](#@Specification_1_cancel_upgrade_plan)
+-  [Specification](#@Specification_0)
+    -  [Function `cancel_upgrade_plan`](#@Specification_0_cancel_upgrade_plan)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
-<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
 <b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
@@ -25,50 +22,6 @@
 </code></pre>
 
 
-
-<a name="@Constants_0"></a>
-
-## Constants
-
-
-<a name="0x1_ModuleUpgradeScripts_EDEPRECATED_FUNCTION"></a>
-
-
-
-<pre><code><b>const</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
-</code></pre>
-
-
-
-<a name="0x1_ModuleUpgradeScripts_propose_module_upgrade"></a>
-
-## Function `propose_module_upgrade`
-
-
-
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: signer, _module_address: address, _package_hash: vector&lt;u8&gt;, _version: u64, _exec_delay: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store&gt;(
-    _signer: signer,
-    _module_address: address,
-    _package_hash: vector&lt;u8&gt;,
-    _version: u64,
-    _exec_delay: u64,
-) {
-    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_ModuleUpgradeScripts_propose_module_upgrade_v2"></a>
 
@@ -201,7 +154,7 @@
 
 </details>
 
-<a name="@Specification_1"></a>
+<a name="@Specification_0"></a>
 
 ## Specification
 
@@ -214,7 +167,7 @@
 
 
 
-<a name="@Specification_1_cancel_upgrade_plan"></a>
+<a name="@Specification_0_cancel_upgrade_plan"></a>
 
 ### Function `cancel_upgrade_plan`
 

@@ -226,6 +226,7 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
     )
 }
 
+#[ignore]
 #[stest::test]
 fn test_call_deprecated_function() -> Result<()> {
     let (chain_state, net) = prepare_genesis();

@@ -32,31 +32,10 @@ module Collection {
     /// The operator require the collection owner.
     const ECOLLECTION_NOT_OWNER: u64 = 102;
 
-    /// Return the length of the collection.
-    public fun length<T>(c: &Collection<T>): u64{
-        Vector::length(&c.items)
-    }
-
-    spec fun length {aborts_if false;}
-
     /// Acquire an immutable reference to the `i`th element of the collection `c`.
     /// Aborts if `i` is out of bounds.
     public fun borrow<T>(c: &Collection<T>, i: u64): &T{
         Vector::borrow(&c.items, i)
-    }
-
-    /// Deprecated since @v3
-    /// Add item `v` to the end of the collection `c`.
-    /// require owner of Collection.
-    public fun push_back<T>(_account: &signer, _c: &mut Collection<T>, _t: T){
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    /// Return a mutable reference to the `i`th item in the Collection `c`.
-    /// Aborts if `i` is out of bounds.
-    public fun borrow_mut<T>(account: &signer, c: &mut Collection<T>, i: u64): &mut T{
-        assert(Signer::address_of(account) == c.owner, Errors::requires_address(ECOLLECTION_NOT_OWNER));
-        Vector::borrow_mut<T>(&mut c.items, i)
     }
 
     /// Pop an element from the end of vector `v`.
@@ -66,34 +45,12 @@ module Collection {
         Vector::pop_back<T>(&mut c.items)
     }
 
-    public fun remove<T>(account: &signer, c: &mut Collection<T>, i: u64): T{
-        assert(Signer::address_of(account) == c.owner, Errors::requires_address(ECOLLECTION_NOT_OWNER));
-        Vector::remove<T>(&mut c.items, i)
-    }
-
-    /// Deprecated since @v3
-    public fun append<T>(_account: &signer, _c: &mut Collection<T>, _other: T) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    /// Deprecated since @v3
-    public fun append_all<T>(_account: &signer, _c: &mut Collection<T>, _other: vector<T>) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    /// Check if the addr has T
-    public fun has<T: store>(addr: address): bool {
-        // just return exists CollectionStore<T>, because we will ensure at least one item in CollectionStore.
-        exists_at<T>(addr)
-    }
-
     /// check the Collection exists in `addr`
     fun exists_at<T: store>(addr: address): bool{
         exists<CollectionStore<T>>(addr)
     }
 
     spec fun exists_at {aborts_if false;}
-
 
     /// Deprecated since @v3
     /// Put items to account's Collection last position.
@@ -102,14 +59,6 @@ module Collection {
     }
 
     spec fun put {aborts_if false;}
-
-    /// Deprecated since @v3
-    /// Put itemss to account's box last position.
-    public fun put_all<T: store>(_account: &signer, _items: vector<T>) {
-        abort Errors::deprecated(EDEPRECATED_FUNCTION)
-    }
-
-    spec fun put_all {aborts_if false;}
 
     /// Take last item from account's Collection of T.
     public fun take<T: store>(account: &signer): T acquires CollectionStore{

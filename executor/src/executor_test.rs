@@ -26,8 +26,9 @@ use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use test_helper::executor::{
-    account_execute, association_execute, blockmeta_execute, build_raw_txn, current_block_number,
-    TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
+    account_execute, account_execute_should_success, association_execute_should_success,
+    blockmeta_execute, build_raw_txn, current_block_number, TEST_MODULE, TEST_MODULE_1,
+    TEST_MODULE_2,
 };
 
 use test_helper::executor::{
@@ -129,7 +130,7 @@ fn test_gen_accounts() -> Result<()> {
             bcs_ext::to_bytes(&1u128).unwrap(),
         ],
     );
-    association_execute(
+    association_execute_should_success(
         &net,
         &chain_state,
         TransactionPayload::ScriptFunction(script_function),
@@ -173,7 +174,7 @@ fn test_batch_transfer() -> Result<()> {
             amounts.simple_serialize().unwrap(),
         ],
     );
-    association_execute(
+    association_execute_should_success(
         &net,
         &chain_state,
         TransactionPayload::ScriptFunction(script_function),
@@ -230,7 +231,7 @@ fn test_package_txn() -> Result<()> {
             alice.auth_key(),
             pre_mint_amount / 4,
         );
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -243,7 +244,7 @@ fn test_package_txn() -> Result<()> {
             bob.auth_key(),
             pre_mint_amount / 4,
         );
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -268,7 +269,7 @@ fn test_package_txn() -> Result<()> {
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
-        account_execute(
+        account_execute_should_success(
             &net,
             &alice,
             &chain_state,
@@ -314,7 +315,7 @@ fn test_package_txn() -> Result<()> {
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
-        account_execute(
+        account_execute_should_success(
             &net,
             &alice,
             &chain_state,
@@ -342,7 +343,7 @@ fn test_wrong_package_address() -> Result<()> {
             alice.auth_key(),
             pre_mint_amount / 4,
         );
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -355,7 +356,7 @@ fn test_wrong_package_address() -> Result<()> {
             bob.auth_key(),
             pre_mint_amount / 4,
         );
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),

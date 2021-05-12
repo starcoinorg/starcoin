@@ -145,6 +145,17 @@ pub fn association_execute(
     let txn = net.genesis_config().sign_with_association(txn)?;
     execute_signed_txn(state, txn)
 }
+
+pub fn association_execute_should_success(
+    net: &ChainNetwork,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> Result<TransactionOutput> {
+    let txn = build_raw_txn(association_address(), state, payload, net.chain_id());
+    let txn = net.genesis_config().sign_with_association(txn)?;
+    execute_signed_txn_should_success(state, txn)
+}
+
 pub fn account_execute(
     net: &ChainNetwork,
     account: &Account,
@@ -159,7 +170,20 @@ pub fn account_execute(
         payload,
     )
 }
-
+pub fn account_execute_should_success(
+    net: &ChainNetwork,
+    account: &Account,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> Result<TransactionOutput> {
+    user_execute_should_success(
+        net,
+        *account.address(),
+        account.private_key(),
+        state,
+        payload,
+    )
+}
 pub fn account_execute_with_output(
     net: &ChainNetwork,
     account: &Account,
@@ -230,6 +254,17 @@ fn user_execute(
     execute_signed_txn(state, txn)
 }
 
+fn user_execute_should_success(
+    net: &ChainNetwork,
+    user_address: AccountAddress,
+    prikey: &AccountPrivateKey,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> Result<TransactionOutput> {
+    let txn = build_signed_txn(net, user_address, prikey, state, payload);
+    execute_signed_txn_should_success(state, txn)
+}
+
 fn build_signed_txn(
     net: &ChainNetwork,
     user_address: AccountAddress,
@@ -249,6 +284,26 @@ fn execute_signed_txn(
 ) -> Result<TransactionOutput> {
     let txn = Transaction::UserTransaction(txn);
     Ok(execute_and_apply(state, txn))
+}
+
+fn execute_signed_txn_should_success(
+    state: &ChainStateDB,
+    txn: SignedUserTransaction,
+) -> Result<TransactionOutput> {
+    let txn = Transaction::UserTransaction(txn);
+    let output = execute_and_apply(state, txn);
+
+    match output.status() {
+        TransactionStatus::Discard(s) => {
+            bail!("txn discard, status: {:?}", s);
+        }
+        TransactionStatus::Keep(s) => {
+            if s != &KeptVMStatus::Executed {
+                bail!("txn executing error, {:?}", s)
+            }
+        }
+    }
+    Ok(output)
 }
 
 pub fn move_abort_code(status: KeptVMStatus) -> Option<u64> {

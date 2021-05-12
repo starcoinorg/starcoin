@@ -10,7 +10,8 @@ use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload
 use starcoin_vm_types::value::MoveValue;
 use starcoin_vm_types::values::VMValueCast;
 use test_helper::executor::{
-    association_execute, compile_modules_with_address, move_abort_code, prepare_genesis,
+    association_execute, association_execute_should_success, compile_modules_with_address,
+    move_abort_code, prepare_genesis,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -39,7 +40,11 @@ fn test_merkle_distributor() -> Result<()> {
         let modules = compile_modules_with_address(association_address(), source);
 
         let package = Package::new(modules, None)?;
-        association_execute(&net, &chain_state, TransactionPayload::Package(package))?;
+        association_execute_should_success(
+            &net,
+            &chain_state,
+            TransactionPayload::Package(package),
+        )?;
     }
 
     // association: create the merkle distributor.
@@ -63,7 +68,7 @@ fn test_merkle_distributor() -> Result<()> {
             ],
         );
 
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -177,7 +182,7 @@ fn test_merkle_distributor() -> Result<()> {
                 proofs.simple_serialize().unwrap(),
             ],
         );
-        association_execute(
+        association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::ScriptFunction(script_function),
