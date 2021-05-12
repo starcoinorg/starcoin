@@ -8,7 +8,8 @@ use starcoin_config::{
 };
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::{Params, RpcClient};
+use starcoin_rpc_client::{Params, RemoteStateReader, RpcClient};
+use starcoin_state_api::StateReaderExt;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::U256;
 use std::fmt::Write;
@@ -25,30 +26,8 @@ impl RpcFutureBlockParameterResolver {
         Self { network }
     }
 
-    pub fn get_latest_block_number(
-        client: &RpcClient,
-        target_network: BuiltinNetworkID,
-    ) -> Result<BlockNumber> {
-        match target_network {
-            // because current proxima is at v0.9.x, api not compat with current code, so request raw api
-            BuiltinNetworkID::Proxima => {
-                let response = client.call_raw_api("chain.info", Params::None)?;
-                debug!("chain.info api response: {:?}", response);
-                let response = response
-                    .as_object()
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
-                let head = response
-                    .get("head")
-                    .and_then(|head| head.as_object())
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
-                let number = head
-                    .get("number")
-                    .and_then(|number| number.as_str())
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
-                Ok(number.parse()?)
-            }
-            _ => Ok(client.chain_info()?.head.number.0),
-        }
+    pub fn get_latest_block_number(client: &RpcClient) -> Result<BlockNumber> {
+        Ok(client.chain_info()?.head.number.0)
     }
 
     pub fn get_genesis_parameter(
@@ -143,8 +122,9 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
         let ws_rpc_url = format!("ws://{}:{}", parameter.network.boot_nodes_domain(), 9870);
         info!("Connect to {} for get genesis block parameter.", ws_rpc_url);
         let rpc_client: RpcClient = RpcClient::connect_websocket(ws_rpc_url.as_str())?;
+        let state_reader = RemoteStateReader::new(&rpc_client)?;
         loop {
-            match Self::get_latest_block_number(&rpc_client, parameter.network) {
+            match Self::get_latest_block_number(&rpc_client) {
                 Ok(block_number) => {
                     info!(
                         "{}'s latest block number is {}",
@@ -182,21 +162,17 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
                             }
                         }
                     } else {
-                        //TODO read onchain block_time_target to estimate time.
-                        let wait_milli_seconds = (parameter.block_number - block_number)
-                            * parameter
-                                .network
-                                .genesis_config()
-                                .consensus_config
-                                .base_block_time_target;
+                        let epoch = state_reader.get_epoch()?;
+                        let wait_milli_seconds =
+                            (parameter.block_number - block_number) * epoch.block_time_target();
                         let duration = chrono::Duration::milliseconds(wait_milli_seconds as i64);
                         let utc_launch_time = chrono::Utc::now()
                             + chrono::Duration::milliseconds(wait_milli_seconds as i64);
                         let local_launch_time = chrono::Local::now()
                             + chrono::Duration::milliseconds(wait_milli_seconds as i64);
                         info!(
-                            "Waiting to {}'s block {}, {} network will launch at {}, local time: {}, remaining {}",
-                            parameter.network, parameter.block_number, self.network, utc_launch_time, local_launch_time, Self::fmt_duration(duration.to_std()?)?
+                            "Waiting to {}'s block {}, {} network will launch at {}, local time: {}, remaining {} (The time is estimated according to the current block time target[{} millisecond] of {} network)",
+                            parameter.network, parameter.block_number, self.network, utc_launch_time, local_launch_time, Self::fmt_duration(duration.to_std()?)?, epoch.block_time_target(), parameter.network,
                         )
                     }
                 }
@@ -221,8 +197,8 @@ mod tests {
     fn test_genesis_parameter_resolver() {
         let resolver = RpcFutureBlockParameterResolver::new(BuiltinNetworkID::Main.into());
         let parameter = FutureBlockParameter {
-            network: BuiltinNetworkID::Proxima,
-            block_number: 956666,
+            network: BuiltinNetworkID::Barnard,
+            block_number: 310000,
         };
         let genesis_parameter = resolver.resolve(&parameter).unwrap();
         debug!("{:?}", genesis_parameter);

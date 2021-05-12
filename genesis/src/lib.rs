@@ -38,13 +38,6 @@ pub use errors::GenesisError;
 pub static GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
 
-pub enum GenesisOpt {
-    /// Load generated genesis
-    Generated,
-    /// Regenerate genesis
-    Fresh,
-}
-
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
@@ -73,27 +66,29 @@ impl Display for Genesis {
 impl Genesis {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
 
-    pub fn load_by_opt(option: GenesisOpt, net: &ChainNetwork) -> Result<Option<Self>> {
-        match (option, net.id()) {
-            (GenesisOpt::Generated, ChainNetworkID::Builtin(id)) => Self::load_generated(*id),
-            (_, _) => Ok(Some(Self::build(net)?)),
+    /// Load Load pre generated genesis, only support builtin network.
+    pub fn load(net: &ChainNetwork) -> Result<Option<Self>> {
+        match net.id() {
+            ChainNetworkID::Builtin(id) => Self::load_generated(*id),
+            _ => Ok(None),
         }
     }
 
     /// Load pre generated genesis.
-    pub fn load(net: &ChainNetwork) -> Result<Self> {
+    pub fn load_or_build(net: &ChainNetwork) -> Result<Self> {
         // test and dev always use Fresh genesis.
         if net.is_test() || net.is_dev() {
-            Ok(Self::load_by_opt(GenesisOpt::Fresh, net)?
-                .expect("generate test/dev genesis should success"))
+            Self::build(net)
         } else {
-            Self::load_by_opt(GenesisOpt::Generated, net)?
-                .ok_or_else(|| format_err!("{}'s genesis do not generated", net))
+            match Self::load(net)? {
+                Some(genesis) => Ok(genesis),
+                None => Self::build(net),
+            }
         }
     }
 
     /// Build fresh genesis
-    pub(crate) fn build(net: &ChainNetwork) -> Result<Self> {
+    pub fn build(net: &ChainNetwork) -> Result<Self> {
         debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
@@ -263,7 +258,7 @@ impl Genesis {
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
         let genesis = match Genesis::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
-                let expect_genesis = Genesis::load(net)?;
+                let expect_genesis = Genesis::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
                     return Err(GenesisError::GenesisVersionMismatch {
                         expect: expect_genesis.block.header.id(),
@@ -276,7 +271,7 @@ impl Genesis {
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
-                    let genesis = Genesis::load(net)?;
+                    let genesis = Genesis::load_or_build(net)?;
                     genesis.save(data_dir)?;
                     info!("Build and save new genesis: {}", genesis);
                     genesis
@@ -332,7 +327,7 @@ impl Genesis {
     pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let genesis = Genesis::load(net)?;
+        let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
         Ok((storage, chain_info, genesis))
     }
@@ -361,7 +356,7 @@ mod tests {
             if !net.is_ready() {
                 continue;
             }
-            Genesis::load(&net)?;
+            Genesis::load_or_build(&net)?;
         }
         Ok(())
     }
