@@ -27,14 +27,6 @@ kind: Namespace
 metadata:
   labels:
     app: starcoin
-    network: centauri
-  name: starcoin-centauri
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    app: starcoin
     network: barnard
   name: starcoin-barnard
 ---
