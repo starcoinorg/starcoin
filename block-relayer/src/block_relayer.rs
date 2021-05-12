@@ -117,20 +117,23 @@ impl BlockRelayer {
                 .iter()
                 .map(|&short_id| short_id.0)
                 .collect();
-            let (_, fetched_missing_txn) = rpc_client
-                .get_txns(
-                    Some(peer_id),
-                    GetTxnsWithHash {
-                        ids: missing_txn_ids,
-                    },
-                )
-                .await?;
-            let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> = {
-                fetched_missing_txn
-                    .into_iter()
-                    .map(|data| (ShortId(data.id()), data.try_into()))
-                    .collect()
-            };
+            let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> =
+                if missing_txn_ids.is_empty() {
+                    HashMap::new()
+                } else {
+                    let (_, fetched_missing_txn) = rpc_client
+                        .get_txns(
+                            Some(peer_id),
+                            GetTxnsWithHash {
+                                ids: missing_txn_ids,
+                            },
+                        )
+                        .await?;
+                    fetched_missing_txn
+                        .into_iter()
+                        .map(|data| (ShortId(data.id()), data.try_into()))
+                        .collect()
+                };
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
                     if let Some(txn) = fetched_missing_txn_map.remove(short_id) {
