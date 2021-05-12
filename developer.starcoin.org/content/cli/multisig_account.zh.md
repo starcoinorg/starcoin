@@ -163,7 +163,7 @@ starcoin% account transfer -b -v 10000000 -r 0f8a76c7fe8612b3dd6547d54546c1a9
 再查看多签账户的信息：
 
 ```bash
-starcoin% dev call --module-address 0x1 --module-name Account --func-name balance -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9
+starcoin% dev call --function 0x1::Account::balance -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9
 
 +------+----------+
 | type | value    |
@@ -184,7 +184,7 @@ starcoin% dev gen-multisig-txn \
 -p ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0d1a6ffadd1a40505d3283 \
 -p 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf \
 --threshold 2 \
---stdlib-script peer_to_peer \
+--function 0x1::TransferScripts::peer_to_peer \
 -t 0x1::STC::STC \
 --arg 0x2a3a2feefb08a61450e8c84b5ca86cfb \
 --arg x"b549cbd66a9f0a7fe645b21aa740ffad2a3a2feefb08a61450e8c84b5ca86cfb" \
