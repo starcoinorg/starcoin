@@ -183,7 +183,7 @@ impl BuiltinNetworkID {
 
 impl Default for BuiltinNetworkID {
     fn default() -> Self {
-        BuiltinNetworkID::Dev
+        BuiltinNetworkID::Main
     }
 }
 
