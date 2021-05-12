@@ -167,6 +167,11 @@ impl EsSinker {
             anyhow::bail!("cannot get block data with id {}", block_id);
         };
 
+        // first, rollback tip header
+        let rollback_to = (parent_hash, tip_header.block_number - 1);
+        self.update_local_tip_header(rollback_to.0, rollback_to.1)
+            .await?;
+
         // delete block
         {
             let resp = self
@@ -202,10 +207,6 @@ impl EsSinker {
             }
         }
 
-        // rollback tip header
-        let rollback_to = (parent_hash, tip_header.block_number - 1);
-        self.update_local_tip_header(rollback_to.0, rollback_to.1)
-            .await?;
         info!(
             "Rollback to block: {}, height: {}",
             rollback_to.0, rollback_to.1
