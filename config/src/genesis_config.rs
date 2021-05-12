@@ -385,7 +385,7 @@ impl ChainNetworkID {
 
     pub fn limit_peers(&self) -> u8 {
         match self {
-            Self::Builtin(BuiltinNetworkID::Main) => 3,
+            Self::Builtin(BuiltinNetworkID::Main) => 2,
             _ => 1,
         }
     }
@@ -1059,6 +1059,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
             network: BuiltinNetworkID::Barnard,
+            block_number: 277630,
             block_number: 277630,
         }),
         version: Version { major: 1 },
