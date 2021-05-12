@@ -1060,7 +1060,6 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
             network: BuiltinNetworkID::Barnard,
             block_number: 277630,
-            block_number: 277630,
         }),
         version: Version { major: 1 },
         reward_delay: 7,
