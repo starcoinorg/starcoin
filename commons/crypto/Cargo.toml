@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-serde = { version = "1.0.125" }
+serde = { version = "1.0.126" }
 serde_bytes = "0.11.5"
 hex = "0.4.3"
 anyhow = "1.0"

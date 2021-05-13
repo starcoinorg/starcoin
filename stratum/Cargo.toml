@@ -11,7 +11,7 @@ jsonrpc-derive =  { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913c
 jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913ce4632c1989c8fa1810823ec7c209a50d26c",features=["arbitrary_precision"]}
 jsonrpc-pubsub = { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913ce4632c1989c8fa1810823ec7c209a50d26c"}
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-serde = { version = "1.0.125" }
+serde = { version = "1.0.126" }
 hex = { version = "0.4.3", default-features = false }
 byteorder = "1.3.4"
 anyhow = "1.0.40"
