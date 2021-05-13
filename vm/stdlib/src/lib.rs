@@ -124,7 +124,7 @@ pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
         StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
         StdLibOptions::Compiled(version) => &*COMPILED_STDLIB
             .get(&version)
-            .expect("compiled modules should not be none"),
+            .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version)),
     }
 }
 
