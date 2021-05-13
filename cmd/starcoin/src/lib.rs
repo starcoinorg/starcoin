@@ -1,9 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::debug::{GenBlockCommand, SleepCommand, TxPoolStatusCommand};
-use scmd::{CmdContext, Command};
-
 pub mod account;
 pub mod chain;
 pub mod cli_state;
@@ -17,7 +14,9 @@ pub mod state;
 mod txpool;
 pub mod view;
 
+use crate::debug::{GenBlockCommand, SleepCommand, TxPoolStatusCommand};
 pub use cli_state::CliState;
+use scmd::{CmdContext, Command};
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
 
@@ -32,7 +31,9 @@ pub fn add_command(
                 .subcommand(account::TransferCommand)
                 .subcommand(account::AcceptTokenCommand)
                 .subcommand(account::ListCommand)
-                .subcommand(account::PartialSignTxnCommand)
+                .subcommand(account::import_multisig_cmd::ImportMultisigCommand)
+                .subcommand(account::sign_multisig_txn_cmd::GenerateMultisigTxnCommand)
+                .subcommand(account::submit_multisig_txn_cmd::SubmitMultiSignedTxnCommand)
                 .subcommand(account::UnlockCommand)
                 .subcommand(account::ExportCommand)
                 .subcommand(account::ImportCommand)
@@ -127,8 +128,6 @@ pub fn add_command(
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
                 .subcommand(dev::DeriveAddressCommand)
-                .subcommand(dev::GenerateMultisigTxnCommand)
-                .subcommand(dev::ExecuteMultiSignedTxnCommand)
                 .subcommand(dev::UpgradeModuleProposalCommand)
                 .subcommand(dev::UpgradeModuleProposalV2Command)
                 .subcommand(dev::UpgradeModulePlanCommand)
