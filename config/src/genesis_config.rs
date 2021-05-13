@@ -1052,8 +1052,6 @@ pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    //TODO set public key
-    let (_association_private_key, association_public_key) = genesis_multi_key_pair();
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
@@ -1083,7 +1081,8 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
-        association_key_pair: (None, association_public_key),
+        association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
+            .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version,
