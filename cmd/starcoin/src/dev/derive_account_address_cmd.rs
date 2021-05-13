@@ -43,8 +43,12 @@ impl CommandAction for DeriveAddressCommand {
             !opt.public_key.is_empty(),
             "at least one public key is provided"
         );
-        let auth_key = if opt.public_key.len() == 1 {
-            transaction::authenticator::AuthenticationKey::ed25519(opt.public_key.first().unwrap())
+        let (auth_key, public_key_string) = if opt.public_key.len() == 1 {
+            let public_key = opt.public_key.first().unwrap();
+            (
+                transaction::authenticator::AuthenticationKey::ed25519(public_key),
+                hex::encode(public_key.to_bytes()),
+            )
         } else {
             let threshold = opt.threshold.unwrap_or(opt.public_key.len() as u8);
 
@@ -55,13 +59,16 @@ impl CommandAction for DeriveAddressCommand {
 
                 MultiEd25519PublicKey::new(pubkeys, threshold)?
             };
-            transaction::authenticator::AuthenticationKey::multi_ed25519(&multi_public_key)
+            (
+                transaction::authenticator::AuthenticationKey::multi_ed25519(&multi_public_key),
+                hex::encode(multi_public_key.to_bytes()),
+            )
         };
 
         Ok(DerivedAddressData {
             address: auth_key.derived_address(),
-            auth_key_prefix: hex::encode(auth_key.prefix().to_vec()),
             auth_key: hex::encode(auth_key.to_vec()),
+            public_key: public_key_string,
         })
     }
 }
@@ -70,6 +77,5 @@ impl CommandAction for DeriveAddressCommand {
 pub struct DerivedAddressData {
     pub address: AccountAddress,
     pub auth_key: String,
-    /// hex encoded
-    pub auth_key_prefix: String,
+    pub public_key: String,
 }

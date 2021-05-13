@@ -1,6 +1,6 @@
 [package]
 name = "forkable-jellyfish-merkle"
-version = "1.0.0-beta.6"
+version = "1.0.0-rc"
 authors = ["Diem Association <opensource@diem.org>", "Starcoin Core Dev <dev@starcoin.org>"]
 description = "Diem jellyfish merkle"
 license = "Apache-2.0"
