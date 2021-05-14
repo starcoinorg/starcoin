@@ -10,7 +10,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::{
-    build_module_upgrade_plan, build_module_upgrade_proposal_v2, build_module_upgrade_queue_v2,
+    build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
 };
 use starcoin_types::transaction::{
     parse_transaction_argument, ScriptFunction, TransactionArgument,
@@ -175,11 +175,12 @@ fn test_upgrade_module() {
     let test_upgrade_module_package = Package::new_with_module(test_upgrade_module).unwrap();
 
     let dao_config = config.net().genesis_config().dao_config;
-    let (module_upgrade_proposal, _) = build_module_upgrade_proposal_v2(
+    let (module_upgrade_proposal, _) = build_module_upgrade_proposal(
         &test_upgrade_module_package,
         2,
         dao_config.min_action_delay,
         false,
+        config.net().stdlib_version(),
     );
 
     let proposal_txn = _sign_txn_with_association_account_by_rpc_client(
@@ -274,7 +275,11 @@ fn test_upgrade_module() {
     node_handle.generate_block().unwrap();
 
     // 5. queue
-    let module_upgrade_queue = build_module_upgrade_queue_v2(association_address(), proposal_id);
+    let module_upgrade_queue = build_module_upgrade_queue(
+        association_address(),
+        proposal_id,
+        config.net().stdlib_version(),
+    );
     let queue_txn = sign_txn_with_account_by_rpc_client(
         &cli_state,
         default_account.address,

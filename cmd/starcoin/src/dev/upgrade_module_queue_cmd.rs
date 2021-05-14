@@ -4,11 +4,15 @@
 use crate::cli_state::CliState;
 use crate::dev::sign_txn_helper::sign_txn_with_account_by_rpc_client;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::HashValue;
+use starcoin_rpc_client::RemoteStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_queue;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
@@ -87,23 +91,35 @@ impl CommandAction for UpgradeModuleQueueCommand {
         } else {
             sender
         };
-        let module_upgrade_queue = build_module_upgrade_queue(proposer_address, opt.proposal_id);
-        let signed_txn = sign_txn_with_account_by_rpc_client(
-            cli_state,
-            sender,
-            opt.max_gas_amount,
-            opt.gas_price,
-            opt.expiration_time,
-            TransactionPayload::ScriptFunction(module_upgrade_queue),
-        )?;
-        let txn_hash = signed_txn.id();
-        cli_state.client().submit_transaction(signed_txn)?;
+        let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
+        if let Some(stdlib_version) = chain_state_reader
+            .get_on_chain_config::<Version>()?
+            .map(|version| version.major)
+        {
+            let module_upgrade_queue = build_module_upgrade_queue(
+                proposer_address,
+                opt.proposal_id,
+                StdlibVersion::new(stdlib_version),
+            );
+            let signed_txn = sign_txn_with_account_by_rpc_client(
+                cli_state,
+                sender,
+                opt.max_gas_amount,
+                opt.gas_price,
+                opt.expiration_time,
+                TransactionPayload::ScriptFunction(module_upgrade_queue),
+            )?;
+            let txn_hash = signed_txn.id();
+            cli_state.client().submit_transaction(signed_txn)?;
 
-        println!("txn {:#x} submitted.", txn_hash);
+            println!("txn {:#x} submitted.", txn_hash);
 
-        if opt.blocking {
-            ctx.state().watch_txn(txn_hash)?;
+            if opt.blocking {
+                ctx.state().watch_txn(txn_hash)?;
+            }
+            Ok(txn_hash)
+        } else {
+            bail!("on chain config stdlib version can not be empty.")
         }
-        Ok(txn_hash)
     }
 }

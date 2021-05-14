@@ -716,53 +716,47 @@ pub fn build_stdlib_package_for_test(
     stdlib_package(stdlib_option, init_script)
 }
 
-pub fn build_module_upgrade_proposal_v2(
-    package: &Package,
-    version: u64,
-    day: u64,
-    enforced: bool,
-) -> (ScriptFunction, HashValue) {
-    let package_hash = package.crypto_hash();
-    (
-        ScriptFunction::new(
-            ModuleId::new(
-                core_code_address(),
-                Identifier::new("ModuleUpgradeScripts").unwrap(),
-            ),
-            Identifier::new("propose_module_upgrade_v2").unwrap(),
-            vec![stc_type_tag()],
-            vec![
-                bcs_ext::to_bytes(&package.package_address()).unwrap(),
-                bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
-                bcs_ext::to_bytes(&version).unwrap(),
-                bcs_ext::to_bytes(&day).unwrap(),
-                bcs_ext::to_bytes(&enforced).unwrap(),
-            ],
-        ),
-        package_hash,
-    )
-}
-
 pub fn build_module_upgrade_proposal(
     package: &Package,
     version: u64,
-    day: u64,
+    exec_delay: u64,
+    enforced: bool,
+    stdlib_version: StdlibVersion,
 ) -> (ScriptFunction, HashValue) {
     let package_hash = package.crypto_hash();
+    // propose_module_upgrade_v2 is available after v2 upgrade.
+    let (function_name, args) = if stdlib_version >= StdlibVersion::Version(2) {
+        (
+            "propose_module_upgrade_v2",
+            vec![
+                bcs_ext::to_bytes(&package.package_address()).unwrap(),
+                bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
+                bcs_ext::to_bytes(&version).unwrap(),
+                bcs_ext::to_bytes(&exec_delay).unwrap(),
+                bcs_ext::to_bytes(&enforced).unwrap(),
+            ],
+        )
+    } else {
+        (
+            "propose_module_upgrade",
+            vec![
+                bcs_ext::to_bytes(&package.package_address()).unwrap(),
+                bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
+                bcs_ext::to_bytes(&version).unwrap(),
+                bcs_ext::to_bytes(&exec_delay).unwrap(),
+            ],
+        )
+    };
+
     (
         ScriptFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
             ),
-            Identifier::new("propose_module_upgrade").unwrap(),
+            Identifier::new(function_name).unwrap(),
             vec![stc_type_tag()],
-            vec![
-                bcs_ext::to_bytes(&package.package_address()).unwrap(),
-                bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
-                bcs_ext::to_bytes(&version).unwrap(),
-                bcs_ext::to_bytes(&day).unwrap(),
-            ],
+            args,
         ),
         package_hash,
     )
@@ -786,38 +780,26 @@ pub fn build_module_upgrade_plan(
     )
 }
 
-pub fn build_module_upgrade_queue_v2(
-    proposal_address: AccountAddress,
-    proposal_id: u64,
-) -> ScriptFunction {
-    let upgrade_module = TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModuleV2").unwrap(),
-        type_params: vec![],
-    });
-
-    ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
-        Identifier::new("queue_proposal_action").unwrap(),
-        vec![stc_type_tag(), upgrade_module],
-        vec![
-            bcs_ext::to_bytes(&proposal_address).unwrap(),
-            bcs_ext::to_bytes(&proposal_id).unwrap(),
-        ],
-    )
-}
-
 pub fn build_module_upgrade_queue(
     proposal_address: AccountAddress,
     proposal_id: u64,
+    stdlib_version: StdlibVersion,
 ) -> ScriptFunction {
-    let upgrade_module = TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
-        name: Identifier::new("UpgradeModule").unwrap(),
-        type_params: vec![],
-    });
+    let upgrade_module = if stdlib_version >= StdlibVersion::Version(2) {
+        TypeTag::Struct(StructTag {
+            address: genesis_address(),
+            module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+            name: Identifier::new("UpgradeModuleV2").unwrap(),
+            type_params: vec![],
+        })
+    } else {
+        TypeTag::Struct(StructTag {
+            address: genesis_address(),
+            module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+            name: Identifier::new("UpgradeModule").unwrap(),
+            type_params: vec![],
+        })
+    };
 
     ScriptFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
