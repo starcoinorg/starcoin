@@ -9,257 +9,216 @@ weight: 5
 
 <!--more-->
 
-
 ## 前置准备
 
-请保证
+多签交易涉及到多个参与者。这里我们用 alice, bob, tom 三个参与者来说明多签交易的流程。
 
-1. starcoin 节点已经启动。
-2. 已经启动 cli 连接到节点。
-3. wallet 存在至少三个地址。
-4. 已经通过 `dev get_coin` 给默认的钱包地址充钱。
-
-下图是我的初始状态。
-
-```bash
-starcoin% account list
-+----------------------------------+------------+------------------------------------------------------------------+
-| address                          | is_default | public_key                                                       |
-+----------------------------------+------------+------------------------------------------------------------------+
-| 2a3a2feefb08a61450e8c84b5ca86cfb | false      | 908648b8fdff8b9e337b2e546c0ce5ca6f24dee715de0782e2f7943c677b6284 |
-+----------------------------------+------------+------------------------------------------------------------------+
-| 9503b1e9052e6c5cc0b4f9e8d303fa83 | false      | ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0d1a6ffadd1a40505d3283 |
-+----------------------------------+------------+------------------------------------------------------------------+
-| 6142815e14be403fef8048b945cd4685 | true       | 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf |
-+----------------------------------+------------+------------------------------------------------------------------+
+1. 首先你需要在本地启动三个 starcoin dev 节点，分别对应到 alice,bob,tom。 dev 节点启动时，会默认创建一个本地账户。
+```
+% starcoin -n dev -d alice
+% starcoin -n dev -d bob
+% starcoin -n dev -d tom
 ```
 
-给默认钱包地址充钱。
 
-```bash
+这里假设他们三者的私钥信息（只用于举例，请勿使用在正式网络中）分别是：
+
+- alice:
+  - address: 0x662275a33c99a1e3f4d1dd3bf712470f
+  - pubkey: 0x6cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c03034    
+  - prikey: 0x48d097cb7dafea94c0310c6c02bba075955913bf2d356faffbf9adc6fc6d8e1a
+- bob:
+  - address: 0x51888ec9961c09db913bfe2bfacd8ec1
+  - authkey: 0x951d6a3008eec3b0add413a622514d5c51888ec9961c09db913bfe2bfacd8ec1
+  - pubkey: 0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b584    
+  - prikey: 0x744dcfb091bce98d5aeec1e28471251a526d1b4a6240db1ec50655a285703bac
+  
+- tom: 
+  - address: 0x49ea9eb68253cde31bf4cda26d640a21
+  - pubkey: 0x3db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da7064066
+  - prikey: 0x74f6c2f05a7b369351a21af3afd05d94aed5b254269c5f149a23a4a600a202c0
+  
+
+2. 然后启动三个 starcoin console 分别连到三个节点中。
+
+```
+%starcoin -c alice/dev/starcoin.ipc -o json console
+%starcoin -c bob/dev/starcoin.ipc -o json console
+%starcoin -c tom/dev/starcoin.ipc -o json console 
+```
+
+3. 最后在 tom 的 starcoin console 用 `dev get_coin` 给 tom 账户充钱。
+
+```
 starcoin% dev get_coin
-txn mined in block hight: 1, hash: b75bbe0ac17639d746a823a67b278e892cd635aa83ca66694e374d059527e6cf
-+-----------------+------------------------------------------------------------------+
-| gas_unit_price  | 1                                                                |
-+-----------------+------------------------------------------------------------------+
-| id              | 865e314c93bc51eeb19599e8c87a10734d539494c90f2f9b0bb765e64f67c3e3 |
-+-----------------+------------------------------------------------------------------+
-| max_gas_amount  | 2000000                                                          |
-+-----------------+------------------------------------------------------------------+
-| sender          | 0000000000000000000000000a550c18                                 |
-+-----------------+------------------------------------------------------------------+
-| sequence_number | 1                                                                |
-+-----------------+------------------------------------------------------------------+
-
-starcoin% account show 6142815e14be403fef8048b945cd4685
-+--------------------+------------------------------------------------------------------+
-| account.address    | 6142815e14be403fef8048b945cd4685                                 |
-+--------------------+------------------------------------------------------------------+
-| account.is_default | true                                                             |
-+--------------------+------------------------------------------------------------------+
-| account.public_key | 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf |
-+--------------------+------------------------------------------------------------------+
-| auth_key_prefix    | e1ae28ee72cf133ad170b8a90eda5909                                 |
-+--------------------+------------------------------------------------------------------+
-| balances.STC       | 84005000000000                                                   |
-+--------------------+------------------------------------------------------------------+
-| sequence_number    | 0                                                                |
-+--------------------+------------------------------------------------------------------+
 ```
+
 
 做完上述准备后，下面开始我们的多签交易流程。主要步骤如下：
 
-1. 首先我们在链上创建一个多签账户。
-2. 然后从我的默认地址给这个多签账户转一笔钱。
-3. 然后发起一个多签交易：从多签账户给我的另外一个地址转账。
+1. 首先我们在本地创建一个多签账户。
+2. 然后从 alice 向这个多签账户转一笔钱。
+3. 最后以这个多签账户的名义发起一个多签交易：从多签账户给 bob 转账。
 
-## 创建多签账户
+## 生成多签账户
 
 这里假设读者了解多签账户的基本概念。
 
-这一小节里，我们会创建一个，由**三个**参与者共同维护的多签账户，交易只需要其中**两个**参与者的签名即可（ `threshold=2` ）。
-
-首先查看，前置准备中要求读者准备的三个地址，以及对应的公钥。
-
-```bash
-	starcoin% account list
-+----------------------------------+------------+------------------------------------------------------------------+
-| address                          | is_default | public_key                                                       |
-+----------------------------------+------------+------------------------------------------------------------------+
-| 2a3a2feefb08a61450e8c84b5ca86cfb | false      | 908648b8fdff8b9e337b2e546c0ce5ca6f24dee715de0782e2f7943c677b6284 |
-+----------------------------------+------------+------------------------------------------------------------------+
-| 9503b1e9052e6c5cc0b4f9e8d303fa83 | false      | ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0d1a6ffadd1a40505d3283 |
-+----------------------------------+------------+------------------------------------------------------------------+
-| 6142815e14be403fef8048b945cd4685 | true       | 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf |
-+----------------------------------+------------+------------------------------------------------------------------+
-```
-
+这一小节里，我们会创建由 **三个** 参与者共同维护的多签账户，交易只需要其中**两个**参与者的签名即可（ `threshold=2` ）。
 然后我们从这三个公钥以及 `threshold=2`  来生成多签账户的地址信息。
 
-- 公钥的顺序不影响生成的地址。内部会根据公钥的bytes做排序。
-- `-t 2` 表明 `threshold=2`。
+首先分别在 alice，bob，tom 的节点中生成三人共同维护的多签账户。
+
+在 alice 的 console 中执行：
 
 ```bash
-# 公钥的顺序不影响生成的地址。内部会根据公钥的bytes做排序
-starcoin% dev derive-address -t 2 -p ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0d1a6ffadd1a40505d3283 -p 908648b8fdff8b9e337b2e546c0ce5ca6f24dee715de0782e2f7943c677b6284 -p 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf
-+-----------------+----------------------------------+
-| address         | 0f8a76c7fe8612b3dd6547d54546c1a9 |
-+-----------------+----------------------------------+
-| auth_key        | e0d3d4c38cb2c3fda21425bbca8822c1bee64e38f075031e6a508459213d2461 |
-+-----------------+------------------------------------------------------------------+
-| auth_key_prefix | e0d3d4c38cb2c3fda21425bbca8822c1 |
-+-----------------+----------------------------------+
 
+starcoin% account import-multisig --pubkey 0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b584 --pubkey 0x3db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da7064066 --prikey 0x48d097cb7dafea94c0310c6c02bba075955913bf2d356faffbf9adc6fc6d8e1a -t 2
 ```
 
-最后执行 create_account 交易，在链上创建这个账户。命令如下：
+在 bob 的 console 中执行：
 
 ```bash
-# 从默认地址账户发起交易，创建多签账户，并给这个多签账户转账 1000 STC。
-starcoin% account execute-function -b --function 0x1::TransferScripts::peer_to_peer -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9 --arg x"e0d3d4c38cb2c3fda21425bbca8822c1bee64e38f075031e6a508459213d2461" --arg 10000000u128
 
-txn becac3e5f1605255e6274b7b0a7c8f17262439c123f96f584cbce8d667f0800d submitted.
-txn mined in block hight: 5, hash: c20a82c741f5f552b622e797769567dabf577eb00c466d81dff8f9cada5fda45
-becac3e5f1605255e6274b7b0a7c8f17262439c123f96f584cbce8d667f0800d
+starcoin% account import-multisig --pubkey 0x6cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c03034 --pubkey 0x3db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da7064066 --prikey 0x744dcfb091bce98d5aeec1e28471251a526d1b4a6240db1ec50655a285703bac -t 2
 ```
-- 多签账户和普通账户的创建流程是一样的。只是多签账户的地址信息和 auth_key 的生成依赖多签账户参与者的公钥。
-- `-- 0x0f8a76c7fe8612b3dd6547d54546c1a9 x"e0d3d4c38cb2c3fda21425bbca8822c1bee64e38f075031e6a508459213d2461" 10000000u128` 是 `create_account` 的参数，第一个是 多签账户的地址，第二个是多签账户的 `auth_key`，第三个是多签账户初始时的账户余额。
-- 如果遇到 `Server returned rpc error Invalid params: account 6142815e14be403fef8048b945cd4685 is locked` 或者类似的错误，请先执行  `account unlock -t 100000 [your-address]` 命令解锁账户。
 
-以上命令执行成功后，多签账户就创建成功了。可以用下面的命令查看这个账户的信息：
+在 tom 的 console 中执行：
 
 ```bash
-starcoin% dev call --module-address 0x1 --module-name Account --func-name balance -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9
 
-+------+----------+
-| type | value    |
-+------+----------+
-| U128 | 10000000 |
-+------+----------+
+starcoin% account import-multisig --pubkey 0x6cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c03034 --pubkey 0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b584 --prikey 0x74f6c2f05a7b369351a21af3afd05d94aed5b254269c5f149a23a4a600a202c0 -t 2
 ```
+
+你会发现，三个命令会生成相同的多签地址信息。
+
+```bash
+starcoin% account show 0xdec266f6749fa0b193f3a7f89d3cd9f2
+{
+  "ok": {
+    "account": {
+      "address": "0xdec266f6749fa0b193f3a7f89d3cd9f2",
+      "is_default": false,
+      "public_key": "0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b5843db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da70640666cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c0303402"
+    },
+    "auth_key": "0x0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2",
+    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7g8d27hgxte5l3d35azv03lkte0aasnx7e6flg93j0e607ya8nvly44eynp",
+    "sequence_number": null,
+    "balances": {}
+  }
+}
+```
+
+
 
 ## 给多签账户打钱
 
-虽然我们的多签账户已经有 `10000000` 个 STC 了，但是可能还不够多。
+这一小节，我们从 tom 账户给这个多签账户转 1000 个 STC。
 
-这一小节，我们再从默认钱包地址给这个多签账户转 1000w 个 STC。
+在 tom 的 starcoin console 中执行：
 
 ```bash
-starcoin% account transfer -b -v 10000000 -r 0f8a76c7fe8612b3dd6547d54546c1a9
-+-----------------+------------------------------------------------------------------+
-| gas_unit_price  | 1                                                                |
-+-----------------+------------------------------------------------------------------+
-| id              | 170bd4c473f76d29a050a2314e956464cfbf356eadabbac4804785dae34fd53c |
-+-----------------+------------------------------------------------------------------+
-| max_gas_amount  | 1000000                                                          |
-+-----------------+------------------------------------------------------------------+
-| sender          | 6142815e14be403fef8048b945cd4685                                 |
-+-----------------+------------------------------------------------------------------+
-| sequence_number | 1                                                                |
-+-----------------+------------------------------------------------------------------+
-
+starcoin% account execute-function -b --function 0x1::TransferScripts::peer_to_peer  -t 0x1::STC::STC --arg 0xdec266f6749fa0b193f3a7f89d3cd9f2 --arg x"0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2" --arg 1000000000000u128
 ```
 
 再查看多签账户的信息：
 
 ```bash
-starcoin% dev call --function 0x1::Account::balance -t 0x1::STC::STC --arg 0x0f8a76c7fe8612b3dd6547d54546c1a9
-
-+------+----------+
-| type | value    |
-+------+----------+
-| U128 | 20000000 |
-+------+----------+
+starcoin% account show 0xdec266f6749fa0b193f3a7f89d3cd9f2
+{
+  "ok": {
+    "account": {
+      "address": "0xdec266f6749fa0b193f3a7f89d3cd9f2",
+      "is_default": false,
+      "public_key": "0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b5843db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da70640666cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c0303402"
+    },
+    "auth_key": "0x0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2",
+    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7g8d27hgxte5l3d35azv03lkte0aasnx7e6flg93j0e607ya8nvly44eynp",
+    "sequence_number": 0,
+    "balances": {
+      "STC": 1000000000000
+    }
+  }
+}
 ```
 
 ## 发起多签交易
 
-现在多签账户有了 2000w STC。
+现在多签账户有了 1000 STC。
 
-我们来发起一个多签交易：从多签账户往我的账户地址（ `2a3a2feefb08a61450e8c84b5ca86cfb` ）转账 500w 个 STC。
+我们来发起一个多签交易：从多签账户往 bob 转账 1 个 STC。
+
+在 tom 的 starcoin console 中执行：
 
 ```bash
-starcoin% dev gen-multisig-txn \
--p 908648b8fdff8b9e337b2e546c0ce5ca6f24dee715de0782e2f7943c677b6284 \
--p ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0d1a6ffadd1a40505d3283 \
--p 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf \
---threshold 2 \
---function 0x1::TransferScripts::peer_to_peer \
--t 0x1::STC::STC \
---arg 0x2a3a2feefb08a61450e8c84b5ca86cfb \
---arg x"b549cbd66a9f0a7fe645b21aa740ffad2a3a2feefb08a61450e8c84b5ca86cfb" \
---arg 5000000u128
+starcoin% account sign-multisig-txn -s 0xdec266f6749fa0b193f3a7f89d3cd9f2 --function 0x1::TransferScripts::peer_to_peer -t 0x1::STC::STC --arg 0x51888ec9961c09db913bfe2bfacd8ec1 --arg x"951d6a3008eec3b0add413a622514d5c51888ec9961c09db913bfe2bfacd8ec1" --arg 1000000000u128
 
-/Users/annali007/projects/starcoin/28f3bf96.multisig-txn
+mutlisig txn(address: 0xdec266f6749fa0b193f3a7f89d3cd9f2, threshold: 2): 1 signatures collected
+still require 1 signatures
+{
+  "ok": "/Users/caojiafeng/projects/starcoinorg/starcoin/5e764f83.multisig-txn"
+}
 ```
 
 其中 `peer_to_peer` 脚本参数：
-- `0x2a3a2feefb08a61450e8c84b5ca86cfb` 是收款人地址。
-- `x"b549cbd66a9f0a7fe645b21aa740ffad2a3a2feefb08a61450e8c84b5ca86cfb"` 是收款人的 auth_key。
-- `5000000u128` 是要发送的 token 数量。
-生成的 txn 会以文件形式保存在当前目录下，文件名是 txn 的 short hash。
+- `0x51888ec9961c09db913bfe2bfacd8ec1` 是 bob 地址。
+- `x"951d6a3008eec3b0add413a622514d5c51888ec9961c09db913bfe2bfacd8ec1"` 是 bob 的 auth_key。
+- `1000000000u128` 是要发送的 token 数量。 
 
-拿到这个文件后，将其分发给多签账户的参与者去进行签名。
+该命令会生成原始交易，并用 alice 的私钥签名，生成的 txn 会以文件形式保存在当前目录下，文件名是 txn 的 short hash。
 
-## 签名
+命令行提示：该多签交易还需要一个签名。
+那么需要将生成的 txn 文件分发给该多签账户的其他参与者去签名。
 
-多签账户参与者，可以利用下面的命令对交易签名。
+## ALICE 签名
 
-这里我们让如下两个参与者签名（threshold=2）。
+alice 拿到上述的交易文件后，在自己的 starcoin cosole 中签名：
 
-- address：9503b1e9052e6c5cc0b4f9e8d303fa83
-
-    public_key: ca9eb069f655145d1bf61829e59ef5c70ac10c8acf0d1a6ffadd1a40505d3283
-
-- address：6142815e14be403fef8048b945cd4685
-
-    public_key: 37283fa8e0b2aa1df9567104d72053c3ee6947bf96559a9a8452870f9d2b5dcf
 
 ```bash
-starcoin% account partial-sign-txn -i /Users/annali007/projects/starcoin/28f3bf96.multisig-txn -s 9503b1e9052e6c5cc0b4f9e8d303fa83
-/Users/annali007/projects/starcoin/28f3bf96.multisig-txn.partial
-starcoin% account partial-sign-txn -i /Users/annali007/projects/starcoin/28f3bf96.multisig-txn.partial -s 6142815e14be403fef8048b945cd4685
-/Users/annali007/projects/starcoin/28f3bf96.multisig-txn.partial
+starcoin% account sign-multisig-txn /Users/caojiafeng/projects/starcoinorg/starcoin/5e764f83.multisig-txn
+mutlisig txn(address: 0xdec266f6749fa0b193f3a7f89d3cd9f2, threshold: 2): 2 signatures collected
+enough signatures collected for the multisig txn, txn can be submitted now
+{
+  "ok": "/Users/caojiafeng/projects/starcoinorg/starcoin/194d547f.multisig-txn"
+}
 ```
 
-签名会产生一个 partial-signed 的交易文件。该交易文件可以继续分发给其他参与者进行签名。
+该命令会生成另一个交易文件，包含有 tom 和 alice 的签名。
+返回信息提示用户，该多签交易已经收集到足够多的签名，可以提交到链上执行了。
 
-当然其他参与者也可以直接对原始的交易文件签名，但聚合签名时，需要收集所有交易者的  partial-signed 文件。
 
-## 聚合签名并提交交易
+## 提交多签交易
 
-当参与者签名完成后，需要收集到所有的 partial signed 交易文件。
-
-然后利用下面的命令提交多签交易到链上。
-
-- 该命令接受多个文件路径参数。
-- 这里只有一个 partial-signed 文件，因为上一小节，第二个参与者是基于第一个参与者签名后的 partial-signed 文件做签名的。
+多签交易完整生成后，任何人都可以将其提交到链上。
+这里我们从 alice 的 starcoin console 中提交该多签交易。
 
 ```bash
-starcoin% dev submit-multisig-txn -b /Users/annali007/projects/starcoin/28f3bf96.multisig-txn.partial
-txn mined in block hight: 9, hash: e591f207743d38825a35230724580b9dd3dd584850a4af52c1f82ed4993bf163
-b53a6355e3ed23d81aaae716cb9999233ca2e7611fbceef36d99f870c476971c
+starcoin% account submit-multisig-txn /Users/caojiafeng/projects/starcoinorg/starcoin/194d547f.multisig-txn
+{
+  "ok": "0x194d547f06018c0bad6312db0dae75ce4dd26afd302410a9647e5720e395878a"
+}
 ```
 
-命令执行完后，我们再查看 `2a3a2feefb08a61450e8c84b5ca86cfb` 地址的账户信息。
-
-可以发现，balances.STC 是 500w，说明转账成功。
+等待10秒，再查看多签账户的信息，会发现多签账户的余额已经减少了（gas 费用和转出去的 1 stc）， sequence number 也变成了 1，说明交易已经执行成功了。
 
 ```bash
-starcoin% account show 2a3a2feefb08a61450e8c84b5ca86cfb
-+--------------------+------------------------------------------------------------------+
-| account.address    | 2a3a2feefb08a61450e8c84b5ca86cfb                                 |
-+--------------------+------------------------------------------------------------------+
-| account.is_default | false                                                            |
-+--------------------+------------------------------------------------------------------+
-| account.public_key | 908648b8fdff8b9e337b2e546c0ce5ca6f24dee715de0782e2f7943c677b6284 |
-+--------------------+------------------------------------------------------------------+
-| auth_key_prefix    | b549cbd66a9f0a7fe645b21aa740ffad                                 |
-+--------------------+------------------------------------------------------------------+
-| balances.STC       | 5000000                                                          |
-+--------------------+------------------------------------------------------------------+
-| sequence_number    | 0                                                                |
-+--------------------+------------------------------------------------------------------+
+starcoin% account show 0xdec266f6749fa0b193f3a7f89d3cd9f2
+{
+  "ok": {
+    "account": {
+      "address": "0xdec266f6749fa0b193f3a7f89d3cd9f2",
+      "is_default": false,
+      "public_key": "0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b5843db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da70640666cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c0303402"
+    },
+    "auth_key": "0x0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2",
+    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7g8d27hgxte5l3d35azv03lkte0aasnx7e6flg93j0e607ya8nvly44eynp",
+    "sequence_number": 1,
+    "balances": {
+      "STC": 998998928221
+    }
+  }
+}
 ```
 
 ## 结语

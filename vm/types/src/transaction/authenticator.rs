@@ -520,15 +520,7 @@ impl AccountSignature {
                 SignedUserTransaction::ed25519(raw_txn, public_key, signature)
             }
             Self::Multi(public_key, signature) => {
-                if signature.is_enough() {
-                    SignedUserTransaction::multi_ed25519(raw_txn, public_key, signature.into())
-                } else {
-                    anyhow::bail!(
-                        "MultiEd25519SignatureShard do not have enough signatures, current: {}, threshold: {}",
-                        signature.signatures().len(),
-                        signature.threshold()
-                    )
-                }
+                SignedUserTransaction::multi_ed25519(raw_txn, public_key, signature.into())
             }
         })
     }

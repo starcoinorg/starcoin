@@ -11,6 +11,7 @@ use crate::{SigningKey, Uniform};
 use anyhow::{anyhow, bail, ensure, Result};
 use diem_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -24,9 +25,8 @@ pub struct MultiEd25519KeyShard {
     /// Public keys must contains all public key of the MultiEd25519PrivateKey
     public_keys: Vec<Ed25519PublicKey>,
     threshold: u8,
-    private_keys: Vec<Ed25519PrivateKey>,
-    /// The private_key index in MultiEd25519PrivateKey, if has multi private_keys, use the first key index.
-    index: u8,
+    // pos => private_key
+    private_keys: BTreeMap<usize, Ed25519PrivateKey>,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -40,40 +40,37 @@ impl MultiEd25519KeyShard {
         public_keys: Vec<Ed25519PublicKey>,
         threshold: u8,
         private_key: Ed25519PrivateKey,
-        index: u8,
     ) -> Result<Self, CryptoMaterialError> {
-        Self::new_multi(public_keys, threshold, vec![private_key], index)
+        Self::new_multi(public_keys, threshold, vec![private_key])
     }
 
     pub fn new_multi(
         public_keys: Vec<Ed25519PublicKey>,
         threshold: u8,
         private_keys: Vec<Ed25519PrivateKey>,
-        index: u8,
     ) -> Result<Self, CryptoMaterialError> {
         let num_of_public_keys = public_keys.len();
         let num_of_private_keys = private_keys.len();
         if threshold == 0 || num_of_private_keys == 0 || num_of_public_keys < threshold as usize {
             Err(CryptoMaterialError::ValidationError)
-        } else if num_of_private_keys > MAX_NUM_OF_KEYS
-            || num_of_public_keys > MAX_NUM_OF_KEYS
-            || (index as usize) >= num_of_public_keys
-        {
+        } else if num_of_private_keys > MAX_NUM_OF_KEYS || num_of_public_keys > MAX_NUM_OF_KEYS {
             Err(CryptoMaterialError::WrongLengthError)
         } else {
-            for (i, private_key) in private_keys.iter().enumerate() {
-                let public_key_idx = (index as usize) + i;
-                let public_key = &public_keys[public_key_idx];
+            let mut pos_verified_private_keys = BTreeMap::default();
+            for private_key in private_keys {
                 let private_key_public_key = private_key.public_key();
-                if public_key != &private_key_public_key {
-                    return Err(CryptoMaterialError::ValidationError);
-                }
+                match public_keys
+                    .iter()
+                    .position(|k| k == &private_key_public_key)
+                {
+                    Some(pos) => pos_verified_private_keys.insert(pos, private_key),
+                    None => return Err(CryptoMaterialError::ValidationError),
+                };
             }
             Ok(Self {
                 public_keys,
                 threshold,
-                private_keys,
-                index,
+                private_keys: pos_verified_private_keys,
             })
         }
     }
@@ -96,10 +93,8 @@ impl MultiEd25519KeyShard {
             .collect::<Vec<_>>();
         private_keys
             .into_iter()
-            .enumerate()
-            .map(|(idx, private_key)| {
-                Self::new(public_keys.clone(), threshold, private_key, idx as u8)
-                    .map_err(anyhow::Error::new)
+            .map(|private_key| {
+                Self::new(public_keys.clone(), threshold, private_key).map_err(anyhow::Error::new)
             })
             .collect()
     }
@@ -108,16 +103,12 @@ impl MultiEd25519KeyShard {
         MultiEd25519PublicKey::new(self.public_keys.clone(), self.threshold)
             .expect("New MultiEd25519PublicKey should success.")
     }
-    pub fn private_keys(&self) -> &[Ed25519PrivateKey] {
-        self.private_keys.as_slice()
+    pub fn private_keys(&self) -> Vec<Ed25519PrivateKey> {
+        self.private_keys.values().cloned().collect()
     }
 
     pub fn threshold(&self) -> u8 {
         self.threshold
-    }
-
-    pub fn index(&self) -> u8 {
-        self.index
     }
 
     pub fn len(&self) -> usize {
@@ -132,8 +123,7 @@ impl MultiEd25519KeyShard {
         let signatures: Vec<(Ed25519Signature, u8)> = self
             .private_keys
             .iter()
-            .enumerate()
-            .map(|(i, item)| (item.sign(message), self.index + (i as u8)))
+            .map(|(i, item)| (item.sign(message), *i as u8))
             .collect();
 
         MultiEd25519SignatureShard::new(
@@ -151,7 +141,6 @@ impl ValidCryptoMaterial for MultiEd25519KeyShard {
         bytes.push(self.public_keys.len() as u8);
         bytes.push(self.threshold);
         bytes.push(self.private_keys.len() as u8);
-        bytes.push(self.index);
 
         bytes.extend(
             self.public_keys
@@ -161,7 +150,7 @@ impl ValidCryptoMaterial for MultiEd25519KeyShard {
         );
         bytes.extend(
             self.private_keys
-                .iter()
+                .values()
                 .flat_map(ValidCryptoMaterial::to_bytes)
                 .collect::<Vec<u8>>(),
         );
@@ -187,34 +176,34 @@ impl TryFrom<&[u8]> for MultiEd25519KeyShard {
 
     /// Deserialize an Ed25519PrivateKey. This method will also check for key and threshold validity.
     fn try_from(bytes: &[u8]) -> Result<MultiEd25519KeyShard, Self::Error> {
+        const HEADER_LEN: usize = 3;
         let bytes_len = bytes.len();
-        if bytes_len < 4 {
+        if bytes_len < HEADER_LEN {
             return Err(CryptoMaterialError::WrongLengthError);
         }
         let public_key_len = bytes[0];
         let threshold = bytes[1];
         let private_key_len = bytes[2];
-        let index = bytes[3];
 
         let public_key_bytes_len = public_key_len as usize * ED25519_PUBLIC_KEY_LENGTH;
         let private_key_bytes_len = private_key_len as usize * ED25519_PRIVATE_KEY_LENGTH;
-        if bytes_len < 4 + public_key_bytes_len + private_key_bytes_len {
+        if bytes_len < HEADER_LEN + public_key_bytes_len + private_key_bytes_len {
             return Err(CryptoMaterialError::WrongLengthError);
         }
-        let public_key_bytes = &bytes[4..4 + public_key_bytes_len];
+        let public_key_bytes = &bytes[HEADER_LEN..HEADER_LEN + public_key_bytes_len];
 
         let public_keys: Result<Vec<Ed25519PublicKey>, _> = public_key_bytes
             .chunks_exact(ED25519_PUBLIC_KEY_LENGTH)
             .map(Ed25519PublicKey::try_from)
             .collect();
 
-        let private_key_bytes = &bytes[4 + public_key_bytes_len..];
+        let private_key_bytes = &bytes[HEADER_LEN + public_key_bytes_len..];
         let private_keys: Result<Vec<Ed25519PrivateKey>, _> = private_key_bytes
             .chunks_exact(ED25519_PRIVATE_KEY_LENGTH)
             .map(Ed25519PrivateKey::try_from)
             .collect();
 
-        MultiEd25519KeyShard::new_multi(public_keys?, threshold, private_keys?, index)
+        MultiEd25519KeyShard::new_multi(public_keys?, threshold, private_keys?)
     }
 }
 
