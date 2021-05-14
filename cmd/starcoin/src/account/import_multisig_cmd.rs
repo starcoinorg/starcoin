@@ -24,7 +24,7 @@ pub struct ImportMultisigOpt {
     /// if account_address is absent, generate address by public_key.
     account_address: Option<AccountAddress>,
 
-    #[structopt(long = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(long = "pubkey", max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public keys of other participants in this multisig account.
     public_keys: Vec<Ed25519PublicKey>,
 
@@ -32,7 +32,11 @@ pub struct ImportMultisigOpt {
     /// In multi-sig case, a threshold is needed.
     threshold: u8,
 
-    #[structopt(long = "prikey-file", required = true, min_values = 1, max_values = 32)]
+    #[structopt(long = "prikey", max_values = 32, parse(try_from_str=Ed25519PrivateKey::from_encoded_string))]
+    /// hex encoded private key, if you control multi private keys, provide multi args.
+    private_keys: Vec<Ed25519PrivateKey>,
+
+    #[structopt(long = "prikey-file", max_values = 32)]
     /// private key file contain the hex-encoded private key, if you control multi private keys, provide multi args.
     private_key_files: Vec<PathBuf>,
 }
@@ -53,10 +57,16 @@ impl CommandAction for ImportMultisigCommand {
         let opt: &ImportMultisigOpt = ctx.opt();
 
         let mut private_keys = vec![];
+        for p in &opt.private_keys {
+            private_keys.push(p.clone());
+        }
         for file in &opt.private_key_files {
             let prikey =
                 Ed25519PrivateKey::from_encoded_string(std::fs::read_to_string(file)?.trim())?;
             private_keys.push(prikey);
+        }
+        if private_keys.is_empty() {
+            anyhow::bail!("require at least one private key or private file");
         }
 
         let public_keys = {
