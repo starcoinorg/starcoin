@@ -109,7 +109,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
         let args = opt.args.clone().unwrap_or_default();
 
         // gen multisig txn or read from file sent by other participants.
-        let (signed_txn, existing_signatures) =
+        let (raw_txn, existing_signatures) =
             if let Some(function_id) = opt.script_function.clone().map(|t| t.0) {
                 let sender = ctx.opt().sender.expect("sender adress should be provided");
                 let script_function = ScriptFunction::new(
@@ -163,7 +163,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             };
 
         // sign the multi txn using my private keys.
-        let sender = signed_txn.sender();
+        let sender = raw_txn.sender();
         let account = ctx
             .state()
             .client()
@@ -175,16 +175,15 @@ impl CommandAction for GenerateMultisigTxnCommand {
             }
             AccountPublicKey::Multi(m) => m.clone(),
         };
-
-        // pre-run the txn.
-        {
+        // pre-run the txn when first generation.
+        if opt.multisig_txn_file.is_none() {
             let output: TransactionOutputView = {
                 let state_view = RemoteStateReader::new(client)?;
                 playground::dry_run(
                     &state_view,
                     DryRunTransaction {
                         public_key: AccountPublicKey::Multi(account_public_key.clone()),
-                        raw_txn: signed_txn.clone(),
+                        raw_txn: raw_txn.clone(),
                     },
                 )
                 .map(|(_, b)| b.into())?
@@ -200,7 +199,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             }
         }
 
-        let partial_signed_txn = client.account_sign_txn(signed_txn)?;
+        let partial_signed_txn = client.account_sign_txn(raw_txn)?;
         let my_signatures = if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
             partial_signed_txn.authenticator()
         {
