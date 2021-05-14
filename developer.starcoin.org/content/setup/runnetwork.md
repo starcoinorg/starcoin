@@ -95,4 +95,12 @@ Inspiration of the name "Barnard" comes from the [Barnard's Star](https://en.wik
 
 ## Join main network
 
-Mainnet will launch between April and May, 2021.
+```shell
+starcoin -n main
+```
+
+The default network is main, so also just run:
+
+```shell
+starcoin
+```

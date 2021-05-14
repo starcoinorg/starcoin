@@ -30,7 +30,13 @@ More detailed dev instructions please read [Run starcoin dev network](https://de
 ## Join a test network
 
 ```shell
-starcoin -n halley console
+starcoin -n barnard console
+```
+
+## Join main network
+
+```shell
+starcoin -n main console
 ```
 
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/runnetwork/).
@@ -38,8 +44,9 @@ More detailed test network info please read [Join starcoin test network](https:/
 ## Network deployment status
 
 1. halley: auto deploy latest code.
-2. proxima: v1.0.0.beta.5
-3. barnard: v1.0.0.beta.5
+2. proxima: v1.0.0-rc
+3. barnard: v1.0.0-rc
+4. main: v1.0.0-rc
 
 ## Contribution
 Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.
