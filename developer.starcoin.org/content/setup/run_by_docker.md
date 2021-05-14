@@ -23,16 +23,16 @@ docker pull starcoin/starcoin:v0.9.3
 
 2. Run starcoin node
 
-Run barnard network node
+Run main network node
 
 ```shell
-docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin -n barnard
+docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin -n main
 ``` 
 
 3. Attach to console
 
 ```shell
-docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/barnard/starcoin.ipc console
+docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/main/starcoin.ipc console
 ```
 
 More detail about run a network node see [Run/Join Network](./runnetwork).

@@ -95,4 +95,8 @@ starcoin -n barnard
 
 ## 加入主网
 
-主网将于 2021 年 4-5 月 Barnard 某个高度启动，具体高度待公布。
+```shell
+starcoin -n main
+```
+
+默认网络是主网，所以 -n 参数可省略。
