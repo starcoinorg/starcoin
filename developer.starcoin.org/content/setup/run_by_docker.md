@@ -32,7 +32,7 @@ docker run --name starcoin -d --network host -v ~/.starcoin/:/root/.starcoin/ st
 3. Attach to console
 
 ```shell
-docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect ~/.starcoin/main/starcoin.ipc console
+docker run --rm -it -v  ~/.starcoin/:/root/.starcoin/ starcoin/starcoin:latest /starcoin/starcoin --connect /root/.starcoin/main/starcoin.ipc console
 ```
 
 More detail about run a network node see [Run/Join Network](./runnetwork).
