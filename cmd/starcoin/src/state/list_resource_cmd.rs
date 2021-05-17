@@ -18,7 +18,7 @@ pub struct ListResourceOpt {
     /// address which the resources is under of.
     account_address: AccountAddress,
     #[structopt(name = "state_root")]
-    /// address which the resources is under of.
+    /// state_root of the block for listing resource
     state_root: Option<HashValue>,
 }
 
