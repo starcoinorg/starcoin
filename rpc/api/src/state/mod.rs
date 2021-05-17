@@ -26,6 +26,7 @@ pub trait StateApi {
     fn get_account_state_set(
         &self,
         address: AccountAddress,
+        state_root: Option<HashValue>,
     ) -> FutureResult<Option<AccountStateSetView>>;
 
     #[rpc(name = "state.get_state_root")]

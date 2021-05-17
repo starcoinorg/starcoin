@@ -458,9 +458,14 @@ impl RpcClient {
     pub fn get_account_state_set(
         &self,
         address: AccountAddress,
+        state_root: Option<HashValue>,
     ) -> anyhow::Result<Option<AccountStateSetView>> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_account_state_set(address))
-            .map_err(map_err)
+        self.call_rpc_blocking(|inner| {
+            inner
+                .state_client
+                .get_account_state_set(address, state_root)
+        })
+        .map_err(map_err)
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValueView>> {
