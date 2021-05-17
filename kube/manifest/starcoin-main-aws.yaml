@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 3
+  replicas: 6
   template:
     metadata:
       name: starcoin
@@ -20,7 +20,7 @@ spec:
         network: main
     spec:
       nodeSelector:
-        starcoin/node-pool: seed-main-pool
+        starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
         image: starcoin/starcoin:v1.0.0-rc
