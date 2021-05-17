@@ -74,15 +74,16 @@ where
     fn get_account_state_set(
         &self,
         address: AccountAddress,
+        state_root: Option<HashValue>,
     ) -> FutureResult<Option<AccountStateSetView>> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
         let fut = async move {
             let state = state_service
                 .clone()
-                .get_account_state_set(address, None)
+                .get_account_state_set(address, state_root)
                 .await?;
-            let state_root = state_service.state_root().await?;
+            let state_root = state_root.unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
             let annotator = MoveValueAnnotator::new(&statedb);
             match state {
