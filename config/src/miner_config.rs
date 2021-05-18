@@ -22,7 +22,7 @@ pub struct MinerConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(long = "disable-miner-client")]
-    /// Don't start a miner client in node.
+    /// Don't start a miner client in node. The main network miner client is disable in default.
     /// This flag support both cli and config file.
     pub disable_miner_client: Option<bool>,
 
@@ -41,7 +41,9 @@ impl MinerConfig {
         self.base.as_ref().expect("Config should init")
     }
     pub fn disable_miner_client(&self) -> bool {
-        self.disable_miner_client.unwrap_or(false)
+        //The main network miner client is disable in default.
+        self.disable_miner_client
+            .unwrap_or_else(|| self.base().net.is_main())
     }
     pub fn is_disable_mint_empty_block(&self) -> bool {
         self.disable_mint_empty_block
