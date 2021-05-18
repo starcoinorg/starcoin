@@ -1055,9 +1055,10 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::FutureBlock(FutureBlockParameter {
-            network: BuiltinNetworkID::Barnard,
-            block_number: 310000,
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
+            parent_hash: HashValue::from_hex_literal("0xb82a2c11f2df62bf87c2933d0281e5fe47ea94d5f0049eec1485b682df29529a").unwrap(),
+            timestamp: 1621311100863,
+            difficulty: 0xb1ec37.into(),
         }),
         version: Version { major: 1 },
         reward_delay: 7,
