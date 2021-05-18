@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 3
+  replicas: 9
   template:
     metadata:
       name: starcoin
@@ -22,43 +22,43 @@ spec:
       nodeSelector:
         starcoin/node-pool: seed-pool
       containers:
-      - name: starcoin
-        image: starcoin/starcoin:v1.0.0-beta.5
-        imagePullPolicy: Always
-        command:
-          - bash
-          - -c
-        args:
-          -
-            rm -rf /sc-data/main/starcoin.ipc /sc-data/main/starcoindb/db/starcoindb/LOCK;
-            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
-            node_key=${node_keys[$id]};
-            if [ ! -z $node_key ]; then
+        - name: starcoin
+          image: starcoin/starcoin:v1.0.0-rc
+          imagePullPolicy: Always
+          command:
+            - bash
+            - -c
+          args:
+            -
+              rm -rf /sc-data/main/starcoin.ipc /sc-data/main/starcoindb/db/starcoindb/LOCK;
+              id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+              node_key=${node_keys[$id]};
+              if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
-            fi;
-            /starcoin/starcoin -n main --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 --slog-separate-store true -d /sc-data $node_key_flag;
-        ports:
-          - containerPort: 9840
-            hostPort: 9840
-        volumeMounts:
-        - name: starcoin-volume
-          mountPath: /sc-data
-        env:
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: NODE_KEYS
-            valueFrom:
-              secretKeyRef:
-                name: node-keys
-                key: node-keys
+              fi;
+              /starcoin/starcoin -n main --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 --slog-separate-store true -d /sc-data $node_key_flag;
+          ports:
+            - containerPort: 9840
+              hostPort: 9840
+          volumeMounts:
+            - name: starcoin-volume
+              mountPath: /sc-data
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: node-keys
+                  key: node-keys
   volumeClaimTemplates:
-  - metadata:
-      name: starcoin-volume
-      namespace: starcoin-main
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 100Gi
+    - metadata:
+        name: starcoin-volume
+        namespace: starcoin-main
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 100Gi
