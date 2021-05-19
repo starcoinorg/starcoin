@@ -21,7 +21,7 @@ log = "0.4.14"
 chrono = "0.4.19"
 globset = "0.4.6"
 regex = "1.4.3"
-rayon = "1.5.0"
+rayon = "1.5.1"
 indexmap = "1.6.2"
 x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="6e1cc95897557ce8328c3d08037196b6445d5be8" }
 x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="6e1cc95897557ce8328c3d08037196b6445d5be8" }
