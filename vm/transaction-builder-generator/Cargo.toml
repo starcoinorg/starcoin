@@ -20,7 +20,7 @@ serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev=
 
 starcoin-vm-types = { path = "../types"}
 move-core-types = {git = "https://github.com/starcoinorg/diem", rev="6e1cc95897557ce8328c3d08037196b6445d5be8" }
-bcs = "0.1.2"
+bcs = "0.1.3"
 
 [dev-dependencies]
 tempfile = "3.2.0"
