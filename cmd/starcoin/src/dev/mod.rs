@@ -20,7 +20,6 @@ pub use upgrade_vm_config_proposal_cmd::*;
 mod call_contract_cmd;
 mod compile_cmd;
 mod deploy_cmd;
-mod derive_account_address_cmd;
 mod get_coin_cmd;
 mod package_cmd;
 pub(crate) mod sign_txn_helper;
