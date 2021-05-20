@@ -44,7 +44,8 @@ pub fn add_command(
                 .subcommand(account::SignMessageCmd)
                 .subcommand(account::VerifySignMessageCmd)
                 .subcommand(account::DefaultCommand)
-                .subcommand(account::DeriveAddressCommand),
+                .subcommand(account::DeriveAddressCommand)
+                .subcommand(account::receipt_identifier_cmd::ReceiptIdentifierCommand),
         )
         .command(
             Command::with_name("state")

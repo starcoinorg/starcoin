@@ -31,8 +31,8 @@ impl std::fmt::Display for ReceiptIdentifier {
 }
 
 impl ReceiptIdentifier {
-    pub fn v1(address: AccountAddress, auth_key: AuthenticationKey) -> ReceiptIdentifier {
-        ReceiptIdentifier::V1(address, Some(auth_key))
+    pub fn v1(address: AccountAddress, auth_key: Option<AuthenticationKey>) -> ReceiptIdentifier {
+        ReceiptIdentifier::V1(address, auth_key)
     }
     pub fn address(&self) -> AccountAddress {
         match self {

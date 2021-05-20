@@ -6,7 +6,8 @@ use crate::view::{AddressOrReceipt, ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
+use starcoin_account_api::AccountPublicKey;
+use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
@@ -14,7 +15,6 @@ use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -123,13 +123,12 @@ impl CommandAction for TransferCommand {
                             )
                         })
                         .and_then(|pubkey_str| {
-                            Ok(Ed25519PublicKey::from_encoded_string(pubkey_str)?)
+                            Ok(AccountPublicKey::from_encoded_string(pubkey_str)?)
                         })?;
                     Some(k)
                 };
-                let receiver_auth_key = receiver_public_key
-                    .as_ref()
-                    .map(|k| AuthenticationKey::ed25519(k));
+                let receiver_auth_key =
+                    receiver_public_key.as_ref().map(|k| k.authentication_key());
                 (receiver, receiver_auth_key)
             }
             AddressOrReceipt::Receipt(receipt_id) => match receipt_id {
