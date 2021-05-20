@@ -151,6 +151,7 @@ impl AccountManager {
             .and_then(|a| a);
         Ok(account_info)
     }
+
     pub fn list_account_infos(&self) -> AccountResult<Vec<AccountInfo>> {
         let default_account = self.store.default_address()?;
         let mut res = vec![];
@@ -158,11 +159,11 @@ impl AccountManager {
             let pubkey = self.store.public_key(account)?;
             match pubkey {
                 Some(p) => {
-                    res.push(AccountInfo {
-                        address: account,
-                        is_default: default_account.filter(|a| a == &account).is_some(),
-                        public_key: p,
-                    });
+                    res.push(AccountInfo::new(
+                        account,
+                        p,
+                        default_account.filter(|a| a == &account).is_some(),
+                    ));
                 }
                 None => {
                     continue;
@@ -176,15 +177,16 @@ impl AccountManager {
         match self.store.public_key(address)? {
             Some(p) => {
                 let default_account = self.store.default_address()?;
-                Ok(Some(AccountInfo {
+                Ok(Some(AccountInfo::new(
                     address,
-                    is_default: default_account.filter(|a| a == &address).is_some(),
-                    public_key: p,
-                }))
+                    p,
+                    default_account.filter(|a| a == &address).is_some(),
+                )))
             }
             None => Ok(None),
         }
     }
+
     pub fn sign_message(
         &self,
         signer_address: AccountAddress,

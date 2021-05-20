@@ -4,7 +4,6 @@
 pub use call_contract_cmd::*;
 pub use compile_cmd::*;
 pub use deploy_cmd::*;
-pub use derive_account_address_cmd::*;
 pub use get_coin_cmd::*;
 pub use package_cmd::*;
 pub use sign_txn_helper::sign_txn_with_account_by_rpc_client;
