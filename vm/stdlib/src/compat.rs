@@ -46,6 +46,7 @@ impl StdlibCompat for StdlibVersion {
         enforced: bool,
     ) -> ScriptFunction {
         // propose_module_upgrade_v2 is available after v2 upgrade.
+        // 'self' is the target stdlib version to be upgraded to.
         let (function_name, args) = if self > &StdlibVersion::Version(2) {
             (
                 "propose_module_upgrade_v2",

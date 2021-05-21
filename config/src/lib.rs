@@ -451,6 +451,14 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn customize_for_test() -> Self {
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::Test.into()),
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate test config should success.")
+    }
+
     pub fn config_path(&self) -> PathBuf {
         self.base().data_dir().join(CONFIG_FILE_PATH)
     }

@@ -8,9 +8,13 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_logger::prelude::*;
+use starcoin_rpc_client::RemoteStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_proposal;
 use starcoin_types::transaction::Package;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::genesis_config::StdlibVersion;
+use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
 use std::io::Read;
@@ -49,6 +53,14 @@ pub struct UpgradeModuleProposalOpt {
     expiration_time: u64,
 
     #[structopt(
+        short = "e",
+        name = "enforced",
+        long = "enforced",
+        help = "enforced upgrade regardless of compatible or not"
+    )]
+    enforced: bool,
+
+    #[structopt(
         short = "b",
         name = "blocking-mode",
         long = "blocking",
@@ -69,10 +81,9 @@ pub struct UpgradeModuleProposalOpt {
         short = "v",
         name = "module-version",
         long = "module_version",
-        default_value = "1",
-        help = "module version"
+        help = "new version number for the module"
     )]
-    version: u64,
+    version: Option<u64>,
 }
 
 pub struct UpgradeModuleProposalCommand;
@@ -94,6 +105,10 @@ impl CommandAction for UpgradeModuleProposalCommand {
         } else {
             ctx.state().default_account()?.address
         };
+        if opt.version.is_none() {
+            bail!("version can not be empty")
+        };
+        let module_version = opt.version.unwrap();
         if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
             File::open(module_file)?.read_to_end(&mut bytes)?;
@@ -102,27 +117,40 @@ impl CommandAction for UpgradeModuleProposalCommand {
                 "upgrade package address : {:?}",
                 upgrade_package.package_address()
             );
-
             let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
-            let (module_upgrade_proposal, package_hash) =
-                build_module_upgrade_proposal(&upgrade_package, opt.version, min_action_delay);
-            let signed_txn = sign_txn_with_account_by_rpc_client(
-                cli_state,
-                sender,
-                opt.max_gas_amount,
-                opt.gas_price,
-                opt.expiration_time,
-                TransactionPayload::ScriptFunction(module_upgrade_proposal),
-            )?;
-            let txn_hash = signed_txn.crypto_hash();
-            cli_state.client().submit_transaction(signed_txn)?;
+            let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
+            if let Some(stdlib_version) = chain_state_reader
+                .get_on_chain_config::<Version>()?
+                .map(|version| version.major)
+            {
+                info!("stdlib version {:?}", StdlibVersion::new(stdlib_version));
+                let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
+                    &upgrade_package,
+                    module_version,
+                    min_action_delay,
+                    opt.enforced,
+                    StdlibVersion::new(stdlib_version),
+                );
+                let signed_txn = sign_txn_with_account_by_rpc_client(
+                    cli_state,
+                    sender,
+                    opt.max_gas_amount,
+                    opt.gas_price,
+                    opt.expiration_time,
+                    TransactionPayload::ScriptFunction(module_upgrade_proposal),
+                )?;
+                let txn_hash = signed_txn.crypto_hash();
+                cli_state.client().submit_transaction(signed_txn)?;
 
-            println!("txn {:#x} submitted.", txn_hash);
+                println!("txn {:#x} submitted.", txn_hash);
 
-            if opt.blocking {
-                ctx.state().watch_txn(txn_hash)?;
+                if opt.blocking {
+                    ctx.state().watch_txn(txn_hash)?;
+                }
+                Ok((package_hash, txn_hash))
+            } else {
+                bail!("on chain config stdlib version can not be empty.")
             }
-            Ok((package_hash, txn_hash))
         } else {
             bail!("file can not be empty.")
         }

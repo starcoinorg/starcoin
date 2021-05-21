@@ -19,13 +19,13 @@ DAO 本身也拥有几个链上参数，包括：
 DEV 环境下，STC 的 DAO 治理参数默认是：
 
 ```
-voting_delay: 60,       // 1min
-voting_period: 60 * 60, // 1h
+voting_delay: 60000,       // 1min
+voting_period: 60 * 60 * 1000, // 1h
 voting_quorum_rate: 4,  // 4%
-min_action_delay: 60 * 60, // 1h
+min_action_delay: 60 * 60 * 1000, // 1h
 ```
 
-以下通过 cli 命令，演示如何投票更改 STC 治理参数 中的提案公示期为 `60 * 60 = 1h`， 以展示 *提案-投票-执行* 这系列流程。
+以下通过 cli 命令，演示如何投票更改 STC 治理参数 中的提案公示期为 `60 * 60 * 1000 = 1h`， 以展示 *提案-投票-执行* 这系列流程。
 
 
 注：以下假设你使用的是 DEV 环境的节点，并且节点默认账号是  `0x3ce9c3beeb95b555f5e3f2ac297afbf1`。
@@ -36,8 +36,9 @@ min_action_delay: 60 * 60, // 1h
 ``` bash
 # 解锁节点账号，用节点账号发起提案
 account unlock 0x3ce9c3beeb95b555f5e3f2ac297afbf1
-account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::ModifyDaoConfigProposal::propose -t 0x1::STC::STC --arg 3600 0 0u8 0 0
+account execute-function -s 0x3ce9c3beeb95b555f5e3f2ac297afbf1 --function 0x1::ModifyDaoConfigProposal::propose -t 0x1::STC::STC --arg 60000 600000 4u8 1000 0
 ```
+注：dao参数不能等于0，否则该参数不会被更新。
 
 提案发起后，用户需要等待公示期过后才能开始投票。
 

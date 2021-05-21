@@ -20,7 +20,11 @@ type VersionNumber = u64;
 
 impl StdlibVersion {
     pub fn new(version: u64) -> Self {
-        StdlibVersion::Version(version)
+        if version == 0 {
+            StdlibVersion::Latest
+        } else {
+            StdlibVersion::Version(version)
+        }
     }
 
     pub fn as_string(&self) -> String {
