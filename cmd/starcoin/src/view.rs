@@ -32,10 +32,10 @@ impl AddressOrReceipt {
         matches!(self, AddressOrReceipt::Address(_))
     }
 
-    pub fn as_address(&self) -> Option<AccountAddress> {
+    pub fn address(&self) -> AccountAddress {
         match self {
-            AddressOrReceipt::Address(address) => Some(*address),
-            _ => None,
+            AddressOrReceipt::Address(address) => *address,
+            AddressOrReceipt::Receipt(receipt) => receipt.address(),
         }
     }
 
