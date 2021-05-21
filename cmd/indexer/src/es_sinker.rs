@@ -201,9 +201,21 @@ impl EsSinker {
                 .send()
                 .await?;
 
-            let exception = resp.exception().await?;
-            if let Some(ex) = exception {
-                anyhow::bail!("{}", serde_json::to_string(&ex)?);
+            // check response
+            if resp.status_code().is_client_error() || resp.status_code().is_server_error() {
+                let exception = resp.exception().await?;
+                if let Some(ex) = exception {
+                    anyhow::bail!("{}", serde_json::to_string(&ex)?);
+                }
+            } else {
+                let delete_response: serde_json::Value = resp.json().await?;
+
+                let total_txn = delete_response["total"].as_u64();
+                let deleted_txns = delete_response["deleted"].as_u64();
+                info!(
+                    "cleanup block {}, total txns: {:?}, delete {:?} txns",
+                    block_id, total_txn, deleted_txns
+                );
             }
         }
 
@@ -246,18 +258,37 @@ impl EsSinker {
             )?;
         }
 
+        self.bulk(bulk_operations).await?;
+
+        self.update_local_tip_header(tip_info.block_hash, tip_info.block_number)
+            .await?;
+        Ok(())
+    }
+
+    // bulk insert data into es.
+    async fn bulk(&self, bulk_operations: BulkOperations) -> anyhow::Result<()> {
         let resp = self
             .es
             .bulk(BulkParts::None)
             .body(vec![bulk_operations])
             .send()
             .await?;
-        let exception = resp.exception().await?;
-        if let Some(ex) = exception {
-            anyhow::bail!("{}", serde_json::to_string(&ex)?);
+
+        // check response
+        if resp.status_code().is_client_error() || resp.status_code().is_server_error() {
+            let exception = resp.exception().await?;
+            if let Some(ex) = exception {
+                anyhow::bail!("{}", serde_json::to_string(&ex)?);
+            }
+        } else {
+            let bulk_response: serde_json::Value = resp.json().await?;
+            if let Some(true) = bulk_response["errors"].as_bool() {
+                anyhow::bail!(
+                    "[es] bulk error: {}",
+                    serde_json::to_string(&bulk_response)?
+                );
+            }
         }
-        self.update_local_tip_header(tip_info.block_hash, tip_info.block_number)
-            .await?;
         Ok(())
     }
 }
