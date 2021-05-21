@@ -43,7 +43,9 @@ pub fn add_command(
                 .subcommand(account::ChangePasswordCmd)
                 .subcommand(account::SignMessageCmd)
                 .subcommand(account::VerifySignMessageCmd)
-                .subcommand(account::DefaultCommand),
+                .subcommand(account::DefaultCommand)
+                .subcommand(account::DeriveAddressCommand)
+                .subcommand(account::receipt_identifier_cmd::ReceiptIdentifierCommand),
         )
         .command(
             Command::with_name("state")
@@ -127,7 +129,6 @@ pub fn add_command(
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
-                .subcommand(dev::DeriveAddressCommand)
                 .subcommand(dev::UpgradeModuleProposalCommand)
                 .subcommand(dev::UpgradeModuleProposalV2Command)
                 .subcommand(dev::UpgradeModulePlanCommand)

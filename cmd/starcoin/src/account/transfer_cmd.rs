@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, ExecutionOutputView};
+use crate::view::{AddressOrReceipt, ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
+use starcoin_account_api::AccountPublicKey;
+use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
@@ -14,7 +15,6 @@ use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -25,14 +25,15 @@ pub struct TransferOpt {
     sender: Option<AccountAddress>,
 
     #[structopt(long = "receipt", name = "receipt")]
-    /// receipt identifier
-    receipt_identifier: Option<ReceiptIdentifier>,
+    /// this is a alias of `receiver` arg.
+    receipt: Option<AddressOrReceipt>,
 
     #[structopt(short = "r", required_unless = "receipt")]
-    /// if receipt is absent, receiver must be provided.
-    receiver: Option<AccountAddress>,
+    /// transfer to, accept address (start with 0x) or receipt_identifier (start with stc1)
+    receiver: Option<AddressOrReceipt>,
+
     #[structopt(short = "k")]
-    /// if `to` account not exist on chain, must provide public_key of the account.
+    /// if `receiver` account not exist on chain, and `receiver` is AddressOrReceipt::Address, must provide public_key of the account.
     public_key: Option<String>,
 
     #[structopt(short = "v")]
@@ -97,10 +98,15 @@ impl CommandAction for TransferCommand {
 
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-
-        let (receiver_address, receiver_auth_key) = match opt.receipt_identifier {
-            None => {
-                let receiver = opt.receiver.unwrap();
+        let receiver = match (opt.receiver, opt.receipt) {
+            (Some(address_or_receipt), _) => address_or_receipt,
+            (None, Some(address_or_receipt)) => address_or_receipt,
+            (None, None) => {
+                bail!("Please set the receiver argument.")
+            }
+        };
+        let (receiver_address, receiver_auth_key) = match receiver {
+            AddressOrReceipt::Address(receiver) => {
                 let receiver_exist_on_chain = account_state_reader
                     .get_account_resource(&receiver)?
                     .is_some();
@@ -117,16 +123,15 @@ impl CommandAction for TransferCommand {
                             )
                         })
                         .and_then(|pubkey_str| {
-                            Ok(Ed25519PublicKey::from_encoded_string(pubkey_str)?)
+                            Ok(AccountPublicKey::from_encoded_string(pubkey_str)?)
                         })?;
                     Some(k)
                 };
-                let receiver_auth_key = receiver_public_key
-                    .as_ref()
-                    .map(|k| AuthenticationKey::ed25519(k));
+                let receiver_auth_key =
+                    receiver_public_key.as_ref().map(|k| k.authentication_key());
                 (receiver, receiver_auth_key)
             }
-            Some(receipt_id) => match receipt_id {
+            AddressOrReceipt::Receipt(receipt_id) => match receipt_id {
                 ReceiptIdentifier::V1(addr, auth_key) => (addr, auth_key),
             },
         };

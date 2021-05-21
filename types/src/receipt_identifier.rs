@@ -1,13 +1,18 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::account_address::AccountAddress;
 use crate::transaction::authenticator::AuthenticationKey;
 use anyhow::Result;
 use bech32::ToBase32;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
 /// See sip-21
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash)]
 pub enum ReceiptIdentifier {
     V1(AccountAddress, Option<AuthenticationKey>),
 }
@@ -26,8 +31,18 @@ impl std::fmt::Display for ReceiptIdentifier {
 }
 
 impl ReceiptIdentifier {
-    pub fn v1(address: AccountAddress, auth_key: AuthenticationKey) -> ReceiptIdentifier {
-        ReceiptIdentifier::V1(address, Some(auth_key))
+    pub fn v1(address: AccountAddress, auth_key: Option<AuthenticationKey>) -> ReceiptIdentifier {
+        ReceiptIdentifier::V1(address, auth_key)
+    }
+    pub fn address(&self) -> AccountAddress {
+        match self {
+            ReceiptIdentifier::V1(address, _) => *address,
+        }
+    }
+    pub fn auth_key(&self) -> Option<&AuthenticationKey> {
+        match self {
+            ReceiptIdentifier::V1(_, auth_key) => auth_key.as_ref(),
+        }
     }
     pub fn encode(&self) -> String {
         match self {
@@ -67,6 +82,25 @@ impl ReceiptIdentifier {
             anyhow::bail!("invalid data");
         };
         Ok(ReceiptIdentifier::V1(address, auth_key))
+    }
+}
+
+impl<'de> Deserialize<'de> for ReceiptIdentifier {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <String>::deserialize(deserializer)?;
+        ReceiptIdentifier::decode(s).map_err(D::Error::custom)
+    }
+}
+
+impl Serialize for ReceiptIdentifier {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.encode().as_str())
     }
 }
 

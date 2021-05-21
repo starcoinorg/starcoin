@@ -59,7 +59,7 @@ Feature: cmd integration test
     Then cmd: "account list"
     # index 1 is 0000000000000000000000000A550C18, and it is a multi address, so skip.
     # TODO support remove account and remove 0000000000000000000000000A550C18
-    Then cmd: "dev derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
+    Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
     Then cmd: "account execute-function --blocking --function 0x1::TransferScripts::peer_to_peer --type_tag 0x01::STC::STC --arg @$.address@ --arg <para> --arg 10000000u128"
     Then stop
 
@@ -99,6 +99,10 @@ Feature: cmd integration test
     Then cmd: "dev get_coin"
     Then cmd: "account create -p transfer"
     Then cmd: "account transfer --blocking -v 10000 -r @$.address@ -k @$.public_key@"
+    Then cmd: "chain get_txn @$.txn_hash@"
+    Then cmd: "chain get_events @$.transaction_hash@"
+    Then cmd: "account create -p transfer"
+    Then cmd: "account transfer --blocking -v 10000 -r @$.receipt_identifier@"
     Then cmd: "chain get_txn @$.txn_hash@"
     Then cmd: "chain get_events @$.transaction_hash@"
     Then cmd: "account create -p compat"

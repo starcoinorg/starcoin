@@ -20,7 +20,9 @@ Let's say you've run up a starcoin dev node locally.
 
 ### Create an account
 
-After connecting to the node, let's first create two accounts. Here we assume that both accounts have been created successfully, Alice is the default account with the address 0x1d8133a0c1a07366de459fb08d28d2a6 and Bob's address is 0xbfbed907d7ba364e1445b971f9182949.
+After connecting to the node, let's first create two accounts. Here we assume that both accounts have been created successfully, 
+Alice is the default account with the address 0x988acf6d210701242af03cbb13780745 and Bob's address is 0x1179ec968815ded9c59775274446ad4c , 
+receipt_identifier is stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t .
 
 ### Use Faucet to top up your account
 
@@ -30,17 +32,6 @@ After connecting to the node, let's first create two accounts. Here we assume th
 
  ``` bash
 starcoin% dev get_coin -v 100000000000
-+-----------------+------------------------------------------------------------------+
-| gas_unit_price  | 1                                                                |
-+-----------------+------------------------------------------------------------------+
-| id              | 65610116a010de657c9faeca94c2b91b9e4fd36f62bc8d7ccbdbb6fdd2e64769 |
-+-----------------+------------------------------------------------------------------+
-| max_gas_amount  | 2000000                                                          |
-+-----------------+------------------------------------------------------------------+
-| sender          | 0000000000000000000000000a550c18                                 |
-+-----------------+------------------------------------------------------------------+
-| sequence_number | 1                                                                |
-+-----------------+------------------------------------------------------------------+
 ```
 
 `dev get_coin` will mint some coins the default account, and if the account does not exist on the chain, it will creates the account first and then transfers a specified (with `-v`) number of coins to the account.
@@ -49,20 +40,22 @@ The output of the command is the transaction data  issued by the FAUCET account 
 Wait a few seconds and then check your account information again.
 
 ```bash
-starcoin% account show 1d8133a0c1a07366de459fb08d28d2a6
-+--------------------+------------------------------------------------------------------+
-| account.address    | 1d8133a0c1a07366de459fb08d28d2a6                                 |
-+--------------------+------------------------------------------------------------------+
-| account.is_default | false                                                            |
-+--------------------+------------------------------------------------------------------+
-| account.public_key | 7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d |
-+--------------------+------------------------------------------------------------------+
-| auth_key_prefix    | 7bc6066656bb248755686d2ab78aef14                                 |
-+--------------------+------------------------------------------------------------------+
-| balances.STC       | 100000000000                                                     |
-+--------------------+------------------------------------------------------------------+
-| sequence_number    | 0                                                                |
-+--------------------+------------------------------------------------------------------+
+starcoin% account show 0x988acf6d210701242af03cbb13780745
++--------------------+------------------------------------------------------------------------------------------+
+| account.address    | 0x988acf6d210701242af03cbb13780745                                                       |
++--------------------+------------------------------------------------------------------------------------------+
+| account.is_default | true                                                                                     |
++--------------------+------------------------------------------------------------------------------------------+
+| account.public_key | 0xd574c33580942a124b377c0fa64c0d1c021c405893ac99b1cf77a44dc530e4b2                       |
++--------------------+------------------------------------------------------------------------------------------+
+| auth_key           | 0x6d9ca71670371e406e6e7821c4560f31988acf6d210701242af03cbb13780745                       |
++--------------------+------------------------------------------------------------------------------------------+
+| receipt_identifier | stc1pnz9v7mfpquqjg2hs8ja3x7q8g4keefckwqm3usrwdeuzr3zkpuce3zk0d5sswqfy9tcrewcn0qr528sv4vw |
++--------------------+------------------------------------------------------------------------------------------+
+| sequence_number    | 0                                                                                        |
++--------------------+------------------------------------------------------------------------------------------+
+| balances.STC       | 100000000000                                                                             |
++--------------------+------------------------------------------------------------------------------------------+
 ```
 
 Now, `balances` and `sequence_number` is filled.
@@ -77,30 +70,18 @@ First you need to unlock Alice's account and authorize node to sign the transact
 account unlock -p my-pass 1d8133a0c1a07366de459fb08d28d2a6
 ````
 
-where `-p my-pass` is the password that was needed when creating the account.
+where `-p my-pass` is the password that was needed when creating the account, if the default account's init password is empty.
 
 Once the account is unlocked, execute the following command.
 
 ```bash
-starcoin% account transfer -s 0x1d8133a0c1a07366de459fb08d28d2a6 -r 0xbfbed907d7ba364e1445b971f9182949 -k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d -v 10000
-+-----------------+------------------------------------------------------------------+
-| gas_unit_price  | 1                                                                |
-+-----------------+------------------------------------------------------------------+
-| id              | 0x44433463c38aacd31731fba1a38d3a38f9a14c0281a264634e470c8f25bd557d |
-+-----------------+------------------------------------------------------------------+
-| max_gas_amount  | 1000000                                                          |
-+-----------------+------------------------------------------------------------------+
-| sender          | 1d8133a0c1a07366de459fb08d28d2a6                                 |
-+-----------------+------------------------------------------------------------------+
-| sequence_number | 0                                                                |
-+-----------------+------------------------------------------------------------------+
+starcoin% account transfer -s 0x988acf6d210701242af03cbb13780745 -r stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t -v 10000 -b
 ```
 
-- `-s 0x1d8133a0c1a07366de459fb08d28d2a6`: is Alice's account address.
-- `-r 0xbfbed907d7ba364e1445b971f9182949`: is Bob's account address.
-- `-k 0x7add08c841d0f99f1f90ea2632c72aee483fab882e0d8d6d6defed2f1987345d`: is the public key of Bob.
+- `-s 0x988acf6d210701242af03cbb13780745`: is Alice's account address.
+- `-r stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t`: is Bob's receipt_identifier.
 
-> If, Bob's account does not yet exist on the chain, then his public key should be provided, the transfer transaction will automatically create Bob's account on the chain.
+> If, Bob's account does not yet exist on the chain, the transfer transaction will automatically create Bob's account on the chain.
 
 
 At this point, the transaction has been submitted to the chain.
@@ -109,20 +90,22 @@ Then check Bob's account information again:.
 
 
 ``` bash
-starcoin% account show 0xbfbed907d7ba364e1445b971f9182949
-+--------------------+------------------------------------------------------------------+
-| account.address    | 0xbfbed907d7ba364e1445b971f9182949                                 |
-+--------------------+------------------------------------------------------------------+
-| account.is_default | false                                                            |
-+--------------------+------------------------------------------------------------------+
-| account.public_key | 0xd80234b11619e62a62fac048b2b79a9eec1727b476155e1f8fe19c89c7443076 |
-+--------------------+------------------------------------------------------------------+
-| auth_key_prefix    | 0x7c87272c7fc2f5586a0770d1d718f14f                                 |
-+--------------------+------------------------------------------------------------------+
-| balances.STC       | 10000                                                            |
-+--------------------+------------------------------------------------------------------+
-| sequence_number    | 0                                                                |
-+--------------------+------------------------------------------------------------------+
+starcoin% account show 0x1179ec968815ded9c59775274446ad4c
++----------------------------+------------------------------------------------------------------------------------------+
+| account.address            | 0x1179ec968815ded9c59775274446ad4c                                                       |
++----------------------------+------------------------------------------------------------------------------------------+
+| account.is_default         | false                                                                                    |
++----------------------------+------------------------------------------------------------------------------------------+
+| account.public_key         | 0xfacd584290ee7baea7fe8e22d13332633babca46e77c0ca941b6b5c6266523cb                       |
++----------------------------+------------------------------------------------------------------------------------------+
+| account.receipt_identifier | stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t |
++----------------------------+------------------------------------------------------------------------------------------+
+| auth_key                   | 0xce10e8b810895d64f3d3fe1cd2307cf61179ec968815ded9c59775274446ad4c                       |
++----------------------------+------------------------------------------------------------------------------------------+
+| sequence_number            | 0                                                                                        |
++----------------------------+------------------------------------------------------------------------------------------+
+| balances.STC               | 10000                                                                                    |
++----------------------------+------------------------------------------------------------------------------------------+
 ```
 
 Bob has the money now!

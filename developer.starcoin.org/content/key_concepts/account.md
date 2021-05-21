@@ -3,6 +3,8 @@ title: Account
 weight: 1
 ---
 
+TODO: this document need to be updated.
+
 Account, Addresses, Authentication keys, and Cryptographic keys
 
 <!--more-->
