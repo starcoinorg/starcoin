@@ -45,7 +45,7 @@ impl BlockClient {
                 .get_events_by_txn_hash(txn_info.transaction_hash)
                 .await?;
             txns_data.push(TransactionData {
-                info: txn_info,
+                info: txn_info.into(),
                 block_metadata: txn.block_metadata,
                 user_transaction: txn.user_transaction,
                 events,
@@ -67,7 +67,7 @@ impl BlockClient {
             txn_infos.into_iter().zip(events).zip(user_transactions)
         {
             txns_data.push(TransactionData {
-                info: txn_info,
+                info: txn_info.into(),
                 events,
                 user_transaction: Some(user_txn),
                 block_metadata: None,
