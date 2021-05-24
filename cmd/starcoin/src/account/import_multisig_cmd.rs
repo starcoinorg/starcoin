@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use itertools::Itertools;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
@@ -74,10 +75,12 @@ impl CommandAction for ImportMultisigCommand {
             keys.extend(private_keys.iter().map(|p| p.public_key()));
             // sort all public keys by its bytes to make sure same public key set always generate same auth key.
             keys.sort_by_key(|k| k.to_bytes());
-            keys
+            // remove repeat public keys, if use add repeat public_key or private key.
+            keys.into_iter()
+                .unique_by(|k| k.to_bytes())
+                .collect::<Vec<_>>()
         };
         let threshold = opt.threshold;
-
         let private_key = AccountPrivateKey::Multi(MultiEd25519KeyShard::new_multi(
             public_keys,
             threshold,

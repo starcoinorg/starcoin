@@ -4,19 +4,22 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use itertools::Itertools;
 use scmd::{CommandAction, ExecContext};
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction;
+use starcoin_types::receipt_identifier::ReceiptIdentifier;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use structopt::StructOpt;
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "derive-address")]
 pub struct DeriveAddressOpt {
-    #[structopt(short = "p", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", long = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public key used to derive address.If multi public keys is provided, a multi-sig account address is derived.
     public_key: Vec<Ed25519PublicKey>,
 
@@ -38,37 +41,35 @@ impl CommandAction for DeriveAddressCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let _client = ctx.state().client();
         anyhow::ensure!(
             !opt.public_key.is_empty(),
             "at least one public key is provided"
         );
-        let (auth_key, public_key_string) = if opt.public_key.len() == 1 {
-            let public_key = opt.public_key.first().unwrap();
-            (
-                transaction::authenticator::AuthenticationKey::ed25519(public_key),
-                hex::encode(public_key.to_bytes()),
-            )
+        let account_key = if opt.public_key.len() == 1 {
+            let public_key = opt
+                .public_key
+                .first()
+                .cloned()
+                .expect("must at least have one public key");
+            AccountPublicKey::single(public_key)
         } else {
             let threshold = opt.threshold.unwrap_or(opt.public_key.len() as u8);
-
-            let multi_public_key = {
-                // sort the public key to make account address derivation stable.
-                let mut pubkeys = opt.public_key.clone();
-                pubkeys.sort_by_key(|k| k.to_bytes());
-
-                MultiEd25519PublicKey::new(pubkeys, threshold)?
-            };
-            (
-                transaction::authenticator::AuthenticationKey::multi_ed25519(&multi_public_key),
-                hex::encode(multi_public_key.to_bytes()),
-            )
+            // sort the public key to make account address derivation stable.
+            let mut pubkeys = opt.public_key.clone();
+            pubkeys.sort_by_key(|k| k.to_bytes());
+            // remove repeat public keys
+            let pubkeys = pubkeys
+                .into_iter()
+                .unique_by(|k| k.to_bytes())
+                .collect::<Vec<_>>();
+            AccountPublicKey::multi(pubkeys, threshold)?
         };
 
         Ok(DerivedAddressData {
-            address: auth_key.derived_address(),
-            auth_key: hex::encode(auth_key.to_vec()),
-            public_key: public_key_string,
+            address: account_key.derived_address(),
+            auth_key: account_key.authentication_key(),
+            receipt_identifier: account_key.receipt_identifier(),
+            public_key: account_key,
         })
     }
 }
@@ -76,6 +77,7 @@ impl CommandAction for DeriveAddressCommand {
 #[derive(Debug, Clone, Hash, Serialize, Deserialize)]
 pub struct DerivedAddressData {
     pub address: AccountAddress,
-    pub auth_key: String,
-    pub public_key: String,
+    pub auth_key: AuthenticationKey,
+    pub receipt_identifier: ReceiptIdentifier,
+    pub public_key: AccountPublicKey,
 }
