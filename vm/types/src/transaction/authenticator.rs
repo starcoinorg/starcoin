@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
+use crate::receipt_identifier::ReceiptIdentifier;
 use crate::sign_message::SigningMessage;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{ensure, Error, Result};
@@ -359,6 +360,17 @@ impl ValidCryptoMaterial for AccountPublicKey {
 }
 
 impl AccountPublicKey {
+    pub fn single(public_key: Ed25519PublicKey) -> Self {
+        AccountPublicKey::Single(public_key)
+    }
+
+    pub fn multi(public_keys: Vec<Ed25519PublicKey>, threshold: u8) -> Result<Self> {
+        Ok(AccountPublicKey::Multi(MultiEd25519PublicKey::new(
+            public_keys,
+            threshold,
+        )?))
+    }
+
     pub fn derived_address(&self) -> AccountAddress {
         self.authentication_key().derived_address()
     }
@@ -381,6 +393,11 @@ impl AccountPublicKey {
             Self::Single(public_key) => public_key.to_bytes().to_vec(),
             Self::Multi(public_key) => public_key.to_bytes().to_vec(),
         }
+    }
+
+    pub fn receipt_identifier(&self) -> ReceiptIdentifier {
+        let auth_key = self.authentication_key();
+        ReceiptIdentifier::v1(auth_key.derived_address(), Some(auth_key))
     }
 
     /// Unique identifier for the signature scheme
@@ -535,11 +552,29 @@ impl AccountSignature {
 
 #[cfg(test)]
 mod tests {
-    use crate::transaction::authenticator::AuthenticationKey;
+    use crate::transaction::authenticator::{AccountPublicKey, AuthenticationKey};
+    use starcoin_crypto::keygen::KeyGen;
+    use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
     use std::str::FromStr;
 
     #[test]
     fn test_from_str_should_not_panic_by_given_empty_string() {
         assert!(AuthenticationKey::from_str("").is_err());
+    }
+
+    #[test]
+    fn test_account_public_key() {
+        let mut key_gen = KeyGen::from_os_rng();
+        let threshold = 2;
+        let pubkeys = (0..2)
+            .into_iter()
+            .map(|_| key_gen.generate_keypair().1)
+            .collect::<Vec<_>>();
+        let account_public_key = AccountPublicKey::multi(pubkeys.clone(), threshold).unwrap();
+        let auth_key = account_public_key.authentication_key();
+
+        let multi_pubkey = MultiEd25519PublicKey::new(pubkeys, threshold).unwrap();
+        let auth_key2 = AuthenticationKey::multi_ed25519(&multi_pubkey);
+        assert_eq!(auth_key, auth_key2);
     }
 }

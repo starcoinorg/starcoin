@@ -19,6 +19,7 @@ hex = "0.4.3"
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 mirai-annotations = "1.10.1"
 log = "0.4.14"
+bech32 = "0.8"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
