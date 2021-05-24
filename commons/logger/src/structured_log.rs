@@ -7,8 +7,12 @@ use lazy_static::lazy_static;
 use slog::{o, Discard, Drain, Logger};
 use slog_async::Async;
 use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
+
+const TIMESTAMP_FORMAT: &str = "%+";
 
 // Defined global slog logger
 lazy_static! {
@@ -53,6 +57,10 @@ where
     }
 }
 
+fn timestamp_custom(io: &mut dyn Write) -> std::io::Result<()> {
+    write!(io, "{}", chrono::Local::now().format(TIMESTAMP_FORMAT))
+}
+
 /// Creates a root logger with config settings.
 fn create_default_root_logger(
     is_async: bool,
@@ -66,7 +74,10 @@ fn create_default_root_logger(
         .open(log_path)?;
 
     let decorator = slog_term::PlainDecorator::new(file);
-    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_term::CompactFormat::new(decorator)
+        .use_custom_timestamp(timestamp_custom)
+        .build()
+        .fuse();
 
     if is_async {
         let async_builder = match chan_size {
