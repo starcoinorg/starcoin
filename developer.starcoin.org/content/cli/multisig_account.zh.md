@@ -13,15 +13,19 @@ weight: 5
 
 多签交易涉及到多个参与者。这里我们用 alice, bob, tom 三个参与者来说明多签交易的流程。
 
-1. 首先你需要在本地启动三个 starcoin dev 节点，分别对应到 alice,bob,tom。 dev 节点启动时，会默认创建一个本地账户。
+1. 首先你需要在本地启动三个 starcoin dev 节点，分别对应到 alice,bob,tom。并同时连接到 console 中。
 ```
-% starcoin -n dev -d alice
-% starcoin -n dev -d bob
-% starcoin -n dev -d tom
+% starcoin -n dev -d alice -o json console
+% starcoin -n dev -d bob -o json console
+% starcoin -n dev -d tom -o json console
 ```
 
+2. 通过以下命令各自生成一个公私钥对
+```shell
+%starcoin account generate-keypair
+```
 
-这里假设他们三者的私钥信息（只用于举例，请勿使用在正式网络中）分别是：
+这里假设他们三者生成对私钥信息（只用于举例，请勿使用在正式网络中）分别是：
 
 - alice:
   - address: 0x662275a33c99a1e3f4d1dd3bf712470f
@@ -38,14 +42,6 @@ weight: 5
   - pubkey: 0x3db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da7064066
   - prikey: 0x74f6c2f05a7b369351a21af3afd05d94aed5b254269c5f149a23a4a600a202c0
   
-
-2. 然后启动三个 starcoin console 分别连到三个节点中。
-
-```
-%starcoin -c alice/dev/starcoin.ipc -o json console
-%starcoin -c bob/dev/starcoin.ipc -o json console
-%starcoin -c tom/dev/starcoin.ipc -o json console 
-```
 
 3. 最后在 tom 的 starcoin console 用 `dev get_coin` 给 tom 账户充钱。
 

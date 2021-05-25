@@ -26,6 +26,7 @@ mod derive_account_address_cmd;
 mod execute_script_cmd;
 mod execute_script_function_cmd;
 mod export_cmd;
+pub mod generate_keypair;
 mod import_cmd;
 pub mod import_multisig_cmd;
 mod list_cmd;

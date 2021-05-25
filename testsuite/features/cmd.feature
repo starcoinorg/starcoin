@@ -60,7 +60,7 @@ Feature: cmd integration test
     # index 1 is 0000000000000000000000000A550C18, and it is a multi address, so skip.
     # TODO support remove account and remove 0000000000000000000000000A550C18
     Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
-    Then cmd: "account execute-function --blocking --function 0x1::TransferScripts::peer_to_peer --type_tag 0x01::STC::STC --arg @$.address@ --arg <para> --arg 10000000u128"
+    Then cmd: "account transfer --blocking -r @$.receipt_identifier@ -t 0x1::STC::STC -v 10000000"
     Then stop
 
     Examples:
