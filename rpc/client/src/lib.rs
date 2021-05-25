@@ -19,11 +19,10 @@ use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
     BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunTransactionRequest,
-    EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView,
+    EpochUncleSummaryView, FactoryAction, MintedBlockView, PeerInfoView, SignedUserTransactionView,
     StateWithProofView, StrView, TransactionInfoView, TransactionOutputView, TransactionRequest,
     TransactionView,
 };
@@ -57,6 +56,7 @@ mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
 pub use jsonrpc_core::Params;
 use starcoin_types::sign_message::SigningMessage;
+use starcoin_types::system_events::MintBlockEvent;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use tokio::runtime::Runtime;
 
@@ -642,7 +642,7 @@ impl RpcClient {
         minting_blob: String,
         nonce: u32,
         extra: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<MintedBlockView> {
         self.call_rpc_blocking(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
             .map_err(map_err)
     }
@@ -651,7 +651,7 @@ impl RpcClient {
         minting_blob: String,
         nonce: u32,
         extra: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<MintedBlockView> {
         self.call_rpc_async(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
             .await
             .map_err(map_err)
@@ -693,7 +693,7 @@ impl RpcClient {
 
     pub fn subscribe_new_mint_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = MintBlock, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.map_err(map_err))
@@ -703,7 +703,7 @@ impl RpcClient {
 
     pub async fn subscribe_new_mint_blocks_async(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = MintBlock, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
         self.call_rpc_async(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.map_err(map_err))

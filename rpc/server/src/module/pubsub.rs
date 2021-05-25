@@ -11,9 +11,8 @@ use parking_lot::RwLock;
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_miner::{MinerClientSubscribeRequest, MinerService};
+use starcoin_miner::{MinerService, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::metadata::Metadata;
-use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{BlockView, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::{
@@ -304,15 +303,17 @@ impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
         ));
         ctx.spawn(async move {
             match miner_service
-                .send(MinerClientSubscribeRequest::Add(subscribers_num))
+                .send(UpdateSubscriberNumRequest {
+                    number: Some(subscribers_num),
+                })
                 .await
             {
-                Ok(Ok(Some(event))) => {
+                Ok(Some(event)) => {
                     if let Err(err) = sender.unbounded_send(event) {
                         error!("[pubsub] Failed to send MintBlockEvent: {}", err);
                     }
                 }
-                Ok(Ok(None)) => {}
+                Ok(None) => {}
                 _ => error!("[pubsub] Failed to send NewMinerClientRequest to miner service"),
             };
         });
@@ -395,10 +396,9 @@ impl ServiceHandler<Self, Unsubscribe> for PubSubService {
         self.new_header_subscribers.remove(&msg.0);
         self.new_event_subscribers.remove(&msg.0);
         self.mint_block_subscribers.remove(&msg.0);
-        self.miner_service
-            .do_send(MinerClientSubscribeRequest::Remove(
-                self.mint_block_subscribers.len() as u32,
-            ));
+        self.miner_service.do_send(UpdateSubscriberNumRequest {
+            number: Some(self.mint_block_subscribers.len() as u32),
+        });
         if let Some(h) = self.new_pending_txn_tasks.write().remove(&msg.0) {
             h.abort();
         }
@@ -486,12 +486,7 @@ pub struct NewMintBlockHandler;
 
 impl EventHandler<MintBlockEvent> for NewMintBlockHandler {
     fn handle(&self, msg: MintBlockEvent) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
-        vec![Ok(pubsub::Result::MintBlock(Box::new(MintBlock {
-            strategy: msg.strategy,
-            minting_blob: hex::encode(msg.minting_blob),
-            difficulty: msg.difficulty,
-            block_number: msg.block_number,
-        })))]
+        vec![Ok(pubsub::Result::MintBlock(Box::new(msg)))]
     }
 }
 

@@ -5,8 +5,8 @@ use anyhow::Result;
 use futures::{StreamExt, TryStreamExt};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_client::RpcClient;
+use starcoin_types::system_events::MintBlockEvent;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -108,7 +108,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     let handle1 = async_std::task::spawn(async move {
         stream1
             .into_stream()
-            .collect::<Vec<Result<MintBlock>>>()
+            .collect::<Vec<Result<MintBlockEvent>>>()
             .await
     });
     node_handle.generate_block()?;
@@ -125,7 +125,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     let handle2 = async_std::task::spawn(async move {
         stream2
             .into_stream()
-            .collect::<Vec<Result<MintBlock>>>()
+            .collect::<Vec<Result<MintBlockEvent>>>()
             .await
     });
 

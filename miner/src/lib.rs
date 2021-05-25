@@ -22,18 +22,28 @@ mod metrics;
 pub mod task;
 
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
+use crypto::HashValue;
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
+use std::fmt;
+use thiserror::Error;
 pub use types::block::BlockHeaderExtra;
-pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
+pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 
-#[derive(Debug)]
-pub enum MinerClientSubscribeRequest {
-    Add(u32),
-    Remove(u32),
+#[derive(Debug, Error)]
+pub enum MinerError {
+    #[error("Mint task is empty Error")]
+    TaskEmptyError,
+    #[error("Mint task is mismatch Error, current blob: {current}, got blob: {real}")]
+    TaskMisMatchError { current: String, real: String },
 }
 
-impl ServiceRequest for MinerClientSubscribeRequest {
-    type Response = Result<Option<MintBlockEvent>>;
+#[derive(Debug)]
+pub struct UpdateSubscriberNumRequest {
+    pub number: Option<u32>,
+}
+
+impl ServiceRequest for UpdateSubscriberNumRequest {
+    type Response = Option<MintBlockEvent>;
 }
 
 pub struct MinerService {
@@ -43,27 +53,55 @@ pub struct MinerService {
     client_subscribers_num: u32,
 }
 
-impl ServiceHandler<Self, MinerClientSubscribeRequest> for MinerService {
+impl ServiceRequest for SubmitSealRequest {
+    type Response = Result<HashValue>;
+}
+
+#[derive(Clone, Debug)]
+pub struct SubmitSealRequest {
+    pub nonce: u32,
+    pub extra: BlockHeaderExtra,
+    pub minting_blob: Vec<u8>,
+}
+
+impl fmt::Display for SubmitSealRequest {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            fmt,
+            "Seal{{nonce:{}, extra:{}, blob:{}}}",
+            self.nonce,
+            self.extra,
+            hex::encode(&self.minting_blob)
+        )
+    }
+}
+
+impl SubmitSealRequest {
+    pub fn new(minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra) -> Self {
+        Self {
+            minting_blob,
+            nonce,
+            extra,
+        }
+    }
+}
+
+impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     fn handle(
         &mut self,
-        msg: MinerClientSubscribeRequest,
+        req: UpdateSubscriberNumRequest,
         _ctx: &mut ServiceContext<MinerService>,
-    ) -> Result<Option<MintBlockEvent>> {
-        match msg {
-            MinerClientSubscribeRequest::Add(num) => {
-                self.client_subscribers_num = num;
-                Ok(self.current_task.as_ref().map(|task| MintBlockEvent {
-                    strategy: task.block_template.strategy,
-                    minting_blob: task.minting_blob.clone(),
-                    difficulty: task.block_template.difficulty,
-                    block_number: task.block_template.number,
-                }))
-            }
-            MinerClientSubscribeRequest::Remove(num) => {
-                self.client_subscribers_num = num;
-                Ok(None)
-            }
+    ) -> Option<MintBlockEvent> {
+        if let Some(num) = req.number {
+            self.client_subscribers_num = num;
         }
+        self.current_task.as_ref().map(|task| MintBlockEvent {
+            parent_hash: task.block_template.parent_hash,
+            strategy: task.block_template.strategy,
+            minting_blob: task.minting_blob.clone(),
+            difficulty: task.block_template.difficulty,
+            block_number: task.block_template.number,
+        })
     }
 }
 
@@ -84,23 +122,26 @@ impl ServiceFactory<MinerService> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
-        ctx.subscribe::<SubmitSealEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
-        ctx.unsubscribe::<SubmitSealEvent>();
         Ok(())
     }
 }
 
-impl EventHandler<Self, SubmitSealEvent> for MinerService {
-    fn handle_event(&mut self, event: SubmitSealEvent, ctx: &mut ServiceContext<MinerService>) {
-        if let Err(e) = self.finish_task(event.nonce, event.extra, event.minting_blob.clone(), ctx)
-        {
-            error!("Process SubmitSealEvent {:?} fail: {:?}", event, e);
-        }
+impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
+    fn handle(
+        &mut self,
+        req: SubmitSealRequest,
+        ctx: &mut ServiceContext<MinerService>,
+    ) -> Result<HashValue> {
+        self.finish_task(req.nonce, req.extra, req.minting_blob.clone(), ctx)
+            .map_err(|e| {
+                warn!(target: "miner", "process seal: {} failed: {}", req, e);
+                e
+            })
     }
 }
 
@@ -122,6 +163,7 @@ impl MinerService {
             let difficulty = block_template.difficulty;
             let strategy = block_template.strategy;
             let number = block_template.number;
+            let parent_hash = block_template.parent_hash;
             let task = MintTask::new(block_template);
             let mining_blob = task.minting_blob.clone();
             if let Some(current_task) = self.current_task.as_ref() {
@@ -132,6 +174,7 @@ impl MinerService {
             }
             self.current_task = Some(task);
             ctx.broadcast(MintBlockEvent::new(
+                parent_hash,
                 strategy,
                 mining_blob,
                 difficulty,
@@ -147,48 +190,38 @@ impl MinerService {
         extra: BlockHeaderExtra,
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<MinerService>,
-    ) -> Result<()> {
+    ) -> Result<HashValue> {
         match self.current_task.as_ref() {
-            None => {
-                debug!(
-                    "MintTask is none, but got nonce: {}, extra:{:?} for minting_blob: {:?}, may be mint by other client.",
-                    nonce, extra, minting_blob,
-                );
-                return Ok(());
-            }
             Some(task) => {
                 if task.minting_blob != minting_blob {
-                    info!(
-                        "[miner] Jobs hash mismatch expect: {}, got: {}, probably received old job result.",
-                        hex::encode(task.minting_blob.as_slice()),
-                        hex::encode(minting_blob.as_slice())
-                    );
-                    return Ok(());
-                }
-                if let Err(e) = task.block_template.strategy.verify_blob(
+                    return Err(MinerError::TaskMisMatchError {
+                        current: hex::encode(&task.minting_blob),
+                        real: hex::encode(minting_blob),
+                    }
+                    .into());
+                };
+                task.block_template.strategy.verify_blob(
                     task.minting_blob.clone(),
                     nonce,
                     extra,
                     task.block_template.difficulty,
-                ) {
-                    warn!(
-                        "Failed to verify blob: {}, nonce: {}, err: {}",
-                        hex::encode(task.minting_blob.as_slice()),
-                        nonce,
-                        e
-                    );
-                    return Ok(());
-                }
+                )?
+            }
+            None => {
+                return Err(MinerError::TaskEmptyError.into());
             }
         }
 
         if let Some(task) = self.current_task.take() {
             let block = task.finish(nonce, extra);
-            info!("Mint new block: {}", block);
+            let block_hash = block.id();
+            info!(target: "miner", "Mint new block: {}", block);
             ctx.broadcast(MinedBlock(Arc::new(block)));
             MINER_METRICS.block_mint_count.inc();
+            Ok(block_hash)
+        } else {
+            Err(MinerError::TaskEmptyError.into())
         }
-        Ok(())
     }
 
     pub fn is_minting(&self) -> bool {

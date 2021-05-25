@@ -260,11 +260,12 @@ impl NodeService {
         info!("Self address is: {}", config.network.self_address());
 
         registry.register::<CreateBlockTemplateService>().await?;
-        registry.register::<MinerService>().await?;
+        let miner_service = registry.register::<MinerService>().await?;
 
         if let Some(miner_client_config) = config.miner.miner_client_config() {
             registry.put_shared(miner_client_config).await?;
-            let job_client = JobBusClient::new(bus.clone(), config.net().time_service());
+            let job_client =
+                JobBusClient::new(miner_service, bus.clone(), config.net().time_service());
             registry.put_shared(job_client).await?;
             registry
                 .register::<MinerClientService<JobBusClient>>()

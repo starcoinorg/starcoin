@@ -12,12 +12,11 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, PrivateKey};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
-use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_state_api::StateReaderExt;
@@ -219,17 +218,22 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     // Generate a event
     let diff = U256::from(1024);
     let header_hash = vec![0u8; 76];
-    let mint_block_event =
-        MintBlockEvent::new(ConsensusStrategy::Dummy, header_hash.clone(), diff, 0);
+    let mint_block_event = MintBlockEvent::new(
+        HashValue::random(),
+        ConsensusStrategy::Dummy,
+        header_hash.clone(),
+        diff,
+        0,
+    );
     bus.broadcast(mint_block_event.clone()).unwrap();
     let res = timeout(Duration::from_secs(1), receiver.next())
         .await?
         .ok_or_else(|| anyhow::anyhow!("Empty value"))?;
     let r: Value = serde_json::from_str(&res).unwrap();
     let v = r["params"]["result"].clone();
-    let mint_block: MintBlock = serde_json::from_value(v).unwrap();
+    let mint_block: MintBlockEvent = serde_json::from_value(v).unwrap();
     assert_eq!(mint_block.difficulty, diff);
-    assert_eq!(&mint_block.minting_blob, &hex::encode(&header_hash));
+    assert_eq!(&mint_block.minting_blob, &header_hash);
     // Unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;

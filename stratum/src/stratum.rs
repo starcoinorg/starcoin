@@ -4,11 +4,13 @@ use futures::channel::mpsc;
 use futures::StreamExt;
 use jsonrpc_pubsub::SubscriptionId;
 use starcoin_logger::prelude::*;
-use starcoin_miner::{MinerClientSubscribeRequest, MinerService};
+use starcoin_miner::{
+    MinerService, SubmitSealRequest as MinerSubmitSealRequest, UpdateSubscriberNumRequest,
+};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
-use starcoin_types::system_events::{MintBlockEvent, SubmitSealEvent};
+use starcoin_types::system_events::MintBlockEvent;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::sync::atomic;
@@ -35,10 +37,9 @@ impl Stratum {
     fn sync_current_job(&mut self) -> Result<Option<MintBlockEvent>> {
         let service = self.miner_service.clone();
         let subscribers_num = self.mint_block_subscribers.len() as u32;
-        let current_mint_event = futures::executor::block_on(
-            service.send(MinerClientSubscribeRequest::Add(subscribers_num)),
-        )??;
-        Ok(current_mint_event)
+        futures::executor::block_on(service.send(UpdateSubscriberNumRequest {
+            number: Some(subscribers_num),
+        }))
     }
     fn send_to_all(&mut self, event: MintBlockEvent) {
         let mut remove_outdated = vec![];
@@ -82,10 +83,11 @@ impl ServiceHandler<Self, Unsubscribe> for Stratum {
     fn handle(&mut self, msg: Unsubscribe, _ctx: &mut ServiceContext<Self>) {
         self.mint_block_subscribers.remove(&msg.0);
         self.uid.fetch_sub(1, atomic::Ordering::SeqCst);
-        self.miner_service
-            .do_send(MinerClientSubscribeRequest::Remove(
-                self.mint_block_subscribers.len() as u32,
-            ));
+        if let Err(e) = self.miner_service.try_send(UpdateSubscriberNumRequest {
+            number: Some(self.mint_block_subscribers.len() as u32),
+        }) {
+            error!(target: "stratum", "Failed to send unsubscribe message to miner service:{}", e)
+        }
     }
 }
 
@@ -139,9 +141,9 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 warn!(target: "stratum", "received job mismatch with current job,{},{}", submit_job_id, job_id);
                 return Ok(());
             }
-            let mut seal: SubmitSealEvent = msg.0.try_into()?;
+            let mut seal: MinerSubmitSealRequest = msg.0.try_into()?;
             seal.minting_blob = current_mint_event.minting_blob;
-            self.miner_service.notify(seal)?
+            let _ = self.miner_service.try_send(seal)?;
         }
         Ok(())
     }

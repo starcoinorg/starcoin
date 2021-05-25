@@ -52,6 +52,11 @@ use std::str::FromStr;
 pub type ByteCode = Vec<u8>;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MintedBlockView {
+    pub block_hash: HashValue,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     pub type_: StructTagView,
