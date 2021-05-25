@@ -10,7 +10,6 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
 
 const TIMESTAMP_FORMAT: &str = "%+";
 
