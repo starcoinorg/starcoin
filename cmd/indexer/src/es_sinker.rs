@@ -227,6 +227,33 @@ impl EsSinker {
         Ok(())
     }
 
+    pub async fn repair_block(&self, block: BlockData) -> Result<()> {
+        let BlockData { block, txns_data } = block;
+
+        let block_index = self.config.block_index.as_str();
+        let txn_info_index = self.config.txn_info_index.as_str();
+        let mut bulk_operations = BulkOperations::new();
+        bulk_operations.push(
+            BulkOperation::index(BlockWithMetadata {
+                block: block.clone(),
+                metadata: txns_data[0].block_metadata.clone(),
+            })
+            .id(block.header.block_hash.to_string())
+            .index(block_index),
+        )?;
+
+        for txn_data in txns_data {
+            bulk_operations.push(
+                BulkOperation::index(txn_data.clone())
+                    .id(txn_data.info.transaction_hash.to_string())
+                    .index(txn_info_index),
+            )?;
+        }
+
+        self.bulk(bulk_operations).await?;
+        Ok(())
+    }
+
     /// write new block into es.
     /// Caller need to make sure the block with right block number.
     pub async fn write_next_block(&self, block: BlockData) -> Result<()> {

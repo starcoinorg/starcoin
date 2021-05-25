@@ -1,5 +1,6 @@
 {
   "mappings": {
+    "dynamic": "strict",
     "properties": {
       "timestamp": {
         "type": "date"
@@ -206,6 +207,10 @@
             "ignore_above": 256
           }
         }
+      },
+      "status_content": {
+        "type": "object",
+        "dynamic": true
       },
       "transaction_hash": {
         "type": "text",

@@ -30,6 +30,26 @@ pub struct Options {
         default_value = "http://localhost:9850"
     )]
     node_url: String,
+
+    #[clap(subcommand)]
+    subcmd: Option<SubCommand>,
+}
+
+#[derive(Clap, Debug, Clone)]
+enum SubCommand {
+    Repair(Repair),
+}
+
+/// repair sub command
+#[derive(Clap, Debug, Clone)]
+struct Repair {
+    // block to repair from. default to 0.
+    #[clap(long = "from-block")]
+    from_block: Option<u64>,
+
+    // block to repair to. default to current end block
+    #[clap(long = "to-block")]
+    to_block: Option<u64>,
 }
 
 async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
@@ -118,6 +138,54 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
     }
 }
 
+async fn repair(block_client: BlockClient, sinker: EsSinker, repair_config: Repair) -> Result<()> {
+    let latest_block_number = block_client
+        .get_chain_head()
+        .await
+        .map_err(|e| anyhow!("{}", e))?
+        .number
+        .0;
+    let end_block = repair_config.to_block.unwrap_or(latest_block_number);
+    let from_block = repair_config.from_block.unwrap_or(0);
+    let mut current_block: u64 = from_block;
+
+    while current_block < end_block {
+        let block_data: BlockData = FutureRetry::new(
+            || {
+                block_client.get_block_whole_by_height(current_block)
+                //.map_err(|e| e.compat())
+            },
+            |e| {
+                warn!("[Retry]: get chain block data, err: {}", &e);
+                RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
+            },
+        )
+        .await
+        .map(|(d, _)| d)
+        .map_err(|(e, _)| e)?;
+
+        // retry write
+        FutureRetry::new(
+            || sinker.repair_block(block_data.clone()),
+            |e: anyhow::Error| {
+                warn!("[Retry]: repair block {}, err: {}", current_block, e);
+                RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
+            },
+        )
+        .await
+        .map(|(d, _)| d)
+        .map_err(|(e, _)| e)?;
+
+        info!(
+            "Repair block {}, height: {} done",
+            block_data.block.header.block_hash, block_data.block.header.number
+        );
+
+        current_block += 1;
+    }
+    Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
     let _log_handle = starcoin_logger::init();
     let opts: Options = Options::parse();
@@ -145,7 +213,13 @@ fn main() -> anyhow::Result<()> {
     let index_config = IndexConfig::new_with_prefix(opts.es_index_prefix.as_str());
     let sinker = EsSinker::new(es, index_config);
 
-    rt.block_on(start_loop(block_client, sinker))?;
-
+    match &opts.subcmd {
+        Some(SubCommand::Repair(repair_config)) => {
+            rt.block_on(repair(block_client, sinker, repair_config.clone()))?;
+        }
+        None => {
+            rt.block_on(start_loop(block_client, sinker))?;
+        }
+    }
     Ok(())
 }
