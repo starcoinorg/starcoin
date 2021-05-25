@@ -17,7 +17,7 @@ pub struct TransactionData {
     pub info: TransactionInfoEsView,
     pub block_metadata: Option<BlockMetadataView>,
     pub user_transaction: Option<SignedUserTransactionView>,
-    pub events: Vec<TransactionEventView>,
+    pub events: Vec<TransactionEventEsView>,
     pub timestamp: u64,
 }
 
