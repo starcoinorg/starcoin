@@ -26,7 +26,7 @@ data:
                   containers.ids:
                     - "${data.kubernetes.container.id}"
                   paths:
-                    - /sc-data/barnard/starcoin.log
+                    - /sc-data/main/sc_slog.log
 
     processors:
       - add_kubernetes_metadata:
