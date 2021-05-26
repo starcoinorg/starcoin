@@ -132,14 +132,14 @@ impl KeyCodec for AccountAddressWrapper {
             .map_err(anyhow::Error::new)
     }
 }
-
+/// Setting use json encode/decode for support more setting field in the future.
 impl ValueCodec for SettingWrapper {
     fn encode_value(&self) -> Result<Vec<u8>, Error> {
-        self.0.encode()
+        Ok(serde_json::to_vec(&self.0)?)
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, Error> {
-        Setting::decode(data).map(SettingWrapper)
+        Ok(SettingWrapper(serde_json::from_slice(data)?))
     }
 }
 
@@ -245,6 +245,7 @@ impl AccountStorage {
                 .remove(GlobalSettingKey::DefaultAddress),
         }
     }
+
     pub fn contain_address(&self, address: AccountAddress) -> Result<bool> {
         self.public_key_store
             .get(address.into())
@@ -265,6 +266,7 @@ impl AccountStorage {
             GlobalValue { addresses: addrs },
         )
     }
+
     fn remove_address(&self, address: AccountAddress) -> Result<()> {
         let value = self
             .global_value_store
@@ -306,6 +308,17 @@ impl AccountStorage {
         }
     }
 
+    pub fn update_public_key(
+        &self,
+        address: AccountAddress,
+        public_key: AccountPublicKey,
+    ) -> Result<()> {
+        self.public_key_store
+            .put(address.into(), public_key.into())?;
+        Ok(())
+    }
+
+    /// Update private and public key
     pub fn update_key(
         &self,
         address: AccountAddress,
@@ -316,18 +329,20 @@ impl AccountStorage {
         self.private_key_store
             .put(address.into(), encrypted_prikey.into())?;
         let public_key = private_key.public_key();
-        self.public_key_store
-            .put(address.into(), public_key.into())?;
+        self.update_public_key(address, public_key)?;
         Ok(())
     }
 
-    #[allow(unused)]
-    pub fn update_default_settings(
-        &self,
-        address: AccountAddress,
-        setting: Setting,
-    ) -> Result<(), Error> {
+    pub fn update_setting(&self, address: AccountAddress, setting: Setting) -> Result<()> {
         self.setting_store.put(address.into(), setting.into())
+    }
+
+    pub fn load_setting(&self, address: AccountAddress) -> Result<Setting> {
+        Ok(self
+            .setting_store
+            .get(address.into())?
+            .map(|setting| setting.0)
+            .unwrap_or_else(Setting::default))
     }
 
     pub fn destroy_account(&self, address: AccountAddress) -> Result<()> {

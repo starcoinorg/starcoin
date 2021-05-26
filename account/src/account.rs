@@ -5,8 +5,10 @@ use crate::account_manager::gen_private_key;
 use crate::account_storage::AccountStorage;
 use anyhow::{format_err, Result};
 use starcoin_account_api::error::AccountError;
-use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult};
-use starcoin_crypto::{PrivateKey, ValidCryptoMaterial};
+use starcoin_account_api::{
+    AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult, Setting,
+};
+use starcoin_crypto::PrivateKey;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
@@ -16,24 +18,44 @@ use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 pub struct Account {
     addr: AccountAddress,
-    private_key: AccountPrivateKey,
+    public_key: AccountPublicKey,
+    private_key: Option<AccountPrivateKey>,
+    setting: Setting,
     store: AccountStorage,
 }
 
 impl Account {
     pub fn create(
+        address: AccountAddress,
         private_key: AccountPrivateKey,
-        addr: Option<AccountAddress>,
         password: String,
         storage: AccountStorage,
     ) -> AccountResult<Self> {
-        let address = addr.unwrap_or_else(|| private_key.public_key().derived_address());
-
         storage.update_key(address, &private_key, password.as_str())?;
-
+        let setting = Setting::default();
+        storage.update_setting(address, setting.clone())?;
         Ok(Self {
             addr: address,
-            private_key,
+            public_key: private_key.public_key(),
+            private_key: Some(private_key),
+            setting,
+            store: storage,
+        })
+    }
+
+    pub fn create_readonly(
+        address: AccountAddress,
+        public_key: AccountPublicKey,
+        storage: AccountStorage,
+    ) -> AccountResult<Self> {
+        storage.update_public_key(address, public_key.clone())?;
+        let setting = Setting::readonly();
+        storage.update_setting(address, setting.clone())?;
+        Ok(Self {
+            addr: address,
+            public_key,
+            private_key: None,
+            setting,
             store: storage,
         })
     }
@@ -41,43 +63,64 @@ impl Account {
     pub fn load(
         addr: AccountAddress,
         password: &str,
-        store: AccountStorage,
+        storage: AccountStorage,
     ) -> AccountResult<Option<Self>> {
-        let decrypted_key = store.decrypt_private_key(addr, password)?;
-        let private_key = match decrypted_key {
-            None => return Ok(None),
-            Some(p) => p,
+        let setting = storage.load_setting(addr)?;
+
+        let private_key = if setting.is_readonly {
+            None
+        } else {
+            let decrypted_key = storage.decrypt_private_key(addr, password)?;
+            let private_key = match decrypted_key {
+                None => return Ok(None),
+                Some(p) => p,
+            };
+            Some(private_key)
         };
 
-        let saved_public_key = store.public_key(addr)?;
+        let saved_public_key = storage.public_key(addr)?;
         let saved_public_key = saved_public_key.ok_or_else(|| {
             AccountError::StoreError(format_err!("public key not found for address {}", addr))
         })?;
-        if saved_public_key.to_bytes() != private_key.public_key().to_bytes() {
-            return Err(AccountError::StoreError(format_err!(
-                "invalid state of public key and private key"
-            )));
-        }
-
         Ok(Some(Self {
             addr,
+            public_key: saved_public_key,
             private_key,
-            store,
+            setting,
+            store: storage,
         }))
     }
 
-    pub fn info(&self) -> AccountInfo {
-        // TODO: fix is_default
-        AccountInfo::new(self.addr, self.private_key.public_key(), false)
+    /// Set current account to default account
+    pub fn set_default(&mut self) -> Result<()> {
+        self.setting.is_default = true;
+        self.store.set_default_address(Some(self.addr))?;
+        self.store.update_setting(self.addr, self.setting.clone())?;
+        Ok(())
     }
 
-    pub fn sign_message(&self, message: SigningMessage) -> AccountSignature {
-        self.private_key.sign_message(message)
+    pub fn info(&self) -> AccountInfo {
+        AccountInfo::new(
+            self.addr,
+            self.public_key.clone(),
+            self.setting.is_default,
+            self.setting.is_readonly,
+        )
+    }
+
+    pub fn sign_message(&self, message: SigningMessage) -> Result<AccountSignature> {
+        self.private_key
+            .as_ref()
+            .map(|private_key| private_key.sign_message(message))
+            .ok_or_else(|| format_err!("Readonly account can not sign message."))
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        //TODO handle multi signature
-        let signature = self.private_key.sign(&raw_txn);
+        let signature = self
+            .private_key
+            .as_ref()
+            .map(|private_key| private_key.sign(&raw_txn))
+            .ok_or_else(|| format_err!("Readonly account can not sign txn"))?;
         signature.build_transaction(raw_txn)
     }
 
@@ -89,16 +132,16 @@ impl Account {
         &self.addr
     }
 
-    pub fn private_key(&self) -> &AccountPrivateKey {
-        &self.private_key
+    pub fn private_key(&self) -> Option<&AccountPrivateKey> {
+        self.private_key.as_ref()
     }
 
     pub fn public_key(&self) -> AccountPublicKey {
-        self.private_key.public_key()
+        self.public_key.clone()
     }
 
     pub fn auth_key(&self) -> AuthenticationKey {
-        self.public_key().authentication_key()
+        self.public_key.authentication_key()
     }
 
     ///Generate a random account for test.
@@ -107,7 +150,6 @@ impl Account {
         let public_key = private_key.public_key();
         let address = account_address::from_public_key(&public_key);
         let storage = AccountStorage::new(StorageInstance::new_cache_instance());
-        Self::create(private_key.into(), Some(address), "".to_string(), storage)
-            .map_err(|e| e.into())
+        Self::create(address, private_key.into(), "".to_string(), storage).map_err(|e| e.into())
     }
 }

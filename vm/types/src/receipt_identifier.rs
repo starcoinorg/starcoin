@@ -12,7 +12,7 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 
 /// See sip-21
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum ReceiptIdentifier {
     V1(AccountAddress, Option<AuthenticationKey>),
 }

@@ -46,10 +46,22 @@ impl ActorService for AccountService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         let account = self.manager.default_account_info()?;
 
-        if account.is_none() {
-            self.manager.create_account(DEFAULT_ACCOUNT_PASSWORD)?;
+        match account {
+            None => {
+                self.manager.create_account(DEFAULT_ACCOUNT_PASSWORD)?;
+            }
+            Some(account_info) => {
+                // before v1.1, account's setting is not persistent in storage, so the is_default in the account_info may bean wrong,
+                // repair the old account data
+                if !account_info.is_default {
+                    info!(
+                        "Repair the default account address: {}",
+                        account_info.address
+                    );
+                    self.manager.set_default_account(account_info.address)?;
+                }
+            }
         }
-
         let config = ctx
             .get_shared::<Arc<NodeConfig>>()
             .expect("Get NodeConfig should success.");
@@ -136,10 +148,17 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 password,
                 private_key,
             } => {
-                let wallet =
+                let account =
                     self.manager
                         .import_account(address, private_key, password.as_str())?;
-                AccountResponse::AccountInfo(Box::new(wallet.info()))
+                AccountResponse::AccountInfo(Box::new(account.info()))
+            }
+            AccountRequest::ImportReadonlyAccount {
+                address,
+                public_key,
+            } => {
+                let account = self.manager.import_readonly_account(address, public_key)?;
+                AccountResponse::AccountInfo(Box::new(account.info()))
             }
             AccountRequest::AccountAcceptedTokens { address } => {
                 let mut tokens = self.manager.accepted_tokens(address)?;

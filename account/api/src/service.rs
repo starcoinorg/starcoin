@@ -50,6 +50,12 @@ pub trait AccountAsyncService:
         password: String,
     ) -> Result<AccountInfo>;
 
+    async fn import_readonly_account(
+        &self,
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    ) -> Result<AccountInfo>;
+
     /// Return the private key as bytes for `address`
     async fn export_account(&self, address: AccountAddress, password: String) -> Result<Vec<u8>>;
 
@@ -198,6 +204,24 @@ where
                 address,
                 password,
                 private_key,
+            })
+            .await??;
+        if let AccountResponse::AccountInfo(account) = response {
+            Ok(*account)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn import_readonly_account(
+        &self,
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    ) -> Result<AccountInfo> {
+        let response = self
+            .send(AccountRequest::ImportReadonlyAccount {
+                address,
+                public_key,
             })
             .await??;
         if let AccountResponse::AccountInfo(account) = response {

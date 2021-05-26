@@ -6,7 +6,9 @@ use crate::Account;
 use crate::AccountManager;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
+use starcoin_account_api::AccountPublicKey;
 use starcoin_config::RocksdbConfig;
+use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{SigningKey, ValidCryptoMaterial};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -57,8 +59,8 @@ pub fn test_wallet() -> Result<()> {
     assert!(loaded_wallet.is_some());
     let reloaded_wallet = loaded_wallet.unwrap();
     assert_eq!(
-        reloaded_wallet.private_key().to_bytes(),
-        wallet.private_key().to_bytes()
+        reloaded_wallet.private_key().unwrap().to_bytes(),
+        wallet.private_key().unwrap().to_bytes()
     );
 
     // test default wallet
@@ -70,6 +72,35 @@ pub fn test_wallet() -> Result<()> {
     // test wallet destroy
 
     wallet.destroy()?;
+
+    Ok(())
+}
+
+#[test]
+pub fn test_readonly_account() -> Result<()> {
+    let tempdir = tempfile::tempdir()?;
+    let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
+    let manager = AccountManager::new(storage.clone())?;
+    let mut key_gen = KeyGen::from_os_rng();
+    let (_private_key, public_key) = key_gen.generate_keypair();
+    let account_public_key = AccountPublicKey::Single(public_key);
+    let address = account_public_key.derived_address();
+    let account = manager.import_readonly_account(address, account_public_key.to_bytes())?;
+
+    // test reload
+    let loaded_account = Account::load(address, "", storage)?;
+    assert!(loaded_account.is_some());
+    let loaded_account = loaded_account.unwrap();
+    assert_eq!(account.info(), loaded_account.info());
+    assert!(loaded_account.private_key().is_none());
+
+    // test default wallet
+    let default_wallet_info = manager.default_account_info()?;
+    assert!(default_wallet_info.is_some());
+    let default_wallet_info = default_wallet_info.unwrap();
+    assert_eq!(&default_wallet_info.address, loaded_account.address());
+
+    loaded_account.destroy()?;
 
     Ok(())
 }
