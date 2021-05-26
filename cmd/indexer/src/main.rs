@@ -10,6 +10,7 @@ use jsonrpc_core_client::transports::http;
 use starcoin_indexer::{BlockClient, BlockData, EsSinker, IndexConfig};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::chain::ChainClient;
+use std::cmp::min;
 use std::time::Duration;
 use tokio::runtime;
 
@@ -55,6 +56,8 @@ struct Repair {
 async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
     sinker.init_indices().await?;
 
+    let bulk_size = 100u64;
+
     loop {
         let remote_tip_header = FutureRetry::new(
             || block_client.get_chain_head().map_err(|e| e),
@@ -78,16 +81,17 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
         .map(|(d, _)| d)
         .map_err(|(e, _)| e)?;
 
-        let next_block_number = match local_tip_header.as_ref() {
-            Some(local_tip_header) => local_tip_header.block_number + 1,
+        let current_block_number = match local_tip_header.as_ref() {
+            Some(local_tip_header) => local_tip_header.block_number,
             None => 0,
         };
-        if next_block_number > remote_tip_header.number.0 {
-            tokio::time::delay_for(Duration::from_secs(1)).await;
-        } else {
+        let bulk_times = min(remote_tip_header.number.0 - current_block_number, bulk_size);
+        let mut block_vec = vec![];
+        let mut index = 0u64;
+        while index < bulk_times {
             let next_block: BlockData = FutureRetry::new(
                 || {
-                    block_client.get_block_whole_by_height(next_block_number)
+                    block_client.get_block_whole_by_height(current_block_number + index)
                     //.map_err(|e| e.compat())
                 },
                 |e| {
@@ -98,7 +102,6 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
             .await
             .map(|(d, _)| d)
             .map_err(|(e, _)| e)?;
-
             // fork occurs
             if let Some(local_tip_header) = local_tip_header.as_ref() {
                 if next_block.block.header.parent_hash != local_tip_header.block_hash {
@@ -113,27 +116,51 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
                     .await
                     .map(|(d, _)| d)
                     .map_err(|(e, _)| e)?;
-
-                    continue;
+                    break;
+                } else {
+                    block_vec.push(next_block.clone());
+                    sinker
+                        .update_local_tip_header(
+                            next_block.block.header.block_hash,
+                            next_block.block.header.number.0,
+                        )
+                        .await?;
+                    index += 1;
+                    debug!(
+                        "Indexing block {}, height: {} done",
+                        next_block.block.header.block_hash, next_block.block.header.number
+                    );
                 }
             }
-
-            // retry write
+        }
+        if index == bulk_times {
+            // bulk send
             FutureRetry::new(
-                || sinker.write_next_block(next_block.clone()),
+                || sinker.bulk(block_vec.clone()),
                 |e: anyhow::Error| {
-                    warn!("[Retry]: write next block, err: {}", e);
+                    warn!("[Retry]: write next blocks, err: {}", e);
                     RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
                 },
             )
             .await
             .map(|(d, _)| d)
             .map_err(|(e, _)| e)?;
-
-            info!(
-                "Indexing block {}, height: {} done",
-                next_block.block.header.block_hash, next_block.block.header.number
-            );
+            info!("Indexing height: {} done", current_block_number + index,);
+        } else {
+            //reset tips to local_tip
+            match local_tip_header.as_ref() {
+                Some(local_tip_header) => {
+                    sinker
+                        .update_remote_tip_header(
+                            local_tip_header.block_hash,
+                            local_tip_header.block_number,
+                        )
+                        .await?;
+                }
+                _ => {
+                    //todo check remote tip
+                }
+            }
         }
     }
 }

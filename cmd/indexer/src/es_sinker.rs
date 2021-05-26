@@ -94,7 +94,7 @@ impl EsSinker {
         Ok(())
     }
 
-    async fn update_local_tip_header(
+    pub async fn update_remote_tip_header(
         &self,
         block_hash: HashValue,
         block_number: u64,
@@ -121,6 +121,19 @@ impl EsSinker {
         let data = resp.json().await?;
         self.state.write().await.tip = Some(tip_info);
         Ok(data)
+    }
+
+    pub async fn update_local_tip_header(
+        &self,
+        block_hash: HashValue,
+        block_number: u64,
+    ) -> Result<()> {
+        let tip_info = LocalTipInfo {
+            block_number,
+            block_hash,
+        };
+        self.state.write().await.tip = Some(tip_info);
+        Ok(())
     }
 
     pub async fn get_local_tip_header(&self) -> Result<Option<LocalTipInfo>> {
@@ -169,7 +182,7 @@ impl EsSinker {
 
         // first, rollback tip header
         let rollback_to = (parent_hash, tip_header.block_number - 1);
-        self.update_local_tip_header(rollback_to.0, rollback_to.1)
+        self.update_remote_tip_header(rollback_to.0, rollback_to.1)
             .await?;
 
         // delete block
@@ -228,72 +241,35 @@ impl EsSinker {
     }
 
     pub async fn repair_block(&self, block: BlockData) -> Result<()> {
-        let BlockData { block, txns_data } = block;
-
-        let block_index = self.config.block_index.as_str();
-        let txn_info_index = self.config.txn_info_index.as_str();
-        let mut bulk_operations = BulkOperations::new();
-        bulk_operations.push(
-            BulkOperation::index(BlockWithMetadata {
-                block: block.clone(),
-                metadata: txns_data[0].block_metadata.clone(),
-            })
-            .id(block.header.block_hash.to_string())
-            .index(block_index),
-        )?;
-
-        for txn_data in txns_data {
-            bulk_operations.push(
-                BulkOperation::index(txn_data.clone())
-                    .id(txn_data.info.transaction_hash.to_string())
-                    .index(txn_info_index),
-            )?;
-        }
-
-        self.bulk(bulk_operations).await?;
-        Ok(())
-    }
-
-    /// write new block into es.
-    /// Caller need to make sure the block with right block number.
-    pub async fn write_next_block(&self, block: BlockData) -> Result<()> {
-        let BlockData { block, txns_data } = block;
-
-        // TODO: check against old tip info
-        let tip_info = LocalTipInfo {
-            block_hash: block.header.block_hash,
-            block_number: block.header.number.0,
-        };
-
-        let block_index = self.config.block_index.as_str();
-        let txn_info_index = self.config.txn_info_index.as_str();
-        let mut bulk_operations = BulkOperations::new();
-        bulk_operations.push(
-            BulkOperation::index(BlockWithMetadata {
-                block: block.clone(),
-                metadata: txns_data[0].block_metadata.clone(),
-            })
-            .id(block.header.block_hash.to_string())
-            .index(block_index),
-        )?;
-
-        for txn_data in txns_data {
-            bulk_operations.push(
-                BulkOperation::index(txn_data.clone())
-                    .id(txn_data.info.transaction_hash.to_string())
-                    .index(txn_info_index),
-            )?;
-        }
-
-        self.bulk(bulk_operations).await?;
-
-        self.update_local_tip_header(tip_info.block_hash, tip_info.block_number)
-            .await?;
+        self.bulk(vec![block]).await?;
         Ok(())
     }
 
     // bulk insert data into es.
-    async fn bulk(&self, bulk_operations: BulkOperations) -> anyhow::Result<()> {
+    pub async fn bulk(&self, blocks: Vec<BlockData>) -> anyhow::Result<()> {
+        let mut bulk_operations = BulkOperations::new();
+        let block_index = self.config.block_index.as_str();
+        let txn_info_index = self.config.txn_info_index.as_str();
+        for blockdata in blocks {
+            let BlockData { block, txns_data } = blockdata;
+            bulk_operations.push(
+                BulkOperation::index(BlockWithMetadata {
+                    block: block.clone(),
+                    metadata: txns_data[0].block_metadata.clone(),
+                })
+                .id(block.header.block_hash.to_string())
+                .index(block_index),
+            )?;
+
+            for txn_data in txns_data {
+                bulk_operations.push(
+                    BulkOperation::index(txn_data.clone())
+                        .id(txn_data.info.transaction_hash.to_string())
+                        .index(txn_info_index),
+                )?;
+            }
+        }
+
         let resp = self
             .es
             .bulk(BulkParts::None)
@@ -355,7 +331,7 @@ mod tests {
         };
 
         let _ = sinker
-            .update_local_tip_header(tip_info.block_hash, tip_info.block_number)
+            .update_remote_tip_header(tip_info.block_hash, tip_info.block_number)
             .await
             .unwrap();
 
