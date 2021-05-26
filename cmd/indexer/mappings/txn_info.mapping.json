@@ -116,72 +116,11 @@
             "type": "long"
           },
           "type_tag": {
-            "properties": {
-              "Struct": {
-                "properties": {
-                  "address": {
-                    "type": "text",
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    }
-                  },
-                  "module": {
-                    "type": "text",
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    }
-                  },
-                  "name": {
-                    "type": "text",
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    }
-                  },
-                  "type_params": {
-                    "properties": {
-                      "Struct": {
-                        "properties": {
-                          "address": {
-                            "type": "text",
-                            "fields": {
-                              "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                              }
-                            }
-                          },
-                          "module": {
-                            "type": "text",
-                            "fields": {
-                              "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                              }
-                            }
-                          },
-                          "name": {
-                            "type": "text",
-                            "fields": {
-                              "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
               }
             }
           }

@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{
     BlockMetadataView, BlockView, SignedUserTransactionView, StrView, TransactionEventView,
-    TransactionInfoView, TransactionVMStatus,
+    TransactionInfoView, TransactionVMStatus, TypeTagView,
 };
+use starcoin_types::block::BlockNumber;
+use starcoin_types::event::EventKey;
 use starcoin_types::vm_error::AbortLocation;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -17,8 +19,36 @@ pub struct TransactionData {
     pub info: TransactionInfoEsView,
     pub block_metadata: Option<BlockMetadataView>,
     pub user_transaction: Option<SignedUserTransactionView>,
-    pub events: Vec<TransactionEventView>,
+    pub events: Vec<TransactionEventEsView>,
     pub timestamp: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct TransactionEventEsView {
+    pub block_hash: Option<HashValue>,
+    pub block_number: Option<StrView<BlockNumber>>,
+    pub transaction_hash: Option<HashValue>,
+    // txn index in block
+    pub transaction_index: Option<u32>,
+
+    pub data: StrView<Vec<u8>>,
+    pub type_tag: TypeTagView,
+    pub event_key: EventKey,
+    pub event_seq_number: StrView<u64>,
+}
+impl From<TransactionEventView> for TransactionEventEsView {
+    fn from(event: TransactionEventView) -> Self {
+        Self {
+            block_hash: event.block_hash,
+            block_number: event.block_number,
+            transaction_hash: event.transaction_hash,
+            transaction_index: event.transaction_index,
+            data: event.data,
+            type_tag: TypeTagView::from(event.type_tag),
+            event_key: event.event_key,
+            event_seq_number: StrView(event.event_seq_number.0),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -123,8 +153,12 @@ struct BlockWithMetadata {
 
 #[cfg(test)]
 mod tests {
-    use crate::{TransactionInfoEsView, TransactionVMStatusEsView};
-    use starcoin_rpc_api::types::StrView;
+    use crate::{TransactionEventEsView, TransactionInfoEsView, TransactionVMStatusEsView};
+    use starcoin_crypto::HashValue;
+    use starcoin_rpc_api::types::{StrView, TransactionEventView};
+    use starcoin_types::account_address::AccountAddress;
+    use starcoin_types::event::EventKey;
+    use starcoin_types::language_storage::TypeTag;
 
     #[test]
     fn test_info_view() {
@@ -159,5 +193,26 @@ mod tests {
         {"block_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","block_number":"1","transaction_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","transaction_index":0,"state_root_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","event_root_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","gas_used":"0","status":"Discard","status_content":{"status_code":"1000"}}
         "#;
         assert_eq!(serde_json::to_string(&v).unwrap().as_str(), expected.trim());
+    }
+    #[test]
+    fn test_event() {
+        let v = TransactionEventView {
+            block_hash: Some(HashValue::zero()),
+            block_number: Some(StrView(1)),
+            transaction_hash: Some(HashValue::zero()),
+            transaction_index: Some(0),
+            data: StrView(vec![0]),
+            type_tag: TypeTag::Bool,
+            event_key: EventKey::new_from_address(&AccountAddress::ZERO, 0),
+            event_seq_number: StrView(0),
+        };
+        let event_view = TransactionEventEsView::from(v);
+        let expected = r#"
+        {"block_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","block_number":"1","transaction_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","transaction_index":0,"data":"0x00","type_tag":"bool","event_key":"0x000000000000000000000000000000000000000000000000","event_seq_number":"0"}
+        "#;
+        assert_eq!(
+            serde_json::to_string(&event_view).unwrap().as_str(),
+            expected.trim()
+        );
     }
 }

@@ -10,6 +10,7 @@ use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
 use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
+use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
@@ -38,7 +39,7 @@ pub enum Result {
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
     Event(Box<TransactionEventView>),
-    MintBlock(Box<MintBlock>),
+    MintBlock(Box<MintBlockEvent>),
 }
 
 impl Serialize for Result {

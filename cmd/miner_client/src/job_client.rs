@@ -34,7 +34,7 @@ impl JobRpcClient {
                     nonce,
                     hex::encode(extra.to_vec()),
                 ) {
-                    error!("Submit seal error: {}", e);
+                    warn!("Submit seal error: {}", e);
                     Delay::new(Duration::from_secs(1)).await;
                 }
             }
@@ -58,23 +58,10 @@ impl JobRpcClient {
                         let mut stream = stream.into_stream();
                         while let Some(item) = stream.next().await {
                             match item {
-                                Ok(b) => {
-                                    let blob = match hex::decode(b.minting_blob) {
-                                        Ok(blob) => blob,
-                                        Err(e) => {
-                                            error!("Invalid blob:{}", e);
-                                            continue;
-                                        }
-                                    };
-                                    let event = MintBlockEvent::new(
-                                        b.strategy,
-                                        blob,
-                                        b.difficulty,
-                                        b.block_number,
-                                    );
+                                Ok(event) => {
                                     info!(
                                         "Receive mint event, minting_blob: {}, difficulty: {}",
-                                        hex::encode(event.minting_blob.as_slice()),
+                                        hex::encode(&event.minting_blob),
                                         event.difficulty
                                     );
                                     let _ = sender.unbounded_send(event);

@@ -75,16 +75,13 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
             Some(local_tip_header) => local_tip_header.block_number,
             None => 0,
         };
+        info!("current_block_number: {}", current_block_number);
         let bulk_times = min(chain_header.number.0 - current_block_number, bulk_size);
         let mut block_vec = vec![];
         let mut index = 1u64;
 
         while index < bulk_times {
-            let read_number = if current_block_number == 0 {
-                current_block_number
-            } else {
-                current_block_number + index
-            };
+            let read_number = current_block_number + index;
             let next_block: BlockData = FutureRetry::new(
                 || {
                     block_client.get_block_whole_by_height(read_number)
@@ -101,11 +98,15 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
             let local_tip_header = sinker.get_local_tip_header().await?;
 
             if let Some(local_tip_header) = local_tip_header.as_ref() {
-                if next_block.block.header.parent_hash != local_tip_header.block_hash {
+                if next_block.block.header.parent_hash != local_tip_header.block_hash
+                    && read_number > 0
+                {
                     // fork occurs
                     warn!(
-                        "Fork detected, rollbacking: {}, {}",
-                        next_block.block.header.parent_hash, local_tip_header.block_hash
+                        "Fork detected, rollbacking: {}, {}, {}",
+                        read_number,
+                        next_block.block.header.parent_hash,
+                        local_tip_header.block_hash
                     );
                     break;
                 }
@@ -118,7 +119,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
                 )
                 .await?;
             index += 1;
-            debug!(
+            info!(
                 "Indexing block {}, height: {} done",
                 next_block.block.header.block_hash, next_block.block.header.number
             );

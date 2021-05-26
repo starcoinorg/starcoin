@@ -48,7 +48,7 @@ impl BlockClient {
                 info: txn_info.into(),
                 block_metadata: txn.block_metadata,
                 user_transaction: txn.user_transaction,
-                events,
+                events: events.iter().map(|event| event.clone().into()).collect(),
                 timestamp: block.header.timestamp.0,
             })
         }
@@ -68,7 +68,7 @@ impl BlockClient {
         {
             txns_data.push(TransactionData {
                 info: txn_info.into(),
-                events,
+                events: events.iter().map(|event| event.clone().into()).collect(),
                 user_transaction: Some(user_txn),
                 block_metadata: None,
                 timestamp: block.header.timestamp.0,
