@@ -63,6 +63,14 @@ pub trait AccountApi {
         password: String,
     ) -> FutureResult<AccountInfo>;
 
+    /// Import a readonly account with public key.
+    #[rpc(name = "account.import_readonly")]
+    fn import_readonly(
+        &self,
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    ) -> FutureResult<AccountInfo>;
+
     /// Return the private key as bytes for `address`
     #[rpc(name = "account.export")]
     fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>>;

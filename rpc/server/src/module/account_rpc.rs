@@ -212,6 +212,20 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn import_readonly(
+        &self,
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    ) -> FutureResult<AccountInfo> {
+        let service = self.account.clone();
+        let fut = async move {
+            let result = service.import_readonly_account(address, public_key).await?;
+            Ok(result)
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
     /// Return the private key as bytes for `address`
     fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>> {
         let service = self.account.clone();
