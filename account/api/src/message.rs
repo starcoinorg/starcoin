@@ -36,6 +36,10 @@ pub enum AccountRequest {
         private_key: Vec<u8>,
         password: String,
     },
+    ImportReadonlyAccount {
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    },
     ExportAccount {
         address: AccountAddress,
         password: String,

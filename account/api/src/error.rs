@@ -16,12 +16,15 @@ pub enum AccountError {
 
     #[error("invalid password, cannot decrypt account {0}")]
     InvalidPassword(AccountAddress),
-    #[error("invalid private key")]
-    InvalidPrivateKey,
-
+    #[error("invalid private key: {0:?}")]
+    InvalidPrivateKey(starcoin_crypto::CryptoMaterialError),
+    #[error("invalid public key: {0:?}")]
+    InvalidPublicKey(starcoin_crypto::CryptoMaterialError),
     // logic error
     #[error("transaction sign error, {0:?}")]
     TransactionSignError(anyhow::Error),
+    #[error("message sign error, {0:?}")]
+    MessageSignError(anyhow::Error),
     // #[error("decrypt private key error, {0:?}")]
     // DecryptPrivateKeyError(anyhow::Error),
     #[error("no private key data associate with address {0}")]

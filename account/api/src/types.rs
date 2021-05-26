@@ -13,23 +13,30 @@ pub use starcoin_types::transaction::authenticator::{
     AccountPrivateKey, AccountPublicKey, AccountSignature,
 };
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AccountInfo {
     pub address: AccountAddress,
     /// This account is default at current wallet.
     /// Every wallet must has one default account.
     pub is_default: bool,
+    pub is_readonly: bool,
     pub public_key: AccountPublicKey,
     pub receipt_identifier: ReceiptIdentifier,
 }
 
 impl AccountInfo {
-    pub fn new(address: AccountAddress, public_key: AccountPublicKey, is_default: bool) -> Self {
+    pub fn new(
+        address: AccountAddress,
+        public_key: AccountPublicKey,
+        is_default: bool,
+        is_readonly: bool,
+    ) -> Self {
         let auth_key = public_key.authentication_key();
         Self {
             address,
             public_key,
             is_default,
+            is_readonly,
             receipt_identifier: ReceiptIdentifier::V1(address, Some(auth_key)),
         }
     }
@@ -51,6 +58,7 @@ impl AccountInfo {
         AccountInfo {
             address,
             is_default: false,
+            is_readonly: false,
             public_key: account_public_key,
             receipt_identifier: ReceiptIdentifier::V1(address, Some(auth_key)),
         }

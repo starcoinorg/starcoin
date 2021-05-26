@@ -37,6 +37,7 @@ pub fn add_command(
                 .subcommand(account::UnlockCommand)
                 .subcommand(account::ExportCommand)
                 .subcommand(account::ImportCommand)
+                .subcommand(account::import_readonly_cmd::ImportReadonlyCommand)
                 .subcommand(account::ExecuteScriptFunctionCmd)
                 .subcommand(account::ExecuteScriptCommand)
                 .subcommand(account::LockCommand)

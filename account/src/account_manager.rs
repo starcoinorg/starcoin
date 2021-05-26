@@ -3,13 +3,13 @@
 
 use crate::account::Account;
 use crate::account_storage::AccountStorage;
-
 use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::error::AccountError;
-use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountResult};
+use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{Uniform, ValidCryptoMaterial};
+use starcoin_logger::prelude::*;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::authenticator::AccountSignature;
 use starcoin_types::{
@@ -74,7 +74,11 @@ impl AccountManager {
         let private_key = gen_private_key();
         let private_key = AccountPrivateKey::Single(private_key);
         let address = private_key.public_key().derived_address();
-        self.save_account(address, private_key, password.to_string())
+        self.save_account(
+            address,
+            private_key.public_key(),
+            Some((private_key, password.to_string())),
+        )
     }
 
     pub fn unlock_account(
@@ -104,25 +108,45 @@ impl AccountManager {
         password: &str,
     ) -> AccountResult<Account> {
         let private_key = AccountPrivateKey::try_from(private_key.as_slice())
-            .map_err(|_| AccountError::InvalidPrivateKey)?;
-        self.save_account(address, private_key, password.to_string())
+            .map_err(AccountError::InvalidPrivateKey)?;
+        self.save_account(
+            address,
+            private_key.public_key(),
+            Some((private_key, password.to_string())),
+        )
+    }
+
+    pub fn import_readonly_account(
+        &self,
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    ) -> AccountResult<Account> {
+        let public_key = AccountPublicKey::try_from(public_key.as_slice())
+            .map_err(AccountError::InvalidPublicKey)?;
+        self.save_account(address, public_key, None)
     }
 
     fn save_account(
         &self,
         address: AccountAddress,
-        private_key: AccountPrivateKey,
-        password: String,
+        public_key: AccountPublicKey,
+        private_key_and_password: Option<(AccountPrivateKey, String)>,
     ) -> AccountResult<Account> {
         if self.contains(&address)? {
             return Err(AccountError::AccountAlreadyExist(address));
         }
-        let account = Account::create(private_key, Some(address), password, self.store.clone())?;
+        let mut account = match private_key_and_password {
+            Some((private_key, password)) => {
+                Account::create(address, private_key, password, self.store.clone())?
+            }
+            None => Account::create_readonly(address, public_key, self.store.clone())?,
+        };
+
         self.store.add_address(*account.address())?;
 
         // if it's the first address, set it default.
         if self.store.list_addresses()?.len() == 1 {
-            self.set_default_account(address)?;
+            account.set_default()?;
         }
         Ok(account)
     }
@@ -134,7 +158,10 @@ impl AccountManager {
     ) -> AccountResult<Vec<u8>> {
         let account = Account::load(address, password, self.store.clone())?
             .ok_or(AccountError::AccountNotExist(address))?;
-        Ok(account.private_key().to_bytes().to_vec())
+        Ok(account
+            .private_key()
+            .map(|private_key| private_key.to_bytes().to_vec())
+            .unwrap_or_default())
     }
 
     pub fn contains(&self, address: &AccountAddress) -> AccountResult<bool> {
@@ -153,16 +180,17 @@ impl AccountManager {
     }
 
     pub fn list_account_infos(&self) -> AccountResult<Vec<AccountInfo>> {
-        let default_account = self.store.default_address()?;
         let mut res = vec![];
         for account in self.store.list_addresses()? {
             let pubkey = self.store.public_key(account)?;
+            let setting = self.store.load_setting(account)?;
             match pubkey {
                 Some(p) => {
                     res.push(AccountInfo::new(
                         account,
                         p,
-                        default_account.filter(|a| a == &account).is_some(),
+                        setting.is_default,
+                        setting.is_readonly,
                     ));
                 }
                 None => {
@@ -176,11 +204,12 @@ impl AccountManager {
     pub fn account_info(&self, address: AccountAddress) -> AccountResult<Option<AccountInfo>> {
         match self.store.public_key(address)? {
             Some(p) => {
-                let default_account = self.store.default_address()?;
+                let setting = self.store.load_setting(address)?;
                 Ok(Some(AccountInfo::new(
                     address,
                     p,
-                    default_account.filter(|a| a == &address).is_some(),
+                    setting.is_default,
+                    setting.is_readonly,
                 )))
             }
             None => Ok(None),
@@ -198,7 +227,9 @@ impl AccountManager {
             Some(p) => {
                 let account = Account::load(signer_address, p.as_str(), self.store.clone())?
                     .ok_or(AccountError::AccountNotExist(signer_address))?;
-                Ok(account.sign_message(message))
+                account
+                    .sign_message(message)
+                    .map_err(AccountError::MessageSignError)
             }
         }
     }
@@ -222,9 +253,29 @@ impl AccountManager {
     }
 
     pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<()> {
+        let current_default = self.store.default_address()?;
+        if let Some(current_default) = current_default {
+            if current_default == address {
+                info!("the account {} is already default.", address);
+                return Ok(());
+            }
+            let mut setting = self
+                .store
+                .load_setting(address)
+                .map_err(AccountError::StoreError)?;
+            setting.is_default = false;
+            self.store.update_setting(address, setting)?;
+        }
         self.store
             .set_default_address(Some(address))
-            .map_err(AccountError::StoreError)
+            .map_err(AccountError::StoreError)?;
+        let mut setting = self
+            .store
+            .load_setting(address)
+            .map_err(AccountError::StoreError)?;
+        setting.is_default = true;
+        self.store.update_setting(address, setting)?;
+        Ok(())
     }
 
     pub fn change_password(

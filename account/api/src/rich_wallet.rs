@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
+use starcoin_types::account_config::STC_TOKEN_CODE;
 use starcoin_types::contract_event::EventWithProof;
 use starcoin_types::event::EventKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload};
@@ -51,9 +52,35 @@ pub trait RichWallet {
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Setting {
-    default_expiration_timeout: u64,
-    default_gas_price: u64,
-    default_gas_token: TokenCode,
+    pub default_expiration_timeout: u64,
+    pub default_gas_price: u64,
+    pub default_gas_token: TokenCode,
+    /// this account is default account.
+    pub is_default: bool,
+    /// this account is readonly
+    pub is_readonly: bool,
+}
+
+impl Setting {
+    pub fn default() -> Self {
+        Setting {
+            default_expiration_timeout: 3600,
+            default_gas_price: 1,
+            default_gas_token: STC_TOKEN_CODE.clone(),
+            is_default: false,
+            is_readonly: false,
+        }
+    }
+
+    pub fn readonly() -> Self {
+        Setting {
+            default_expiration_timeout: 3600,
+            default_gas_price: 1,
+            default_gas_token: STC_TOKEN_CODE.clone(),
+            is_default: false,
+            is_readonly: true,
+        }
+    }
 }
 
 pub trait WalletStorageTrait {

@@ -388,6 +388,15 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn account_import_readonly(
+        &self,
+        address: AccountAddress,
+        public_key: Vec<u8>,
+    ) -> anyhow::Result<AccountInfo> {
+        self.call_rpc_blocking(|inner| inner.account_client.import_readonly(address, public_key))
+            .map_err(map_err)
+    }
+
     pub fn account_accepted_tokens(
         &self,
         address: AccountAddress,
