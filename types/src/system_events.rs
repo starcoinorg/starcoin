@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
+use crate::block::{Block, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::HashValue;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 
@@ -40,7 +41,9 @@ impl GenerateBlockEvent {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MintBlockEvent {
+    pub parent_hash: HashValue,
     pub strategy: ConsensusStrategy,
+    #[serde(with = "hex")]
     pub minting_blob: Vec<u8>,
     pub difficulty: U256,
     pub block_number: u64,
@@ -48,33 +51,18 @@ pub struct MintBlockEvent {
 
 impl MintBlockEvent {
     pub fn new(
+        parent_hash: HashValue,
         strategy: ConsensusStrategy,
         minting_blob: Vec<u8>,
         difficulty: U256,
         block_number: u64,
     ) -> Self {
         Self {
+            parent_hash,
             strategy,
             minting_blob,
             difficulty,
             block_number,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct SubmitSealEvent {
-    pub nonce: u32,
-    pub extra: BlockHeaderExtra,
-    pub minting_blob: Vec<u8>,
-}
-
-impl SubmitSealEvent {
-    pub fn new(minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra) -> Self {
-        Self {
-            minting_blob,
-            nonce,
-            extra,
         }
     }
 }

@@ -10,9 +10,10 @@ use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::{typed, PubSubMetadata, Session, SubscriptionId};
 use starcoin_crypto::hash::DefaultHasher;
 use starcoin_logger::prelude::*;
+use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
 use starcoin_service_registry::{ServiceRef, ServiceRequest};
 use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::system_events::{MintBlockEvent, SubmitSealEvent};
+use starcoin_types::system_events::MintBlockEvent;
 use std::convert::TryInto;
 use std::sync::mpsc::TrySendError;
 use std::sync::Arc;
@@ -48,15 +49,15 @@ pub struct ShareRequest {
     pub result: String,
 }
 
-impl TryInto<SubmitSealEvent> for ShareRequest {
+impl TryInto<MinerSubmitSealRequest> for ShareRequest {
     type Error = anyhow::Error;
-    fn try_into(self) -> anyhow::Result<SubmitSealEvent> {
+    fn try_into(self) -> anyhow::Result<MinerSubmitSealRequest> {
         let nonce_temp = u32::from_str_radix(self.nonce.as_str(), 16)?;
         let mut n = Vec::new();
         let _ = n.write_u32::<LittleEndian>(nonce_temp);
         let nonce = byteorder::BigEndian::read_u32(&n);
         let extra = BlockHeaderExtra::default();
-        Ok(SubmitSealEvent {
+        Ok(MinerSubmitSealRequest {
             nonce,
             extra,
             minting_blob: vec![],

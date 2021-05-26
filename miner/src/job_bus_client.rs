@@ -1,4 +1,4 @@
-use crate::{BlockHeaderExtra, MintBlockEvent, SubmitSealEvent};
+use crate::{BlockHeaderExtra, MinerService, MintBlockEvent, SubmitSealRequest};
 use anyhow::Result;
 use futures::executor::block_on;
 use futures::stream::BoxStream;
@@ -13,11 +13,20 @@ use std::sync::Arc;
 pub struct JobBusClient {
     bus: ServiceRef<BusService>,
     time_service: Arc<dyn TimeService>,
+    miner_service: ServiceRef<MinerService>,
 }
 
 impl JobBusClient {
-    pub fn new(bus: ServiceRef<BusService>, time_service: Arc<dyn TimeService>) -> Self {
-        Self { bus, time_service }
+    pub fn new(
+        miner_service: ServiceRef<MinerService>,
+        bus: ServiceRef<BusService>,
+        time_service: Arc<dyn TimeService>,
+    ) -> Self {
+        Self {
+            bus,
+            time_service,
+            miner_service,
+        }
     }
 }
 
@@ -33,9 +42,9 @@ impl JobClient for JobBusClient {
         nonce: u32,
         extra: BlockHeaderExtra,
     ) -> Result<()> {
-        self.bus
-            .broadcast(SubmitSealEvent::new(minting_blob, nonce, extra))?;
-        Ok(())
+        self.miner_service
+            .try_send(SubmitSealRequest::new(minting_blob, nonce, extra))
+            .map_err(|e| e.into())
     }
 
     fn time_service(&self) -> Arc<dyn TimeService> {

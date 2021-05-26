@@ -1,13 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::module::{map_err, RpcError};
-use jsonrpc_core::{ErrorCode, Result};
-use starcoin_miner::MinerService;
+use crate::module::map_err;
+use futures::{FutureExt, TryFutureExt};
+use starcoin_miner::{MinerService, SubmitSealRequest, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::miner::MinerApi;
+use starcoin_rpc_api::types::MintedBlockView;
+use starcoin_rpc_api::FutureResult;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::system_events::SubmitSealEvent;
+use starcoin_types::system_events::MintBlockEvent;
 use std::convert::TryInto;
 
 pub struct MinerRpcImpl {
@@ -21,24 +23,42 @@ impl MinerRpcImpl {
 }
 
 impl MinerApi for MinerRpcImpl {
-    fn submit(&self, minting_blob: String, nonce: u32, extra: String) -> Result<()> {
-        let minting_blob = hex::decode(minting_blob).map_err(|e| RpcError::from(e).into())?;
-        let e = hex::decode(extra).map_err(|e| RpcError::from(e).into())?;
-        let e: Box<[u8; 4]> = e.into_boxed_slice().try_into().map_err(|_| {
-            RpcError(jsonrpc_core::Error {
-                code: ErrorCode::InvalidParams,
-                message: "Invalid size for extra".to_string(),
-                data: None,
-            })
-            .into()
-        })?;
-        let extra = BlockHeaderExtra::new(*e);
-        self.miner_service
-            .notify(SubmitSealEvent {
-                nonce,
-                extra,
-                minting_blob,
-            })
-            .map_err(|e| map_err(e.into()))
+    fn submit(
+        &self,
+        minting_blob: String,
+        nonce: u32,
+        extra: String,
+    ) -> FutureResult<MintedBlockView> {
+        let miner_service = self.miner_service.clone();
+        let fut = async move {
+            let minting_blob = hex::decode(minting_blob)?;
+            let e: Box<[u8; 4]> = hex::decode(extra).map_err(|e| e.into()).and_then(|b| {
+                b.into_boxed_slice()
+                    .try_into()
+                    .map_err(|_| anyhow::anyhow!("Invalid length of extra"))
+            })?;
+            let extra = BlockHeaderExtra::new(*e);
+            let block_hash = miner_service
+                .send(SubmitSealRequest {
+                    nonce,
+                    extra,
+                    minting_blob,
+                })
+                .await??;
+            Ok(MintedBlockView { block_hash })
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn get_job(&self) -> FutureResult<Option<MintBlockEvent>> {
+        let miner_service = self.miner_service.clone();
+        let fut = async move {
+            miner_service
+                .send(UpdateSubscriberNumRequest { number: None })
+                .await
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
     }
 }
