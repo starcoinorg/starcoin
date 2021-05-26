@@ -29,6 +29,7 @@ mod export_cmd;
 pub mod generate_keypair;
 mod import_cmd;
 pub mod import_multisig_cmd;
+pub mod import_readonly_cmd;
 mod list_cmd;
 mod lock_cmd;
 pub mod receipt_identifier_cmd;
