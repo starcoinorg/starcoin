@@ -89,8 +89,14 @@ impl EsSinker {
         let txn_info_index = self.config.txn_info_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
-        let tip = self._get_local_tip_header().await?;
-        self.state.write().await.tip = tip;
+        let tip = self.get_remote_tip_header().await?;
+        self.state.write().await.tip = tip.clone();
+        if let Some(tip_info) = tip {
+            info!(
+                "remote tips: {}, {}",
+                tip_info.block_hash, tip_info.block_number
+            );
+        }
         Ok(())
     }
 
@@ -119,7 +125,7 @@ impl EsSinker {
             .await?;
         let resp = resp.error_for_status_code()?;
         let data = resp.json().await?;
-        self.state.write().await.tip = Some(tip_info);
+        // self.state.write().await.tip = Some(tip_info);
         Ok(data)
     }
 
@@ -141,7 +147,7 @@ impl EsSinker {
         Ok(tip)
     }
 
-    async fn _get_local_tip_header(&self) -> Result<Option<LocalTipInfo>> {
+    async fn get_remote_tip_header(&self) -> Result<Option<LocalTipInfo>> {
         let block_index = self.config.block_index.as_str();
         let resp_data: Value = self
             .es
