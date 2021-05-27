@@ -23,6 +23,9 @@ pub struct GenerateKeypairOpt {
     #[structopt(short = "s", name = "seed")]
     /// random seed for generate keypair, should been a 32 bytes hex string.
     seed: Option<String>,
+    /// How many keypair to generate
+    #[structopt(short = "c", name = "count")]
+    count: Option<u32>,
 }
 
 pub struct GenerateKeypairCommand;
@@ -32,7 +35,7 @@ impl CommandAction for GenerateKeypairCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GenerateKeypairOpt;
-    type ReturnItem = GenerateKeypairData;
+    type ReturnItem = Vec<GenerateKeypairData>;
 
     fn run(
         &self,
@@ -56,16 +59,25 @@ impl CommandAction for GenerateKeypairCommand {
         } else {
             KeyGen::from_os_rng()
         };
-        let (private_key, public_key) = key_gen.generate_keypair();
-        let account_public_key = AccountPublicKey::single(public_key);
-        let account_private_key = AccountPrivateKey::Single(private_key);
-        Ok(GenerateKeypairData {
-            address: account_public_key.derived_address(),
-            auth_key: account_public_key.authentication_key(),
-            receipt_identifier: account_public_key.receipt_identifier(),
-            public_key: account_public_key,
-            private_key: account_private_key.to_encoded_string()?,
-        })
+        let keypairs = (0..opt.count.unwrap_or(1))
+            .into_iter()
+            .map(|_| {
+                let (private_key, public_key) = key_gen.generate_keypair();
+                let account_public_key = AccountPublicKey::single(public_key);
+                let account_private_key = AccountPrivateKey::Single(private_key);
+                GenerateKeypairData {
+                    address: account_public_key.derived_address(),
+                    auth_key: account_public_key.authentication_key(),
+                    receipt_identifier: account_public_key.receipt_identifier(),
+                    public_key: account_public_key,
+                    private_key: account_private_key
+                        .to_encoded_string()
+                        .expect("private key to string should success."),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        Ok(keypairs)
     }
 }
 

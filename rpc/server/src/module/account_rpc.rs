@@ -188,7 +188,7 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn lock(&self, address: AccountAddress) -> FutureResult<()> {
+    fn lock(&self, address: AccountAddress) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move { service.lock_account(address).await }.map_err(map_err);
         Box::pin(fut.boxed())
@@ -241,7 +241,7 @@ where
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> FutureResult<()> {
+    ) -> FutureResult<AccountInfo> {
         let account_service = self.account.clone();
         let fut = async move {
             account_service

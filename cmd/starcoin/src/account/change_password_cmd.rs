@@ -5,17 +5,18 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, StructOpt)]
 #[structopt(name = "change-password")]
 pub struct ChangePasswordOpt {
     #[structopt(
         name = "account_address",
-        help = "The wallet account address which to change password, if absent, use the default wallet."
+        help = "The wallet account address which to change password."
     )]
-    account_address: Option<AccountAddress>,
+    account_address: AccountAddress,
 
     #[structopt(short, name = "password")]
     password: String,
@@ -27,7 +28,7 @@ impl CommandAction for ChangePasswordCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ChangePasswordOpt;
-    type ReturnItem = ();
+    type ReturnItem = AccountInfo;
 
     fn run(
         &self,
@@ -35,8 +36,8 @@ impl CommandAction for ChangePasswordCmd {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &ChangePasswordOpt = ctx.opt();
-        let account = ctx.state().get_account_or_default(opt.account_address)?;
-        client.account_change_password(account.address, opt.password.clone())?;
-        Ok(())
+        let account_info =
+            client.account_change_password(opt.account_address, opt.password.clone())?;
+        Ok(account_info)
     }
 }

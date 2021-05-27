@@ -149,8 +149,7 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 AccountResponse::AccountInfo(Box::new(account_info))
             }
             AccountRequest::LockAccount(address) => {
-                self.manager.lock_account(address)?;
-                AccountResponse::None
+                AccountResponse::AccountInfo(Box::new(self.manager.lock_account(address)?))
             }
             AccountRequest::ExportAccount { address, password } => {
                 let data = self.manager.export_account(address, password.as_str())?;
@@ -184,10 +183,9 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
             AccountRequest::ChangePassword {
                 address,
                 new_password,
-            } => {
-                self.manager.change_password(address, new_password)?;
-                AccountResponse::None
-            }
+            } => AccountResponse::AccountInfo(Box::new(
+                self.manager.change_password(address, new_password)?,
+            )),
         };
         Ok(response)
     }

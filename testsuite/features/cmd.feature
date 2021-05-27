@@ -54,12 +54,8 @@ Feature: cmd integration test
   Scenario Outline: [cmd] multisig account
     Then cmd: "account unlock"
     Then cmd: "dev get_coin"
-    Then cmd: "account create -p 111"
-    Then cmd: "account create -p 222"
-    Then cmd: "account list"
-    # index 1 is 0000000000000000000000000A550C18, and it is a multi address, so skip.
-    # TODO support remove account and remove 0000000000000000000000000A550C18
-    Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
+    Then cmd: "account generate-keypair -c 3"
+    Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[1].public_key@ -p @$[2].public_key@"
     Then cmd: "account transfer --blocking -r @$.receipt_identifier@ -t 0x1::STC::STC -v 10000000"
     Then stop
 
@@ -107,11 +103,12 @@ Feature: cmd integration test
     Then cmd: "chain get_events @$.transaction_hash@"
     Then cmd: "account create -p compat"
     Then cmd: "account unlock -p compat @$.address@"
-    Then cmd: "account show @$.result@"
+    Then cmd: "account show @$.address@"
     Then cmd: "account export -p compat @$.account.address@"
     Then cmd: "account create -p test"
     Then cmd: "account unlock -p test @$.address@"
-    Then cmd: "account change-password @$.result@ -p hello"
+    Then cmd: "account change-password @$.address@ -p hello"
+    Then cmd: "account remove @$.address@ -p hello"
     Then cmd: "account list"
     Then cmd: "account show"
 #    Then cmd: "account execute-builtin --blocking --script empty_script -s @$.account.address@"
