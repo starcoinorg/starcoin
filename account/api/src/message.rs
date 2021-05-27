@@ -16,6 +16,7 @@ pub enum AccountRequest {
     CreateAccount(String),
     GetDefaultAccount(),
     SetDefaultAccount(AccountAddress),
+    RemoveAccount(AccountAddress, Option<String>),
     GetAccounts(),
     GetAccount(AccountAddress),
     SignTxn {

@@ -9,6 +9,7 @@ use starcoin_account_api::{
     AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult, Setting,
 };
 use starcoin_crypto::PrivateKey;
+use starcoin_logger::prelude::*;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
@@ -60,9 +61,10 @@ impl Account {
         })
     }
 
+    /// load account, if account not readonly account , need password to unlock private key.
     pub fn load(
         addr: AccountAddress,
-        password: &str,
+        password: Option<String>,
         storage: AccountStorage,
     ) -> AccountResult<Option<Self>> {
         let setting = storage.load_setting(addr)?;
@@ -70,7 +72,15 @@ impl Account {
         let private_key = if setting.is_readonly {
             None
         } else {
-            let decrypted_key = storage.decrypt_private_key(addr, password)?;
+            let decrypted_key = storage
+                .decrypt_private_key(addr, password.unwrap_or_else(|| "".to_string()))
+                .map_err(|e| {
+                    warn!(
+                        "Try to unlock {} with a invalid password, err: {:?}",
+                        addr, e
+                    );
+                    AccountError::InvalidPassword(addr)
+                })?;
             let private_key = match decrypted_key {
                 None => return Ok(None),
                 Some(p) => p,

@@ -85,4 +85,12 @@ pub trait AccountApi {
 
     #[rpc(name = "account.accepted_tokens")]
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>>;
+
+    /// remove account from local wallet.
+    #[rpc(name = "account.remove")]
+    fn remove(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> FutureResult<AccountInfo>;
 }

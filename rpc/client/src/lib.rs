@@ -405,6 +405,15 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn account_remove(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> anyhow::Result<AccountInfo> {
+        self.call_rpc_blocking(|inner| inner.account_client.remove(address, password))
+            .map_err(map_err)
+    }
+
     pub fn get_code(&self, module_id: ModuleId) -> anyhow::Result<Option<String>> {
         let result: Option<StrView<Vec<u8>>> = self
             .call_rpc_blocking(|inner| inner.contract_client.get_code(StrView(module_id)))

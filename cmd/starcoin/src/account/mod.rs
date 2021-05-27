@@ -33,6 +33,7 @@ pub mod import_readonly_cmd;
 mod list_cmd;
 mod lock_cmd;
 pub mod receipt_identifier_cmd;
+pub mod remove_cmd;
 mod show_cmd;
 mod sign_cmd;
 pub mod sign_multisig_txn_cmd;

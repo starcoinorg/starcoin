@@ -67,6 +67,12 @@ pub trait AccountAsyncService:
         address: AccountAddress,
         new_password: String,
     ) -> Result<()>;
+
+    async fn remove_account(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> Result<AccountInfo>;
 }
 
 #[async_trait::async_trait]
@@ -268,6 +274,21 @@ where
             Ok(())
         } else {
             panic!("Unexpected response type.")
+        }
+    }
+
+    async fn remove_account(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> Result<AccountInfo> {
+        let response = self
+            .send(AccountRequest::RemoveAccount(address, password))
+            .await??;
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
+        } else {
+            panic!("Unexpect response type.")
         }
     }
 }
