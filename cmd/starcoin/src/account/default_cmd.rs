@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
@@ -25,7 +25,7 @@ impl CommandAction for DefaultCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = DefaultOpt;
-    type ReturnItem = StringView;
+    type ReturnItem = AccountInfo;
 
     fn run(
         &self,
@@ -36,16 +36,12 @@ impl CommandAction for DefaultCommand {
         match opt.account_address.as_ref() {
             None => {
                 let default_account = ctx.state().default_account()?;
-                Ok(StringView {
-                    result: default_account.address.to_string(),
-                })
+                Ok(default_account)
             }
             Some(addr) => {
                 let client = ctx.state().client();
-                client.set_default_account(*addr)?;
-                Ok(StringView {
-                    result: addr.to_string(),
-                })
+                let default_account = client.set_default_account(*addr)?;
+                Ok(default_account)
             }
         }
     }

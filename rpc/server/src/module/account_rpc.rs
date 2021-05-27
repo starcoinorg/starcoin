@@ -84,7 +84,7 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>> {
+    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move {
             let result = service.set_default_account(addr).await?;
@@ -173,14 +173,14 @@ where
         address: AccountAddress,
         password: String,
         duration: Option<u32>,
-    ) -> FutureResult<()> {
+    ) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move {
             service
                 .unlock_account(
                     address,
                     password,
-                    Duration::from_secs(duration.unwrap_or_else(u32::max_value) as u64),
+                    Duration::from_secs(duration.unwrap_or(u32::MAX) as u64),
                 )
                 .await
         }
@@ -188,7 +188,7 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn lock(&self, address: AccountAddress) -> FutureResult<()> {
+    fn lock(&self, address: AccountAddress) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move { service.lock_account(address).await }.map_err(map_err);
         Box::pin(fut.boxed())
@@ -241,7 +241,7 @@ where
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> FutureResult<()> {
+    ) -> FutureResult<AccountInfo> {
         let account_service = self.account.clone();
         let fut = async move {
             account_service
@@ -258,6 +258,16 @@ where
             Ok(result)
         }
         .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn remove(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> FutureResult<AccountInfo> {
+        let service = self.account.clone();
+        let fut = async move { service.remove_account(address, password).await }.map_err(map_err);
         Box::pin(fut.boxed())
     }
 }

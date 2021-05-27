@@ -19,7 +19,7 @@ pub trait AccountApi {
     fn default(&self) -> FutureResult<Option<AccountInfo>>;
 
     #[rpc(name = "account.set_default_account")]
-    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>>;
+    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<AccountInfo>;
 
     #[rpc(name = "account.create")]
     fn create(&self, password: String) -> FutureResult<AccountInfo>;
@@ -50,9 +50,9 @@ pub trait AccountApi {
         address: AccountAddress,
         password: String,
         duration: Option<u32>,
-    ) -> FutureResult<()>;
+    ) -> FutureResult<AccountInfo>;
     #[rpc(name = "account.lock")]
-    fn lock(&self, address: AccountAddress) -> FutureResult<()>;
+    fn lock(&self, address: AccountAddress) -> FutureResult<AccountInfo>;
 
     /// Import private key with address.
     #[rpc(name = "account.import")]
@@ -76,13 +76,21 @@ pub trait AccountApi {
     fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>>;
 
     #[rpc(name = "account.change_password")]
-    // change account password, user need to unlock account first.
+    /// change account password, user need to unlock account first.
     fn change_account_password(
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> FutureResult<()>;
+    ) -> FutureResult<AccountInfo>;
 
     #[rpc(name = "account.accepted_tokens")]
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>>;
+
+    /// remove account from local wallet.
+    #[rpc(name = "account.remove")]
+    fn remove(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> FutureResult<AccountInfo>;
 }

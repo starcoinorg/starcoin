@@ -55,7 +55,7 @@ pub fn test_wallet() -> Result<()> {
     let wallet_address = wallet.address();
 
     // test reload
-    let loaded_wallet = Account::load(*wallet_address, "hello", storage)?;
+    let loaded_wallet = Account::load(*wallet_address, Some("hello".to_string()), storage)?;
     assert!(loaded_wallet.is_some());
     let reloaded_wallet = loaded_wallet.unwrap();
     assert_eq!(
@@ -88,7 +88,7 @@ pub fn test_readonly_account() -> Result<()> {
     let account = manager.import_readonly_account(address, account_public_key.to_bytes())?;
 
     // test reload
-    let loaded_account = Account::load(address, "", storage)?;
+    let loaded_account = Account::load(address, None, storage)?;
     assert!(loaded_account.is_some());
     let loaded_account = loaded_account.unwrap();
     assert_eq!(account.info(), loaded_account.info());

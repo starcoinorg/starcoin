@@ -11,13 +11,16 @@ pub enum AccountError {
     AccountAlreadyExist(AccountAddress),
     #[error("account {0} is locked")]
     AccountLocked(AccountAddress),
+
     #[error("cannot remove default account {0}")]
     RemoveDefaultAccountError(AccountAddress),
 
     #[error("invalid password, cannot decrypt account {0}")]
     InvalidPassword(AccountAddress),
+
     #[error("invalid private key: {0:?}")]
     InvalidPrivateKey(starcoin_crypto::CryptoMaterialError),
+
     #[error("invalid public key: {0:?}")]
     InvalidPublicKey(starcoin_crypto::CryptoMaterialError),
     // logic error

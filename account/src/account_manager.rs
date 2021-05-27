@@ -3,6 +3,7 @@
 
 use crate::account::Account;
 use crate::account_storage::AccountStorage;
+use anyhow::format_err;
 use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::error::AccountError;
@@ -86,19 +87,22 @@ impl AccountManager {
         address: AccountAddress,
         password: &str,
         duration: Duration,
-    ) -> AccountResult<()> {
-        let _ = Account::load(address, password, self.store.clone())?
+    ) -> AccountResult<AccountInfo> {
+        let account = Account::load(address, Some(password.to_string()), self.store.clone())?
             .ok_or(AccountError::AccountNotExist(address))?;
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
             .write()
             .cache_pass(address, password.to_string(), ttl);
-        Ok(())
+        Ok(account.info())
     }
 
-    pub fn lock_account(&self, address: AccountAddress) -> AccountResult<()> {
+    pub fn lock_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
+        let account_info = self
+            .account_info(address)?
+            .ok_or(AccountError::AccountNotExist(address))?;
         self.key_cache.write().remove_pass(&address);
-        Ok(())
+        Ok(account_info)
     }
 
     pub fn import_account(
@@ -156,7 +160,7 @@ impl AccountManager {
         address: AccountAddress,
         password: &str,
     ) -> AccountResult<Vec<u8>> {
-        let account = Account::load(address, password, self.store.clone())?
+        let account = Account::load(address, Some(password.to_string()), self.store.clone())?
             .ok_or(AccountError::AccountNotExist(address))?;
         Ok(account
             .private_key()
@@ -182,20 +186,14 @@ impl AccountManager {
     pub fn list_account_infos(&self) -> AccountResult<Vec<AccountInfo>> {
         let mut res = vec![];
         for account in self.store.list_addresses()? {
-            let pubkey = self.store.public_key(account)?;
-            let setting = self.store.load_setting(account)?;
-            match pubkey {
-                Some(p) => {
-                    res.push(AccountInfo::new(
-                        account,
-                        p,
-                        setting.is_default,
-                        setting.is_readonly,
-                    ));
-                }
-                None => {
-                    continue;
-                }
+            if let Some(account_info) = self.account_info(account)? {
+                res.push(account_info)
+            } else {
+                warn!(
+                    "Can not find account_info by address:{}, clear it from address list.",
+                    account
+                );
+                self.store.remove_address(account)?;
             }
         }
         Ok(res)
@@ -225,7 +223,7 @@ impl AccountManager {
         match pass {
             None => Err(AccountError::AccountLocked(signer_address)),
             Some(p) => {
-                let account = Account::load(signer_address, p.as_str(), self.store.clone())?
+                let account = Account::load(signer_address, Some(p), self.store.clone())?
                     .ok_or(AccountError::AccountNotExist(signer_address))?;
                 account
                     .sign_message(message)
@@ -243,7 +241,7 @@ impl AccountManager {
         match pass {
             None => Err(AccountError::AccountLocked(signer_address)),
             Some(p) => {
-                let account = Account::load(signer_address, p.as_str(), self.store.clone())?
+                let account = Account::load(signer_address, Some(p), self.store.clone())?
                     .ok_or(AccountError::AccountNotExist(signer_address))?;
                 account
                     .sign_txn(raw_txn)
@@ -252,20 +250,25 @@ impl AccountManager {
         }
     }
 
-    pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<()> {
+    pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
+        let mut account_info = self
+            .account_info(address)?
+            .ok_or_else(|| format_err!("Can not find account by address:{}", address))?;
         let current_default = self.store.default_address()?;
         if let Some(current_default) = current_default {
-            if current_default == address {
+            if current_default != address {
+                let mut setting = self
+                    .store
+                    .load_setting(current_default)
+                    .map_err(AccountError::StoreError)?;
+                setting.is_default = false;
+                self.store.update_setting(current_default, setting)?;
+            } else {
                 info!("the account {} is already default.", address);
-                return Ok(());
+                // do not return here,for fix setting.is_default in some condition.
             }
-            let mut setting = self
-                .store
-                .load_setting(address)
-                .map_err(AccountError::StoreError)?;
-            setting.is_default = false;
-            self.store.update_setting(address, setting)?;
         }
+
         self.store
             .set_default_address(Some(address))
             .map_err(AccountError::StoreError)?;
@@ -275,14 +278,19 @@ impl AccountManager {
             .map_err(AccountError::StoreError)?;
         setting.is_default = true;
         self.store.update_setting(address, setting)?;
-        Ok(())
+        account_info.is_default = true;
+        Ok(account_info)
     }
 
     pub fn change_password(
         &self,
         address: AccountAddress,
         new_pass: impl AsRef<str>,
-    ) -> AccountResult<()> {
+    ) -> AccountResult<AccountInfo> {
+        let account_info = self
+            .account_info(address)?
+            .ok_or(AccountError::AccountNotExist(address))?;
+
         let pass = self.key_cache.write().get_pass(&address);
 
         match pass {
@@ -301,23 +309,36 @@ impl AccountManager {
                     .map_err(AccountError::StoreError)?;
 
                 // After changing password success, we should remove the old pass cache.
-                // And user need to login in again, like we always did in websites.
+                // And user need to unlock it again, like we always did in websites.
                 self.key_cache.write().remove_pass(&address);
-                Ok(())
+                Ok(account_info)
             }
         }
     }
 
-    /// remove wallet need user password.
-    #[allow(unused)]
-    pub fn delete_account(&self, address: AccountAddress, password: &str) -> AccountResult<()> {
+    /// remove account need user password.
+    pub fn remove_account(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> AccountResult<AccountInfo> {
+        let default_account = self.default_account_info()?;
+        if let Some(default_account) = default_account {
+            if address == default_account.address {
+                return Err(AccountError::RemoveDefaultAccountError(
+                    default_account.address,
+                ));
+            }
+        }
         let account = Account::load(address, password, self.store.clone())?;
         match account {
             Some(account) => {
                 self.key_cache.write().remove_pass(&address);
-                account.destroy().map_err(AccountError::StoreError)
+                let info = account.info();
+                account.destroy().map_err(AccountError::StoreError)?;
+                Ok(info)
             }
-            None => Ok(()),
+            None => Err(AccountError::AccountNotExist(address)),
         }
     }
 
