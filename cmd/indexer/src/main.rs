@@ -160,16 +160,13 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
             info!("Indexing height: {} done", current_block_number + index);
         } else {
             //reset tips to local_tip,and rollback
-            match local_tip_header.as_ref() {
-                Some(local_tip_header) => {
-                    sinker
-                        .update_remote_tip_header(
-                            local_tip_header.block_hash,
-                            local_tip_header.block_number,
-                        )
-                        .await?;
-                }
-                _ => {}
+            if let Some(local_tip_header) = local_tip_header.as_ref() {
+                sinker
+                    .update_remote_tip_header(
+                        local_tip_header.block_hash,
+                        local_tip_header.block_number,
+                    )
+                    .await?;
             }
         }
         block_vec.clear();
