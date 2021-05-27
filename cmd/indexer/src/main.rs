@@ -11,6 +11,7 @@ use starcoin_indexer::{BlockClient, BlockData, EsSinker, IndexConfig};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::chain::ChainClient;
 use std::cmp::min;
+use std::thread::sleep;
 use std::time::Duration;
 use tokio::runtime;
 
@@ -72,7 +73,13 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
 
         let local_tip_header = sinker.get_local_tip_header().await?;
         let current_block_number = match local_tip_header.as_ref() {
-            Some(local_tip_header) => local_tip_header.block_number,
+            Some(local_tip_header) => {
+                //sleep
+                if chain_header.number.0 == local_tip_header.block_number {
+                    sleep(Duration::from_secs(2));
+                }
+                local_tip_header.block_number
+            }
             None => 0,
         };
         info!("current_block_number: {}", current_block_number);
@@ -80,7 +87,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
         let mut block_vec = vec![];
         let mut index = 1u64;
 
-        while index < bulk_times {
+        while index <= bulk_times {
             let read_number = current_block_number + index;
             let next_block: BlockData = FutureRetry::new(
                 || {
@@ -120,7 +127,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
                 .await?;
             index += 1;
             info!(
-                "Indexing block {}, height: {} done",
+                "Indexing block {}, height: {}",
                 next_block.block.header.block_hash, next_block.block.header.number
             );
         }

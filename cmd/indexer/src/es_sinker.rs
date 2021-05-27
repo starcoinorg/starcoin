@@ -253,6 +253,9 @@ impl EsSinker {
 
     // bulk insert data into es.
     pub async fn bulk(&self, blocks: Vec<BlockData>) -> anyhow::Result<()> {
+        if blocks.is_empty() {
+            return Ok(());
+        }
         let mut bulk_operations = BulkOperations::new();
         let block_index = self.config.block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
