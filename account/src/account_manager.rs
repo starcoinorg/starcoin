@@ -87,14 +87,14 @@ impl AccountManager {
         address: AccountAddress,
         password: &str,
         duration: Duration,
-    ) -> AccountResult<()> {
-        let _ = Account::load(address, Some(password.to_string()), self.store.clone())?
+    ) -> AccountResult<AccountInfo> {
+        let account = Account::load(address, Some(password.to_string()), self.store.clone())?
             .ok_or(AccountError::AccountNotExist(address))?;
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
             .write()
             .cache_pass(address, password.to_string(), ttl);
-        Ok(())
+        Ok(account.info())
     }
 
     pub fn lock_account(&self, address: AccountAddress) -> AccountResult<()> {

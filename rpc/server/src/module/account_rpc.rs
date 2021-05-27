@@ -173,14 +173,14 @@ where
         address: AccountAddress,
         password: String,
         duration: Option<u32>,
-    ) -> FutureResult<()> {
+    ) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move {
             service
                 .unlock_account(
                     address,
                     password,
-                    Duration::from_secs(duration.unwrap_or_else(u32::max_value) as u64),
+                    Duration::from_secs(duration.unwrap_or(u32::MAX) as u64),
                 )
                 .await
         }

@@ -143,9 +143,10 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 Box::new(self.manager.sign_message(signer, message)?),
             ),
             AccountRequest::UnlockAccount(address, password, duration) => {
-                self.manager
-                    .unlock_account(address, password.as_str(), duration)?;
-                AccountResponse::UnlockAccountResponse
+                let account_info =
+                    self.manager
+                        .unlock_account(address, password.as_str(), duration)?;
+                AccountResponse::AccountInfo(Box::new(account_info))
             }
             AccountRequest::LockAccount(address) => {
                 self.manager.lock_account(address)?;
