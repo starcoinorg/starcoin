@@ -76,7 +76,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
             Some(local_tip_header) => {
                 //sleep
                 if chain_header.number.0 == local_tip_header.block_number {
-                    sleep(Duration::from_secs(2));
+                    sleep(Duration::from_secs(1));
                 }
                 local_tip_header.block_number
             }
@@ -115,6 +115,16 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
                         next_block.block.header.parent_hash,
                         local_tip_header.block_hash
                     );
+                    FutureRetry::new(
+                        || sinker.rollback_to_last_block(),
+                        |e| {
+                            warn!("[Retry]: rollback to last block, err: {}", &e);
+                            RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
+                        },
+                    )
+                    .await
+                    .map(|(d, _)| d)
+                    .map_err(|(e, _)| e)?;
                     break;
                 }
             }
@@ -158,16 +168,6 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
                 .map_err(|(e, _)| e)?;
             }
             info!("Indexing height: {} done", current_block_number + index);
-        } else {
-            //reset tips to local_tip,and rollback
-            if let Some(local_tip_header) = local_tip_header.as_ref() {
-                sinker
-                    .update_remote_tip_header(
-                        local_tip_header.block_hash,
-                        local_tip_header.block_number,
-                    )
-                    .await?;
-            }
         }
         block_vec.clear();
     }

@@ -190,6 +190,8 @@ impl EsSinker {
         let rollback_to = (parent_hash, tip_header.block_number - 1);
         self.update_remote_tip_header(rollback_to.0, rollback_to.1)
             .await?;
+        self.update_local_tip_header(rollback_to.0, rollback_to.1)
+            .await?;
 
         // delete block
         {
