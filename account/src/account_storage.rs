@@ -267,7 +267,7 @@ impl AccountStorage {
         )
     }
 
-    fn remove_address(&self, address: AccountAddress) -> Result<()> {
+    pub fn remove_address(&self, address: AccountAddress) -> Result<()> {
         let value = self
             .global_value_store
             .get(GlobalSettingKey::AllAddresses)?;

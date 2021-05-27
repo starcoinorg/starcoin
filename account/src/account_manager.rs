@@ -3,6 +3,7 @@
 
 use crate::account::Account;
 use crate::account_storage::AccountStorage;
+use anyhow::format_err;
 use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::error::AccountError;
@@ -182,20 +183,14 @@ impl AccountManager {
     pub fn list_account_infos(&self) -> AccountResult<Vec<AccountInfo>> {
         let mut res = vec![];
         for account in self.store.list_addresses()? {
-            let pubkey = self.store.public_key(account)?;
-            let setting = self.store.load_setting(account)?;
-            match pubkey {
-                Some(p) => {
-                    res.push(AccountInfo::new(
-                        account,
-                        p,
-                        setting.is_default,
-                        setting.is_readonly,
-                    ));
-                }
-                None => {
-                    continue;
-                }
+            if let Some(account_info) = self.account_info(account)? {
+                res.push(account_info)
+            } else {
+                warn!(
+                    "Can not find account_info by address:{}, clear it from address list.",
+                    account
+                );
+                self.store.remove_address(account)?;
             }
         }
         Ok(res)
@@ -252,20 +247,25 @@ impl AccountManager {
         }
     }
 
-    pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<()> {
+    pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
+        let mut account_info = self
+            .account_info(address)?
+            .ok_or_else(|| format_err!("Can not find account by address:{}", address))?;
         let current_default = self.store.default_address()?;
         if let Some(current_default) = current_default {
-            if current_default == address {
+            if current_default != address {
+                let mut setting = self
+                    .store
+                    .load_setting(current_default)
+                    .map_err(AccountError::StoreError)?;
+                setting.is_default = false;
+                self.store.update_setting(current_default, setting)?;
+            } else {
                 info!("the account {} is already default.", address);
-                return Ok(());
+                // do not return here,for fix setting.is_default in some condition.
             }
-            let mut setting = self
-                .store
-                .load_setting(address)
-                .map_err(AccountError::StoreError)?;
-            setting.is_default = false;
-            self.store.update_setting(address, setting)?;
         }
+
         self.store
             .set_default_address(Some(address))
             .map_err(AccountError::StoreError)?;
@@ -275,7 +275,8 @@ impl AccountManager {
             .map_err(AccountError::StoreError)?;
         setting.is_default = true;
         self.store.update_setting(address, setting)?;
-        Ok(())
+        account_info.is_default = true;
+        Ok(account_info)
     }
 
     pub fn change_password(

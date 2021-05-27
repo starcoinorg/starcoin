@@ -279,7 +279,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn set_default_account(&self, addr: AccountAddress) -> anyhow::Result<Option<AccountInfo>> {
+    pub fn set_default_account(&self, addr: AccountAddress) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| inner.account_client.set_default_account(addr))
             .map_err(map_err)
     }
