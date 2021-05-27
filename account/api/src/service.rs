@@ -41,7 +41,7 @@ pub trait AccountAsyncService:
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> Result<()>;
+    ) -> Result<AccountInfo>;
     async fn lock_account(&self, address: AccountAddress) -> Result<()>;
     async fn import_account(
         &self,
@@ -179,12 +179,12 @@ where
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> Result<()> {
+    ) -> Result<AccountInfo> {
         let response = self
             .send(AccountRequest::UnlockAccount(address, password, duration))
             .await??;
-        if let AccountResponse::UnlockAccountResponse = response {
-            Ok(())
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
         } else {
             panic!("Unexpect response type.")
         }

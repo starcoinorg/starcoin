@@ -50,7 +50,7 @@ pub trait AccountApi {
         address: AccountAddress,
         password: String,
         duration: Option<u32>,
-    ) -> FutureResult<()>;
+    ) -> FutureResult<AccountInfo>;
     #[rpc(name = "account.lock")]
     fn lock(&self, address: AccountAddress) -> FutureResult<()>;
 

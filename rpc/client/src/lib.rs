@@ -362,7 +362,7 @@ impl RpcClient {
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| {
             inner
                 .account_client
