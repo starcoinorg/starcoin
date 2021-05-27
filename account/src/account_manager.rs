@@ -88,7 +88,7 @@ impl AccountManager {
         password: &str,
         duration: Duration,
     ) -> AccountResult<()> {
-        let _ = Account::load(address, password, self.store.clone())?
+        let _ = Account::load(address, Some(password.to_string()), self.store.clone())?
             .ok_or(AccountError::AccountNotExist(address))?;
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
@@ -157,7 +157,7 @@ impl AccountManager {
         address: AccountAddress,
         password: &str,
     ) -> AccountResult<Vec<u8>> {
-        let account = Account::load(address, password, self.store.clone())?
+        let account = Account::load(address, Some(password.to_string()), self.store.clone())?
             .ok_or(AccountError::AccountNotExist(address))?;
         Ok(account
             .private_key()
@@ -220,7 +220,7 @@ impl AccountManager {
         match pass {
             None => Err(AccountError::AccountLocked(signer_address)),
             Some(p) => {
-                let account = Account::load(signer_address, p.as_str(), self.store.clone())?
+                let account = Account::load(signer_address, Some(p), self.store.clone())?
                     .ok_or(AccountError::AccountNotExist(signer_address))?;
                 account
                     .sign_message(message)
@@ -238,7 +238,7 @@ impl AccountManager {
         match pass {
             None => Err(AccountError::AccountLocked(signer_address)),
             Some(p) => {
-                let account = Account::load(signer_address, p.as_str(), self.store.clone())?
+                let account = Account::load(signer_address, Some(p), self.store.clone())?
                     .ok_or(AccountError::AccountNotExist(signer_address))?;
                 account
                     .sign_txn(raw_txn)
@@ -309,16 +309,29 @@ impl AccountManager {
         }
     }
 
-    /// remove wallet need user password.
-    #[allow(unused)]
-    pub fn delete_account(&self, address: AccountAddress, password: &str) -> AccountResult<()> {
+    /// remove account need user password.
+    pub fn remove_account(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> AccountResult<AccountInfo> {
+        let default_account = self.default_account_info()?;
+        if let Some(default_account) = default_account {
+            if address == default_account.address {
+                return Err(AccountError::RemoveDefaultAccountError(
+                    default_account.address,
+                ));
+            }
+        }
         let account = Account::load(address, password, self.store.clone())?;
         match account {
             Some(account) => {
                 self.key_cache.write().remove_pass(&address);
-                account.destroy().map_err(AccountError::StoreError)
+                let info = account.info();
+                account.destroy().map_err(AccountError::StoreError)?;
+                Ok(info)
             }
-            None => Ok(()),
+            None => Err(AccountError::AccountNotExist(address)),
         }
     }
 

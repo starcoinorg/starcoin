@@ -260,4 +260,14 @@ where
         .map_err(map_err);
         Box::pin(fut.boxed())
     }
+
+    fn remove(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> FutureResult<AccountInfo> {
+        let service = self.account.clone();
+        let fut = async move { service.remove_account(address, password).await }.map_err(map_err);
+        Box::pin(fut.boxed())
+    }
 }

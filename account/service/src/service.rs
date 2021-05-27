@@ -126,6 +126,9 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 }
                 AccountResponse::AccountInfo(Box::new(account_info))
             }
+            AccountRequest::RemoveAccount(address, password) => AccountResponse::AccountInfo(
+                Box::new(self.manager.remove_account(address, password)?),
+            ),
             AccountRequest::GetAccounts() => {
                 AccountResponse::AccountList(self.manager.list_account_infos()?)
             }
