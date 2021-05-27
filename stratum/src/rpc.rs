@@ -14,7 +14,9 @@ use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
 use starcoin_service_registry::{ServiceRef, ServiceRequest};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
+use std::borrow::BorrowMut;
 use std::convert::TryInto;
+use std::io::Write;
 use std::sync::mpsc::TrySendError;
 use std::sync::Arc;
 
@@ -56,10 +58,13 @@ impl TryInto<MinerSubmitSealRequest> for ShareRequest {
         let mut n = Vec::new();
         let _ = n.write_u32::<LittleEndian>(nonce_temp);
         let nonce = byteorder::BigEndian::read_u32(&n);
-        let extra = BlockHeaderExtra::default();
+        let extra = hex::decode(self.id)?;
+        let extra: [u8; 4] = extra
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to parse extra"))?;
         Ok(MinerSubmitSealRequest {
             nonce,
-            extra,
+            extra: BlockHeaderExtra::new(extra),
             minting_blob: vec![],
         })
     }
@@ -150,13 +155,17 @@ pub struct LoginRequest {
 }
 
 impl LoginRequest {
-    pub fn get_worker_id(&self) -> String {
+    pub fn get_worker_id(&self, sub_id: u32) -> [u8; 4] {
         let mut hash = DefaultHasher::new(b"");
         hash.update(self.login.as_bytes());
-        let output: [u8; 4] = hash.finish().to_vec()[0..4]
+        let mut output: [u8; 4] = hash.finish().to_vec()[0..4]
             .try_into()
-            .expect("Hash len must be 32");
-        format!("{}", u32::from_le_bytes(output))
+            .expect("Hash len should have 32 bytes");
+        output
+            .iter_mut()
+            .zip(u32::to_le_bytes(sub_id).iter())
+            .for_each(|(x1, x2)| *x1 ^= *x2);
+        output
     }
 }
 
@@ -179,17 +188,20 @@ pub struct StratumJob {
 }
 
 impl StratumJobResponse {
-    pub fn from(e: &MintBlockEvent, login: Option<LoginRequest>, worker_id: String) -> Self {
+    pub fn from(e: &MintBlockEvent, login: Option<LoginRequest>, worker_id: [u8; 4]) -> Self {
+        let mut minting_blob = e.minting_blob.clone();
+        let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id);
+        let worker_id_hex = hex::encode(&worker_id);
         Self {
             login,
-            id: worker_id.clone(),
+            id: worker_id_hex.clone(),
             status: "OK".into(),
             job: StratumJob {
                 height: 0,
-                id: worker_id,
+                id: worker_id_hex,
                 target: difficulty_to_target_hex(e.difficulty),
                 job_id: hex::encode(&e.minting_blob[0..8]),
-                blob: hex::encode(&e.minting_blob),
+                blob: hex::encode(&minting_blob),
             },
         }
     }
