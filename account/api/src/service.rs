@@ -19,7 +19,7 @@ pub trait AccountAsyncService:
     async fn create_account(&self, password: String) -> Result<AccountInfo>;
 
     async fn get_default_account(&self) -> Result<Option<AccountInfo>>;
-    async fn set_default_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
+    async fn set_default_account(&self, address: AccountAddress) -> Result<AccountInfo>;
     async fn get_accounts(&self) -> Result<Vec<AccountInfo>>;
 
     async fn get_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
@@ -92,11 +92,11 @@ where
             panic!("Unexpect response type.")
         }
     }
-    async fn set_default_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>> {
+    async fn set_default_account(&self, address: AccountAddress) -> Result<AccountInfo> {
         let response = self
             .send(AccountRequest::SetDefaultAccount(address))
             .await??;
-        if let AccountResponse::AccountInfoOption(account) = response {
+        if let AccountResponse::AccountInfo(account) = response {
             Ok(*account)
         } else {
             panic!("Unexpect response type.")

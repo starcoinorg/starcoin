@@ -84,7 +84,7 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>> {
+    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move {
             let result = service.set_default_account(addr).await?;

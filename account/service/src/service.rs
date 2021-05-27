@@ -4,6 +4,7 @@
 use anyhow::Result;
 use starcoin_account::{account_storage::AccountStorage, AccountManager};
 use starcoin_account_api::message::{AccountRequest, AccountResponse};
+use starcoin_account_api::DefaultAccountChangeEvent;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_logger::prelude::*;
@@ -99,7 +100,7 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
     fn handle(
         &mut self,
         msg: AccountRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<AccountResponse> {
         let response = match msg {
             AccountRequest::CreateAccount(password) => AccountResponse::AccountInfo(Box::new(
@@ -109,13 +110,21 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 AccountResponse::AccountInfoOption(Box::new(self.manager.default_account_info()?))
             }
             AccountRequest::SetDefaultAccount(address) => {
-                let account_info = self.manager.account_info(address)?;
+                let current_default_account = self.manager.default_account_info()?;
+                //support repeat execute for fix data in some condition
+                let account_info = self.manager.set_default_account(address)?;
 
-                // only set default if this address exists
-                if account_info.is_some() {
-                    self.manager.set_default_account(address)?;
+                let fire_event = if let Some(current_default_account) = current_default_account {
+                    current_default_account.address != address
+                } else {
+                    true
+                };
+                if fire_event {
+                    ctx.broadcast(DefaultAccountChangeEvent {
+                        new_account: account_info.clone(),
+                    });
                 }
-                AccountResponse::AccountInfoOption(Box::new(account_info))
+                AccountResponse::AccountInfo(Box::new(account_info))
             }
             AccountRequest::GetAccounts() => {
                 AccountResponse::AccountList(self.manager.list_account_infos()?)
