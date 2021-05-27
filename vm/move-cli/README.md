@@ -6,11 +6,11 @@ mimics the Move memory model
 
 ## Installation
 ```shell
-$ cargo install --path diem/language/tools/move-cli
+$ cargo install --path starcoin/vm/move-cli
 ```
 or
 ```shell
-$ cargo install --git https://github.com/diem/diem move-cli --branch main
+$ cargo install --git https://github.com/starcoinorg/starcoin move-cli --branch master
 ```
 
 This will install the `move` binary in your Cargo binary directory. On
@@ -111,7 +111,7 @@ address 0x2 {
 module Test {
     use 0x1::Signer;
 
-    struct Resource { i: u64 } has key
+    struct Resource  has key { i: u64 }
 
     public fun publish(account: &signer) {
         move_to(account, Resource { i: 10 })
@@ -451,41 +451,11 @@ are the following:
 	   │
 	```
 
-* **stdlib:** This includes a small set of utility modules published under the
-  `0x1` address. **This is the default mode if no mode is supplied**. The set of
-  Move modules that are included in this mode are the following:
-  [`Debug`](https://github.com/diem/diem/blob/main/language/diem-framework/nursery/Debug.move),
-  [`Errors`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/Errors.move),
-  [`Event`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/Event.move),
-  [`FixedPoint32`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/FixedPoint32.move),
-  [`Hash`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/Hash.move),
-  [`BCS`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/BCS.move),
-  [`Option`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/Option.move),
-  [`Vector`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/Vector.move), and
-  [`Signer`](https://github.com/diem/diem/blob/main/language/diem-framework/modules/Signer.move).
 
-* **diem:** This includes all of the modules in the `stdlib` mode, along with
-  all of the other modules that comprise the Diem Framework as defined
+* **starcoin:** This includes all of the modules in the `stdlib` mode, along with
+  all of the other modules that comprise the Starcoin Framework as defined
   [here](https://github.com/diem/diem/blob/main/language/diem-framework/modules/doc/overview.md).
 
-### Running with genesis state
-
-You can run the Move CLI using the modules from the Diem Framework by using
-the `--mode diem` mode flag in your commands. However, a number of the Diem
-Framework modules require a specific initialization sequence to be run in
-genesis in order to function properly.
-
-The `tests/testsuite/liba_smoke` test uses the CLI to run a fairly
-realistic Diem genesis setup to initialize these modules, and also contains a
-few basic transactions. If you want to experiment with running
-different transactions with the Diem semantics, you can use this test as a
-starting point, and add your scripts/modules as you wish. You'll need to update
-the `args.txt` file as well to exercise these new scripts as well, and then
-you can run them just like any other Move CLI test:
-
-```shell
-$ move test ./tests/testsuite/diem_smoke
-```
 
 ## Detecting breaking changes
 
@@ -502,7 +472,7 @@ module:
 ```
 address 0x2 {
 module M {
-    struct S { f: u64, g: u64 } has key
+    struct S has key { f: u64, g: u64 }
 }
 }
 ```
@@ -512,7 +482,7 @@ and then wish to upgrade it to the following:
 ```
 address 0x2 {
 module M {
-    struct S { f: u64 } has key
+    struct S has key { f: u64 } 
 }
 }
 ```
