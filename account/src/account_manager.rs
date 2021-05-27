@@ -97,9 +97,12 @@ impl AccountManager {
         Ok(account.info())
     }
 
-    pub fn lock_account(&self, address: AccountAddress) -> AccountResult<()> {
+    pub fn lock_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
+        let account_info = self
+            .account_info(address)?
+            .ok_or(AccountError::AccountNotExist(address))?;
         self.key_cache.write().remove_pass(&address);
-        Ok(())
+        Ok(account_info)
     }
 
     pub fn import_account(
@@ -283,7 +286,11 @@ impl AccountManager {
         &self,
         address: AccountAddress,
         new_pass: impl AsRef<str>,
-    ) -> AccountResult<()> {
+    ) -> AccountResult<AccountInfo> {
+        let account_info = self
+            .account_info(address)?
+            .ok_or(AccountError::AccountNotExist(address))?;
+
         let pass = self.key_cache.write().get_pass(&address);
 
         match pass {
@@ -302,9 +309,9 @@ impl AccountManager {
                     .map_err(AccountError::StoreError)?;
 
                 // After changing password success, we should remove the old pass cache.
-                // And user need to login in again, like we always did in websites.
+                // And user need to unlock it again, like we always did in websites.
                 self.key_cache.write().remove_pass(&address);
-                Ok(())
+                Ok(account_info)
             }
         }
     }

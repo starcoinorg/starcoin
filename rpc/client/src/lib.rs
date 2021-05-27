@@ -344,7 +344,7 @@ impl RpcClient {
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| {
             inner
                 .account_client
@@ -353,7 +353,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<()> {
+    pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| inner.account_client.lock(address))
             .map_err(map_err)
     }

@@ -42,7 +42,7 @@ pub trait AccountAsyncService:
         password: String,
         duration: std::time::Duration,
     ) -> Result<AccountInfo>;
-    async fn lock_account(&self, address: AccountAddress) -> Result<()>;
+    async fn lock_account(&self, address: AccountAddress) -> Result<AccountInfo>;
     async fn import_account(
         &self,
         address: AccountAddress,
@@ -61,12 +61,12 @@ pub trait AccountAsyncService:
 
     async fn accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>>;
 
-    // change account password, user need to unlock account first.
+    /// change account password, user need to unlock account first.
     async fn change_account_password(
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> Result<()>;
+    ) -> Result<AccountInfo>;
 
     async fn remove_account(
         &self,
@@ -190,10 +190,10 @@ where
         }
     }
 
-    async fn lock_account(&self, address: AccountAddress) -> Result<()> {
+    async fn lock_account(&self, address: AccountAddress) -> Result<AccountInfo> {
         let response = self.send(AccountRequest::LockAccount(address)).await??;
-        if let AccountResponse::None = response {
-            Ok(())
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
         } else {
             panic!("Unexpect response type.")
         }
@@ -263,15 +263,15 @@ where
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> Result<()> {
+    ) -> Result<AccountInfo> {
         let response = self
             .send(AccountRequest::ChangePassword {
                 address,
                 new_password,
             })
             .await??;
-        if let AccountResponse::None = response {
-            Ok(())
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
         } else {
             panic!("Unexpected response type.")
         }
