@@ -132,7 +132,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
             );
         }
 
-        if index == bulk_times {
+        if index >= bulk_times {
             // bulk send
             FutureRetry::new(
                 || sinker.bulk(block_vec.clone()),
