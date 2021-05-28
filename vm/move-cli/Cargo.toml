@@ -38,6 +38,14 @@ stdlib = {path = "../stdlib"}
 vm = { git = "https://github.com/starcoinorg/diem", rev = "6e1cc95897557ce8328c3d08037196b6445d5be8"}
 # vm-genesis = { path = "../vm-genesis" }
 walkdir = "2.3.1"
+itertools = "0.9"
+starcoin-rpc-client = {path = "../../rpc/client"}
+starcoin-rpc-api = {path = "../../rpc/api"}
+jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
+
+futures = "0.3"
+tokio = {version = "0.2", features = ["full"]}
 
 [dev-dependencies]
 datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="6e1cc95897557ce8328c3d08037196b6445d5be8" }

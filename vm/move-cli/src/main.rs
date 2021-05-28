@@ -3,6 +3,8 @@
 
 use anyhow::{anyhow, bail, Result};
 use errmapgen::ErrorMapping;
+use move_cli::package::DepMode;
+use move_cli::remote_state::RemoteStateView;
 use move_cli::{
     package::{parse_mode_from_string, Mode},
     *,
@@ -58,6 +60,14 @@ pub struct Move {
         parse(try_from_str = parse_mode_from_string),
     )]
     mode: Mode,
+    /// starcoin rpc, required if dep mode is starcoin
+    #[structopt(
+        long,
+        default_value = "http://main.seed.starcoin.org:9850",
+        global = true,
+        required_if("mode", "starcoin")
+    )]
+    starcoin_rpc: String,
     /// Print additional diagnostics
     #[structopt(short = "v", global = true)]
     verbose: bool,
@@ -67,6 +77,13 @@ pub struct Move {
 
 #[derive(StructOpt)]
 pub enum Command {
+    /// Create a scaffold for developing.
+    #[structopt(name = "scaffold")]
+    Scaffold {
+        /// a directory path where scaffold will be saved
+        #[structopt(name = "path")]
+        path: String,
+    },
     /// Type check and verify the specified script and modules against the modules in `storage`
     #[structopt(name = "check")]
     Check {
@@ -977,14 +994,27 @@ fn doctor(state: OnDiskStateView) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let move_args = Move::from_args();
-
+    let move_args: Move = Move::from_args();
+    let mut rt = tokio::runtime::Builder::new()
+        .thread_name("move-cli")
+        .threaded_scheduler()
+        .enable_all()
+        .build()?;
     match &move_args.cmd {
+        Command::Scaffold { path } => test::create_test_scaffold(path),
         Command::Check {
             source_files,
             no_republish,
         } => {
             let state = move_args.prepare_state(true)?;
+            if let DepMode::OnChain = move_args.mode.1 {
+                let found_modules = rt.block_on(async {
+                    let view = RemoteStateView::from_url(move_args.starcoin_rpc.as_str()).await?;
+                    let found_modules = view.resolve_deps(&source_files).await?;
+                    Ok::<_, anyhow::Error>(found_modules)
+                })?;
+                state.save_modules(found_modules.iter())?;
+            }
             check(state, !*no_republish, &source_files, move_args.verbose)
         }
         Command::Publish {

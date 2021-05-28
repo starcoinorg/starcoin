@@ -213,8 +213,15 @@ impl MovePackage {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum DepMode {
+    Bare,
+    Stdlib,
+    OnChain,
+}
+
 /// The dependency interface exposed to CLI main
-pub struct Mode(Vec<&'static MovePackage>);
+pub struct Mode(Vec<&'static MovePackage>, pub DepMode);
 
 impl Mode {
     pub fn prepare(&self, out_path: &Path, source_only: bool) -> Result<()> {
@@ -245,8 +252,9 @@ impl Mode {
 
 pub fn parse_mode_from_string(mode: &str) -> Result<Mode> {
     match mode {
-        "bare" => Ok(Mode(vec![])),
-        "starcoin" => Ok(Mode(vec![&*PACKAGE_STARCOIN_FRAMEWORK])),
+        "bare" => Ok(Mode(vec![], DepMode::Bare)),
+        "stdlib" => Ok(Mode(vec![&*PACKAGE_STARCOIN_FRAMEWORK], DepMode::Stdlib)),
+        "starcoin" => Ok(Mode(vec![], DepMode::OnChain)),
         _ => bail!("Invalid mode for dependency: {}", mode),
     }
 }
