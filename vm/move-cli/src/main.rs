@@ -30,6 +30,8 @@ use std::{
     path::{Path, PathBuf},
 };
 use structopt::StructOpt;
+use vm::errors::Location;
+use vm::normalized::Module;
 use vm::{
     access::ModuleAccess,
     compatibility::Compatibility,
@@ -317,6 +319,20 @@ fn publish(
 
             let id = module.self_id();
             let sender = *id.address();
+
+            // check compatibility.
+            if state.has_module(&id) {
+                let old_module = state.get_compiled_module(&id)?;
+                if !Compatibility::check(&Module::new(&old_module), &Module::new(module))
+                    .is_fully_compatible()
+                {
+                    let err = PartialVMError::new(StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE)
+                        .finish(Location::Module(id));
+                    explain_publish_error(err, &state, module)?;
+                    has_error = true;
+                    break;
+                }
+            }
 
             let res =
                 session.publish_module(module_bytes, sender, &mut cost_strategy, &log_context);

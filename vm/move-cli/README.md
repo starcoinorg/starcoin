@@ -55,10 +55,7 @@ name/
 Let's now create a Move project that we'll use for the code in this README and `cd` into it:
 
 ```shell
-$ mkdir readme
-$ cd readme
-$ mkdir -p src/modules
-$ mkdir -p src/scripts
+$ move scaffold readme
 ```
 
 ## Compiling and running scripts
@@ -68,8 +65,9 @@ Let's first start out with a simple script that prints its `signer`:
 ```rust
 script {
 use 0x1::Debug;
+use 0x1::Signer;
 fun main(account: signer) {
-    Debug::print(account)
+    Debug::print(&Signer::address_of(account));
 }
 }
 ```
@@ -216,8 +214,9 @@ changes first. We can do this by passing the `--dry-run` flag:
 $ move run src/scripts/test_script.move --signers 0xf -v --dry-run
 Compiling transaction script...
 Changed resource(s) under 1 address(es):
-  Changed 1 resource(s) under address 0000000000000000000000000000000F:
-    Added type 0x2::Test::Resource: [U64(10)]
+  Changed 1 resource(s) under address 0x0000000000000000000000000000000f:
+    Added type 0x00000000000000000000000000000002::Test::Resource: [10, 0, 0, 0, 0, 0, 0, 0] (wrote 40 bytes)
+Wrote 40 bytes of resource ID's and data
 Discarding changes; re-run without --dry-run if you would like to keep them.
 ```
 
@@ -228,8 +227,9 @@ changes by removing the `--dry-run` flag:
 $ move run src/scripts/test_script.move --signers 0xf -v
 Compiling transaction script...
 Changed resource(s) under 1 address(es):
-  Changed 1 resource(s) under address 0000000000000000000000000000000F:
-      Added type 0x2::Test::Resource: [U64(10)]
+  Changed 1 resource(s) under address 0x0000000000000000000000000000000f:
+    Added type 0x00000000000000000000000000000002::Test::Resource: [10, 0, 0, 0, 0, 0, 0, 0] (wrote 40 bytes)
+Wrote 40 bytes of resource ID's and data
 ```
 
 We can now inspect this newly published resource using `move view` since
@@ -250,7 +250,7 @@ can be done using the `move clean` command which will remove the
 `storage` directory:
 
 ```shell
-$ move view storage/0x0000000000000000000000000000000F/resources/0x00000000000000000000000000000002::Test::Resource.bcs
+$ move view storage/0x0000000000000000000000000000000f/resources/0x00000000000000000000000000000002::Test::Resource.bcs
 resource 0x2::Test::Resource {
         i: 10
 }
@@ -258,6 +258,83 @@ $ move clean
 $ move view storage/0x0000000000000000000000000000000F/resources/0x00000000000000000000000000000002::Test::Resource.bcs
 Error: `move view <file>` must point to a valid file under storage
 ```
+
+
+## Using the CLI with modes and genesis state
+
+The CLI offers a couple of different _modes_ that it can be run with---each
+mode specifies a set of predefined modules that will be used during
+compilation and execution. The mode to be used during a CLI action is specified
+by passing the `--mode <mode>` flag to the Move CLI. The modes that can be used
+are the following:
+
+* **bare:** No predefined modules will be included during the compilation and
+  execution of a script or module (but user-defined modules will). E.g., using
+  the `debug_script.move` example above:
+
+	```shell
+	$ move run src/scripts/debug_script.move --signers 0xf --mode bare
+	error:
+
+	   ┌── debug_script.move:2:5 ───
+	   │
+	 2 │ use 0x1::Debug;
+	   │     ^^^^^^^^^^ Invalid 'use'. Unbound module: '0x1::Debug'
+	   │
+	```
+
+
+* **stdlib:** This includes all of the modules in the `stdlib` mode, along with
+  all of the other modules that comprise the Starcoin Framework as defined
+  [here](https://github.com/starcoinorg/starcoin/blob/master/vm/stdlib/modules/doc).
+* **starcoin:** In this mode, you can use modules already existed on starcoin network 
+  which is determined by `--starcoin-rpc` arguments, default to main network.
+
+## Detecting breaking changes
+
+The `move publish` command automatically detects when upgrading a module may lead to a breaking change.
+There are two kinds of breaking changes:
+
+* Linking compatibility (e.g., removing or changing the signature of a public function that is invoked by other modules, removing a
+struct or resource type used by other modules)
+* Layout compatibility (e.g., adding/removing a resource or struct field)
+
+The breaking changes analysis performed by `move publish` is necessarily conservative. For example, say we `move publish` the following
+module:
+
+```
+address 0x2 {
+module M {
+    struct S has key { f: u64, g: u64 }
+}
+}
+```
+
+and then wish to upgrade it to the following:
+
+```
+address 0x2 {
+module M {
+    struct S has key { f: u64 } 
+}
+}
+```
+
+Running `move publish` on this new version will fail:
+
+```
+Breaking change detected--publishing aborted. Re-run with --ignore-breaking-changes to publish anyway.
+Error: Layout API for structs of module 00000000000000000000000000000002::M has changed. Need to do a data migration of published structs
+```
+
+In this case, we know we have not published any instances of `S` in global storage, so it is safe to re-run `move publish --ignore-breaking-changes` (as recommended).
+We can double-check that this was not a breaking change by running `move doctor`.
+This handy command runs exhaustive sanity checks on global storage to detect any breaking changes that occurred in the past:
+* All modules pass the bytecode verifier
+* All modules link against their dependencies
+* All resources deserialize according to their declared types
+* All events deserialize according to their declared types
+
 
 ## Testing with the Move CLI
 
@@ -427,77 +504,3 @@ Module 00000000000000000000000000000002::Test
 
 This time, note that the `unpublish` function is 100% covered too and the
 overall module coverage is boosted to 61.11%.
-
-## Using the CLI with modes and genesis state
-
-The CLI offers a couple of different _modes_ that it can be run with---each
-mode specifies a set of predefined modules that will be used during
-compilation and execution. The mode to be used during a CLI action is specified
-by passing the `--mode <mode>` flag to the Move CLI. The modes that can be used
-are the following:
-
-* **bare:** No predefined modules will be included during the compilation and
-  execution of a script or module (but user-defined modules will). E.g., using
-  the `debug_script.move` example above:
-
-	```shell
-	$ move run src/scripts/debug_script.move --signers 0xf --mode bare
-	error:
-
-	   ┌── debug_script.move:2:5 ───
-	   │
-	 2 │ use 0x1::Debug;
-	   │     ^^^^^^^^^^ Invalid 'use'. Unbound module: '0x1::Debug'
-	   │
-	```
-
-
-* **starcoin:** This includes all of the modules in the `stdlib` mode, along with
-  all of the other modules that comprise the Starcoin Framework as defined
-  [here](https://github.com/diem/diem/blob/main/language/diem-framework/modules/doc/overview.md).
-
-
-## Detecting breaking changes
-
-The `move publish` command automatically detects when upgrading a module may lead to a breaking change.
-There are two kinds of breaking changes:
-
-* Linking compatibility (e.g., removing or changing the signature of a public function that is invoked by other modules, removing a
-struct or resource type used by other modules)
-* Layout compatibility (e.g., adding/removing a resource or struct field)
-
-The breaking changes analysis performed by `move publish` is necessarily conservative. For example, say we `move publish` the following
-module:
-
-```
-address 0x2 {
-module M {
-    struct S has key { f: u64, g: u64 }
-}
-}
-```
-
-and then wish to upgrade it to the following:
-
-```
-address 0x2 {
-module M {
-    struct S has key { f: u64 } 
-}
-}
-```
-
-Running `move publish` on this new version will fail:
-
-```
-Breaking change detected--publishing aborted. Re-run with --ignore-breaking-changes to publish anyway.
-Error: Layout API for structs of module 00000000000000000000000000000002::M has changed. Need to do a data migration of published structs
-```
-
-In this case, we know we have not published any instances of `S` in global storage, so it is safe to re-run `move publish --ignore-breaking-changes` (as recommended).
-We can double-check that this was not a breaking change by running `move doctor`.
-This handy command runs exhaustive sanity checks on global storage to detect any breaking changes that occurred in the past:
-* All modules pass the bytecode verifier
-* All modules link against their dependencies
-* All resources deserialize according to their declared types
-* All events deserialize according to their declared types
