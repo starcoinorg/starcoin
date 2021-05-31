@@ -13,6 +13,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
+/// Accept a new token, this operator will call 0x1::Account::accept_token function.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "accept_token")]
 pub struct AcceptTokenOpt {
@@ -87,7 +88,7 @@ impl CommandAction for AcceptTokenCommand {
         let signed_txn = client.account_sign_txn(accept_token_txn)?;
         let txn_hash = signed_txn.id();
         client.submit_transaction(signed_txn)?;
-        println!("txn {:#x} submitted.", txn_hash);
+        eprintln!("txn {:#x} submitted.", txn_hash);
 
         if opt.blocking {
             ctx.state().watch_txn(txn_hash)?;

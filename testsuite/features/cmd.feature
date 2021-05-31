@@ -127,7 +127,7 @@ Feature: cmd integration test
     Then cmd: "account unlock"
     Then cmd: "account sign-message  -m ssyuan"
     Then cmd: "account verify-sign-message -m ssyuan -d @$.result@"
-    Then assert: "$.result ok"
+    Then assert: "$.result true"
 
     Examples:
       |  |

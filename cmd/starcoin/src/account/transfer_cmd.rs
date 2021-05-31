@@ -17,6 +17,7 @@ use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
+/// Transfer token's command, this command will send a transaction to the chain.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "transfer")]
 pub struct TransferOpt {

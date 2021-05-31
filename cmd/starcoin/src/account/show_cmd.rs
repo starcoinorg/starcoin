@@ -12,8 +12,8 @@ use starcoin_state_api::AccountStateReader;
 use std::collections::HashMap;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
 /// Show a account info, only the accounts managed by the current node are supported
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "show")]
 pub struct ShowOpt {
     #[structopt(name = "address_or_receipt")]

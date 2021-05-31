@@ -8,6 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use structopt::StructOpt;
 
+/// Create a new account
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "create")]
 pub struct CreateOpt {

@@ -5,6 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -12,6 +13,7 @@ use std::convert::TryFrom;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// Export account's private key.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "export")]
 pub struct ExportOpt {
@@ -29,9 +31,12 @@ impl CommandAction for ExportCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ExportOpt;
-    type ReturnItem = ();
+    type ReturnItem = ExportData;
 
-    fn run(&self, ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> Result<()> {
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &ExportOpt = ctx.opt();
         let data = client.account_export(opt.account_address, opt.password.clone())?;
@@ -42,12 +47,17 @@ impl CommandAction for ExportCommand {
                 bail!("the output_file {} is already exists, please change a name");
             }
             std::fs::write(output_file, encoded.clone())?;
-            println!("private key saved to {}", output_file.as_path().display());
+            eprintln!("private key saved to {}", output_file.as_path().display());
         }
-        println!(
-            "account {}, private key: {}",
-            &opt.account_address, &encoded
-        );
-        Ok(())
+        Ok(ExportData {
+            account: opt.account_address,
+            private_key: encoded,
+        })
     }
+}
+
+#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
+pub struct ExportData {
+    pub account: AccountAddress,
+    pub private_key: String,
 }

@@ -19,6 +19,7 @@ use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
+/// Execute a script function.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute-function")]
 pub struct ExecuteScriptFunctionOpt {
@@ -148,7 +149,7 @@ impl CommandAction for ExecuteScriptFunctionCmd {
         if !opt.dry_run {
             client.submit_transaction(signed_txn)?;
 
-            println!("txn {:#x} submitted.", txn_hash);
+            eprintln!("txn {:#x} submitted.", txn_hash);
 
             let mut output_view = ExecutionOutputView::new(txn_hash);
 

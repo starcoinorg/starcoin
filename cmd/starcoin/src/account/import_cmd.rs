@@ -11,6 +11,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// Import account by private key to node wallet.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "import")]
 pub struct ImportOpt {
