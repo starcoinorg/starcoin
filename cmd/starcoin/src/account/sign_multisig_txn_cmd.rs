@@ -161,7 +161,11 @@ impl CommandAction for GenerateMultisigTxnCommand {
             } else {
                 unreachable!()
             };
-
+        // Use `eprintln` instead of `println`, for keep the cli stdout's format(such as json) is not broken by print.
+        eprintln!(
+            "Prepare to sign the transaction: \n {}",
+            serde_json::to_string_pretty(&raw_txn)?
+        );
         // sign the multi txn using my private keys.
         let sender = raw_txn.sender();
         let account = ctx
@@ -217,19 +221,19 @@ impl CommandAction for GenerateMultisigTxnCommand {
             signatures.push(my_signatures);
             MultiEd25519SignatureShard::merge(signatures)?
         };
-        println!(
+        eprintln!(
             "mutlisig txn(address: {}, threshold: {}): {} signatures collected",
             sender,
             merged_signatures.threshold(),
             merged_signatures.signatures().len()
         );
         if !merged_signatures.is_enough() {
-            println!(
+            eprintln!(
                 "still require {} signatures",
                 merged_signatures.threshold() as usize - merged_signatures.signatures().len()
             );
         } else {
-            println!("enough signatures collected for the multisig txn, txn can be submitted now");
+            eprintln!("enough signatures collected for the multisig txn, txn can be submitted now");
         }
 
         // construct the signed txn with merged signatures.

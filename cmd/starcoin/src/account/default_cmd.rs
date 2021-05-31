@@ -9,6 +9,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
+/// Set or show the default account
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "default")]
 pub struct DefaultOpt {

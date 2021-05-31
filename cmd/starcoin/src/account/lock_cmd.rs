@@ -9,6 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
+/// Lock the account
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "lock")]
 pub struct LockOpt {

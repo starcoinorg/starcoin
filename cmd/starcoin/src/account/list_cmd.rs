@@ -8,6 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use structopt::StructOpt;
 
+/// List all accounts in the node.
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "list")]
 pub struct ListOpt {}

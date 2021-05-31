@@ -9,6 +9,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
+/// Change account password, should unlock the account before change password.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "change-password")]
 pub struct ChangePasswordOpt {

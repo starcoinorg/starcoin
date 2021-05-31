@@ -10,6 +10,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::time::Duration;
 use structopt::StructOpt;
 
+/// Unlock the account
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "unlock")]
 pub struct UnlockOpt {

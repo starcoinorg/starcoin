@@ -15,8 +15,8 @@ use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
 /// Encode or decode the receipt_identifier
+#[derive(Debug, StructOpt)]
 #[structopt(name = "receipt-identifier")]
 pub struct ReceiptIdentifierOpt {
     #[structopt(name = "address_or_receipt")]

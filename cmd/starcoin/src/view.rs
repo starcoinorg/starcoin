@@ -69,6 +69,11 @@ pub struct StringView {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct BoolView {
+    pub result: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccountWithStateView {
     pub account: AccountInfo,
     pub auth_key: String,

@@ -16,6 +16,7 @@ use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use structopt::StructOpt;
 
+/// Derive an address by public key.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "derive-address")]
 pub struct DeriveAddressOpt {

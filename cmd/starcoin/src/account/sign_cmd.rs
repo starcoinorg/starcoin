@@ -10,6 +10,7 @@ use starcoin_types::sign_message::SigningMessage;
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
+/// Sign a message by the account's private key.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "sign-message")]
 pub struct SignMessageOpt {

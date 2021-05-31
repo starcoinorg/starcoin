@@ -10,6 +10,7 @@ use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
+/// Import a readonly account by public key
 #[derive(Debug, StructOpt)]
 #[structopt(name = "import-readonly")]
 pub struct ImportReadonlyOpt {

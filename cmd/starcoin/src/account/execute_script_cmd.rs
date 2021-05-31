@@ -21,6 +21,7 @@ use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// Execute a script
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute-script")]
 pub struct ExecuteScriptOpt {
@@ -170,7 +171,7 @@ impl CommandAction for ExecuteScriptCommand {
         if !opt.dry_run {
             client.submit_transaction(signed_txn)?;
 
-            println!("txn {:#x} submitted.", txn_hash);
+            eprintln!("txn {:#x} submitted.", txn_hash);
 
             let mut output_view = ExecutionOutputView::new(txn_hash);
 
