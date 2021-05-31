@@ -192,6 +192,10 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 )
                 .map(|(_, b)| b.into())?
             };
+            eprintln!(
+                "Transaction dry run execute output: \n {}",
+                serde_json::to_string_pretty(&output)?
+            );
             match output.status {
                 TransactionVMStatus::Discard { status_code } => {
                     bail!("TransactionStatus is discard: {:?}", status_code)
