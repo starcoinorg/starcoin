@@ -39,6 +39,7 @@ vm = { git = "https://github.com/starcoinorg/diem", rev = "6e1cc95897557ce8328c3
 # vm-genesis = { path = "../vm-genesis" }
 walkdir = "2.3.1"
 itertools = "0.9"
+starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}

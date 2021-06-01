@@ -3,8 +3,9 @@
 
 use anyhow::{anyhow, bail, Result};
 use errmapgen::ErrorMapping;
+use move_cli::function_resolver::FunctionResolver;
 use move_cli::package::DepMode;
-use move_cli::remote_state::RemoteStateView;
+use move_cli::remote_state::{MergedRemoteCache, RemoteStateView};
 use move_cli::{
     package::{parse_mode_from_string, Mode},
     *,
@@ -20,6 +21,7 @@ use move_core_types::{
     vm_status::{AbortLocation, StatusCode, VMStatus},
 };
 use move_lang::{self, compiled_unit::CompiledUnit, MOVE_COMPILED_EXTENSION};
+use move_vm_runtime::data_cache::RemoteCache;
 use move_vm_runtime::{logging::NoContextLog, move_vm::MoveVM};
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_vm_types::gas_schedule::CostStrategy;
@@ -70,6 +72,9 @@ pub struct Move {
         required_if("mode", "starcoin")
     )]
     starcoin_rpc: String,
+    #[structopt(long, global = true)]
+    /// block height to fork from. default to latest block number
+    block_number: Option<u64>,
     /// Print additional diagnostics
     #[structopt(short = "v", global = true)]
     verbose: bool,
@@ -382,46 +387,6 @@ fn run(
     dry_run: bool,
     verbose: bool,
 ) -> Result<()> {
-    fn compile_script(
-        state: &OnDiskStateView,
-        script_file: &str,
-        verbose: bool,
-    ) -> Result<Option<CompiledScript>> {
-        if verbose {
-            println!("Compiling transaction script...")
-        }
-        let (_files, compiled_units) = move_lang::move_compile_and_report(
-            &[script_file.to_string()],
-            &[state.interface_files_dir()?],
-            None,
-            None,
-            false,
-        )?;
-
-        let mut script_opt = None;
-        for c in compiled_units {
-            match c {
-                CompiledUnit::Script { script, .. } => {
-                    if script_opt.is_some() {
-                        bail!("Error: Found more than one script")
-                    }
-                    script_opt = Some(script)
-                }
-                CompiledUnit::Module { ident, .. } => {
-                    if verbose {
-                        println!(
-                            "Warning: Found module '{}' in file specified for the script. This \
-                             module will not be published.",
-                            ident
-                        )
-                    }
-                }
-            }
-        }
-
-        Ok(script_opt)
-    }
-
     let path = Path::new(script_file);
     if !path.exists() {
         bail!("Script file {:?} does not exist", path)
@@ -508,6 +473,174 @@ move run` must be applied to a module inside `storage/`",
     }
 }
 
+fn run_on_remote<R: RemoteCache>(
+    state: OnDiskStateView,
+    remote_state: R,
+    script_file: &str,
+    script_name_opt: &Option<String>,
+    signers: &[String],
+    txn_args: &[TransactionArgument],
+    vm_type_args: Vec<TypeTag>,
+    gas_budget: Option<u64>,
+    dry_run: bool,
+    verbose: bool,
+) -> Result<()> {
+    let path = Path::new(script_file);
+    if !path.exists() {
+        bail!("Script file {:?} does not exist", path)
+    };
+    let bytecode = if Move::is_bytecode_file(path) {
+        assert!(
+            state.is_module_path(path) || !Move::contains_module(path),
+            "Attempting to run module {:?} outside of the `storage/` directory.
+move run` must be applied to a module inside `storage/`",
+            path
+        );
+        // script bytecode; read directly from file
+        fs::read(path)?
+    } else {
+        // script source file; compile first and then extract bytecode
+        let script_opt = compile_script(&state, script_file, verbose)?;
+        match script_opt {
+            Some(script) => {
+                let mut script_bytes = vec![];
+                script.serialize(&mut script_bytes)?;
+                script_bytes
+            }
+            None => bail!("Unable to find script in file {:?}", script_file),
+        }
+    };
+
+    let signer_addresses = signers
+        .iter()
+        .map(|s| AccountAddress::from_hex_literal(&s))
+        .collect::<Result<Vec<AccountAddress>, _>>()?;
+    // TODO: parse Value's directly instead of going through the indirection of TransactionArgument?
+    let vm_args: Vec<Vec<u8>> = convert_txn_args(&txn_args);
+
+    let cost_strategy = get_cost_strategy(gas_budget)?;
+    let script_type_parameters = vec![];
+    let script_parameters = vec![];
+    let merged_state = MergedRemoteCache {
+        a: state,
+        b: remote_state,
+    };
+    let res = execute(
+        &merged_state,
+        script_name_opt,
+        bytecode,
+        signer_addresses.clone(),
+        vm_args,
+        vm_type_args.clone(),
+        cost_strategy,
+    );
+
+    match res {
+        Err(err) => explain_execution_error(
+            err,
+            &merged_state,
+            &script_type_parameters,
+            &script_parameters,
+            &vm_type_args,
+            &signer_addresses,
+            txn_args,
+        ),
+        Ok((changeset, events)) => {
+            if verbose {
+                explain_execution_effects(&changeset, &events, &merged_state)?;
+            }
+            maybe_commit_effects(!dry_run, changeset, events, &merged_state.a)
+        }
+    }
+}
+
+fn compile_script(
+    state: &OnDiskStateView,
+    script_file: &str,
+    verbose: bool,
+) -> Result<Option<CompiledScript>> {
+    if verbose {
+        println!("Compiling transaction script...")
+    }
+    let (_files, compiled_units) = move_lang::move_compile_and_report(
+        &[script_file.to_string()],
+        &[state.interface_files_dir()?],
+        None,
+        None,
+        false,
+    )?;
+
+    let mut script_opt = None;
+    for c in compiled_units {
+        match c {
+            CompiledUnit::Script { script, .. } => {
+                if script_opt.is_some() {
+                    bail!("Error: Found more than one script")
+                }
+                script_opt = Some(script)
+            }
+            CompiledUnit::Module { ident, .. } => {
+                if verbose {
+                    println!(
+                        "Warning: Found module '{}' in file specified for the script. This \
+                             module will not be published.",
+                        ident
+                    )
+                }
+            }
+        }
+    }
+
+    Ok(script_opt)
+}
+
+// execute the script against the given state
+fn execute<R: RemoteCache>(
+    state: &R,
+    script_name_opt: &Option<String>,
+    bytecode: Vec<u8>,
+    signer_addresses: Vec<AccountAddress>,
+    vm_args: Vec<Vec<u8>>,
+    vm_type_args: Vec<TypeTag>,
+    mut cost_strategy: CostStrategy,
+) -> Result<(ChangeSet, Vec<Event>), VMError> {
+    let vm = MoveVM::new();
+    let log_context = NoContextLog::new();
+    let mut session = vm.new_session(state);
+    let res = match script_name_opt {
+        Some(script_name) => {
+            // script fun. parse module, extract script ID to pass to VM
+            let module = CompiledModule::deserialize(&bytecode)
+                .map_err(|e| e.finish(Location::Undefined))?;
+
+            session
+                .execute_script_function(
+                    &module.self_id(),
+                    &IdentStr::new(script_name).map_err(|_| {
+                        PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR)
+                            .finish(Location::Undefined)
+                    })?,
+                    vm_type_args,
+                    vm_args,
+                    signer_addresses,
+                    &mut cost_strategy,
+                    &log_context,
+                )
+                .map(|_| ())
+        }
+        None => session.execute_script(
+            bytecode.to_vec(),
+            vm_type_args,
+            vm_args,
+            signer_addresses,
+            &mut cost_strategy,
+            &log_context,
+        ),
+    };
+
+    res.and_then(|_| session.finish())
+}
+
 fn get_cost_strategy(gas_budget: Option<u64>) -> Result<CostStrategy<'static>> {
     let gas_schedule = &INITIAL_GAS_SCHEDULE;
     let cost_strategy = if let Some(gas_budget) = gas_budget {
@@ -556,10 +689,10 @@ fn explain_publish_changeset(changeset: &ChangeSet, state: &OnDiskStateView) {
     )
 }
 
-fn explain_execution_effects(
+fn explain_execution_effects<R: RemoteCache>(
     changeset: &ChangeSet,
     events: &[Event],
-    state: &OnDiskStateView,
+    state: &R,
 ) -> Result<()> {
     // execution effects should contain no modules
     assert!(changeset.modules().next().is_none());
@@ -598,7 +731,8 @@ fn explain_execution_effects(
                 Some(blob) => {
                     bytes_to_write += blob.len();
                     if state
-                        .get_resource_bytes(*addr, struct_tag.clone())?
+                        .get_resource(addr, struct_tag)
+                        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?
                         .is_some()
                     {
                         // TODO: print resource diff
@@ -794,9 +928,9 @@ fn explain_publish_error(
 }
 
 /// Explain an execution error
-fn explain_execution_error(
+fn explain_execution_error<R: RemoteCache>(
     error: VMError,
-    state: &OnDiskStateView,
+    state: &R,
     script_type_parameters: &[AbilitySet],
     script_parameters: &[SignatureToken],
     vm_type_args: &[TypeTag],
@@ -1011,26 +1145,27 @@ fn doctor(state: OnDiskStateView) -> Result<()> {
 
 fn main() -> Result<()> {
     let move_args: Move = Move::from_args();
-    let mut rt = tokio::runtime::Builder::new()
-        .thread_name("move-cli")
-        .threaded_scheduler()
-        .enable_all()
-        .build()?;
     match &move_args.cmd {
         Command::Scaffold { path } => test::create_test_scaffold(path),
         Command::Check {
             source_files,
             no_republish,
+        } if move_args.mode.1 == DepMode::OnChain => {
+            let state = move_args.prepare_state(true)?;
+
+            // get deps first.
+            let view =
+                RemoteStateView::from_url(move_args.starcoin_rpc.as_str(), move_args.block_number)?;
+            let found_modules = view.resolve_deps(&source_files)?;
+            state.save_modules(found_modules.iter())?;
+
+            check(state, !*no_republish, &source_files, move_args.verbose)
+        }
+        Command::Check {
+            source_files,
+            no_republish,
         } => {
             let state = move_args.prepare_state(true)?;
-            if let DepMode::OnChain = move_args.mode.1 {
-                let found_modules = rt.block_on(async {
-                    let view = RemoteStateView::from_url(move_args.starcoin_rpc.as_str()).await?;
-                    let found_modules = view.resolve_deps(&source_files).await?;
-                    Ok::<_, anyhow::Error>(found_modules)
-                })?;
-                state.save_modules(found_modules.iter())?;
-            }
             check(state, !*no_republish, &source_files, move_args.verbose)
         }
         Command::Publish {
@@ -1044,6 +1179,31 @@ fn main() -> Result<()> {
                 source_files,
                 !*no_republish,
                 *ignore_breaking_changes,
+                move_args.verbose,
+            )
+        }
+        Command::Run {
+            script_file,
+            script_name,
+            signers,
+            args,
+            type_args,
+            gas_budget,
+            dry_run,
+        } if move_args.mode.1 == DepMode::OnChain => {
+            let local_state = move_args.prepare_state(true)?;
+            let remote_state =
+                RemoteStateView::from_url(move_args.starcoin_rpc.as_str(), move_args.block_number)?;
+            run_on_remote(
+                local_state,
+                remote_state,
+                script_file,
+                script_name,
+                signers,
+                args,
+                type_args.to_vec(),
+                *gas_budget,
+                *dry_run,
                 move_args.verbose,
             )
         }

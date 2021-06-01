@@ -29,6 +29,7 @@ use vm::{
 };
 
 pub(crate) mod dependencies;
+pub mod function_resolver;
 pub mod package;
 pub mod remote_state;
 pub mod test;
@@ -59,7 +60,7 @@ const MODULES_DIR: &str = "modules";
 /// subdirectory of `MOVE_DATA`/<addr> where events are stored
 const EVENTS_DIR: &str = "events";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OnDiskStateView {
     build_dir: PathBuf,
     storage_dir: PathBuf,
@@ -472,7 +473,7 @@ impl RemoteCache for OnDiskStateView {
         struct_tag: &StructTag,
     ) -> PartialVMResult<Option<Vec<u8>>> {
         self.get_resource_bytes(*address, struct_tag.clone())
-            .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))
+            .map_err(|e| PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(e.to_string()))
     }
 }
 
