@@ -4717,6 +4717,7 @@ dependencies = [
  "move-vm-runtime",
  "once_cell",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",

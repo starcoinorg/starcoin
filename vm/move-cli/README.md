@@ -67,7 +67,7 @@ script {
 use 0x1::Debug;
 use 0x1::Signer;
 fun main(account: signer) {
-    Debug::print(&Signer::address_of(account));
+    Debug::print(&Signer::address_of(&account));
 }
 }
 ```
