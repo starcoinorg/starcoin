@@ -11,6 +11,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `prologue`](#0x1_TransactionManager_prologue)
 -  [Function `epilogue`](#0x1_TransactionManager_epilogue)
+-  [Function `epilogue_v2`](#0x1_TransactionManager_epilogue_v2)
 -  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
 -  [Specification](#@Specification_1)
     -  [Function `prologue`](#@Specification_1_prologue)
@@ -33,6 +34,7 @@
 <b>use</b> <a href="TransactionFee.md#0x1_TransactionFee">0x1::TransactionFee</a>;
 <b>use</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">0x1::TransactionPublishOption</a>;
 <b>use</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout">0x1::TransactionTimeout</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
 
@@ -125,7 +127,7 @@ It verifies:
 - That the sequence number matches the transaction's sequence key
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(account: signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, txn_expiration_time: u64, chain_id: u8, txn_payload_type: u8, txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(account: signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, txn_expiration_time: u64, chain_id: u8, txn_payload_type: u8, txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address)
 </code></pre>
 
 
@@ -138,7 +140,7 @@ It verifies:
     account: signer,
     txn_sender: address,
     txn_sequence_number: u64,
-    txn_public_key: vector&lt;u8&gt;,
+    txn_authentication_key_preimage: vector&lt;u8&gt;,
     txn_gas_price: u64,
     txn_max_gas_units: u64,
     txn_expiration_time: u64,
@@ -159,7 +161,7 @@ It verifies:
         &account,
         txn_sender,
         txn_sequence_number,
-        txn_public_key,
+        txn_authentication_key_preimage,
         txn_gas_price,
         txn_max_gas_units,
     );
@@ -227,11 +229,51 @@ It collects gas and bumps the sequence number
     // txn execute success or fail.
     success: bool,
 ) {
+    <a href="TransactionManager.md#0x1_TransactionManager_epilogue_v2">epilogue_v2</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>(), txn_gas_price, txn_max_gas_units, gas_units_remaining, txn_payload_type, _txn_script_or_package_hash, txn_package_address, success)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_TransactionManager_epilogue_v2"></a>
+
+## Function `epilogue_v2`
+
+The epilogue is invoked at the end of transactions.
+It collects gas and bumps the sequence number
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_epilogue_v2">epilogue_v2</a>&lt;TokenType&gt;(account: signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address, success: bool)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_epilogue_v2">epilogue_v2</a>&lt;TokenType: store&gt;(
+    account: signer,
+    txn_sender: address,
+    txn_sequence_number: u64,
+    txn_authentication_key_preimage: vector&lt;u8&gt;,
+    txn_gas_price: u64,
+    txn_max_gas_units: u64,
+    gas_units_remaining: u64,
+    txn_payload_type: u8,
+    _txn_script_or_package_hash: vector&lt;u8&gt;,
+    txn_package_address: address,
+    // txn execute success or fail.
+    success: bool,
+) {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(&account);
-    <a href="Account.md#0x1_Account_txn_epilogue">Account::txn_epilogue</a>&lt;TokenType&gt;(
+    <a href="Account.md#0x1_Account_txn_epilogue_v2">Account::txn_epilogue_v2</a>&lt;TokenType&gt;(
         &account,
         txn_sender,
         txn_sequence_number,
+        txn_authentication_key_preimage,
         txn_gas_price,
         txn_max_gas_units,
         gas_units_remaining,
@@ -325,7 +367,7 @@ The runtime always runs this before executing the transactions in a block.
 ### Function `prologue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(account: signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, txn_expiration_time: u64, chain_id: u8, txn_payload_type: u8, txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(account: signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, txn_expiration_time: u64, chain_id: u8, txn_payload_type: u8, txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address)
 </code></pre>
 
 
@@ -335,7 +377,7 @@ The runtime always runs this before executing the transactions in a block.
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="ChainId.md#0x1_ChainId_ChainId">ChainId::ChainId</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
 <b>aborts_if</b> <a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() != chain_id;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender);
-<b>aborts_if</b> <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) != <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender).authentication_key;
+<b>aborts_if</b> <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_authentication_key_preimage) != <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender).authentication_key;
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; max_u64();
 <b>include</b> <a href="Timestamp.md#0x1_Timestamp_AbortsIfTimestampNotExists">Timestamp::AbortsIfTimestampNotExists</a>;
 <b>include</b> <a href="Block.md#0x1_Block_AbortsIfBlockMetadataNotExist">Block::AbortsIfBlockMetadataNotExist</a>;

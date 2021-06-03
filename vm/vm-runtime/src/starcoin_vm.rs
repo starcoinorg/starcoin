@@ -836,14 +836,9 @@ impl StarcoinVM {
         })
     }
 
-    fn check_reconfigure(
-        &mut self,
-        _state_view: &dyn StateView,
-        _output: &TransactionOutput,
-    ) -> Result<(), Error> {
+    fn check_reconfigure(&mut self, _state_view: &dyn StateView, _output: &TransactionOutput) {
         //TODO this vm is need to reconfigure by the check the output event
         //if need reconfigure, do load_config
-        Ok(())
     }
 
     /// Execute a block transactions with gas_limit,
@@ -885,7 +880,7 @@ impl StarcoinVM {
                             }
                             data_cache.push_write_set(output.write_set())
                         }
-                        self.check_reconfigure(&data_cache, &output)?;
+                        self.check_reconfigure(&data_cache, &output);
                         result.push((status, output));
                     }
                 }
