@@ -10,7 +10,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs::File;
+use std::io::prelude::*;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use structopt::StructOpt;
 
@@ -18,7 +20,6 @@ pub use rustyline::{
     config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
     Editor,
 };
-use std::str::FromStr;
 
 pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
     ConsoleConfig::builder()
@@ -319,21 +320,14 @@ where
                     let cmd_name = if params.is_empty() { "" } else { params[0] };
                     match cmd_name {
                         "quit" | "exit" | "q!" => {
-                            let global_opt = Arc::try_unwrap(global_opt)
-                                .ok()
-                                .expect("unwrap opt must success when quit.");
-                            let state = Arc::try_unwrap(state)
-                                .ok()
-                                .expect("unwrap state must success when quit.");
-                            if let Some(history_file) = history_file.as_ref() {
-                                if let Err(e) = rl.save_history(history_file.as_path()) {
-                                    println!(
-                                        "Save history to file {:?} error: {:?}",
-                                        history_file, e
-                                    );
-                                }
-                            }
-                            quit_action(app.clone(), global_opt, state);
+                            Self::do_quit(
+                                app.clone(),
+                                global_opt,
+                                state,
+                                quit_action,
+                                rl,
+                                history_file,
+                            );
                             break;
                         }
                         "history" => {
@@ -366,7 +360,12 @@ where
                         }
                         "version" => {
                             let mut out = std::io::stdout();
-                            let _ = app.write_long_version(&mut out);
+                            let _ = app
+                                .write_long_version(&mut out)
+                                .expect("write version to stdout should success");
+                            // write a `\n` for flush stdout
+                            out.write_all("\n".as_bytes())
+                                .expect("write to stdout should success");
                         }
                         "output" => {
                             if params.len() == 1 {
@@ -414,10 +413,26 @@ where
                 }
                 Err(ReadlineError::Interrupted) => {
                     println!("CTRL-C");
+                    Self::do_quit(
+                        app.clone(),
+                        global_opt,
+                        state,
+                        quit_action,
+                        rl,
+                        history_file,
+                    );
                     break;
                 }
                 Err(ReadlineError::Eof) => {
                     println!("CTRL-D");
+                    Self::do_quit(
+                        app.clone(),
+                        global_opt,
+                        state,
+                        quit_action,
+                        rl,
+                        history_file,
+                    );
                     break;
                 }
                 Err(err) => {
@@ -426,5 +441,27 @@ where
                 }
             }
         }
+    }
+
+    fn do_quit(
+        app: App,
+        global_opt: Arc<GlobalOpt>,
+        state: Arc<State>,
+        quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+        mut rl: Editor<()>,
+        history_file: Option<PathBuf>,
+    ) {
+        let global_opt = Arc::try_unwrap(global_opt)
+            .ok()
+            .expect("unwrap opt must success when quit.");
+        let state = Arc::try_unwrap(state)
+            .ok()
+            .expect("unwrap state must success when quit.");
+        if let Some(history_file) = history_file.as_ref() {
+            if let Err(e) = rl.save_history(history_file.as_path()) {
+                println!("Save history to file {:?} error: {:?}", history_file, e);
+            }
+        }
+        quit_action(app, global_opt, state);
     }
 }
