@@ -12,6 +12,21 @@ script {
     }
 }
 // check: gas_used
-// check: 125381
+// check: 129620
+// check: "Keep(EXECUTED)"
+
+//! new-transaction
+//! sender: alice
+//! args: {{bob}}, 100u128, x""
+script {
+    use 0x1::TransferScripts;
+    use 0x1::STC::STC;
+
+    fun main(account: signer, payee: address, amount: u128, metadata: vector<u8>) {
+        TransferScripts::peer_to_peer_with_metadata_v2<STC>(account, payee, amount, metadata);
+    }
+}
+// check: gas_used
+// check: 124796
 // check: "Keep(EXECUTED)"
 

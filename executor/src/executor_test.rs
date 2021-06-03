@@ -104,41 +104,6 @@ fn test_consensus_config_get() -> Result<()> {
 }
 
 #[stest::test]
-fn test_gen_accounts() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
-    let alice = Account::new();
-    let bob = Account::new();
-    let mut address_vec = alice.address().to_vec();
-    address_vec.extend_from_slice(bob.address().to_vec().as_slice());
-    let mut auth_key_vec = alice.auth_key().to_vec();
-    auth_key_vec.extend_from_slice(bob.auth_key().to_vec().as_slice());
-    (1..8).for_each(|_| {
-        let account = Account::new();
-        address_vec.extend_from_slice(account.address().to_vec().as_slice());
-        auth_key_vec.extend_from_slice(account.auth_key().to_vec().as_slice());
-    });
-    let script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("TransferScripts").unwrap(),
-        ),
-        Identifier::new("peer_to_peer_batch").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&address_vec).unwrap(),
-            bcs_ext::to_bytes(&auth_key_vec).unwrap(),
-            bcs_ext::to_bytes(&1u128).unwrap(),
-        ],
-    );
-    association_execute_should_success(
-        &net,
-        &chain_state,
-        TransactionPayload::ScriptFunction(script_function),
-    )?;
-    Ok(())
-}
-
-#[stest::test]
 fn test_batch_transfer() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let alice = Account::new();

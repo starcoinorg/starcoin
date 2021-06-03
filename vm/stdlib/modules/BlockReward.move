@@ -11,7 +11,6 @@ module BlockReward {
     use 0x1::Errors;
     use 0x1::RewardConfig;
     use 0x1::Config;
-    use 0x1::Authenticator;
     use 0x1::Event;
     use 0x1::Treasury;
     use 0x1::TreasuryWithdrawDaoProposal;
@@ -85,7 +84,7 @@ module BlockReward {
 
     /// Process the given block rewards.
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-                                    current_author: address, auth_key_vec: vector<u8>,
+                                    current_author: address, _auth_key_vec: vector<u8>,
                                     previous_block_gas_fees: Token::Token<STC>) acquires RewardQueue {
         CoreAddresses::assert_genesis_address(account);
         if (current_number == 0) {
@@ -150,10 +149,7 @@ module BlockReward {
         };
 
         if (!Account::exists_at(current_author)) {
-            //create account from public key
-            assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_AUTH_KEY_IS_EMPTY));
-            let expected_address = Account::create_account<STC>(auth_key_vec);
-            assert(current_author == expected_address, Errors::invalid_argument(EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH));
+            Account::create_account_with_address<STC>(current_author);
         };
         let current_info = RewardInfo {
             number: current_number,
@@ -188,8 +184,7 @@ module BlockReward {
         aborts_if current_number > 0 && Vector::length(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos) >= global<Config::Config<RewardConfig::RewardConfig>>(CoreAddresses::GENESIS_ADDRESS()).payload.reward_delay
                 && (global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).reward_number + 1) > max_u64();
 
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && len(auth_key_vec) != 32;
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && Authenticator::spec_derived_address(auth_key_vec) != current_author;
+        aborts_if current_number > 0 && !Account::exists_at(current_author) ;
 
         pragma verify = false;
     }
