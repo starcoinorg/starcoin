@@ -320,5 +320,5 @@ Error: Layout API for structs of module 00000000000000000000000000000002::M has 
 ```
 
 这种情况下，我们没有在全局存储中发布任何 `S` 的实例，但是 `move publish` 仍然报出兼容性问题。
-重新运行`move publish --ignore-reaking-changes` 可以强制重新 publish 模块。
+重新运行`move publish --ignore-breaking-changes` 可以强制重新 publish 模块。
 

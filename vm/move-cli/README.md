@@ -97,7 +97,7 @@ The CLI supports passing non-`signer` arguments to `move run` via `--args`. The 
 When executing a transaction script you'll often want to call into different Move
 modules like in the example above with the `Debug` module. New modules can be added to the `src/modules`
 directory in the directory where the CLI is being invoked (or a directory
-of your choosing specified via the `--source-dir` flag). The `move run`
+of your choosing specified via the `[SOURCE_FILE]` argument). The `move run`
 command will compile and publish each module source file in this directory
 before running the given script. You can also compile and publish modules
 separately if you want as well.
