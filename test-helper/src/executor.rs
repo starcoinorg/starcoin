@@ -4,6 +4,7 @@
 use crate::Account;
 use crate::Genesis;
 use anyhow::{bail, Result};
+use serde::de::DeserializeOwned;
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::{temp_path, ChainNetwork};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
@@ -21,6 +22,8 @@ use starcoin_types::{
     account_address::AccountAddress, transaction::Module, transaction::Transaction,
     transaction::TransactionStatus,
 };
+use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use stdlib::restore_stdlib_in_dir;
@@ -311,4 +314,27 @@ pub fn move_abort_code(status: KeptVMStatus) -> Option<u64> {
         KeptVMStatus::MoveAbort(_, code) => Some(code),
         _ => None,
     }
+}
+
+pub fn expect_event<Event: MoveResource>(output: &TransactionOutput) -> ContractEvent {
+    output
+        .events()
+        .iter()
+        .filter(|event| event.is::<Event>())
+        .cloned()
+        .last()
+        .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
+}
+
+pub fn expect_decode_event<Event: MoveResource + DeserializeOwned>(
+    output: &TransactionOutput,
+) -> Event {
+    output
+        .events()
+        .iter()
+        .filter(|event| event.is::<Event>())
+        .cloned()
+        .last()
+        .and_then(|event| event.decode_event::<Event>().ok())
+        .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }

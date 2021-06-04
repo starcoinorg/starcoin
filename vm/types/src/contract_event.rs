@@ -4,15 +4,13 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    account_config::{BurnEvent, DepositEvent, MintEvent, WithdrawEvent},
-    event::EventKey,
-};
+use crate::event::EventKey;
 use crate::{language_storage::TypeTag, move_resource::MoveResource};
-use anyhow::{Error, Result};
+use anyhow::Result;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
-use std::{convert::TryFrom, ops::Deref};
+use std::ops::Deref;
 
 /// Support versioning of the data structure.
 #[derive(Hash, Clone, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
@@ -33,6 +31,12 @@ impl ContractEvent {
             type_tag,
             event_data,
         ))
+    }
+
+    pub fn is<EventType: MoveResource>(&self) -> bool {
+        match self {
+            ContractEvent::V0(event) => event.is::<EventType>(),
+        }
     }
 }
 
@@ -89,52 +93,16 @@ impl ContractEventV0 {
         &self.event_data
     }
 
+    pub fn decode_event<EventType: MoveResource + DeserializeOwned>(&self) -> Result<EventType> {
+        bcs_ext::from_bytes(self.event_data.as_slice()).map_err(Into::into)
+    }
+
     pub fn type_tag(&self) -> &TypeTag {
         &self.type_tag
     }
-}
 
-impl TryFrom<&ContractEvent> for WithdrawEvent {
-    type Error = Error;
-
-    fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag != TypeTag::Struct(WithdrawEvent::struct_tag()) {
-            anyhow::bail!("Expected Withdraw Event")
-        }
-        Self::try_from_bytes(&event.event_data)
-    }
-}
-
-impl TryFrom<&ContractEvent> for DepositEvent {
-    type Error = Error;
-
-    fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag != TypeTag::Struct(DepositEvent::struct_tag()) {
-            anyhow::bail!("Expected Deposit Event")
-        }
-        Self::try_from_bytes(&event.event_data)
-    }
-}
-
-impl TryFrom<&ContractEvent> for BurnEvent {
-    type Error = Error;
-
-    fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag != TypeTag::Struct(BurnEvent::struct_tag()) {
-            anyhow::bail!("Expected BurnEvent")
-        }
-        Self::try_from_bytes(&event.event_data)
-    }
-}
-
-impl TryFrom<&ContractEvent> for MintEvent {
-    type Error = Error;
-
-    fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag != TypeTag::Struct(MintEvent::struct_tag()) {
-            anyhow::bail!("Expected BurnEvent")
-        }
-        Self::try_from_bytes(&event.event_data)
+    pub fn is<EventType: MoveResource>(&self) -> bool {
+        self.type_tag == TypeTag::Struct(EventType::struct_tag())
     }
 }
 
@@ -153,21 +121,7 @@ impl std::fmt::Debug for ContractEvent {
 
 impl std::fmt::Display for ContractEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Ok(payload) = WithdrawEvent::try_from(self) {
-            write!(
-                f,
-                "ContractEvent {{ key: {}, index: {:?}, type: {:?}, event_data: {:?} }}",
-                self.key, self.sequence_number, self.type_tag, payload,
-            )
-        } else if let Ok(payload) = DepositEvent::try_from(self) {
-            write!(
-                f,
-                "ContractEvent {{ key: {}, index: {:?}, type: {:?}, event_data: {:?} }}",
-                self.key, self.sequence_number, self.type_tag, payload,
-            )
-        } else {
-            write!(f, "{:?}", self)
-        }
+        write!(f, "{:?}", self)
     }
 }
 

@@ -14,6 +14,7 @@ use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
 use starcoin_move_compiler::check_module_compat;
+use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
     access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
 };
@@ -28,6 +29,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{
     genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource, EPILOGUE_NAME,
     EPILOGUE_V2_NAME, PROLOGUE_NAME,
@@ -836,9 +838,22 @@ impl StarcoinVM {
         })
     }
 
-    fn check_reconfigure(&mut self, _state_view: &dyn StateView, _output: &TransactionOutput) {
-        //TODO this vm is need to reconfigure by the check the output event
-        //if need reconfigure, do load_config
+    fn check_reconfigure(
+        &mut self,
+        state_view: &dyn StateView,
+        output: &TransactionOutput,
+    ) -> Result<(), Error> {
+        for event in output.events() {
+            if event.key().get_creator_address() == genesis_address()
+                && (event.is::<UpgradeEvent>()
+                    || event.is::<ConfigChangeEvent<VMConfig>>()
+                    || event.is::<ConfigChangeEvent<Version>>())
+            {
+                info!("Load vm configs trigger by reconfigure event. ");
+                self.load_configs(state_view)?;
+            }
+        }
+        Ok(())
     }
 
     /// Execute a block transactions with gas_limit,
@@ -880,7 +895,7 @@ impl StarcoinVM {
                             }
                             data_cache.push_write_set(output.write_set())
                         }
-                        self.check_reconfigure(&data_cache, &output);
+                        self.check_reconfigure(&data_cache, &output)?;
                         result.push((status, output));
                     }
                 }

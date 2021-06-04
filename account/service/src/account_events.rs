@@ -7,7 +7,6 @@ use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::event::EventKey;
 use std::collections::HashSet;
-use std::convert::TryFrom;
 
 #[derive(Clone)]
 pub struct AccountEventService {
@@ -72,11 +71,14 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
 
 impl AccountEventService {
     fn handle_contract_event(&self, event: &ContractEvent) -> Result<(), Error> {
-        let evt = AcceptTokenEvent::try_from(event)?;
-        let addr = event.key().get_creator_address();
-        let token_code = evt.token_code();
-        self.storage.add_accepted_token(addr, token_code.clone())?;
-        info!("addr {:#x} accept new token {}", addr, token_code);
+        if event.is::<AcceptTokenEvent>() {
+            let evt = event.decode_event::<AcceptTokenEvent>()?;
+            let addr = event.key().get_creator_address();
+            let token_code = evt.token_code();
+            self.storage.add_accepted_token(addr, token_code.clone())?;
+            info!("addr {:#x} accept new token {}", addr, token_code);
+        }
+
         Ok(())
     }
 }

@@ -1,10 +1,10 @@
-use crate::contract_event::ContractEvent;
-use crate::language_storage::TypeTag;
+// Copyright (c) The Diem Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::move_resource::MoveResource;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BlockRewardEvent {
@@ -23,15 +23,4 @@ impl BlockRewardEvent {
 impl MoveResource for BlockRewardEvent {
     const MODULE_NAME: &'static str = "BlockReward";
     const STRUCT_NAME: &'static str = "BlockRewardEvent";
-}
-
-impl TryFrom<&ContractEvent> for BlockRewardEvent {
-    type Error = anyhow::Error;
-
-    fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag() != &TypeTag::Struct(BlockRewardEvent::struct_tag()) {
-            anyhow::bail!("Expected {}", Self::STRUCT_NAME);
-        }
-        Self::try_from_bytes(event.event_data())
-    }
 }

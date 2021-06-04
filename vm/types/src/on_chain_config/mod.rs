@@ -50,6 +50,15 @@ impl ConfigID {
             self.3,
         )
     }
+
+    pub fn struct_tag(self) -> StructTag {
+        StructTag {
+            address: AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
+            module: Identifier::new(self.1).expect("failed to get Identifier"),
+            name: Identifier::new(self.2).expect("failed to get Identifier"),
+            type_params: self.3,
+        }
+    }
 }
 
 #[allow(clippy::vec_init_then_push)]
