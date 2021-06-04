@@ -24,6 +24,7 @@ pub struct AccountResource {
 }
 
 impl AccountResource {
+    pub const DUMMY_AUTH_KEY: [u8; 32] = [0; 32];
     /// Constructs an Account resource.
     pub fn new(
         sequence_number: u64,

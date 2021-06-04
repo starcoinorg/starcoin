@@ -2,7 +2,7 @@ use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::account_config::BlockRewardEvent;
-use std::convert::TryFrom;
+use test_helper::executor::expect_decode_event;
 use test_helper::{
     dao::empty_txn_payload,
     executor::{
@@ -56,12 +56,7 @@ fn test_block_reward() -> Result<()> {
             ),
         )?;
 
-        let block_reward_event = output
-            .events()
-            .iter()
-            .find_map(|event| BlockRewardEvent::try_from(event).ok());
-        assert!(block_reward_event.is_some());
-        let block_reward_event = block_reward_event.unwrap();
+        let block_reward_event = expect_decode_event::<BlockRewardEvent>(&output);
         assert_eq!(&block_reward_event.miner, alice.address());
         assert_eq!(block_reward_event.block_number, 1);
         assert_eq!(block_reward_event.gas_fees, 0);
@@ -86,12 +81,7 @@ fn test_block_reward() -> Result<()> {
                 0,
             ),
         )?;
-        let block_reward_event = output
-            .events()
-            .iter()
-            .find_map(|event| BlockRewardEvent::try_from(event).ok());
-        assert!(block_reward_event.is_some());
-        let block_reward_event = block_reward_event.unwrap();
+        let block_reward_event = expect_decode_event::<BlockRewardEvent>(&output);
         assert_eq!(&block_reward_event.miner, bob.address());
         assert_eq!(block_reward_event.block_number, 2);
         assert_eq!(block_reward_event.gas_fees, gas_fees as u128);

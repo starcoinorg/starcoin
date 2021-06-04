@@ -1,13 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use crate::{encode_create_account_script_function, Account};
 use anyhow::anyhow;
 use anyhow::Result;
 use logger::prelude::*;
+use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
+use starcoin_executor::{encode_create_account_script_function, Account};
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_transaction_builder::{
+    raw_peer_to_peer_txn_v2, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
+};
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
@@ -17,10 +19,11 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::token::stc::stc_type_tag;
+use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -36,6 +39,8 @@ use test_helper::executor::{
     prepare_genesis,
 };
 // use test_helper::Account;
+use starcoin_state_api::StateReaderExt;
+use starcoin_types::account_config::STC_TOKEN_CODE;
 use starcoin_vm_types::account_config::core_code_address;
 use vm_runtime::starcoin_vm::StarcoinVM;
 
@@ -100,41 +105,6 @@ fn test_consensus_config_get() -> Result<()> {
         .ok_or_else(|| anyhow::format_err!("fail to serialize contract result"))?;
     let config = ConsensusConfig::deserialize_into_config(r.as_slice())?;
     assert_eq!(config.strategy, 0);
-    Ok(())
-}
-
-#[stest::test]
-fn test_gen_accounts() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
-    let alice = Account::new();
-    let bob = Account::new();
-    let mut address_vec = alice.address().to_vec();
-    address_vec.extend_from_slice(bob.address().to_vec().as_slice());
-    let mut auth_key_vec = alice.auth_key().to_vec();
-    auth_key_vec.extend_from_slice(bob.auth_key().to_vec().as_slice());
-    (1..8).for_each(|_| {
-        let account = Account::new();
-        address_vec.extend_from_slice(account.address().to_vec().as_slice());
-        auth_key_vec.extend_from_slice(account.auth_key().to_vec().as_slice());
-    });
-    let script_function = ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("TransferScripts").unwrap(),
-        ),
-        Identifier::new("peer_to_peer_batch").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&address_vec).unwrap(),
-            bcs_ext::to_bytes(&auth_key_vec).unwrap(),
-            bcs_ext::to_bytes(&1u128).unwrap(),
-        ],
-    );
-    association_execute_should_success(
-        &net,
-        &chain_state,
-        TransactionPayload::ScriptFunction(script_function),
-    )?;
     Ok(())
 }
 
@@ -429,7 +399,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net.chain_id(),
         ));
-        crate::execute_transactions(&chain_state, vec![txn])
+        starcoin_executor::execute_transactions(&chain_state, vec![txn])
             .unwrap()
             .pop()
             .expect("Output must exist.")
@@ -469,7 +439,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         assert_eq!(max_include_txn_num, txns.len() as u64);
 
         txns.insert(0, Transaction::BlockMetadata(block_meta));
-        let executed_data = crate::block_execute(&chain_state, txns, block_gas_limit)?;
+        let executed_data = starcoin_executor::block_execute(&chain_state, txns, block_gas_limit)?;
         let txn_infos = executed_data.txn_infos;
 
         // all user txns can be included
@@ -515,7 +485,8 @@ fn test_block_execute_gas_limit() -> Result<()> {
             })
             .collect();
         txns.insert(0, Transaction::BlockMetadata(block_meta2));
-        let txn_infos = crate::block_execute(&chain_state, txns, max_block_gas_limit)?.txn_infos;
+        let txn_infos =
+            starcoin_executor::block_execute(&chain_state, txns, max_block_gas_limit)?.txn_infos;
 
         // not all user txns can be included
         assert_eq!(txn_infos.len() as u64, max_txn_num + 1);
@@ -534,7 +505,7 @@ fn test_validate_sequence_number_too_new() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
     let txn = create_account_txn_sent_as_association(&account1, 10000, 50_000_000, 1, &net);
-    let output = crate::validate_transaction(&chain_state, txn);
+    let output = starcoin_executor::validate_transaction(&chain_state, txn);
     assert_eq!(output, None);
     Ok(())
 }
@@ -547,7 +518,7 @@ fn test_validate_sequence_number_too_old() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn1));
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
     let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, &net);
-    let output = crate::validate_transaction(&chain_state, txn2);
+    let output = starcoin_executor::validate_transaction(&chain_state, txn2);
     assert!(
         output.is_some(),
         "expect validate transaction return VMStatus, but get None "
@@ -575,7 +546,7 @@ fn test_validate_txn() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = crate::build_transfer_txn(
+    let raw_txn = starcoin_executor::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         Some(account2.auth_key()),
@@ -587,7 +558,7 @@ fn test_validate_txn() -> Result<()> {
         net.chain_id(),
     );
     let txn2 = account1.sign_txn(raw_txn);
-    let output = crate::validate_transaction(&chain_state, txn2);
+    let output = starcoin_executor::validate_transaction(&chain_state, txn2);
     assert_eq!(output, None);
     Ok(())
 }
@@ -605,7 +576,7 @@ fn test_validate_txn_chain_id() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = crate::build_transfer_txn(
+    let raw_txn = starcoin_executor::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         Some(account2.auth_key()),
@@ -714,7 +685,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
     let account = Account::new();
-    let txn = crate::build_transfer_from_association(
+    let txn = starcoin_executor::build_transfer_from_association(
         *account.address(),
         Some(account.auth_key()),
         0,
@@ -722,7 +693,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
         1,
         &net,
     );
-    let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
+    let output = starcoin_executor::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
 
     Ok(())
@@ -741,7 +712,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = crate::build_transfer_txn(
+    let raw_txn = starcoin_executor::build_transfer_txn(
         *account1.address(),
         *account2.address(),
         Some(account2.auth_key()),
@@ -754,8 +725,87 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     );
 
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
-    let output = crate::execute_transactions(&chain_state, vec![txn2]).unwrap();
+    let output = starcoin_executor::execute_transactions(&chain_state, vec![txn2]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_execute_transfer_txn_v2_with_starcoin_vm() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1,
+        0,
+        STCUnit::STC.value_of(100).scaling(),
+        1,
+        &net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+
+    let account2 = Account::new();
+
+    let raw_txn = raw_peer_to_peer_txn_v2(
+        *account1.address(),
+        *account2.address(),
+        STCUnit::STC.value_of(1).scaling(),
+        0,
+        1,
+        DEFAULT_MAX_GAS_AMOUNT,
+        STC_TOKEN_CODE.clone(),
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        net.chain_id(),
+    );
+
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
+    let output = execute_and_apply(&chain_state, txn2);
+    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
+    let account_resource = chain_state
+        .get_account_resource(*account2.address())?
+        .expect("account resource should exist.");
+
+    // auth_key is empty when account create.
+    assert_eq!(
+        account_resource.authentication_key(),
+        &AccountResource::DUMMY_AUTH_KEY
+    );
+
+    let raw_txn = raw_peer_to_peer_txn_v2(
+        *account2.address(),
+        *account1.address(),
+        1000,
+        0,
+        1,
+        DEFAULT_MAX_GAS_AMOUNT,
+        STC_TOKEN_CODE.clone(),
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        net.chain_id(),
+    );
+
+    // account1 try to transfer stc from account2, will discard.
+    let txn3 = Transaction::UserTransaction(account1.sign_txn(raw_txn.clone()));
+    let output = execute_and_apply(&chain_state, txn3);
+    assert_eq!(
+        StatusCode::INVALID_AUTH_KEY,
+        output.status().status().err().unwrap()
+    );
+
+    let txn4 = Transaction::UserTransaction(account2.sign_txn(raw_txn));
+    let output = execute_and_apply(&chain_state, txn4);
+    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
+
+    let account_resource = chain_state
+        .get_account_resource(*account2.address())?
+        .expect("account resource should exist.");
+
+    // account2's auth_key will set in txn epilogue_v2 when execute first transaction.
+    assert_eq!(
+        account_resource.authentication_key(),
+        account2.auth_key().to_vec().as_slice()
+    );
 
     Ok(())
 }
@@ -773,31 +823,33 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
 
     let account2 = Account::new();
 
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
-        *account1.address(),
-        *account2.address(),
-        Some(account2.auth_key()),
-        0,
-        1000,
-        1,
-        DEFAULT_MAX_GAS_AMOUNT,
-        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        net.chain_id(),
-    )));
+    let txn2 =
+        Transaction::UserTransaction(account1.sign_txn(starcoin_executor::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            Some(account2.auth_key()),
+            0,
+            1000,
+            1,
+            DEFAULT_MAX_GAS_AMOUNT,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net.chain_id(),
+        )));
 
-    let txn3 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
-        *account1.address(),
-        *account2.address(),
-        Some(account2.auth_key()),
-        1,
-        1000,
-        1,
-        DEFAULT_MAX_GAS_AMOUNT,
-        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        net.chain_id(),
-    )));
+    let txn3 =
+        Transaction::UserTransaction(account1.sign_txn(starcoin_executor::build_transfer_txn(
+            *account1.address(),
+            *account2.address(),
+            Some(account2.auth_key()),
+            1,
+            1000,
+            1,
+            DEFAULT_MAX_GAS_AMOUNT,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net.chain_id(),
+        )));
 
-    let output = crate::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
+    let output = starcoin_executor::execute_transactions(&chain_state, vec![txn2, txn3]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
     assert_eq!(KeptVMStatus::Executed, output[1].status().status().unwrap());
 
@@ -814,7 +866,7 @@ fn test_sequence_number() -> Result<()> {
         get_sequence_number(account_config::association_address(), &chain_state);
 
     let account = Account::new();
-    let txn = crate::build_transfer_from_association(
+    let txn = starcoin_executor::build_transfer_from_association(
         *account.address(),
         Some(account.auth_key()),
         old_sequence_number,
@@ -838,7 +890,7 @@ fn test_gas_used() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
     let account = Account::new();
-    let txn = crate::build_transfer_from_association(
+    let txn = starcoin_executor::build_transfer_from_association(
         *account.address(),
         Some(account.auth_key()),
         0,
@@ -885,7 +937,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
         net.chain_id(),
     ));
 
-    let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
+    let output = starcoin_executor::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
 
     //upgrade, add new method.
@@ -912,7 +964,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
         net.chain_id(),
     ));
 
-    let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
+    let output = starcoin_executor::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
 
     Ok(())

@@ -41,13 +41,6 @@ starcoin -n main console
 
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/runnetwork/).
 
-## Network deployment status
-
-1. halley: auto deploy latest code.
-2. proxima: v1.0.0-rc
-3. barnard: v1.0.0-rc
-4. main: v1.0.0-rc
-
 ## Contribution
 Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.
 

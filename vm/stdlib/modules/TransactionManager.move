@@ -18,6 +18,7 @@ module TransactionManager {
     use 0x1::TransactionPublishOption;
     use 0x1::Epoch;
     use 0x1::Hash;
+    use 0x1::Vector;
 
     spec module {
         pragma verify = false;
@@ -44,7 +45,7 @@ module TransactionManager {
         account: signer,
         txn_sender: address,
         txn_sequence_number: u64,
-        txn_public_key: vector<u8>,
+        txn_authentication_key_preimage: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         txn_expiration_time: u64,
@@ -65,7 +66,7 @@ module TransactionManager {
             &account,
             txn_sender,
             txn_sequence_number,
-            txn_public_key,
+            txn_authentication_key_preimage,
             txn_gas_price,
             txn_max_gas_units,
         );
@@ -103,7 +104,7 @@ module TransactionManager {
         aborts_if !exists<ChainId::ChainId>(CoreAddresses::GENESIS_ADDRESS());
         aborts_if ChainId::get() != chain_id;
         aborts_if !exists<Account::Account>(txn_sender);
-        aborts_if Hash::sha3_256(txn_public_key) != global<Account::Account>(txn_sender).authentication_key;
+        aborts_if Hash::sha3_256(txn_authentication_key_preimage) != global<Account::Account>(txn_sender).authentication_key;
         aborts_if txn_gas_price * txn_max_gas_units > max_u64();
         include Timestamp::AbortsIfTimestampNotExists;
         include Block::AbortsIfBlockMetadataNotExist;
@@ -138,11 +139,31 @@ module TransactionManager {
         // txn execute success or fail.
         success: bool,
     ) {
+        epilogue_v2<TokenType>(account, txn_sender, txn_sequence_number, Vector::empty(), txn_gas_price, txn_max_gas_units, gas_units_remaining, txn_payload_type, _txn_script_or_package_hash, txn_package_address, success)
+    }
+
+    /// The epilogue is invoked at the end of transactions.
+    /// It collects gas and bumps the sequence number
+    public fun epilogue_v2<TokenType: store>(
+        account: signer,
+        txn_sender: address,
+        txn_sequence_number: u64,
+        txn_authentication_key_preimage: vector<u8>,
+        txn_gas_price: u64,
+        txn_max_gas_units: u64,
+        gas_units_remaining: u64,
+        txn_payload_type: u8,
+        _txn_script_or_package_hash: vector<u8>,
+        txn_package_address: address,
+        // txn execute success or fail.
+        success: bool,
+    ) {
         CoreAddresses::assert_genesis_address(&account);
-        Account::txn_epilogue<TokenType>(
+        Account::txn_epilogue_v2<TokenType>(
             &account,
             txn_sender,
             txn_sequence_number,
+            txn_authentication_key_preimage,
             txn_gas_price,
             txn_max_gas_units,
             gas_units_remaining,

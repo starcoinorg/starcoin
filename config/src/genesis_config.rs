@@ -933,11 +933,12 @@ pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    let stdlib_version = StdlibVersion::Version(4);
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(
             GenesisBlockParameter{
                 parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-                timestamp: 1618880879000,
+                timestamp: 1622795165000,
                 difficulty: 100.into(),
             }
         ),
@@ -949,7 +950,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: V1_GAS_SCHEDULE.clone(),
         },
-        publishing_option: TransactionPublishOption::open(),
+        publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -970,7 +971,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Version(1),
+        stdlib_version,
         dao_config: DaoConfig {
             voting_delay: 60 * 1000,          // 1 minute
             voting_period: 30 * 60 * 1000, // 30 minute

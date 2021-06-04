@@ -38,3 +38,5 @@ pub static PROLOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("prolo
 pub static BLOCK_PROLOGUE_NAME: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("block_prologue").unwrap());
 pub static EPILOGUE_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("epilogue").unwrap());
+pub static EPILOGUE_V2_NAME: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("epilogue_v2").unwrap());

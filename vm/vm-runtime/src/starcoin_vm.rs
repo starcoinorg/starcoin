@@ -14,6 +14,7 @@ use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
 use starcoin_move_compiler::check_module_compat;
+use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
     access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
 };
@@ -28,12 +29,15 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{
-    genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource, EPILOGUE_NAME, PROLOGUE_NAME,
+    genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource, EPILOGUE_NAME,
+    EPILOGUE_V2_NAME, PROLOGUE_NAME,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{DryRunTransaction, Module, Package, TransactionPayloadType};
@@ -86,7 +90,7 @@ impl StarcoinVM {
             self.vm_config = Some(VMConfig {
                 gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             });
-            self.version = Some(Version { major: 0 });
+            self.version = Some(Version { major: 1 });
             Ok(())
         } else {
             self.load_configs_impl(state)
@@ -511,7 +515,7 @@ impl StarcoinVM {
         let genesis_address = genesis_address();
         let gas_token_ty = txn_data.gas_token_code().into();
         let txn_sequence_number = txn_data.sequence_number();
-        let txn_public_key = txn_data.authentication_key_preimage().to_vec();
+        let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let txn_expiration_time = txn_data.expiration_time_secs();
@@ -540,7 +544,7 @@ impl StarcoinVM {
                     MoveValue::Signer(genesis_address),
                     MoveValue::Address(txn_data.sender),
                     MoveValue::U64(txn_sequence_number),
-                    MoveValue::vector_u8(txn_public_key),
+                    MoveValue::vector_u8(authentication_key_preimage),
                     MoveValue::U64(txn_gas_price),
                     MoveValue::U64(txn_max_gas_amount),
                     MoveValue::U64(txn_expiration_time),
@@ -567,6 +571,7 @@ impl StarcoinVM {
         let genesis_address = genesis_address();
         let gas_token_ty = txn_data.gas_token_code().into();
         let txn_sequence_number = txn_data.sequence_number();
+        let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let gas_remaining = cost_strategy.remaining_gas().get();
@@ -583,12 +588,29 @@ impl StarcoinVM {
                 AccountAddress::ZERO,
             ),
         };
-        // Run epilogue by genesis account
-        session
-            .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
+        let stdlib_version = self.get_version()?.into_stdlib_version();
+        // Run epilogue by genesis account, second arg is txn sender.
+        // From stdlib v5, the epilogue function add `txn_authentication_key_preimage` argument, change to epilogue_v2
+        let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {
+            (
+                &EPILOGUE_V2_NAME,
+                serialize_values(&vec![
+                    MoveValue::Signer(genesis_address),
+                    MoveValue::Address(txn_data.sender),
+                    MoveValue::U64(txn_sequence_number),
+                    MoveValue::vector_u8(txn_authentication_key_preimage),
+                    MoveValue::U64(txn_gas_price),
+                    MoveValue::U64(txn_max_gas_amount),
+                    MoveValue::U64(gas_remaining),
+                    MoveValue::U8(payload_type.into()),
+                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
+                    MoveValue::Address(package_address),
+                    MoveValue::Bool(success),
+                ]),
+            )
+        } else {
+            (
                 &EPILOGUE_NAME,
-                vec![gas_token_ty],
                 serialize_values(&vec![
                     MoveValue::Signer(genesis_address),
                     MoveValue::Address(txn_data.sender),
@@ -601,6 +623,14 @@ impl StarcoinVM {
                     MoveValue::Address(package_address),
                     MoveValue::Bool(success),
                 ]),
+            )
+        };
+        session
+            .execute_function(
+                &account_config::TRANSACTION_MANAGER_MODULE,
+                function_name,
+                vec![gas_token_ty],
+                args,
                 cost_strategy,
             )
             .map(|_return_vals| ())
@@ -808,6 +838,24 @@ impl StarcoinVM {
         })
     }
 
+    fn check_reconfigure(
+        &mut self,
+        state_view: &dyn StateView,
+        output: &TransactionOutput,
+    ) -> Result<(), Error> {
+        for event in output.events() {
+            if event.key().get_creator_address() == genesis_address()
+                && (event.is::<UpgradeEvent>()
+                    || event.is::<ConfigChangeEvent<VMConfig>>()
+                    || event.is::<ConfigChangeEvent<Version>>())
+            {
+                info!("Load vm configs trigger by reconfigure event. ");
+                self.load_configs(state_view)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Execute a block transactions with gas_limit,
     /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
     pub fn execute_block_transactions(
@@ -847,6 +895,7 @@ impl StarcoinVM {
                             }
                             data_cache.push_write_set(output.write_set())
                         }
+                        self.check_reconfigure(&data_cache, &output)?;
                         result.push((status, output));
                     }
                 }

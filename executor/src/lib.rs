@@ -21,12 +21,8 @@ pub mod error_code_test;
 
 mod executor;
 #[cfg(test)]
-pub mod executor_test;
-#[cfg(test)]
 pub mod module_compatibility_test;
 #[cfg(test)]
 pub mod readonly_function_call_test;
 #[cfg(test)]
 pub mod script_function_test;
-#[cfg(test)]
-pub mod stdlib_test;
