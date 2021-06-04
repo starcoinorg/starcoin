@@ -97,7 +97,7 @@ The CLI supports passing non-`signer` arguments to `move run` via `--args`. The 
 When executing a transaction script you'll often want to call into different Move
 modules like in the example above with the `Debug` module. New modules can be added to the `src/modules`
 directory in the directory where the CLI is being invoked (or a directory
-of your choosing specified via the `--source-dir` flag). The `move run`
+of your choosing specified via the `[SOURCE_FILE]` argument). The `move run`
 command will compile and publish each module source file in this directory
 before running the given script. You can also compile and publish modules
 separately if you want as well.
@@ -288,7 +288,23 @@ are the following:
   all of the other modules that comprise the Starcoin Framework as defined
   [here](https://github.com/starcoinorg/starcoin/blob/master/vm/stdlib/modules/doc).
 * **starcoin:** In this mode, you can use modules already existed on starcoin network 
-  which is determined by `--starcoin-rpc` arguments, default to main network.
+  which is determined by `--starcoin-rpc` and `--block-number` arguments, default to the latest state of main network.
+  An example is reading current block number:
+
+  ```move
+  script {
+  use 0x1::Block;
+  use 0x1::Debug;
+  fun main() {
+    Debug::print(&Block::get_current_block_number());
+  }
+  }
+  ```
+  execute the script will print the latest block number of chain.
+  ```
+  $ move run src/scripts/test_script.move --mode starcoin
+  [debug] 278342
+  ```
 
 ## Detecting breaking changes
 
