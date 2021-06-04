@@ -194,6 +194,34 @@ pub fn raw_peer_to_peer_txn(
     )
 }
 
+pub fn raw_peer_to_peer_txn_v2(
+    sender: AccountAddress,
+    receiver: AccountAddress,
+    transfer_amount: u128,
+    seq_num: u64,
+    gas_price: u64,
+    max_gas: u64,
+    token_code: TokenCode,
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+) -> RawUserTransaction {
+    RawUserTransaction::new_with_default_gas_token(
+        sender,
+        seq_num,
+        TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code_v2(
+            //TODO should use latest?
+            StdlibVersion::Latest,
+            receiver,
+            transfer_amount,
+            token_code,
+        )),
+        max_gas,
+        gas_price,
+        expiration_timestamp_secs,
+        chain_id,
+    )
+}
+
 pub fn raw_accept_token_txn(
     sender: AccountAddress,
     seq_num: u64,
@@ -255,6 +283,14 @@ pub fn encode_transfer_script_function(
     )
 }
 
+pub fn encode_transfer_script_function_v2(
+    version: StdlibVersion,
+    recipient: AccountAddress,
+    amount: u128,
+) -> ScriptFunction {
+    encode_transfer_script_by_token_code_v2(version, recipient, amount, STC_TOKEN_CODE.clone())
+}
+
 pub fn encode_transfer_script_by_token_code(
     _version: StdlibVersion,
     recipient: AccountAddress,
@@ -272,6 +308,26 @@ pub fn encode_transfer_script_by_token_code(
         vec![
             bcs_ext::to_bytes(&recipient).unwrap(),
             bcs_ext::to_bytes(&recipient_auth_key.map(|k| k.to_vec()).unwrap_or_default()).unwrap(),
+            bcs_ext::to_bytes(&amount).unwrap(),
+        ],
+    )
+}
+
+pub fn encode_transfer_script_by_token_code_v2(
+    _version: StdlibVersion,
+    recipient: AccountAddress,
+    amount: u128,
+    token_code: TokenCode,
+) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("peer_to_peer_v2").unwrap(),
+        vec![token_code.into()],
+        vec![
+            bcs_ext::to_bytes(&recipient).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
         ],
     )

@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{encode_create_account_script_function, execute_readonly_function};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_config::stc_type_tag;
