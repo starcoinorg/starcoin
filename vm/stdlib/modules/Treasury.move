@@ -301,5 +301,11 @@ module Treasury {
     public fun get_linear_withdraw_capability_start_time<TokenT: store>(cap: &LinearWithdrawCapability<TokenT>):u64 {
         cap.start_time
     }
+
+    spec module {
+        define spec_balance<TokenType>(): u128 {
+            global<Treasury<TokenType>>(Token::SPEC_TOKEN_TEST_ADDRESS()).balance.value
+        }
+    }
 }
 }
