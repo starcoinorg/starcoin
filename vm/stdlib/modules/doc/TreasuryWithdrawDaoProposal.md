@@ -121,6 +121,16 @@ Only receiver can execute TreasuryWithdrawDaoProposal
 
 
 
+<a name="0x1_TreasuryWithdrawDaoProposal_ERR_TOO_MANY_WITHDRAW_AMOUNT"></a>
+
+The withdraw amount of propose is too many.
+
+
+<pre><code><b>const</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_ERR_TOO_MANY_WITHDRAW_AMOUNT">ERR_TOO_MANY_WITHDRAW_AMOUNT</a>: u64 = 103;
+</code></pre>
+
+
+
 <a name="0x1_TreasuryWithdrawDaoProposal_plugin"></a>
 
 ## Function `plugin`
@@ -166,6 +176,8 @@ Entrypoint for the proposal.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
+    <b>let</b> quorum_votes = <a href="Dao.md#0x1_Dao_quorum_votes">Dao::quorum_votes</a>&lt;TokenT&gt;();
+    <b>assert</b>(amount &lt;= quorum_votes,  <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_ERR_TOO_MANY_WITHDRAW_AMOUNT">ERR_TOO_MANY_WITHDRAW_AMOUNT</a>));
     <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a>&gt;(
         signer,
         <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a> { receiver, amount, period },
@@ -291,12 +303,15 @@ This approach is not graceful, but restricts the operation to genesis accounts o
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<a name="0x1_TreasuryWithdrawDaoProposal_quorum_votes$5"></a>
+<b>let</b> quorum_votes = <a href="Dao.md#0x1_Dao_spec_quorum_votes">Dao::spec_quorum_votes</a>&lt;TokenT&gt;();
+<b>aborts_if</b> amount &gt; quorum_votes;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">Dao::AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">Dao::AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> exec_delay &gt; 0 && exec_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">Dao::spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">Dao::CheckQuorumVotes</a>&lt;TokenT&gt;;
-<a name="0x1_TreasuryWithdrawDaoProposal_sender$5"></a>
+<a name="0x1_TreasuryWithdrawDaoProposal_sender$6"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a>&gt;&gt;(sender);
 </code></pre>
@@ -315,10 +330,10 @@ This approach is not graceful, but restricts the operation to genesis accounts o
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
-<a name="0x1_TreasuryWithdrawDaoProposal_expected_states$6"></a>
+<a name="0x1_TreasuryWithdrawDaoProposal_expected_states$7"></a>
 <b>let</b> expected_states = singleton_vector(6);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">Dao::CheckProposalStates</a>&lt;TokenT, <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a>&gt;{expected_states};
-<a name="0x1_TreasuryWithdrawDaoProposal_proposal$7"></a>
+<a name="0x1_TreasuryWithdrawDaoProposal_proposal$8"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WithdrawToken">WithdrawToken</a>&gt;&gt;(proposer_address);
 <b>aborts_if</b> <a href="Option.md#0x1_Option_is_none">Option::is_none</a>(proposal.action);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="TreasuryWithdrawDaoProposal.md#0x1_TreasuryWithdrawDaoProposal_WrappedWithdrawCapability">WrappedWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());

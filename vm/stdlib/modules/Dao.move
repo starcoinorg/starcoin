@@ -877,7 +877,7 @@ module Dao {
     }
 
     spec define spec_quorum_votes<TokenT: copy + drop + store>(): u128 {
-        let supply = Token::spec_abstract_total_value<TokenT>();
+        let supply = Token::spec_abstract_total_value<TokenT>() - Treasury::spec_balance<TokenT>();
         supply * spec_dao_config<TokenT>().voting_quorum_rate / 100
     }
 

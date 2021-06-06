@@ -32,6 +32,8 @@ module TreasuryWithdrawDaoProposal {
     const ERR_NOT_AUTHORIZED: u64 = 101;
     /// Only receiver can execute TreasuryWithdrawDaoProposal
     const ERR_NEED_RECEIVER_TO_EXECUTE: u64 = 102;
+    /// The withdraw amount of propose is too many.
+    const ERR_TOO_MANY_WITHDRAW_AMOUNT: u64 = 103;
 
     /// Plugin method of the module.
     /// Should be called by token issuer.
@@ -55,6 +57,8 @@ module TreasuryWithdrawDaoProposal {
 
     /// Entrypoint for the proposal.
     public fun propose_withdraw<TokenT: copy + drop + store>(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
+        let quorum_votes = Dao::quorum_votes<TokenT>();
+        assert(amount <= quorum_votes,  Errors::invalid_argument(ERR_TOO_MANY_WITHDRAW_AMOUNT));
         Dao::propose<TokenT, WithdrawToken>(
             signer,
             WithdrawToken { receiver, amount, period },
@@ -65,7 +69,8 @@ module TreasuryWithdrawDaoProposal {
         use 0x1::Timestamp;
         use 0x1::CoreAddresses;
         pragma aborts_if_is_partial = false;
-
+        let quorum_votes = Dao::spec_quorum_votes<TokenT>();
+        aborts_if amount > quorum_votes;
         // copy from Dao::propose spec.
         include Dao::AbortIfDaoConfigNotExist<TokenT>;
         include Dao::AbortIfDaoInfoNotExist<TokenT>;

@@ -2312,7 +2312,7 @@ set min action delay
 
 
 <pre><code><b>define</b> <a href="Dao.md#0x1_Dao_spec_quorum_votes">spec_quorum_votes</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(): u128 {
-   <b>let</b> supply = <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;TokenT&gt;();
+   <b>let</b> supply = <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;TokenT&gt;() - <a href="Treasury.md#0x1_Treasury_spec_balance">Treasury::spec_balance</a>&lt;TokenT&gt;();
    supply * <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().voting_quorum_rate / 100
 }
 </code></pre>

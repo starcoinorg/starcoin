@@ -963,6 +963,17 @@ Get LinearWithdrawCapability start_time in seconds
 
 
 
+
+<a name="0x1_Treasury_spec_balance"></a>
+
+
+<pre><code><b>define</b> <a href="Treasury.md#0x1_Treasury_spec_balance">spec_balance</a>&lt;TokenType&gt;(): u128 {
+    <b>global</b>&lt;<a href="Treasury.md#0x1_Treasury">Treasury</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>()).balance.value
+}
+</code></pre>
+
+
+
 <a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
