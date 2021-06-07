@@ -138,17 +138,18 @@ Feature: cmd integration test
     Then cmd: "account unlock @$.account.address@"
     Then cmd: "dev get_coin"
     Then cmd: "account show"
-    Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples -s @$.account.address@"
+    Then cmd: "dev compile ../examples/my_token/MyToken.move -o ../examples -s @$.account.address@"
     Then cmd: "dev deploy --blocking @$.result@"
     Then cmd: "account show"
-    Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples -s @$.account.address@"
-    Then cmd: "account execute-script --blocking @$.result@"
+    Then cmd: "account execute-function --function @$.account.address@::MyToken::init --blocking"
     Then cmd: "chain get_txn @$.txn_hash@"
     Then cmd: "account show"
-    Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples -s @$.account.address@"
-    Then cmd: "account execute-script @$.result@ --blocking --arg 1000000u128"
+    Then cmd: "account execute-function --function @$.account.address@::MyToken::mint --blocking --arg 1000000u128"
 #    Then assert: "$.status Executed"
     Then cmd: "chain get_txn @$.txn_hash@"
+# TODO check MyToken balance.
+#    Then cmd: "account show"
+#    Then assert: "$.account.balances.MyToken 1000000"
     Then stop
 
     Examples:
