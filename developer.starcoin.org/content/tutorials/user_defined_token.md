@@ -16,50 +16,41 @@ In this document, I will use `aa5d01819bb5b6c5fece4eef943fde9c`, the default acc
 First, compile my_token module. The compiled bytecode will be output to `MyToken.mv` under the directory specified by `-o` parameter, or a temp dir if emit the `-o` parameter.
 
 ```bash
-starcoin% dev compile -o examples examples/my_token/module/MyToken.move
+starcoin% dev compile -o examples examples/my_token/MyToken.move
 ```
 
-Then, to compile the three scripts. The scripts depend on my_token module, so pass the dependency through `-d`.
-
-```bash
-starcoin% dev compile -o examples examples/my_token/scripts/init.move -d examples/my_token/module/MyToken.move
-```
-
-```bash
-starcoin% dev compile -o examples examples/my_token/scripts/mint.move -d examples/my_token/module/MyToken.move
-```
-
-Last, unlock the default account and deploy MyToken module.
+Then, unlock the default account and deploy MyToken module.
 
 ```bash
 starcoin% account unlock
 starcoin% dev deploy examples/MyToken.mv
 ```
-# Execute scripts
+# Execute script function
 
 First, use the default account init module.
+
 ```bash
-starcoin% account execute-script examples/init.mv --blocking
+starcoin% account execute-function --function 0xaa5d01819bb5b6c5fece4eef943fde9c::MyToken::init --blocking
 ```
 
 Second, use the default account mint some MyToken.
 ```bash
-starcoin% account execute-script examples/mint.mv --arg 1000000u128 --blocking
+starcoin% account execute-function --function 0xaa5d01819bb5b6c5fece4eef943fde9c::MyToken::mint --blocking --arg 1000000u128
 ```
 
 Third, the second account accept the new Token. An account can accept the Token only if has adopted the Token.
 ```bash
-starcoin% account accept_token -s 353c411064ee39efaf2f3d115c55166a 0xaa5d01819bb5b6c5fece4eef943fde9c::MyToken::MyToken --blocking
+starcoin% account accept_token -s 0x353c411064ee39efaf2f3d115c55166a 0xaa5d01819bb5b6c5fece4eef943fde9c::MyToken::MyToken --blocking
 ```
 
 Fourth, the default account transfer 1000 MyToken to the second user.
 ```bash
-starcoin% account transfer -r 353c411064ee39efaf2f3d115c55166a -v 1000 -t 0xaa5d01819bb5b6c5fece4eef943fde9c::MyToken::MyToken --blocking
+starcoin% account transfer -r 0x353c411064ee39efaf2f3d115c55166a -v 1000 -t 0xaa5d01819bb5b6c5fece4eef943fde9c::MyToken::MyToken --blocking
 ```
 
 Last, show balances of second user.
 ```bash
-starcoin% account show 353c411064ee39efaf2f3d115c55166a
+starcoin% account show 0x353c411064ee39efaf2f3d115c55166a
 +--------------------+------------------------------------------------------------------+
 | account.address    | 353c411064ee39efaf2f3d115c55166a                                 |
 +--------------------+------------------------------------------------------------------+
