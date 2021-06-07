@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::StringView;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::temp_path;
 use starcoin_move_compiler::{compile_source_string_no_report, errors};
@@ -79,7 +79,11 @@ impl CommandAction for CompileCommand {
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
         let (sources, compile_result) = compile_source_string_no_report(
-            std::fs::read_to_string(source_file_path)?.as_str(),
+            std::fs::read_to_string(source_file_path)
+                .map_err(|e| {
+                    format_err!("read source file({:?}) error: {:?}", source_file_path, e)
+                })?
+                .as_str(),
             &deps,
             sender,
         )?;
@@ -119,19 +123,27 @@ impl CommandAction for CompileCommand {
             }
         };
 
-        let mut txn_path = ctx
+        let mut out_dir = ctx
             .opt()
             .out_dir
             .clone()
             .unwrap_or_else(|| ctx.state().temp_dir().to_path_buf());
-
-        txn_path.push(source_file_path.file_name().unwrap());
-        txn_path.set_extension(stdlib::COMPILED_EXTENSION);
-        let mut file = File::create(txn_path.clone()).expect("unable create out file");
+        if !out_dir.exists() {
+            std::fs::create_dir_all(out_dir.as_path())
+                .map_err(|e| format_err!("make out_dir({:?}) error: {:?}", out_dir, e))?;
+        }
+        ensure!(out_dir.is_dir(), "out_dir should is a dir.");
+        out_dir.push(source_file_path.file_name().unwrap());
+        out_dir.set_extension(stdlib::COMPILED_EXTENSION);
+        let mut file = File::create(out_dir.clone())
+            .map_err(|e| format_err!("create file({:?} error: {:?})", out_dir, e))?;
         file.write_all(&compile_unit.serialize())
             .expect("write out file error");
         Ok(StringView {
-            result: txn_path.to_str().unwrap().to_string(),
+            result: out_dir
+                .to_str()
+                .expect("out_dir to string should success")
+                .to_string(),
         })
     }
 }
