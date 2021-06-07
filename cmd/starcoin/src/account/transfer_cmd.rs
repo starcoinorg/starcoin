@@ -108,26 +108,11 @@ impl CommandAction for TransferCommand {
         };
         let (receiver_address, receiver_auth_key) = match receiver {
             AddressOrReceipt::Address(receiver) => {
-                let receiver_exist_on_chain = account_state_reader
-                    .get_account_resource(&receiver)?
-                    .is_some();
-                let receiver_public_key = if receiver_exist_on_chain {
-                    None
-                } else {
-                    let k = opt
-                        .public_key
-                        .as_ref()
-                        .ok_or_else(|| {
-                            format_err!(
-                                "receiver account {} not exist on chain, please provide public_key",
-                                receiver
-                            )
-                        })
-                        .and_then(|pubkey_str| {
-                            Ok(AccountPublicKey::from_encoded_string(pubkey_str)?)
-                        })?;
-                    Some(k)
-                };
+                let receiver_public_key: Option<AccountPublicKey> = opt
+                    .public_key
+                    .as_ref()
+                    .map(|pubkey_str| AccountPublicKey::from_encoded_string(pubkey_str))
+                    .transpose()?;
                 let receiver_auth_key =
                     receiver_public_key.as_ref().map(|k| k.authentication_key());
                 (receiver, receiver_auth_key)
