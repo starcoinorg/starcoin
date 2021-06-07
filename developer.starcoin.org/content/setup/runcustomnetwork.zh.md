@@ -21,7 +21,7 @@ weight: 7
 ## 生成 genesis 配置文件
 
 ```
-starcoin_generator -n my_chain:123:halley genesis_config
+starcoin_generator -n my_chain:123 --genesis-config halley genesis_config
 ```
 
 该命令将以 `halley` 配置文件为模板， 生成一个名为 genesis_config.json 配置文件在 ~/.starcoin/$chain_name 目录下。然后用任何编辑器修改 ~/.starcoin/$chain_name/genesis_config.json 文件中的参数。
