@@ -19,7 +19,7 @@ log = "0.4.14"
 parking_lot = "0.11.1"
 jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "17.0.0"
-jsonrpc-server-utils = "17.0.0"
+jsonrpc-server-utils = "17.1.0"
 jsonrpc-pubsub = "17.0.0"
 jsonrpc-core-client = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
