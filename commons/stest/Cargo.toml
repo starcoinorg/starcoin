@@ -11,7 +11,7 @@ stest-macro = {path = "./stest-macro"}
 starcoin-logger = {path = "../logger"}
 timeout-join-handler = {path = "../timeout-join-handler"}
 log = "0.4.14"
-actix = "0.10.0"
+actix = "0.12.0"
 actix-rt = "1.1"
 futures = "0.3.12"
 tokio = { version = "0.2", features = ["full"] }

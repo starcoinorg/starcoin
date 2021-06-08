@@ -23,8 +23,8 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1be241f88f3b1e7e9a3fbe3b5a8a0f6915b5a1d7ee0d9a248d3376d01068cc60"
 dependencies = [
- "actix-rt",
- "actix_derive",
+ "actix-rt 1.1.1",
+ "actix_derive 0.5.0",
  "bitflags",
  "bytes 0.5.6",
  "crossbeam-channel 0.4.4",
@@ -40,6 +40,30 @@ dependencies = [
  "tokio-util 0.3.1",
  "trust-dns-proto",
  "trust-dns-resolver",
+]
+
+[[package]]
+name = "actix"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3720d0064a0ce5c0de7bd93bdb0a6caebab2a9b5668746145d7b3b0c5da02914"
+dependencies = [
+ "actix-rt 2.2.0",
+ "actix_derive 0.6.0",
+ "bitflags",
+ "bytes 1.0.1",
+ "crossbeam-channel 0.5.1",
+ "futures-core",
+ "futures-sink",
+ "futures-task",
+ "futures-util",
+ "log 0.4.14",
+ "once_cell",
+ "parking_lot 0.11.1",
+ "pin-project-lite 0.2.6",
+ "smallvec 1.6.1",
+ "tokio 1.4.0",
+ "tokio-util 0.6.5",
 ]
 
 [[package]]
@@ -68,6 +92,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-rt"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc7d7cd957c9ed92288a7c3c96af81fa5291f65247a76a34dac7b6af74e52ba0"
+dependencies = [
+ "futures-core",
+ "tokio 1.4.0",
+]
+
+[[package]]
 name = "actix-threadpool"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -87,6 +121,17 @@ name = "actix_derive"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b95aceadaf327f18f0df5962fedc1bde2f870566a0b9f65c89508a3b1f79334c"
+dependencies = [
+ "proc-macro2 1.0.27",
+ "quote 1.0.9",
+ "syn 1.0.72",
+]
+
+[[package]]
+name = "actix_derive"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d44b8fee1ced9671ba043476deddef739dd0959bf77030b26b738cc591737a7"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
@@ -8203,8 +8248,8 @@ dependencies = [
 name = "starcoin-miner-client"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.12.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "byteorder 1.4.3",
@@ -8377,8 +8422,8 @@ dependencies = [
 name = "starcoin-node"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.12.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "async-trait",
@@ -8563,8 +8608,8 @@ dependencies = [
 name = "starcoin-rpc-client"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.12.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "bcs-ext",
@@ -8621,8 +8666,8 @@ dependencies = [
 name = "starcoin-rpc-server"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.12.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "api-limiter",
  "bcs-ext",
@@ -8690,8 +8735,8 @@ dependencies = [
 name = "starcoin-service-registry"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.12.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "async-trait",
@@ -9174,8 +9219,8 @@ dependencies = [
 name = "stest"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.12.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "futures 0.3.15",
  "log 0.4.14",
@@ -9189,8 +9234,8 @@ dependencies = [
 name = "stest-macro"
 version = "1.2.0"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.10.0",
+ "actix-rt 1.1.1",
  "darling 0.10.2",
  "quote 1.0.9",
  "stest",
