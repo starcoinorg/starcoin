@@ -32,21 +32,10 @@ dev call --function 0x1::Dao::proposal_state -t 0x1::STC::STC -t 0x1::UpgradeMod
 
 ```
 
-如果stdlib当前版本为 1, 改为下面命令：
-
-```bash
-dev call --function 0x1::Dao::proposal_info -t 0x1::STC::STC -t 0x1::UpgradeModuleDaoProposal::UpgradeModule --arg <proposal address>
-dev call --function 0x1::Dao::proposal_state -t 0x1::STC::STC -t 0x1::UpgradeModuleDaoProposal::UpgradeModule --arg <proposal address> --arg <proposal_id>
-```
-
 5. 任何人都可以给状态为 ACTIVE 的提议投赞成或者反对票：
 
 ```bash
 starcoin% account execute-function -s <account address> --function 0x1::DaoVoteScripts::cast_vote -t 0x1::STC::STC -t 0x1::UpgradeModuleDaoProposal::UpgradeModuleV2 --arg <proposal address> --arg <proposal_id> --arg true --arg 2000000000000000u128
-```
-如果stdlib当前版本为 1, 改为下面命令：
-```bash
-starcoin% account execute-function -s <account address> --function 0x1::DaoVoteScripts::cast_vote -t 0x1::STC::STC -t 0x1::UpgradeModuleDaoProposal::UpgradeModule --arg <proposal address> --arg <proposal_id> --arg true --arg 2000000000000000u128
 ```
 
 6. 任何人都可以将状态为 AGREED 的提议放入更新队列：

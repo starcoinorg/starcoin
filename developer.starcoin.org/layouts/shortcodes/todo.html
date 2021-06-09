@@ -1,0 +1,14 @@
+<blockquote class="book-hint {{ .Get 0 }}">
+{{ i18n "check other language version" }}
+<ul>
+{{ range .Page.Translations }}
+    {{ $link := ref . (dict "path" .Page.File.Path "lang" .Language.Lang) }}
+    <li>
+    <a href="{{ $link }}" class="flex align-center">
+        <img src="{{ "svg/translate.svg" | relURL }}" class="book-icon" alt="Languages" />
+        {{ .Language.LanguageName }}
+    </a>
+    </li>
+{{ end }}
+</ul>
+</blockquote>
