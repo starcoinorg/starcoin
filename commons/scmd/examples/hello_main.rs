@@ -60,10 +60,10 @@ impl User {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "list")]
+#[structopt(name = "list", alias = "list_alias")]
 struct ListOpts {
-    #[structopt(long, short = "c", default_value = "5")]
-    count: usize,
+    #[structopt(long, short = "m", default_value = "5")]
+    max_size: usize,
 }
 
 struct ListCommand;
@@ -78,7 +78,7 @@ impl CommandAction for ListCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let count = ctx.opt().count;
+        let count = ctx.opt().max_size;
         let mut users = vec![];
         for i in 0..count {
             users.push(User::random(i));
@@ -258,18 +258,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_execute_command_with_args() -> Result<()> {
+    fn test_execute_command_with_short() -> Result<()> {
         let context = init_context();
-        let count = 10;
+        let max = 10;
         let result = context.exec_with_args::<Vec<User>>(vec![
             "hello",
             "-r",
             "test_required",
             "list",
-            "-c",
-            format!("{}", count).as_str(),
+            "-m",
+            format!("{}", max).as_str(),
         ])?;
-        assert_eq!(result.len(), count);
+        assert_eq!(result.len(), max);
+        Ok(())
+    }
+
+    #[test]
+    fn test_execute_command_with_long() -> Result<()> {
+        let context = init_context();
+        let max = 10;
+        let result = context.exec_with_args::<Vec<User>>(vec![
+            "hello",
+            "-r",
+            "test_required",
+            "list",
+            "--max-size",
+            format!("{}", max).as_str(),
+        ])?;
+        assert_eq!(result.len(), max);
+        Ok(())
+    }
+
+    #[test]
+    fn test_execute_command_with_alias() -> Result<()> {
+        let context = init_context();
+        let max = 10;
+        let result = context.exec_with_args::<Vec<User>>(vec![
+            "hello",
+            "-r",
+            "test_required",
+            "list_alias",
+            "--max-size",
+            format!("{}", max).as_str(),
+        ])?;
+        assert_eq!(result.len(), max);
         Ok(())
     }
 }

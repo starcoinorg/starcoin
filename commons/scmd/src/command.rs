@@ -10,17 +10,24 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use structopt::StructOpt;
 
+pub(crate) enum HistoryOp {
+    Skip,
+    Record,
+}
+
 pub(crate) trait CommandExec<State, GlobalOpt>
 where
     GlobalOpt: StructOpt + 'static,
     State: 'static,
 {
+    /// return HistoryOp and execute result value.
+    // return HistoryOp as execute result is not a good design, may been change in the future.
     fn exec(
         &mut self,
         state: Arc<State>,
         global_opt: Arc<GlobalOpt>,
         arg_matches: &ArgMatches<'_>,
-    ) -> Result<Value>;
+    ) -> Result<(HistoryOp, Value)>;
 
     fn get_app(&mut self) -> &mut App<'static, 'static>;
 }
@@ -186,11 +193,20 @@ where
         String::from_utf8(help_message).expect("help message should utf8")
     }
 
-    fn exec_action(&mut self, ctx: &ExecContext<State, GlobalOpt, Opt>) -> Result<Value> {
+    fn exec_action(
+        &mut self,
+        ctx: &ExecContext<State, GlobalOpt, Opt>,
+    ) -> Result<(HistoryOp, Value)> {
         match &self.action {
             Some(action) => {
+                let skip_history = action.skip_history(ctx);
+                let skip_history_op = if skip_history {
+                    HistoryOp::Skip
+                } else {
+                    HistoryOp::Record
+                };
                 let ret = action.run(ctx)?;
-                Ok(serde_json::to_value(ret)?)
+                Ok((skip_history_op, serde_json::to_value(ret)?))
             }
             None => Err(anyhow::Error::msg(self.help_message())),
         }
@@ -223,7 +239,7 @@ where
         state: Arc<State>,
         global_opt: Arc<GlobalOpt>,
         arg_matches: &ArgMatches<'_>,
-    ) -> Result<Value> {
+    ) -> Result<(HistoryOp, Value)> {
         let opt = Arc::new(Opt::from_clap(arg_matches));
         let ctx = ExecContext::new(state, global_opt, opt);
         let value = if self.has_subcommand() {
