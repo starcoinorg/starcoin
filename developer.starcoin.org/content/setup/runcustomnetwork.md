@@ -7,4 +7,4 @@ weight: 7
 
 <!--more-->
 
-TODO
+{{< todo >}}

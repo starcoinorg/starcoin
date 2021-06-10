@@ -18,3 +18,6 @@
         return str.replace(/[\x00-\x7F]/g, '').split('');
       }
     }
+
+- id: check other language version
+  translation: 当前语言文档的版本尚在完善中，请查看其他语言的版本

@@ -12,3 +12,6 @@
 
 - id: bookSearchConfig
   translation: '{ cache: true }'
+
+- id: check other language version
+  translation: The current language version of this document is still under improvement, please check other language versions

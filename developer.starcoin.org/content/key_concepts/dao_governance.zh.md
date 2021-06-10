@@ -35,6 +35,7 @@ Starcoin 的 DAO 实现与以太坊的 DAO 实现一个最大的区别是：Star
 - ModifyDaoConfigPorposal: 更改 DAO 投票参数的提案。
 - OnChainConfigDao: 更改链上参数的提案。
 - UpgradeModuleDaoProposal: 升级合约代码的提案。
+- TreasuryWithdrawDaoProposal: 从国库中提款的提案。
 
 在发行自己的 Token 时，如有类似需求，用户可以直接接入标准库中的提案，如果有其他更复杂的需求，也可以编写更多的自定义的提案。
 
@@ -54,4 +55,19 @@ Starcoin 的 DAO 实现与以太坊的 DAO 实现一个最大的区别是：Star
 提案的一个完整生命周期如下：
 
 ![proposal lifetime](/images/proposal_lifetime.jpg)
+
+### 投票状态说明：
+
+```rust
+
+    const PENDING: u8 = 1; //等待公示时期
+    const ACTIVE: u8 = 2;  //正在进行投票
+    const DEFEATED: u8 = 3; //投票期过后，同意的票数小于等于反对的票数，或者同意的票数小于投票阈值，提案被拒绝 
+    const AGREED: u8 = 4; //投票期过后，同意的票数大于反对的票数，提案通过
+    const QUEUED: u8 = 5; //投票通过的提案被放入等待执行队列进行公示，当前公示期为 24 小时
+    const EXECUTABLE: u8 = 6; //经过公示期后，进入可执行状态。任何人可以触发执行。
+    const EXTRACTED: u8 = 7; //提案已经执行
+
+```
+
 
