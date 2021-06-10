@@ -7,7 +7,7 @@ use starcoin_functional_tests::testsuite;
 use starcoin_move_compiler::shared::Flags;
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile};
 use starcoin_vm_types::account_address::AccountAddress;
-use std::{convert::TryFrom, fmt, io::Write, path::Path};
+use std::{fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
 
 pub const STD_LIB_DIR: &str = "../stdlib/modules";
