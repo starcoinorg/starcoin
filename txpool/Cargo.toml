@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 async-trait = "0.1"
 log = "0.4.14"
 futures = "0.3.12"

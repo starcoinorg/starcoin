@@ -11,4 +11,4 @@ edition = "2018"
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 starcoin-crypto = { path = "../../commons/crypto"}
 serde = { version = "1.0.126" }
-anyhow = "1.0.40"
+anyhow = "1.0.41"

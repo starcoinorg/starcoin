@@ -5,7 +5,7 @@ authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 thiserror = "1.0"
 pin-utils = "0.1.0"
 async-std = "1.9"

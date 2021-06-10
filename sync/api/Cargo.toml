@@ -5,7 +5,7 @@ authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 starcoin-types = {path = "../../types", package="starcoin-types"}
 starcoin-logger = {path = "../../commons/logger", package="starcoin-logger"}
 async-trait = "0.1"

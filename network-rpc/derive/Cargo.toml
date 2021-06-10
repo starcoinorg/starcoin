@@ -13,4 +13,4 @@ proc-macro = true
 syn = { version = "1.0", features = ["full", "extra-traits", "visit", "fold"] }
 proc-macro2 = "1.0"
 quote = "1.0.9"
-anyhow = "1.0.40"
+anyhow = "1.0.41"
