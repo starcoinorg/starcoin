@@ -70,4 +70,8 @@ impl CommandAction for ImportCommand {
         )?;
         Ok(account)
     }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
+    }
 }

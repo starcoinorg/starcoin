@@ -41,4 +41,8 @@ impl CommandAction for RemoveCommand {
         let account_info = client.account_remove(opt.account_address, opt.password.clone())?;
         Ok(account_info)
     }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
+    }
 }

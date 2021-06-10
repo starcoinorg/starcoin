@@ -54,6 +54,10 @@ impl CommandAction for ExportCommand {
             private_key: encoded,
         })
     }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
+    }
 }
 
 #[derive(Debug, Clone, Hash, Serialize, Deserialize)]

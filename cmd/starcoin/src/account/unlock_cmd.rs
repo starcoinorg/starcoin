@@ -53,4 +53,8 @@ impl CommandAction for UnlockCommand {
         let account = client.account_unlock(account_address, opt.password.clone(), duration)?;
         Ok(account)
     }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
+    }
 }
