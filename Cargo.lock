@@ -3792,9 +3792,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-http-server"
-version = "17.0.0"
+version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eff2303c4f0562afcbd2dae75e3e21815095f8994749a80fbcd365877e44ed64"
+checksum = "522a047cac0958097ee71d047dd71cb84979fd2fa21c7a68fbe12736bef870a2"
 dependencies = [
  "futures 0.3.15",
  "hyper 0.13.10",
