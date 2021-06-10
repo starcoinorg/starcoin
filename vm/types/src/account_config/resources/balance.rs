@@ -6,11 +6,9 @@ use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
     account_config::constants::{stc_type_tag, ACCOUNT_MODULE_NAME, CORE_CODE_ADDRESS},
-};
-use move_core_types::{
-    language_storage::{StructTag, TypeTag},
     move_resource::MoveResource,
 };
+use move_core_types::language_storage::{StructTag, TypeTag};
 use serde::{Deserialize, Serialize};
 
 /// The balance resource held under an account.

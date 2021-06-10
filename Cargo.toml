@@ -218,5 +218,5 @@ starcoin-vm-runtime.debug = 1
 [profile.release.package."*"]
 debug = false
 
-[patch.'https://github.com/diem/diem-devtools']
-testrunner = {package = "testrunner", git = "https://github.com/starcoinorg/diem-devtools", rev="3cc8015b05cf591a5a96801aee394f7df92d946c"}
+#[patch.'https://github.com/diem/diem-devtools']
+#testrunner = {package = "testrunner", git = "https://github.com/starcoinorg/diem-devtools", rev="3cc8015b05cf591a5a96801aee394f7df92d946c"}
