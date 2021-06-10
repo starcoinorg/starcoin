@@ -3911,9 +3911,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-ws-server"
-version = "17.0.0"
+version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abe06e1385e4a912711703123ba44f735627d666f87e5fec764ad1338ec617dc"
+checksum = "b1d267a8649ec37e4452dd7b3f48827c9cdf36de3a3539cf73242c222ba2eb50"
 dependencies = [
  "futures 0.3.15",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
