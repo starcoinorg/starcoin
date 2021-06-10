@@ -40,7 +40,7 @@ Move representation of the authenticator types
 A multi-ed25519 public key
 
 
-<pre><code><b>struct</b> <a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a>
+<pre><code><b>struct</b> <a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -397,7 +397,7 @@ does not matter for the verification of callers.
 <a name="0x1_Authenticator_spec_ed25519_authentication_key"></a>
 
 
-<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;;
+<pre><code><b>fun</b> <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;;
 </code></pre>
 
 
@@ -426,7 +426,7 @@ does not matter for the verification of callers.
 <a name="0x1_Authenticator_spec_derived_address"></a>
 
 
-<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key: vector&lt;u8&gt;): address;
+<pre><code><b>fun</b> <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key: vector&lt;u8&gt;): address;
 </code></pre>
 
 

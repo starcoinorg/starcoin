@@ -34,7 +34,7 @@ module Timestamp {
         let milli_timer = CurrentTimeMilliseconds {milliseconds: genesis_timestamp};
         move_to<CurrentTimeMilliseconds>(account, milli_timer);
     }
-    spec fun initialize {
+    spec initialize {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if exists<CurrentTimeMilliseconds>(Signer::spec_address_of(account));
         ensures exists<CurrentTimeMilliseconds>(Signer::spec_address_of(account));
@@ -48,7 +48,7 @@ module Timestamp {
         assert(timestamp > global_milli_timer.milliseconds, Errors::invalid_argument(EINVALID_TIMESTAMP));
         global_milli_timer.milliseconds = timestamp;
     }
-    spec fun update_global_time {
+    spec update_global_time {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if timestamp <= global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds;
@@ -59,11 +59,11 @@ module Timestamp {
     public fun now_seconds(): u64 acquires CurrentTimeMilliseconds {
         now_milliseconds() / MILLI_CONVERSION_FACTOR
     }
-    spec fun now_seconds {
+    spec now_seconds {
         aborts_if !exists<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         ensures result == now_milliseconds() / MILLI_CONVERSION_FACTOR;
     }
-    spec define spec_now_seconds(): u64 {
+    spec fun spec_now_seconds(): u64 {
         global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds / MILLI_CONVERSION_FACTOR
     }
 
@@ -72,12 +72,12 @@ module Timestamp {
         borrow_global<CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS()).milliseconds
     }
 
-    spec fun now_milliseconds {
+    spec now_milliseconds {
         aborts_if !exists<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         ensures result == global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds;
     }
 
-    spec define spec_now_millseconds(): u64 {
+    spec fun spec_now_millseconds(): u64 {
         global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds
     }
 
@@ -93,7 +93,7 @@ module Timestamp {
         move_to(account, TimeHasStarted{});
     }
 
-    spec fun set_time_has_started {
+    spec set_time_has_started {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<CurrentTimeMilliseconds>(Signer::spec_address_of(account));
         aborts_if exists<TimeHasStarted>(Signer::spec_address_of(account));
@@ -105,7 +105,7 @@ module Timestamp {
         !exists<TimeHasStarted>(CoreAddresses::GENESIS_ADDRESS())
     }
 
-    spec fun is_genesis {
+    spec is_genesis {
         aborts_if false;
         ensures result == !exists<TimeHasStarted>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
@@ -114,7 +114,7 @@ module Timestamp {
     public fun assert_genesis() {
         assert(is_genesis(), Errors::invalid_state(ENOT_GENESIS));
     }
-    spec fun assert_genesis {
+    spec assert_genesis {
         pragma opaque = true;
         include AbortsIfNotGenesis;
     }

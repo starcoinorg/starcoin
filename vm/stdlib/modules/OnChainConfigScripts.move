@@ -36,7 +36,7 @@ module OnChainConfigScripts {
         OnChainConfigDao::propose_update<STC::STC, ConsensusConfig::ConsensusConfig>(&account, consensus_config, exec_delay);
     }
 
-    spec fun propose_update_consensus_config {
+    spec propose_update_consensus_config {
         pragma verify = false;
     }
 
@@ -47,7 +47,7 @@ module OnChainConfigScripts {
         OnChainConfigDao::propose_update<STC::STC, RewardConfig::RewardConfig>(&account, reward_config, exec_delay);
     }
 
-    spec fun propose_update_reward_config {
+    spec propose_update_reward_config {
         pragma verify = false;
     }
 
@@ -59,7 +59,7 @@ module OnChainConfigScripts {
         OnChainConfigDao::propose_update<STC::STC, TransactionPublishOption::TransactionPublishOption>(&account, txn_publish_option, exec_delay);
     }
 
-    spec fun propose_update_txn_publish_option {
+    spec propose_update_txn_publish_option {
         pragma verify = false;
     }
 
@@ -70,7 +70,7 @@ module OnChainConfigScripts {
         OnChainConfigDao::propose_update<STC::STC, TransactionTimeoutConfig::TransactionTimeoutConfig>(&account, txn_timeout_config, exec_delay);
     }
 
-    spec fun propose_update_txn_timeout_config {
+    spec propose_update_txn_timeout_config {
         pragma verify = false;
     }
 
@@ -105,7 +105,7 @@ module OnChainConfigScripts {
         OnChainConfigDao::propose_update<STC::STC, VMConfig::VMConfig>(&account, vm_config, exec_delay);
     }
 
-    spec fun propose_update_vm_config {
+    spec propose_update_vm_config {
         pragma verify = false;
     }
 
@@ -113,7 +113,7 @@ module OnChainConfigScripts {
         OnChainConfigDao::execute<STC::STC, ConfigT>(Signer::address_of(&account), proposal_id);
     }
 
-    spec fun execute_on_chain_config_proposal {
+    spec execute_on_chain_config_proposal {
         pragma verify = false;
     }
 }

@@ -30,7 +30,7 @@ module RewardConfig {
         );
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
         aborts_if exists<Config::Config<RewardConfig>>(Signer::spec_address_of(account));
@@ -43,14 +43,14 @@ module RewardConfig {
         RewardConfig {reward_delay: reward_delay}
     }
 
-    spec fun new_reward_config {}
+    spec new_reward_config {}
 
     /// Get reward configuration.
     public fun get_reward_config(): RewardConfig {
         Config::get_by_address<RewardConfig>(CoreAddresses::GENESIS_ADDRESS())
     }
 
-    spec fun get_reward_config {
+    spec get_reward_config {
         include GetRewardConfigAbortsIf;
     }
 
@@ -64,7 +64,7 @@ module RewardConfig {
         reward_config.reward_delay
     }
 
-    spec fun reward_delay {
+    spec reward_delay {
         aborts_if !exists<Config::Config<RewardConfig>>(CoreAddresses::GENESIS_ADDRESS());
     }
 }

@@ -147,7 +147,7 @@ module Genesis {
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,
             PackageTxnManager::get_strategy_two_phase(),
-            Option::some(0),
+            Option::some(0u64),
         );
         // stc should be initialized after genesis_account's module upgrade strategy set.
         {
@@ -292,7 +292,7 @@ module Genesis {
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,
             PackageTxnManager::get_strategy_two_phase(),
-            Option::some(0),
+            Option::some(0u64),
         );
         BlockReward::initialize(&genesis_account, reward_delay);
 

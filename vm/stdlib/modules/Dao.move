@@ -48,7 +48,7 @@ module Dao {
         min_action_delay: u64,
     }
 
-    spec struct DaoConfig {
+    spec DaoConfig {
         invariant voting_quorum_rate > 0 && voting_quorum_rate <= 100;
         invariant voting_delay > 0;
         invariant voting_period > 0;
@@ -152,7 +152,7 @@ module Dao {
         Config::publish_new_config(signer, config);
     }
 
-    spec fun plugin {
+    spec plugin {
         aborts_if voting_delay == 0;
         aborts_if voting_period == 0;
         aborts_if voting_quorum_rate == 0 || voting_quorum_rate > 100;
@@ -214,7 +214,7 @@ module Dao {
         DaoConfig { voting_delay, voting_period, voting_quorum_rate, min_action_delay }
     }
 
-    spec fun new_dao_config {
+    spec new_dao_config {
         aborts_if voting_delay == 0;
         aborts_if voting_period == 0;
         aborts_if voting_quorum_rate == 0 || voting_quorum_rate > 100;
@@ -259,7 +259,7 @@ module Dao {
         );
     }
 
-    spec fun propose {
+    spec propose {
         use 0x1::CoreAddresses;
         pragma addition_overflow_unchecked;
         include AbortIfDaoConfigNotExist<TokenT>;
@@ -340,12 +340,12 @@ module Dao {
         aborts_if vote.stake.value + stake_value > MAX_U128;
     }
 
-    spec fun cast_vote {
+    spec cast_vote {
         pragma addition_overflow_unchecked = true;
 
         include AbortIfDaoInfoNotExist<TokenT>;
 
-        let expected_states = singleton_vector(ACTIVE);
+        let expected_states = vec(ACTIVE);
         include CheckProposalStates<TokenT, ActionT> {expected_states};
         let sender = Signer::spec_address_of(signer);
         let vote_exists = exists<Vote<TokenT>>(sender);
@@ -370,7 +370,7 @@ module Dao {
         };
     }
 
-    spec fun do_cast_vote {
+    spec do_cast_vote {
         pragma addition_overflow_unchecked = true;
         aborts_if vote.stake.value + stake.value > MAX_U128;
         ensures vote.stake.value == old(vote).stake.value + stake.value;
@@ -433,8 +433,8 @@ module Dao {
         include AbortIfDaoInfoNotExist<TokenT>;
         include CheckFlipVote<TokenT, ActionT> {my_vote: vote, proposal};
     }
-    spec fun change_vote {
-        let expected_states = singleton_vector(ACTIVE);
+    spec change_vote {
+        let expected_states = vec(ACTIVE);
         include CheckProposalStates<TokenT, ActionT>{expected_states};
 
         let sender = Signer::spec_address_of(signer);
@@ -467,7 +467,7 @@ module Dao {
         aborts_if !my_vote.agree && proposal.for_votes + my_vote.stake.value > MAX_U128;
     }
 
-    spec fun do_flip_vote {
+    spec do_flip_vote {
         include CheckFlipVote<TokenT, ActionT>;
         ensures my_vote.agree == !old(my_vote).agree;
     }
@@ -510,9 +510,9 @@ module Dao {
         reverted_stake
     }
 
-    spec fun revoke_vote {
+    spec revoke_vote {
         include AbortIfDaoInfoNotExist<TokenT>;
-        let expected_states = singleton_vector(ACTIVE);
+        let expected_states = vec(ACTIVE);
         include CheckProposalStates<TokenT, ActionT> {expected_states};
         let sender = Signer::spec_address_of(signer);
 
@@ -557,7 +557,7 @@ module Dao {
         aborts_if !vote.agree && proposal.against_votes < to_revoke;
     }
 
-    spec fun do_revoke_vote {
+    spec do_revoke_vote {
         include CheckRevokeVote<TokenT, ActionT>;
         ensures vote.agree ==> old(proposal).for_votes == proposal.for_votes + to_revoke;
         ensures !vote.agree ==> old(proposal).against_votes == proposal.against_votes + to_revoke;
@@ -586,12 +586,12 @@ module Dao {
         stake
     }
 
-    spec fun unstake_votes {
-        let expected_states = singleton_vector(DEFEATED);
-        let expected_states1 = concat_vector(expected_states,singleton_vector(AGREED));
-        let expected_states2 = concat_vector(expected_states1,singleton_vector(QUEUED));
-        let expected_states3 = concat_vector(expected_states2,singleton_vector(EXECUTABLE));
-        let expected_states4 = concat_vector(expected_states3,singleton_vector(EXTRACTED));
+    spec unstake_votes {
+        let expected_states = vec(DEFEATED);
+        let expected_states1 = concat(expected_states,vec(AGREED));
+        let expected_states2 = concat(expected_states1,vec(QUEUED));
+        let expected_states3 = concat(expected_states2,vec(EXECUTABLE));
+        let expected_states4 = concat(expected_states3,vec(EXTRACTED));
         aborts_if expected_states4[0] != DEFEATED;
         aborts_if expected_states4[1] != AGREED;
         aborts_if expected_states4[2] != QUEUED;
@@ -621,8 +621,8 @@ module Dao {
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         proposal.eta = Timestamp::now_milliseconds() + proposal.action_delay;
     }
-    spec fun queue_proposal_action {
-        let expected_states = singleton_vector(AGREED);
+    spec queue_proposal_action {
+        let expected_states = vec(AGREED);
         include CheckProposalStates<TokenT, ActionT>{expected_states};
 
         let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
@@ -644,9 +644,9 @@ module Dao {
         let action: ActionT = Option::extract(&mut proposal.action);
         action
     }
-    spec fun extract_proposal_action {
+    spec extract_proposal_action {
         pragma aborts_if_is_partial = false;
-        let expected_states = singleton_vector(EXECUTABLE);
+        let expected_states = vec(EXECUTABLE);
         include CheckProposalStates<TokenT, ActionT>{expected_states};
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
         ensures Option::is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
@@ -681,8 +681,8 @@ module Dao {
         Option::destroy_none(action);
     }
 
-    spec fun destroy_terminated_proposal {
-        let expected_states = concat_vector(singleton_vector(DEFEATED), singleton_vector(EXTRACTED));
+    spec destroy_terminated_proposal {
+        let expected_states = concat(vec(DEFEATED), vec(EXTRACTED));
         aborts_if len(expected_states) != 2;
         aborts_if expected_states[0] != DEFEATED;
         aborts_if expected_states[1] != EXTRACTED;
@@ -710,13 +710,13 @@ module Dao {
         };
         false
     }
-    spec fun proposal_exists {
+    spec proposal_exists {
         ensures exists<Proposal<TokenT, ActionT>>(proposer_address) &&
                     borrow_global<Proposal<TokenT, ActionT>>(proposer_address).id == proposal_id ==>
                     result;
     }
 
-    spec define spec_proposal_exists<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    spec fun spec_proposal_exists<TokenT: copy + drop + store, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): bool {
@@ -754,7 +754,7 @@ module Dao {
         aborts_if (forall s in expected_states : s != state);
     }
 
-    spec fun proposal_state {
+    spec proposal_state {
         use 0x1::CoreAddresses;
         include AbortIfTimestampNotExist;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
@@ -801,7 +801,7 @@ module Dao {
         (proposal.id, proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
     }
 
-    spec fun proposal_info {
+    spec proposal_info {
         aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
     }
 
@@ -817,7 +817,7 @@ module Dao {
         (vote.agree, Token::value(&vote.stake))
     }
 
-    spec fun vote_of {
+    spec vote_of {
         aborts_if !exists<Vote<TokenT>>(voter);
         let vote = global<Vote<TokenT>>(voter);
         include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
@@ -829,7 +829,7 @@ module Dao {
         gov_info.next_proposal_id = proposal_id + 1;
         proposal_id
     }
-    spec fun generate_next_proposal_id  {
+    spec generate_next_proposal_id  {
         pragma addition_overflow_unchecked;
         modifies global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
         ensures
@@ -847,7 +847,7 @@ module Dao {
         get_config<TokenT>().voting_delay
     }
 
-    spec fun voting_delay {
+    spec voting_delay {
         aborts_if false;
     }
 
@@ -856,7 +856,7 @@ module Dao {
         get_config<TokenT>().voting_period
     }
 
-    spec fun voting_period {
+    spec voting_period {
         aborts_if false;
     }
 
@@ -872,11 +872,11 @@ module Dao {
     spec schema CheckQuorumVotes<TokenT> {
         aborts_if Token::spec_abstract_total_value<TokenT>() * spec_dao_config<TokenT>().voting_quorum_rate > MAX_U128;
     }
-    spec fun quorum_votes {
+    spec quorum_votes {
         include CheckQuorumVotes<TokenT>;
     }
 
-    spec define spec_quorum_votes<TokenT: copy + drop + store>(): u128 {
+    spec fun spec_quorum_votes<TokenT: copy + drop + store>(): u128 {
         let supply = Token::spec_abstract_total_value<TokenT>() - Treasury::spec_balance<TokenT>();
         supply * spec_dao_config<TokenT>().voting_quorum_rate / 100
     }
@@ -886,7 +886,7 @@ module Dao {
         get_config<TokenT>().voting_quorum_rate
     }
 
-    spec fun voting_quorum_rate {
+    spec voting_quorum_rate {
         aborts_if false;
         ensures result == global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload.voting_quorum_rate;
     }
@@ -896,7 +896,7 @@ module Dao {
         get_config<TokenT>().min_action_delay
     }
 
-    spec fun min_action_delay {
+    spec min_action_delay {
         aborts_if false;
         ensures result == spec_dao_config<TokenT>().min_action_delay;
     }
@@ -906,16 +906,16 @@ module Dao {
         Config::get_by_address<DaoConfig<TokenT>>(token_issuer)
     }
 
-    spec fun get_config {
+    spec get_config {
         aborts_if false;
         ensures result == global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload;
     }
 
-    spec module {
-        define spec_dao_config<TokenT: copy + drop + store>(): DaoConfig<TokenT> {
-            global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload
-        }
+
+    spec fun spec_dao_config<TokenT: copy + drop + store>(): DaoConfig<TokenT> {
+        global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload
     }
+
 
     spec schema CheckModifyConfigWithCap<TokenT> {
         cap: Config::ModifyConfigCapability<DaoConfig<TokenT>>;
@@ -950,7 +950,7 @@ module Dao {
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
     }
 
-    spec fun modify_dao_config {
+    spec modify_dao_config {
         include CheckModifyConfigWithCap<TokenT>;
         aborts_if voting_quorum_rate > 0 && voting_quorum_rate > 100;
     }
@@ -967,7 +967,7 @@ module Dao {
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
     }
 
-    spec fun set_voting_delay {
+    spec set_voting_delay {
         include CheckModifyConfigWithCap<TokenT>;
         aborts_if value == 0;
     }
@@ -984,7 +984,7 @@ module Dao {
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
     }
 
-    spec fun set_voting_period {
+    spec set_voting_period {
         include CheckModifyConfigWithCap<TokenT>;
         aborts_if value == 0;
     }
@@ -1001,7 +1001,7 @@ module Dao {
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
     }
 
-    spec fun set_voting_quorum_rate {
+    spec set_voting_quorum_rate {
         aborts_if !(value > 0 && value <= 100);
         include CheckModifyConfigWithCap<TokenT>;
     }
@@ -1017,7 +1017,7 @@ module Dao {
         config.min_action_delay = value;
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
     }
-    spec fun set_min_action_delay {
+    spec set_min_action_delay {
         aborts_if value == 0;
         include CheckModifyConfigWithCap<TokenT>;
     }

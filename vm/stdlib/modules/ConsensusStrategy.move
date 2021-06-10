@@ -29,7 +29,7 @@ module ConsensusStrategy {
         Config::destroy_modify_config_capability(cap);
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if exists<Config::Config<ConsensusStrategy>>(Signer::spec_address_of(account));
@@ -42,7 +42,7 @@ module ConsensusStrategy {
         Config::get_by_address<ConsensusStrategy>(CoreAddresses::GENESIS_ADDRESS()).value
     }
 
-    spec fun get {
+    spec get {
         aborts_if !exists<Config::Config<ConsensusStrategy>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 }

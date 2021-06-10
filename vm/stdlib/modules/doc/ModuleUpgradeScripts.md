@@ -29,7 +29,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64, enforced: bool)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b>, drop, store&gt;(signer: signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64, enforced: bool)
 </code></pre>
 
 
@@ -106,7 +106,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="ModuleUpgradeScripts.md#0x1_ModuleUpgradeScripts_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b>, drop, store&gt;(_signer: signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 

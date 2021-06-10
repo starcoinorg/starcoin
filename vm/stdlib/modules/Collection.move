@@ -50,7 +50,7 @@ module Collection {
         exists<CollectionStore<T>>(addr)
     }
 
-    spec fun exists_at {aborts_if false;}
+    spec exists_at {aborts_if false;}
 
     /// Deprecated since @v3
     /// Put items to account's Collection last position.
@@ -58,7 +58,7 @@ module Collection {
         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
-    spec fun put {aborts_if false;}
+    spec put {aborts_if false;}
 
     /// Take last item from account's Collection of T.
     public fun take<T: store>(account: &signer): T acquires CollectionStore{
@@ -69,7 +69,7 @@ module Collection {
         item
     }
 
-    spec fun take {
+    spec take {
         aborts_if false;
     }
 
@@ -84,7 +84,7 @@ module Collection {
         }
     }
 
-    spec fun borrow_collection {
+    spec borrow_collection {
         aborts_if false;
     }
 
@@ -101,7 +101,7 @@ module Collection {
         }
     }
 
-    spec fun return_collection {
+    spec return_collection {
         aborts_if false;
     }
 
@@ -110,7 +110,7 @@ module Collection {
         Option::destroy_none(items);
     }
 
-    spec fun destroy_empty {
+    spec destroy_empty {
         aborts_if false;
     }
 

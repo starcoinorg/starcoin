@@ -34,7 +34,7 @@ module OnChainConfigDao {
         let cap = WrappedConfigModifyCapability<TokenT, ConfigT> { cap: config_modify_cap };
         move_to(signer, cap);
     }
-    spec fun plugin {
+    spec plugin {
         pragma aborts_if_is_partial = false;
         let sender = Signer::address_of(signer);
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
@@ -56,7 +56,7 @@ module OnChainConfigDao {
         );
     }
 
-    spec fun propose_update {
+    spec propose_update {
         use 0x1::Timestamp;
         use 0x1::CoreAddresses;
         pragma aborts_if_is_partial = false;
@@ -87,9 +87,9 @@ module OnChainConfigDao {
         );
         Config::set_with_capability(&mut cap.cap, value);
     }
-    spec fun execute {
+    spec execute {
         pragma aborts_if_is_partial = true;
-        let expected_states = singleton_vector(6);
+        let expected_states = vec<u8>(6);
         include Dao::CheckProposalStates<TokenT, OnChainConfigUpdate<ConfigT>>{expected_states};
         aborts_if !exists<WrappedConfigModifyCapability<TokenT, ConfigT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }

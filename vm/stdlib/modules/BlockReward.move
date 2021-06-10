@@ -73,7 +73,7 @@ module BlockReward {
         });
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
         include Config::PublishNewConfigAbortsIf<RewardConfig::RewardConfig>;
@@ -161,7 +161,7 @@ module BlockReward {
 
     }
 
-    spec fun process_block_reward {
+    spec process_block_reward {
         aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
         // abort if current block is genesis, and previous block gas fees != 0
         aborts_if current_number == 0 && Token::value(previous_block_gas_fees) != 0;

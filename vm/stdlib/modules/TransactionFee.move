@@ -31,7 +31,7 @@ module TransactionFee {
         add_txn_fee_token<STC>(account);
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if exists<TransactionFee<STC>>(Signer::spec_address_of(account));
@@ -49,7 +49,7 @@ module TransactionFee {
         )
      }
 
-    spec fun add_txn_fee_token {
+    spec add_txn_fee_token {
         aborts_if exists<TransactionFee<TokenType>>(Signer::spec_address_of(account));
     }
 
@@ -61,7 +61,7 @@ module TransactionFee {
         Token::deposit(&mut txn_fees.fee, token)
     }
 
-    spec fun pay_fee {
+    spec pay_fee {
         aborts_if !exists<TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if global<TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).fee.value + token.value > max_u128();
     }
@@ -85,7 +85,7 @@ module TransactionFee {
         }
     }
 
-    spec fun distribute_transaction_fees {
+    spec distribute_transaction_fees {
         pragma verify = false;
 //        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
 //        aborts_if !exists<TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());

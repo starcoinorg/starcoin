@@ -63,7 +63,7 @@ module Authenticator {
         MultiEd25519PublicKey { public_keys, threshold }
     }
 
-    spec fun create_multi_ed25519 {
+    spec create_multi_ed25519 {
         aborts_if threshold == 0;
         aborts_if threshold > Vector::length(public_keys);
         aborts_if Vector::length(public_keys) > 32;
@@ -75,7 +75,7 @@ module Authenticator {
         Hash::sha3_256(public_key)
     }
 
-    spec fun ed25519_authentication_key {
+    spec ed25519_authentication_key {
         pragma opaque = true;
         aborts_if false;
         ensures [abstract] result == spec_ed25519_authentication_key(public_key);
@@ -83,7 +83,7 @@ module Authenticator {
 
     /// We use an uninterpreted function to represent the result of key construction. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_ed25519_authentication_key(public_key: vector<u8>): vector<u8>;
+    spec fun spec_ed25519_authentication_key(public_key: vector<u8>): vector<u8>;
 
     /// convert authentication key to address
     public fun derived_address(authentication_key: vector<u8>): address {
@@ -100,7 +100,7 @@ module Authenticator {
         BCS::to_address(address_bytes)
     }
 
-    spec fun derived_address {
+    spec derived_address {
         pragma opaque = true;
         aborts_if len(authentication_key) != 32;
         ensures [abstract] result == spec_derived_address(authentication_key);
@@ -108,7 +108,7 @@ module Authenticator {
 
     /// We use an uninterpreted function to represent the result of derived address. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_derived_address(authentication_key: vector<u8>): address;
+    spec fun spec_derived_address(authentication_key: vector<u8>): address;
 
     /// Compute a multied25519 account authentication key for the policy `k`
     public fun multi_ed25519_authentication_key(k: &MultiEd25519PublicKey): vector<u8> {
@@ -129,7 +129,7 @@ module Authenticator {
         Hash::sha3_256(authentication_key_preimage)
     }
 
-    spec fun multi_ed25519_authentication_key {
+    spec multi_ed25519_authentication_key {
         aborts_if false;
     }
 
@@ -138,7 +138,7 @@ module Authenticator {
         &k.public_keys
     }
 
-    spec fun public_keys {
+    spec public_keys {
         aborts_if false;
     }
 
@@ -147,7 +147,7 @@ module Authenticator {
         *&k.threshold
     }
 
-    spec fun threshold {
+    spec threshold {
         aborts_if false;
     }
 

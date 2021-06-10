@@ -218,7 +218,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copyable</b>&gt;(account: signer, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copy</b>, drop, store&gt;(account: signer, proposal_id: u64)
 </code></pre>
 
 
@@ -326,7 +326,7 @@
 ### Function `execute_on_chain_config_proposal`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copyable</b>&gt;(account: signer, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copy</b>, drop, store&gt;(account: signer, proposal_id: u64)
 </code></pre>
 
 

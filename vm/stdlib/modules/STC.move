@@ -64,7 +64,7 @@ module STC {
         OnChainConfigDao::plugin<STC, TransactionTimeoutConfig::TransactionTimeoutConfig>(account);
     }
 
-    spec fun initialize {
+    spec initialize {
         include Token::RegisterTokenAbortsIf<STC>{precision: PRECISION};
     }
 
@@ -79,7 +79,7 @@ module STC {
         withdraw_cap
     }
 
-    spec fun upgrade_from_v1_to_v2 {
+    spec upgrade_from_v1_to_v2 {
         pragma verify = false;
     }
 
@@ -125,7 +125,7 @@ module STC {
         withdraw_cap
     }
 
-    spec fun initialize_v2 {
+    spec initialize_v2 {
         include Token::RegisterTokenAbortsIf<STC>{precision: PRECISION};
     }
 
@@ -134,7 +134,7 @@ module STC {
         Token::is_same_token<STC, TokenType>()
     }
 
-    spec fun is_stc {
+    spec is_stc {
     }
 
     /// Burn STC tokens.
@@ -144,7 +144,7 @@ module STC {
         Token::burn_with_capability(&cap.cap, token);
     }
 
-    spec fun burn {
+    spec burn {
         aborts_if Token::spec_abstract_total_value<STC>() - token.value < 0;
         aborts_if !exists<SharedBurnCapability>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
@@ -154,7 +154,7 @@ module STC {
         Token::token_address<STC>()
     }
 
-    spec fun token_address {
+    spec token_address {
     }
 }
 }

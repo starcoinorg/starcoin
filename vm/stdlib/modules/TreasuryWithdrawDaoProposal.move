@@ -43,7 +43,7 @@ module TreasuryWithdrawDaoProposal {
         move_to(signer, WrappedWithdrawCapability<TokenT> { cap: cap });
     }
 
-    spec fun plugin {
+    spec plugin {
         pragma aborts_if_is_partial = false;
         let sender = Signer::address_of(signer);
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
@@ -65,7 +65,7 @@ module TreasuryWithdrawDaoProposal {
             exec_delay,
         );
     }
-    spec fun propose_withdraw {
+    spec propose_withdraw {
         use 0x1::Timestamp;
         use 0x1::CoreAddresses;
         pragma aborts_if_is_partial = false;
@@ -97,10 +97,10 @@ module TreasuryWithdrawDaoProposal {
         Treasury::add_linear_withdraw_capability(signer, linear_cap);
     }
 
-    spec fun execute_withdraw_proposal {
+    spec execute_withdraw_proposal {
         use 0x1::Option;
         pragma aborts_if_is_partial = true;
-        let expected_states = singleton_vector(6);
+        let expected_states = vec<u8>(6);
         include Dao::CheckProposalStates<TokenT, WithdrawToken>{expected_states};
         let proposal = global<Dao::Proposal<TokenT, WithdrawToken>>(proposer_address);
         aborts_if Option::is_none(proposal.action);

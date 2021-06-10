@@ -37,7 +37,7 @@ Block module provide metadata for generated blocks.
 Block metadata struct.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>
+<pre><code><b>struct</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a> has key
 </code></pre>
 
 
@@ -89,7 +89,7 @@ Block metadata struct.
 Events emitted when new block generated.
 
 
-<pre><code><b>struct</b> <a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a>
+<pre><code><b>struct</b> <a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a> has drop, store
 </code></pre>
 
 
