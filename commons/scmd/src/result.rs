@@ -57,7 +57,13 @@ pub fn print_action_result(
             }
 
             let value = match result {
-                Ok(value) => json!({ "ok": value }),
+                Ok(value) => {
+                    if value.is_null() {
+                        value
+                    } else {
+                        json!({ "ok": value })
+                    }
+                }
                 Err(err) => json!({"err": err.to_string()}),
             };
             print_json(value)
@@ -74,6 +80,9 @@ pub fn print_action_result(
 }
 
 pub fn print_json(value: Value) -> Result<()> {
+    if value.is_null() {
+        return Ok(());
+    }
     let json = serde_json::to_string_pretty(&value)?;
     println!("{}", json);
     Ok(())
