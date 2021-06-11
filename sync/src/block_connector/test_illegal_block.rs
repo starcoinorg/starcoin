@@ -750,8 +750,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     };
     let old_epoch_num = writeable_block_chain_service
         .get_main()
-        .epoch_info()
-        .unwrap()
+        .epoch()
         .number();
     // create block loop
     loop {
@@ -765,15 +764,14 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
             .current_header()
             .number();
         if block_number == end_number {
-            let epoch_info = writeable_block_chain_service
+            let epoch = writeable_block_chain_service
                 .get_main()
-                .epoch_info()
-                .unwrap();
+                .epoch();
             if begin_epoch {
-                assert_eq!(old_epoch_num, epoch_info.number());
-                assert_eq!(block_number + 1, epoch_info.end_block_number());
+                assert_eq!(old_epoch_num, epoch.number());
+                assert_eq!(block_number + 1, epoch.end_block_number());
             } else {
-                assert_eq!(old_epoch_num + 1, epoch_info.number());
+                assert_eq!(old_epoch_num + 1, epoch.number());
             }
             break;
         }
@@ -943,8 +941,7 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
 
     let epoch = writeable_block_chain_service
         .get_main()
-        .epoch_info()
-        .unwrap();
+        .epoch()
     assert_eq!(
         epoch.start_block_number(),
         writeable_block_chain_service
