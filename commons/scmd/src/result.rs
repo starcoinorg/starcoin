@@ -21,8 +21,15 @@ impl FromStr for OutputFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "json" | "JSON" => OutputFormat::JSON,
-            _ => OutputFormat::TABLE,
+            "table" | "TABLE" => OutputFormat::TABLE,
+            _ => OutputFormat::JSON,
         })
+    }
+}
+
+impl Default for OutputFormat {
+    fn default() -> Self {
+        OutputFormat::JSON
     }
 }
 
