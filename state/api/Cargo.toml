@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 async-trait = "0.1"
 serde = { version = "1.0.126", features = ["derive"] }
 starcoin-crypto = {path = "../../commons/crypto"}
