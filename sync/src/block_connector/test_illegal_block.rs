@@ -748,10 +748,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     } else {
         TEST_CONFIG.consensus_config.epoch_block_count + 1
     };
-    let old_epoch_num = writeable_block_chain_service
-        .get_main()
-        .epoch()
-        .number();
+    let old_epoch_num = writeable_block_chain_service.get_main().epoch().number();
     // create block loop
     loop {
         apply_legal_block(
@@ -764,9 +761,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
             .current_header()
             .number();
         if block_number == end_number {
-            let epoch = writeable_block_chain_service
-                .get_main()
-                .epoch();
+            let epoch = writeable_block_chain_service.get_main().epoch();
             if begin_epoch {
                 assert_eq!(old_epoch_num, epoch.number());
                 assert_eq!(block_number + 1, epoch.end_block_number());
@@ -939,9 +934,7 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 1).await;
 
-    let epoch = writeable_block_chain_service
-        .get_main()
-        .epoch()
+    let epoch = writeable_block_chain_service.get_main().epoch();
     assert_eq!(
         epoch.start_block_number(),
         writeable_block_chain_service
