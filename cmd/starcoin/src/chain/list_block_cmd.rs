@@ -11,8 +11,8 @@ use structopt::StructOpt;
 
 /// List latest `count` blocks before `number`. if `number` is absent, use head block number.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "list_block")]
-pub struct GetOpt {
+#[structopt(name = "list-block", alias = "list_block")]
+pub struct ListBlockOpt {
     #[structopt(name = "number", long, short = "n")]
     number: Option<BlockNumber>,
     #[structopt(name = "count", long, short = "c", default_value = "10")]
@@ -24,7 +24,7 @@ pub struct ListBlockCommand;
 impl CommandAction for ListBlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
+    type Opt = ListBlockOpt;
     type ReturnItem = Vec<BlockHeaderView>;
 
     fn run(

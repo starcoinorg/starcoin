@@ -10,7 +10,7 @@ use starcoin_crypto::HashValue;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_events")]
+#[structopt(name = "get-events", alias = "get_events")]
 pub struct GetEventsOpt {
     #[structopt(name = "txn-hash")]
     /// txn hash

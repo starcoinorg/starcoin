@@ -9,8 +9,9 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
+/// Get transaction info by txn hash or block hash and txn idx in the block
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_txn_info")]
+#[structopt(name = "get-txn-info", alias = "get_txn_info")]
 pub struct GetTransactionInfoOpt {
     #[structopt(name = "txn-hash")]
     /// txn hash
