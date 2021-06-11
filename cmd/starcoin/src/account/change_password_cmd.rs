@@ -41,4 +41,8 @@ impl CommandAction for ChangePasswordCmd {
             client.account_change_password(opt.account_address, opt.password.clone())?;
         Ok(account_info)
     }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
+    }
 }

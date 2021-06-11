@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::error::CmdError;
-use crate::{print_action_result, Command, CommandAction, CommandExec, OutputFormat};
+use crate::{print_action_result, Command, CommandAction, CommandExec, HistoryOp, OutputFormat};
 use anyhow::Result;
 use clap::{crate_authors, App, Arg, SubCommand};
 use once_cell::sync::Lazy;
@@ -23,10 +23,11 @@ pub use rustyline::{
 
 pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
     ConsoleConfig::builder()
-        .max_history_size(100)
+        .max_history_size(1000)
         .history_ignore_space(true)
+        .history_ignore_dups(true)
         .completion_type(CompletionType::List)
-        .auto_add_history(true)
+        .auto_add_history(false)
         .edit_mode(EditMode::Emacs)
         .color_mode(ColorMode::Enabled)
         .build()
@@ -244,8 +245,9 @@ where
                 let cmd = self.commands.get_mut(cmd_name);
                 match (cmd, arg_matches) {
                     (Some(cmd), Some(arg_matches)) => {
-                        cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)
-                        //print_action_result(value, output_format)?;
+                        let (_, value) =
+                            cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
+                        Ok(value)
                     }
                     _ => Err(CmdError::need_help(Self::app_help_message(&mut app)).into()),
                 }
@@ -312,6 +314,7 @@ where
             match readline {
                 Ok(line) => {
                     let params: Vec<&str> = line
+                        .as_str()
                         .trim()
                         .split(' ')
                         .map(str::trim)
@@ -387,11 +390,21 @@ where
                                     let app = cmd.get_app();
                                     match app.get_matches_from_safe_borrow(params) {
                                         Ok(arg_matches) => {
-                                            let result = cmd.exec(
+                                            let cmd_result = cmd.exec(
                                                 state.clone(),
                                                 global_opt.clone(),
                                                 &arg_matches,
                                             );
+                                            let (skip_history, result) = match cmd_result {
+                                                Ok((history_op, value)) => (
+                                                    matches!(history_op, HistoryOp::Skip),
+                                                    Ok(value),
+                                                ),
+                                                Err(err) => (false, Err(err)),
+                                            };
+                                            if !skip_history {
+                                                rl.add_history_entry(line.as_str());
+                                            }
                                             if let Err(err) =
                                                 print_action_result(output_format, result, true)
                                             {

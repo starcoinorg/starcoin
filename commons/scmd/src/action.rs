@@ -20,6 +20,11 @@ pub trait CommandAction {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem>;
 
+    /// This command should skip record in console history when return true.
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        false
+    }
+
     fn into_cmd(self) -> Command<Self::State, Self::GlobalOpt, Self::Opt, Self::ReturnItem, Self>
     where
         Self: std::marker::Sized,
