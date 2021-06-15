@@ -11,6 +11,6 @@ hmac = "0.7"
 sha2 = "0.8"
 aes-gcm = "0.5"
 rand = "0.8.3"
-rand_core = { version = "0.6.2", default-features = false }
+rand_core = { version = "0.6.3", default-features = false }
 byteorder="1.4"
 anyhow= "1.0.41"
