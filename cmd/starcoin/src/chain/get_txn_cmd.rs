@@ -9,9 +9,10 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::TransactionView;
 use structopt::StructOpt;
 
+/// Get transaction by txn hash or block hash and txn idx in the block
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_txn")]
-pub struct GetOpt {
+#[structopt(name = "get-txn", alias = "get_txn")]
+pub struct GetTransactionOpt {
     #[structopt(name = "txn-hash")]
     /// txn hash
     txn_hash: Option<HashValue>,
@@ -29,7 +30,7 @@ pub struct GetTransactionCommand;
 impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
+    type Opt = GetTransactionOpt;
     type ReturnItem = Option<TransactionView>;
 
     fn run(

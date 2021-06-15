@@ -6,13 +6,14 @@ Feature: cmd integration test
 
 # chain
   Scenario Outline: [cmd] cli chain test
-    Then cmd: "chain epoch_info"
-    Then cmd: "chain get_block_by_number"
-    Then cmd: "chain list_block"
-    Then cmd: "chain get_block @$[0].block_hash@"
-    Then cmd: "chain get_txn_by_block @$.block_hash@"
-    Then cmd: "chain get_txn @$[0].transaction_hash@"
-    Then cmd: "chain get_events @$.transaction_hash@"
+    Then cmd: "chain epoch-info"
+    Then cmd: "chain list-block"
+    Then cmd: "chain get-block @$[0].block_hash@"
+    Then cmd: "chain list-block"
+    Then cmd: "chain get-block @$[0].number@"
+    Then cmd: "chain get-txn-infos @$.header.block_hash@"
+    Then cmd: "chain get-txn @$[0].transaction_hash@"
+    Then cmd: "chain get-events @$.transaction_hash@"
     Then stop
 
     Examples:
@@ -95,12 +96,12 @@ Feature: cmd integration test
     Then cmd: "dev get_coin"
     Then cmd: "account create -p transfer"
     Then cmd: "account transfer --blocking -v 10000 -r @$.address@ -k @$.public_key@"
-    Then cmd: "chain get_txn @$.txn_hash@"
-    Then cmd: "chain get_events @$.transaction_hash@"
+    Then cmd: "chain get-txn @$.txn_hash@"
+    Then cmd: "chain get-events @$.transaction_hash@"
     Then cmd: "account create -p transfer"
     Then cmd: "account transfer --blocking -v 10000 -r @$.receipt_identifier@"
-    Then cmd: "chain get_txn @$.txn_hash@"
-    Then cmd: "chain get_events @$.transaction_hash@"
+    Then cmd: "chain get-txn @$.txn_hash@"
+    Then cmd: "chain get-events @$.transaction_hash@"
     Then cmd: "account create -p compat"
     Then cmd: "account unlock -p compat @$.address@"
     Then cmd: "account show @$.address@"
@@ -115,7 +116,7 @@ Feature: cmd integration test
     Then cmd: "account list"
     Then cmd: "account show"
 #    Then cmd: "account execute-builtin --blocking --script empty_script -s @$.account.address@"
-    Then cmd: "account accept_token 0x1::DummyToken::DummyToken"
+    Then cmd: "account accept-token 0x1::DummyToken::DummyToken"
     Then stop
 
 
@@ -142,11 +143,11 @@ Feature: cmd integration test
     Then cmd: "dev deploy --blocking @$.result@"
     Then cmd: "account show"
     Then cmd: "account execute-function --function @$.account.address@::MyToken::init --blocking"
-    Then cmd: "chain get_txn @$.txn_hash@"
+    Then cmd: "chain get-txn @$.txn_hash@"
     Then cmd: "account show"
     Then cmd: "account execute-function --function @$.account.address@::MyToken::mint --blocking --arg 1000000u128"
 #    Then assert: "$.status Executed"
-    Then cmd: "chain get_txn @$.txn_hash@"
+    Then cmd: "chain get-txn @$.txn_hash@"
 # TODO check MyToken balance.
 #    Then cmd: "account show"
 #    Then assert: "$.account.balances.MyToken 1000000"

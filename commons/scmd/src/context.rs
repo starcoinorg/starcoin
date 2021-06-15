@@ -105,7 +105,7 @@ where
                     .short("o")
                     .help("set output-format, support [json|table]")
                     .takes_value(true)
-                    .default_value("table"),
+                    .default_value("json"),
             );
         app = Self::set_app_author(app);
         Self {
@@ -374,8 +374,8 @@ where
                             if params.len() == 1 {
                                 println!("Current format: {}", output_format);
                             } else if params.len() == 2 {
-                                output_format = OutputFormat::from_str(params[1])
-                                    .unwrap_or(OutputFormat::TABLE);
+                                output_format =
+                                    OutputFormat::from_str(params[1]).unwrap_or_default();
                                 println!("Set output format to: {}", output_format);
                             } else {
                                 println!("Usage: output [format] 'Output format: JSON|TABLE'");
@@ -412,11 +412,13 @@ where
                                             }
                                         }
                                         Err(e) => {
+                                            rl.add_history_entry(line.as_str());
                                             println!("{}", e);
                                         }
                                     }
                                 }
                                 _ => {
+                                    rl.add_history_entry(line.as_str());
                                     println!("Unknown command: {:?}", cmd_name);
                                     app.print_long_help().expect("print help should success.");
                                 }

@@ -128,13 +128,7 @@ fn test_halley_consensus() {
 
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
-    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
     let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
-    let global = mock_chain
-        .head()
-        .get_global_time_by_number(mock_chain.head().current_header().number())
-        .unwrap();
-    net.time_service().adjust(global);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -304,7 +298,7 @@ fn test_switch_epoch() {
 
     // 4. block apply
     let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch_info().unwrap().end_block_number();
+    let end_number = mock_chain.head().epoch().end_block_number();
     assert!(begin_number < end_number);
     if begin_number < (end_number - 1) {
         for _i in begin_number..(end_number - 1) {
@@ -330,7 +324,7 @@ fn test_uncle_in_diff_epoch() {
 
     // 3. block apply
     let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch_info().unwrap().end_block_number();
+    let end_number = mock_chain.head().epoch().end_block_number();
     assert!(begin_number < end_number);
     if begin_number < (end_number - 1) {
         for _i in begin_number..(end_number - 1) {

@@ -9,19 +9,20 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
+/// Get transaction infos by block hash.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_txn_by_block")]
-pub struct GetOpt {
-    #[structopt(name = "hash")]
-    hash: HashValue,
+#[structopt(name = "get-txn-infos")]
+pub struct GetTxnInfosOpt {
+    #[structopt(name = "block-hash")]
+    block_hash: HashValue,
 }
 
-pub struct GetTxnByBlockCommand;
+pub struct GetTxnInfosCommand;
 
-impl CommandAction for GetTxnByBlockCommand {
+impl CommandAction for GetTxnInfosCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
+    type Opt = GetTxnInfosOpt;
     type ReturnItem = Vec<TransactionInfoView>;
 
     fn run(
@@ -30,7 +31,7 @@ impl CommandAction for GetTxnByBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let vec_transaction_info = client.chain_get_block_txn_infos(opt.hash)?;
+        let vec_transaction_info = client.chain_get_block_txn_infos(opt.block_hash)?;
 
         Ok(vec_transaction_info)
     }

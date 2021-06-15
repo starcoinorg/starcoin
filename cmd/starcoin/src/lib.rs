@@ -91,16 +91,13 @@ pub fn add_command(
         .command(
             Command::with_name("chain")
                 .subcommand(chain::InfoCommand)
-                .subcommand(chain::GetBlockByNumberCommand)
+                .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::ListBlockCommand)
                 .subcommand(chain::GetTransactionCommand)
-                .subcommand(chain::GetTxnByBlockCommand)
+                .subcommand(chain::GetTxnInfosCommand)
                 .subcommand(chain::GetTransactionInfoCommand)
                 .subcommand(chain::GetEventsCommand)
-                .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::EpochInfoCommand)
-                .subcommand(chain::GetEpochInfoByNumberCommand)
-                .subcommand(chain::GetGlobalTimeByNumberCommand)
                 .subcommand(chain::TPSCommand)
                 .subcommand(
                     Command::with_name("uncle")

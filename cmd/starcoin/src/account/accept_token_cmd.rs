@@ -15,7 +15,7 @@ use structopt::StructOpt;
 
 /// Accept a new token, this operator will call 0x1::Account::accept_token function.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "accept_token")]
+#[structopt(name = "accept-token", alias = "accept_token")]
 pub struct AcceptTokenOpt {
     #[structopt(short = "s")]
     /// if `sender` is absent, use default account.
