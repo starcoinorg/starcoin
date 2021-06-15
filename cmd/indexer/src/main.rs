@@ -85,6 +85,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
         info!("current_block_number: {}", current_block_number);
         let bulk_times = min(chain_header.number.0 - current_block_number, bulk_size);
         let mut block_vec = vec![];
+        let mut uncle_block_vec = vec![];
         let mut index = 1u64;
 
         while index <= bulk_times {
@@ -129,6 +130,25 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
                 }
             }
             block_vec.push(next_block.clone());
+            // add uncle
+            if !next_block.block.uncles.is_empty() {
+                for uncle_header in next_block.block.uncles {
+                    let uncle_block: BlockData = FutureRetry::new(
+                        || {
+                            block_client.get_block_whole_by_hash(uncle_header.block_hash)
+                            //.map_err(|e| e.compat())
+                        },
+                        |e| {
+                            warn!("[Retry]: get chain uncle block data, err: {}", &e);
+                            RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
+                        },
+                    )
+                    .await
+                    .map(|(d, _)| d)
+                    .map_err(|(e, _)| e)?;
+                    uncle_block_vec.push(uncle_block.clone());
+                }
+            }
             sinker
                 .update_local_tip_header(
                     next_block.block.header.block_hash,
@@ -154,6 +174,18 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker, bulk_size: u64)
             .await
             .map(|(d, _)| d)
             .map_err(|(e, _)| e)?;
+            //bulk uncle
+            FutureRetry::new(
+                || sinker.bulk_uncle(uncle_block_vec.clone()),
+                |e: anyhow::Error| {
+                    warn!("[Retry]: write next uncle blocks, err: {}", e);
+                    RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
+                },
+            )
+            .await
+            .map(|(d, _)| d)
+            .map_err(|(e, _)| e)?;
+
             let local_tip_header = sinker.get_local_tip_header().await?;
             if let Some(tip_info) = local_tip_header.as_ref() {
                 FutureRetry::new(
