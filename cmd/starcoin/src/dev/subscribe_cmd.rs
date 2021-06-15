@@ -8,6 +8,7 @@ use starcoin_types::event::EventKey;
 use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
 
+/// Subscribe chain event.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "event")]
 pub struct SubscribeEventOpt {

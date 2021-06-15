@@ -21,6 +21,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// Submit a module upgrade proposal
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_proposal")]
 pub struct UpgradeModuleProposalOpt {

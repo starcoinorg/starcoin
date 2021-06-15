@@ -14,6 +14,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// Execute module upgrade plan, submit a package transaction.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_exe")]
 pub struct UpgradeModuleExeOpt {

@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
 
+/// Compile a module or script.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "compile")]
 pub struct CompileOpt {

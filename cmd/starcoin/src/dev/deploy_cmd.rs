@@ -16,6 +16,7 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use structopt::StructOpt;
 
+/// Deploy Move modules
 #[derive(Debug, StructOpt)]
 #[structopt(name = "deploy")]
 pub struct DeployOpt {

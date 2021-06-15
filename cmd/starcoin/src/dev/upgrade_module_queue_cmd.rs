@@ -16,6 +16,7 @@ use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
+/// Queue the upgrade module proposal
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_queue")]
 pub struct UpgradeModuleQueueOpt {

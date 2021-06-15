@@ -5,7 +5,6 @@ pub mod account;
 pub mod chain;
 pub mod cli_state;
 pub mod contract;
-pub mod debug;
 pub mod dev;
 pub mod helper;
 pub mod mutlisig_transaction;
@@ -13,8 +12,6 @@ pub mod node;
 pub mod state;
 mod txpool;
 pub mod view;
-
-use crate::debug::{GenBlockCommand, SleepCommand, TxPoolStatusCommand};
 pub use cli_state::CliState;
 use scmd::{CmdContext, Command};
 pub use starcoin_config::StarcoinOpt;
@@ -127,6 +124,7 @@ pub fn add_command(
         .command(
             Command::with_name("dev")
                 .subcommand(dev::GetCoinCommand)
+                .subcommand(dev::move_explain::MoveExplain)
                 .subcommand(dev::CompileCommand)
                 .subcommand(dev::DeployCommand)
                 .subcommand(dev::UpgradeModuleProposalCommand)
@@ -141,22 +139,15 @@ pub fn add_command(
                         .subcommand(dev::SubscribeBlockCommand)
                         .subcommand(dev::SubscribeEventCommand)
                         .subcommand(dev::SubscribeNewTxnCommand),
-                ),
-        )
-        .command(Command::with_name("contract").subcommand(contract::GetContractDataCommand))
-        .command(
-            Command::with_name("debug")
+                )
                 .subcommand(
                     Command::with_name("log")
-                        .subcommand(debug::LogLevelCommand)
-                        .subcommand(debug::LogPatternCommand),
+                        .subcommand(dev::log_cmd::LogLevelCommand)
+                        .subcommand(dev::log_cmd::LogPatternCommand),
                 )
-                .subcommand(debug::TxFactoryCommand)
-                .subcommand(debug::PanicCommand)
-                .subcommand(debug::GetBlockByUncleCommand)
-                .subcommand(TxPoolStatusCommand)
-                .subcommand(SleepCommand)
-                .subcommand(GenBlockCommand)
-                .subcommand(debug::MoveExplain),
+                .subcommand(dev::panic_cmd::PanicCommand)
+                .subcommand(dev::sleep_cmd::SleepCommand)
+                .subcommand(dev::gen_block_cmd::GenBlockCommand),
         )
+        .command(Command::with_name("contract").subcommand(contract::GetContractDataCommand))
 }

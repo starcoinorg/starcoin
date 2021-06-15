@@ -14,6 +14,7 @@ use starcoin_vm_types::transaction::TransactionPayload;
 use std::str::FromStr;
 use structopt::StructOpt;
 
+/// Submit a VM config upgrade proposal
 #[derive(Debug, StructOpt)]
 #[structopt(name = "vm_config_proposal")]
 #[allow(clippy::upper_case_acronyms)]
