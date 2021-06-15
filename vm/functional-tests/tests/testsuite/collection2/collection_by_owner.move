@@ -2,7 +2,9 @@
 //! account: alice, 100000 0x1::STC::STC
 //! account: bob, 100000 0x1::STC::STC
 
-module TestR {
+address default={{default}};
+address alice = {{alice}};
+module default::TestR {
     struct TestR has key, store {id: u64}
 
     public fun new(id: u64): TestR{
@@ -22,10 +24,12 @@ module TestR {
 
 //! new-transaction
 //! sender: alice
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
     use 0x1::Signer;
-    use {{default}}::TestR::{Self,TestR};
+    use default::TestR::{Self,TestR};
 
     fun test_single(signer: signer) {
         let r = TestR::new(1);
@@ -36,10 +40,12 @@ script {
 
 //! new-transaction
 //! sender: alice
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
     use 0x1::Signer;
-    use {{default}}::TestR::{Self, TestR};
+    use default::TestR::{Self, TestR};
 
     fun test_single(signer: signer) {
         let addr = Signer::address_of(&signer);
@@ -53,10 +59,12 @@ script {
 
 //! new-transaction
 //! sender: alice
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
     use 0x1::Signer;
-    use {{default}}::TestR::{Self,TestR};
+    use default::TestR::{Self,TestR};
 
     fun test_multi(signer: signer) {
         let addr = Signer::address_of(&signer);
@@ -71,10 +79,12 @@ script {
 
 //! new-transaction
 //! sender: alice
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
     use 0x1::Signer;
-    use {{default}}::TestR::{Self, TestR};
+    use default::TestR::{Self, TestR};
 
     fun test_borrow_by_owner(signer: signer) {
         let addr = Signer::address_of(&signer);
@@ -95,12 +105,14 @@ script {
 
 //! new-transaction
 //! sender: bob
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
-    use {{default}}::TestR::{Self, TestR};
+    use default::TestR::{Self, TestR};
 
     fun test_borrow_by_other(signer: signer) {
-        let c = Collection2::borrow_collection<TestR>(&signer, {{alice}});
+        let c = Collection2::borrow_collection<TestR>(&signer, @alice);
         let r = Collection2::borrow(&c, 0);
         let id = TestR::id_of(r);
         assert(id == 1, 1006);
@@ -110,12 +122,14 @@ script {
 
 //! new-transaction
 //! sender: bob
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
-    use {{default}}::TestR::{Self, TestR};
+    use default::TestR::{Self, TestR};
 
     fun test_remove_by_other(signer: signer) {
-        let c = Collection2::borrow_collection<TestR>(&signer, {{alice}});
+        let c = Collection2::borrow_collection<TestR>(&signer, @alice);
         let r = Collection2::remove<TestR>(&mut c, 0);
         TestR::drop(r);
         Collection2::return_collection(c);
@@ -127,10 +141,12 @@ script {
 
 //! new-transaction
 //! sender: alice
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
     use 0x1::Signer;
-    use {{default}}::TestR::{Self, TestR};
+    use default::TestR::{Self, TestR};
 
     fun test_remove_by_owner(signer: signer) {
         let addr = Signer::address_of(&signer);
@@ -152,10 +168,12 @@ script {
 
 //! new-transaction
 //! sender: alice
+address default={{default}};
+address alice = {{alice}};
 script {
     use 0x1::Collection2;
     use 0x1::Signer;
-    use {{default}}::TestR::{TestR};
+    use default::TestR::{TestR};
 
     fun test_remove_by_owner(signer: signer) {
         let addr = Signer::address_of(&signer);

@@ -1,4 +1,5 @@
-module Swapper {
+address default = {{default}};
+module default::Swapper {
     use 0x1::Vector;
     public fun call(x: u64) {
         swap_it_up(x)
@@ -23,8 +24,9 @@ module Swapper {
 
 //! new-transaction
 //! max-gas: 621000
+address default = {{default}};
 script {
-use {{default}}::Swapper;
+use default::Swapper;
 fun main() {
     Swapper::call(10000)
 }

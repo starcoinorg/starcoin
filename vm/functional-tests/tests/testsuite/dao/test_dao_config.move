@@ -2,7 +2,8 @@
 //! account: bob
 
 //! sender: alice
-module MyToken {
+address alice = {{alice}};
+module alice::MyToken {
     use 0x1::Token;
     use 0x1::Dao;
 
@@ -19,8 +20,9 @@ module MyToken {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::MyToken::{MyToken, Self};
+    use alice::MyToken::{MyToken, Self};
     use 0x1::Account;
     use 0x1::Token;
 
@@ -29,7 +31,7 @@ script {
 
         let market_cap = Token::market_cap<MyToken>();
         assert(market_cap == 0, 8001);
-        assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
+        assert(Token::is_registered_in<MyToken>(@alice), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
         Account::do_accept_token<MyToken>(&account);
     }
@@ -39,9 +41,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
 
@@ -62,9 +65,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
     fun set_dao_config(signer: signer) {
@@ -79,9 +83,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
     fun set_dao_config(signer: signer) {
@@ -96,9 +101,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
     fun set_dao_config(signer: signer) {
@@ -113,9 +119,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
     fun set_dao_config(signer: signer) {
@@ -130,8 +137,9 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
 script {
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::ModifyDaoConfigProposal;
 
     fun test_plugin(signer: signer) {
@@ -142,9 +150,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
     fun modify_dao_config(signer: signer) {
@@ -185,9 +194,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
     use 0x1::Config;
 
     fun modify_dao_config(signer: signer) {
@@ -214,9 +224,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 0; //should > 0
@@ -236,9 +247,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
@@ -258,9 +270,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
@@ -280,9 +293,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;
@@ -302,9 +316,10 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
         let voting_delay = 30 * 1000;

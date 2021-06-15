@@ -20,12 +20,13 @@ script {
 
 //! new-transaction
 //! sender: association
+address alice = {{alice}};
 script {
     use 0x1::TreasuryScripts;
     use 0x1::STC::STC;
 
     fun main(account: signer) {
-        TreasuryScripts::withdraw_and_split_lt_withdraw_cap<STC>(account, {{alice}}, 100000000000000, 0);
+        TreasuryScripts::withdraw_and_split_lt_withdraw_cap<STC>(account, @alice, 100000000000000, 0);
     }
 }
 
@@ -41,13 +42,14 @@ script {
 
 //! new-transaction
 //! sender: alice
+address ASSOCIATION = {{association}};
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
     use 0x1::Treasury;
 
     fun redeem_offer(account: signer) {
-        let cap = Offer::redeem<Treasury::LinearWithdrawCapability<STC>>(&account, {{association}});
+        let cap = Offer::redeem<Treasury::LinearWithdrawCapability<STC>>(&account, @ASSOCIATION);
         Treasury::add_linear_withdraw_capability(&account,cap);
     }
 }

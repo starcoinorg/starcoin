@@ -8,6 +8,9 @@
 
 //! new-transaction
 //! sender: association
+address alice = {{alice}};
+address bob = {{bob}};
+
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
@@ -15,8 +18,8 @@ script {
 
     fun transfer_some_token_to_alice_and_bob(signer: signer) {
         let balance = Account::balance<STC>(Signer::address_of(&signer));
-        Account::pay_from<STC>(&signer, {{alice}}, balance / 4);
-        Account::pay_from<STC>(&signer, {{bob}}, balance / 4);
+        Account::pay_from<STC>(&signer, @alice, balance / 4);
+        Account::pay_from<STC>(&signer, @bob, balance / 4);
     }
 }
 // check: EXECUTED
@@ -57,6 +60,8 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address genesis = {{genesis}};
 
 script {
     use 0x1::OnChainConfigDao;
@@ -68,7 +73,7 @@ script {
     fun vote(signer: signer) {
         let balance = Account::balance<STC>(Signer::address_of(&signer));
         let balance = Account::withdraw<STC>(&signer, balance);
-        Dao::cast_vote<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(&signer, {{alice}}, 0, balance, true);
+        Dao::cast_vote<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(&signer, @alice, 0, balance, true);
     }
 }
 // check: EXECUTED
@@ -88,6 +93,8 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address genesis = {{genesis}};
 
 script {
     use 0x1::OnChainConfigDao;
@@ -96,15 +103,15 @@ script {
     use 0x1::Account;
     use 0x1::Dao;
     fun queue_proposal(signer: signer) {
-        let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>({{alice}}, 0);
+        let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(@alice, 0);
         assert(state == 4, (state as u64));
         {
-            let token = Dao::unstake_votes<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(&signer, {{alice}}, 0);
+            let token = Dao::unstake_votes<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(&signer, @alice, 0);
             Account::deposit_to_self(&signer, token);
         };
-        Dao::queue_proposal_action<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>({{alice}}, 0);
-        // ModifyDaoConfigProposal::execute<STC>({{alice}}, 0);
-        let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>({{alice}}, 0);
+        Dao::queue_proposal_action<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(@alice, 0);
+        // ModifyDaoConfigProposal::execute<STC>(@alice, 0);
+        let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(@alice, 0);
         assert(state == 5, (state as u64));
     }
 }
@@ -120,18 +127,19 @@ script {
 
 //! new-transaction
 //! sender: bob
-
+address alice = {{alice}};
+address genesis = {{genesis}};
 script {
     use 0x1::OnChainConfigDao;
     use 0x1::TransactionPublishOption;
     use 0x1::STC::STC;
     use 0x1::Dao;
     fun execute_proposal_action(_signer: signer) {
-        let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>({{alice}}, 0);
+        let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(@alice, 0);
         assert(state == 6, (state as u64));
-        OnChainConfigDao::execute<STC, TransactionPublishOption::TransactionPublishOption>({{alice}}, 0);
-        assert(!TransactionPublishOption::is_module_allowed({{genesis}}), 401);
-        assert(TransactionPublishOption::is_script_allowed({{genesis}}), 402);
+        OnChainConfigDao::execute<STC, TransactionPublishOption::TransactionPublishOption>(@alice, 0);
+        assert(!TransactionPublishOption::is_module_allowed(@genesis), 401);
+        assert(TransactionPublishOption::is_script_allowed(@genesis), 402);
     }
 }
 // check: EXECUTED

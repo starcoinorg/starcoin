@@ -4,8 +4,8 @@
 //! new-transaction
 
 //! sender: alice
-
-module M {
+address alice = {{alice}};
+module alice::M {
     use 0x1::Signer;
 
     struct Cup has key, store {
@@ -40,9 +40,9 @@ module M {
 
 //! new-transaction
 //! sender: bob
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 fun main(account: signer) {
   let cup = M::new();
   M::publish(cup, &account);
@@ -55,9 +55,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: bob
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 fun main(account: signer) {
   let y = M::destroy(&account);
   assert(y == 1, 41)
@@ -70,9 +70,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: bob
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 fun main(account: signer) {
     let cup = M::new();
     M::publish(cup, &account);
@@ -86,9 +86,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: bob
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 fun main(account: signer) {
     let cup = M::new();
     M::publish(cup, &account);

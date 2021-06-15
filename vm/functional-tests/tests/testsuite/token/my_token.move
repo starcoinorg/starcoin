@@ -3,14 +3,15 @@
 //! account: bob
 
 //! sender: alice
-module MyToken {
+address alice = {{alice}};
+module alice::MyToken {
     use 0x1::Token;
     use 0x1::Signer;
 
     struct MyToken has copy, drop, store { }
 
     public fun init(account: &signer) {
-        assert(Signer::address_of(account) == {{alice}}, 8000);
+        assert(Signer::address_of(account) == @alice, 8000);
 
         Token::register_token<MyToken>(
                     account,
@@ -23,8 +24,9 @@ module MyToken {
 
 //! new-transaction
 //! sender: bob
-module HideToken {
-    use {{alice}}::MyToken::MyToken;
+address bob = {{bob}};
+module bob::HideToken {
+    use alice::MyToken::MyToken;
     use 0x1::Token::Token;
 
     struct Collection has key, store { t: Token<MyToken>,}
@@ -38,8 +40,9 @@ module HideToken {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-use {{alice}}::MyToken::{MyToken, Self};
+use alice::MyToken::{MyToken, Self};
 use 0x1::Account;
 use 0x1::Token;
 
@@ -48,7 +51,7 @@ fun main(account: signer) {
 
     let market_cap = Token::market_cap<MyToken>();
     assert(market_cap == 0, 8001);
-    assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
+    assert(Token::is_registered_in<MyToken>(@alice), 8002);
     // Create 'Balance<TokenType>' resource under sender account, and init with zero
     Account::do_accept_token<MyToken>(&account);
 }
@@ -63,7 +66,7 @@ fun main(account: signer) {
 script {
 use 0x1::Account;
 use 0x1::Token;
-use {{alice}}::MyToken::{MyToken};
+use alice::MyToken::{MyToken};
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
     let old_market_cap = Token::market_cap<MyToken>();
@@ -80,7 +83,7 @@ fun main(account: signer) {
 //! sender: bob
 script {
     use 0x1::Account;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun main(account: signer) {
         Account::accept_token<MyToken>(account);
@@ -90,22 +93,25 @@ script {
 
 //! new-transaction
 //! sender: alice
-
+address alice = {{alice}};
+address bob = {{bob}};
 script {
     use 0x1::Account;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun main(account: signer) {
-        Account::pay_from<MyToken>(&account, {{bob}}, 10);
+        Account::pay_from<MyToken>(&account, @bob, 10);
     }
 }
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address bob = {{bob}};
 script {
     use 0x1::Account;
-    use {{alice}}::MyToken::MyToken;
-    use {{bob}}::HideToken;
+    use alice::MyToken::MyToken;
+    use bob::HideToken;
 
     fun main(account: signer) {
         let token = Account::withdraw<MyToken>(&account, 10);

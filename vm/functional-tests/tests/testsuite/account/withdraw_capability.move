@@ -3,7 +3,8 @@
 //! account: carol
 
 //! sender: alice
-module SillyColdWallet {
+address alice = {{alice}};
+module alice::SillyColdWallet {
     use 0x1::Account;
 
     struct T has key, store {
@@ -18,20 +19,23 @@ module SillyColdWallet {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
+address bob = {{bob}};
 script {
-use {{alice}}::SillyColdWallet;
+use alice::SillyColdWallet;
 use 0x1::Account;
 
 // create a cold wallet for Bob that withdraws from Alice's account
 fun main(sender: signer) {
     let cap = Account::extract_withdraw_capability(&sender);
-    SillyColdWallet::publish(&sender, cap, {{bob}});
+    SillyColdWallet::publish(&sender, cap, @bob);
 }
 }
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::STC::STC;
 use 0x1::Account;
@@ -40,7 +44,7 @@ use 0x1::Account;
 fun main(account: signer) {
     let with_cap = Account::extract_withdraw_capability(&account);
     // should fail with withdrawal capability already extracted
-    Account::pay_from_capability<STC>(&with_cap, {{alice}}, 1000, x"");
+    Account::pay_from_capability<STC>(&with_cap, @alice, 1000, x"");
     Account::restore_withdraw_capability(with_cap);
 }
 }
@@ -66,6 +70,7 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: bob
+address bob = {{bob}};
 script {
 use 0x1::STC::STC;
 use 0x1::Account;
@@ -73,7 +78,7 @@ use 0x1::Account;
 // check that Bob can still pay from his normal account
 fun main(account: signer) {
     let with_cap = Account::extract_withdraw_capability(&account);
-    Account::pay_from_capability<STC>(&with_cap, {{bob}}, 1000, x"");
+    Account::pay_from_capability<STC>(&with_cap, @bob, 1000, x"");
     Account::restore_withdraw_capability(with_cap);
 }
 }
@@ -109,6 +114,7 @@ use 0x1::Signer;
 
 //! new-transaction
 //! sender: carol
+address alice = {{alice}};
 script {
 use 0x1::STC::STC;
 use 0x1::Account;
@@ -116,7 +122,7 @@ use 0x1::Account;
 // check that other users can still pay into Alice's account in the normal way
 fun main(account: signer) {
     let with_cap = Account::extract_withdraw_capability(&account);
-    Account::pay_from_capability<STC>(&with_cap, {{alice}}, 1000, x"");
+    Account::pay_from_capability<STC>(&with_cap, @alice, 1000, x"");
     Account::restore_withdraw_capability(with_cap);
 }
 }

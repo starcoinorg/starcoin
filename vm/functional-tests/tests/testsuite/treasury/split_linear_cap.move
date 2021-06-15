@@ -21,6 +21,7 @@ script {
 
 //! new-transaction
 //! sender: association
+address alice = {{alice}};
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
@@ -30,7 +31,7 @@ script {
     fun bob_take_linear_key_from_offer(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let (token, cap2) = Treasury::split_linear_withdraw_cap(&mut cap, 47777040000000000/2);
-        Offer::create(&account, cap2, {{alice}}, 0);
+        Offer::create(&account, cap2, @alice, 0);
         Account::deposit_to_self(&account, token);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }
@@ -43,13 +44,14 @@ script {
 
 //! new-transaction
 //! sender: alice
+address ASSOCIATION = {{association}};
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
     use 0x1::Treasury::{Self, LinearWithdrawCapability};
 
     fun alice_take_linear_key_from_offer(account: signer) {
-        let cap = Offer::redeem<LinearWithdrawCapability<STC>>(&account, {{association}});
+        let cap = Offer::redeem<LinearWithdrawCapability<STC>>(&account, @ASSOCIATION);
         assert(Treasury::get_linear_withdraw_capability_total(&cap)==47777040000000000/2, 1002);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }

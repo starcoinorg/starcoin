@@ -6,18 +6,20 @@
 //! sender: alice
 //! gas-price: 1
 //! max-gas: 700
+address alice = {{alice}};
+address bob = {{bob}};
 
 script {
     use 0x1::Account;
 
     fun main(account: signer) {
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
         // gas used out
     }
 }
@@ -28,14 +30,16 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address bob = {{bob}};
 
 script {
     use 0x1::Account;
 
     fun main() {
         // check the state is unchanged
-        assert(Account::balance<0x1::STC::STC>({{bob}}) == 1000, 42);
-        assert(Account::balance<0x1::STC::STC>({{alice}}) == 300, 43);
+        assert(Account::balance<0x1::STC::STC>(@bob) == 1000, 42);
+        assert(Account::balance<0x1::STC::STC>(@alice) == 300, 43);
     }
 }
 

@@ -3,7 +3,9 @@
 
 //! sender: alice
 
-module A {
+address alice = {{alice}};
+address bob = {{bob}};
+module alice::A {
     struct Coin has key, store {
         u: u64,
     }
@@ -26,8 +28,10 @@ module A {
 //! new-transaction
 //! sender: bob
 
-module Tester {
-    use {{alice}}::A;
+address alice = {{alice}};
+address bob = {{bob}};
+module bob::Tester {
+    use alice::A;
 
     struct Pair has key, store { x: A::Coin, y: A::Coin }
 
@@ -39,8 +43,11 @@ module Tester {
 
 //! new-transaction
 //! sender: bob
+
+address alice = {{alice}};
+address bob = {{bob}};
 script {
-use {{bob}}::Tester;
+use bob::Tester;
 
 fun main(account: signer) {
     Tester::test(&account);
@@ -52,9 +59,10 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
-
+address alice = {{alice}};
+address bob = {{bob}};
 script {
-use {{alice}}::A;
+use alice::A;
 
 fun main() {
     let x = A::new();

@@ -4,6 +4,8 @@
 //! account: carol, 0 0x1::STC::STC
 
 //! sender: alice
+address alice = {{alice}};
+address bob = {{bob}};
 script {
     use 0x1::Account;
     use 0x1::Offer;
@@ -13,11 +15,11 @@ script {
 
     fun create_offer(account: signer) {
         let token = Account::withdraw<STC>(&account, 10000);
-        Offer::create(&account, token, {{bob}}, 5);
+        Offer::create(&account, token, @bob, 5);
         // test Offer::exists_at
         assert(Offer::exists_at<Token<STC>>(Signer::address_of(&account)), 1001);
         // test Offer::address_of
-        assert(Offer::address_of<Token<STC>>(Signer::address_of(&account)) == {{bob}}, 1002);
+        assert(Offer::address_of<Token<STC>>(Signer::address_of(&account)) == @bob, 1002);
     }
 }
 
@@ -30,6 +32,8 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address bob = {{bob}};
 script {
     use 0x1::Account;
     use 0x1::Offer;
@@ -37,7 +41,7 @@ script {
     use 0x1::STC::STC;
 
     fun redeem_offer(account: signer) {
-        let token = Offer::redeem<Token<STC>>(&account, {{alice}});
+        let token = Offer::redeem<Token<STC>>(&account, @alice);
         Account::deposit_to_self(&account, token);
     }
 }
@@ -51,6 +55,8 @@ script {
 
 //! new-transaction
 //! sender: carol
+address alice = {{alice}};
+address bob = {{bob}};
 script {
     use 0x1::Account;
     use 0x1::Offer;
@@ -58,7 +64,7 @@ script {
     use 0x1::STC::STC;
 
     fun redeem_offer(account: signer) {
-        let token = Offer::redeem<Token<STC>>(&account, {{alice}});
+        let token = Offer::redeem<Token<STC>>(&account, @alice);
         Account::deposit_to_self(&account, token);
     }
 }
@@ -66,6 +72,8 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address bob = {{bob}};
 script {
     use 0x1::Account;
     use 0x1::Offer;
@@ -73,7 +81,7 @@ script {
     use 0x1::STC::STC;
 
     fun redeem_offer(account: signer) {
-        let token = Offer::redeem<Token<STC>>(&account, {{alice}});
+        let token = Offer::redeem<Token<STC>>(&account, @alice);
         Account::deposit_to_self(&account, token);
     }
 }
