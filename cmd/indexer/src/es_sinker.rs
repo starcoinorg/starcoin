@@ -267,6 +267,8 @@ impl EsSinker {
         let mut bulk_operations = BulkOperations::new();
         let block_index = self.config.block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
+        let mut uncle_bulk_operations = BulkOperations::new();
+        let uncle_index = self.config.uncle_block_index.as_str();
         for blockdata in blocks {
             let BlockData { block, txns_data } = blockdata;
             bulk_operations.push(
@@ -284,6 +286,16 @@ impl EsSinker {
                         .id(txn_data.info.transaction_hash.to_string())
                         .index(txn_info_index),
                 )?;
+            }
+            //add uncle
+            if !block.uncles.is_empty() {
+                for uncle in block.uncles {
+                    uncle_bulk_operations.push(
+                        BulkOperation::index(uncle.clone())
+                            .id(uncle.block_hash.to_string())
+                            .index(uncle_index),
+                    )?;
+                }
             }
         }
 
