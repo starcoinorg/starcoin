@@ -12,6 +12,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
+/// Execute the module upgrade proposal and submit module upgrade plan.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_plan")]
 pub struct UpgradeModulePlanOpt {

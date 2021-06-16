@@ -14,10 +14,10 @@ use std::convert::TryInto;
 use structopt::StructOpt;
 use tokio::time::Duration;
 
-/// Get coin to default account.
+/// Get stc to default account.
 /// This command only available in dev network.
 #[derive(Debug, StructOpt, Default)]
-#[structopt(name = "get_coin")]
+#[structopt(name = "get-coin", alias = "get_coin")]
 pub struct GetCoinOpt {
     #[structopt(short = "v")]
     /// if amount absent, transfer 20% of association_address's balance.

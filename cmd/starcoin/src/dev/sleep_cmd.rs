@@ -3,17 +3,18 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
 
+/// Let time pass for a period, only available in test or dev chain.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "sleep")]
 pub struct SleepOpt {
     #[structopt(
         short = "t",
         long = "time",
-        name = "sleep time",
+        name = "sleep time in milliseconds",
         default_value = "1",
         help = "only dev net can use."
     )]
@@ -35,7 +36,12 @@ impl CommandAction for SleepCommand {
         let opt = ctx.opt();
         let client = ctx.state().client();
         let net = ctx.state().net();
-        assert!(net.is_dev());
+        if !net.is_test_or_dev() {
+            bail!(
+                "This command only available in test or dev network, current network is: {}",
+                net
+            );
+        }
         client.sleep(opt.time)
     }
 }

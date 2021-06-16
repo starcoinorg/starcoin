@@ -10,8 +10,9 @@ use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
+/// Trigger a new block in dev.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "gen_block")]
+#[structopt(name = "gen-block")]
 pub struct GenBlockOpt {}
 
 pub struct GenBlockCommand;

@@ -19,18 +19,6 @@ Feature: cmd integration test
     Examples:
       |  |
 
-# debug
-  Scenario Outline: [cmd] debug test
-    Then cmd: "chain info"
-#    Then cmd: "debug gen_dev_block -p $.head_block"
-    Then cmd: "account unlock"
-    Then cmd: "dev get_coin"
-#    Then cmd: "debug log level Debug"
-    Then stop
-
-    Examples:
-      |  |
-
 # node
   Scenario Outline: [cmd] node test
     Then cmd: "node metrics"
@@ -54,7 +42,7 @@ Feature: cmd integration test
 # multisig account
   Scenario Outline: [cmd] multisig account
     Then cmd: "account unlock"
-    Then cmd: "dev get_coin"
+    Then cmd: "dev get-coin"
     Then cmd: "account generate-keypair -c 3"
     Then cmd: "account derive-address -t 2 -p @$[0].public_key@ -p @$[1].public_key@ -p @$[2].public_key@"
     Then cmd: "account transfer --blocking -r @$.receipt_identifier@ -t 0x1::STC::STC -v 10000000"
@@ -75,7 +63,7 @@ Feature: cmd integration test
 #state
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root"
-    Then cmd: "dev get_coin"
+    Then cmd: "dev get-coin"
     Then assert: "$.raw_txn.gas_unit_price 1 $.raw_txn.sequence_number 0 $.raw_txn.sender 0x0000000000000000000000000a550c18"
     Then cmd: "account show"
     Then assert: "$.account.is_default true $.sequence_number 0"
@@ -93,7 +81,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] account test
     Then cmd: "account show"
     Then cmd: "account unlock"
-    Then cmd: "dev get_coin"
+    Then cmd: "dev get-coin"
     Then cmd: "account create -p transfer"
     Then cmd: "account transfer --blocking -v 10000 -r @$.address@ -k @$.public_key@"
     Then cmd: "chain get-txn @$.txn_hash@"
@@ -137,7 +125,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] my_token test
     Then cmd: "account show"
     Then cmd: "account unlock @$.account.address@"
-    Then cmd: "dev get_coin"
+    Then cmd: "dev get-coin"
     Then cmd: "account show"
     Then cmd: "dev compile ../examples/my_token/MyToken.move -o ../examples -s @$.account.address@"
     Then cmd: "dev deploy --blocking @$.result@"

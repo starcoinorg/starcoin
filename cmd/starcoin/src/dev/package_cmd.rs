@@ -22,6 +22,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
+/// Build a modules package.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "package")]
 pub struct PackageOpt {
