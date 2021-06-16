@@ -1,4 +1,4 @@
-use crate::{BlockData, BlockWithMetadata};
+use crate::{BlockData, BlockSimplified, BlockWithMetadata};
 use anyhow::Result;
 use elasticsearch::http::response::Response;
 use elasticsearch::indices::{
@@ -267,7 +267,6 @@ impl EsSinker {
         let mut bulk_operations = BulkOperations::new();
         let block_index = self.config.block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
-        let mut uncle_bulk_operations = BulkOperations::new();
         let uncle_index = self.config.uncle_block_index.as_str();
         for blockdata in blocks {
             let BlockData { block, txns_data } = blockdata;
@@ -290,10 +289,13 @@ impl EsSinker {
             //add uncle
             if !block.uncles.is_empty() {
                 for uncle in block.uncles {
-                    uncle_bulk_operations.push(
-                        BulkOperation::index(uncle.clone())
-                            .id(uncle.block_hash.to_string())
-                            .index(uncle_index),
+                    bulk_operations.push(
+                        BulkOperation::index(BlockSimplified {
+                            header: uncle.clone(),
+                            uncle_block_number: block.header.number,
+                        })
+                        .id(uncle.block_hash.to_string())
+                        .index(uncle_index),
                     )?;
                 }
             }
@@ -306,8 +308,7 @@ impl EsSinker {
             .send()
             .await?;
 
-        EsSinker::check_status_code(resp).await;
-        Ok(())
+        EsSinker::check_status_code(resp).await
     }
 
     // bulk insert data into es.
@@ -336,8 +337,7 @@ impl EsSinker {
             .send()
             .await?;
 
-        EsSinker::check_status_code(resp).await;
-        Ok(())
+        EsSinker::check_status_code(resp).await
     }
 
     async fn check_status_code(resp: Response) -> anyhow::Result<()> {

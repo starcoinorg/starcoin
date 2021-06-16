@@ -6,8 +6,8 @@ pub use es_sinker::{EsSinker, IndexConfig, LocalTipInfo};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{
-    BlockMetadataView, BlockView, SignedUserTransactionView, StrView, TransactionEventView,
-    TransactionInfoView, TransactionVMStatus, TypeTagView,
+    BlockHeaderView, BlockMetadataView, BlockView, SignedUserTransactionView, StrView,
+    TransactionEventView, TransactionInfoView, TransactionVMStatus, TypeTagView,
 };
 use starcoin_types::block::BlockNumber;
 use starcoin_types::event::EventKey;
@@ -149,6 +149,12 @@ struct BlockWithMetadata {
     #[serde(flatten)]
     block: BlockView,
     metadata: Option<BlockMetadataView>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct BlockSimplified {
+    header: BlockHeaderView,
+    pub uncle_block_number: StrView<BlockNumber>,
 }
 
 #[cfg(test)]
