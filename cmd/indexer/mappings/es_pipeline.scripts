@@ -31,12 +31,21 @@ PUT _component_template/block-mappings
     }
   }
 
- PUT _component_template/txn_info-mappings
+
+ PUT _component_template/uncle-mappings
   {
     "template": {
-      # copy txn_info.mapping.json to here.
+      # copy uncle_mapping.json to here.
     }
   }
+
+  PUT _component_template/txn_info-mappings
+    {
+      "template": {
+        # copy txn_info.mapping.json to here.
+      }
+    }
+
 4.
   PUT _index_template/blocks-template
   {
@@ -44,6 +53,13 @@ PUT _component_template/block-mappings
     "priority": 500,
     "composed_of": ["blocks-settings","block-mappings", "txn_info-mappings" ]
   }
+
+  PUT _index_template/uncle-template
+    {
+      "index_patterns": ["*.uncle_blocks"],
+      "priority": 500,
+      "composed_of": ["blocks-settings","uncle-mappings"]
+    }
 
   PUT _index_template/txn-template
   {

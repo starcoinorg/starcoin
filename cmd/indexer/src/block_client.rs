@@ -1,6 +1,7 @@
 use crate::{BlockData, TransactionData};
 use anyhow::Result;
 use jsonrpc_core_client::RpcError;
+use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainClient;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockTransactionsView, BlockView, ChainInfoView, TransactionEventView,
@@ -17,10 +18,24 @@ impl BlockClient {
             node_client: chain_client,
         }
     }
+    pub async fn get_block_whole_by_hash(
+        &self,
+        block_hash: HashValue,
+    ) -> Result<BlockData, RpcError> {
+        let block: Option<BlockView> = self.node_client.get_block_by_hash(block_hash).await?;
+        let block = block
+            .ok_or_else(|| RpcError::Client(format!("cannot find block of hash {}", block_hash)))?;
+        self.get_block_data(block).await
+    }
+
     pub async fn get_block_whole_by_height(&self, height: u64) -> Result<BlockData, RpcError> {
         let block: Option<BlockView> = self.node_client.get_block_by_number(height).await?;
         let block = block
             .ok_or_else(|| RpcError::Client(format!("cannot find block of height {}", height)))?;
+        self.get_block_data(block).await
+    }
+
+    pub async fn get_block_data(&self, block: BlockView) -> Result<BlockData, RpcError> {
         let mut txn_infos: Vec<TransactionInfoView> = self
             .node_client
             .get_block_txn_infos(block.header.block_hash)

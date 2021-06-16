@@ -1,5 +1,6 @@
-use crate::{BlockData, BlockWithMetadata};
+use crate::{BlockData, BlockSimplified, BlockWithMetadata};
 use anyhow::Result;
+use elasticsearch::http::response::Response;
 use elasticsearch::indices::{
     IndicesCreateParts, IndicesExistsParts, IndicesGetMappingParts, IndicesPutMappingParts,
 };
@@ -16,6 +17,7 @@ use tokio::sync::RwLock;
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
     pub block_index: String,
+    pub uncle_block_index: String,
     pub txn_info_index: String,
 }
 
@@ -23,6 +25,7 @@ impl IndexConfig {
     pub fn new_with_prefix(prefix: impl AsRef<str>) -> Self {
         Self {
             block_index: format!("{}.blocks", prefix.as_ref()),
+            uncle_block_index: format!("{}.uncle_blocks", prefix.as_ref()),
             txn_info_index: format!("{}.txn_infos", prefix.as_ref()),
         }
     }
@@ -32,6 +35,7 @@ impl Default for IndexConfig {
     fn default() -> Self {
         Self {
             block_index: "blocks".to_string(),
+            uncle_block_index: "uncle_blocks".to_string(),
             txn_info_index: "txn_infos".to_string(),
         }
     }
@@ -86,8 +90,10 @@ impl EsSinker {
     /// init es indices
     pub async fn init_indices(&self) -> Result<()> {
         let block_index = self.config.block_index.as_str();
+        let uncle_block_index = self.config.uncle_block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
+        self.create_index_if_not_exists(uncle_block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
         let tip = self.get_remote_tip_header().await?;
         self.state.write().await.tip = tip.clone();
@@ -261,6 +267,7 @@ impl EsSinker {
         let mut bulk_operations = BulkOperations::new();
         let block_index = self.config.block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
+        let uncle_index = self.config.uncle_block_index.as_str();
         for blockdata in blocks {
             let BlockData { block, txns_data } = blockdata;
             bulk_operations.push(
@@ -279,6 +286,19 @@ impl EsSinker {
                         .index(txn_info_index),
                 )?;
             }
+            //add uncle
+            if !block.uncles.is_empty() {
+                for uncle in block.uncles {
+                    bulk_operations.push(
+                        BulkOperation::index(BlockSimplified {
+                            header: uncle.clone(),
+                            uncle_block_number: block.header.number,
+                        })
+                        .id(uncle.block_hash.to_string())
+                        .index(uncle_index),
+                    )?;
+                }
+            }
         }
 
         let resp = self
@@ -288,6 +308,39 @@ impl EsSinker {
             .send()
             .await?;
 
+        EsSinker::check_status_code(resp).await
+    }
+
+    // bulk insert data into es.
+    pub async fn bulk_uncle(&self, uncle_blocks: Vec<BlockData>) -> anyhow::Result<()> {
+        if uncle_blocks.is_empty() {
+            return Ok(());
+        }
+        let mut bulk_operations = BulkOperations::new();
+        let block_index = self.config.uncle_block_index.as_str();
+        for blockdata in uncle_blocks {
+            let BlockData { block, txns_data } = blockdata;
+            bulk_operations.push(
+                BulkOperation::index(BlockWithMetadata {
+                    block: block.clone(),
+                    metadata: txns_data[0].block_metadata.clone(),
+                })
+                .id(block.header.block_hash.to_string())
+                .index(block_index),
+            )?;
+        }
+
+        let resp = self
+            .es
+            .bulk(BulkParts::None)
+            .body(vec![bulk_operations])
+            .send()
+            .await?;
+
+        EsSinker::check_status_code(resp).await
+    }
+
+    async fn check_status_code(resp: Response) -> anyhow::Result<()> {
         // check response
         if resp.status_code().is_client_error() || resp.status_code().is_server_error() {
             let exception = resp.exception().await?;
