@@ -20,7 +20,6 @@ use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::Package;
 use starcoin_vm_types::transaction::RawUserTransaction;
 use starcoin_vm_types::transaction::TransactionPayload;
@@ -137,7 +136,6 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     let raw_txn = crate::build_transfer_txn_by_token_type(
         *account1.address(),
         *account2.address(),
-        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -173,7 +171,6 @@ fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
     let raw_txn = raw_peer_to_peer_txn_with_non_default_gas_token(
         *account1.address(),
         *account2.address(),
-        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -196,7 +193,6 @@ fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
 pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     transfer_amount: u128,
     seq_num: u64,
     gas_price: u64,
@@ -211,7 +207,6 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
         TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
             StdlibVersion::Latest,
             receiver,
-            recipient_auth_key,
             transfer_amount,
             STC_TOKEN_CODE.clone(),
         )),

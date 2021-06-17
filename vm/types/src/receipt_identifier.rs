@@ -7,7 +7,6 @@ use anyhow::Result;
 use bech32::ToBase32;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
@@ -31,8 +30,8 @@ impl std::fmt::Display for ReceiptIdentifier {
 }
 
 impl ReceiptIdentifier {
-    pub fn v1(address: AccountAddress, auth_key: Option<AuthenticationKey>) -> ReceiptIdentifier {
-        ReceiptIdentifier::V1(address, auth_key)
+    pub fn v1(address: AccountAddress) -> ReceiptIdentifier {
+        ReceiptIdentifier::V1(address, None)
     }
     pub fn address(&self) -> AccountAddress {
         match self {
@@ -40,19 +39,14 @@ impl ReceiptIdentifier {
         }
     }
     pub fn auth_key(&self) -> Option<&AuthenticationKey> {
-        match self {
-            ReceiptIdentifier::V1(_, auth_key) => auth_key.as_ref(),
-        }
+        None
     }
+
     pub fn encode(&self) -> String {
         match self {
-            ReceiptIdentifier::V1(address, auth_key) => {
+            ReceiptIdentifier::V1(address, _auth_key) => {
                 let mut data = vec![];
                 data.append(address.to_vec().as_mut());
-                if let Some(auth_key) = auth_key {
-                    data.append(auth_key.to_vec().as_mut());
-                }
-
                 let mut data = data.to_base32();
                 data.insert(0, bech32::u5::try_from_u8(1).unwrap());
                 bech32::encode("stc", data, bech32::Variant::Bech32).unwrap()
@@ -76,8 +70,7 @@ impl ReceiptIdentifier {
             (AccountAddress::from_bytes(data.as_slice())?, None)
         } else if data.len() == AccountAddress::LENGTH + AuthenticationKey::LENGTH {
             let address = AccountAddress::from_bytes(&data[0..AccountAddress::LENGTH])?;
-            let auth_key = AuthenticationKey::try_from(&data[AccountAddress::LENGTH..])?;
-            (address, Some(auth_key))
+            (address, None)
         } else {
             anyhow::bail!("invalid data");
         };
@@ -110,19 +103,15 @@ mod test {
     #[test]
     pub fn test_rust_bench32() {
         let address = AccountAddress::random();
-        let auth_key = AuthenticationKey::random();
 
-        let encoded = ReceiptIdentifier::V1(address, Some(auth_key)).to_string();
-        println!(
-            "address: {}, auth_key: {}, id: {}",
-            address, auth_key, &encoded
-        );
+        let encoded = ReceiptIdentifier::V1(address, None).to_string();
+        println!("address: {}, id: {}", address, &encoded);
 
         let id = ReceiptIdentifier::from_str(encoded.as_str()).unwrap();
         match id {
             ReceiptIdentifier::V1(decoded_address, decoded_auth_key) => {
                 assert_eq!(decoded_address, address);
-                assert_eq!(decoded_auth_key, Some(auth_key));
+                assert_eq!(decoded_auth_key, None);
             }
         }
     }

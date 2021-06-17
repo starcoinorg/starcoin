@@ -8,7 +8,7 @@ use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to
 use starcoin_executor::{encode_create_account_script_function, Account};
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_transaction_builder::{
-    raw_peer_to_peer_txn_v2, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
+    raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
@@ -549,7 +549,6 @@ fn test_validate_txn() -> Result<()> {
     let raw_txn = starcoin_executor::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -579,7 +578,6 @@ fn test_validate_txn_chain_id() -> Result<()> {
     let raw_txn = starcoin_executor::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -619,7 +617,7 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),
         ),
-        Identifier::new("peer_to_peer").unwrap(),
+        Identifier::new("peer_to_peer_v2").unwrap(),
         vec![],
         vec![],
     ));
@@ -685,14 +683,8 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
     let account = Account::new();
-    let txn = starcoin_executor::build_transfer_from_association(
-        *account.address(),
-        Some(account.auth_key()),
-        0,
-        1000,
-        1,
-        &net,
-    );
+    let txn =
+        starcoin_executor::build_transfer_from_association(*account.address(), 0, 1000, 1, &net);
     let output = starcoin_executor::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
 
@@ -700,39 +692,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
 }
 
 #[stest::test]
-fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
-
-    let account1 = Account::new();
-    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 0, 50_000_000, 1, &net,
-    ));
-    let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
-
-    let account2 = Account::new();
-
-    let raw_txn = starcoin_executor::build_transfer_txn(
-        *account1.address(),
-        *account2.address(),
-        Some(account2.auth_key()),
-        0,
-        1000,
-        1,
-        DEFAULT_MAX_GAS_AMOUNT,
-        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        net.chain_id(),
-    );
-
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
-    let output = starcoin_executor::execute_transactions(&chain_state, vec![txn2]).unwrap();
-    assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
-
-    Ok(())
-}
-
-#[stest::test]
-fn test_execute_transfer_txn_v2_with_starcoin_vm() -> Result<()> {
+fn test_execute_transfer_txn() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
     let account1 = Account::new();
@@ -748,7 +708,7 @@ fn test_execute_transfer_txn_v2_with_starcoin_vm() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = raw_peer_to_peer_txn_v2(
+    let raw_txn = raw_peer_to_peer_txn(
         *account1.address(),
         *account2.address(),
         STCUnit::STC.value_of(1).scaling(),
@@ -773,7 +733,7 @@ fn test_execute_transfer_txn_v2_with_starcoin_vm() -> Result<()> {
         &AccountResource::DUMMY_AUTH_KEY
     );
 
-    let raw_txn = raw_peer_to_peer_txn_v2(
+    let raw_txn = raw_peer_to_peer_txn(
         *account2.address(),
         *account1.address(),
         1000,
@@ -827,7 +787,6 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         Transaction::UserTransaction(account1.sign_txn(starcoin_executor::build_transfer_txn(
             *account1.address(),
             *account2.address(),
-            Some(account2.auth_key()),
             0,
             1000,
             1,
@@ -840,7 +799,6 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         Transaction::UserTransaction(account1.sign_txn(starcoin_executor::build_transfer_txn(
             *account1.address(),
             *account2.address(),
-            Some(account2.auth_key()),
             1,
             1000,
             1,
@@ -868,7 +826,6 @@ fn test_sequence_number() -> Result<()> {
     let account = Account::new();
     let txn = starcoin_executor::build_transfer_from_association(
         *account.address(),
-        Some(account.auth_key()),
         old_sequence_number,
         1000,
         1,
@@ -890,14 +847,8 @@ fn test_gas_used() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
     let account = Account::new();
-    let txn = starcoin_executor::build_transfer_from_association(
-        *account.address(),
-        Some(account.auth_key()),
-        0,
-        1000,
-        1,
-        &net,
-    );
+    let txn =
+        starcoin_executor::build_transfer_from_association(*account.address(), 0, 1000, 1, &net);
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
     assert!(output.gas_used() > 0);

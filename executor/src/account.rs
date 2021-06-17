@@ -658,7 +658,6 @@ pub fn peer_to_peer_txn(
 ) -> SignedUserTransaction {
     let mut args: Vec<Vec<u8>> = Vec::new();
     args.push(bcs_ext::to_bytes(receiver.address()).unwrap());
-    args.push(bcs_ext::to_bytes(&receiver.auth_key().to_vec()).unwrap());
     args.push(bcs_ext::to_bytes(&transfer_amount).unwrap());
 
     // get a SignedTransaction
@@ -668,7 +667,7 @@ pub fn peer_to_peer_txn(
                 core_code_address(),
                 Identifier::new("TransferScripts").unwrap(),
             ),
-            Identifier::new("peer_to_peer").unwrap(),
+            Identifier::new("peer_to_peer_v2").unwrap(),
             vec![stc_type_tag()],
             args,
         )),

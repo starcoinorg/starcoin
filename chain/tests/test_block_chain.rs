@@ -16,7 +16,6 @@ use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventKey;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
@@ -379,7 +378,6 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let signed_txn_t2 = {
         let txn = build_transfer_from_association(
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             0,
             10000,
             config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,

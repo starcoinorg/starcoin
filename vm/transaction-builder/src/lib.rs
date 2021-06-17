@@ -22,7 +22,6 @@ use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
     TransactionPayload,
 };
-use starcoin_vm_types::value::MoveValue;
 use stdlib::stdlib_package;
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
@@ -31,7 +30,6 @@ pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
 
 pub fn build_transfer_from_association(
     addr: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
@@ -39,7 +37,6 @@ pub fn build_transfer_from_association(
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
-        recipient_auth_key,
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
@@ -50,7 +47,6 @@ pub fn build_transfer_from_association(
 pub fn build_transfer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -61,7 +57,6 @@ pub fn build_transfer_txn(
     build_transfer_txn_by_token_type(
         sender,
         receiver,
-        recipient_auth_key,
         seq_num,
         amount,
         gas_price,
@@ -75,7 +70,6 @@ pub fn build_transfer_txn(
 pub fn build_batch_transfer_txn(
     sender: AccountAddress,
     receivers: Vec<AccountAddress>,
-    recipient_auth_keys: Vec<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -87,22 +81,15 @@ pub fn build_batch_transfer_txn(
     for receiver in receivers {
         address_vec.extend_from_slice(receiver.to_vec().as_slice());
     }
-    let auth_keys = MoveValue::Vector(
-        recipient_auth_keys
-            .into_iter()
-            .map(|auth_key| MoveValue::vector_u8(auth_key.to_vec()))
-            .collect(),
-    );
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),
         ),
-        Identifier::new("batch_peer_to_peer").unwrap(),
+        Identifier::new("batch_peer_to_peer_v2").unwrap(),
         vec![stc_type_tag()],
         vec![
             bcs_ext::to_bytes(&address_vec).unwrap(),
-            bcs_ext::to_bytes(&auth_keys).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
         ],
     ));
@@ -121,7 +108,6 @@ pub fn build_batch_transfer_txn(
 pub fn build_transfer_txn_by_token_type(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -133,7 +119,6 @@ pub fn build_transfer_txn_by_token_type(
     raw_peer_to_peer_txn(
         sender,
         receiver,
-        recipient_auth_key,
         amount,
         seq_num,
         gas_price,
@@ -167,7 +152,6 @@ pub fn build_accept_token_txn(
 pub fn raw_peer_to_peer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     transfer_amount: u128,
     seq_num: u64,
     gas_price: u64,
@@ -180,35 +164,6 @@ pub fn raw_peer_to_peer_txn(
         sender,
         seq_num,
         TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
-            //TODO should use latest?
-            StdlibVersion::Latest,
-            receiver,
-            recipient_auth_key,
-            transfer_amount,
-            token_code,
-        )),
-        max_gas,
-        gas_price,
-        expiration_timestamp_secs,
-        chain_id,
-    )
-}
-
-pub fn raw_peer_to_peer_txn_v2(
-    sender: AccountAddress,
-    receiver: AccountAddress,
-    transfer_amount: u128,
-    seq_num: u64,
-    gas_price: u64,
-    max_gas: u64,
-    token_code: TokenCode,
-    expiration_timestamp_secs: u64,
-    chain_id: ChainId,
-) -> RawUserTransaction {
-    RawUserTransaction::new_with_default_gas_token(
-        sender,
-        seq_num,
-        TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code_v2(
             //TODO should use latest?
             StdlibVersion::Latest,
             receiver,
@@ -271,49 +226,12 @@ pub fn encode_create_account_script_function(
 pub fn encode_transfer_script_function(
     version: StdlibVersion,
     recipient: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     amount: u128,
 ) -> ScriptFunction {
-    encode_transfer_script_by_token_code(
-        version,
-        recipient,
-        recipient_auth_key,
-        amount,
-        STC_TOKEN_CODE.clone(),
-    )
-}
-
-pub fn encode_transfer_script_function_v2(
-    version: StdlibVersion,
-    recipient: AccountAddress,
-    amount: u128,
-) -> ScriptFunction {
-    encode_transfer_script_by_token_code_v2(version, recipient, amount, STC_TOKEN_CODE.clone())
+    encode_transfer_script_by_token_code(version, recipient, amount, STC_TOKEN_CODE.clone())
 }
 
 pub fn encode_transfer_script_by_token_code(
-    _version: StdlibVersion,
-    recipient: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
-    amount: u128,
-    token_code: TokenCode,
-) -> ScriptFunction {
-    ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("TransferScripts").unwrap(),
-        ),
-        Identifier::new("peer_to_peer").unwrap(),
-        vec![token_code.into()],
-        vec![
-            bcs_ext::to_bytes(&recipient).unwrap(),
-            bcs_ext::to_bytes(&recipient_auth_key.map(|k| k.to_vec()).unwrap_or_default()).unwrap(),
-            bcs_ext::to_bytes(&amount).unwrap(),
-        ],
-    )
-}
-
-pub fn encode_transfer_script_by_token_code_v2(
     _version: StdlibVersion,
     recipient: AccountAddress,
     amount: u128,
@@ -335,7 +253,6 @@ pub fn encode_transfer_script_by_token_code_v2(
 
 pub fn peer_to_peer_txn_sent_as_association(
     recipient: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
@@ -345,7 +262,6 @@ pub fn peer_to_peer_txn_sent_as_association(
         TransactionPayload::ScriptFunction(encode_transfer_script_function(
             net.stdlib_version(),
             recipient,
-            recipient_auth_key,
             amount,
         )),
         seq_num,
