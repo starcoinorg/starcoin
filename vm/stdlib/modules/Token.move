@@ -476,7 +476,7 @@ module Token {
     spec token_code {
         pragma opaque = true;
         aborts_if false;
-        ensures [abstract] result == spec_token_code<TokenType>();
+        // ensures [abstract] result == spec_token_code<TokenType>();
     }
 
     /// We use an uninterpreted function to represent the result of derived address. The actual value
