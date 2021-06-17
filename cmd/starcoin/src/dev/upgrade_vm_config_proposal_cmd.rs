@@ -16,7 +16,7 @@ use structopt::StructOpt;
 
 /// Submit a VM config upgrade proposal
 #[derive(Debug, StructOpt)]
-#[structopt(name = "vm_config_proposal")]
+#[structopt(name = "vm-config-proposal", alias = "vm_config_proposal")]
 #[allow(clippy::upper_case_acronyms)]
 pub struct UpgradeVMConfigProposalOpt {
     #[structopt(short = "s", long)]

@@ -23,7 +23,7 @@ use structopt::StructOpt;
 
 /// Submit a module upgrade proposal
 #[derive(Debug, StructOpt)]
-#[structopt(name = "module_proposal")]
+#[structopt(name = "module-proposal", alias = "module_proposal")]
 pub struct UpgradeModuleProposalOpt {
     #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12

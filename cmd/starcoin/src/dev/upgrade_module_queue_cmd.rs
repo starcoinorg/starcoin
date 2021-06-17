@@ -18,7 +18,7 @@ use structopt::StructOpt;
 
 /// Queue the upgrade module proposal
 #[derive(Debug, StructOpt)]
-#[structopt(name = "module_queue")]
+#[structopt(name = "module-queue", alias = "module_queue")]
 pub struct UpgradeModuleQueueOpt {
     #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
@@ -60,9 +60,9 @@ pub struct UpgradeModuleQueueOpt {
     proposer_address: Option<AccountAddress>,
 
     #[structopt(
-        short = "m",
-        name = "module-proposal-id",
-        long = "module",
+        short = "i",
+        name = "proposal-id",
+        long = "proposal-id",
         help = "proposal id."
     )]
     proposal_id: u64,

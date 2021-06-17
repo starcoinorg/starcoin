@@ -136,12 +136,14 @@ pub fn add_command(
                 .subcommand(dev::CallContractCommand)
                 .subcommand(
                     Command::with_name("subscribe")
+                        .with_about("Subscribe the chain events")
                         .subcommand(dev::SubscribeBlockCommand)
                         .subcommand(dev::SubscribeEventCommand)
                         .subcommand(dev::SubscribeNewTxnCommand),
                 )
                 .subcommand(
                     Command::with_name("log")
+                        .with_about("Set node's log level and pattern.")
                         .subcommand(dev::log_cmd::LogLevelCommand)
                         .subcommand(dev::log_cmd::LogPatternCommand),
                 )

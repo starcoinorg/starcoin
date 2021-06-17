@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::dev::sign_txn_helper::sign_txn_with_account_by_rpc_client;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::HashValue;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -16,7 +16,7 @@ use structopt::StructOpt;
 
 /// Execute module upgrade plan, submit a package transaction.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "module_exe")]
+#[structopt(name = "module-exe", alias = "module_exe")]
 pub struct UpgradeModuleExeOpt {
     #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
@@ -39,7 +39,7 @@ pub struct UpgradeModuleExeOpt {
     gas_price: u64,
 
     #[structopt(
-        name = "expiration_time",
+        name = "expiration-time",
         long = "timeout",
         default_value = "3000",
         help = "how long(in seconds) the txn stay alive"
@@ -57,10 +57,10 @@ pub struct UpgradeModuleExeOpt {
         short = "m",
         name = "module-file",
         long = "module",
-        help = "path for module file, can be empty.",
+        help = "path for module file.",
         parse(from_os_str)
     )]
-    module_file: Option<PathBuf>,
+    module_file: PathBuf,
 }
 
 pub struct UpgradeModuleExeCommand;
@@ -82,30 +82,26 @@ impl CommandAction for UpgradeModuleExeCommand {
         } else {
             ctx.state().default_account()?.address
         };
-        if let Some(module_file) = &opt.module_file {
-            let mut bytes = vec![];
-            File::open(module_file)?.read_to_end(&mut bytes)?;
-            let upgrade_package = bcs_ext::from_bytes(&bytes)?;
+        let mut bytes = vec![];
+        File::open(opt.module_file.as_path())?.read_to_end(&mut bytes)?;
+        let upgrade_package = bcs_ext::from_bytes(&bytes)?;
 
-            let signed_txn = sign_txn_with_account_by_rpc_client(
-                cli_state,
-                sender,
-                opt.max_gas_amount,
-                opt.gas_price,
-                opt.expiration_time,
-                TransactionPayload::Package(upgrade_package),
-            )?;
-            let txn_hash = signed_txn.id();
-            cli_state.client().submit_transaction(signed_txn)?;
+        let signed_txn = sign_txn_with_account_by_rpc_client(
+            cli_state,
+            sender,
+            opt.max_gas_amount,
+            opt.gas_price,
+            opt.expiration_time,
+            TransactionPayload::Package(upgrade_package),
+        )?;
+        let txn_hash = signed_txn.id();
+        cli_state.client().submit_transaction(signed_txn)?;
 
-            println!("txn {:#x} submitted.", txn_hash);
+        println!("txn {:#x} submitted.", txn_hash);
 
-            if opt.blocking {
-                ctx.state().watch_txn(txn_hash)?;
-            }
-            Ok(txn_hash)
-        } else {
-            bail!("file can not be empty.")
+        if opt.blocking {
+            ctx.state().watch_txn(txn_hash)?;
         }
+        Ok(txn_hash)
     }
 }
