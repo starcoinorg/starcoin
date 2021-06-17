@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
-use move_vm_runtime::data_cache::RemoteCache;
+use move_vm_runtime::data_cache::MoveStorage;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex};
 
-pub trait FunctionResolver: RemoteCache {
+pub trait FunctionResolver: MoveStorage {
     /// Return the name of the function at `idx` in `module_id`
     fn resolve_function(&self, module_id: &ModuleId, idx: u16) -> Result<Identifier> {
         let m = CompiledModule::deserialize(
@@ -24,4 +24,4 @@ pub trait FunctionResolver: RemoteCache {
     }
 }
 
-impl<R> FunctionResolver for R where R: RemoteCache {}
+impl<R> FunctionResolver for R where R: MoveStorage {}

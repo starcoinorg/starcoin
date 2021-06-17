@@ -1,7 +1,7 @@
 use crate::dependencies::get_uses;
 use anyhow::{anyhow, Result};
 use jsonrpc_client_transports::RpcChannel;
-use move_vm_runtime::data_cache::RemoteCache;
+use move_vm_runtime::data_cache::MoveStorage;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApiClient;
 use starcoin_rpc_api::state::StateApiClient;
@@ -15,15 +15,15 @@ use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMRes
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 
-pub struct MergedRemoteCache<A: RemoteCache, B: RemoteCache> {
+pub struct MergedRemoteCache<A: MoveStorage, B: MoveStorage> {
     pub a: A,
     pub b: B,
 }
 
-impl<A, B> RemoteCache for MergedRemoteCache<A, B>
+impl<A, B> MoveStorage for MergedRemoteCache<A, B>
 where
-    A: RemoteCache,
-    B: RemoteCache,
+    A: MoveStorage,
+    B: MoveStorage,
 {
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         match self.a.get_module(module_id)? {
@@ -90,7 +90,7 @@ impl RemoteStateAsyncView {
         let mut found_modules = vec![];
         for (addr, name) in uses {
             let module_id = ModuleId::new(
-                AccountAddress::new(addr.to_u8()),
+                AccountAddress::new(addr.into_bytes()),
                 Identifier::new(name).unwrap(),
             );
             let compiled_module = self
@@ -162,7 +162,7 @@ impl RemoteStateView {
         let mut found_modules = vec![];
         for (addr, name) in uses {
             let module_id = ModuleId::new(
-                AccountAddress::new(addr.to_u8()),
+                AccountAddress::new(addr.into_bytes()),
                 Identifier::new(name).unwrap(),
             );
             let compiled_module = self
@@ -176,7 +176,7 @@ impl RemoteStateView {
     }
 }
 
-impl RemoteCache for RemoteStateView {
+impl MoveStorage for RemoteStateView {
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         let handle = self.rt.handle().clone();
         handle.block_on(self.svc.get_module_async(module_id))
