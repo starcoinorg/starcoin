@@ -9,6 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use structopt::StructOpt;
 
+/// Get chain's events by txn hash
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get-events", alias = "get_events")]
 pub struct GetEventsOpt {

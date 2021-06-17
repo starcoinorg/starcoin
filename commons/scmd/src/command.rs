@@ -147,6 +147,11 @@ where
         }
     }
 
+    pub fn with_about(mut self, about: &'static str) -> Self {
+        self.app = self.app.about(about);
+        self
+    }
+
     pub fn name(&self) -> &str {
         self.app.get_name()
     }

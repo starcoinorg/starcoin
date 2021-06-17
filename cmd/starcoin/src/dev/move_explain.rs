@@ -14,7 +14,7 @@ use structopt::StructOpt;
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "move_explain")]
+#[structopt(name = "move-explain", alias = "move_explain")]
 pub struct MoveExplainOpt {
     /// The location (module id) returned with a `MoveAbort` error
     #[structopt(short = "l")]

@@ -14,7 +14,7 @@ use structopt::StructOpt;
 
 /// Execute the module upgrade proposal and submit module upgrade plan.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "module_plan")]
+#[structopt(name = "module-plan", alias = "module_plan")]
 pub struct UpgradeModulePlanOpt {
     #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
@@ -56,9 +56,9 @@ pub struct UpgradeModulePlanOpt {
     proposer_address: Option<AccountAddress>,
 
     #[structopt(
-        short = "m",
-        name = "module-proposal-id",
-        long = "module",
+        short = "i",
+        name = "proposal-id",
+        long = "proposal-id",
         help = "proposal id."
     )]
     proposal_id: u64,

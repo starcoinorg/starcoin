@@ -94,26 +94,7 @@ pub fn add_command(
                 .subcommand(chain::GetTxnInfosCommand)
                 .subcommand(chain::GetTransactionInfoCommand)
                 .subcommand(chain::GetEventsCommand)
-                .subcommand(chain::EpochInfoCommand)
-                .subcommand(chain::TPSCommand)
-                .subcommand(
-                    Command::with_name("uncle")
-                        .subcommand(chain::uncle::UnclePathCommand)
-                        .subcommand(chain::uncle::ListEpochUnclesByNumberCommand)
-                        .subcommand(chain::uncle::EpochUncleSummaryByNumberCommand),
-                )
-                .subcommand(
-                    Command::with_name("stat")
-                        .subcommand(chain::StatTPSCommand)
-                        .subcommand(chain::StatEpochCommand)
-                        .subcommand(chain::StatBlockCommand),
-                )
-                .subcommand(
-                    Command::with_name("verify")
-                        .subcommand(chain::VerifyBlockCommand)
-                        .subcommand(chain::VerifyEpochCommand)
-                        .subcommand(chain::VerifyNodeCommand),
-                ),
+                .subcommand(chain::EpochInfoCommand),
         )
         .command(
             Command::with_name("txpool")
@@ -136,12 +117,14 @@ pub fn add_command(
                 .subcommand(dev::CallContractCommand)
                 .subcommand(
                     Command::with_name("subscribe")
+                        .with_about("Subscribe the chain events")
                         .subcommand(dev::SubscribeBlockCommand)
                         .subcommand(dev::SubscribeEventCommand)
                         .subcommand(dev::SubscribeNewTxnCommand),
                 )
                 .subcommand(
                     Command::with_name("log")
+                        .with_about("Set node's log level and pattern.")
                         .subcommand(dev::log_cmd::LogLevelCommand)
                         .subcommand(dev::log_cmd::LogPatternCommand),
                 )
