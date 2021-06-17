@@ -19,6 +19,7 @@ pub struct IndexConfig {
     pub block_index: String,
     pub uncle_block_index: String,
     pub txn_info_index: String,
+    pub txn_event_index: String,
 }
 
 impl IndexConfig {
@@ -27,6 +28,7 @@ impl IndexConfig {
             block_index: format!("{}.blocks", prefix.as_ref()),
             uncle_block_index: format!("{}.uncle_blocks", prefix.as_ref()),
             txn_info_index: format!("{}.txn_infos", prefix.as_ref()),
+            txn_event_index: format!("{}.txn_events", prefix.as_ref()),
         }
     }
 }
@@ -37,6 +39,7 @@ impl Default for IndexConfig {
             block_index: "blocks".to_string(),
             uncle_block_index: "uncle_blocks".to_string(),
             txn_info_index: "txn_infos".to_string(),
+            txn_event_index: "txn_events".to_string(),
         }
     }
 }
@@ -92,9 +95,11 @@ impl EsSinker {
         let block_index = self.config.block_index.as_str();
         let uncle_block_index = self.config.uncle_block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
+        let txn_event_index: =self.config.txn_event_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
         self.create_index_if_not_exists(uncle_block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
+        self.create_index_if_not_exists(txn_event_index).await?;
         let tip = self.get_remote_tip_header().await?;
         self.state.write().await.tip = tip.clone();
         if let Some(tip_info) = tip {
