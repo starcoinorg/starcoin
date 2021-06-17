@@ -1,4 +1,4 @@
-use crate::{BlockData, BlockSimplified, BlockWithMetadata};
+use crate::{BlockData, BlockSimplified, BlockWithMetadata, EventData};
 use anyhow::Result;
 use elasticsearch::http::response::Response;
 use elasticsearch::indices::{
@@ -95,7 +95,7 @@ impl EsSinker {
         let block_index = self.config.block_index.as_str();
         let uncle_block_index = self.config.uncle_block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
-        let txn_event_index: =self.config.txn_event_index.as_str();
+        let txn_event_index = self.config.txn_event_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
         self.create_index_if_not_exists(uncle_block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
@@ -273,6 +273,8 @@ impl EsSinker {
         let block_index = self.config.block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
         let uncle_index = self.config.uncle_block_index.as_str();
+        let event_index = self.config.txn_event_index.as_str();
+
         for blockdata in blocks {
             let BlockData { block, txns_data } = blockdata;
             bulk_operations.push(
@@ -283,12 +285,22 @@ impl EsSinker {
                 .id(block.header.block_hash.to_string())
                 .index(block_index),
             )?;
-
+            let mut event_vec = vec![];
             for txn_data in txns_data {
+                if !txn_data.events.is_empty() {
+                    event_vec.extend_from_slice(txn_data.events.as_slice());
+                }
                 bulk_operations.push(
                     BulkOperation::index(txn_data.clone())
                         .id(txn_data.info.transaction_hash.to_string())
                         .index(txn_info_index),
+                )?;
+            }
+            for event in event_vec {
+                bulk_operations.push(
+                    BulkOperation::index(EventData::from(event.clone()))
+                        .id(event.event_seq_number.to_string())
+                        .index(event_index),
                 )?;
             }
             //add uncle
