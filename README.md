@@ -25,7 +25,7 @@ Download binary release from github [releases](https://github.com/starcoinorg/st
 starcoin -n dev console
 ```
 
-More detailed dev instructions please read [Run starcoin dev network](https://developer.starcoin.org/en/runnetwork/) document.
+More detailed dev instructions please read [Run starcoin dev network](https://developer.starcoin.org/en/setup/runnetwork/) document.
 
 ## Join a test network
 
@@ -39,7 +39,7 @@ starcoin -n barnard console
 starcoin -n main console
 ```
 
-More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/runnetwork/).
+More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
 
 ## Contribution
 Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.
