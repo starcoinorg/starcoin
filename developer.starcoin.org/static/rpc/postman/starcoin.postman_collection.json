@@ -1,113 +1,10 @@
 {
 	"info": {
-		"_postman_id": "944be543-230b-44f8-9616-829b792e0115",
+		"_postman_id": "ac0aafba-91ed-4337-898a-bebd0efc3873",
 		"name": "starcoin",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
-		{
-			"name": "account",
-			"item": [
-				{
-					"name": "account.list",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"account.list\", \n \"params\":[]\n}"
-						},
-						"url": {
-							"raw": "{{url}}",
-							"host": [
-								"{{url}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "account.unlock",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"account.unlock\", \n \"params\":[\"0x390f5aafb30bfa1bbd03e53710456fef\", \"my-pass\"]\n}"
-						},
-						"url": {
-							"raw": "http://{{domain}}:{{port}}",
-							"protocol": "http",
-							"host": [
-								"{{domain}}"
-							],
-							"port": "{{port}}"
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "account.default",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"account.default\", \n \"params\":[]\n}"
-						},
-						"url": {
-							"raw": "{{url}}",
-							"host": [
-								"{{url}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "account.get",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"account.get\", \n \"params\":[\"0x0000000000000000000000000a550c18\"]\n}"
-						},
-						"url": {
-							"raw": "{{url}}",
-							"host": [
-								"{{url}}"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
 		{
 			"name": "chain",
 			"item": [
@@ -500,7 +397,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"contract.dry_run\", \n \"params\":[\n     {\n         \"chain_id\": 254,\n         \"gas_unit_price\": 1,\n         \"sender\": \"0x49624992dd72da077ee19d0be210406a\",\n         \"sequence_number\": 63,\n         \"script\": {\n             \"code\": \"0x1::TransferScripts::peer_to_peer\", \n             \"type_args\": [\"0x1::STC::STC\"],\n             \"args\": [\"0x621500bf2b4aad17a690cb24f9a225c6\", \"x\\\"\\\"\", \"0u128\"]\n            }\n     }\n    ]\n}"
+							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"contract.dry_run\", \n \"params\":[\n     {\n         \"chain_id\": 254,\n         \"gas_unit_price\": 1,\n         \"sender\": \"0x49624992dd72da077ee19d0be210406a\",\n         \"sender_public_key\": \"0x\",\n         \"sequence_number\": 63,\n         \"max_gas_amount\": 10000000,\n         \"script\": {\n             \"code\": \"0x1::TransferScripts::peer_to_peer\", \n             \"type_args\": [\"0x1::STC::STC\"],\n             \"args\": [\"0x621500bf2b4aad17a690cb24f9a225c6\", \"x\\\"\\\"\", \"1000000000u128\"]\n            }\n     }\n    ]\n}"
 						},
 						"url": {
 							"raw": "{{url}}",
@@ -821,6 +718,179 @@
 								"{{domain}}"
 							],
 							"port": "{{port}}"
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "poll",
+			"item": [
+				{
+					"name": "check poll status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 101,\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"contract.call\",\n    \"params\": [\n        {\n            \"function_id\": \"0x1::Dao::proposal_state\",\n            \"type_args\": [\n                \"0x1::STC::STC\",\n                \"0x1::UpgradeModuleDaoProposal::UpgradeModuleV2\"\n            ],\n            \"args\": [\n                \"0xb2aa52f94db4516c5beecef363af850a\",\n                \"0\"\n            ]\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "query poll info from contract.get_resource",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"id\":101, \n \"jsonrpc\":\"2.0\", \n \"method\":\"contract.get_resource\", \n \"params\":[\"0xb2aa52f94db4516c5beecef363af850a\", \"0x1::Dao::Proposal<0x1::STC::STC,0x1::UpgradeModuleDaoProposal::UpgradeModuleV2>\"]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get sequence_number from contract.get_resource",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"id\":101, \n \"jsonrpc\":\"2.0\", \n \"method\":\"contract.get_resource\", \n \"params\":[\"0x49624992dd72da077ee19d0be210406a\", \"0x1::Account::Account\"]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "cast_vote dry_run",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 200,\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"contract.dry_run\",\n    \"params\": [\n        {\n            \"chain_id\": 1,\n            \"gas_unit_price\": 1,\n            \"sender\": \"0x0a6cd5d8711d88258adac029ffa6a3e4\",\n            \"sender_public_key\": \"0x\",\n            \"sequence_number\": 4,\n            \"max_gas_amount\": 10000000,\n            \"script\": {\n                \"code\": \"0x1::DaoVoteScripts::cast_vote\",\n                \"type_args\": [\n                    \"0x1::STC::STC\",\n                    \"0x1::UpgradeModuleDaoProposal::UpgradeModuleV2\"\n                ],\n                \"args\": [\n                    \"0xb2aa52f94db4516c5beecef363af850a\",\n                    \"0u64\",\n                    \"true\",\n                    \"10000000u128\"\n                ]\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "txpool.submit_hex_transaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"id\":200, \n \"jsonrpc\":\"2.0\", \n \"method\":\"txpool.submit_hex_transaction\", \n \"params\":[\"0x0a6cd5d8711d88258adac029ffa6a3e4040000000000000002000000000000000000000000000000010e44616f566f74655363726970747309636173745f766f7465020700000000000000000000000000000001035354430353544300070000000000000000000000000000000118557067726164654d6f64756c6544616f50726f706f73616c0f557067726164654d6f64756c655632000410b2aa52f94db4516c5beecef363af850a08000000000000000001011080969800000000000000000000000000809698000000000003000000000000000d3078313a3a5354433a3a5354438bdfc46000000000010020e7c8125c6a6d1d388f9ebce81e56615f18adba98d6f14da4339ecf8d70585941407f8eeab7b2288c5e744c1ef34fde517d3bc842727dc5d6c25340c4b755413793087988cff573197cd282721938e2debc21c1f7a2ea797fb840cd9a901d25b105\"]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "chain.get_transactio_info",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"id\":101, \n \"jsonrpc\":\"2.0\", \n \"method\":\"chain.get_transaction_info\", \n \"params\":[\"0x58ac2124ea43b2eb3cb3d89d6f422d14fe479d54b1241d8a230b544260fc6781\"]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "query votes from contract.get_resource",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"id\":101, \n \"jsonrpc\":\"2.0\", \n \"method\":\"contract.get_resource\", \n \"params\":[\"0x0a6cd5d8711d88258adac029ffa6a3e4\", \"0x1::Dao::Vote<0x1::STC::STC>\"]\n}"
+						},
+						"url": {
+							"raw": "{{url}}",
+							"host": [
+								"{{url}}"
+							]
 						}
 					},
 					"response": []
