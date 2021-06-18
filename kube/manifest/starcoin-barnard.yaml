@@ -61,7 +61,7 @@ spec:
         ]
         env:
           - name: ELASTICSEARCH_HOST
-            value: "es-cn-n6w24qcc200cq97zg.public.elasticsearch.aliyuncs.com"
+            value: "search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com"
           - name: ELASTICSEARCH_PORT
             value: ""
           - name: ELASTICSEARCH_USERNAME
