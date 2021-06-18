@@ -285,24 +285,26 @@ impl EsSinker {
                 .id(block.header.block_hash.to_string())
                 .index(block_index),
             )?;
-            let mut event_vec = vec![];
             for txn_data in txns_data {
-                if !txn_data.events.is_empty() {
-                    event_vec.extend_from_slice(txn_data.events.as_slice());
-                }
                 bulk_operations.push(
                     BulkOperation::index(txn_data.clone())
                         .id(txn_data.info.transaction_hash.to_string())
                         .index(txn_info_index),
                 )?;
+                if !txn_data.events.is_empty() {
+                    // event_vec.extend_from_slice(txn_data.events.as_slice());
+                    for event in txn_data.events {
+                        let mut event_data = EventData::from(event.clone());
+                        event_data.timestamp = txn_data.timestamp;
+                        bulk_operations.push(
+                            BulkOperation::index(event_data)
+                                .id(event.event_seq_number.to_string())
+                                .index(event_index),
+                        )?;
+                    }
+                }
             }
-            for event in event_vec {
-                bulk_operations.push(
-                    BulkOperation::index(EventData::from(event.clone()))
-                        .id(event.event_seq_number.to_string())
-                        .index(event_index),
-                )?;
-            }
+
             //add uncle
             if !block.uncles.is_empty() {
                 for uncle in block.uncles {

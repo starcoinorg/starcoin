@@ -46,6 +46,13 @@ PUT _component_template/block-mappings
       }
     }
 
+   PUT _component_template/event-mappings
+    {
+      "template": {
+        # copy event_mapping.json to here.
+      }
+    }
+
 4.
   PUT _index_template/blocks-template
   {
@@ -66,4 +73,11 @@ PUT _component_template/block-mappings
     "index_patterns": ["*.txn_infos"],
     "priority": 500,
     "composed_of": [ "txn_info-mappings" ]
+  }
+
+  PUT _index_template/event-template
+  {
+    "index_patterns": ["*.txn_events"],
+    "priority": 500,
+    "composed_of": ["event-mappings"]
   }

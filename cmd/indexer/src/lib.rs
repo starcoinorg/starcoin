@@ -32,7 +32,6 @@ pub struct TransactionEventEsView {
     pub transaction_hash: Option<HashValue>,
     // txn index in block
     pub transaction_index: Option<u32>,
-
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
     pub event_key: EventKey,
@@ -174,6 +173,7 @@ struct EventData {
     pub tag_address: Option<AccountAddress>,
     pub tag_module: Option<String>,
     pub tag_name: Option<String>,
+    pub timestamp: u64,
 }
 
 impl From<TransactionEventEsView> for EventData {
@@ -192,6 +192,7 @@ impl From<TransactionEventEsView> for EventData {
                 tag_address: Some(struct_tag.address),
                 tag_module: Some(struct_tag.module.to_string()),
                 tag_name: Some(struct_tag.name.to_string()),
+                timestamp: 0, //set later from txn
             },
             _ => Self {
                 event_seq_number: event.event_seq_number,
@@ -206,6 +207,7 @@ impl From<TransactionEventEsView> for EventData {
                 tag_address: None,
                 tag_module: None,
                 tag_name: None,
+                timestamp: 0, //set later from txn
             },
         }
     }
