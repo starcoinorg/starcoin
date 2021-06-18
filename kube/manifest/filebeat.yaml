@@ -12,7 +12,7 @@ data:
     filebeat.inputs:
     - type: log
       paths:
-        - /sc-data/barnard/sc_slog.log
+        - /sc-data/main/sc_slog.log
 
     processors:
       - drop_fields:
