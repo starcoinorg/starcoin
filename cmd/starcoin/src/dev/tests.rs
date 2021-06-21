@@ -112,7 +112,6 @@ fn create_default_account(
     let transfer_raw_txn = starcoin_executor::build_transfer_txn(
         association_address(),
         default_account.address,
-        Some(default_account.public_key.authentication_key()),
         seq_num,
         transfer_amount,
         1,

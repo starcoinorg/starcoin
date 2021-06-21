@@ -1,14 +1,10 @@
 use anyhow::{format_err, Result};
-
 use starcoin_account_api::AccountInfo;
-use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use std::convert::TryFrom;
 
 pub struct Faucet {
     client: RpcClient,
@@ -26,12 +22,7 @@ impl Faucet {
         }
     }
 
-    pub fn transfer(
-        &self,
-        amount: u128,
-        receiver: AccountAddress,
-        public_key: Vec<u8>,
-    ) -> Result<()> {
+    pub fn transfer(&self, amount: u128, receiver: AccountAddress) -> Result<()> {
         let chain_state_reader = RemoteStateReader::new(&self.client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
@@ -42,11 +33,9 @@ impl Faucet {
                     self.faucet_account.address()
                 )
             })?;
-        let public_key = Ed25519PublicKey::try_from(public_key.as_slice())?;
         let raw_tx = starcoin_executor::build_transfer_txn(
             self.faucet_account.address,
             receiver,
-            Some(AuthenticationKey::ed25519(&public_key)),
             account_resource.sequence_number(),
             amount,
             DEFAULT_GAS_PRICE,

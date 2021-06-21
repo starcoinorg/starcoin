@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::AddressOrReceipt;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
@@ -28,6 +29,10 @@ pub struct GetCoinOpt {
         help = "not blocking wait txn mined"
     )]
     no_blocking: bool,
+
+    #[structopt(name = "address_or_receipt")]
+    /// The account's address or receipt to send coin, if absent, send to the default account.
+    address_or_receipt: Option<AddressOrReceipt>,
 }
 
 pub struct GetCoinCommand;
@@ -52,9 +57,9 @@ impl CommandAction for GetCoinCommand {
         }
         let client = ctx.state().client();
         let node_info = client.node_info()?;
-        let to = client.account_default()?.ok_or_else(|| {
-            format_err!("Can not find default account, Please create account first.")
-        })?;
+        let to = ctx
+            .state()
+            .get_account_or_default(opt.address_or_receipt.map(|add| add.address()))?;
 
         let association_address = account_config::association_address();
         let chain_state_reader = RemoteStateReader::new(client)?;
@@ -79,7 +84,6 @@ impl CommandAction for GetCoinCommand {
         let raw_txn = starcoin_executor::build_transfer_txn(
             association_address,
             to.address,
-            Some(to.public_key.authentication_key()),
             account_resource.sequence_number(),
             amount,
             1,

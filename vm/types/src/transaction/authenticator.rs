@@ -397,7 +397,7 @@ impl AccountPublicKey {
 
     pub fn receipt_identifier(&self) -> ReceiptIdentifier {
         let auth_key = self.authentication_key();
-        ReceiptIdentifier::v1(auth_key.derived_address(), Some(auth_key))
+        ReceiptIdentifier::v1(auth_key.derived_address())
     }
 
     /// Unique identifier for the signature scheme

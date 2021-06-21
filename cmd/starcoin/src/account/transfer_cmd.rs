@@ -4,14 +4,11 @@
 use crate::cli_state::CliState;
 use crate::view::{AddressOrReceipt, ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountPublicKey;
-use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -25,17 +22,13 @@ pub struct TransferOpt {
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 
-    #[structopt(long = "receipt", name = "receipt")]
-    /// this is a alias of `receiver` arg.
-    receipt: Option<AddressOrReceipt>,
-
-    #[structopt(short = "r", required_unless = "receipt")]
+    #[structopt(short = "r", long = "receiver", alias = "receipt")]
     /// transfer to, accept address (start with 0x) or receipt_identifier (start with stc1)
-    receiver: Option<AddressOrReceipt>,
+    receiver: AddressOrReceipt,
 
-    #[structopt(short = "k")]
-    /// if `receiver` account not exist on chain, and `receiver` is AddressOrReceipt::Address, must provide public_key of the account.
-    public_key: Option<String>,
+    #[structopt(short = "k", name = "public-key", long = "public-key")]
+    /// this option is deprecated
+    _public_key: Option<String>,
 
     #[structopt(short = "v")]
     amount: u128,
@@ -99,28 +92,8 @@ impl CommandAction for TransferCommand {
 
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let receiver = match (opt.receiver, opt.receipt) {
-            (Some(address_or_receipt), _) => address_or_receipt,
-            (None, Some(address_or_receipt)) => address_or_receipt,
-            (None, None) => {
-                bail!("Please set the receiver argument.")
-            }
-        };
-        let (receiver_address, receiver_auth_key) = match receiver {
-            AddressOrReceipt::Address(receiver) => {
-                let receiver_public_key: Option<AccountPublicKey> = opt
-                    .public_key
-                    .as_ref()
-                    .map(|pubkey_str| AccountPublicKey::from_encoded_string(pubkey_str))
-                    .transpose()?;
-                let receiver_auth_key =
-                    receiver_public_key.as_ref().map(|k| k.authentication_key());
-                (receiver, receiver_auth_key)
-            }
-            AddressOrReceipt::Receipt(receipt_id) => match receipt_id {
-                ReceiptIdentifier::V1(addr, auth_key) => (addr, auth_key),
-            },
-        };
+
+        let receiver_address = opt.receiver.address();
 
         let account_resource = account_state_reader
             .get_account_resource(sender.address())?
@@ -137,7 +110,6 @@ impl CommandAction for TransferCommand {
         let raw_txn = starcoin_executor::build_transfer_txn_by_token_type(
             sender.address,
             receiver_address,
-            receiver_auth_key,
             account_resource.sequence_number(),
             opt.amount,
             opt.gas_price,

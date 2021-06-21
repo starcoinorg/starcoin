@@ -76,7 +76,6 @@ async fn test_tx_pool() -> Result<()> {
     let account_address = account_address::from_public_key(&public_key);
     let txn = starcoin_executor::build_transfer_from_association(
         account_address,
-        Some(AuthenticationKey::ed25519(&public_key)),
         0,
         10000,
         1,
@@ -142,7 +141,6 @@ async fn test_rollback() -> Result<()> {
         let account_address = account_address::from_public_key(&public_key);
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             0,
             10000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
@@ -157,7 +155,6 @@ async fn test_rollback() -> Result<()> {
         let account_address = account_address::from_public_key(&public_key);
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             0,
             20000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
@@ -257,7 +254,6 @@ fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
         TransactionPayload::ScriptFunction(encode_transfer_script_function(
             config.net().stdlib_version(),
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             10000,
         )),
         seq,

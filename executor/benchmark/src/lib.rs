@@ -179,7 +179,6 @@ impl TransactionGenerator {
                     encode_transfer_script_function(
                         self.net.stdlib_version(),
                         receiver.address,
-                        Some(AuthenticationKey::ed25519(&receiver.public_key)),
                         1, /* amount */
                     ),
                     self.net.time_service().now_secs() + j as u64 + 1,
