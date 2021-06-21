@@ -296,7 +296,7 @@ dependencies = [
  "futures-retry",
  "futures-util",
  "hex",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.0.0",
  "rpassword",
  "serde",
  "serde_json",
@@ -1084,6 +1084,12 @@ name = "bytes"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
+
+[[package]]
+name = "bytes"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0dcbc35f504eb6fc275a6d20e4ebcda18cf50d40ba6fabff8c711fa16cb3b16"
 
 [[package]]
 name = "bytes"
@@ -3711,6 +3717,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-client-transports"
+version = "17.1.0"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
+dependencies = [
+ "derive_more",
+ "futures 0.3.13",
+ "jsonrpc-core 17.1.0",
+ "jsonrpc-pubsub 17.1.0",
+ "log 0.4.14",
+ "serde",
+ "serde_json",
+ "url 1.7.2",
+]
+
+[[package]]
 name = "jsonrpc-core"
 version = "17.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3726,7 +3747,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-core"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "futures 0.3.13",
  "futures-executor",
@@ -3744,7 +3765,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ac9d56dc729912796637c30f475bbf834594607b27740dfea6e5fa7ba40d1f1"
 dependencies = [
  "futures 0.3.13",
- "jsonrpc-client-transports",
+ "jsonrpc-client-transports 17.0.0",
+]
+
+[[package]]
+name = "jsonrpc-core-client"
+version = "17.1.0"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
+dependencies = [
+ "futures 0.3.13",
+ "jsonrpc-client-transports 17.1.0",
 ]
 
 [[package]]
@@ -3762,7 +3792,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-derive"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.27",
@@ -3819,7 +3849,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-pubsub"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "futures 0.3.13",
  "jsonrpc-core 17.1.0",
@@ -3851,7 +3881,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-server-utils"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "bytes 0.5.6",
  "futures 0.3.13",
@@ -3880,7 +3910,7 @@ dependencies = [
 [[package]]
 name = "jsonrpc-tcp-server"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "jsonrpc-core 17.1.0",
  "jsonrpc-server-utils 17.1.0",
@@ -8050,7 +8080,7 @@ dependencies = [
  "elasticsearch",
  "futures-retry",
  "futures-util",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.0.0",
  "serde",
  "serde_json",
  "starcoin-crypto",
@@ -8116,7 +8146,6 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-miner-client",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node",
@@ -8154,6 +8183,8 @@ dependencies = [
  "futures-timer",
  "hex",
  "jsonrpc-core 17.0.0",
+ "jsonrpc-core-client 17.0.0",
+ "jsonrpc-server-utils 17.0.0",
  "libloading",
  "parking_lot 0.11.1",
  "rand 0.8.3",
@@ -8169,11 +8200,12 @@ dependencies = [
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-service-registry",
+ "starcoin-stratum",
  "starcoin-types",
  "stest",
  "structopt 0.3.21",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 0.3.7",
 ]
 
 [[package]]
@@ -8343,6 +8375,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-miner",
+ "starcoin-miner-client",
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
@@ -8476,7 +8509,7 @@ dependencies = [
  "futures 0.3.13",
  "hex",
  "jsonrpc-core 17.0.0",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.0.0",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-pubsub 17.0.0",
  "jsonrpc-server-utils 17.0.0",
@@ -8511,9 +8544,9 @@ dependencies = [
  "futures 0.3.13",
  "futures-timer",
  "hex",
- "jsonrpc-client-transports",
+ "jsonrpc-client-transports 17.0.0",
  "jsonrpc-core 17.0.0",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.0.0",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-pubsub 17.0.0",
  "jsonrpc-server-utils 17.0.0",
@@ -8572,7 +8605,7 @@ dependencies = [
  "governor",
  "hex",
  "jsonrpc-core 17.0.0",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.0.0",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
@@ -8760,6 +8793,7 @@ dependencies = [
  "futures 0.3.13",
  "hex",
  "jsonrpc-core 17.1.0",
+ "jsonrpc-core-client 17.1.0",
  "jsonrpc-derive 17.1.0",
  "jsonrpc-pubsub 17.1.0",
  "jsonrpc-tcp-server 17.1.0",
@@ -9717,6 +9751,28 @@ dependencies = [
 
 [[package]]
 name = "tokio"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46409491c9375a693ce7032101970a54f8a2010efb77e13f70788f0d84489e39"
+dependencies = [
+ "autocfg 1.0.1",
+ "bytes 0.6.0",
+ "futures-core",
+ "libc",
+ "memchr",
+ "mio 0.7.11",
+ "num_cpus",
+ "once_cell",
+ "parking_lot 0.11.1",
+ "pin-project-lite 0.2.6",
+ "signal-hook-registry",
+ "slab",
+ "tokio-macros 0.3.2",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "tokio"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134af885d758d645f0f0505c9a8b3f9bf8a348fd822e112ab5248138348f1722"
@@ -9783,6 +9839,17 @@ name = "tokio-macros"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
+dependencies = [
+ "proc-macro2 1.0.27",
+ "quote 1.0.9",
+ "syn 1.0.72",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46dfffa59fc3c8aad216ed61bdc2c263d2b9d87a9c8ac9de0c11a813e51b6db7"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",

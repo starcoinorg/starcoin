@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod cpu_solver;
+pub mod job_bus_client;
 pub mod job_client;
 pub mod miner;
 mod solver;
-
+pub mod stratum_client;
+mod stratum_client_service;
 use actix::prelude::*;
 use anyhow::Result;
 use dyn_clone::DynClone;

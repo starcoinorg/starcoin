@@ -19,6 +19,7 @@ use std::convert::TryInto;
 use std::io::Write;
 use std::sync::mpsc::TrySendError;
 use std::sync::Arc;
+use serde_json::Value;
 
 #[derive(Clone, Default, Debug)]
 pub struct Metadata {
@@ -75,18 +76,18 @@ pub struct SubmitResult {
     pub result: Status,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct KeepalivedResult {
     pub result: Status,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct Status {
     pub status: String,
 }
 
 #[allow(clippy::needless_return)]
-#[rpc(server)]
+#[rpc]
 pub trait StratumRpc {
     type Metadata;
     #[rpc(name = "keepalived", raw_params)]
@@ -145,13 +146,17 @@ impl StratumRpcImpl {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct LoginRequest {
-    login: String,
-    pass: String,
-    agent: String,
+    pub login: String,
+    pub pass: String,
+    pub agent: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    algo: Option<Vec<String>>,
+    pub algo: Option<Vec<String>>,
+}
+impl ServiceRequest for LoginRequest {
+    type Response = futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
 }
 
 impl LoginRequest {
@@ -169,7 +174,7 @@ impl LoginRequest {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct StratumJobResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub login: Option<LoginRequest>,
@@ -178,7 +183,7 @@ pub struct StratumJobResponse {
     pub job: StratumJob,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct StratumJob {
     pub height: u64,
     pub id: String,

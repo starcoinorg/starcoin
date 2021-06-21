@@ -19,40 +19,41 @@ async-trait = "0.1"
 async-std = "1.9"
 chrono = "0.4.19"
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
-timeout-join-handler = {path = "../commons/timeout-join-handler"}
-starcoin-metrics = {path = "../commons/metrics"}
-starcoin-config = {path = "../config"}
-starcoin-consensus = {path = "../consensus"}
-starcoin-executor = {path = "../executor"}
-network-api = {path = "../network/api"}
-starcoin-network = {path = "../network"}
+timeout-join-handler = { path = "../commons/timeout-join-handler" }
+starcoin-metrics = { path = "../commons/metrics" }
+starcoin-config = { path = "../config" }
+starcoin-consensus = { path = "../consensus" }
+starcoin-executor = { path = "../executor" }
+network-api = { path = "../network/api" }
+starcoin-network = { path = "../network" }
 starcoin-txpool = { path = "../txpool" }
 starcoin-chain-service = { path = "../chain/service" }
 starcoin-chain-notify = { path = "../chain/chain-notify" }
-starcoin-rpc-server = {path = "../rpc/server"}
-starcoin-storage = {path = "../storage"}
-starcoin-miner = {path = "../miner"}
-starcoin-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-starcoin-logger = {path = "../commons/logger"}
-starcoin-types = {path = "../types"}
-starcoin-sync = {path = "../sync"}
-starcoin-genesis = { path = "../genesis"}
-starcoin-account-api = { path = "../account/api"}
-starcoin-account-service = { path = "../account/service"}
-starcoin-state-api = { path = "../state/api"}
-starcoin-statedb = { path = "../state/statedb"}
-starcoin-state-service = { path = "../state/service"}
-starcoin-txpool-api = {path = "../txpool/api"}
-starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
-starcoin-block-relayer = {path = "../block-relayer"}
-starcoin-network-rpc = {path = "../network-rpc"}
+starcoin-rpc-server = { path = "../rpc/server" }
+starcoin-storage = { path = "../storage" }
+starcoin-miner = { path = "../miner" }
+starcoin-crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
+starcoin-logger = { path = "../commons/logger" }
+starcoin-types = { path = "../types" }
+starcoin-sync = { path = "../sync" }
+starcoin-genesis = { path = "../genesis" }
+starcoin-account-api = { path = "../account/api" }
+starcoin-account-service = { path = "../account/service" }
+starcoin-state-api = { path = "../state/api" }
+starcoin-statedb = { path = "../state/statedb" }
+starcoin-state-service = { path = "../state/service" }
+starcoin-txpool-api = { path = "../txpool/api" }
+starcoin-sync-api = { package = "starcoin-sync-api", path = "../sync/api" }
+starcoin-block-relayer = { path = "../block-relayer" }
+starcoin-network-rpc = { path = "../network-rpc" }
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 network-rpc-core = { path = "../network-rpc/core" }
 starcoin-node-api = { path = "./api" }
 starcoin-dev = { path = "../vm/dev" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-rpc-client = { path = "../rpc/client" }
-starcoin-stratum = {path = "../stratum"}
+starcoin-stratum = { path = "../stratum" }
+starcoin-miner-client = { path = "../cmd/miner_client" }
 [dev-dependencies]
-stest = {path = "../commons/stest"}
+stest = { path = "../commons/stest" }
 

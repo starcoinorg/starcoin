@@ -7,6 +7,8 @@ use starcoin_miner_client::job_client::JobRpcClient;
 use starcoin_miner_client::miner::MinerClientService;
 use starcoin_rpc_client::RpcClient;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+use starcoin_types::time::RealTimeService;
+use std::sync::Arc;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -32,29 +34,13 @@ fn main() {
         }
     };
 
-    let client = match RpcClient::connect_websocket(&format!("ws://{}", opts.server)) {
-        Ok(c) => c,
-        Err(err) => {
-            error!(
-                "Failed to connect to starcoin node: {}, error: {}",
-                opts.server, err
-            );
-            std::process::exit(-1);
-        }
-    };
-
     let mut system = System::builder()
         .stop_on_panic(true)
         .name("starcoin-miner")
         .build();
     if let Err(err) = system.block_on(async move {
         let registry = RegistryService::launch();
-        let job_client = JobRpcClient::new(client);
-        registry.put_shared(config).await?;
-        registry.put_shared(job_client).await?;
-        registry
-            .register::<MinerClientService<JobRpcClient>>()
-            .await
+        registry.put_shared(config).await
     }) {
         error!("Failed to set up miner client:{}", err);
     }
