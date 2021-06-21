@@ -868,7 +868,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
     let module_source = r#"
-        module M {
+        module {{sender}}::M {
             public fun hello(){
             }
         }
@@ -893,7 +893,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
 
     //upgrade, add new method.
     let module_source = r#"
-        module M {
+        module {{sender}}::M {
             public fun hello(){
             }
             public fun hello2(){

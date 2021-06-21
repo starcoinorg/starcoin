@@ -31,19 +31,19 @@ use stdlib::restore_stdlib_in_dir;
 //TODO warp to A MockTxnExecutor
 
 pub const TEST_MODULE: &str = r#"
-    module M {
+    module {{sender}}::M {
         struct Foo { a: u8 }
         public fun foo(): u8 { 1 }
     }
     "#;
 pub const TEST_MODULE_1: &str = r#"
-    module M {
+    module {{sender}}::M {
         struct Foo { a: address }
         public fun foo(): u8 { 2 }
     }
     "#;
 pub const TEST_MODULE_2: &str = r#"
-    module M {
+    module {{sender}}::M {
         struct Foo { a: u8 }
         public fun foo(): u8 { 1 }
         public fun bar(): u8 { 2 }
