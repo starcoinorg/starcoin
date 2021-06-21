@@ -26,7 +26,7 @@ bcs-ext = { path = "../../commons/bcs_ext", package = "bcs-ext" }
 
 [dev-dependencies]
 rand = "0.8.3"
-rand_core = { version = "0.6.2", default-features = false }
+rand_core = { version = "0.6.3", default-features = false }
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
 criterion = "0.3"
