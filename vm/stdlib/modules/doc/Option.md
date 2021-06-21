@@ -624,7 +624,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 <pre><code><b>fun</b> <a href="Option.md#0x1_Option_spec_some">spec_some</a>&lt;Element&gt;(e: Element): <a href="Option.md#0x1_Option">Option</a>&lt;Element&gt; {
-   <a href="Option.md#0x1_Option">Option</a>{ vec: <a href="Vector.md#0x1_Vector_spec_singleton">Vector::spec_singleton</a>(e) }
+   <a href="Option.md#0x1_Option">Option</a>{ vec: vec(e) }
 }
 </code></pre>
 
@@ -838,7 +838,7 @@ because it's 0 for "none" or 1 for "some".
 
 <pre><code><b>pragma</b> opaque;
 <b>aborts_if</b> <b>false</b>;
-<b>ensures</b> result == (<b>if</b> (<a href="Option.md#0x1_Option_is_some">is_some</a>(<b>old</b>(t))) <a href="Option.md#0x1_Option_borrow">borrow</a>(<b>old</b>(t)) <b>else</b> default);
+<b>ensures</b> result == (<b>if</b> (<a href="Option.md#0x1_Option_is_some">is_some</a>(t)) <a href="Option.md#0x1_Option_borrow">borrow</a>(t) <b>else</b> default);
 </code></pre>
 
 
@@ -856,7 +856,7 @@ because it's 0 for "none" or 1 for "some".
 
 <pre><code><b>pragma</b> opaque;
 <b>include</b> <a href="Option.md#0x1_Option_AbortsIfNone">AbortsIfNone</a>&lt;Element&gt;;
-<b>ensures</b> result == <a href="Option.md#0x1_Option_borrow">borrow</a>(<b>old</b>(t));
+<b>ensures</b> result == <a href="Option.md#0x1_Option_borrow">borrow</a>(t);
 </code></pre>
 
 

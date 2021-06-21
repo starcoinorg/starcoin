@@ -637,7 +637,7 @@ Check that <code>v1</code> is equal to the result of removing the element at ind
 
 
 <pre><code><b>aborts_if</b> <b>false</b>;
-<b>ensures</b> result == <a href="Vector.md#0x1_Vector_spec_singleton">spec_singleton</a>(e);
+<b>ensures</b> result == vec(e);
 </code></pre>
 
 

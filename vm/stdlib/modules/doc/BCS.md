@@ -79,5 +79,5 @@ Return the address of key bytes
 <a name="0x1_BCS_serialize"></a>
 
 
-<pre><code><b>fun</b> <a href="BCS.md#0x1_BCS_serialize">serialize</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
+<pre><code><b>native</b> <b>fun</b> <a href="BCS.md#0x1_BCS_serialize">serialize</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
 </code></pre>

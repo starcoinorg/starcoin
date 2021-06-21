@@ -1868,7 +1868,6 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 <pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
-<b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;();
 </code></pre>
 
 
