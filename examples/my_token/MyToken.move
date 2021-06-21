@@ -1,4 +1,4 @@
-module MyToken {
+module {{sender}}::MyToken {
      use 0x1::Token;
      use 0x1::Account;
 
