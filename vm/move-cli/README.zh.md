@@ -322,3 +322,55 @@ Error: Layout API for structs of module 00000000000000000000000000000002::M has 
 这种情况下，我们没有在全局存储中发布任何 `S` 的实例，但是 `move publish` 仍然报出兼容性问题。
 重新运行`move publish --ignore-breaking-changes` 可以强制重新 publish 模块。
 
+## 单元测试
+
+
+
+Move 1.3 支持直接在 move 代码中编写单元测试。
+Move CLI 已经支持这个新特效。 你可以使用命令 `move unit-test --help` 来查看相关的参数。
+
+
+一个例子：把下述代码以 `A.move` 文件名存储在你的 `src/modules` 目录下。
+
+```move
+module 0x2::A {
+    use 0x1::Signer;
+    public fun new(): R {
+        R { x: true }
+    }
+
+    public fun destroy(r: R) {
+        R { x: _ } = r;
+    }
+
+    struct R has key, store { x: bool }
+
+    public fun save(account: &signer, r: R){
+        move_to(account, r);
+    }
+
+    public fun get_x(account: &signer): bool acquires R {
+        let sender = Signer::address_of(account);
+        assert(exists<R>(sender), 1);
+        let r = borrow_global<R>(sender);
+        r.x
+    }
+
+    #[test(a=@0x10)]
+    fun make_sure_saves(a: signer) acquires R {
+        let r = new();
+        save(&a, r);
+        assert(get_x(&a), 100);
+    }
+}
+```
+
+然后运行 `move unit-test`，会输出:
+
+```shell
+Running Move unit tests
+[ PASS    ] 0x2::A::make_sure_saves
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+```
+
+更多测试语法可参考：[changes/4-unit-testing.md](https://github.com/diem/diem/blob/main/language/changes/4-unit-testing.md)
