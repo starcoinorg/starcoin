@@ -27,7 +27,7 @@ module Signer {
 
 
     /// Specification version of `Self::address_of`.
-    spec fun spec_address_of(account: signer): address;
+    spec native fun spec_address_of(account: signer): address;
 
 }
 }

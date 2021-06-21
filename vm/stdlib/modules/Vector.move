@@ -54,7 +54,7 @@ module Vector {
         // TODO: when using opaque here, we get verification errors.
         // pragma opaque;
         aborts_if false;
-        ensures result == spec_singleton(e);
+        ensures result == vec(e);
     }
     spec fun spec_singleton<Element>(e: Element): vector<Element> {
         vec(e)

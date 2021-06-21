@@ -46,7 +46,7 @@ module Option {
         ensures result == spec_some(e);
     }
     spec fun spec_some<Element>(e: Element): Option<Element> {
-        Option{ vec: Vector::spec_singleton(e) }
+        Option{ vec: vec(e) }
     }
 
     /// Return true if `t` does not hold a value
@@ -56,7 +56,7 @@ module Option {
     spec is_none {
         pragma opaque;
         aborts_if false;
-        ensures result == is_none(t);
+        ensures result == is_none(t); 
     }
 
     /// Return true if `t` holds a value

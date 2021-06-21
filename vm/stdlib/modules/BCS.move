@@ -17,7 +17,6 @@ module BCS {
     // ------------------------------------------------------------------------
 
 
-    spec fun serialize<MoveValue>(v: &MoveValue): vector<u8>;
-
+    spec native fun serialize<MoveValue>(v: &MoveValue): vector<u8>;
 }
 }

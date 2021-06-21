@@ -13,13 +13,13 @@ dependencies = [
 [[package]]
 name = "abigen"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
  "bytecode-verifier",
- "diem-types 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-types",
+ "diem-workspace-hack",
  "heck",
  "log 0.4.14",
  "move-core-types",
@@ -915,14 +915,14 @@ dependencies = [
 [[package]]
 name = "boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "async-trait",
- "bytecode 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "bytecode",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "futures 0.3.15",
  "itertools 0.10.1",
  "log 0.4.14",
@@ -943,18 +943,9 @@ dependencies = [
 [[package]]
 name = "borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "mirai-annotations",
-]
-
-[[package]]
-name = "borrow-graph"
-version = "0.0.1"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "mirai-annotations",
 ]
 
@@ -1013,39 +1004,15 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 [[package]]
 name = "bytecode"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "borrow-graph 0.0.1 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "borrow-graph",
  "bytecode-verifier",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "im",
- "ir-to-bytecode 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "itertools 0.10.1",
- "log 0.4.14",
- "move-binary-format",
- "move-core-types",
- "move-model",
- "num",
- "once_cell",
- "petgraph",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "bytecode"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "borrow-graph 0.0.1 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "bytecode-verifier",
- "codespan",
- "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "im",
- "ir-to-bytecode 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "ir-to-bytecode",
  "itertools 0.10.1",
  "log 0.4.14",
  "move-binary-format",
@@ -1061,31 +1028,12 @@ dependencies = [
 [[package]]
 name = "bytecode-interpreter"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "bytecode 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-crypto 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "move-binary-format",
- "move-core-types",
- "move-model",
- "move-vm-runtime",
- "num",
- "serde",
- "sha2 0.9.3",
- "structopt 0.3.21",
-]
-
-[[package]]
-name = "bytecode-interpreter"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "bytecode 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "diem-crypto 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "bytecode",
+ "diem-crypto",
+ "diem-workspace-hack",
  "move-binary-format",
  "move-core-types",
  "move-model",
@@ -1099,29 +1047,13 @@ dependencies = [
 [[package]]
 name = "bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "move-binary-format",
- "move-core-types",
- "move-ir-types",
- "serde",
-]
-
-[[package]]
-name = "bytecode-source-map"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "bcs",
- "codespan",
- "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "move-binary-format",
  "move-core-types",
  "move-ir-types",
@@ -1131,11 +1063,11 @@ dependencies = [
 [[package]]
 name = "bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "borrow-graph 0.0.1 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "borrow-graph",
+ "diem-workspace-hack",
  "mirai-annotations",
  "move-binary-format",
  "move-core-types",
@@ -2127,14 +2059,14 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.2"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
  "bcs",
  "bytes 1.0.1",
  "curve25519-dalek-fiat",
- "diem-crypto-derive 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-crypto-derive",
  "digest 0.9.0",
  "ed25519-dalek-fiat",
  "hex",
@@ -2156,48 +2088,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "diem-crypto"
-version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "aes-gcm 0.8.0",
- "anyhow",
- "bcs",
- "bytes 1.0.1",
- "curve25519-dalek-fiat",
- "diem-crypto-derive 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "digest 0.9.0",
- "ed25519-dalek-fiat",
- "hex",
- "hkdf",
- "mirai-annotations",
- "once_cell",
- "rand 0.8.3",
- "rand_core 0.6.2",
- "serde",
- "serde-name",
- "serde_bytes",
- "sha2 0.9.3",
- "static_assertions",
- "thiserror",
- "tiny-keccak 2.0.2",
- "x25519-dalek-fiat",
-]
-
-[[package]]
 name = "diem-crypto-derive"
 version = "0.0.2"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "proc-macro2 1.0.27",
- "quote 1.0.9",
- "syn 1.0.73",
-]
-
-[[package]]
-name = "diem-crypto-derive"
-version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
@@ -2207,13 +2100,13 @@ dependencies = [
 [[package]]
 name = "diem-framework-releases"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
- "diem-crypto 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-types 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-crypto",
+ "diem-types",
+ "diem-workspace-hack",
  "include_dir",
  "move-binary-format",
  "once_cell",
@@ -2222,17 +2115,17 @@ dependencies = [
 [[package]]
 name = "diem-infallible"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
 ]
 
 [[package]]
 name = "diem-log-derive"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
  "syn 1.0.73",
@@ -2241,13 +2134,13 @@ dependencies = [
 [[package]]
 name = "diem-logger"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "backtrace",
  "chrono",
  "diem-infallible",
  "diem-log-derive",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "erased-serde",
  "hostname",
  "once_cell",
@@ -2259,10 +2152,10 @@ dependencies = [
 [[package]]
 name = "diem-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "crossbeam 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "proptest",
  "proptest-derive",
 ]
@@ -2270,20 +2163,20 @@ dependencies = [
 [[package]]
 name = "diem-state-view"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "diem-crypto 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-types 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-crypto",
+ "diem-types",
+ "diem-workspace-hack",
 ]
 
 [[package]]
 name = "diem-temppath"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "hex",
  "rand 0.8.3",
 ]
@@ -2291,40 +2184,15 @@ dependencies = [
 [[package]]
 name = "diem-types"
 version = "0.0.2"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
  "bcs",
  "bytes 1.0.1",
  "chrono",
- "diem-crypto 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-crypto-derive 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "hex",
- "itertools 0.10.1",
- "mirai-annotations",
- "move-core-types",
- "once_cell",
- "rand 0.8.3",
- "serde",
- "serde_bytes",
- "serde_json",
- "thiserror",
- "tiny-keccak 2.0.2",
-]
-
-[[package]]
-name = "diem-types"
-version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "aes-gcm 0.8.0",
- "anyhow",
- "bcs",
- "bytes 1.0.1",
- "chrono",
- "diem-crypto 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "diem-crypto-derive 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-crypto",
+ "diem-crypto-derive",
  "hex",
  "itertools 0.10.1",
  "mirai-annotations",
@@ -2341,70 +2209,7 @@ dependencies = [
 [[package]]
 name = "diem-workspace-hack"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "Inflector",
- "anyhow",
- "backtrace",
- "bstr",
- "byteorder 1.4.3",
- "bytes 1.0.1",
- "cc",
- "chrono",
- "clap 2.33.3",
- "codespan-reporting 0.8.0",
- "crossbeam-channel 0.5.1",
- "crossbeam-deque 0.8.0",
- "crossbeam-utils 0.8.3",
- "either",
- "futures 0.3.15",
- "futures-channel",
- "futures-core",
- "futures-io",
- "futures-sink",
- "futures-util",
- "getrandom 0.2.2",
- "hashbrown 0.9.1",
- "hyper 0.14.5",
- "indexmap",
- "itertools 0.10.1",
- "itoa",
- "libc",
- "log 0.4.14",
- "memchr",
- "num-integer",
- "num-traits",
- "once_cell",
- "petgraph",
- "plotters",
- "proc-macro2 0.4.30",
- "prost",
- "quote 0.6.13",
- "rand 0.8.3",
- "rand_core 0.5.1",
- "regex",
- "regex-syntax",
- "reqwest 0.11.2",
- "rusty-fork",
- "serde",
- "serde_json",
- "standback",
- "subtle 2.4.0",
- "syn 0.15.44",
- "syn 1.0.73",
- "tiny-keccak 2.0.2",
- "tokio 1.4.0",
- "tokio-util 0.6.5",
- "toml",
- "tracing",
- "warp",
- "zeroize",
-]
-
-[[package]]
-name = "diem-workspace-hack"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -2541,33 +2346,16 @@ dependencies = [
 [[package]]
 name = "disassembler"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "bytecode-source-map",
  "bytecode-verifier",
  "colored",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "move-binary-format",
  "move-core-types",
- "move-coverage 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "move-ir-types",
- "structopt 0.3.21",
-]
-
-[[package]]
-name = "disassembler"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "bytecode-verifier",
- "colored",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "move-binary-format",
- "move-core-types",
- "move-coverage 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "move-coverage 0.1.0",
  "move-ir-types",
  "structopt 0.3.21",
 ]
@@ -2585,13 +2373,13 @@ dependencies = [
 [[package]]
 name = "docgen"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "bytecode 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "bytecode",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "itertools 0.10.1",
  "log 0.4.14",
  "move-model",
@@ -2747,25 +2535,11 @@ dependencies = [
 [[package]]
 name = "errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "log 0.4.14",
- "move-core-types",
- "move-model",
- "serde",
-]
-
-[[package]]
-name = "errmapgen"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "bcs",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "log 0.4.14",
  "move-core-types",
  "move-model",
@@ -3965,33 +3739,14 @@ checksum = "47be2f14c678be2fdcab04ab1171db51b2762ce6f0a8ee87c8dd4a04ed216135"
 [[package]]
 name = "ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "bytecode-source-map",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "ir-to-bytecode-syntax 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "log 0.4.14",
- "move-binary-format",
- "move-core-types",
- "move-ir-types",
- "ouroboros",
- "thiserror",
-]
-
-[[package]]
-name = "ir-to-bytecode"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "codespan",
- "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "ir-to-bytecode-syntax 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
+ "ir-to-bytecode-syntax",
  "log 0.4.14",
  "move-binary-format",
  "move-core-types",
@@ -4003,24 +3758,11 @@ dependencies = [
 [[package]]
 name = "ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "codespan",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "hex",
- "move-core-types",
- "move-ir-types",
-]
-
-[[package]]
-name = "ir-to-bytecode-syntax"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "codespan",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "hex",
  "move-core-types",
  "move-ir-types",
@@ -5092,10 +4834,10 @@ checksum = "b48e78b8626927bd980dff38d8147006323f5d7634d7bc9e31c3a59e07da1b28"
 [[package]]
 name = "move-binary-format"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "mirai-annotations",
  "move-core-types",
  "num-variants",
@@ -5113,10 +4855,10 @@ dependencies = [
  "bcs",
  "bytecode-verifier",
  "datatest-stable",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "difference",
- "disassembler 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "errmapgen 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "disassembler",
+ "errmapgen",
  "futures 0.3.15",
  "include_dir",
  "itertools 0.10.1",
@@ -5145,7 +4887,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5163,36 +4905,15 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
- "bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
  "colored",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "move-binary-format",
- "move-core-types",
- "move-ir-types",
- "once_cell",
- "petgraph",
- "serde",
- "structopt 0.3.21",
-]
-
-[[package]]
-name = "move-coverage"
-version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
-dependencies = [
- "anyhow",
- "bcs",
- "bytecode-source-map 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "bytecode-verifier",
- "codespan",
- "colored",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "move-binary-format",
  "move-core-types",
  "move-ir-types",
@@ -5208,7 +4929,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
  "colored",
@@ -5223,11 +4944,11 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "codespan",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "hex",
  "move-core-types",
  "once_cell",
@@ -5237,19 +4958,19 @@ dependencies = [
 [[package]]
 name = "move-lang"
 version = "0.0.1"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
- "borrow-graph 0.0.1 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "bytecode-source-map 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "borrow-graph",
+ "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "difference",
  "hex",
- "ir-to-bytecode 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "ir-to-bytecode",
  "move-binary-format",
  "move-core-types",
  "move-ir-types",
@@ -5264,25 +4985,25 @@ dependencies = [
 [[package]]
 name = "move-lang-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "datatest-stable",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "walkdir",
 ]
 
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "bytecode-source-map 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "bytecode-source-map",
  "bytecode-verifier",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "disassembler 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
+ "disassembler",
  "internment",
  "itertools 0.10.1",
  "log 0.4.14",
@@ -5299,21 +5020,21 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "abigen",
  "anyhow",
  "async-trait",
  "atty",
  "boogie-backend",
- "bytecode 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "bytecode-interpreter 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "bytecode",
+ "bytecode-interpreter",
  "clap 2.33.3",
  "codespan",
  "codespan-reporting 0.8.0",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "docgen",
- "errmapgen 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "errmapgen",
  "futures 0.3.15",
  "hex",
  "itertools 0.10.1",
@@ -5366,10 +5087,10 @@ dependencies = [
 [[package]]
 name = "move-prover-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "prettydiff",
  "regex",
 ]
@@ -5377,9 +5098,9 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "docgen",
  "log 0.4.14",
  "move-prover 0.1.0",
@@ -5389,12 +5110,12 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "bytecode-interpreter 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "bytecode-interpreter",
  "colored",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "move-binary-format",
  "move-core-types",
  "move-lang",
@@ -5412,10 +5133,10 @@ dependencies = [
 [[package]]
 name = "move-vm-natives"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-crypto 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-crypto",
+ "diem-workspace-hack",
  "mirai-annotations",
  "move-binary-format",
  "move-core-types",
@@ -5429,12 +5150,12 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "bytecode-verifier",
- "diem-crypto 0.0.2 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-crypto",
  "diem-logger",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "fail",
  "mirai-annotations",
  "move-binary-format",
@@ -5448,10 +5169,10 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "move-binary-format",
  "move-core-types",
  "move-vm-runtime",
@@ -5460,10 +5181,10 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "bcs",
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "mirai-annotations",
  "move-binary-format",
  "move-core-types",
@@ -5897,9 +5618,9 @@ dependencies = [
 [[package]]
 name = "num-variants"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=rebase-on-1.3#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/lerencao/libra?branch=rebase-on-1.3)",
+ "diem-workspace-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
  "syn 1.0.73",
@@ -7254,14 +6975,14 @@ dependencies = [
 [[package]]
 name = "resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "bcs",
  "diem-framework-releases",
  "diem-state-view",
- "diem-types 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-types",
+ "diem-workspace-hack",
  "hex",
  "move-binary-format",
  "move-core-types",
@@ -7905,9 +7626,9 @@ checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 [[package]]
 name = "short-hex-str"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "mirai-annotations",
  "serde",
  "static_assertions",
@@ -8371,7 +8092,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "crossbeam-channel 0.5.1",
- "errmapgen 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "errmapgen",
  "forkable-jellyfish-merkle",
  "futures 0.3.15",
  "hex",
@@ -8479,8 +8200,8 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "diem-crypto 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
- "diem-crypto-derive 0.0.2 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-crypto",
+ "diem-crypto-derive",
  "hex",
  "once_cell",
  "rand 0.8.3",
@@ -9727,7 +9448,7 @@ dependencies = [
  "chrono",
  "colored-diff",
  "determinator",
- "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f)",
+ "diem-workspace-hack",
  "env_logger",
  "globset",
  "guppy",
@@ -11481,7 +11202,7 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 [[package]]
 name = "x"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "anyhow",
  "camino",
@@ -11510,7 +11231,7 @@ dependencies = [
 [[package]]
 name = "x-core"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "camino",
  "determinator",
@@ -11528,7 +11249,7 @@ dependencies = [
 [[package]]
 name = "x-lint"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=fa4bf9fcaa8b70c79348325ccaf9379785c3928f#fa4bf9fcaa8b70c79348325ccaf9379785c3928f"
+source = "git+https://github.com/starcoinorg/diem?rev=806b61ca1f798c5bbafad18852f34b147a1b0f05#806b61ca1f798c5bbafad18852f34b147a1b0f05"
 dependencies = [
  "camino",
  "guppy",
