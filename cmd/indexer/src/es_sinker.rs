@@ -296,11 +296,13 @@ impl EsSinker {
                     for event in txn_data.events {
                         let mut event_data = EventData::from(event.clone());
                         event_data.timestamp = txn_data.timestamp;
-                        bulk_operations.push(
-                            BulkOperation::index(event_data)
-                                .id(event.event_seq_number.to_string())
-                                .index(event_index),
-                        )?;
+                        if let Some(tag_name) = event_data.clone().tag_name {
+                            let id = format!("{}_{}", tag_name, event.event_seq_number);
+                            bulk_operations
+                                .push(BulkOperation::index(event_data).id(id).index(event_index))?;
+                        } else {
+                            warn!("other event: {}", event_data.type_tag);
+                        }
                     }
                 }
             }
