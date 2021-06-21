@@ -46,7 +46,7 @@ fn test_readonly_function_call() -> Result<()> {
         }
         
         public fun get_tuple(): (u64, address) {
-            (0, 0x1)
+            (0, @0x1)
         }
 
         public fun set_s(account: &signer): u64 {
