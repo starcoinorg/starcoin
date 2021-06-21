@@ -70,13 +70,13 @@ macro_rules! module_compatibility_test {
 module_compatibility_test!(
     duplicate_module,
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
         public fun f() { return }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
         public fun f() { return }
     }
@@ -88,11 +88,11 @@ module_compatibility_test!(
 module_compatibility_test!(
     layout_compatible_module,
     "
-    module M {
+    module {{sender}}::M {
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
     }
     ",
@@ -103,11 +103,11 @@ module_compatibility_test!(
 module_compatibility_test!(
     linking_compatible_module,
     "
-    module M {
+    module {{sender}}::M {
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         public fun f() { return }
     }
     ",
@@ -118,12 +118,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     layout_incompatible_module_with_new_field,
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64, g: bool }
     }
     ",
@@ -133,12 +133,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     layout_incompatible_module_with_changed_field,
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: bool }
     }
     ",
@@ -148,12 +148,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     layout_incompatible_module_with_removed_field,
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store {}
     }
     ",
@@ -163,12 +163,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     layout_incompatible_module_with_removed_struct,
     "
-    module M {
+    module {{sender}}::M {
         struct T has key,store { f: u64 }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
     }
     ",
     MiscellaneousError
@@ -178,12 +178,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     linking_incompatible_module_with_added_param,
     "
-    module M {
+    module {{sender}}::M {
         public fun f() { return }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         public fun f(_a: u64) { return }
     }
     ",
@@ -193,12 +193,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     linking_incompatible_module_with_changed_param,
     "
-    module M {
+    module {{sender}}::M {
         public fun f(_a: u64) { return }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
         public fun f(_a: bool) { return }
     }
     ",
@@ -208,12 +208,12 @@ module_compatibility_test!(
 module_compatibility_test!(
     linking_incompatible_module_with_removed_pub_fn,
     "
-    module M {
+    module {{sender}}::M {
         public fun f() { return }
     }
     ",
     "
-    module M {
+    module {{sender}}::M {
     }
     ",
     MiscellaneousError

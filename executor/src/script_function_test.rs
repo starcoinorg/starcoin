@@ -20,7 +20,7 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
     let module_source = r#"
-        module Test {
+        module {{sender}}::Test {
             struct R has key, store {
                 i: u64,
             }

@@ -161,7 +161,7 @@ fn test_upgrade_module() {
 
     // 1. proposal
     let test_upgrade_module_source = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }
