@@ -5,10 +5,8 @@ use anyhow::format_err;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::{
-    StrView, TransactionEventView, TransactionOutputAction, TransactionOutputView,
-    TransactionVMStatus,
-};
+pub use starcoin_rpc_api::types::TransactionOutputView;
+use starcoin_rpc_api::types::{StrView, TransactionEventView, TransactionInfoView};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
@@ -18,8 +16,10 @@ use starcoin_vm_types::account_config::events::accept_token_payment::AcceptToken
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::vm_status::VMStatus;
 use std::collections::HashMap;
 use std::str::FromStr;
+use structopt::StructOpt;
 
 #[derive(Clone, Copy, Debug)]
 pub enum AddressOrReceipt {
@@ -61,6 +61,47 @@ impl FromStr for AddressOrReceipt {
             AddressOrReceipt::Address(AccountAddress::from_hex_literal(s)?)
         })
     }
+}
+
+#[derive(Debug, Clone, StructOpt, Default)]
+pub struct TransactionOptions {
+    #[structopt(short = "s", long)]
+    /// the account address for signing transaction, if `sender` is absent, use default account.
+    pub sender: Option<AccountAddress>,
+
+    #[structopt(
+        short = "g",
+        name = "max-gas-amount",
+        help = "max gas used to deploy the module"
+    )]
+    pub max_gas_amount: Option<u64>,
+
+    #[structopt(
+        short = "p",
+        long = "gas-price",
+        name = "price of gas",
+        help = "gas price used to deploy the module"
+    )]
+    pub gas_price: Option<u64>,
+
+    #[structopt(
+        name = "expiration-time-secs",
+        long = "expiration-time-secs",
+        help = "how long(in seconds) the txn stay alive from now"
+    )]
+    pub expiration_time_secs: Option<u64>,
+
+    #[structopt(
+        short = "b",
+        name = "blocking-mode",
+        long = "blocking",
+        help = "blocking wait txn mined"
+    )]
+    pub blocking: bool,
+
+    #[structopt(long = "dry-run")]
+    /// dry-run mode, only get transaction output, do not change chain state.
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -252,49 +293,25 @@ impl From<ContractEvent> for EventView {
 }
 
 #[derive(Debug, Serialize)]
-pub struct TranscationOutputView {
-    pub write_set: Vec<TransactionOutputAction>,
-    /// The list of events emitted during this transaction.
-    pub events: Vec<EventView>,
-
-    /// The amount of gas used during execution.
-    pub gas_used: u64,
-
-    /// The execution status.
-    pub status: TransactionVMStatus,
-}
-
-impl From<TransactionOutputView> for TranscationOutputView {
-    fn from(output: TransactionOutputView) -> Self {
-        Self {
-            write_set: output.write_set,
-            events: output.events.into_iter().map(|e| e.into()).collect(),
-            gas_used: output.gas_used.0,
-            status: output.status,
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum ExecuteResultView {
-    DryRun(TranscationOutputView),
+    DryRun((VMStatus, TransactionOutputView)),
     Run(ExecutionOutputView),
 }
 
-#[derive(Serialize, Debug, Clone, Copy)]
+#[derive(Serialize, Debug, Clone)]
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
-    pub block_number: Option<u64>,
-    pub block_id: Option<HashValue>,
+    pub txn_info: Option<TransactionInfoView>,
+    pub events: Option<Vec<TransactionEventView>>,
 }
 
 impl ExecutionOutputView {
     pub fn new(txn_hash: HashValue) -> Self {
         Self {
             txn_hash,
-            block_number: None,
-            block_id: None,
+            txn_info: None,
+            events: None,
         }
     }
 }

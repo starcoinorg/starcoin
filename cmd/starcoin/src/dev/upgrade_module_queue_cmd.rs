@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::sign_txn_helper::sign_txn_with_account_by_rpc_client;
+use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::HashValue;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_queue;
@@ -20,43 +19,11 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module-queue", alias = "module_queue")]
 pub struct UpgradeModuleQueueOpt {
-    #[structopt(short = "s", long)]
-    /// hex encoded string, like 0x1, 0x12
-    sender: Option<AccountAddress>,
-
-    #[structopt(
-        short = "g",
-        name = "max-gas-amount",
-        default_value = "10000000",
-        help = "max gas used to deploy the module"
-    )]
-    max_gas_amount: u64,
-    #[structopt(
-        short = "p",
-        long = "gas-price",
-        name = "price of gas",
-        default_value = "1",
-        help = "gas price used to deploy the module"
-    )]
-    gas_price: u64,
-
-    #[structopt(
-        name = "expiration_time",
-        long = "timeout",
-        default_value = "3000",
-        help = "how long(in seconds) the txn stay alive"
-    )]
-    expiration_time: u64,
-    #[structopt(
-        short = "b",
-        name = "blocking-mode",
-        long = "blocking",
-        help = "blocking wait txn mined"
-    )]
-    blocking: bool,
+    #[structopt(flatten)]
+    transaction_opts: TransactionOptions,
 
     #[structopt(short = "a", name = "proposer-address", long = "proposer_address")]
-    /// hex encoded string, like 0x1, 0x12
+    /// the account address for proposer.
     proposer_address: Option<AccountAddress>,
 
     #[structopt(
@@ -74,53 +41,35 @@ impl CommandAction for UpgradeModuleQueueCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = UpgradeModuleQueueOpt;
-    type ReturnItem = HashValue;
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let cli_state = ctx.state();
-        let sender = if let Some(sender) = ctx.opt().sender {
+        let proposer_address = if let Some(address) = ctx.opt().proposer_address {
+            address
+        } else if let Some(sender) = ctx.opt().transaction_opts.sender {
             sender
         } else {
             ctx.state().default_account()?.address
         };
-        let proposer_address = if let Some(address) = ctx.opt().proposer_address {
-            address
-        } else {
-            sender
-        };
+
         let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
-        if let Some(stdlib_version) = chain_state_reader
+        let stdlib_version = chain_state_reader
             .get_on_chain_config::<Version>()?
             .map(|version| version.major)
-        {
-            let module_upgrade_queue = build_module_upgrade_queue(
-                proposer_address,
-                opt.proposal_id,
-                StdlibVersion::new(stdlib_version),
-            );
-            let signed_txn = sign_txn_with_account_by_rpc_client(
-                cli_state,
-                sender,
-                opt.max_gas_amount,
-                opt.gas_price,
-                opt.expiration_time,
-                TransactionPayload::ScriptFunction(module_upgrade_queue),
-            )?;
-            let txn_hash = signed_txn.id();
-            cli_state.client().submit_transaction(signed_txn)?;
+            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
 
-            println!("txn {:#x} submitted.", txn_hash);
-
-            if opt.blocking {
-                ctx.state().watch_txn(txn_hash)?;
-            }
-            Ok(txn_hash)
-        } else {
-            bail!("on chain config stdlib version can not be empty.")
-        }
+        let module_upgrade_queue = build_module_upgrade_queue(
+            proposer_address,
+            opt.proposal_id,
+            StdlibVersion::new(stdlib_version),
+        );
+        ctx.state().build_and_execute_transaction(
+            opt.transaction_opts.clone(),
+            TransactionPayload::ScriptFunction(module_upgrade_queue),
+        )
     }
 }
