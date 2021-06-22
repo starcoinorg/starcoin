@@ -9,7 +9,7 @@ hex= "0.4.3"
 anyhow = "1.0.41"
 futures = "0.3.12"
 serde = { version = "1.0.126", default-features = false }
-rand = "0.8.3"
+rand = "0.8.4"
 itertools = "0.10.1"
 async-trait = "0.1.50"
 parking_lot = "0.11.1"

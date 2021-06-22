@@ -17,4 +17,4 @@ starcoin-logger = { path = "../../commons/logger"}
 starcoin-metrics = { path = "../../commons/metrics"}
 [dev-dependencies]
 stest = { path = "../../commons/stest"}
-rand = "0.8.3"
+rand = "0.8.4"
