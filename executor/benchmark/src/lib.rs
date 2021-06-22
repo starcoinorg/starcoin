@@ -176,11 +176,7 @@ impl TransactionGenerator {
                 let receiver = &self.accounts[receiver_idx];
                 let txn = create_transaction(
                     self.sequence,
-                    encode_transfer_script_function(
-                        self.net.stdlib_version(),
-                        receiver.address,
-                        1, /* amount */
-                    ),
+                    encode_transfer_script_function(receiver.address, 1 /* amount */),
                     self.net.time_service().now_secs() + j as u64 + 1,
                     &self.net,
                 );
