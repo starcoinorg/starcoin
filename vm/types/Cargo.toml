@@ -23,11 +23,11 @@ bech32 = "0.8"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "c7b8dc228138d1a87bc7be5009b44cf959d4952b" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "c7b8dc228138d1a87bc7be5009b44cf959d4952b" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "c7b8dc228138d1a87bc7be5009b44cf959d4952b" }
-vm = { git = "https://github.com/starcoinorg/diem", rev = "c7b8dc228138d1a87bc7be5009b44cf959d4952b"}
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "c7b8dc228138d1a87bc7be5009b44cf959d4952b" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "544762425cbd51bce83e23dc3fc8b7888a7c99db" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "544762425cbd51bce83e23dc3fc8b7888a7c99db" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "544762425cbd51bce83e23dc3fc8b7888a7c99db" }
+vm = { git = "https://github.com/starcoinorg/diem", package = "move-binary-format", rev = "544762425cbd51bce83e23dc3fc8b7888a7c99db"}
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "544762425cbd51bce83e23dc3fc8b7888a7c99db" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -38,7 +38,7 @@ forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { git = "https://github.com/starcoinorg/diem", rev = "c7b8dc228138d1a87bc7be5009b44cf959d4952b", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/diem",package = "move-binary-format", rev = "544762425cbd51bce83e23dc3fc8b7888a7c99db", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 

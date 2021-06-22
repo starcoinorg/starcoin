@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// A wrap to move-lang compiler
-use crate::shared::Address;
 use anyhow::{bail, ensure, Result};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
@@ -16,6 +15,8 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use crate::shared::AddressBytes;
+use move_lang::shared::Flags;
 pub use move_lang::{
     compiled_unit::{verify_units, CompiledUnit},
     errors::*,
@@ -28,15 +29,15 @@ pub mod errors {
 
 //TODO directly use AccountAddress
 pub mod command_line {
-    use crate::shared::Address;
+    use crate::shared::AddressBytes;
 
-    pub fn parse_address(s: &str) -> Result<Address, String> {
+    pub fn parse_address(s: &str) -> Result<AddressBytes, String> {
         let s = if !s.starts_with("0x") {
             format!("0x{}", s)
         } else {
             s.to_owned()
         };
-        move_lang::command_line::parse_address(s.as_str())
+        AddressBytes::parse_str(s.as_str())
     }
 }
 
@@ -72,7 +73,7 @@ fn substitute_variable<S: ::std::hash::BuildHasher>(
 /// Replace {{variable}} placeholders in source file, default variable is `sender`.
 pub fn process_source_tpl<S: ::std::hash::BuildHasher>(
     source: &str,
-    sender: Address,
+    sender: AddressBytes,
     ext_vars: HashMap<&str, String, S>,
 ) -> String {
     let mut vars = ext_vars;
@@ -80,7 +81,11 @@ pub fn process_source_tpl<S: ::std::hash::BuildHasher>(
     substitute_variable(source, vars)
 }
 
-pub fn process_source_tpl_file<P>(temp_dir: P, source_file: P, sender: Address) -> Result<PathBuf>
+pub fn process_source_tpl_file<P>(
+    temp_dir: P,
+    source_file: P,
+    sender: AddressBytes,
+) -> Result<PathBuf>
 where
     P: AsRef<Path>,
 {
@@ -123,14 +128,20 @@ pub fn compile_source_string_no_report(
 ) -> Result<(FilesSourceText, Result<Vec<CompiledUnit>, Errors>)> {
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
-    let sender = Address::new(sender.into());
+    let sender = AddressBytes::new(sender.into());
     let processed_source = process_source_tpl(source, sender, HashMap::new());
     std::fs::write(temp_file.as_path(), processed_source.as_bytes())?;
     let targets = vec![temp_file
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    move_compile(&targets, deps, Some(sender), None, true).map(|(f, u)| {
+    move_compile(
+        &targets,
+        deps,
+        None,
+        Flags::empty().set_sources_shadow_deps(true),
+    )
+    .map(|(f, u)| {
         // let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
         (f, u)
     })
@@ -235,7 +246,7 @@ mod tests {
         let test_cases = vec![
             (
                 r#"
-            module M {
+            module 0x1::M {
                 struct M{
                     value: u64,
                 }
@@ -245,7 +256,7 @@ mod tests {
             }
         "#,
                 r#"
-            module M {
+            module 0x1::M {
                 struct M{
                     value: u64,
                 }
@@ -265,14 +276,14 @@ mod tests {
             ),
             (
                 r#"
-            module M {
+            module 0x1::M {
                 struct M{
                     value: u64,
                 }
             }
         "#,
                 r#"
-            module M {
+            module 0x1::M {
                 struct M{
                     value: u64,
                     new_field: address,

@@ -99,7 +99,7 @@ module TransactionManager {
         // do nothing for TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION
     }
 
-    spec fun prologue {
+    spec prologue {
         aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
         aborts_if !exists<ChainId::ChainId>(CoreAddresses::GENESIS_ADDRESS());
         aborts_if ChainId::get() != chain_id;
@@ -178,7 +178,7 @@ module TransactionManager {
         }
     }
 
-    spec fun epilogue {
+    spec epilogue {
         pragma verify = false;//fixme : timeout
         include CoreAddresses::AbortsIfNotGenesisAddress;
         aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
@@ -231,7 +231,7 @@ module TransactionManager {
         BlockReward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
     }
 
-    spec fun block_prologue {
+    spec block_prologue {
         pragma verify = false;//fixme : timeout
     }
 }

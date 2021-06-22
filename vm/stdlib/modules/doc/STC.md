@@ -49,7 +49,7 @@ It uses apis defined in the <code><a href="Token.md#0x1_Token">Token</a></code> 
 STC token marker.
 
 
-<pre><code><b>struct</b> <a href="STC.md#0x1_STC">STC</a>
+<pre><code><b>struct</b> <a href="STC.md#0x1_STC">STC</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -77,7 +77,7 @@ STC token marker.
 Burn capability of STC.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>
+<pre><code><b>struct</b> <a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> has store, key
 </code></pre>
 
 
@@ -265,7 +265,7 @@ STC initialization.
 Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC::STC</a></code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_is_stc">is_stc</a>&lt;TokenType&gt;(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_is_stc">is_stc</a>&lt;TokenType: store&gt;(): bool
 </code></pre>
 
 
@@ -400,7 +400,7 @@ Return STC token address.
 ### Function `is_stc`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_is_stc">is_stc</a>&lt;TokenType&gt;(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_is_stc">is_stc</a>&lt;TokenType: store&gt;(): bool
 </code></pre>
 
 

@@ -108,7 +108,7 @@ module Epoch {
         move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0, total_gas: 0 });
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
@@ -143,7 +143,7 @@ module Epoch {
         new_epoch_block_time_target
     }
 
-    spec fun compute_next_block_time_target {
+    spec compute_next_block_time_target {
         pragma verify = false;
     }
 
@@ -196,7 +196,7 @@ module Epoch {
         reward
     }
 
-    spec fun adjust_epoch {
+    spec adjust_epoch {
         pragma verify = false; //timeout
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<Epoch>(Signer::spec_address_of(account));
@@ -213,7 +213,7 @@ module Epoch {
         }
     }
 
-    spec fun adjust_gas_limit {
+    spec adjust_gas_limit {
         pragma verify = false; //mul_div() timeout
     }
 
@@ -239,7 +239,7 @@ module Epoch {
         new_gas_limit
     }
 
-    spec fun compute_gas_limit {
+    spec compute_gas_limit {
         pragma verify = false; //mul_div() timeout
     }
 
@@ -254,7 +254,7 @@ module Epoch {
         new_gas_limit
     }
 
-    spec fun in_or_decrease_gas_limit {
+    spec in_or_decrease_gas_limit {
         include Math::MulDivAbortsIf{x: last_epoch_block_gas_limit, y: percent, z: HUNDRED};
         aborts_if Math::spec_mul_div() > MAX_U64;
     }
@@ -271,7 +271,7 @@ module Epoch {
         }
     }
 
-    spec fun update_epoch_data {
+    spec update_epoch_data {
         aborts_if !new_epoch && epoch_data.total_reward + reward > MAX_U128;
         aborts_if !new_epoch && epoch_data.uncles + uncles > MAX_U64;
         aborts_if !new_epoch && epoch_data.total_gas + parent_gas_used > MAX_U128;
@@ -292,7 +292,7 @@ module Epoch {
         );
     }
 
-    spec fun emit_epoch_event {
+    spec emit_epoch_event {
         aborts_if false;
     }
 
@@ -302,7 +302,7 @@ module Epoch {
         epoch_ref.start_time
     }
 
-    spec fun start_time {
+    spec start_time {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -312,7 +312,7 @@ module Epoch {
         epoch_data.uncles
     }
 
-    spec fun uncles {
+    spec uncles {
         aborts_if !exists<EpochData>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -322,7 +322,7 @@ module Epoch {
         epoch_data.total_gas
     }
 
-    spec fun total_gas {
+    spec total_gas {
         aborts_if !exists<EpochData>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -332,7 +332,7 @@ module Epoch {
         epoch_ref.block_gas_limit
     }
 
-    spec fun block_gas_limit {
+    spec block_gas_limit {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -342,7 +342,7 @@ module Epoch {
         epoch_ref.start_block_number
     }
 
-    spec fun start_block_number {
+    spec start_block_number {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -352,7 +352,7 @@ module Epoch {
         epoch_ref.end_block_number
     }
 
-    spec fun end_block_number {
+    spec end_block_number {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -362,7 +362,7 @@ module Epoch {
         epoch_ref.number
     }
 
-    spec fun number {
+    spec number {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -372,7 +372,7 @@ module Epoch {
         epoch_ref.block_time_target
     }
 
-    spec fun block_time_target {
+    spec block_time_target {
         aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 

@@ -3,8 +3,8 @@
 //! account: bob
 
 //! sender: alice
-
-module Token {
+address alice = {{alice}};
+module alice::Token {
 
     struct Coin<AssetType: copy + drop + store> has key, store {
         type: AssetType,
@@ -52,8 +52,10 @@ module Token {
 //! new-transaction
 //! sender: bob
 
-module ToddNickles {
-    use {{alice}}::Token;
+address bob = {{bob}};
+address alice = {{alice}};
+module bob::ToddNickles {
+    use alice::Token;
     use 0x1::Signer;
 
     struct T has copy, drop, store {}
@@ -63,17 +65,17 @@ module ToddNickles {
     }
 
     public fun init(account: signer) {
-        assert(Signer::address_of(&account) == {{bob}}, 42);
+        assert(Signer::address_of(&account) == @bob, 42);
         move_to(&account, Wallet { nickles: Token::create(T{}, 0) })
     }
 
     public fun mint(account: signer): Token::Coin<T> {
-        assert(Signer::address_of(&account) == {{bob}}, 42);
+        assert(Signer::address_of(&account) == @bob, 42);
         Token::create(T{}, 5)
     }
 
     public fun destroy(c: Token::Coin<T>) acquires Wallet {
-        Token::deposit(&mut borrow_global_mut<Wallet>({{bob}}).nickles, c)
+        Token::deposit(&mut borrow_global_mut<Wallet>(@bob).nickles, c)
     }
 
 }

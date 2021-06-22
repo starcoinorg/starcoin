@@ -33,7 +33,7 @@ This is just a u64 integer but it is wrapped in a struct to
 make a unique type.
 
 
-<pre><code><b>struct</b> <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>
+<pre><code><b>struct</b> <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -295,14 +295,13 @@ values directly.
 </code></pre>
 
 
-
 Uninterpreted function for <code><a href="FixedPoint32.md#0x1_FixedPoint32_multiply_u64">Self::multiply_u64</a></code>.
 
 
 <a name="0x1_FixedPoint32_spec_multiply_u64"></a>
 
 
-<pre><code><b>define</b> <a href="FixedPoint32.md#0x1_FixedPoint32_spec_multiply_u64">spec_multiply_u64</a>(val: u64, multiplier: <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>): u64;
+<pre><code><b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_spec_multiply_u64">spec_multiply_u64</a>(val: u64, multiplier: <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>): u64;
 </code></pre>
 
 
@@ -312,7 +311,7 @@ Uninterpreted function for <code><a href="FixedPoint32.md#0x1_FixedPoint32_divid
 <a name="0x1_FixedPoint32_spec_divide_u64"></a>
 
 
-<pre><code><b>define</b> <a href="FixedPoint32.md#0x1_FixedPoint32_spec_divide_u64">spec_divide_u64</a>(val: u64, divisor: <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>): u64;
+<pre><code><b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_spec_divide_u64">spec_divide_u64</a>(val: u64, divisor: <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>): u64;
 </code></pre>
 
 
@@ -322,7 +321,7 @@ Uninterpreted function for <code><a href="FixedPoint32.md#0x1_FixedPoint32_creat
 <a name="0x1_FixedPoint32_spec_create_from_rational"></a>
 
 
-<pre><code><b>define</b> <a href="FixedPoint32.md#0x1_FixedPoint32_spec_create_from_rational">spec_create_from_rational</a>(numerator: u64, denominator: u64): <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>;
+<pre><code><b>fun</b> <a href="FixedPoint32.md#0x1_FixedPoint32_spec_create_from_rational">spec_create_from_rational</a>(numerator: u64, denominator: u64): <a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a>;
 </code></pre>
 
 

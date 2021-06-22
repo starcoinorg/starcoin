@@ -39,7 +39,7 @@ The module provide block rewarding calculation logic.
 Queue of rewards distributed to miners.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>
+<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a> has key
 </code></pre>
 
 
@@ -79,7 +79,7 @@ Queue of rewards distributed to miners.
 Reward info of miners.
 
 
-<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a>
+<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a> has store
 </code></pre>
 
 
@@ -125,7 +125,7 @@ Reward info of miners.
 block reward event
 
 
-<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockRewardEvent</a>
+<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockRewardEvent</a> has drop, store
 </code></pre>
 
 
@@ -395,7 +395,6 @@ Process the given block rewards.
 <b>aborts_if</b> current_number &gt; 0 && !<b>exists</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
 <b>aborts_if</b> current_number &gt; 0 && (<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).reward_number + <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos) + 1) != current_number;
 <b>aborts_if</b> current_number &gt; 0 && !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-<a name="0x1_BlockReward_reward_info_length$2"></a>
 <b>let</b> reward_info_length = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos);
 <b>aborts_if</b> current_number &gt; 0 && reward_info_length == 0 && <a href="Token.md#0x1_Token_value">Token::value</a>(previous_block_gas_fees) != 0;
 <b>aborts_if</b> current_number &gt; 0 && reward_info_length != 0 && <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos, reward_info_length - 1).number != current_number - 1;

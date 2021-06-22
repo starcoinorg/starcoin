@@ -35,11 +35,11 @@ module Config {
     const ECAPABILITY_HOLDER_NOT_EXISTS: u64 = 101;
 
 
-    spec module {
-        define spec_get<ConfigValue>(addr: address): ConfigValue {
+
+        spec fun spec_get<ConfigValue>(addr: address): ConfigValue {
             global<Config<ConfigValue>>(addr).payload
         }
-    }
+
 
     /// Get a copy of `ConfigValue` value stored under `addr`.
     public fun get_by_address<ConfigValue: copy + drop + store>(addr: address): ConfigValue acquires Config {
@@ -47,7 +47,7 @@ module Config {
         *&borrow_global<Config<ConfigValue>>(addr).payload
     }
 
-    spec fun get_by_address {
+    spec get_by_address {
         aborts_if !exists<Config<ConfigValue>>(addr);
         ensures exists<Config<ConfigValue>>(addr);
     }
@@ -56,7 +56,7 @@ module Config {
         exists<Config<ConfigValue>>(addr)
     }
 
-    spec fun config_exist_by_address {
+    spec config_exist_by_address {
         aborts_if false;
     }
 
@@ -69,7 +69,7 @@ module Config {
         set_with_capability(Option::borrow_mut(&mut cap_holder.cap), payload)
     }
 
-    spec fun set {
+    spec set {
         pragma verify = false;
 
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
@@ -78,11 +78,11 @@ module Config {
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
-    spec module {
-        define spec_cap<ConfigValue>(addr: address): Option<ModifyConfigCapability<ConfigValue>> {
+
+        spec fun spec_cap<ConfigValue>(addr: address): Option<ModifyConfigCapability<ConfigValue>> {
             global<ModifyConfigCapabilityHolder<ConfigValue>>(addr).cap
         }
-    }
+
 
     /// Set a config item to a new value with cap.
     public fun set_with_capability<ConfigValue: copy + drop + store>(cap: &mut ModifyConfigCapability<ConfigValue>, payload: ConfigValue) acquires Config{
@@ -93,7 +93,7 @@ module Config {
         emit_config_change_event(cap, payload);
     }
 
-    spec fun set_with_capability {
+    spec set_with_capability {
         aborts_if !exists<Config<ConfigValue>>(cap.account_address);
         ensures exists<Config<ConfigValue>>(cap.account_address);
     }
@@ -108,10 +108,10 @@ module Config {
         extract_modify_config_capability<ConfigValue>(account)
     }
 
-    spec fun publish_new_config_with_capability {
-        aborts_if exists<Config>(Signer::spec_address_of(account));
+    spec publish_new_config_with_capability {
+        aborts_if exists<Config<ConfigValue>>(Signer::spec_address_of(account));
         aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        ensures exists<Config>(Signer::spec_address_of(account));
+        ensures exists<Config<ConfigValue>>(Signer::spec_address_of(account));
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
@@ -122,7 +122,7 @@ module Config {
         move_to(account, ModifyConfigCapabilityHolder{cap: Option::some(cap)});
     }
 
-    spec fun publish_new_config {
+    spec publish_new_config {
         aborts_if exists<Config<ConfigValue>>(Signer::spec_address_of(account));
         aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
         ensures exists<Config<ConfigValue>>(Signer::spec_address_of(account));
@@ -167,7 +167,7 @@ module Config {
         aborts_if Option::is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(account).cap);
     }
 
-    spec fun extract_modify_config_capability {
+    spec extract_modify_config_capability {
         include AbortsIfCapNotExist<ConfigValue>{account: Signer::spec_address_of(account)};
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
         ensures Option::is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
@@ -179,7 +179,7 @@ module Config {
         Option::fill(&mut cap_holder.cap, cap);
     }
 
-    spec fun restore_modify_config_capability {
+    spec restore_modify_config_capability {
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
         aborts_if Option::is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
@@ -192,7 +192,7 @@ module Config {
         Event::destroy_handle(events)
     }
 
-    spec fun destroy_modify_config_capability {
+    spec destroy_modify_config_capability {
         aborts_if false;
     }
 
@@ -200,7 +200,7 @@ module Config {
     public fun account_address<ConfigValue: copy + drop + store>(cap: &ModifyConfigCapability<ConfigValue>): address {
         cap.account_address
     }
-    spec fun account_address {
+    spec account_address {
         aborts_if false;
     }
 
@@ -215,7 +215,7 @@ module Config {
         );
     }
 
-    spec fun emit_config_change_event {
+    spec emit_config_change_event {
         aborts_if false;
     }
 }

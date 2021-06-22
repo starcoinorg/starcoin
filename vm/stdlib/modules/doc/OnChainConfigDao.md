@@ -34,7 +34,7 @@ OnChainConfigDao is a DAO proposal for modify onchain configuration.
 A wrapper of <code><a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigT&gt;</code>.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_WrappedConfigModifyCapability">WrappedConfigModifyCapability</a>&lt;TokenT, ConfigT: <b>copyable</b>&gt;
+<pre><code><b>struct</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_WrappedConfigModifyCapability">WrappedConfigModifyCapability</a>&lt;TokenT, ConfigT: <b>copy</b>, drop, store&gt; has key
 </code></pre>
 
 
@@ -62,7 +62,7 @@ A wrapper of <code><a href="Config.md#0x1_Config_ModifyConfigCapability">Config:
 request of updating configuration.
 
 
-<pre><code><b>struct</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_OnChainConfigUpdate">OnChainConfigUpdate</a>&lt;ConfigT: <b>copyable</b>&gt;
+<pre><code><b>struct</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_OnChainConfigUpdate">OnChainConfigUpdate</a>&lt;ConfigT: <b>copy</b>, drop, store&gt; has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -105,7 +105,7 @@ Plugin method of the module.
 Should be called by token issuer.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(signer: &signer)
 </code></pre>
 
 
@@ -134,7 +134,7 @@ Should be called by token issuer.
 issue a proposal to update config of ConfigT goved by TokenT
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">propose_update</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(signer: &signer, new_config: ConfigT, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">propose_update</a>&lt;TokenT: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(signer: &signer, new_config: ConfigT, exec_delay: u64)
 </code></pre>
 
 
@@ -169,7 +169,7 @@ Caller need to make sure that the proposal of <code>proposal_id</code> under <co
 the kind of this proposal module.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -215,14 +215,13 @@ the kind of this proposal module.
 ### Function `plugin`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">plugin</a>&lt;TokenT: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(signer: &signer)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<a name="0x1_OnChainConfigDao_sender$3"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
 <b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>include</b> <a href="Config.md#0x1_Config_AbortsIfCapNotExist">Config::AbortsIfCapNotExist</a>&lt;ConfigT&gt;{account: sender};
@@ -237,7 +236,7 @@ the kind of this proposal module.
 ### Function `propose_update`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">propose_update</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(signer: &signer, new_config: ConfigT, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_propose_update">propose_update</a>&lt;TokenT: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(signer: &signer, new_config: ConfigT, exec_delay: u64)
 </code></pre>
 
 
@@ -249,7 +248,6 @@ the kind of this proposal module.
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> exec_delay &gt; 0 && exec_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">Dao::spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">Dao::CheckQuorumVotes</a>&lt;TokenT&gt;;
-<a name="0x1_OnChainConfigDao_sender$4"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_OnChainConfigUpdate">OnChainConfigUpdate</a>&lt;ConfigT&gt;&gt;&gt;(sender);
 </code></pre>
@@ -261,15 +259,14 @@ the kind of this proposal module.
 ### Function `execute`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copyable</b>, ConfigT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">execute</a>&lt;TokenT: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
-<a name="0x1_OnChainConfigDao_expected_states$5"></a>
-<b>let</b> expected_states = singleton_vector(6);
+<b>let</b> expected_states = vec&lt;u8&gt;(6);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">Dao::CheckProposalStates</a>&lt;TokenT, <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_OnChainConfigUpdate">OnChainConfigUpdate</a>&lt;ConfigT&gt;&gt;{expected_states};
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="OnChainConfigDao.md#0x1_OnChainConfigDao_WrappedConfigModifyCapability">WrappedConfigModifyCapability</a>&lt;TokenT, ConfigT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
 </code></pre>

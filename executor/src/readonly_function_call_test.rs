@@ -28,7 +28,7 @@ fn test_readonly_function_call() -> Result<()> {
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
     let module_source = r#"
-        module A {
+        module {{sender}}::A {
 
         struct S has copy,drop,store {
             f1: u64,
@@ -46,7 +46,7 @@ fn test_readonly_function_call() -> Result<()> {
         }
         
         public fun get_tuple(): (u64, address) {
-            (0, 0x1)
+            (0, @0x1)
         }
 
         public fun set_s(account: &signer): u64 {

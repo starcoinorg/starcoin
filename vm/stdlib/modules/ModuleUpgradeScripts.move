@@ -64,7 +64,7 @@ module ModuleUpgradeScripts {
         PackageTxnManager::cancel_upgrade_plan(&signer);
     }
 
-    spec fun cancel_upgrade_plan {
+    spec cancel_upgrade_plan {
         pragma verify = false;
     }
 }

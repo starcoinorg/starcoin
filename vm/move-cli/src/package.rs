@@ -3,6 +3,7 @@
 
 use anyhow::{anyhow, bail, Result};
 use include_dir::{include_dir, Dir};
+use move_lang::shared::Flags;
 use move_lang::{
     compiled_unit::CompiledUnit, extension_equals, find_filenames, move_compile_and_report,
     path_to_string,
@@ -157,8 +158,7 @@ impl MovePackage {
                 &[path_to_string(&pkg_src_path)?],
                 &src_dirs,
                 None,
-                None,
-                false,
+                Flags::empty(),
             )?;
 
             // save modules and ignore scripts
@@ -168,7 +168,7 @@ impl MovePackage {
                         let mut data = vec![];
                         module.serialize(&mut data)?;
                         let file_path = pkg_bin_path
-                            .join(ident.value.1)
+                            .join(ident.module_name.0.value)
                             .with_extension(MOVE_COMPILED_EXTENSION);
                         let mut fp = File::create(file_path)?;
                         fp.write_all(&data)?;

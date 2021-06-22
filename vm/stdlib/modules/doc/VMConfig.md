@@ -29,7 +29,7 @@ The struct to hold all config data needed to operate the VM.
 * gas_schedule: Cost of running the VM.
 
 
-<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig">VMConfig</a>
+<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig">VMConfig</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -67,7 +67,7 @@ address, and will preload the vector with the gas schedule for instructions. The
 load this into memory at the startup of each block.
 
 
-<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasSchedule">GasSchedule</a>
+<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasSchedule">GasSchedule</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -107,7 +107,7 @@ load this into memory at the startup of each block.
 The gas constants contains all kind of constants used in gas calculation.
 
 
-<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a>
+<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> has <b>copy</b>, drop, store
 </code></pre>
 
 

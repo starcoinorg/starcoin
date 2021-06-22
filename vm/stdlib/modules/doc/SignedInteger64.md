@@ -35,7 +35,7 @@ Implementation of i64.
 Define a signed integer type with two 32 bits.
 
 
-<pre><code><b>struct</b> <a href="SignedInteger64.md#0x1_SignedInteger64">SignedInteger64</a>
+<pre><code><b>struct</b> <a href="SignedInteger64.md#0x1_SignedInteger64">SignedInteger64</a> has <b>copy</b>, drop, store
 </code></pre>
 
 

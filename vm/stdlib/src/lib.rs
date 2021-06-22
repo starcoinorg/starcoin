@@ -11,9 +11,7 @@ use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_move_compiler::{
-    compiled_unit::CompiledUnit, move_compile_and_report, shared::Address,
-};
+use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile_and_report};
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
@@ -26,9 +24,11 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
 };
-
 mod compat;
+mod utils;
 pub use compat::*;
+use starcoin_move_compiler::shared::Flags;
+pub use utils::iterate_directory;
 
 pub const STD_LIB_DIR: &str = "modules";
 pub const MOVE_EXTENSION: &str = "move";
@@ -173,7 +173,7 @@ pub fn filter_compiled_mv_files(
 }
 
 pub fn compiled_stdlib_files(path: &Path) -> Vec<String> {
-    let dirfiles = datatest_stable::utils::iterate_directory(&path);
+    let dirfiles = crate::utils::iterate_directory(&path);
     filter_compiled_mv_files(dirfiles).collect::<Vec<_>>()
 }
 
@@ -219,14 +219,14 @@ pub fn restore_stdlib_in_dir(dir: &Path) -> anyhow::Result<Vec<String>> {
 pub(crate) fn stdlib_files() -> Vec<String> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push(STD_LIB_DIR);
-    let dirfiles = datatest_stable::utils::iterate_directory(&path);
+
+    let dirfiles = crate::utils::iterate_directory(&path);
     filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
     let (_, compiled_units) =
-        move_compile_and_report(&stdlib_files(), &[], Some(Address::DIEM_CORE), None, false)
-            .unwrap();
+        move_compile_and_report(&stdlib_files(), &[], None, Flags::empty()).unwrap();
     let mut modules = BTreeMap::new();
     for (i, compiled_unit) in compiled_units.into_iter().enumerate() {
         let name = compiled_unit.name();
@@ -246,14 +246,8 @@ pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
 }
 
 pub fn compile_script(source_file_str: String) -> Vec<u8> {
-    let (_, mut compiled_program) = move_compile_and_report(
-        &[source_file_str],
-        &stdlib_files(),
-        Some(Address::DIEM_CORE),
-        None,
-        false,
-    )
-    .unwrap();
+    let (_, mut compiled_program) =
+        move_compile_and_report(&[source_file_str], &stdlib_files(), None, Flags::empty()).unwrap();
     let mut script_bytes = vec![];
     assert_eq!(compiled_program.len(), 1);
     match compiled_program.pop().unwrap() {
@@ -354,7 +348,7 @@ pub fn compile_scripts(script_dir: &Path, dest_dir: PathBuf) {
 }
 
 pub fn compile_scripts_to_bytes(script_dir: &Path) -> HashMap<String, (HashValue, Vec<u8>)> {
-    let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
+    let script_source_files = crate::utils::iterate_directory(script_dir);
     let script_files = filter_files(script_source_files, MOVE_EXTENSION.to_string());
     let mut scripts: HashMap<String, (HashValue, Vec<u8>)> = HashMap::new();
 
@@ -372,7 +366,7 @@ pub fn compile_scripts_to_bytes(script_dir: &Path) -> HashMap<String, (HashValue
 pub fn compiled_scripts(script_dir: &Path) -> HashMap<String, HashValue> {
     let mut scripts: HashMap<String, HashValue> = HashMap::new();
     if script_dir.exists() {
-        let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
+        let script_source_files = crate::utils::iterate_directory(script_dir);
         let script_files = filter_mv_files(script_source_files);
 
         for script_file in script_files {

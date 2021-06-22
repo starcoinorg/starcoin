@@ -161,7 +161,7 @@ fn test_upgrade_module() {
 
     // 1. proposal
     let test_upgrade_module_source = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }
@@ -449,7 +449,7 @@ fn test_only_new_module() {
 
     // 3. apply new module
     let test_upgrade_module_source_1 = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }
@@ -486,7 +486,7 @@ fn test_only_new_module() {
 
     // 4. 更新module
     let test_upgrade_module_source_2 = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }

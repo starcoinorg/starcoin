@@ -1,7 +1,7 @@
 //! account: bob, 10000 0x1::STC::STC
 //! account: alice, 0 0x1::STC::STC
-
-module Holder {
+address default={{default}};
+module default::Holder {
     use 0x1::Signer;
 
     struct Hold<T> has key, store {
@@ -22,12 +22,13 @@ module Holder {
 
 //! new-transaction
 //! sender: bob
+address bob = {{bob}};
 script {
     use 0x1::STC::STC;
     use 0x1::Account;
     fun main(account: signer) {
         let with_cap = Account::extract_withdraw_capability(&account);
-        Account::pay_from_capability<STC>(&with_cap, {{bob}}, 10, x"");
+        Account::pay_from_capability<STC>(&with_cap, @bob, 10, x"");
         Account::restore_withdraw_capability(with_cap);
     }
 }
@@ -48,9 +49,10 @@ script {
 // check: 26119
 
 //! new-transaction
+address default={{default}};
 script {
     use 0x1::Account;
-    use {{default}}::Holder;
+    use default::Holder;
     fun main(account: signer) {
         Holder::hold(
             &account,
@@ -88,14 +90,15 @@ script {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
     fun main(account: signer) {
         let with_cap = Account::extract_withdraw_capability(&account);
-        Account::pay_from_capability<STC>(&with_cap, {{alice}}, 10000, x"");
+        Account::pay_from_capability<STC>(&with_cap, @alice, 10000, x"");
         Account::restore_withdraw_capability(with_cap);
-        assert(Account::balance<STC>({{alice}}) == 10000, 60)
+        assert(Account::balance<STC>(@alice) == 10000, 60)
     }
 }
 // check: EXECUTED
@@ -105,7 +108,7 @@ script {
 script {
     use 0x1::CoreAddresses;
     fun main() {
-       assert(CoreAddresses::VM_RESERVED_ADDRESS() == 0x0, 100);
+       assert(CoreAddresses::VM_RESERVED_ADDRESS() == @0x0, 100);
     }
 }
 // check: EXECUTED

@@ -21,7 +21,7 @@ module Version {
         Version { major }
     }
 
-    spec fun new_version {
+    spec new_version {
         aborts_if false;
     }
 
@@ -31,7 +31,7 @@ module Version {
         version.major
     }
 
-    spec fun get {
+    spec get {
         aborts_if !exists<Config::Config<Version>>(addr);
     }
 }

@@ -31,7 +31,7 @@ module TreasuryScripts {
         Offer::create(&signer, new_cap, for_address, lock_period);
     }
 
-    spec fun withdraw_and_split_lt_withdraw_cap {
+    spec withdraw_and_split_lt_withdraw_cap {
         pragma verify = false;
     }
 
@@ -55,7 +55,7 @@ module TreasuryScripts {
         };
     }
 
-    spec fun withdraw_token_with_linear_withdraw_capability {
+    spec withdraw_token_with_linear_withdraw_capability {
         pragma verify = false;
     }
 
@@ -63,7 +63,7 @@ module TreasuryScripts {
         TreasuryWithdrawDaoProposal::propose_withdraw<TokenT>(&signer, receiver, amount, period, exec_delay)
     }
 
-    spec fun propose_withdraw {
+    spec propose_withdraw {
         pragma verify = false;
     }
 
@@ -72,7 +72,7 @@ module TreasuryScripts {
         TreasuryWithdrawDaoProposal::execute_withdraw_proposal<TokenT>(&signer, proposer_address, proposal_id);
     }
 
-     spec fun execute_withdraw_proposal {
+     spec execute_withdraw_proposal {
          pragma verify = false;
      }
 }

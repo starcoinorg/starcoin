@@ -65,7 +65,7 @@ module Treasury {
         WithdrawCapability<TokenT>{}
     }
 
-    spec fun initialize {
+    spec initialize {
     }
 
     /// Check the Treasury of TokenT is exists.
@@ -74,7 +74,7 @@ module Treasury {
         exists<Treasury<TokenT>>(token_issuer)
     }
 
-    spec fun exists_at {
+    spec exists_at {
     }
 
     /// Get the balance of TokenT's Treasury
@@ -88,7 +88,7 @@ module Treasury {
         Token::value(&treasury.balance)
     }
 
-    spec fun balance {
+    spec balance {
     }
 
     public fun deposit<TokenT:store>(token: Token<TokenT>) acquires Treasury{
@@ -105,7 +105,7 @@ module Treasury {
         Token::deposit(&mut treasury.balance, token);
     }
 
-    spec fun deposit {
+    spec deposit {
     }
 
     fun do_withdraw<TokenT:store>(amount: u128): Token<TokenT> acquires Treasury {
@@ -123,7 +123,7 @@ module Treasury {
         Token::withdraw(&mut treasury.balance, amount)
     }
     
-    spec fun do_withdraw {
+    spec do_withdraw {
         aborts_if !exists<Treasury<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
 
@@ -133,7 +133,7 @@ module Treasury {
         token
     }
 
-    spec fun withdraw_with_capability {
+    spec withdraw_with_capability {
     }
 
     /// Withdraw from TokenT's  treasury, the signer must have WithdrawCapability<TokenT>
@@ -142,7 +142,7 @@ module Treasury {
         Self::withdraw_with_capability(cap, amount)
     }
 
-    spec fun withdraw {
+    spec withdraw {
     }
   
     /// Issue a `LinearWithdrawCapability` with given `WithdrawCapability`.
@@ -159,7 +159,7 @@ module Treasury {
         }
     }
     
-    spec fun issue_linear_withdraw_capability {
+    spec issue_linear_withdraw_capability {
         aborts_if period == 0;
         aborts_if amount == 0;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
@@ -173,7 +173,7 @@ module Treasury {
         token
     }
 
-    spec fun withdraw_with_linear_capability {
+    spec withdraw_with_linear_capability {
         pragma verify = false; //timeout, fix later
     }
 
@@ -200,7 +200,7 @@ module Treasury {
         (token, new_key)
     }
 
-    spec fun split_linear_withdraw_cap {
+    spec split_linear_withdraw_cap {
         pragma verify = false; //timeout, fix later
     }
         
@@ -216,7 +216,7 @@ module Treasury {
         }
     }
         
-    spec fun withdraw_amount_of_linear_cap {
+    spec withdraw_amount_of_linear_cap {
         pragma verify = false; //timeout, fix later
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if Timestamp::spec_now_seconds() < cap.start_time;
@@ -229,7 +229,7 @@ module Treasury {
         key.total == key.withdraw
     }
 
-    spec fun is_empty_linear_withdraw_cap {
+    spec is_empty_linear_withdraw_cap {
         aborts_if false;
     }
 
@@ -239,7 +239,7 @@ module Treasury {
         move_from<WithdrawCapability<TokenT>>(Signer::address_of(signer))
     }
 
-    spec fun remove_withdraw_capability {
+    spec remove_withdraw_capability {
         aborts_if !exists<WithdrawCapability<TokenT>>(Signer::spec_address_of(signer));
         ensures !exists<WithdrawCapability<TokenT>>(Signer::spec_address_of(signer));
     }
@@ -249,7 +249,7 @@ module Treasury {
         move_to(signer, cap)
     }
 
-    spec fun add_withdraw_capability {
+    spec add_withdraw_capability {
         aborts_if exists<WithdrawCapability<TokenT>>(Signer::spec_address_of(signer));
         ensures exists<WithdrawCapability<TokenT>>(Signer::spec_address_of(signer));
     }
@@ -259,7 +259,7 @@ module Treasury {
         let WithdrawCapability<TokenT> { } = cap;
     }
 
-    spec fun destroy_withdraw_capability {
+    spec destroy_withdraw_capability {
     }
 
     /// Add LinearWithdrawCapability to `signer`, a address only can have one LinearWithdrawCapability<T>
@@ -302,10 +302,10 @@ module Treasury {
         cap.start_time
     }
 
-    spec module {
-        define spec_balance<TokenType>(): u128 {
-            global<Treasury<TokenType>>(Token::SPEC_TOKEN_TEST_ADDRESS()).balance.value
-        }
+
+    spec fun spec_balance<TokenType>(): u128 {
+        global<Treasury<TokenType>>(Token::SPEC_TOKEN_TEST_ADDRESS()).balance.value
     }
+
 }
 }

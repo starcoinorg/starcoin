@@ -244,7 +244,7 @@ does not matter for the verification of callers.
 <a name="0x1_Math_spec_sqrt"></a>
 
 
-<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_sqrt">spec_sqrt</a>(): u128;
+<pre><code><b>fun</b> <a href="Math.md#0x1_Math_spec_sqrt">spec_sqrt</a>(): u128;
 </code></pre>
 
 
@@ -274,7 +274,7 @@ does not matter for the verification of callers.
 <a name="0x1_Math_spec_pow"></a>
 
 
-<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>(): u128;
+<pre><code><b>fun</b> <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>(): u128;
 </code></pre>
 
 
@@ -327,5 +327,5 @@ does not matter for the verification of callers.
 <a name="0x1_Math_spec_mul_div"></a>
 
 
-<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(): u128;
+<pre><code><b>fun</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(): u128;
 </code></pre>

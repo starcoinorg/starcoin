@@ -47,7 +47,7 @@ module UpgradeModuleDaoProposal {
         move_to(signer, UpgradeModuleCapability<TokenT> { cap })
     }
 
-    spec fun plugin {
+    spec plugin {
         pragma aborts_if_is_partial = false;
 
         let sender = Signer::address_of(signer);
@@ -81,7 +81,7 @@ module UpgradeModuleDaoProposal {
         );
     }
 
-    spec fun propose_module_upgrade_v2 {
+    spec propose_module_upgrade_v2 {
         pragma aborts_if_is_partial = true;
         include AbortIfUnableUpgrade<TokenT>;
     }
@@ -105,8 +105,8 @@ module UpgradeModuleDaoProposal {
             enforced,
         );
     }
-    spec fun submit_module_upgrade_plan {
-        let expected_states = singleton_vector(6);
+    spec submit_module_upgrade_plan {
+        let expected_states = vec<u8>(6);
         include Dao::CheckProposalStates<TokenT, UpgradeModule>{expected_states};
         let proposal = global<Dao::Proposal<TokenT, UpgradeModule>>(proposer_address);
         aborts_if Option::is_none(proposal.action);

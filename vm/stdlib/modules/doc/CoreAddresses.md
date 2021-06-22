@@ -52,7 +52,7 @@ The address of the genesis
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">GENESIS_ADDRESS</a>(): address {
-    0x1
+    @0x1
 }
 </code></pre>
 
@@ -105,7 +105,7 @@ accounts on-chain.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">ASSOCIATION_ROOT_ADDRESS</a>(): address {
-    0xA550C18
+    @0xA550C18
 }
 </code></pre>
 
@@ -133,7 +133,7 @@ is no signer for the transaction.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_VM_RESERVED_ADDRESS">VM_RESERVED_ADDRESS</a>(): address {
-    0x0
+    @0x0
 }
 </code></pre>
 
@@ -158,8 +158,8 @@ Specification version of <code>Self::GENESIS_ACCOUNT</code>.
 <a name="0x1_CoreAddresses_SPEC_GENESIS_ADDRESS"></a>
 
 
-<pre><code><b>define</b> <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">SPEC_GENESIS_ADDRESS</a>(): address {
-    0x1
+<pre><code><b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">SPEC_GENESIS_ADDRESS</a>(): address {
+   @0x1
 }
 </code></pre>
 
@@ -170,8 +170,8 @@ Specification version of <code><a href="CoreAddresses.md#0x1_CoreAddresses_ASSOC
 <a name="0x1_CoreAddresses_SPEC_ASSOCIATION_ROOT_ADDRESS"></a>
 
 
-<pre><code><b>define</b> <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_ASSOCIATION_ROOT_ADDRESS">SPEC_ASSOCIATION_ROOT_ADDRESS</a>(): address {
-    0xA550C18
+<pre><code><b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_ASSOCIATION_ROOT_ADDRESS">SPEC_ASSOCIATION_ROOT_ADDRESS</a>(): address {
+   @0xA550C18
 }
 </code></pre>
 
@@ -182,8 +182,8 @@ Specification version of <code><a href="CoreAddresses.md#0x1_CoreAddresses_VM_RE
 <a name="0x1_CoreAddresses_SPEC_VM_RESERVED_ADDRESS"></a>
 
 
-<pre><code><b>define</b> <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_VM_RESERVED_ADDRESS">SPEC_VM_RESERVED_ADDRESS</a>(): address {
-    0x0
+<pre><code><b>fun</b> <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_VM_RESERVED_ADDRESS">SPEC_VM_RESERVED_ADDRESS</a>(): address {
+   @0x0
 }
 </code></pre>
 

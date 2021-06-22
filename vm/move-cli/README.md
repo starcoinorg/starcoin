@@ -351,6 +351,55 @@ This handy command runs exhaustive sanity checks on global storage to detect any
 * All resources deserialize according to their declared types
 * All events deserialize according to their declared types
 
+## Write unit-test for move contract
+
+Move 1.3 has supported write unit-test in move lang directly. See [changes/4-unit-testing.md](https://github.com/diem/diem/blob/main/language/changes/4-unit-testing.md) for more details.
+
+Move CLI also supports this. You can use command `move unit-test --help` to run the unit test.
+
+
+Save the code as `A.move` in your `src/modules` directory.
+```move
+module 0x2::A {
+    use 0x1::Signer;
+    public fun new(): R {
+        R { x: true }
+    }
+
+    public fun destroy(r: R) {
+        R { x: _ } = r;
+    }
+
+    struct R has key, store { x: bool }
+
+    public fun save(account: &signer, r: R){
+        move_to(account, r);
+    }
+
+    public fun get_x(account: &signer): bool acquires R {
+        let sender = Signer::address_of(account);
+        assert(exists<R>(sender), 1);
+        let r = borrow_global<R>(sender);
+        r.x
+    }
+
+    #[test(a=@0x10)]
+    fun make_sure_saves(a: signer) acquires R {
+        let r = new();
+        save(&a, r);
+        assert(get_x(&a), 100);
+    }
+}
+```
+
+And then, run `move unit-test` will output:
+
+```shell
+Running Move unit tests
+[ PASS    ] 0x2::A::make_sure_saves
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+```
+
 
 ## Testing with the Move CLI
 

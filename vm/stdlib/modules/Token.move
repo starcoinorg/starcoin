@@ -115,7 +115,7 @@ module Token {
         );
     }
 
-    spec fun register_token {
+    spec register_token {
         include RegisterTokenAbortsIf<TokenType>;
         include RegisterTokenEnsures<TokenType>;
     }
@@ -143,7 +143,7 @@ module Token {
         move_from<MintCapability<TokenType>>(Signer::address_of(signer))
     }
 
-    spec fun remove_mint_capability {
+    spec remove_mint_capability {
         aborts_if !exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
         ensures !exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
     }
@@ -153,7 +153,7 @@ module Token {
         move_to(signer, cap)
     }
 
-    spec fun add_mint_capability {
+    spec add_mint_capability {
         aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
         ensures exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
     }
@@ -163,7 +163,7 @@ module Token {
         let MintCapability<TokenType> { } = cap;
     }
 
-    spec fun destroy_mint_capability {
+    spec destroy_mint_capability {
     }
 
     /// remove the token burn capability from `signer`.
@@ -172,7 +172,7 @@ module Token {
         move_from<BurnCapability<TokenType>>(Signer::address_of(signer))
     }
 
-    spec fun remove_burn_capability {
+    spec remove_burn_capability {
         aborts_if !exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
         ensures !exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
     }
@@ -182,7 +182,7 @@ module Token {
         move_to(signer, cap)
     }
 
-    spec fun add_burn_capability {
+    spec add_burn_capability {
         aborts_if exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
         ensures exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
     }
@@ -192,7 +192,7 @@ module Token {
         let BurnCapability<TokenType> { } = cap;
     }
 
-    spec fun destroy_burn_capability {
+    spec destroy_burn_capability {
     }
 
     /// Return `amount` tokens.
@@ -205,7 +205,7 @@ module Token {
         )
     }
 
-    spec fun mint {
+    spec mint {
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
         aborts_if !exists<MintCapability<TokenType>>(Signer::address_of(account));
     }
@@ -221,7 +221,7 @@ module Token {
         do_mint(amount)
     }
 
-    spec fun mint_with_capability {
+    spec mint_with_capability {
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
         ensures spec_abstract_total_value<TokenType>() ==
                 old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
@@ -242,7 +242,7 @@ module Token {
         Token<TokenType> { value: amount }
     }
 
-    spec fun do_mint {
+    spec do_mint {
         aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
     }
@@ -254,7 +254,7 @@ module Token {
         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
-    spec fun issue_fixed_mint_key {
+    spec issue_fixed_mint_key {
     }
 
     /// Deprecated since @v3
@@ -264,7 +264,7 @@ module Token {
         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
-    spec fun issue_linear_mint_key {
+    spec issue_linear_mint_key {
     }
 
     /// Destroy `LinearTimeMintKey`, for deprecated
@@ -286,7 +286,7 @@ module Token {
         )
     }
 
-    spec fun burn {
+    spec burn {
         aborts_if spec_abstract_total_value<TokenType>() - tokens.value < 0;
         aborts_if !exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
     }
@@ -309,7 +309,7 @@ module Token {
         );
     }
 
-    spec fun burn_with_capability {
+    spec burn_with_capability {
         aborts_if spec_abstract_total_value<TokenType>() - tokens.value < 0;
         ensures spec_abstract_total_value<TokenType>() ==
                 old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) - tokens.value;
@@ -320,7 +320,7 @@ module Token {
         Token<TokenType> { value: 0 }
     }
 
-    spec fun zero {
+    spec zero {
     }
 
 
@@ -329,7 +329,7 @@ module Token {
         token.value
     }
 
-    spec fun value {
+    spec value {
         aborts_if false;
     }
 
@@ -342,7 +342,7 @@ module Token {
         (token, other)
     }
 
-    spec fun split {
+    spec split {
         aborts_if token.value < value;
         ensures old(token.value) == result_1.value + result_2.value;
     }
@@ -361,7 +361,7 @@ module Token {
         Token { value: value }
     }
 
-    spec fun withdraw {
+    spec withdraw {
         aborts_if token.value < value;
         ensures result.value == value;
         ensures token.value == old(token).value - value;
@@ -377,7 +377,7 @@ module Token {
         token1
     }
 
-    spec fun join {
+    spec join {
         aborts_if token1.value + token2.value > max_u128();
         ensures old(token1).value + old(token2).value == result.value;
         ensures token1.value + token2.value == result.value;
@@ -391,7 +391,7 @@ module Token {
         token.value = token.value + value;
     }
 
-    spec fun deposit {
+    spec deposit {
         aborts_if token.value + check.value > max_u128();
         ensures old(token).value + check.value == token.value;
     }
@@ -405,7 +405,7 @@ module Token {
         assert(value == 0, Errors::invalid_state(EDESTROY_TOKEN_NON_ZERO))
     }
 
-    spec fun destroy_zero {
+    spec destroy_zero {
         aborts_if token.value > 0;
     }
 
@@ -415,7 +415,7 @@ module Token {
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
-    spec fun scaling_factor {
+    spec scaling_factor {
         aborts_if false;
     }
 
@@ -425,7 +425,7 @@ module Token {
         borrow_global<TokenInfo<TokenType>>(token_address).total_value
     }
 
-    spec fun market_cap {
+    spec market_cap {
         aborts_if false;
     }
 
@@ -434,7 +434,7 @@ module Token {
         exists<TokenInfo<TokenType>>(token_address)
     }
 
-    spec fun is_registered_in {
+    spec is_registered_in {
         aborts_if false;
     }
 
@@ -443,7 +443,7 @@ module Token {
         return token_code<TokenType1>() == token_code<TokenType2>()
     }
 
-    spec fun is_same_token {
+    spec is_same_token {
         aborts_if false;
     }
 
@@ -455,7 +455,7 @@ module Token {
 
     // The specification of this function is abstracted to avoid the complexity to
     // return a real address to caller
-    spec fun token_address {
+    spec token_address {
         pragma opaque = true;
         aborts_if false;
         ensures [abstract] exists<TokenInfo<TokenType>>(result);
@@ -473,20 +473,20 @@ module Token {
         }
     }
 
-    spec fun token_code {
+    spec token_code {
         pragma opaque = true;
         aborts_if false;
-        ensures [abstract] result == spec_token_code<TokenType>();
+        // ensures [abstract] result == spec_token_code<TokenType>();
     }
 
     /// We use an uninterpreted function to represent the result of derived address. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_token_code<TokenType>(): TokenCode;
+    spec fun spec_token_code<TokenType>(): TokenCode;
 
     /// Return Token's module address, module name, and type name of `TokenType`.
     native fun name_of<TokenType: store>(): (address, vector<u8>, vector<u8>);
 
-    spec fun name_of {
+    spec name_of {
         pragma opaque = true;
         aborts_if false;
     }
@@ -497,7 +497,7 @@ module Token {
 
     // The specification of this function is abstracted to avoid the complexity to
     // return a real address to caller
-    spec fun name_of_token {
+    spec name_of_token {
         pragma opaque = true;
         aborts_if false;
         ensures [abstract] exists<TokenInfo<TokenType>>(result_1);
@@ -505,16 +505,15 @@ module Token {
         ensures [abstract] global<TokenInfo<TokenType>>(result_1).total_value == 100000000u128;
     }
 
-    spec module {
-        define SPEC_TOKEN_TEST_ADDRESS(): address {
-            0x2
-        }
 
-        define spec_abstract_total_value<TokenType>(): u128 {
-            global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value
-        }
-
+    spec fun SPEC_TOKEN_TEST_ADDRESS(): address {
+        @0x2
     }
+
+    spec fun spec_abstract_total_value<TokenType>(): u128 {
+        global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value
+    }
+
 
 }
 }

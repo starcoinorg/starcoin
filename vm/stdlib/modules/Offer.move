@@ -27,7 +27,7 @@ module Offer {
         move_to(account, Offer<Offered> { offered, for, time_lock });
     }
 
-    spec fun create {
+    spec create {
         include Timestamp::AbortsIfTimestampNotExists;
         aborts_if Timestamp::now_seconds() + lock_period > max_u64();
         aborts_if exists<Offer<Offered>>(Signer::address_of(account));
@@ -46,7 +46,7 @@ module Offer {
         offered
     }
 
-    spec fun redeem {
+    spec redeem {
         aborts_if !exists<Offer<Offered>>(offer_address);
         aborts_if Signer::address_of(account) != global<Offer<Offered>>(offer_address).for && Signer::address_of(account) != offer_address;
         aborts_if Timestamp::now_seconds() < global<Offer<Offered>>(offer_address).time_lock;
@@ -58,7 +58,7 @@ module Offer {
         exists<Offer<Offered>>(offer_address)
     }
 
-    spec fun exists_at {aborts_if false;}
+    spec exists_at {aborts_if false;}
 
     /// Returns the address of the `Offered` type stored at `offer_address`.
     /// Fails if no such `Offer` exists.
@@ -66,7 +66,7 @@ module Offer {
         borrow_global<Offer<Offered>>(offer_address).for
     }
 
-    spec fun address_of {aborts_if !exists<Offer<Offered>>(offer_address);}
+    spec address_of {aborts_if !exists<Offer<Offered>>(offer_address);}
 
     /// Take Offer and put to signer's Collection<Offered>.
     public(script) fun take_offer<Offered: store>(
@@ -77,7 +77,7 @@ module Offer {
         Collection2::put(&signer, Signer::address_of(&signer), offered);
     }
 
-    spec fun take_offer {
+    spec take_offer {
         pragma verify = false;
     }
 }

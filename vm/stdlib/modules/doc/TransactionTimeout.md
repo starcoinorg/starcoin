@@ -59,14 +59,21 @@ Check whether the given timestamp is valid for transactions.
 
 <pre><code><b>pragma</b> verify;
 <b>pragma</b> aborts_if_is_strict;
+</code></pre>
+
+
+
+
 <a name="0x1_TransactionTimeout_spec_is_valid_transaction_timestamp"></a>
-<b>define</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout_spec_is_valid_transaction_timestamp">spec_is_valid_transaction_timestamp</a>(txn_timestamp: u64):bool {
-  <b>if</b> (<a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>() == 0) {
-    txn_timestamp &gt; <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>()
-  } <b>else</b> {
-      <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() &lt; txn_timestamp && txn_timestamp &lt;
-      (<a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_duration_seconds">TransactionTimeoutConfig::duration_seconds</a>())
-  }
+
+
+<pre><code><b>fun</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout_spec_is_valid_transaction_timestamp">spec_is_valid_transaction_timestamp</a>(txn_timestamp: u64):bool {
+ <b>if</b> (<a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>() == 0) {
+   txn_timestamp &gt; <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>()
+ } <b>else</b> {
+     <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() &lt; txn_timestamp && txn_timestamp &lt;
+     (<a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_duration_seconds">TransactionTimeoutConfig::duration_seconds</a>())
+ }
 }
 </code></pre>
 

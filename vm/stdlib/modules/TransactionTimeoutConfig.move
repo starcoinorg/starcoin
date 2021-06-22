@@ -28,7 +28,7 @@ module TransactionTimeoutConfig {
         );
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         include Config::PublishNewConfigAbortsIf<TransactionTimeoutConfig>;
@@ -40,7 +40,7 @@ module TransactionTimeoutConfig {
         TransactionTimeoutConfig {duration_seconds: duration_seconds}
     }
 
-    spec fun new_transaction_timeout_config {
+    spec new_transaction_timeout_config {
         aborts_if false;
     }
 
@@ -49,7 +49,7 @@ module TransactionTimeoutConfig {
         Config::get_by_address<TransactionTimeoutConfig>(CoreAddresses::GENESIS_ADDRESS())
     }
 
-    spec fun get_transaction_timeout_config {
+    spec get_transaction_timeout_config {
         include Config::AbortsIfConfigNotExist<TransactionTimeoutConfig>{
             addr: CoreAddresses::GENESIS_ADDRESS()
         };
@@ -61,7 +61,7 @@ module TransactionTimeoutConfig {
         config.duration_seconds
     }
 
-    spec fun duration_seconds {
+    spec duration_seconds {
         include Config::AbortsIfConfigNotExist<TransactionTimeoutConfig>{
             addr: CoreAddresses::GENESIS_ADDRESS()
         };

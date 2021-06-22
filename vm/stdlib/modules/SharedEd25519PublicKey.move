@@ -39,7 +39,7 @@ module SharedEd25519PublicKey {
         move_to(account, t);
     }
 
-    spec fun publish {
+    spec publish {
         aborts_if !exists<Account::Account>(Signer::spec_address_of(account));
         aborts_if 0x1::Option::is_none(global<Account::Account>(Signer::spec_address_of(account)).key_rotation_capability);
         aborts_if !exists<Account::Account>(
@@ -65,7 +65,7 @@ module SharedEd25519PublicKey {
         shared_key.key = new_public_key;
     }
 
-    spec fun rotate_key_ {
+    spec rotate_key_ {
         aborts_if !exists<Account::Account>(shared_key.rotation_cap.account_address);
         aborts_if !Signature::ed25519_validate_pubkey(new_public_key);
         aborts_if len(Authenticator::spec_ed25519_authentication_key(new_public_key)) != 32;
@@ -81,7 +81,7 @@ module SharedEd25519PublicKey {
         rotate_key_(borrow_global_mut<SharedEd25519PublicKey>(Signer::address_of(account)), new_public_key);
     }
 
-    spec fun rotate_key {
+    spec rotate_key {
         aborts_if !exists<SharedEd25519PublicKey>(Signer::address_of(account));
         aborts_if !exists<Account::Account>(global<SharedEd25519PublicKey>(Signer::address_of(account)).rotation_cap.account_address);
         aborts_if !Signature::ed25519_validate_pubkey(new_public_key);
@@ -94,7 +94,7 @@ module SharedEd25519PublicKey {
         *&borrow_global<SharedEd25519PublicKey>(addr).key
     }
 
-    spec fun key {
+    spec key {
         aborts_if !exists<SharedEd25519PublicKey>(addr);
     }
 
@@ -103,7 +103,7 @@ module SharedEd25519PublicKey {
         exists<SharedEd25519PublicKey>(addr)
     }
 
-    spec fun exists_at {
+    spec exists_at {
         aborts_if false;
     }
 }

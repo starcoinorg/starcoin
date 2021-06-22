@@ -12,15 +12,15 @@ module TransactionPublishOption {
         pragma verify = false; // break after enabling v2 compilation scheme
         pragma aborts_if_is_strict = true;
 
-        define spec_is_script_allowed(addr: address) : bool{
-            let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
-            publish_option.script_allowed
-        }
+    }
+    spec fun spec_is_script_allowed(addr: address) : bool{
+        let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
+        publish_option.script_allowed
+    }
 
-        define spec_is_module_allowed(addr: address) : bool{
-            let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
-            publish_option.module_publishing_allowed
-        }
+    spec fun spec_is_module_allowed(addr: address) : bool{
+        let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
+        publish_option.module_publishing_allowed
     }
 
     const SCRIPT_HASH_LENGTH: u64 = 32;
@@ -62,7 +62,7 @@ module TransactionPublishOption {
         );
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         include Config::PublishNewConfigAbortsIf<TransactionPublishOption>;
@@ -77,7 +77,7 @@ module TransactionPublishOption {
         TransactionPublishOption { script_allowed, module_publishing_allowed }
     }
 
-    spec fun new_transaction_publish_option {
+    spec new_transaction_publish_option {
         aborts_if false;
     }
 
@@ -87,7 +87,7 @@ module TransactionPublishOption {
         publish_option.script_allowed
     }
 
-    spec fun is_script_allowed {
+    spec is_script_allowed {
         include Config::AbortsIfConfigNotExist<TransactionPublishOption>{
             addr: account
         };
@@ -99,7 +99,7 @@ module TransactionPublishOption {
         publish_option.module_publishing_allowed
     }
 
-    spec fun is_module_allowed {
+    spec is_module_allowed {
         include Config::AbortsIfConfigNotExist<TransactionPublishOption>{
             addr: account
         };

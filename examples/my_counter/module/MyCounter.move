@@ -1,4 +1,4 @@
-module MyCounter {
+module {{sender}}::MyCounter {
      use 0x1::Signer;
 
      struct T has key, store {

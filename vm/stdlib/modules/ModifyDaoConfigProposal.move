@@ -49,7 +49,7 @@ module ModifyDaoConfigProposal {
         move_to(signer, cap);
     }
 
-    spec fun plugin {
+    spec plugin {
         pragma aborts_if_is_partial = false;
         let sender = Signer::address_of(signer);
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
@@ -79,7 +79,7 @@ module ModifyDaoConfigProposal {
         };
         Dao::propose<TokenT, DaoConfigUpdate>(&signer, action, exec_delay);
     }
-    spec fun propose {
+    spec propose {
         use 0x1::Timestamp;
         use 0x1::CoreAddresses;
         pragma aborts_if_is_partial = false;
@@ -115,9 +115,9 @@ module ModifyDaoConfigProposal {
             min_action_delay,
         );
     }
-    spec fun execute {
+    spec execute {
         pragma aborts_if_is_partial = true;
-        // let expected_states = singleton_vector(6);
+        // let expected_states = vec(6);
         // include Dao::CheckProposalStates<TokenT, DaoConfigUpdate>{expected_states};
         aborts_if !exists<DaoConfigModifyCapability<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }

@@ -73,12 +73,12 @@ module Compare {
         len_cmp
     }
 
-    spec fun cmp_bytes {
+    spec cmp_bytes {
         pragma verify = false;
         //cmp_u8(*Vector::borrow(v1, i1), *Vector::borrow(v2, i2)) is not covered
     }
 
-    spec fun cmp_bcs_bytes {
+    spec cmp_bcs_bytes {
         pragma verify = false;
         //cmp_u8(*Vector::borrow(v1, i1), *Vector::borrow(v2, i2)) is not covered
     }
@@ -89,7 +89,7 @@ module Compare {
         else GREATER_THAN
     }
 
-    spec fun cmp_u8 {
+    spec cmp_u8 {
         aborts_if false;
     }
 
@@ -100,7 +100,7 @@ module Compare {
         else GREATER_THAN
     }
 
-    spec fun cmp_u64 {
+    spec cmp_u64 {
         aborts_if false;
     }
 

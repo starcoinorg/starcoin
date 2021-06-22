@@ -3,14 +3,15 @@
 //! account: bob
 
 //! sender: alice
-module MyToken {
+address alice = {{alice}};
+module alice::MyToken {
     use 0x1::Token;
     use 0x1::Signer;
 
     struct MyToken has copy, drop, store { }
 
     public fun init(account: &signer) {
-        assert(Signer::address_of(account) == {{alice}}, 8000);
+        assert(Signer::address_of(account) == @alice, 8000);
 
         Token::register_token<MyToken>(
             account,
@@ -23,8 +24,9 @@ module MyToken {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::MyToken::{MyToken, Self};
+    use alice::MyToken::{MyToken, Self};
     use 0x1::Account;
     use 0x1::Token;
 
@@ -33,7 +35,7 @@ script {
 
         let market_cap = Token::market_cap<MyToken>();
         assert(market_cap == 0, 8001);
-        assert(Token::is_registered_in<MyToken>({{alice}}), 8002);
+        assert(Token::is_registered_in<MyToken>(@alice), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
         Account::do_accept_token<MyToken>(&account);
     }
@@ -45,10 +47,11 @@ script {
 // issuer mint
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::Account;
 use 0x1::Token;
-use {{alice}}::MyToken::{MyToken};
+use alice::MyToken::{MyToken};
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
     let old_market_cap = Token::market_cap<MyToken>();
@@ -64,9 +67,10 @@ fun main(account: signer) {
 // user burn
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::Token;
-use {{alice}}::MyToken::{MyToken};
+use alice::MyToken::{MyToken};
 fun test_withdraw_and_burn(account: signer) {
     let cap = Token::remove_burn_capability<MyToken>(&account);
     Token::add_burn_capability<MyToken>(&account, cap);
@@ -77,9 +81,10 @@ fun test_withdraw_and_burn(account: signer) {
 // user burn
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::Token;
-use {{alice}}::MyToken::{MyToken};
+use alice::MyToken::{MyToken};
 use 0x1::Account;
 fun test_withdraw_and_burn(account: signer) {
     let market_cap = Token::market_cap<MyToken>();
@@ -97,9 +102,10 @@ fun test_withdraw_and_burn(account: signer) {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::Token;
-use {{alice}}::MyToken::MyToken;
+use alice::MyToken::MyToken;
 fun test_mint_and_burn(account: signer) {
     let old_market_cap = Token::market_cap<MyToken>();
     let amount = 100;
@@ -115,9 +121,10 @@ fun test_mint_and_burn(account: signer) {
 // destroy zero
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::Token;
-use {{alice}}::MyToken::{MyToken};
+use alice::MyToken::{MyToken};
 use 0x1::Account;
 fun test_withdraw_and_burn(account: signer) {
     let zero = Account::withdraw<MyToken>(&account, 0);
@@ -131,9 +138,10 @@ fun test_withdraw_and_burn(account: signer) {
 // destroy capability
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
 use 0x1::Token;
-use {{alice}}::MyToken::{MyToken};
+use alice::MyToken::{MyToken};
 fun test_withdraw_and_burn(account: signer) {
     let burn_cap = Token::remove_burn_capability<MyToken>(&account);
     Token::destroy_burn_capability<MyToken>(burn_cap);

@@ -29,7 +29,7 @@ use stdlib::{
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
     let mut compiled_modules = BTreeMap::new();
     stdlib_path.push(STDLIB_DIR_NAME);
-    for f in datatest_stable::utils::iterate_directory(&stdlib_path) {
+    for f in stdlib::iterate_directory(&stdlib_path) {
         let mut bytes = Vec::new();
         File::open(f)
             .expect("Failed to open module bytecode file")

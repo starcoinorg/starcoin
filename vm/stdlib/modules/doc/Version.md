@@ -27,7 +27,7 @@
 Version.
 
 
-<pre><code><b>struct</b> <a href="Version.md#0x1_Version">Version</a>
+<pre><code><b>struct</b> <a href="Version.md#0x1_Version">Version</a> has <b>copy</b>, drop, store
 </code></pre>
 
 

@@ -33,7 +33,7 @@ The module provide configuration for block reward.
 Reward configuration
 
 
-<pre><code><b>struct</b> <a href="RewardConfig.md#0x1_RewardConfig">RewardConfig</a>
+<pre><code><b>struct</b> <a href="RewardConfig.md#0x1_RewardConfig">RewardConfig</a> has <b>copy</b>, drop, store
 </code></pre>
 
 

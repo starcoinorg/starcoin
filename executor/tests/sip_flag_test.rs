@@ -15,7 +15,7 @@ use test_helper::executor::*;
 use test_helper::Account;
 
 pub const TEST_SIP_10000: &str = r#"
-    module SIP_10000 {
+    module {{sender}}::SIP_10000 {
     }
     "#;
 

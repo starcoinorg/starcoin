@@ -39,7 +39,7 @@ Timestamp is updated on each block. It always steps forward, and never come back
 
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>
+<pre><code><b>struct</b> <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a> has key
 </code></pre>
 
 
@@ -68,7 +68,7 @@ A singleton resource used to determine whether time has started. This
 is called at the end of genesis.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Timestamp.md#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a>
+<pre><code><b>struct</b> <a href="Timestamp.md#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a> has key
 </code></pre>
 
 
@@ -386,7 +386,7 @@ Helper function to assert genesis state.
 <a name="0x1_Timestamp_spec_now_seconds"></a>
 
 
-<pre><code><b>define</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">spec_now_seconds</a>(): u64 {
+<pre><code><b>fun</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">spec_now_seconds</a>(): u64 {
    <b>global</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).milliseconds / <a href="Timestamp.md#0x1_Timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
 }
 </code></pre>
@@ -414,7 +414,7 @@ Helper function to assert genesis state.
 <a name="0x1_Timestamp_spec_now_millseconds"></a>
 
 
-<pre><code><b>define</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_millseconds">spec_now_millseconds</a>(): u64 {
+<pre><code><b>fun</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_millseconds">spec_now_millseconds</a>(): u64 {
    <b>global</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).milliseconds
 }
 </code></pre>

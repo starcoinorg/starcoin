@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, bail, Result};
-use errmapgen::ErrorMapping;
 use move_cli::function_resolver::FunctionResolver;
 use move_cli::package::DepMode;
 use move_cli::remote_state::{MergedRemoteCache, RemoteStateView};
@@ -10,6 +9,7 @@ use move_cli::{
     package::{parse_mode_from_string, Mode},
     *,
 };
+use move_core_types::errmap::ErrorMapping;
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Event},
@@ -20,11 +20,13 @@ use move_core_types::{
     transaction_argument::{convert_txn_args, TransactionArgument},
     vm_status::{AbortLocation, StatusCode, VMStatus},
 };
+use move_lang::shared::Flags;
 use move_lang::{self, compiled_unit::CompiledUnit, MOVE_COMPILED_EXTENSION};
-use move_vm_runtime::data_cache::RemoteCache;
+use move_unit_test::UnitTestingConfig;
+use move_vm_runtime::data_cache::MoveStorage;
 use move_vm_runtime::{logging::NoContextLog, move_vm::MoveVM};
 use starcoin_config::INITIAL_GAS_SCHEDULE;
-use starcoin_vm_types::gas_schedule::CostStrategy;
+use starcoin_vm_types::gas_schedule::GasStatus;
 use std::{
     collections::BTreeMap,
     ffi::OsStr,
@@ -164,6 +166,55 @@ pub enum Command {
         dry_run: bool,
     },
 
+    #[structopt(name = "unit-test")]
+    UnitTest {
+        /// Bound the number of instructions that can be executed by any one test.
+        #[structopt(
+            name = "instructions",
+            default_value = "5000",
+            short = "i",
+            long = "instructions"
+        )]
+        instruction_execution_bound: u64,
+
+        /// A filter string to determine which unit tests to run
+        #[structopt(name = "filter", short = "f", long = "filter")]
+        filter: Option<String>,
+
+        /// List all tests
+        #[structopt(name = "list", short = "l", long = "list")]
+        list: bool,
+
+        /// Number of threads to use for running tests.
+        #[structopt(
+            name = "num_threads",
+            default_value = "8",
+            short = "t",
+            long = "threads"
+        )]
+        num_threads: usize,
+
+        /// Report test statistics at the end of testing
+        #[structopt(name = "report_statistics", short = "s", long = "statistics")]
+        report_statistics: bool,
+
+        /// Show the storage state at the end of execution of a failing test
+        #[structopt(name = "global_state_on_error", short = "g", long = "state_on_error")]
+        report_storage_on_error: bool,
+
+        /// The source files
+        #[structopt(
+        name = "PATH_TO_SOURCE_FILE",
+        default_value = DEFAULT_SOURCE_DIR,
+        )]
+        source_files: Vec<String>,
+
+        /// Use the stackless bytecode interpreter to run the tests and cross check its results with
+        /// the execution result from Move VM.
+        #[structopt(long = "stackless")]
+        check_stackless_vm: bool,
+    },
+
     /// Run expected value tests using the given batch file
     #[structopt(name = "test")]
     Test {
@@ -261,8 +312,7 @@ fn check(state: OnDiskStateView, republish: bool, files: &[String], verbose: boo
         files,
         &[state.interface_files_dir()?],
         None,
-        None,
-        republish,
+        Flags::empty().set_sources_shadow_deps(republish),
     )?;
     Ok(())
 }
@@ -282,8 +332,7 @@ fn publish(
         files,
         &[state.interface_files_dir()?],
         None,
-        None,
-        republish,
+        Flags::empty().set_sources_shadow_deps(republish),
     )?;
 
     let num_modules = compiled_units
@@ -473,7 +522,7 @@ move run` must be applied to a module inside `storage/`",
     }
 }
 
-fn run_on_remote<R: RemoteCache>(
+fn run_on_remote<R: MoveStorage>(
     state: OnDiskStateView,
     remote_state: R,
     script_file: &str,
@@ -566,8 +615,7 @@ fn compile_script(
         &[script_file.to_string()],
         &[state.interface_files_dir()?],
         None,
-        None,
-        false,
+        Flags::empty().set_sources_shadow_deps(false),
     )?;
 
     let mut script_opt = None;
@@ -584,7 +632,7 @@ fn compile_script(
                     println!(
                         "Warning: Found module '{}' in file specified for the script. This \
                              module will not be published.",
-                        ident
+                        ident.module_name
                     )
                 }
             }
@@ -595,14 +643,14 @@ fn compile_script(
 }
 
 // execute the script against the given state
-fn execute<R: RemoteCache>(
+fn execute<R: MoveStorage>(
     state: &R,
     script_name_opt: &Option<String>,
     bytecode: Vec<u8>,
     signer_addresses: Vec<AccountAddress>,
     vm_args: Vec<Vec<u8>>,
     vm_type_args: Vec<TypeTag>,
-    mut cost_strategy: CostStrategy,
+    mut cost_strategy: GasStatus,
 ) -> Result<(ChangeSet, Vec<Event>), VMError> {
     let vm = MoveVM::new();
     let log_context = NoContextLog::new();
@@ -641,7 +689,7 @@ fn execute<R: RemoteCache>(
     res.and_then(|_| session.finish())
 }
 
-fn get_cost_strategy(gas_budget: Option<u64>) -> Result<CostStrategy<'static>> {
+fn get_cost_strategy(gas_budget: Option<u64>) -> Result<GasStatus<'static>> {
     let gas_schedule = &INITIAL_GAS_SCHEDULE;
     let cost_strategy = if let Some(gas_budget) = gas_budget {
         let max_gas_budget = u64::MAX
@@ -650,10 +698,12 @@ fn get_cost_strategy(gas_budget: Option<u64>) -> Result<CostStrategy<'static>> {
         if gas_budget >= max_gas_budget {
             bail!("Gas budget set too high; maximum is {}", max_gas_budget)
         }
-        CostStrategy::transaction(gas_schedule, GasUnits::new(gas_budget))
+        GasStatus::new(gas_schedule, GasUnits::new(gas_budget))
     } else {
         // no budget specified. use CostStrategy::system, which disables gas metering
-        CostStrategy::system(gas_schedule, GasUnits::new(0))
+        let mut gas_status = GasStatus::new(gas_schedule, GasUnits::new(0));
+        gas_status.set_metering(false);
+        gas_status
     };
     Ok(cost_strategy)
 }
@@ -689,7 +739,7 @@ fn explain_publish_changeset(changeset: &ChangeSet, state: &OnDiskStateView) {
     )
 }
 
-fn explain_execution_effects<R: RemoteCache>(
+fn explain_execution_effects<R: MoveStorage>(
     changeset: &ChangeSet,
     events: &[Event],
     state: &R,
@@ -706,25 +756,25 @@ fn explain_execution_effects<R: RemoteCache>(
             )
         }
     }
-    if !changeset.accounts.is_empty() {
+    if !changeset.accounts().is_empty() {
         println!(
             "Changed resource(s) under {:?} address(es):",
-            changeset.accounts.len()
+            changeset.accounts().len()
         );
     }
     // total bytes written across all accounts
     let mut total_bytes_written = 0;
-    for (addr, account) in &changeset.accounts {
+    for (addr, account) in changeset.accounts() {
         print!("  ");
-        if account.resources.is_empty() {
+        if account.resources().is_empty() {
             continue;
         }
         println!(
             "Changed {:?} resource(s) under address {:?}:",
-            account.resources.len(),
+            account.resources().len(),
             addr
         );
-        for (struct_tag, write_opt) in &account.resources {
+        for (struct_tag, write_opt) in account.resources() {
             print!("    ");
             let mut bytes_to_write = struct_tag.access_vector().len();
             match write_opt {
@@ -776,8 +826,9 @@ fn maybe_commit_effects(
     // similar to explain effects, all module publishing happens via save_modules(), so effects
     // shouldn't contain modules
     if commit {
-        for (addr, account) in changeset.accounts {
-            for (struct_tag, blob_opt) in account.resources {
+        for (addr, account) in changeset.into_inner() {
+            let (_modules, resources) = account.into_inner();
+            for (struct_tag, blob_opt) in resources {
                 match blob_opt {
                     Some(blob) => state.save_resource(addr, struct_tag, &blob)?,
                     None => state.delete_resource(addr, struct_tag)?,
@@ -928,7 +979,7 @@ fn explain_publish_error(
 }
 
 /// Explain an execution error
-fn explain_execution_error<R: RemoteCache>(
+fn explain_execution_error<R: MoveStorage>(
     error: VMError,
     state: &R,
     script_type_parameters: &[AbilitySet],
@@ -1228,6 +1279,37 @@ fn main() -> Result<()> {
                 *dry_run,
                 move_args.verbose,
             )
+        }
+        Command::UnitTest {
+            instruction_execution_bound,
+            filter,
+            list,
+            num_threads,
+            report_statistics,
+            report_storage_on_error,
+            source_files,
+            check_stackless_vm,
+        } => {
+            let mut sources = source_files.clone();
+            // only support packages deps
+            sources.push(move_args.get_package_dir().display().to_string());
+
+            let testing_config = UnitTestingConfig {
+                instruction_execution_bound: *instruction_execution_bound,
+                filter: filter.clone(),
+                list: *list,
+                num_threads: *num_threads,
+                report_statistics: *report_statistics,
+                report_storage_on_error: *report_storage_on_error,
+                source_files: sources,
+                check_stackless_vm: *check_stackless_vm,
+                verbose: move_args.verbose,
+            };
+            let test_plan = testing_config.build_test_plan();
+            if let Some(test_plan) = test_plan {
+                testing_config.run_and_report_unit_tests(test_plan, std::io::stdout())?;
+            }
+            Ok(())
         }
         Command::Test {
             path,

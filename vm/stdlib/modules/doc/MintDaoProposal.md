@@ -34,7 +34,7 @@ MintDaoProposal is a dao proposal for mint extra tokens.
 A wrapper of Token MintCapability.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenType&gt; has key
 </code></pre>
 
 
@@ -62,7 +62,7 @@ A wrapper of Token MintCapability.
 MintToken request.
 
 
-<pre><code><b>struct</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>
+<pre><code><b>struct</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -111,7 +111,7 @@ Plugin method of the module.
 Should be called by token issuer.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT: store&gt;(signer: &signer)
 </code></pre>
 
 
@@ -139,7 +139,7 @@ Should be called by token issuer.
 Entrypoint for the proposal.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_propose_mint_to">propose_mint_to</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_propose_mint_to">propose_mint_to</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(signer: &signer, receiver: address, amount: u128, exec_delay: u64)
 </code></pre>
 
 
@@ -168,7 +168,7 @@ Entrypoint for the proposal.
 Once the proposal is agreed, anyone can call the method to make the proposal happen.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -213,14 +213,13 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 ### Function `plugin`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT: store&gt;(signer: &signer)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<a name="0x1_MintDaoProposal_sender$3"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
 <b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenT&gt;&gt;(sender);
@@ -236,7 +235,7 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 ### Function `propose_mint_to`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_propose_mint_to">propose_mint_to</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_propose_mint_to">propose_mint_to</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(signer: &signer, receiver: address, amount: u128, exec_delay: u64)
 </code></pre>
 
 
@@ -248,7 +247,6 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> exec_delay &gt; 0 && exec_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">Dao::spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">Dao::CheckQuorumVotes</a>&lt;TokenT&gt;;
-<a name="0x1_MintDaoProposal_sender$4"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;&gt;(sender);
 </code></pre>
@@ -260,17 +258,15 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 ### Function `execute_mint_proposal`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
-<a name="0x1_MintDaoProposal_expected_states$5"></a>
-<b>let</b> expected_states = singleton_vector(6);
+<b>let</b> expected_states = vec&lt;u8&gt;(6);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">Dao::CheckProposalStates</a>&lt;TokenT, <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;{expected_states};
-<a name="0x1_MintDaoProposal_proposal$6"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;&gt;(proposer_address);
 <b>aborts_if</b> <a href="Option.md#0x1_Option_is_none">Option::is_none</a>(proposal.action);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());

@@ -1,11 +1,13 @@
-module Nop{
+address default = {{default}};
+module default::Nop{
     public fun nop() { }
 }
 
 //! new-transaction
 //! max-gas: 700
+address default = {{default}};
 script {
-use {{default}}::Nop;
+use default::Nop;
 use 0x1::Vector;
 fun main() {
     Nop::nop();

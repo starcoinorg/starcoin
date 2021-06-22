@@ -2,7 +2,8 @@
 //! account: bob
 
 //! sender: alice
-module BigVectorTest {
+address alice = {{alice}};
+module alice::BigVectorTest {
     use 0x1::Vector;
     use 0x1::Signer;
 
@@ -20,7 +21,7 @@ module BigVectorTest {
         let index = 0;
         while (index < 5000) {
             let element = Element<u64> {
-                addr: 0x1,
+                addr: @0x1,
                 value: index,
             };
             Vector::push_back(&mut vec, element);
@@ -28,7 +29,7 @@ module BigVectorTest {
         };
 
         move_to<BigVector<u64>>(account, BigVector<u64> {vec});
-        //assert(Vector::contains<u64>(&vec, &(0x1, 99)) == true, 1001);
+        //assert(Vector::contains<u64>(&vec, &(@0x1, 99)) == true, 1001);
     }
 
     // append num of elements to vector
@@ -38,7 +39,7 @@ module BigVectorTest {
         let total = index + num;
         while (index < total) {
             let element = Element<u64> {
-                addr: 0x1,
+                addr: @0x1,
                 value: index,
             };
             Vector::push_back(vector, element);
@@ -72,8 +73,9 @@ module BigVectorTest {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::init(&account);
         assert(BigVectorTest::value_of(&account, 4999) == 4999, 101);
@@ -85,8 +87,9 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::append(&account, 1);
         assert(BigVectorTest::value_of(&account, 5000) == 5000, 102);
@@ -99,8 +102,9 @@ script {
 //! new-transaction
 //! sender: alice
 // appand 5000 elements "5000, 5001, ... 10000" to the vector
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::append(&account, 5000);
         assert(BigVectorTest::value_of(&account, 10000) == 10000, 103);
@@ -112,8 +116,9 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::append(&account, 1);
         assert(BigVectorTest::value_of(&account, 10001) == 10001, 104);
@@ -126,10 +131,11 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
-        let (has, _) = BigVectorTest::index_of(&account, 0x1, 10001);
+        let (has, _) = BigVectorTest::index_of(&account, @0x1, 10001);
         assert(has == true, 106);
     }
 }
@@ -140,8 +146,9 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::remove(&account, 10001);
         assert(BigVectorTest::value_of(&account, 0) == 0, 105);
@@ -154,8 +161,9 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::remove(&account, 0);
     }
@@ -168,8 +176,9 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::BigVectorTest;
+    use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::remove(&account, 5000);
         assert(BigVectorTest::value_of(&account, 9999) == 10000, 107);

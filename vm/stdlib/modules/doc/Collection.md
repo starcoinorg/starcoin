@@ -76,7 +76,7 @@ Collection in memory, can not drop & store.
 Collection in global store.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T&gt;
+<pre><code><b>struct</b> <a href="Collection.md#0x1_Collection_CollectionStore">CollectionStore</a>&lt;T: store&gt; has key
 </code></pre>
 
 
@@ -191,7 +191,7 @@ Aborts if <code>v</code> is empty.
 check the Collection exists in <code>addr</code>
 
 
-<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T&gt;(addr: address): bool
+<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T: store&gt;(addr: address): bool
 </code></pre>
 
 
@@ -217,7 +217,7 @@ Deprecated since @v3
 Put items to account's Collection last position.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(_account: &signer, _item: T)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T: store&gt;(_account: &signer, _item: T)
 </code></pre>
 
 
@@ -242,7 +242,7 @@ Put items to account's Collection last position.
 Take last item from account's Collection of T.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_take">take</a>&lt;T&gt;(account: &signer): T
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_take">take</a>&lt;T: store&gt;(account: &signer): T
 </code></pre>
 
 
@@ -271,7 +271,7 @@ Take last item from account's Collection of T.
 Borrow collection of T from <code>addr</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_borrow_collection">borrow_collection</a>&lt;T&gt;(addr: address): <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_borrow_collection">borrow_collection</a>&lt;T: store&gt;(addr: address): <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;
 </code></pre>
 
 
@@ -302,7 +302,7 @@ Borrow collection of T from <code>addr</code>
 Return the Collection of T
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_return_collection">return_collection</a>&lt;T&gt;(c: <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_return_collection">return_collection</a>&lt;T: store&gt;(c: <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -334,7 +334,7 @@ Return the Collection of T
 
 
 
-<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_destroy_empty">destroy_empty</a>&lt;T&gt;(c: <a href="Collection.md#0x1_Collection_CollectionStore">Collection::CollectionStore</a>&lt;T&gt;)
+<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_destroy_empty">destroy_empty</a>&lt;T: store&gt;(c: <a href="Collection.md#0x1_Collection_CollectionStore">Collection::CollectionStore</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -370,7 +370,7 @@ Return the Collection of T
 ### Function `exists_at`
 
 
-<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T&gt;(addr: address): bool
+<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_exists_at">exists_at</a>&lt;T: store&gt;(addr: address): bool
 </code></pre>
 
 
@@ -386,7 +386,7 @@ Return the Collection of T
 ### Function `put`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T&gt;(_account: &signer, _item: T)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_put">put</a>&lt;T: store&gt;(_account: &signer, _item: T)
 </code></pre>
 
 
@@ -402,7 +402,7 @@ Return the Collection of T
 ### Function `take`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_take">take</a>&lt;T&gt;(account: &signer): T
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_take">take</a>&lt;T: store&gt;(account: &signer): T
 </code></pre>
 
 
@@ -418,7 +418,7 @@ Return the Collection of T
 ### Function `borrow_collection`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_borrow_collection">borrow_collection</a>&lt;T&gt;(addr: address): <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_borrow_collection">borrow_collection</a>&lt;T: store&gt;(addr: address): <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;
 </code></pre>
 
 
@@ -434,7 +434,7 @@ Return the Collection of T
 ### Function `return_collection`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_return_collection">return_collection</a>&lt;T&gt;(c: <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Collection.md#0x1_Collection_return_collection">return_collection</a>&lt;T: store&gt;(c: <a href="Collection.md#0x1_Collection_Collection">Collection::Collection</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -450,7 +450,7 @@ Return the Collection of T
 ### Function `destroy_empty`
 
 
-<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_destroy_empty">destroy_empty</a>&lt;T&gt;(c: <a href="Collection.md#0x1_Collection_CollectionStore">Collection::CollectionStore</a>&lt;T&gt;)
+<pre><code><b>fun</b> <a href="Collection.md#0x1_Collection_destroy_empty">destroy_empty</a>&lt;T: store&gt;(c: <a href="Collection.md#0x1_Collection_CollectionStore">Collection::CollectionStore</a>&lt;T&gt;)
 </code></pre>
 
 
