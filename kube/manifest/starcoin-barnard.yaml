@@ -53,6 +53,49 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.10.2
+        args: [
+            "-c", "/etc/filebeat.yml",
+            "-e",
+        ]
+        env:
+          - name: ELASTICSEARCH_HOST
+            value: "search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com"
+          - name: ELASTICSEARCH_PORT
+            value: ""
+          - name: ELASTICSEARCH_USERNAME
+            value: elastic
+          - name: ELASTICSEARCH_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: elasticsearch-pw-elastic
+                key: password
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        securityContext:
+          runAsUser: 0
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+          - name: config
+            mountPath: /etc/filebeat.yml
+            readOnly: true
+            subPath: filebeat.yml
+          - mountPath: /sc-data
+            readOnly: true
+            name: starcoin-volume
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 0640
+            name: filebeat-config
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume
