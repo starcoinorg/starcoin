@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: starcoin-indexer-new-deployment
+  name: starcoin-indexer-deployment
   namespace: starcoin-halley
   labels:
     app: starcoin-indexer
@@ -27,7 +27,7 @@ spec:
           - bash
           - -c
         args:
-          - "/starcoin/starcoin_indexer --es-url https://search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com --node-url http://starcoin-svc:9850 --es-user elastic --es-password $(es_password) --es-index-prefix 0621halley --bulk-size 100"
+          - "/starcoin/starcoin_indexer --es-url https://search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com --node-url http://starcoin-svc:9850 --es-user elastic --es-password $(es_password) --es-index-prefix halley --bulk-size 100"
         env:
         - name: es_password
           valueFrom:
