@@ -25,13 +25,12 @@ use std::{
     path::{Path, PathBuf},
 };
 mod compat;
-mod utils;
 pub use compat::*;
 use starcoin_move_compiler::shared::Flags;
-pub use utils::iterate_directory;
+pub use starcoin_move_compiler::utils::iterate_directory;
 
 pub const STD_LIB_DIR: &str = "modules";
-pub const MOVE_EXTENSION: &str = "move";
+pub const MOVE_EXTENSION: &str = starcoin_move_compiler::MOVE_EXTENSION;
 
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
 
@@ -42,7 +41,7 @@ pub const LATEST_COMPILED_OUTPUT_PATH: &str = "compiled/latest";
 /// The output path for the compiled stdlib
 pub const STDLIB_DIR_NAME: &str = "stdlib";
 /// The extension for compiled files
-pub const COMPILED_EXTENSION: &str = "mv";
+pub const COMPILED_EXTENSION: &str = starcoin_move_compiler::MOVE_COMPILED_EXTENSION;
 
 /// The output path for stdlib documentation.
 pub const STD_LIB_DOC_DIR: &str = "modules/doc";
@@ -160,52 +159,6 @@ fn module_to_package(
     )
 }
 
-pub fn filter_compiled_mv_files(
-    dir_iter: impl Iterator<Item = PathBuf>,
-) -> impl Iterator<Item = String> {
-    dir_iter.flat_map(|path| {
-        if path.extension()?.to_str()? == COMPILED_EXTENSION {
-            path.into_os_string().into_string().ok()
-        } else {
-            None
-        }
-    })
-}
-
-pub fn compiled_stdlib_files(path: &Path) -> Vec<String> {
-    let dirfiles = crate::utils::iterate_directory(&path);
-    filter_compiled_mv_files(dirfiles).collect::<Vec<_>>()
-}
-
-/// A predicate detailing whether the compiled versions of scripts and the stdlib should be used or
-/// not. The default is that the compiled versions of the stdlib and transaction scripts should be
-/// used.
-pub fn use_compiled() -> bool {
-    std::env::var(NO_USE_COMPILED).is_err()
-}
-
-pub fn filter_move_files(dir_iter: impl Iterator<Item = PathBuf>) -> impl Iterator<Item = String> {
-    filter_files(dir_iter, MOVE_EXTENSION.to_string())
-        .flat_map(|file| file.into_os_string().into_string().ok())
-}
-
-fn filter_files(
-    dir_iter: impl Iterator<Item = PathBuf>,
-    extension: String,
-) -> impl Iterator<Item = PathBuf> {
-    dir_iter.flat_map(move |path| {
-        if path.extension()?.to_str()? == extension {
-            Some(path)
-        } else {
-            None
-        }
-    })
-}
-
-pub fn filter_mv_files(dir_iter: impl Iterator<Item = PathBuf>) -> impl Iterator<Item = PathBuf> {
-    filter_files(dir_iter, COMPILED_EXTENSION.to_string())
-}
-
 pub fn restore_stdlib_in_dir(dir: &Path) -> anyhow::Result<Vec<String>> {
     let mut deps = vec![];
     for dep in STDLIB_DIR.files() {
@@ -220,8 +173,8 @@ pub(crate) fn stdlib_files() -> Vec<String> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push(STD_LIB_DIR);
 
-    let dirfiles = crate::utils::iterate_directory(&path);
-    filter_move_files(dirfiles).collect::<Vec<_>>()
+    let dirfiles = starcoin_move_compiler::utils::iterate_directory(&path);
+    starcoin_move_compiler::utils::filter_move_files(dirfiles).collect::<Vec<_>>()
 }
 
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
@@ -243,18 +196,6 @@ pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
         }
     }
     modules
-}
-
-pub fn compile_script(source_file_str: String) -> Vec<u8> {
-    let (_, mut compiled_program) =
-        move_compile_and_report(&[source_file_str], &stdlib_files(), None, Flags::empty()).unwrap();
-    let mut script_bytes = vec![];
-    assert_eq!(compiled_program.len(), 1);
-    match compiled_program.pop().unwrap() {
-        CompiledUnit::Module { .. } => panic!("Unexpected module when compiling script"),
-        CompiledUnit::Script { script, .. } => script.serialize(&mut script_bytes).unwrap(),
-    };
-    script_bytes
 }
 
 pub fn save_binary(path: &Path, binary: &[u8]) {
@@ -340,68 +281,6 @@ fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
     options.errmapgen.output_file = output_path.to_string();
     options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
-}
-
-pub fn compile_scripts(script_dir: &Path, dest_dir: PathBuf) {
-    let scripts = compile_scripts_to_bytes(script_dir);
-    save_scripts(scripts, dest_dir);
-}
-
-pub fn compile_scripts_to_bytes(script_dir: &Path) -> HashMap<String, (HashValue, Vec<u8>)> {
-    let script_source_files = crate::utils::iterate_directory(script_dir);
-    let script_files = filter_files(script_source_files, MOVE_EXTENSION.to_string());
-    let mut scripts: HashMap<String, (HashValue, Vec<u8>)> = HashMap::new();
-
-    for script_file in script_files {
-        let file_name =
-            file_name_without_extension(script_file.file_name().unwrap().to_str().unwrap());
-        let compiled_script = compile_script(script_file.into_os_string().into_string().unwrap());
-        let hash = HashValue::sha3_256_of(&compiled_script);
-        scripts.insert(file_name, (hash, compiled_script));
-    }
-
-    scripts
-}
-
-pub fn compiled_scripts(script_dir: &Path) -> HashMap<String, HashValue> {
-    let mut scripts: HashMap<String, HashValue> = HashMap::new();
-    if script_dir.exists() {
-        let script_source_files = crate::utils::iterate_directory(script_dir);
-        let script_files = filter_mv_files(script_source_files);
-
-        for script_file in script_files {
-            let file_name =
-                file_name_without_extension(script_file.file_name().unwrap().to_str().unwrap());
-            let mut compiled_script = Vec::new();
-            File::open(script_file)
-                .expect("Failed to open script bytecode file")
-                .read_to_end(&mut compiled_script)
-                .expect("Failed to read script bytecode file");
-            let hash = HashValue::sha3_256_of(&compiled_script);
-            scripts.insert(file_name, hash);
-        }
-    }
-
-    scripts
-}
-
-pub fn save_scripts(scripts: HashMap<String, (HashValue, Vec<u8>)>, dest_dir: PathBuf) {
-    for script_file in scripts.keys() {
-        if let Some((_, script)) = scripts.get(script_file) {
-            let mut dest_dir = dest_dir.clone();
-            dest_dir.push(script_file.clone());
-            dest_dir.set_extension(COMPILED_EXTENSION);
-            File::create(dest_dir)
-                .unwrap()
-                .write_all(&script.clone())
-                .unwrap();
-        }
-    }
-}
-
-fn file_name_without_extension(file_name: &str) -> String {
-    let tmp: Vec<&str> = file_name.split('.').collect();
-    tmp.get(0).unwrap().to_string()
 }
 
 pub fn load_latest_stable_compiled_modules() -> Option<(StdlibVersion, Vec<CompiledModule>)> {
