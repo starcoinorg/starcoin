@@ -52,41 +52,41 @@ Check the index status of the backup, green is normal. And delete the index on t
 
 ``` 
    Check:
-   GET /_cluster/health/main.blocks_0527?wait_for_status=green&timeout=30s
-   GET /_cluster/health/main.txn_infos_0527?wait_for_status=green&timeout=30s
+   GET /_cluster/health/barnard.blocks_0527?wait_for_status=green&timeout=30s
+   GET /_cluster/health/barnard.txn_infos_0527?wait_for_status=green&timeout=30s
 
-   DELETE /main.txn_infos
-   DELETE /main.blocks
+   DELETE /barnard.txn_infos
+   DELETE /barnard.blocks
  ``` 
 ### step5:
    
 Stop the new indexer from being written and clone the new index.
 
 ``` 
-   POST /0527main.blocks/_open
+   POST /0527barnard.blocks/_open
 
-   PUT /0527main.blocks/_settings
+   PUT /0527barnard.blocks/_settings
    {
      "settings": {
        "index.blocks.write": "true"
      }
    }
-     POST /0527main.blocks/_clone/main.blocks
+     POST /0527barnard.blocks/_clone/barnard.blocks
      {
        "settings": {
          "index.blocks.write": null
        }
      }
 
-   POST /0527main.txn_infos/_open
-   PUT /0527main.txn_infos/_settings
+   POST /0527barnard.txn_infos/_open
+   PUT /0527barnard.txn_infos/_settings
    {
      "settings": {
        "index.blocks.write": "true"
      }
    }
 
-     POST /0527main.txn_infos/_clone/main.txn_infos
+     POST /0527barnard.txn_infos/_clone/barnard.txn_infos
      {
        "settings": {
          "index.blocks.write": null

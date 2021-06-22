@@ -9,8 +9,10 @@ use starcoin_rpc_api::types::{
     BlockHeaderView, BlockMetadataView, BlockView, SignedUserTransactionView, StrView,
     TransactionEventView, TransactionInfoView, TransactionVMStatus, TypeTagView,
 };
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::event::EventKey;
+use starcoin_types::language_storage::TypeTag;
 use starcoin_types::vm_error::AbortLocation;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -30,7 +32,6 @@ pub struct TransactionEventEsView {
     pub transaction_hash: Option<HashValue>,
     // txn index in block
     pub transaction_index: Option<u32>,
-
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
     pub event_key: EventKey,
@@ -155,6 +156,61 @@ struct BlockWithMetadata {
 struct BlockSimplified {
     header: BlockHeaderView,
     pub uncle_block_number: StrView<BlockNumber>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct EventData {
+    pub event_seq_number: StrView<u64>,
+    pub block_hash: Option<HashValue>,
+    pub block_number: Option<StrView<BlockNumber>>,
+    pub transaction_hash: Option<HashValue>,
+    // txn index in block
+    pub transaction_index: Option<u32>,
+    pub data: StrView<Vec<u8>>,
+    pub type_tag: TypeTagView,
+    pub event_key: EventKey,
+    pub event_address: AccountAddress,
+    pub tag_address: Option<AccountAddress>,
+    pub tag_module: Option<String>,
+    pub tag_name: Option<String>,
+    pub timestamp: u64,
+}
+
+impl From<TransactionEventEsView> for EventData {
+    fn from(event: TransactionEventEsView) -> Self {
+        match event.clone().type_tag.0 {
+            TypeTag::Struct(struct_tag) => Self {
+                event_seq_number: event.event_seq_number,
+                block_hash: event.block_hash,
+                block_number: event.block_number,
+                transaction_hash: event.transaction_hash,
+                transaction_index: event.transaction_index,
+                data: event.data,
+                type_tag: event.type_tag,
+                event_key: event.event_key,
+                event_address: event.event_key.get_creator_address(),
+                tag_address: Some(struct_tag.address),
+                tag_module: Some(struct_tag.module.to_string()),
+                tag_name: Some(struct_tag.name.to_string()),
+                timestamp: 0, //set later from txn
+            },
+            _ => Self {
+                event_seq_number: event.event_seq_number,
+                block_hash: event.block_hash,
+                block_number: event.block_number,
+                transaction_hash: event.transaction_hash,
+                transaction_index: event.transaction_index,
+                data: event.data,
+                type_tag: event.type_tag,
+                event_key: event.event_key,
+                event_address: event.event_key.get_creator_address(),
+                tag_address: None,
+                tag_module: None,
+                tag_name: None,
+                timestamp: 0, //set later from txn
+            },
+        }
+    }
 }
 
 #[cfg(test)]

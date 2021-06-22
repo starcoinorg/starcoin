@@ -21,13 +21,13 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin-indexer
-        image: starcoin/starcoin:master
+        image: starcoin/starcoin:feature-index_event
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
-          - "/starcoin/starcoin_indexer --es-url https://search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com --node-url http://starcoin-svc:9850 --es-user elastic --es-password $(es_password) --es-index-prefix halley"
+          - "/starcoin/starcoin_indexer --es-url https://search-starcoin-es2-47avtmhexhbg7qtynzebcnnu64.ap-northeast-1.es.amazonaws.com --node-url http://starcoin-svc:9850 --es-user elastic --es-password $(es_password) --es-index-prefix halley --bulk-size 100"
         env:
         - name: es_password
           valueFrom:

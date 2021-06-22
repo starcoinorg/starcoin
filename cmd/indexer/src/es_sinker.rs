@@ -1,4 +1,4 @@
-use crate::{BlockData, BlockSimplified, BlockWithMetadata};
+use crate::{BlockData, BlockSimplified, BlockWithMetadata, EventData};
 use anyhow::Result;
 use elasticsearch::http::response::Response;
 use elasticsearch::indices::{
@@ -19,6 +19,7 @@ pub struct IndexConfig {
     pub block_index: String,
     pub uncle_block_index: String,
     pub txn_info_index: String,
+    pub txn_event_index: String,
 }
 
 impl IndexConfig {
@@ -27,6 +28,7 @@ impl IndexConfig {
             block_index: format!("{}.blocks", prefix.as_ref()),
             uncle_block_index: format!("{}.uncle_blocks", prefix.as_ref()),
             txn_info_index: format!("{}.txn_infos", prefix.as_ref()),
+            txn_event_index: format!("{}.txn_events", prefix.as_ref()),
         }
     }
 }
@@ -37,6 +39,7 @@ impl Default for IndexConfig {
             block_index: "blocks".to_string(),
             uncle_block_index: "uncle_blocks".to_string(),
             txn_info_index: "txn_infos".to_string(),
+            txn_event_index: "txn_events".to_string(),
         }
     }
 }
@@ -92,9 +95,11 @@ impl EsSinker {
         let block_index = self.config.block_index.as_str();
         let uncle_block_index = self.config.uncle_block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
+        let txn_event_index = self.config.txn_event_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
         self.create_index_if_not_exists(uncle_block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
+        self.create_index_if_not_exists(txn_event_index).await?;
         let tip = self.get_remote_tip_header().await?;
         self.state.write().await.tip = tip.clone();
         if let Some(tip_info) = tip {
@@ -268,6 +273,8 @@ impl EsSinker {
         let block_index = self.config.block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
         let uncle_index = self.config.uncle_block_index.as_str();
+        let event_index = self.config.txn_event_index.as_str();
+
         for blockdata in blocks {
             let BlockData { block, txns_data } = blockdata;
             bulk_operations.push(
@@ -278,14 +285,28 @@ impl EsSinker {
                 .id(block.header.block_hash.to_string())
                 .index(block_index),
             )?;
-
             for txn_data in txns_data {
                 bulk_operations.push(
                     BulkOperation::index(txn_data.clone())
                         .id(txn_data.info.transaction_hash.to_string())
                         .index(txn_info_index),
                 )?;
+                if !txn_data.events.is_empty() {
+                    // event_vec.extend_from_slice(txn_data.events.as_slice());
+                    for event in txn_data.events {
+                        let mut event_data = EventData::from(event.clone());
+                        event_data.timestamp = txn_data.timestamp;
+                        if let Some(tag_name) = event_data.clone().tag_name {
+                            let id = format!("{}_{}", tag_name, event.event_seq_number);
+                            bulk_operations
+                                .push(BulkOperation::index(event_data).id(id).index(event_index))?;
+                        } else {
+                            warn!("other event: {}", event_data.type_tag);
+                        }
+                    }
+                }
             }
+
             //add uncle
             if !block.uncles.is_empty() {
                 for uncle in block.uncles {
