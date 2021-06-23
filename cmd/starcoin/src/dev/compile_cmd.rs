@@ -2,20 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::temp_path;
-use starcoin_move_compiler::{compile_source_string_no_report, errors};
+use starcoin_move_compiler::shared::Flags;
+use starcoin_move_compiler::{
+    compile_source_string_no_report, errors, move_compile, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
 
-/// Compile a module or script.
+/// Compile module or script, support compile source dir.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "compile")]
 pub struct CompileOpt {
@@ -38,8 +40,8 @@ pub struct CompileOpt {
     #[structopt(short = "o", name = "out_dir", help = "out dir", parse(from_os_str))]
     out_dir: Option<PathBuf>,
 
-    #[structopt(name = "source", help = "source file path")]
-    source_file: String,
+    #[structopt(name = "source_file_or_dir", help = "source file path")]
+    source_file_or_dir: PathBuf,
 
     /// Do not automatically run the bytecode verifier
     #[structopt(long = "no-verify")]
@@ -52,7 +54,7 @@ impl CommandAction for CompileCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = CompileOpt;
-    type ReturnItem = StringView;
+    type ReturnItem = Vec<String>;
 
     fn run(
         &self,
@@ -63,31 +65,45 @@ impl CommandAction for CompileCommand {
         } else {
             ctx.state().default_account()?.address
         };
-        let source_file = ctx.opt().source_file.as_str();
-        let source_file_path = Path::new(source_file);
-        let ext = source_file_path
-            .extension()
-            .map(|os_str| os_str.to_str().expect("file extension should is utf str"))
-            .unwrap_or_else(|| "");
-        //TODO support compile dir.
-        if ext != starcoin_move_compiler::MOVE_EXTENSION {
-            bail!("Only support compile *.move file.")
-        }
+        let source_file_or_dir = ctx.opt().source_file_or_dir.as_path();
+
+        ensure!(
+            source_file_or_dir.exists(),
+            "file {:?} not exist",
+            source_file_or_dir
+        );
 
         let temp_path = temp_path();
         let mut deps = restore_stdlib_in_dir(temp_path.path())?;
 
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
-        let (sources, compile_result) = compile_source_string_no_report(
-            std::fs::read_to_string(source_file_path)
-                .map_err(|e| {
-                    format_err!("read source file({:?}) error: {:?}", source_file_path, e)
-                })?
-                .as_str(),
-            &deps,
-            sender,
-        )?;
+        let (sources, compile_result) = if source_file_or_dir.is_file() {
+            let ext = source_file_or_dir
+                .extension()
+                .map(|os_str| os_str.to_string_lossy().to_string())
+                .unwrap_or_default();
+            if ext != MOVE_EXTENSION {
+                bail!("{:?} not a move file", source_file_or_dir)
+            }
+            compile_source_string_no_report(
+                std::fs::read_to_string(source_file_or_dir)
+                    .map_err(|e| {
+                        format_err!("read source file({:?}) error: {:?}", source_file_or_dir, e)
+                    })?
+                    .as_str(),
+                &deps,
+                sender,
+            )?
+        } else {
+            let targets = vec![source_file_or_dir.to_string_lossy().to_string()];
+            move_compile(
+                &targets,
+                &deps,
+                None,
+                Flags::empty().set_sources_shadow_deps(true),
+            )?
+        };
 
         let compile_result = if ctx.opt().no_verify {
             compile_result
@@ -109,10 +125,8 @@ impl CommandAction for CompileCommand {
             })
         };
 
-        let compile_unit = match compile_result {
-            Ok(mut c) => c
-                .pop()
-                .ok_or_else(|| anyhow::anyhow!("file should at least contain one compile unit"))?,
+        let compile_units = match compile_result {
+            Ok(c) => c,
             Err(e) => {
                 eprintln!(
                     "{}",
@@ -124,7 +138,7 @@ impl CommandAction for CompileCommand {
             }
         };
 
-        let mut out_dir = ctx
+        let out_dir = ctx
             .opt()
             .out_dir
             .clone()
@@ -134,17 +148,16 @@ impl CommandAction for CompileCommand {
                 .map_err(|e| format_err!("make out_dir({:?}) error: {:?}", out_dir, e))?;
         }
         ensure!(out_dir.is_dir(), "out_dir should is a dir.");
-        out_dir.push(source_file_path.file_name().unwrap());
-        out_dir.set_extension(stdlib::COMPILED_EXTENSION);
-        let mut file = File::create(out_dir.clone())
-            .map_err(|e| format_err!("create file({:?} error: {:?})", out_dir, e))?;
-        file.write_all(&compile_unit.serialize())
-            .expect("write out file error");
-        Ok(StringView {
-            result: out_dir
-                .to_str()
-                .expect("out_dir to string should success")
-                .to_string(),
-        })
+        let mut results = vec![];
+        for unit in compile_units {
+            let mut file_path = out_dir.join(unit.name());
+            file_path.set_extension(MOVE_COMPILED_EXTENSION);
+            let mut file = File::create(file_path.as_path())
+                .map_err(|e| format_err!("create file({:?} error: {:?})", file_path, e))?;
+            file.write_all(&unit.serialize())
+                .map_err(|e| format_err!("write file({:?} error: {:?})", file_path, e))?;
+            results.push(file_path.to_string_lossy().to_string());
+        }
+        Ok(results)
     }
 }

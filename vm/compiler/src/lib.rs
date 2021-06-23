@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::shared::AddressBytes;
 /// A wrap to move-lang compiler
 use anyhow::{bail, ensure, Result};
+use move_lang::shared::Flags;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -15,19 +17,17 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use crate::shared::AddressBytes;
-use move_lang::shared::Flags;
 pub use move_lang::{
     compiled_unit::{verify_units, CompiledUnit},
     errors::*,
     move_compile, move_compile_and_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
+pub mod utils;
 
 pub mod errors {
     pub use move_lang::errors::*;
 }
 
-//TODO directly use AccountAddress
 pub mod command_line {
     use crate::shared::AddressBytes;
 
@@ -108,7 +108,7 @@ where
 }
 
 /// Compile source, and report error.
-pub fn compile_sorce_string(
+pub fn compile_source_string(
     source: &str,
     deps: &[String],
     sender: AccountAddress,
@@ -141,10 +141,6 @@ pub fn compile_source_string_no_report(
         None,
         Flags::empty().set_sources_shadow_deps(true),
     )
-    .map(|(f, u)| {
-        // let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
-        (f, u)
-    })
 }
 
 /// check module compatibility

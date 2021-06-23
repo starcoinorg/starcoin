@@ -2,20 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::view::StringView;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::HashValue;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
-use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::transaction::{Module, Package};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
-use std::fs;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
@@ -27,13 +25,11 @@ use structopt::StructOpt;
 #[structopt(name = "package")]
 pub struct PackageOpt {
     #[structopt(
-        short = "m",
-        name = "module-file",
-        long = "module",
-        help = "path for module file, can be a folder, can be empty.",
+        name = "mv-file-or-dir",
+        help = "path for move bytecode file, can be a folder.",
         parse(from_os_str)
     )]
-    module_file: Option<PathBuf>,
+    mv_file_or_dir: PathBuf,
 
     #[structopt(
         long = "function",
@@ -59,8 +55,8 @@ pub struct PackageOpt {
     out_dir: Option<PathBuf>,
 
     #[structopt(short = "n", name = "package-name", long = "name")]
-    /// package file name
-    package_name: String,
+    /// package file name, if absent, use file hash as name.
+    package_name: Option<String>,
 }
 
 pub struct PackageCmd;
@@ -69,77 +65,69 @@ impl CommandAction for PackageCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = PackageOpt;
-    type ReturnItem = HashValue;
+    type ReturnItem = StringView;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        if let Some(module_file) = &opt.module_file {
-            let mut compiled_modules = Vec::new();
-            if module_file.is_file() {
-                compiled_modules.push(read_module(module_file)?);
-            } else if module_file.is_dir() {
-                for entry in fs::read_dir(module_file)? {
-                    let entry = entry?;
-                    let path = entry.path();
-                    compiled_modules.push(read_module(&path)?);
-                }
-            }
-            let modules = compiled_modules
-                .iter()
-                .map(|m| {
-                    let mut blob = vec![];
-                    m.serialize(&mut blob)
-                        .expect("serializing stdlib must work");
-                    Module::new(blob)
-                })
-                .collect();
-
-            let init_script = match &opt.init_script {
-                Some(script) => {
-                    let type_tags = opt.type_tags.clone().unwrap_or_default();
-                    let args = opt.args.clone().unwrap_or_default();
-                    let script_function = script.clone().0;
-                    Some(ScriptFunction::new(
-                        script_function.module,
-                        script_function.function,
-                        type_tags,
-                        convert_txn_args(&args),
-                    ))
-                }
-                None => None,
-            };
-
-            let package = Package::new(modules, init_script)?;
-
-            let output_file = {
-                let mut output_dir = opt.out_dir.clone().unwrap_or(current_dir()?);
-                output_dir.push(opt.package_name.as_str());
-                output_dir.set_extension("blob");
-                output_dir
-            };
-            let mut file = File::create(output_file)?;
-            let blob = bcs_ext::to_bytes(&package).unwrap();
-            file.write_all(&blob).expect("write package file error");
-            Ok(package.crypto_hash())
+        let mv_file_or_dir = opt.mv_file_or_dir.as_path();
+        ensure!(
+            mv_file_or_dir.exists(),
+            "file {:?} not exist",
+            mv_file_or_dir
+        );
+        let modules = if mv_file_or_dir.is_file() {
+            vec![read_module(mv_file_or_dir)?]
         } else {
-            bail!("module file can not be empty.")
-        }
+            starcoin_move_compiler::utils::iterate_directory(mv_file_or_dir)
+                .map(|path| read_module(path.as_path()))
+                .collect::<Result<Vec<Module>>>()?
+        };
+
+        let init_script = match &opt.init_script {
+            Some(script) => {
+                let type_tags = opt.type_tags.clone().unwrap_or_default();
+                let args = opt.args.clone().unwrap_or_default();
+                let script_function = script.clone().0;
+                Some(ScriptFunction::new(
+                    script_function.module,
+                    script_function.function,
+                    type_tags,
+                    convert_txn_args(&args),
+                ))
+            }
+            None => None,
+        };
+
+        let package = Package::new(modules, init_script)?;
+
+        let output_file = {
+            let mut output_dir = opt.out_dir.clone().unwrap_or(current_dir()?);
+            output_dir.push(
+                opt.package_name
+                    .clone()
+                    .unwrap_or_else(|| package.crypto_hash().to_string()),
+            );
+            output_dir.set_extension("blob");
+            output_dir
+        };
+        let mut file = File::create(output_file.as_path())?;
+        let blob = bcs_ext::to_bytes(&package)?;
+        file.write_all(&blob)
+            .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
+        Ok(StringView {
+            result: output_file.to_string_lossy().to_string(),
+        })
     }
 }
 
-fn read_module(module_file: &Path) -> Result<CompiledModule> {
+fn read_module(module_file: &Path) -> Result<Module> {
     if !module_file.is_file() {
         bail!("{:?} is not a file", module_file);
     }
     let mut bytes = vec![];
     File::open(module_file)?.read_to_end(&mut bytes)?;
-    match CompiledModule::deserialize(bytes.as_slice()) {
-        Err(e) => {
-            bail!("invalid bytecode file, cannot deserialize as module, {}", e);
-        }
-        Ok(compiled_module) => Ok(compiled_module),
-    }
+    Ok(Module::new(bytes))
 }

@@ -26,7 +26,6 @@ use starcoin_vm_types::transaction::TransactionPayload;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::StatusCode;
 use std::str::FromStr;
-use stdlib::StdlibVersion;
 use test_helper::executor::*;
 use test_helper::executor::{
     association_execute, execute_and_apply, move_abort_code, prepare_genesis,
@@ -205,7 +204,6 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
         sender,
         seq_num,
         TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
-            StdlibVersion::Latest,
             receiver,
             transfer_amount,
             STC_TOKEN_CODE.clone(),

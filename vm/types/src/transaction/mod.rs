@@ -179,6 +179,28 @@ impl RawUserTransaction {
         }
     }
 
+    /// Create a new `RawUserTransaction` with a package to publish.
+    pub fn new_package(
+        sender: AccountAddress,
+        sequence_number: u64,
+        package: Package,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+    ) -> Self {
+        RawUserTransaction {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::Package(package),
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+        }
+    }
+
     /// Create a new `RawUserTransaction` with a module to publish.
     ///
     /// A module transaction is the only way to publish code. Only one module per transaction
@@ -192,19 +214,15 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        RawUserTransaction {
+        Self::new_package(
             sender,
             sequence_number,
-            payload: TransactionPayload::Package(
-                Package::new_with_module(module)
-                    .expect("build package with module should success."),
-            ),
+            Package::new_with_module(module).expect("build package with module should success."),
             max_gas_amount,
             gas_unit_price,
-            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
             chain_id,
-        }
+        )
     }
 
     /// Signs the given `RawUserTransaction`. Note that this consumes the `RawUserTransaction` and turns it

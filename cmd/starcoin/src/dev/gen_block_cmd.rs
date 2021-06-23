@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::sign_txn_with_account_by_rpc_client;
+use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
@@ -21,7 +21,7 @@ impl CommandAction for GenBlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GenBlockOpt;
-    type ReturnItem = ();
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -30,22 +30,13 @@ impl CommandAction for GenBlockCommand {
         let cli_state = ctx.state();
         let net = cli_state.net();
         assert!(net.is_dev());
-        let sender = cli_state.default_account()?.address;
         let empty = build_empty_script();
-        let signed_txn = sign_txn_with_account_by_rpc_client(
-            cli_state,
-            sender,
-            1000000,
-            1,
-            3000,
-            TransactionPayload::ScriptFunction(empty),
-        )?;
-        let txn_hash = signed_txn.id();
-        cli_state.client().submit_transaction(signed_txn)?;
-
-        println!("txn {:#x} submitted.", txn_hash);
-
-        ctx.state().watch_txn(txn_hash)?;
-        Ok(())
+        let txn_opts = TransactionOptions {
+            blocking: true,
+            dry_run: false,
+            ..Default::default()
+        };
+        ctx.state()
+            .build_and_execute_transaction(txn_opts, TransactionPayload::ScriptFunction(empty))
     }
 }

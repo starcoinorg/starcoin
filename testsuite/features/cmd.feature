@@ -128,7 +128,7 @@ Feature: cmd integration test
     Then cmd: "dev get-coin"
     Then cmd: "account show"
     Then cmd: "dev compile ../examples/my_token/MyToken.move -o ../examples -s @$.account.address@"
-    Then cmd: "dev deploy --blocking @$.result@"
+    Then cmd: "dev deploy --blocking @$[0]@"
     Then cmd: "account show"
     Then cmd: "account execute-function --function @$.account.address@::MyToken::init --blocking"
     Then cmd: "chain get-txn @$.txn_hash@"

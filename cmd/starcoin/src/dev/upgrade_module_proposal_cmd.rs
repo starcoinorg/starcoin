@@ -2,17 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::sign_txn_helper::{get_dao_config, sign_txn_with_account_by_rpc_client};
+use crate::dev::sign_txn_helper::get_dao_config;
+use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_proposal;
 use starcoin_types::transaction::Package;
-use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::transaction::TransactionPayload;
@@ -25,33 +23,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module-proposal", alias = "module_proposal")]
 pub struct UpgradeModuleProposalOpt {
-    #[structopt(short = "s", long)]
-    /// hex encoded string, like 0x1, 0x12
-    sender: Option<AccountAddress>,
-
-    #[structopt(
-        short = "g",
-        name = "max-gas-amount",
-        default_value = "10000000",
-        help = "max gas used to deploy the module"
-    )]
-    max_gas_amount: u64,
-    #[structopt(
-        short = "p",
-        long = "gas-price",
-        name = "price of gas",
-        default_value = "1",
-        help = "gas price used to deploy the module"
-    )]
-    gas_price: u64,
-
-    #[structopt(
-        name = "expiration_time",
-        long = "timeout",
-        default_value = "3000",
-        help = "how long(in seconds) the txn stay alive"
-    )]
-    expiration_time: u64,
+    #[structopt(flatten)]
+    transaction_opts: TransactionOptions,
 
     #[structopt(
         short = "e",
@@ -62,21 +35,13 @@ pub struct UpgradeModuleProposalOpt {
     enforced: bool,
 
     #[structopt(
-        short = "b",
-        name = "blocking-mode",
-        long = "blocking",
-        help = "blocking wait txn mined"
-    )]
-    blocking: bool,
-
-    #[structopt(
         short = "m",
-        name = "module-file",
+        name = "module-package-file",
         long = "module",
-        help = "path for module file, can be empty.",
+        help = "path for module package file.",
         parse(from_os_str)
     )]
-    module_file: Option<PathBuf>,
+    module_package_file: PathBuf,
 
     #[structopt(
         short = "v",
@@ -84,7 +49,7 @@ pub struct UpgradeModuleProposalOpt {
         long = "module_version",
         help = "new version number for the module"
     )]
-    version: Option<u64>,
+    version: u64,
 }
 
 pub struct UpgradeModuleProposalCommand;
@@ -93,7 +58,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = UpgradeModuleProposalOpt;
-    type ReturnItem = (HashValue, HashValue);
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -101,59 +66,34 @@ impl CommandAction for UpgradeModuleProposalCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
-        let sender = if let Some(sender) = ctx.opt().sender {
-            sender
-        } else {
-            ctx.state().default_account()?.address
-        };
-        if opt.version.is_none() {
-            bail!("version can not be empty")
-        };
-        let module_version = opt.version.unwrap();
-        if let Some(module_file) = &opt.module_file {
-            let mut bytes = vec![];
-            File::open(module_file)?.read_to_end(&mut bytes)?;
-            let upgrade_package: Package = bcs_ext::from_bytes(&bytes)?;
-            info!(
-                "upgrade package address : {:?}",
-                upgrade_package.package_address()
-            );
-            let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
-            let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
-            if let Some(stdlib_version) = chain_state_reader
-                .get_on_chain_config::<Version>()?
-                .map(|version| version.major)
-            {
-                info!("stdlib version {:?}", StdlibVersion::new(stdlib_version));
-                let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
-                    &upgrade_package,
-                    module_version,
-                    min_action_delay,
-                    opt.enforced,
-                    StdlibVersion::new(stdlib_version),
-                );
-                let signed_txn = sign_txn_with_account_by_rpc_client(
-                    cli_state,
-                    sender,
-                    opt.max_gas_amount,
-                    opt.gas_price,
-                    opt.expiration_time,
-                    TransactionPayload::ScriptFunction(module_upgrade_proposal),
-                )?;
-                let txn_hash = signed_txn.crypto_hash();
-                cli_state.client().submit_transaction(signed_txn)?;
 
-                println!("txn {:#x} submitted.", txn_hash);
-
-                if opt.blocking {
-                    ctx.state().watch_txn(txn_hash)?;
-                }
-                Ok((package_hash, txn_hash))
-            } else {
-                bail!("on chain config stdlib version can not be empty.")
-            }
-        } else {
-            bail!("file can not be empty.")
-        }
+        let module_version = opt.version;
+        let module_file = opt.module_package_file.as_path();
+        let mut bytes = vec![];
+        File::open(module_file)?.read_to_end(&mut bytes)?;
+        let upgrade_package: Package = bcs_ext::from_bytes(&bytes)?;
+        eprintln!(
+            "upgrade package address : {:?}",
+            upgrade_package.package_address()
+        );
+        let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
+        let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
+        let stdlib_version = chain_state_reader
+            .get_on_chain_config::<Version>()?
+            .map(|version| version.major)
+            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+        eprintln!("stdlib version {:?}", StdlibVersion::new(stdlib_version));
+        let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
+            &upgrade_package,
+            module_version,
+            min_action_delay,
+            opt.enforced,
+            StdlibVersion::new(stdlib_version),
+        );
+        eprintln!("package_hash {:?}", package_hash);
+        ctx.state().build_and_execute_transaction(
+            opt.transaction_opts.clone(),
+            TransactionPayload::ScriptFunction(module_upgrade_proposal),
+        )
     }
 }

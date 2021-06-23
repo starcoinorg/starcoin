@@ -164,8 +164,6 @@ pub fn raw_peer_to_peer_txn(
         sender,
         seq_num,
         TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
-            //TODO should use latest?
-            StdlibVersion::Latest,
             receiver,
             transfer_amount,
             token_code,
@@ -223,16 +221,11 @@ pub fn encode_create_account_script_function(
     )
 }
 
-pub fn encode_transfer_script_function(
-    version: StdlibVersion,
-    recipient: AccountAddress,
-    amount: u128,
-) -> ScriptFunction {
-    encode_transfer_script_by_token_code(version, recipient, amount, STC_TOKEN_CODE.clone())
+pub fn encode_transfer_script_function(recipient: AccountAddress, amount: u128) -> ScriptFunction {
+    encode_transfer_script_by_token_code(recipient, amount, STC_TOKEN_CODE.clone())
 }
 
 pub fn encode_transfer_script_by_token_code(
-    _version: StdlibVersion,
     recipient: AccountAddress,
     amount: u128,
     token_code: TokenCode,
@@ -259,11 +252,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(encode_transfer_script_function(
-            net.stdlib_version(),
-            recipient,
-            amount,
-        )),
+        TransactionPayload::ScriptFunction(encode_transfer_script_function(recipient, amount)),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,

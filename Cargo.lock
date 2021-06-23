@@ -8437,15 +8437,18 @@ name = "starcoin-move-compiler"
 version = "1.2.0"
 dependencies = [
  "anyhow",
+ "itertools 0.10.1",
  "move-lang",
  "move-lang-test-utils",
  "once_cell",
+ "rayon",
  "regex",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-vm-types",
  "stest",
  "tempfile",
+ "walkdir",
 ]
 
 [[package]]
