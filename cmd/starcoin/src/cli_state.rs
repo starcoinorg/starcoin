@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
-use anyhow::{format_err, Result};
+use crate::view::{DryRunOutputView, ExecuteResultView, ExecutionOutputView, TransactionOptions};
+use anyhow::{bail, format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
@@ -150,57 +150,69 @@ impl CliState {
         txn_opts: TransactionOptions,
         payload: TransactionPayload,
     ) -> Result<ExecuteResultView> {
-        self.execute_transaction(
-            self.build_transaction(
-                txn_opts.sender,
-                txn_opts.gas_price,
-                txn_opts.max_gas_amount,
-                txn_opts.expiration_time_secs,
-                payload,
-            )?,
-            txn_opts.dry_run,
-            txn_opts.blocking,
-        )
+        let (raw_txn, future_transaction) = self.build_transaction(
+            txn_opts.sender,
+            txn_opts.sequence_number,
+            txn_opts.gas_unit_price,
+            txn_opts.max_gas_amount,
+            txn_opts.expiration_time_secs,
+            payload,
+        )?;
+        if future_transaction {
+            //TODO figure out more graceful method to handle future transaction.
+            bail!("there is transaction from sender({}) in the txpool, please wait it to been executed or use sequence_number({}) to replace it.",raw_txn.sender(), raw_txn.sequence_number()-1);
+        }
+        self.execute_transaction(raw_txn, txn_opts.dry_run, txn_opts.blocking)
     }
 
-    pub fn build_transaction(
+    fn build_transaction(
         &self,
         sender: Option<AccountAddress>,
+        sequence_number: Option<u64>,
         gas_price: Option<u64>,
         max_gas_amount: Option<u64>,
         expiration_time_secs: Option<u64>,
         payload: TransactionPayload,
-    ) -> Result<RawUserTransaction> {
+    ) -> Result<(RawUserTransaction, bool)> {
         let chain_id = self.net().chain_id();
         let sender = self.get_account_or_default(sender)?;
-        let sequence_number = match self.client.next_sequence_number_in_txpool(sender.address)? {
-            Some(sequence_number) => sequence_number,
-            None => {
-                let chain_state_reader = RemoteStateReader::new(&self.client)?;
-                chain_state_reader
-                    .get_account_resource(*sender.address())?
-                    .map(|account| account.sequence_number())
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find account on chain by address:{}",
-                            sender.address()
-                        )
-                    })?
-            }
+        let (sequence_number, future_transaction) = match sequence_number {
+            Some(sequence_number) => (sequence_number, false),
+            None => match self.client.next_sequence_number_in_txpool(sender.address)? {
+                Some(sequence_number) => {
+                    eprintln!("get sequence_number {} from txpool", sequence_number);
+                    (sequence_number, true)
+                }
+                None => {
+                    let chain_state_reader = RemoteStateReader::new(&self.client)?;
+                    chain_state_reader
+                        .get_account_resource(*sender.address())?
+                        .map(|account| (account.sequence_number(), false))
+                        .ok_or_else(|| {
+                            format_err!(
+                                "Can not find account on chain by address:{}",
+                                sender.address()
+                            )
+                        })?
+                }
+            },
         };
         let node_info = self.client.node_info()?;
         let expiration_timestamp_secs = expiration_time_secs
             .unwrap_or(Self::DEFAULT_EXPIRATION_TIME_SECS)
             + node_info.now_seconds;
-        Ok(RawUserTransaction::new(
-            sender.address,
-            sequence_number,
-            payload,
-            max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
-            gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
-            expiration_timestamp_secs,
-            chain_id,
-            Self::DEFAULT_GAS_TOKEN.to_string(),
+        Ok((
+            RawUserTransaction::new(
+                sender.address,
+                sequence_number,
+                payload,
+                max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
+                gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
+                expiration_timestamp_secs,
+                chain_id,
+                Self::DEFAULT_GAS_TOKEN.to_string(),
+            ),
+            future_transaction,
         ))
     }
 
@@ -227,7 +239,12 @@ impl CliState {
                 TransactionStatus::Keep(KeptVMStatus::Executed)
             )
         {
-            return Ok(ExecuteResultView::DryRun((vm_status, output.into())));
+            eprintln!("txn dry run failed");
+            return Ok(ExecuteResultView::DryRun(DryRunOutputView::new(
+                vm_status,
+                output.into(),
+                hex::encode(bcs_ext::to_bytes(&raw_txn)?),
+            )));
         }
         let signed_txn = self.client.account_sign_txn(raw_txn)?;
 
