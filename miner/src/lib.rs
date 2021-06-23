@@ -99,6 +99,7 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
             minting_blob: task.minting_blob.clone(),
             difficulty: task.block_template.difficulty,
             block_number: task.block_template.number,
+            extra: None,
         })
     }
 }
@@ -177,6 +178,7 @@ impl MinerService {
                 mining_blob,
                 difficulty,
                 number,
+                None,
             ));
             Ok(())
         }
@@ -196,7 +198,7 @@ impl MinerService {
                         current: hex::encode(&task.minting_blob),
                         real: hex::encode(minting_blob),
                     }
-                    .into());
+                        .into());
                 };
                 task.block_template.strategy.verify_blob(
                     task.minting_blob.clone(),

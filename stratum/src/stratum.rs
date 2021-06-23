@@ -145,12 +145,12 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
     fn handle(&mut self, msg: SubmitShareEvent, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         info!(target: "stratum", "received submit share event:{:?}", &msg.0);
         if let Some(current_mint_event) = self.sync_current_job()? {
-            let submit_job_id = msg.0.job_id.clone();
             let job_id = hex::encode(&current_mint_event.minting_blob[0..8]);
+            let submit_job_id = msg.0.job_id.clone();
             if submit_job_id != job_id {
                 warn!(target: "stratum", "received job mismatch with current job,{},{}", submit_job_id, job_id);
                 return Ok(());
-            }
+            };
             let mut seal: MinerSubmitSealRequest = msg.0.try_into()?;
 
             seal.minting_blob = current_mint_event.minting_blob;

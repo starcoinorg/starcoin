@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::JobClient;
+use crate::{JobClient, SealEvent};
 use anyhow::Result;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, Future, TryStreamExt};
@@ -84,8 +84,8 @@ impl JobRpcClient {
     }
 
     fn spawn<F>(fut: F)
-    where
-        F: Future + Send + 'static,
+        where
+            F: Future + Send + 'static,
     {
         // if we use async spawn, RpcClient will panic when try reconnection.
         // refactor this after RpcClient refactor to async.
@@ -103,12 +103,14 @@ impl JobClient for JobRpcClient {
 
     fn submit_seal(
         &self,
-        minting_blob: Vec<u8>,
-        nonce: u32,
-        extra: BlockHeaderExtra,
+        seal: SealEvent,
     ) -> Result<()> {
+        let extra = match &seal.extra {
+            None => { BlockHeaderExtra::default() }
+            Some(extra) => { extra.extra }
+        };
         self.seal_sender
-            .unbounded_send((minting_blob, nonce, extra))?;
+            .unbounded_send((seal.minting_blob, seal.nonce, extra))?;
         Ok(())
     }
 

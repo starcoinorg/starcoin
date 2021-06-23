@@ -39,6 +39,7 @@ dyn-clone = "1.0.4"
 parking_lot = "0.11.1"
 starcoin-stratum = { path = "../../stratum" }
 starcoin-miner = { path = "../../miner" }
+starcoin-miner-client-api = { path = "./api" }
 stest = { path = "../../commons/stest" }
 [[bin]]
 name = "starcoin_miner"

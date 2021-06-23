@@ -19,7 +19,6 @@ use std::convert::TryInto;
 use std::io::Write;
 use std::sync::mpsc::TrySendError;
 use std::sync::Arc;
-use serde_json::Value;
 
 #[derive(Clone, Default, Debug)]
 pub struct Metadata {
@@ -130,7 +129,7 @@ impl ServiceRequest for SubscribeJobEvent {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct SubmitShareEvent(pub(crate) ShareRequest);
+pub struct SubmitShareEvent(pub ShareRequest);
 
 impl ServiceRequest for SubmitShareEvent {
     type Response = anyhow::Result<()>;
@@ -155,6 +154,7 @@ pub struct LoginRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub algo: Option<Vec<String>>,
 }
+
 impl ServiceRequest for LoginRequest {
     type Response = futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
 }
@@ -192,20 +192,33 @@ pub struct StratumJob {
     pub blob: String,
 }
 
+impl StratumJob {
+    pub fn get_extra(&self) -> anyhow::Result<BlockHeaderExtra> {
+        let blob = hex::decode(&self.blob)?;
+        if blob.len() != 76 {
+            return Err(anyhow::anyhow!("Invalid stratum job"));
+        }
+        let mut extra: [u8; 4] = blob[35..39].try_into()?;
+
+        Ok(BlockHeaderExtra::new(extra))
+    }
+}
+
 impl StratumJobResponse {
     pub fn from(e: &MintBlockEvent, login: Option<LoginRequest>, worker_id: [u8; 4]) -> Self {
         let mut minting_blob = e.minting_blob.clone();
         let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id);
         let worker_id_hex = hex::encode(&worker_id);
+        let job_id = hex::encode(&e.minting_blob[0..8]);
         Self {
             login,
             id: worker_id_hex.clone(),
             status: "OK".into(),
             job: StratumJob {
-                height: 0,
+                height: e.block_number,
                 id: worker_id_hex,
                 target: difficulty_to_target_hex(e.difficulty),
-                job_id: hex::encode(&e.minting_blob[0..8]),
+                job_id,
                 blob: hex::encode(&minting_blob),
             },
         }
@@ -235,11 +248,11 @@ impl StratumRpc for StratumRpcImpl {
                 },
             })
         }
-        .map_err(|e: anyhow::Error| jsonrpc_core::Error {
-            code: ErrorCode::InvalidParams,
-            message: e.to_string(),
-            data: None,
-        });
+            .map_err(|e: anyhow::Error| jsonrpc_core::Error {
+                code: ErrorCode::InvalidParams,
+                message: e.to_string(),
+                data: None,
+            });
         Box::pin(fut.boxed())
     }
 

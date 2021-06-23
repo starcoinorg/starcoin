@@ -1,8 +1,8 @@
 use crate::cpu_solver::CpuSolver;
-use crate::Solver;
 use anyhow::Result;
 use starcoin_config::{MinerClientConfig, TimeService};
 use std::sync::Arc;
+use starcoin_miner_client_api::Solver;
 
 type CreateSolver = extern "C" fn() -> Box<dyn Solver>;
 

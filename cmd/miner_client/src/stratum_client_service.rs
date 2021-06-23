@@ -2,8 +2,8 @@ use actix::clock::Duration;
 use anyhow::anyhow;
 use anyhow::Result;
 use crypto::HashValue;
-use futures::channel::mpsc;
-use futures::channel::oneshot;
+use futures_channel::mpsc;
+use futures_channel::oneshot;
 use futures::executor::block_on;
 use futures::stream::Fuse;
 use futures::{select, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
@@ -24,9 +24,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceContext,
     ServiceFactory, ServiceHandler, ServiceRef, ServiceRequest,
 };
-use starcoin_stratum::rpc::{
-    KeepalivedResult, LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
-};
+pub use starcoin_stratum::rpc::{KeepalivedResult, LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse};
 use starcoin_types::block::BlockHeaderExtra;
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
@@ -44,7 +42,7 @@ pub enum Request {
         LoginRequest,
         oneshot::Sender<mpsc::UnboundedReceiver<StratumJob>>,
     ),
-    SubmitSealRequest(SubmitSealRequest, oneshot::Sender<()>),
+    SubmitSealRequest(SubmitSealRequest),
 }
 
 pub enum PendingRequest {
@@ -140,15 +138,11 @@ pub struct MethodCall {
 }
 
 impl ServiceRequest for SubmitSealRequest {
-    type Response = oneshot::Receiver<()>;
+    type Response = ();
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct SubmitSealRequest {
-    pub nonce: u32,
-    pub extra: BlockHeaderExtra,
-    pub minting_blob: Vec<u8>,
-}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SubmitSealRequest(pub ShareRequest);
 
 fn build_request_string<T: ?Sized + Serialize>(
     method: &str,
@@ -204,47 +198,42 @@ impl Inner {
     }
 
     pub async fn process_output(&mut self, response: String) -> Result<()> {
+        debug!(target: "stratum", "Process response:{:?}", response);
         let resp: Response = response.try_into()?;
-        debug!(target: "stratum", "Process resp:{:?}", resp);
+
         match resp {
-            Response::Output(output) => match output.result {
-                OutputResponse::StratumJob(job) => {
-                    if let Some(pd) = self.pending_requests.remove(&output.id) {
-                        match pd {
-                            PendingRequest::LoginRequest(pd) => {
+            Response::Output(output) => {
+                if let Some(pending_request) = self.pending_requests.remove(&output.id) {
+                    match output.result {
+                        OutputResponse::StratumJob(job) => {
+                            if let PendingRequest::LoginRequest(sender) = pending_request {
                                 let (mut s, r) = mpsc::unbounded();
                                 s.send(job.job).await?;
                                 self.connections.insert(job.id, s);
-                                pd.send(r);
+                                sender.send(r);
                             }
-                            PendingRequest::SubmitSealRequest(_) => { return Err(anyhow!("Bad response for stratum login")); }
+                        }
+                        OutputResponse::Status(status) => {
+                            let st = serde_json::to_string(&status)?;
+                            info!("stratum got status response:{}", st);
                         }
                     }
                 }
-                OutputResponse::Status(status) => {
-                    if let Some(pd) = self.pending_requests.remove(&output.id) {
-                        match pd {
-                            PendingRequest::SubmitSealRequest(sender) => {
-                                sender.send(());
-                            }
-                            PendingRequest::LoginRequest(_) => { return Err(anyhow!("Bad response for stratum submit")); }
-                        }
-                    }
-                }
-            },
+            }
             Response::Notification(notification) => {
                 if let Some(con) = self.connections.get_mut(&notification.params.id) {
                     con.send(notification.params).await?;
                 }
             }
 
-            Response::Failure(_) => {}
+            Response::Failure(e) => { error!("stratum client process output request error:{:?}", e); }
         }
         Ok(())
     }
 
     pub async fn start(mut self) {
         let mut stream_fuse = self.stream.take().expect("stream must exist").fuse();
+        //move out
         let mut request_id: u32 = 0;
         loop {
             select! {
@@ -253,20 +242,23 @@ impl Inner {
                     match req {
                         Request::LoginRequest(login_req, s)=>{
                             let req_str = build_request_string("login", &login_req, request_id).expect("build stratum login request failed never happen");
+                            debug!("stratum client send request:{}",req_str);
                             self.sink.send(req_str).await;
                             self.pending_requests.insert(request_id, PendingRequest::LoginRequest(s));
                         }
-                        Request::SubmitSealRequest(seal_req,s)=>{
+                        Request::SubmitSealRequest(seal_req)=>{
                             let req_str = build_request_string("submit", &seal_req, request_id).expect("build stratum login request failed never happen");
+                            debug!("stratum send request:{}",req_str);
                             self.sink.send(req_str).await;
-                            self.pending_requests.insert(request_id, PendingRequest::SubmitSealRequest(s));
-
                         }
                     }
                 },
 
                 resp = stream_fuse.select_next_some() => {
-                    self.process_output(resp).await;
+                    if let Err(err) = self.process_output(resp).await{
+                        error!("process output error:{:?}",err);
+                    }
+
                 },
             }
         }
@@ -307,12 +299,10 @@ impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientSe
     fn handle(
         &mut self,
         msg: SubmitSealRequest,
-        ctx: &mut ServiceContext<StratumClientService>,
+        _ctx: &mut ServiceContext<StratumClientService>,
     ) -> <SubmitSealRequest as ServiceRequest>::Response {
         if let Some(sender) = self.sender.clone().take() {
-            let (s, r) = futures::channel::oneshot::channel();
-            sender.unbounded_send(Request::SubmitSealRequest(msg, s));
-            r
+            sender.unbounded_send(Request::SubmitSealRequest(msg));
         } else {
             unreachable!()
         }
@@ -323,11 +313,7 @@ pub struct StratumClientServiceServiceFactory;
 
 impl ServiceFactory<StratumClientService> for StratumClientServiceServiceFactory {
     fn create(ctx: &mut ServiceContext<StratumClientService>) -> Result<StratumClientService> {
-        let cfg = ctx.get_shared::<NodeConfig>()?;
-        //todo:Fix it
-        let addr =cfg.stratum.address.ok_or(anyhow!("stratum server cfg not found"))?;
-
-        let tcp_stream = Some(std::net::TcpStream::connect(&addr.to_string())?);
+        let tcp_stream = Some(std::net::TcpStream::connect(&"cn2.stc.kelepool.com:9999")?);
         Ok(StratumClientService {
             sender: None,
             tcp_stream,
@@ -348,6 +334,17 @@ async fn test() {
         .is_ok());
     let mut stream = r
         .send(LoginRequest {
+            login: "fikgol".to_string(),
+            pass: "test".to_string(),
+            agent: "test".to_string(),
+            algo: None,
+        })
+        .await
+        .unwrap()
+        .await
+        .unwrap();
+    let mut stream1 = r
+        .send(LoginRequest {
             login: "test".to_string(),
             pass: "test".to_string(),
             agent: "test".to_string(),
@@ -359,8 +356,11 @@ async fn test() {
         .unwrap();
     for i in 1..5 {
         select! {
-            value=stream.select_next_some()=>{
-                println!("receive :{:?}",value);
+            value = stream.select_next_some() =>{
+                println ! ("receive :{:?}", value);
+            }
+            value1 = stream1.select_next_some() =>{
+                println ! ("receive1 :{:?}", value1);
             }
         }
     }

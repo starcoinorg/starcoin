@@ -1,4 +1,4 @@
-use crate::Solver;
+use crate::SealEvent;
 use consensus::{difficult_to_target, Consensus};
 use futures::executor::block_on;
 use futures::{SinkExt, StreamExt};
@@ -13,6 +13,9 @@ use std::ops::Range;
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
+use starcoin_types::account_config::MintEvent;
+use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};
+use starcoin_miner_client_api::Solver;
 
 #[derive(Clone)]
 pub struct CpuSolver {
@@ -49,10 +52,8 @@ impl CpuSolver {
 impl Solver for CpuSolver {
     fn solve(
         &mut self,
-        strategy: ConsensusStrategy,
-        minting_blob: &[u8],
-        diff: U256,
-        nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u32)>,
+        task: MintBlockEvent,
+        nonce_tx: mpsc::UnboundedSender<(SealEvent)>,
         mut stop_rx: mpsc::UnboundedReceiver<bool>,
     ) {
         let thread_num = self.config.miner_thread();
@@ -63,13 +64,21 @@ impl Solver for CpuSolver {
                 let (tx, mut rx) = unbounded::<bool>();
                 let mut nonce_tx = nonce_tx.clone();
                 let time_service = self.time_service.clone();
-                let minting_blob = minting_blob.to_owned();
+                let minting_blob = task.minting_blob.to_owned();
+                let strategy = task.strategy;
+                let diff = task.difficulty;
+                let mint_extra = task.extra.clone();
+                let extra = match &task.extra {
+                    None => { BlockHeaderExtra::new([0u8; 4]) }
+                    Some(task) => { task.extra }
+                };
+
                 let _ = thread::Builder::new()
                     .name(worker_name)
                     .spawn(move || {
                         let mut hash_counter = 0u64;
                         let start = Instant::now();
-                        let extra = BlockHeaderExtra::new([0u8; 4]);
+
                         loop {
                             if rx.try_next().is_ok() {
                                 break;
@@ -81,7 +90,11 @@ impl Solver for CpuSolver {
                                         diff,
                                         time_service.as_ref(),
                                     );
-                                    if let Err(e) = block_on(nonce_tx.send((minting_blob, nonce))) {
+                                    if let Err(e) = block_on(nonce_tx.send(SealEvent {
+                                        minting_blob,
+                                        nonce,
+                                        extra: mint_extra,
+                                    })) {
                                         error!("Failed to send nonce: {:?}", e);
                                     };
                                     break;
@@ -96,7 +109,11 @@ impl Solver for CpuSolver {
                                             let elapsed_sec: f64 = start.elapsed().as_nanos() as f64 / 1_000_000_000.0;
                                             let hash_rate = hash_counter as f64 / elapsed_sec;
                                             info!("[miner-client-solver-{:?}] New seal found by solver, nonce {:?}, hash rate:{:>10.3}", i, nonce, hash_rate);
-                                            if let Err(e) = block_on(nonce_tx.send((minting_blob, nonce))) {
+                                            if let Err(e) = block_on(nonce_tx.send(SealEvent {
+                                                minting_blob,
+                                                nonce,
+                                                extra: mint_extra,
+                                            })) {
                                                 error!("[miner-client-solver] Failed to send seal: {:?}", e);
                                             };
                                             break;
