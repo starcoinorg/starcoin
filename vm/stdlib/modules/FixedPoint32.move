@@ -42,7 +42,7 @@ module FixedPoint32 {
         assert(product <= MAX_U64, Errors::limit_exceeded(EMULTIPLICATION));
         (product as u64)
     }
-    spec fun multiply_u64 {
+    spec multiply_u64 {
         /// Currently, we ignore the actual implementation of this function in verification
         /// and treat it as uninterpreted, which simplifies the verification problem significantly.
         /// This way we avoid the non-linear arithmetic problem presented by this function.
@@ -71,7 +71,7 @@ module FixedPoint32 {
         // with an arithmetic error.
         (quotient as u64)
     }
-    spec fun divide_u64 {
+    spec divide_u64 {
         /// See comment at `Self::multiply_64`.
         pragma opaque = true;
         pragma verify = false;
@@ -98,7 +98,7 @@ module FixedPoint32 {
         assert(quotient <= MAX_U64, Errors::limit_exceeded(ERATIO_OUT_OF_RANGE));
         FixedPoint32 { value: (quotient as u64) }
     }
-    spec fun create_from_rational {
+    spec create_from_rational {
         /// See comment at `Self::multiply_64`.
         pragma opaque = true;
         pragma verify = false;
@@ -119,16 +119,16 @@ module FixedPoint32 {
 
     // **************** SPECIFICATIONS ****************
 
-    spec module {
+
         /// Uninterpreted function for `Self::multiply_u64`.
-        define spec_multiply_u64(val: u64, multiplier: FixedPoint32): u64;
+        spec fun spec_multiply_u64(val: u64, multiplier: FixedPoint32): u64;
 
         /// Uninterpreted function for `Self::divide_u64`.
-        define spec_divide_u64(val: u64, divisor: FixedPoint32): u64;
+        spec fun spec_divide_u64(val: u64, divisor: FixedPoint32): u64;
 
         /// Uninterpreted function for `Self::create_from_rational`.
-        define spec_create_from_rational(numerator: u64, denominator: u64): FixedPoint32;
-    }
+        spec fun spec_create_from_rational(numerator: u64, denominator: u64): FixedPoint32;
+
 
 }
 

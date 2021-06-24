@@ -1,11 +1,11 @@
 [package]
 name = "starcoin-miner-client"
-version = "1.0.0"
+version = "1.2.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.41"
 actix = "0.10.0"
 actix-rt = "1.1"
 async-std = "1.9"
@@ -24,8 +24,8 @@ jsonrpc-core-client = { version = "17.0.0" }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 serde = { version = "1.0.126", features = ["derive"] }
 rust-argon2 = "0.8"
-rand = "0.8.3"
-rand_core = { version = "0.6.2", default-features = false }
+rand = "0.8.4"
+rand_core = { version = "0.6.3", default-features = false }
 byteorder = "1.4.3"
 futures-timer = "3.0"
 hex = { version = "0.4.3", default-features = false }

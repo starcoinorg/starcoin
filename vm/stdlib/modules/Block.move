@@ -52,7 +52,7 @@ module Block {
             });
     }
 
-    spec fun initialize {
+    spec initialize {
         aborts_if !Timestamp::is_genesis();
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if exists<BlockMetadata>(Signer::spec_address_of(account));
@@ -63,7 +63,7 @@ module Block {
       borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number
     }
 
-    spec fun get_current_block_number {
+    spec get_current_block_number {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -72,7 +72,7 @@ module Block {
       *&borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).parent_hash
     }
 
-    spec fun get_parent_hash {
+    spec get_parent_hash {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -81,7 +81,7 @@ module Block {
       borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).author
     }
 
-    spec fun get_current_author {
+    spec get_current_author {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -107,7 +107,7 @@ module Block {
         );
     }
 
-    spec fun process_block_metadata {
+    spec process_block_metadata {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if number != global<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS()).number + 1;

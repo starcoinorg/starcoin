@@ -113,7 +113,7 @@ fn aes_decrypt(
     let cipher = aes_gcm::Aes256Gcm::new(key);
     match cipher.decrypt(&nonce, encrypted) {
         Ok(s) => Ok(s),
-        Err(_) => Err(format_err!("decrypt error")),
+        Err(e) => Err(format_err!("decrypt error:{:?}", e)),
     }
 }
 

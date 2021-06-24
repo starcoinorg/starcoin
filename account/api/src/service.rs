@@ -19,7 +19,7 @@ pub trait AccountAsyncService:
     async fn create_account(&self, password: String) -> Result<AccountInfo>;
 
     async fn get_default_account(&self) -> Result<Option<AccountInfo>>;
-    async fn set_default_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
+    async fn set_default_account(&self, address: AccountAddress) -> Result<AccountInfo>;
     async fn get_accounts(&self) -> Result<Vec<AccountInfo>>;
 
     async fn get_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
@@ -41,8 +41,8 @@ pub trait AccountAsyncService:
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> Result<()>;
-    async fn lock_account(&self, address: AccountAddress) -> Result<()>;
+    ) -> Result<AccountInfo>;
+    async fn lock_account(&self, address: AccountAddress) -> Result<AccountInfo>;
     async fn import_account(
         &self,
         address: AccountAddress,
@@ -61,12 +61,18 @@ pub trait AccountAsyncService:
 
     async fn accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>>;
 
-    // change account password, user need to unlock account first.
+    /// change account password, user need to unlock account first.
     async fn change_account_password(
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> Result<()>;
+    ) -> Result<AccountInfo>;
+
+    async fn remove_account(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> Result<AccountInfo>;
 }
 
 #[async_trait::async_trait]
@@ -92,11 +98,11 @@ where
             panic!("Unexpect response type.")
         }
     }
-    async fn set_default_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>> {
+    async fn set_default_account(&self, address: AccountAddress) -> Result<AccountInfo> {
         let response = self
             .send(AccountRequest::SetDefaultAccount(address))
             .await??;
-        if let AccountResponse::AccountInfoOption(account) = response {
+        if let AccountResponse::AccountInfo(account) = response {
             Ok(*account)
         } else {
             panic!("Unexpect response type.")
@@ -173,21 +179,21 @@ where
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> Result<()> {
+    ) -> Result<AccountInfo> {
         let response = self
             .send(AccountRequest::UnlockAccount(address, password, duration))
             .await??;
-        if let AccountResponse::UnlockAccountResponse = response {
-            Ok(())
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
         } else {
             panic!("Unexpect response type.")
         }
     }
 
-    async fn lock_account(&self, address: AccountAddress) -> Result<()> {
+    async fn lock_account(&self, address: AccountAddress) -> Result<AccountInfo> {
         let response = self.send(AccountRequest::LockAccount(address)).await??;
-        if let AccountResponse::None = response {
-            Ok(())
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
         } else {
             panic!("Unexpect response type.")
         }
@@ -257,17 +263,32 @@ where
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> Result<()> {
+    ) -> Result<AccountInfo> {
         let response = self
             .send(AccountRequest::ChangePassword {
                 address,
                 new_password,
             })
             .await??;
-        if let AccountResponse::None = response {
-            Ok(())
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
         } else {
             panic!("Unexpected response type.")
+        }
+    }
+
+    async fn remove_account(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> Result<AccountInfo> {
+        let response = self
+            .send(AccountRequest::RemoveAccount(address, password))
+            .await??;
+        if let AccountResponse::AccountInfo(account_info) = response {
+            Ok(*account_info)
+        } else {
+            panic!("Unexpect response type.")
         }
     }
 }

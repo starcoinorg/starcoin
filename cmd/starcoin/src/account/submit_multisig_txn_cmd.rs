@@ -43,10 +43,15 @@ impl CommandAction for SubmitMultiSignedTxnCommand {
         let signed_txn: SignedUserTransaction =
             bcs_ext::from_bytes(&std::fs::read(opt.signed_txn_file.as_path())?)?;
 
+        eprintln!(
+            "Prepare to submit the transaction: \n {}",
+            serde_json::to_string_pretty(&signed_txn)?
+        );
+
         let txn_hash = signed_txn.id();
         client.submit_transaction(signed_txn)?;
 
-        println!("txn {:#x} submitted.", txn_hash);
+        eprintln!("txn {:#x} submitted.", txn_hash);
 
         if opt.blocking {
             ctx.state().watch_txn(txn_hash)?;

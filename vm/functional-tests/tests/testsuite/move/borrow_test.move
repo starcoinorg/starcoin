@@ -2,8 +2,8 @@
 //! account: bob, 90000 0x1::STC::STC
 
 //! sender: alice
-
-module M {
+address alice = {{alice}};
+module alice::M {
     use 0x1::Signer;
 
     struct M has key, store {
@@ -39,9 +39,9 @@ module M {
 
 //! new-transaction
 //! sender: alice
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 
 fun main(account: signer) {
     let m = M::new();
@@ -53,9 +53,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 
 fun main(account: signer) {
     let v = M::get_value(&account);
@@ -67,9 +67,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
-
+address alice = {{alice}};
 script {
-use {{alice}}::M;
+use alice::M;
 
 fun main(account: signer) {
     let m = M::get(&account);

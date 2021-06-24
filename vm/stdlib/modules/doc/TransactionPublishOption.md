@@ -40,7 +40,7 @@ Defines and holds the publishing policies for the VM. There are three possible c
 We represent these as the following resource.
 
 
-<pre><code><b>struct</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>
+<pre><code><b>struct</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -245,15 +245,29 @@ Check if a sender can publish a module
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
+
 <a name="0x1_TransactionPublishOption_spec_is_script_allowed"></a>
-<b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">spec_is_script_allowed</a>(addr: address) : bool{
-    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
-    publish_option.script_allowed
+
+
+<pre><code><b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">spec_is_script_allowed</a>(addr: address) : bool{
+   <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
+   publish_option.script_allowed
 }
+</code></pre>
+
+
+
+
 <a name="0x1_TransactionPublishOption_spec_is_module_allowed"></a>
-<b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_module_allowed">spec_is_module_allowed</a>(addr: address) : bool{
-    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
-    publish_option.module_publishing_allowed
+
+
+<pre><code><b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_module_allowed">spec_is_module_allowed</a>(addr: address) : bool{
+   <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
+   publish_option.module_publishing_allowed
 }
 </code></pre>
 

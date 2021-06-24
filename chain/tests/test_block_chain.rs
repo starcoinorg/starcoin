@@ -16,7 +16,6 @@ use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventKey;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
@@ -128,13 +127,7 @@ fn test_halley_consensus() {
 
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
-    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
     let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
-    let global = mock_chain
-        .head()
-        .get_global_time_by_number(mock_chain.head().current_header().number())
-        .unwrap();
-    net.time_service().adjust(global);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number(), times);
@@ -304,7 +297,7 @@ fn test_switch_epoch() {
 
     // 4. block apply
     let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch_info().unwrap().end_block_number();
+    let end_number = mock_chain.head().epoch().end_block_number();
     assert!(begin_number < end_number);
     if begin_number < (end_number - 1) {
         for _i in begin_number..(end_number - 1) {
@@ -330,7 +323,7 @@ fn test_uncle_in_diff_epoch() {
 
     // 3. block apply
     let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch_info().unwrap().end_block_number();
+    let end_number = mock_chain.head().epoch().end_block_number();
     assert!(begin_number < end_number);
     if begin_number < (end_number - 1) {
         for _i in begin_number..(end_number - 1) {
@@ -385,7 +378,6 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let signed_txn_t2 = {
         let txn = build_transfer_from_association(
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             0,
             10000,
             config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,

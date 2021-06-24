@@ -1,0 +1,2 @@
+publish src/modules --mode bare
+run src/scripts/test.move --mode bare --dry-run

@@ -1,6 +1,7 @@
 //! debug
 
-module M {
+address default = {{default}};
+module default::M {
     use 0x1::Debug;
     use 0x1::Vector;
 
@@ -37,8 +38,9 @@ module M {
 // check: EXECUTED
 
 //! new-transaction
+address default = {{default}};
 script {
-use {{default}}::M;
+use default::M;
 
 fun main() {
     M::test();

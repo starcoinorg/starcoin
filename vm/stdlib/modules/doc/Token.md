@@ -95,7 +95,7 @@ The token has a <code>TokenType</code> color that tells us what token the
 <code>value</code> inside represents.
 
 
-<pre><code><b>struct</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; has store
 </code></pre>
 
 
@@ -123,7 +123,7 @@ The token has a <code>TokenType</code> color that tells us what token the
 Token Code which identify a unique Token.
 
 
-<pre><code><b>struct</b> <a href="Token.md#0x1_Token_TokenCode">TokenCode</a>
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -163,7 +163,7 @@ Token Code which identify a unique Token.
 A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; has store, key
 </code></pre>
 
 
@@ -191,7 +191,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 A fixed time mint key which can mint token until global time > end_time
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt; has store, key
 </code></pre>
 
 
@@ -225,7 +225,7 @@ A fixed time mint key which can mint token until global time > end_time
 A linear time mint key which can mint token in a period by time-based linear release.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; has store, key
 </code></pre>
 
 
@@ -271,7 +271,7 @@ A linear time mint key which can mint token in a period by time-based linear rel
 A burn capability allows tokens of type <code>TokenType</code> to be burned.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; has store, key
 </code></pre>
 
 
@@ -299,7 +299,7 @@ A burn capability allows tokens of type <code>TokenType</code> to be burned.
 Event emitted when token minted.
 
 
-<pre><code><b>struct</b> <a href="Token.md#0x1_Token_MintEvent">MintEvent</a>
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_MintEvent">MintEvent</a> has drop, store
 </code></pre>
 
 
@@ -333,7 +333,7 @@ Event emitted when token minted.
 Event emitted when token burned.
 
 
-<pre><code><b>struct</b> <a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a>
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a> has drop, store
 </code></pre>
 
 
@@ -367,7 +367,7 @@ Event emitted when token burned.
 Token information.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt; has key
 </code></pre>
 
 
@@ -540,7 +540,7 @@ Token register's address should same as TokenType's address.
 Register the type <code>TokenType</code> as a Token and got MintCapability and BurnCapability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, precision: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType: store&gt;(account: &signer, precision: u8)
 </code></pre>
 
 
@@ -582,7 +582,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 Remove mint capability from <code>signer</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType: store&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -608,7 +608,7 @@ Remove mint capability from <code>signer</code>.
 Add mint capability to <code>signer</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType: store&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -633,7 +633,7 @@ Add mint capability to <code>signer</code>.
 Destroy the given mint capability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType: store&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -658,7 +658,7 @@ Destroy the given mint capability.
 remove the token burn capability from <code>signer</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType: store&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -684,7 +684,7 @@ remove the token burn capability from <code>signer</code>.
 Add token burn capability to <code>signer</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType: store&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -709,7 +709,7 @@ Add token burn capability to <code>signer</code>.
 Destroy the given burn capability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType: store&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -735,7 +735,7 @@ Return <code>amount</code> tokens.
 Fails if the sender does not have a published MintCapability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint">mint</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint">mint</a>&lt;TokenType: store&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -767,7 +767,7 @@ Only the Association account can acquire such a reference, and it can do so only
 <code>borrow_sender_mint_capability</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -794,7 +794,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType: store&gt;(amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -831,7 +831,7 @@ Deprecated since @v3
 Issue a <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code> with given <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -858,7 +858,7 @@ Deprecated since @v3
 Issue a <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code> with given <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -884,7 +884,7 @@ Issue a <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</
 Destroy <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>, for deprecated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_linear_time_key">destroy_linear_time_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): (u128, u128, u64, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_linear_time_key">destroy_linear_time_key</a>&lt;TokenType: store&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): (u128, u128, u64, u64)
 </code></pre>
 
 
@@ -909,7 +909,7 @@ Destroy <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_read_linear_time_key">read_linear_time_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): (u128, u128, u64, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_read_linear_time_key">read_linear_time_key</a>&lt;TokenType: store&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): (u128, u128, u64, u64)
 </code></pre>
 
 
@@ -934,7 +934,7 @@ Destroy <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</
 Burn some tokens of <code>signer</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType: store&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -963,7 +963,7 @@ Burn some tokens of <code>signer</code>.
 Burn tokens with the given <code><a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1001,7 +1001,7 @@ Burn tokens with the given <code><a href="Token.md#0x1_Token_BurnCapability">Bur
 Create a new Token::Token<TokenType> with a value of 0
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_zero">zero</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_zero">zero</a>&lt;TokenType: store&gt;(): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1026,7 +1026,7 @@ Create a new Token::Token<TokenType> with a value of 0
 Public accessor for the value of a token
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType: store&gt;(token: &<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
 </code></pre>
 
 
@@ -1051,7 +1051,7 @@ Public accessor for the value of a token
 Splits the given token into two and returns them both
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1083,7 +1083,7 @@ The new token will have a value = <code>value</code>
 Fails if the tokens value is less than <code>value</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType: store&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1115,7 +1115,7 @@ Merges two tokens of the same token and returns a new token whose
 value is equal to the sum of the two inputs
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_join">join</a>&lt;TokenType&gt;(token1: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, token2: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_join">join</a>&lt;TokenType: store&gt;(token1: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, token2: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1146,7 +1146,7 @@ The token passed in by reference will have a value equal to the sum of the two t
 The <code>check</code> token is consumed in the process
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_deposit">deposit</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, check: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_deposit">deposit</a>&lt;TokenType: store&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, check: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1175,7 +1175,7 @@ The amount of Token in the system is a tightly controlled property,
 so you cannot "burn" any non-zero amount of Token
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1201,7 +1201,7 @@ so you cannot "burn" any non-zero amount of Token
 Returns the scaling_factor for the <code>TokenType</code> token.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType: store&gt;(): u128
 </code></pre>
 
 
@@ -1227,7 +1227,7 @@ Returns the scaling_factor for the <code>TokenType</code> token.
 Return the total amount of token of type <code>TokenType</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType: store&gt;(): u128
 </code></pre>
 
 
@@ -1253,7 +1253,7 @@ Return the total amount of token of type <code>TokenType</code>.
 Return true if the type <code>TokenType</code> is a registered in <code>token_address</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType&gt;(token_address: address): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType: store&gt;(token_address: address): bool
 </code></pre>
 
 
@@ -1278,7 +1278,7 @@ Return true if the type <code>TokenType</code> is a registered in <code>token_ad
 Return true if the type <code>TokenType1</code> is same with <code>TokenType2</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1, TokenType2&gt;(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1: store, TokenType2: store&gt;(): bool
 </code></pre>
 
 
@@ -1303,7 +1303,7 @@ Return true if the type <code>TokenType1</code> is same with <code>TokenType2</c
 Return the TokenType's address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;(): address
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType: store&gt;(): address
 </code></pre>
 
 
@@ -1329,7 +1329,7 @@ Return the TokenType's address
 Return the token code for the registered token.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a>
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType: store&gt;(): <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a>
 </code></pre>
 
 
@@ -1359,7 +1359,7 @@ Return the token code for the registered token.
 Return Token's module address, module name, and type name of <code>TokenType</code>.
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType: store&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1381,7 +1381,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType: store&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1416,7 +1416,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `register_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, precision: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType: store&gt;(account: &signer, precision: u8)
 </code></pre>
 
 
@@ -1464,7 +1464,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `remove_mint_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType: store&gt;(signer: &signer): <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1481,7 +1481,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `add_mint_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType: store&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1498,7 +1498,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `destroy_mint_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType: store&gt;(cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1509,7 +1509,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `remove_burn_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType: store&gt;(signer: &signer): <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1526,7 +1526,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `add_burn_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType: store&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1543,7 +1543,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `destroy_burn_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType: store&gt;(cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1554,7 +1554,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `mint`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint">mint</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint">mint</a>&lt;TokenType: store&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1571,7 +1571,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `mint_with_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1589,7 +1589,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `do_mint`
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType: store&gt;(amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1606,7 +1606,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `issue_fixed_mint_key`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1617,7 +1617,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `issue_linear_mint_key`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1628,7 +1628,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `burn`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn">burn</a>&lt;TokenType: store&gt;(account: &signer, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1645,7 +1645,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `burn_with_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;, tokens: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1663,7 +1663,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `zero`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_zero">zero</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_zero">zero</a>&lt;TokenType: store&gt;(): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1674,7 +1674,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `value`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType: store&gt;(token: &<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
 </code></pre>
 
 
@@ -1690,7 +1690,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `split`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1707,7 +1707,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `withdraw`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType: store&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1725,7 +1725,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `join`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_join">join</a>&lt;TokenType&gt;(token1: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, token2: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_join">join</a>&lt;TokenType: store&gt;(token1: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, token2: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1743,7 +1743,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `deposit`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_deposit">deposit</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, check: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_deposit">deposit</a>&lt;TokenType: store&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, check: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1760,7 +1760,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `destroy_zero`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1776,7 +1776,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `scaling_factor`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType: store&gt;(): u128
 </code></pre>
 
 
@@ -1792,7 +1792,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `market_cap`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType: store&gt;(): u128
 </code></pre>
 
 
@@ -1808,7 +1808,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `is_registered_in`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType&gt;(token_address: address): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType: store&gt;(token_address: address): bool
 </code></pre>
 
 
@@ -1824,7 +1824,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `is_same_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1, TokenType2&gt;(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1: store, TokenType2: store&gt;(): bool
 </code></pre>
 
 
@@ -1840,7 +1840,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `token_address`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;(): address
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType: store&gt;(): address
 </code></pre>
 
 
@@ -1860,7 +1860,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `token_code`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a>
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType: store&gt;(): <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a>
 </code></pre>
 
 
@@ -1868,7 +1868,6 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 <pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
-<b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;();
 </code></pre>
 
 
@@ -1879,7 +1878,7 @@ does not matter for the verification of callers.
 <a name="0x1_Token_spec_token_code"></a>
 
 
-<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">TokenCode</a>;
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">TokenCode</a>;
 </code></pre>
 
 
@@ -1889,7 +1888,7 @@ does not matter for the verification of callers.
 ### Function `name_of`
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType: store&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1906,7 +1905,7 @@ does not matter for the verification of callers.
 ### Function `name_of_token`
 
 
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType: store&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1925,11 +1924,18 @@ does not matter for the verification of callers.
 <a name="0x1_Token_SPEC_TOKEN_TEST_ADDRESS"></a>
 
 
-<pre><code><b>define</b> <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>(): address {
-    0x2
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>(): address {
+   @0x2
 }
+</code></pre>
+
+
+
+
 <a name="0x1_Token_spec_abstract_total_value"></a>
-<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;(): u128 {
-    <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;(): u128 {
+   <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value
 }
 </code></pre>

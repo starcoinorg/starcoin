@@ -140,7 +140,7 @@ address 0x1 {
             };
         }
 
-        spec fun update_module_upgrade_strategy {
+        spec update_module_upgrade_strategy {
             pragma verify = false;
             aborts_if strategy != 0 && strategy != 1 && strategy != 2 && strategy != 3;
             aborts_if exists<ModuleUpgradeStrategy>(Signer::address_of(account)) && strategy <= global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy;
@@ -166,7 +166,7 @@ address 0x1 {
             let UpgradePlanCapability{account_address:_} = cap;
         }
 
-        spec fun destroy_upgrade_plan_cap {
+        spec destroy_upgrade_plan_cap {
             aborts_if false;
         }
 
@@ -177,7 +177,7 @@ address 0x1 {
             move_from<UpgradePlanCapability>(account_address)
         }
 
-        spec fun extract_submit_upgrade_plan_cap {
+        spec extract_submit_upgrade_plan_cap {
             aborts_if !exists<ModuleUpgradeStrategy>(Signer::address_of(account));
             aborts_if global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy != 1;
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
@@ -211,7 +211,7 @@ address 0x1 {
             };
         }
 
-        spec fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2 {
+        spec convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2 {
             pragma verify = false;
         }
 
@@ -221,7 +221,7 @@ address 0x1 {
             submit_upgrade_plan_with_cap_v2(cap, package_hash, version, enforced);
         }
 
-        spec fun submit_upgrade_plan_v2 {
+        spec submit_upgrade_plan_v2 {
             pragma verify = false;
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
             include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
@@ -234,7 +234,7 @@ address 0x1 {
             let active_after_time = Timestamp::now_milliseconds() + tpu.config.min_time_limit;
             tpu.plan = Option::some(UpgradePlanV2 { package_hash, active_after_time, version, enforced });
         }
-        spec fun submit_upgrade_plan_with_cap_v2 {
+        spec submit_upgrade_plan_with_cap_v2 {
             pragma verify = false;
             include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address};
             ensures Option::is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
@@ -256,7 +256,7 @@ address 0x1 {
             cancel_upgrade_plan_with_cap(cap);
         }
 
-        spec fun cancel_upgrade_plan {
+        spec cancel_upgrade_plan {
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
             include CancelUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
             ensures Option::is_none(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
@@ -271,7 +271,7 @@ address 0x1 {
             tpu.plan = Option::none<UpgradePlanV2>();
         }
 
-        spec fun cancel_upgrade_plan_with_cap {
+        spec cancel_upgrade_plan_with_cap {
             include CancelUpgradePlanWithCapAbortsIf{account: cap.account_address};
             ensures Option::is_none(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
@@ -293,11 +293,11 @@ address 0x1 {
             }
         }
 
-        spec fun get_module_upgrade_strategy {
+        spec get_module_upgrade_strategy {
             aborts_if false;
         }
 
-        spec define spec_get_module_upgrade_strategy(module_address: address): u8 {
+        spec fun spec_get_module_upgrade_strategy(module_address: address): u8 {
             if (exists<ModuleUpgradeStrategy>(module_address)) {
                 global<ModuleUpgradeStrategy>(module_address).strategy
             }else{
@@ -311,7 +311,7 @@ address 0x1 {
             Option::none<UpgradePlan>()
         }
 
-        spec fun get_upgrade_plan {
+        spec get_upgrade_plan {
             aborts_if false;
         }
 
@@ -324,11 +324,11 @@ address 0x1 {
             }
         }
 
-        spec fun get_upgrade_plan_v2 {
+        spec get_upgrade_plan_v2 {
             pragma verify = false;
             aborts_if false;
         }
-        spec define spec_get_upgrade_plan_v2(module_address: address): Option<UpgradePlan> {
+        spec fun spec_get_upgrade_plan_v2(module_address: address): Option<UpgradePlan> {
             if (exists<TwoPhaseUpgrade>(module_address)) {
                 global<TwoPhaseUpgrade>(module_address).plan
             }else{
@@ -354,7 +354,7 @@ address 0x1 {
             };
         }
 
-        spec fun check_package_txn {
+        spec check_package_txn {
             pragma verify = false;
             include CheckPackageTxnAbortsIf;
         }
@@ -412,7 +412,7 @@ address 0x1 {
             tpu.plan = Option::none<UpgradePlanV2>();
         }
 
-        spec fun finish_upgrade_plan {
+        spec finish_upgrade_plan {
             pragma verify = false;
             aborts_if !exists<TwoPhaseUpgrade>(package_address);
             let tpu = global<TwoPhaseUpgrade>(package_address);
@@ -426,7 +426,7 @@ address 0x1 {
             check_package_txn(package_address, package_hash);
         }
 
-        spec fun package_txn_prologue {
+        spec package_txn_prologue {
             aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
             include CheckPackageTxnAbortsIf{};
         }
@@ -456,7 +456,7 @@ address 0x1 {
             aborts_if is_package && get_module_upgrade_strategy(package_address) == STRATEGY_TWO_PHASE && success && !exists<TwoPhaseUpgrade>(package_address);
         }
 
-        spec fun package_txn_epilogue {
+        spec package_txn_epilogue {
             aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1
                 && success && !exists<TwoPhaseUpgrade>(package_address);

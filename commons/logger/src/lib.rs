@@ -29,7 +29,7 @@ pub mod structured_log;
 pub mod prelude {
     pub use crate::stacktrace;
     pub use crate::{sl_crit, sl_debug, sl_error, sl_info, sl_trace, sl_warn};
-    pub use log::{debug, error, info, log_enabled, trace, warn, Level, LevelFilter};
+    pub use log::{debug, error, info, log, log_enabled, trace, warn, Level, LevelFilter};
     pub use slog::{slog_crit, slog_debug, slog_error, slog_info, slog_trace, slog_warn};
 }
 

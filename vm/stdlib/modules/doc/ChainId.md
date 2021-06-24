@@ -27,7 +27,7 @@ The module provides chain id information.
 chain id data structure.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="ChainId.md#0x1_ChainId">ChainId</a>
+<pre><code><b>struct</b> <a href="ChainId.md#0x1_ChainId">ChainId</a> has key
 </code></pre>
 
 

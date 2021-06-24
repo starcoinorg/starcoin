@@ -25,7 +25,7 @@ Download binary release from github [releases](https://github.com/starcoinorg/st
 starcoin -n dev console
 ```
 
-More detailed dev instructions please read [Run starcoin dev network](https://developer.starcoin.org/en/runnetwork/) document.
+More detailed dev instructions please read [Run starcoin dev network](https://developer.starcoin.org/en/setup/runnetwork/) document.
 
 ## Join a test network
 
@@ -39,14 +39,7 @@ starcoin -n barnard console
 starcoin -n main console
 ```
 
-More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/runnetwork/).
-
-## Network deployment status
-
-1. halley: auto deploy latest code.
-2. proxima: v1.0.0-rc
-3. barnard: v1.0.0-rc
-4. main: v1.0.0-rc
+More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
 
 ## Contribution
 Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.

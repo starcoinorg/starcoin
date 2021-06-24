@@ -31,7 +31,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_and_split_lt_withdraw_cap">withdraw_and_split_lt_withdraw_cap</a>&lt;TokenT&gt;(signer: signer, for_address: address, amount: u128, lock_period: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_and_split_lt_withdraw_cap">withdraw_and_split_lt_withdraw_cap</a>&lt;TokenT: store&gt;(signer: signer, for_address: address, amount: u128, lock_period: u64)
 </code></pre>
 
 
@@ -77,7 +77,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_token_with_linear_withdraw_capability">withdraw_token_with_linear_withdraw_capability</a>&lt;TokenT&gt;(signer: signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_token_with_linear_withdraw_capability">withdraw_token_with_linear_withdraw_capability</a>&lt;TokenT: store&gt;(signer: signer)
 </code></pre>
 
 
@@ -117,7 +117,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copyable</b>&gt;(signer: signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(signer: signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -141,7 +141,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_execute_withdraw_proposal">execute_withdraw_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(signer: signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_execute_withdraw_proposal">execute_withdraw_proposal</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(signer: signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -170,7 +170,7 @@
 ### Function `withdraw_and_split_lt_withdraw_cap`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_and_split_lt_withdraw_cap">withdraw_and_split_lt_withdraw_cap</a>&lt;TokenT&gt;(signer: signer, for_address: address, amount: u128, lock_period: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_and_split_lt_withdraw_cap">withdraw_and_split_lt_withdraw_cap</a>&lt;TokenT: store&gt;(signer: signer, for_address: address, amount: u128, lock_period: u64)
 </code></pre>
 
 
@@ -186,7 +186,7 @@
 ### Function `withdraw_token_with_linear_withdraw_capability`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_token_with_linear_withdraw_capability">withdraw_token_with_linear_withdraw_capability</a>&lt;TokenT&gt;(signer: signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_withdraw_token_with_linear_withdraw_capability">withdraw_token_with_linear_withdraw_capability</a>&lt;TokenT: store&gt;(signer: signer)
 </code></pre>
 
 
@@ -202,7 +202,7 @@
 ### Function `propose_withdraw`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copyable</b>&gt;(signer: signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_propose_withdraw">propose_withdraw</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(signer: signer, receiver: address, amount: u128, period: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -218,7 +218,7 @@
 ### Function `execute_withdraw_proposal`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_execute_withdraw_proposal">execute_withdraw_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(signer: signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="TreasuryScripts.md#0x1_TreasuryScripts_execute_withdraw_proposal">execute_withdraw_proposal</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(signer: signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 

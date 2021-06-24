@@ -7,15 +7,14 @@ use futures_channel::mpsc::{unbounded, UnboundedSender};
 use logger::prelude::*;
 use rand::Rng;
 use starcoin_config::{MinerClientConfig, TimeService};
+use starcoin_miner_client_api::Solver;
+use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
 use starcoin_types::{block::BlockHeaderExtra, genesis_config::ConsensusStrategy};
 use std::ops::Range;
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
-use starcoin_types::account_config::MintEvent;
-use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};
-use starcoin_miner_client_api::Solver;
 
 #[derive(Clone)]
 pub struct CpuSolver {
@@ -53,7 +52,7 @@ impl Solver for CpuSolver {
     fn solve(
         &mut self,
         task: MintBlockEvent,
-        nonce_tx: mpsc::UnboundedSender<(SealEvent)>,
+        nonce_tx: mpsc::UnboundedSender<SealEvent>,
         mut stop_rx: mpsc::UnboundedReceiver<bool>,
     ) {
         let thread_num = self.config.miner_thread();
@@ -94,6 +93,7 @@ impl Solver for CpuSolver {
                                         minting_blob,
                                         nonce,
                                         extra: mint_extra,
+                                        hash_result: Default::default(),
                                     })) {
                                         error!("Failed to send nonce: {:?}", e);
                                     };
@@ -113,6 +113,7 @@ impl Solver for CpuSolver {
                                                 minting_blob,
                                                 nonce,
                                                 extra: mint_extra,
+                                                hash_result: Default::default(),
                                             })) {
                                                 error!("[miner-client-solver] Failed to send seal: {:?}", e);
                                             };

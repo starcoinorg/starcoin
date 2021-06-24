@@ -17,10 +17,12 @@ The module for the account resource that governs every account
 -  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
 -  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
 -  [Function `create_account`](#0x1_Account_create_account)
+-  [Function `create_account_with_address`](#0x1_Account_create_account_with_address)
 -  [Function `make_account`](#0x1_Account_make_account)
 -  [Function `create_signer`](#0x1_Account_create_signer)
 -  [Function `destroy_signer`](#0x1_Account_destroy_signer)
 -  [Function `create_account_with_initial_amount`](#0x1_Account_create_account_with_initial_amount)
+-  [Function `create_account_with_initial_amount_v2`](#0x1_Account_create_account_with_initial_amount_v2)
 -  [Function `deposit_to_self`](#0x1_Account_deposit_to_self)
 -  [Function `deposit`](#0x1_Account_deposit)
 -  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
@@ -54,14 +56,18 @@ The module for the account resource that governs every account
 -  [Function `withdraw_capability_address`](#0x1_Account_withdraw_capability_address)
 -  [Function `key_rotation_capability_address`](#0x1_Account_key_rotation_capability_address)
 -  [Function `exists_at`](#0x1_Account_exists_at)
+-  [Function `is_dummy_auth_key`](#0x1_Account_is_dummy_auth_key)
 -  [Function `txn_prologue`](#0x1_Account_txn_prologue)
 -  [Function `txn_epilogue`](#0x1_Account_txn_epilogue)
+-  [Function `txn_epilogue_v2`](#0x1_Account_txn_epilogue_v2)
 -  [Specification](#@Specification_1)
     -  [Function `create_genesis_account`](#@Specification_1_create_genesis_account)
     -  [Function `release_genesis_signer`](#@Specification_1_release_genesis_signer)
     -  [Function `create_account`](#@Specification_1_create_account)
+    -  [Function `create_account_with_address`](#@Specification_1_create_account_with_address)
     -  [Function `make_account`](#@Specification_1_make_account)
     -  [Function `create_account_with_initial_amount`](#@Specification_1_create_account_with_initial_amount)
+    -  [Function `create_account_with_initial_amount_v2`](#@Specification_1_create_account_with_initial_amount_v2)
     -  [Function `deposit_to_self`](#@Specification_1_deposit_to_self)
     -  [Function `deposit`](#@Specification_1_deposit)
     -  [Function `deposit_with_metadata`](#@Specification_1_deposit_with_metadata)
@@ -96,6 +102,7 @@ The module for the account resource that governs every account
     -  [Function `exists_at`](#@Specification_1_exists_at)
     -  [Function `txn_prologue`](#@Specification_1_txn_prologue)
     -  [Function `txn_epilogue`](#@Specification_1_txn_epilogue)
+    -  [Function `txn_epilogue_v2`](#@Specification_1_txn_epilogue_v2)
 
 
 <pre><code><b>use</b> <a href="Authenticator.md#0x1_Authenticator">0x1::Authenticator</a>;
@@ -121,7 +128,7 @@ The module for the account resource that governs every account
 Every account has a Account::Account resource
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Account.md#0x1_Account">Account</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account">Account</a> has key
 </code></pre>
 
 
@@ -196,7 +203,7 @@ Every account has a Account::Account resource
 A resource that holds the tokens stored in this account
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt; has key
 </code></pre>
 
 
@@ -226,7 +233,7 @@ account_address/Account::Account/balance.
 There is at most one WithdrawCapability in existence for a given address.
 
 
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a> has store
 </code></pre>
 
 
@@ -256,7 +263,7 @@ account_address (i.e., write to account_address/Account::Account/authentication_
 There is at most one KeyRotationCapability in existence for a given address.
 
 
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a> has store
 </code></pre>
 
 
@@ -284,7 +291,7 @@ There is at most one KeyRotationCapability in existence for a given address.
 Message for balance withdraw event.
 
 
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_WithdrawEvent">WithdrawEvent</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_WithdrawEvent">WithdrawEvent</a> has drop, store
 </code></pre>
 
 
@@ -324,7 +331,7 @@ Message for balance withdraw event.
 Message for balance deposit event.
 
 
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_DepositEvent">DepositEvent</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_DepositEvent">DepositEvent</a> has drop, store
 </code></pre>
 
 
@@ -364,7 +371,7 @@ Message for balance deposit event.
 Message for accept token events
 
 
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a> has drop, store
 </code></pre>
 
 
@@ -395,6 +402,15 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_MAX_U64">MAX_U64</a>: u128 = 18446744073709551615;
+</code></pre>
+
+
+
+<a name="0x1_Account_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
 </code></pre>
 
 
@@ -594,13 +610,10 @@ Release genesis account signer
 
 ## Function `create_account`
 
-Creates a new account at <code>fresh_address</code> with a balance of zero and public
-key <code>public_key_vec</code> | <code>fresh_address</code>.
-Creating an account at address 0x1 will cause runtime failure as it is a
-reserved address for the MoveVM.
+Deprecated since @v5
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType: store&gt;(_authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 
@@ -609,18 +622,42 @@ reserved address for the MoveVM.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType: store&gt;(authentication_key: vector&lt;u8&gt;): address <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<b>copy</b> authentication_key);
-    // <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>));
-    <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_address);
-    <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType: store&gt;(_authentication_key: vector&lt;u8&gt;): address {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="Account.md#0x1_Account_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_account_with_address"></a>
+
+## Function `create_account_with_address`
+
+Creates a new account at <code>fresh_address</code> with a balance of zero and empty auth key, the address as init auth key for check transaction.
+Creating an account at address 0x1 will cause runtime failure as it is a
+reserved address for the MoveVM.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_address">create_account_with_address</a>&lt;TokenType: store&gt;(fresh_address: address)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_address">create_account_with_address</a>&lt;TokenType: store&gt;(fresh_address: address) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(fresh_address);
+    <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, <a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>);
     // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
     <b>if</b> (!<a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;()){
         <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&new_account);
     };
     <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(&new_account);
     <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
-    new_address
 }
 </code></pre>
 
@@ -722,7 +759,7 @@ reserved address for the MoveVM.
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType&gt;(account: signer, fresh_address: address, auth_key: vector&lt;u8&gt;, initial_amount: u128)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, _auth_key: vector&lt;u8&gt;, initial_amount: u128)
 </code></pre>
 
 
@@ -731,9 +768,32 @@ reserved address for the MoveVM.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, auth_key: vector&lt;u8&gt;, initial_amount: u128) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <b>let</b> created_address = <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(auth_key);
-    <b>assert</b>(fresh_address == created_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_AND_AUTH_KEY_MISMATCH">EADDRESS_AND_AUTH_KEY_MISMATCH</a>));
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, _auth_key: vector&lt;u8&gt;, initial_amount: u128) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+     <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType&gt;(account, fresh_address, initial_amount)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_account_with_initial_amount_v2"></a>
+
+## Function `create_account_with_initial_amount_v2`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, initial_amount: u128)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, initial_amount: u128) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+    <a href="Account.md#0x1_Account_create_account_with_address">create_account_with_address</a>&lt;TokenType&gt;(fresh_address);
     <b>if</b> (initial_amount &gt; 0) {
         <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(&account, fresh_address, initial_amount);
     };
@@ -751,7 +811,7 @@ reserved address for the MoveVM.
 Deposits the <code>to_deposit</code> token into the self's account balance
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType: store&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -782,7 +842,7 @@ Deposits the <code>to_deposit</code> token into the <code>receiver</code>'s acco
 It's a reverse operation of <code>withdraw</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType: store&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -811,7 +871,7 @@ Deposits the <code>to_deposit</code> token into the <code>receiver</code>'s acco
 It's a reverse operation of <code>withdraw_with_metadata</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType: store&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -848,7 +908,7 @@ It's a reverse operation of <code>withdraw_with_metadata</code>.
 Helper to deposit <code>amount</code> to the given account balance
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType: store&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -873,7 +933,7 @@ Helper to deposit <code>amount</code> to the given account balance
 Helper to withdraw <code>amount</code> from the given account balance and return the withdrawn Token<TokenType>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType: store&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -898,7 +958,7 @@ Helper to withdraw <code>amount</code> from the given account balance and return
 Withdraw <code>amount</code> Token<TokenType> from the account balance
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType: store&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -924,7 +984,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account balance
 Withdraw <code>amount</code> tokens from <code>signer</code> with given <code>metadata</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType: store&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -957,7 +1017,7 @@ Withdraw <code>amount</code> tokens from <code>signer</code> with given <code>me
 Withdraw <code>amount</code> Token<TokenType> from the account under cap.account_address with no metadata
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType: store&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -984,7 +1044,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 Withdraw <code>amount</code> Token<TokenType> from the account under cap.account_address with metadata
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType: store&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1070,7 +1130,7 @@ Return the withdraw capability to the account it originally came from
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType: store&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1102,7 +1162,7 @@ Return the withdraw capability to the account it originally came from
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType: store&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1136,7 +1196,7 @@ Withdraws <code>amount</code> Token<TokenType> using the passed in WithdrawCapab
 into the <code>payee</code>'s account balance. Creates the <code>payee</code> account if it doesn't exist.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType: store&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1173,7 +1233,7 @@ account balance and send the token to the <code>payee</code> address with the
 attached <code>metadata</code> Creates the <code>payee</code> account if it does not exist
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType: store&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1210,7 +1270,7 @@ account balance  and send the token to the <code>payee</code> address
 Creates the <code>payee</code> account if it does not exist
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType: store&gt;(account: &signer, payee: address, amount: u128)
 </code></pre>
 
 
@@ -1353,7 +1413,7 @@ Return the key rotation capability to the account it originally came from
 Helper to return the u128 value of the <code>balance</code> for <code>account</code>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;): u128
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType: store&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;): u128
 </code></pre>
 
 
@@ -1378,7 +1438,7 @@ Helper to return the u128 value of the <code>balance</code> for <code>account</c
 Return the current TokenType balance of the account at <code>addr</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(addr: address): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType: store&gt;(addr: address): u128
 </code></pre>
 
 
@@ -1403,7 +1463,7 @@ Return the current TokenType balance of the account at <code>addr</code>.
 Add a balance of <code><a href="Token.md#0x1_Token">Token</a></code> type to the sending account.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(account: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType: store&gt;(account: &signer)
 </code></pre>
 
 
@@ -1437,7 +1497,7 @@ Add a balance of <code><a href="Token.md#0x1_Token">Token</a></code> type to the
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType: store&gt;(account: signer)
 </code></pre>
 
 
@@ -1462,7 +1522,7 @@ Add a balance of <code><a href="Token.md#0x1_Token">Token</a></code> type to the
 Return whether the account at <code>addr</code> accepts <code><a href="Token.md#0x1_Token">Token</a></code> type tokens
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(addr: address): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool
 </code></pre>
 
 
@@ -1682,6 +1742,30 @@ Checks if an account exists at <code>check_addr</code>
 
 </details>
 
+<a name="0x1_Account_is_dummy_auth_key"></a>
+
+## Function `is_dummy_auth_key`
+
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_is_dummy_auth_key">is_dummy_auth_key</a>(account: &<a href="Account.md#0x1_Account_Account">Account::Account</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_is_dummy_auth_key">is_dummy_auth_key</a>(account: &<a href="Account.md#0x1_Account">Account</a>): bool {
+    *&account.authentication_key == <a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Account_txn_prologue"></a>
 
 ## Function `txn_prologue`
@@ -1693,7 +1777,7 @@ It verifies:
 - That the sequence number matches the transaction's sequence key
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType: store&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
 </code></pre>
 
 
@@ -1706,24 +1790,31 @@ It verifies:
     account: &signer,
     txn_sender: address,
     txn_sequence_number: u64,
-    txn_public_key: vector&lt;u8&gt;,
+    txn_authentication_key_preimage: vector&lt;u8&gt;,
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
-    // FUTURE: Make these error codes sequential
     // Verify that the transaction sender's account <b>exists</b>
     <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>));
 
     // Load the transaction sender's account
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
 
-    // Check that the hash of the transaction's <b>public</b> key matches the account's auth key
-    <b>assert</b>(
-        <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) == *&sender_account.authentication_key,
-        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
-    );
+    <b>if</b> (<a href="Account.md#0x1_Account_is_dummy_auth_key">is_dummy_auth_key</a>(sender_account)){
+        // <b>if</b> sender's auth key is empty, <b>use</b> address <b>as</b> auth key for check transaction.
+        <b>assert</b>(
+            <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_authentication_key_preimage)) == txn_sender,
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
+        );
+    }<b>else</b>{
+        // Check that the hash of the transaction's <b>public</b> key matches the account's auth key
+        <b>assert</b>(
+            <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_authentication_key_preimage) == *&sender_account.authentication_key,
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
+        );
+    };
 
     // Check that the account has enough balance for all of the gas
     <b>assert</b>(
@@ -1764,7 +1855,7 @@ The epilogue is invoked at the end of transactions.
 It collects gas and bumps the sequence number
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType: store&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
 </code></pre>
 
 
@@ -1777,6 +1868,40 @@ It collects gas and bumps the sequence number
     account: &signer,
     txn_sender: address,
     txn_sequence_number: u64,
+    txn_gas_price: u64,
+    txn_max_gas_units: u64,
+    gas_units_remaining: u64,
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+    <a href="Account.md#0x1_Account_txn_epilogue_v2">txn_epilogue_v2</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>(), txn_gas_price, txn_max_gas_units, gas_units_remaining)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_txn_epilogue_v2"></a>
+
+## Function `txn_epilogue_v2`
+
+The epilogue is invoked at the end of transactions.
+It collects gas and bumps the sequence number
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue_v2">txn_epilogue_v2</a>&lt;TokenType: store&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue_v2">txn_epilogue_v2</a>&lt;TokenType: store&gt;(
+    account: &signer,
+    txn_sender: address,
+    txn_sequence_number: u64,
+    txn_authentication_key_preimage: vector&lt;u8&gt;,
     txn_gas_price: u64,
     txn_max_gas_units: u64,
     gas_units_remaining: u64,
@@ -1796,7 +1921,10 @@ It collects gas and bumps the sequence number
 
     // Bump the sequence number
     sender_account.sequence_number = txn_sequence_number + 1;
-
+    // Set auth key when user send transaction first.
+    <b>if</b> (<a href="Account.md#0x1_Account_is_dummy_auth_key">is_dummy_auth_key</a>(sender_account) && !<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&txn_authentication_key_preimage)){
+        sender_account.authentication_key = <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_authentication_key_preimage);
+    };
     <b>if</b> (transaction_fee_amount &gt; 0) {
         <b>let</b> transaction_fee = <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>(
                 sender_balance,
@@ -1862,16 +1990,29 @@ It collects gas and bumps the sequence number
 ### Function `create_account`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType: store&gt;(_authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> len(authentication_key) != 32;
-<a name="0x1_Account_fresh_address$44"></a>
-<b>let</b> fresh_address = <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">Authenticator::spec_derived_address</a>(authentication_key);
-<b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(fresh_address);
+<pre><code><b>aborts_if</b> <b>true</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_create_account_with_address"></a>
+
+### Function `create_account_with_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_address">create_account_with_address</a>&lt;TokenType: store&gt;(fresh_address: address)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(fresh_address);
 <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_token_code">Token::spec_token_code</a>&lt;TokenType&gt;() != <a href="Token.md#0x1_Token_spec_token_code">Token::spec_token_code</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;() && <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;&gt;(fresh_address);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(fresh_address);
 <b>ensures</b> <a href="Account.md#0x1_Account_exists_at">exists_at</a>(fresh_address);
@@ -1903,7 +2044,23 @@ It collects gas and bumps the sequence number
 ### Function `create_account_with_initial_amount`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType&gt;(account: signer, fresh_address: address, auth_key: vector&lt;u8&gt;, initial_amount: u128)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, _auth_key: vector&lt;u8&gt;, initial_amount: u128)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_create_account_with_initial_amount_v2"></a>
+
+### Function `create_account_with_initial_amount_v2`
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, initial_amount: u128)
 </code></pre>
 
 
@@ -1919,14 +2076,13 @@ It collects gas and bumps the sequence number
 ### Function `deposit_to_self`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType: store&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> to_deposit.value == 0;
-<a name="0x1_Account_is_accepts_token$45"></a>
 <b>let</b> is_accepts_token = <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>aborts_if</b> is_accepts_token && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value + to_deposit.value &gt; max_u128();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
@@ -1940,7 +2096,7 @@ It collects gas and bumps the sequence number
 ### Function `deposit`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType: store&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1956,7 +2112,7 @@ It collects gas and bumps the sequence number
 ### Function `deposit_with_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType: store&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1990,7 +2146,7 @@ It collects gas and bumps the sequence number
 ### Function `deposit_to_balance`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType: store&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -2006,7 +2162,7 @@ It collects gas and bumps the sequence number
 ### Function `withdraw_from_balance`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType: store&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -2022,7 +2178,7 @@ It collects gas and bumps the sequence number
 ### Function `withdraw`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType: store&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -2041,7 +2197,7 @@ It collects gas and bumps the sequence number
 ### Function `withdraw_with_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType: store&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -2059,7 +2215,7 @@ It collects gas and bumps the sequence number
 <a name="0x1_Account_spec_withdraw"></a>
 
 
-<pre><code><b>define</b> <a href="Account.md#0x1_Account_spec_withdraw">spec_withdraw</a>&lt;TokenType&gt;(account: signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_spec_withdraw">spec_withdraw</a>&lt;TokenType&gt;(account: signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
    <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
 }
 </code></pre>
@@ -2071,7 +2227,7 @@ It collects gas and bumps the sequence number
 ### Function `withdraw_with_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType: store&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -2089,7 +2245,7 @@ It collects gas and bumps the sequence number
 ### Function `withdraw_with_capability_and_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType: store&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -2141,7 +2297,7 @@ It collects gas and bumps the sequence number
 ### Function `emit_account_withdraw_event`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType: store&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -2157,7 +2313,7 @@ It collects gas and bumps the sequence number
 ### Function `emit_account_deposit_event`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType: store&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -2173,7 +2329,7 @@ It collects gas and bumps the sequence number
 ### Function `pay_from_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType: store&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -2195,7 +2351,7 @@ It collects gas and bumps the sequence number
 ### Function `pay_from_with_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType: store&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -2236,7 +2392,7 @@ It collects gas and bumps the sequence number
 ### Function `pay_from`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType: store&gt;(account: &signer, payee: address, amount: u128)
 </code></pre>
 
 
@@ -2276,8 +2432,8 @@ It collects gas and bumps the sequence number
 <a name="0x1_Account_spec_rotate_authentication_key_with_capability"></a>
 
 
-<pre><code><b>define</b> <a href="Account.md#0x1_Account_spec_rotate_authentication_key_with_capability">spec_rotate_authentication_key_with_capability</a>(addr: address, new_authentication_key: vector&lt;u8&gt;): bool {
-    <b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(addr).authentication_key == new_authentication_key
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_spec_rotate_authentication_key_with_capability">spec_rotate_authentication_key_with_capability</a>(addr: address, new_authentication_key: vector&lt;u8&gt;): bool {
+   <b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(addr).authentication_key == new_authentication_key
 }
 </code></pre>
 
@@ -2338,7 +2494,7 @@ It collects gas and bumps the sequence number
 ### Function `balance_for`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;): u128
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_balance_for">balance_for</a>&lt;TokenType: store&gt;(balance: &<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;): u128
 </code></pre>
 
 
@@ -2354,7 +2510,7 @@ It collects gas and bumps the sequence number
 ### Function `balance`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(addr: address): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType: store&gt;(addr: address): u128
 </code></pre>
 
 
@@ -2370,7 +2526,7 @@ It collects gas and bumps the sequence number
 ### Function `do_accept_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(account: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType: store&gt;(account: &signer)
 </code></pre>
 
 
@@ -2387,7 +2543,7 @@ It collects gas and bumps the sequence number
 ### Function `accept_token`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: signer)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType: store&gt;(account: signer)
 </code></pre>
 
 
@@ -2403,7 +2559,7 @@ It collects gas and bumps the sequence number
 ### Function `is_accepts_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(addr: address): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool
 </code></pre>
 
 
@@ -2537,7 +2693,7 @@ It collects gas and bumps the sequence number
 ### Function `txn_prologue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType: store&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
 </code></pre>
 
 
@@ -2545,7 +2701,8 @@ It collects gas and bumps the sequence number
 
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
-<b>aborts_if</b> <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) != <b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender).authentication_key;
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender).authentication_key == <a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a> && <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">Authenticator::spec_derived_address</a>(<a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_authentication_key_preimage)) != txn_sender;
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender).authentication_key != <a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a> && <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_authentication_key_preimage) != <b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender).authentication_key;
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; max_u64();
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && <a href="Token.md#0x1_Token_spec_token_code">Token::spec_token_code</a>&lt;TokenType&gt;() != <a href="Token.md#0x1_Token_spec_token_code">Token::spec_token_code</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;();
@@ -2562,7 +2719,23 @@ It collects gas and bumps the sequence number
 ### Function `txn_epilogue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType: store&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_txn_epilogue_v2"></a>
+
+### Function `txn_epilogue_v2`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_txn_epilogue_v2">txn_epilogue_v2</a>&lt;TokenType: store&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_authentication_key_preimage: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
 </code></pre>
 
 
@@ -2573,7 +2746,6 @@ It collects gas and bumps the sequence number
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
 <b>aborts_if</b> txn_max_gas_units &lt; gas_units_remaining;
-<a name="0x1_Account_transaction_fee_amount$46"></a>
 <b>let</b> transaction_fee_amount = txn_gas_price * (txn_max_gas_units - gas_units_remaining);
 <b>aborts_if</b> transaction_fee_amount &gt; max_u128();
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender).token.value &lt; transaction_fee_amount;

@@ -10,8 +10,8 @@ pub use starcoin_transaction_builder::{
     build_accept_token_txn, build_batch_transfer_txn, build_transfer_from_association,
     build_transfer_txn, build_transfer_txn_by_token_type,
     create_signed_txn_with_association_account, encode_create_account_script_function,
-    encode_transfer_script_function, peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT,
+    encode_transfer_script_by_token_code, encode_transfer_script_function,
+    peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 
 pub mod account;
@@ -21,12 +21,8 @@ pub mod error_code_test;
 
 mod executor;
 #[cfg(test)]
-pub mod executor_test;
-#[cfg(test)]
 pub mod module_compatibility_test;
 #[cfg(test)]
 pub mod readonly_function_call_test;
 #[cfg(test)]
 pub mod script_function_test;
-#[cfg(test)]
-pub mod stdlib_test;

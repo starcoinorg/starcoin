@@ -3,8 +3,7 @@
 
 use anyhow::{bail, Result};
 use starcoin_account_api::AccountInfo;
-use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
+use starcoin_crypto::HashValue;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
@@ -49,12 +48,8 @@ pub struct TxFactoryOpt {
     )]
     pub receiver_address: Option<AccountAddress>,
 
-    #[structopt(
-        long,
-        short = "k",
-        help = "public key(hex encoded) of address to receive balance"
-    )]
-    pub receiver_public_key: Option<String>,
+    #[structopt(long, short = "k", help = "this option is deprecated")]
+    pub _receiver_public_key: Option<String>,
 
     #[structopt(long = "stress", short = "s", help = "is stress test or not")]
     pub stress: bool,
@@ -148,18 +143,9 @@ fn main() {
     let account = get_account_or_default(&client, account_address).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
-    let receiver_public_key = opts.receiver_public_key;
-    let public_key = receiver_public_key.map(|k| {
-        Ed25519PublicKey::from_encoded_string(&k).expect("public key should be hex encoded")
-    });
 
     let net = client.node_info().unwrap().net;
-    let txn_generator = MockTxnGenerator::new(
-        net.chain_id(),
-        account.clone(),
-        receiver_address,
-        public_key,
-    );
+    let txn_generator = MockTxnGenerator::new(net.chain_id(), account.clone(), receiver_address);
     let tx_mocker = TxnMocker::new(
         client,
         txn_generator,
@@ -401,7 +387,6 @@ impl TxnMocker {
         &self,
         sender: AccountAddress,
         receiver_address: AccountAddress,
-        receiver_public_key: Option<Ed25519PublicKey>,
         amount: u128,
         gas_price: u64,
         sequence_number: u64,
@@ -412,7 +397,6 @@ impl TxnMocker {
             sequence_number,
             sender,
             receiver_address,
-            receiver_public_key,
             amount,
             gas_price,
             expiration_timestamp,
@@ -490,13 +474,11 @@ impl TxnMocker {
         let mut i = 0;
         // let batch_size = 30;
         let mut addr_vec = vec![];
-        let mut auth_key_vec = vec![];
         let mut sub_account_list = vec![];
         while i < account_num {
             self.recheck_sequence_number()?;
             let account = self.client.account_create(self.account_password.clone())?;
             addr_vec.push(account.address);
-            auth_key_vec.push(account.auth_key());
             sub_account_list.push(account);
             if addr_vec.len() >= batch_size as usize {
                 //submit create batch account transaction
@@ -504,7 +486,6 @@ impl TxnMocker {
                     self.next_sequence_number,
                     self.account_address,
                     addr_vec.clone(),
-                    auth_key_vec.clone(),
                     1000000000,
                     1,
                     expiration_timestamp,
@@ -518,7 +499,6 @@ impl TxnMocker {
                 account_list.extend_from_slice(sub_account_list.as_slice());
                 sub_account_list.clear();
                 addr_vec.clear();
-                auth_key_vec.clear();
             }
             i += 1;
         }
@@ -581,7 +561,6 @@ impl TxnMocker {
                 let result = self.gen_and_submit_transfer_txn(
                     accounts[index].address,
                     accounts[j].address,
-                    accounts[j].public_key.as_single(),
                     1,
                     1,
                     sequences[index],

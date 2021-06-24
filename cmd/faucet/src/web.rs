@@ -31,11 +31,7 @@ async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
     let query_param =
         unwrap_or_return!(parse_query(query), response_custom(400, "Invalid request"));
     info!("Fund query params: {:?}", query_param);
-    match faucet.transfer(
-        query_param.amount,
-        query_param.address,
-        query_param.public_key,
-    ) {
+    match faucet.transfer(query_param.amount, query_param.address) {
         Ok(_) => response_custom(200, "Success"),
         Err(e) => response_custom(400, &e.to_string()),
     }
@@ -73,18 +69,11 @@ pub async fn run(server: Server, faucet: Faucet) {
 struct QueryParam {
     address: AccountAddress,
     amount: u128,
-    public_key: Vec<u8>,
 }
 
 impl Debug for QueryParam {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "address: {:?}, amount: {:?}, prefix_key: {:?}",
-            self.address,
-            self.amount,
-            hex::encode(&self.public_key)
-        )
+        write!(f, "address: {:?}, amount: {:?}", self.address, self.amount,)
     }
 }
 
@@ -93,25 +82,18 @@ fn parse_query(query: &str) -> Result<QueryParam> {
     pairs.sort_unstable();
     let mut address = "";
     let mut amount = "";
-    let mut public_key = "";
     for pair in pairs {
         let kv: Vec<&str> = pair.split('=').collect();
         if kv.len() == 2 {
             match kv[0] {
                 "address" => address = kv[1],
                 "amount" => amount = kv[1],
-                "public_key" => public_key = kv[1],
                 _ => {}
             };
         }
     }
     let address = AccountAddress::from_str(address)?;
     let amount = u128::from_str(amount)?;
-    let public_key = hex::decode(public_key).unwrap_or_default();
-    let query_param = QueryParam {
-        address,
-        amount,
-        public_key,
-    };
+    let query_param = QueryParam { address, amount };
     Ok(query_param)
 }

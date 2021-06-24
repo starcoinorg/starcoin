@@ -31,7 +31,6 @@ impl MoveResource for TokenCode {
 
 impl TokenCode {
     pub fn new(address: AccountAddress, module: String, name: String) -> TokenCode {
-        debug_assert_eq!(module, name, "Token's module name should equals name");
         Self {
             address,
             module,

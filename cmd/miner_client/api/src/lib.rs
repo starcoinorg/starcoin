@@ -1,6 +1,6 @@
-use starcoin_types::system_events::{MintBlockEvent, SealEvent};
 use dyn_clone::DynClone;
 use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender};
+use starcoin_types::system_events::{MintBlockEvent, SealEvent};
 
 pub trait Solver: Send + DynClone {
     fn solve(

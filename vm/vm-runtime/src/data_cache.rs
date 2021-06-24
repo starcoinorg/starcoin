@@ -3,7 +3,7 @@
 //! Scratchpad for on chain values during the execution.
 
 use crate::create_access_path;
-use move_vm_runtime::data_cache::RemoteCache;
+use move_vm_runtime::data_cache::MoveStorage;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::{
@@ -88,7 +88,7 @@ impl<'block> StateView for StateViewCache<'block> {
     }
 }
 
-impl<'block> RemoteCache for StateViewCache<'block> {
+impl<'block> MoveStorage for StateViewCache<'block> {
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_module(module_id)
     }
@@ -117,7 +117,7 @@ impl<'a> RemoteStorage<'a> {
     }
 }
 
-impl<'a> RemoteCache for RemoteStorage<'a> {
+impl<'a> MoveStorage for RemoteStorage<'a> {
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         // REVIEW: cache this?
         let ap = AccessPath::from(module_id);

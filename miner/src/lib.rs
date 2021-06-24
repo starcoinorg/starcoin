@@ -198,7 +198,7 @@ impl MinerService {
                         current: hex::encode(&task.minting_blob),
                         real: hex::encode(minting_blob),
                     }
-                        .into());
+                    .into());
                 };
                 task.block_template.strategy.verify_blob(
                     task.minting_blob.clone(),

@@ -3,15 +3,15 @@
 use actix::System;
 use logger::prelude::*;
 use starcoin_config::MinerClientConfig;
-use starcoin_miner_client::job_client::JobRpcClient;
 use starcoin_miner_client::miner::MinerClientService;
-use starcoin_rpc_client::RpcClient;
-use starcoin_service_registry::{RegistryAsyncService, RegistryService, ActorService};
+use starcoin_miner_client::stratum_client::StratumJobClient;
+use starcoin_miner_client::stratum_client_service::{
+    StratumClientService, StratumClientServiceServiceFactory,
+};
+use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_types::time::RealTimeService;
 use std::sync::Arc;
 use structopt::StructOpt;
-use starcoin_miner_client::stratum_client::StratumJobClient;
-use starcoin_miner_client::stratum_client_service::{StratumClientService, StratumClientServiceServiceFactory};
 
 #[derive(Debug, Clone, StructOpt, Default)]
 #[structopt(name = "starcoin-miner", about = "Starcoin Miner")]
@@ -50,7 +50,9 @@ fn main() {
         let time_srv = Arc::new(RealTimeService::new());
         let stratum_job_client = StratumJobClient::new(stratum_cli_srv, time_srv);
         registry.put_shared(stratum_job_client).await?;
-        registry.register::<MinerClientService<StratumJobClient>>().await
+        registry
+            .register::<MinerClientService<StratumJobClient>>()
+            .await
     }) {
         error!("Failed to set up miner client:{}", err);
     }

@@ -38,7 +38,7 @@ module Math {
         }
     }
 
-    spec fun sqrt {
+    spec sqrt {
         pragma opaque = true;
         pragma verify = false; //while loop
         aborts_if [abstract] false;
@@ -47,7 +47,7 @@ module Math {
 
     /// We use an uninterpreted function to represent the result of sqrt. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_sqrt(): u128;
+    spec fun spec_sqrt(): u128;
 
     /// calculate the `y` pow of `x`.
     public fun pow(x: u64, y: u64): u128 {
@@ -64,7 +64,7 @@ module Math {
         result
     }
 
-    spec fun pow {
+    spec pow {
         pragma opaque = true;
         pragma verify = false; //while loop
         aborts_if [abstract] false;
@@ -73,7 +73,7 @@ module Math {
 
     /// We use an uninterpreted function to represent the result of pow. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_pow(): u128;
+    spec fun spec_pow(): u128;
 
     /// https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
     /// calculate x * y /z with as little loss of precision as possible and avoid overflow
@@ -93,7 +93,7 @@ module Math {
         a * b * z + a * d + b * c + b * d / z
     }
 
-    spec fun mul_div {
+    spec mul_div {
         pragma opaque = true;
         include MulDivAbortsIf;
         aborts_if [abstract] false;
@@ -128,6 +128,6 @@ module Math {
 
     }
 
-    spec define spec_mul_div(): u128;
+    spec fun spec_mul_div(): u128;
 }
 }

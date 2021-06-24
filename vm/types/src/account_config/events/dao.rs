@@ -1,3 +1,6 @@
+// Copyright (c) The Diem Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::move_resource::MoveResource;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;

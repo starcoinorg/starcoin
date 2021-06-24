@@ -46,7 +46,7 @@ module Collection2 {
         Vector::length(&c.items)
     }
 
-    spec fun length {aborts_if false;}
+    spec length {aborts_if false;}
 
     /// Acquire an immutable reference to the `i`th element of the collection `c`.
     /// Aborts if `i` is out of bounds.
@@ -95,7 +95,7 @@ module Collection2 {
         exists<CollectionStore<T>>(addr)
     }
 
-    spec fun exists_at {aborts_if false;}
+    spec exists_at {aborts_if false;}
 
     /// check `addr` is accept T and other can send T to `addr`,
     /// it means exists a Collection of T at `addr` and anyone_can_put of the Collection is true
@@ -129,7 +129,7 @@ module Collection2 {
         Self::return_collection(c);
     }
 
-    spec fun put {aborts_if false;}
+    spec put {aborts_if false;}
 
     /// Put all items to owner's collection of T.
     public fun put_all<T: store>(signer: &signer, owner: address, items: vector<T>) acquires CollectionStore{
@@ -138,7 +138,7 @@ module Collection2 {
         Self::return_collection(c);
     }
 
-    spec fun put_all {aborts_if false;}
+    spec put_all {aborts_if false;}
 
     /// Take last item from signer's Collection of T.
     public fun take<T: store>(signer: &signer): T acquires CollectionStore{
@@ -149,7 +149,7 @@ module Collection2 {
         item
     }
 
-    spec fun take {
+    spec take {
         aborts_if false;
     }
 
@@ -177,7 +177,7 @@ module Collection2 {
         }
     }
 
-    spec fun borrow_collection {
+    spec borrow_collection {
         aborts_if false;
     }
 
@@ -189,7 +189,7 @@ module Collection2 {
         Option::fill(&mut cs.items, items);
     }
 
-    spec fun return_collection {
+    spec return_collection {
         aborts_if false;
     }
 
@@ -198,7 +198,7 @@ module Collection2 {
         destroy_empty(c);
     }
 
-    spec fun destroy_collection {
+    spec destroy_collection {
         aborts_if false;
     }
 
@@ -214,7 +214,7 @@ module Collection2 {
         }
     }
 
-    spec fun destroy_empty {
+    spec destroy_empty {
         aborts_if false;
     }
 

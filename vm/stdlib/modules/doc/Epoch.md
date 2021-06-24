@@ -63,7 +63,7 @@ The module provide epoch functionality for starcoin.
 Current epoch info.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Epoch.md#0x1_Epoch">Epoch</a>
+<pre><code><b>struct</b> <a href="Epoch.md#0x1_Epoch">Epoch</a> has key
 </code></pre>
 
 
@@ -157,7 +157,7 @@ Current epoch info.
 New epoch event.
 
 
-<pre><code><b>struct</b> <a href="Epoch.md#0x1_Epoch_NewEpochEvent">NewEpochEvent</a>
+<pre><code><b>struct</b> <a href="Epoch.md#0x1_Epoch_NewEpochEvent">NewEpochEvent</a> has drop, store
 </code></pre>
 
 
@@ -221,7 +221,7 @@ New epoch event.
 Epoch data.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Epoch.md#0x1_Epoch_EpochData">EpochData</a>
+<pre><code><b>struct</b> <a href="Epoch.md#0x1_Epoch_EpochData">EpochData</a> has key
 </code></pre>
 
 

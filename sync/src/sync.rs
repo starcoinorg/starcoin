@@ -127,11 +127,18 @@ impl SyncService {
 
             loop {
                 if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
-                    info!(
+                    let level = if config.net().is_dev() || config.net().is_test() {
+                        Level::Debug
+                    } else {
+                        Level::Info
+                    };
+                    log!(
+                        level,
                         "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
                         peer_set.len(),
                         config.net().min_peers()
                     );
+
                     Delay::new(Duration::from_secs(1)).await;
                     peer_set = network.peer_set().await?;
                 } else {

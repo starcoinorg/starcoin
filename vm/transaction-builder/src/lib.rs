@@ -30,7 +30,6 @@ pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
 
 pub fn build_transfer_from_association(
     addr: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
@@ -38,7 +37,6 @@ pub fn build_transfer_from_association(
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
-        recipient_auth_key,
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
@@ -49,7 +47,6 @@ pub fn build_transfer_from_association(
 pub fn build_transfer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -60,7 +57,6 @@ pub fn build_transfer_txn(
     build_transfer_txn_by_token_type(
         sender,
         receiver,
-        recipient_auth_key,
         seq_num,
         amount,
         gas_price,
@@ -74,7 +70,6 @@ pub fn build_transfer_txn(
 pub fn build_batch_transfer_txn(
     sender: AccountAddress,
     receivers: Vec<AccountAddress>,
-    recipient_auth_keys: Vec<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -86,21 +81,15 @@ pub fn build_batch_transfer_txn(
     for receiver in receivers {
         address_vec.extend_from_slice(receiver.to_vec().as_slice());
     }
-    let mut auth_key_vec = vec![];
-    for auth_key in recipient_auth_keys {
-        auth_key_vec.extend_from_slice(auth_key.to_vec().as_slice());
-    }
-
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),
         ),
-        Identifier::new("peer_to_peer_batch").unwrap(),
+        Identifier::new("batch_peer_to_peer_v2").unwrap(),
         vec![stc_type_tag()],
         vec![
             bcs_ext::to_bytes(&address_vec).unwrap(),
-            bcs_ext::to_bytes(&auth_key_vec).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
         ],
     ));
@@ -119,7 +108,6 @@ pub fn build_batch_transfer_txn(
 pub fn build_transfer_txn_by_token_type(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -131,7 +119,6 @@ pub fn build_transfer_txn_by_token_type(
     raw_peer_to_peer_txn(
         sender,
         receiver,
-        recipient_auth_key,
         amount,
         seq_num,
         gas_price,
@@ -165,7 +152,6 @@ pub fn build_accept_token_txn(
 pub fn raw_peer_to_peer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     transfer_amount: u128,
     seq_num: u64,
     gas_price: u64,
@@ -178,10 +164,7 @@ pub fn raw_peer_to_peer_txn(
         sender,
         seq_num,
         TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
-            //TODO should use latest?
-            StdlibVersion::Latest,
             receiver,
-            recipient_auth_key,
             transfer_amount,
             token_code,
         )),
@@ -238,25 +221,12 @@ pub fn encode_create_account_script_function(
     )
 }
 
-pub fn encode_transfer_script_function(
-    version: StdlibVersion,
-    recipient: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
-    amount: u128,
-) -> ScriptFunction {
-    encode_transfer_script_by_token_code(
-        version,
-        recipient,
-        recipient_auth_key,
-        amount,
-        STC_TOKEN_CODE.clone(),
-    )
+pub fn encode_transfer_script_function(recipient: AccountAddress, amount: u128) -> ScriptFunction {
+    encode_transfer_script_by_token_code(recipient, amount, STC_TOKEN_CODE.clone())
 }
 
 pub fn encode_transfer_script_by_token_code(
-    _version: StdlibVersion,
     recipient: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     amount: u128,
     token_code: TokenCode,
 ) -> ScriptFunction {
@@ -265,11 +235,10 @@ pub fn encode_transfer_script_by_token_code(
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),
         ),
-        Identifier::new("peer_to_peer").unwrap(),
+        Identifier::new("peer_to_peer_v2").unwrap(),
         vec![token_code.into()],
         vec![
             bcs_ext::to_bytes(&recipient).unwrap(),
-            bcs_ext::to_bytes(&recipient_auth_key.map(|k| k.to_vec()).unwrap_or_default()).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
         ],
     )
@@ -277,19 +246,13 @@ pub fn encode_transfer_script_by_token_code(
 
 pub fn peer_to_peer_txn_sent_as_association(
     recipient: AccountAddress,
-    recipient_auth_key: Option<AuthenticationKey>,
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(encode_transfer_script_function(
-            net.stdlib_version(),
-            recipient,
-            recipient_auth_key,
-            amount,
-        )),
+        TransactionPayload::ScriptFunction(encode_transfer_script_function(recipient, amount)),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,

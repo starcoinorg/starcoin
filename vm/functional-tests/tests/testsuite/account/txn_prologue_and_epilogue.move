@@ -10,8 +10,9 @@ script {
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
-        let txn_sender = Account::create_account<STC>(copy auth_key_vec);
-        Account::pay_from<STC>(&account, txn_sender, 5000);
+        let address = Authenticator::derived_address(auth_key_vec);
+        Account::create_account_with_address<STC>(address);
+        Account::pay_from<STC>(&account, address, 5000);
     }
 }
 // check: EXECUTED

@@ -4,9 +4,10 @@ use anyhow::{bail, Result};
 use move_lang::command_line::read_bool_env_var;
 use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
-use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
+use starcoin_move_compiler::shared::Flags;
+use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile};
 use starcoin_vm_types::account_address::AccountAddress;
-use std::{convert::TryFrom, fmt, io::Write, path::Path};
+use std::{fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
 
 pub const STD_LIB_DIR: &str = "../stdlib/modules";
@@ -42,17 +43,22 @@ impl Compiler for MoveSourceCompiler {
     fn compile<Logger: FnMut(String)>(
         &mut self,
         _log: Logger,
-        address: AccountAddress,
+        _address: AccountAddress,
         input: &str,
     ) -> Result<ScriptOrModule> {
         let cur_file = NamedTempFile::new()?;
-        let sender_addr = Address::try_from(address.as_ref()).unwrap();
+        // let sender_addr = Address::try_from(_address.as_ref()).unwrap();
         cur_file.reopen()?.write_all(input.as_bytes())?;
         let cur_path = cur_file.path().to_str().unwrap().to_owned();
 
         let targets = &vec![cur_path.clone()];
-        let sender = Some(sender_addr);
-        let (files, units_or_errors) = move_compile(targets, &self.deps, sender, None, true)?;
+        // let sender = Some(sender_addr);
+        let (files, units_or_errors) = move_compile(
+            targets,
+            &self.deps,
+            None,
+            Flags::empty().set_sources_shadow_deps(true),
+        )?;
         let unit = match units_or_errors {
             Err(errors) => {
                 let error_buffer = if read_bool_env_var(testsuite::PRETTY) {
@@ -76,8 +82,8 @@ impl Compiler for MoveSourceCompiler {
         Ok(match unit {
             CompiledUnit::Script { script, .. } => ScriptOrModule::Script(script),
             CompiledUnit::Module { module, .. } => {
-                let input = format!("address {} {{\n{}\n}}", sender_addr, input);
-                cur_file.reopen()?.write_all(input.as_bytes())?;
+                // let input = format!("address {} {{\n{}\n}}", sender_addr, input);
+                // cur_file.reopen()?.write_all(input.as_bytes())?;
                 self.temp_files.push(cur_file);
                 self.deps.push(cur_path);
                 ScriptOrModule::Module(module)

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, ExecutedBlock, BlockHeaderExtra};
+use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use serde::{Deserialize, Serialize};
@@ -78,10 +78,10 @@ impl MintBlockEvent {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub struct SealEvent {
     pub minting_blob: Vec<u8>,
     pub nonce: u32,
     pub extra: Option<MintEventExtra>,
+    pub hash_result: String,
 }

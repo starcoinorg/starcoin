@@ -14,6 +14,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// Import multisin account.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "import-multisig")]
 pub struct ImportMultisigOpt {
@@ -96,5 +97,9 @@ impl CommandAction for ImportMultisigCommand {
             opt.password.clone(),
         )?;
         Ok(account)
+    }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
     }
 }

@@ -30,7 +30,7 @@ The module provide a dummy token implementation.
 The DummyToken type.
 
 
-<pre><code><b>struct</b> <a href="DummyToken.md#0x1_DummyToken">DummyToken</a>
+<pre><code><b>struct</b> <a href="DummyToken.md#0x1_DummyToken">DummyToken</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -58,7 +58,7 @@ The DummyToken type.
 Burn capability of the token.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="DummyToken.md#0x1_DummyToken_SharedBurnCapability">SharedBurnCapability</a>
+<pre><code><b>struct</b> <a href="DummyToken.md#0x1_DummyToken_SharedBurnCapability">SharedBurnCapability</a> has key
 </code></pre>
 
 
@@ -86,7 +86,7 @@ Burn capability of the token.
 Mint capability of the token.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a>
+<pre><code><b>struct</b> <a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a> has store, key
 </code></pre>
 
 
@@ -171,7 +171,7 @@ Initialization of the module.
 Returns true if <code>TokenType</code> is <code><a href="DummyToken.md#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a></code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_is_dummy_token">is_dummy_token</a>&lt;TokenType&gt;(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_is_dummy_token">is_dummy_token</a>&lt;TokenType: store&gt;(): bool
 </code></pre>
 
 

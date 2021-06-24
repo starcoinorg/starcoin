@@ -28,7 +28,7 @@ The module provides the information of current consensus strategy.
 ConsensusStrategy data.
 
 
-<pre><code><b>struct</b> <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a>
+<pre><code><b>struct</b> <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a> has <b>copy</b>, drop, store
 </code></pre>
 
 

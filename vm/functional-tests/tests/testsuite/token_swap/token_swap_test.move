@@ -7,7 +7,8 @@
 
 //! new-transaction
 //! sender: admin
-module TokenSwapHelper {
+address admin = {{admin}};
+module admin::TokenSwapHelper {
   public fun quote(amount_x: u128, reserve_x: u128, reserve_y: u128): u128 {
       assert(amount_x > 0, 400);
       assert(reserve_x > 0 && reserve_y > 0, 410);
@@ -36,18 +37,20 @@ module TokenSwapHelper {
 
 //! new-transaction
 //! sender: admin
-module LiquidityToken {
+address admin = {{admin}};
+module admin::LiquidityToken {
     struct LiquidityToken<X, Y> has copy, drop, store {}
 }
 // check: EXECUTED
 
 //! new-transaction
 //! sender: admin
-module TokenSwap {
+address admin = {{admin}};
+module admin::TokenSwap {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Math;
-    use {{admin}}::LiquidityToken::LiquidityToken;
+    use admin::LiquidityToken::LiquidityToken;
 
     // Liquidity Token
     // TODO: token should be generic on <X, Y>
@@ -207,14 +210,15 @@ module TokenSwap {
         assert(Signer::address_of(signer) == admin_address(), 401);
     }
     fun admin_address(): address {
-        {{admin}}
+        @admin
     }
 }
 // check: EXECUTED
 
 //! new-transaction
 //! sender: admin
-module Token1 {
+address admin = {{admin}};
+module admin::Token1 {
     struct Token1 has copy, drop, store {}
 }
 // check: EXECUTED
@@ -223,9 +227,10 @@ module Token1 {
 //! sender: admin
 
 // register a token pair STC/Token1
+address admin = {{admin}};
 script {
-use {{admin}}::TokenSwap;
-use {{admin}}::Token1;
+use admin::TokenSwap;
+use admin::Token1;
 use 0x1::Token;
 use 0x1::STC;
 fun main(signer: signer) {
@@ -240,8 +245,9 @@ fun main(signer: signer) {
 
 //! new-transaction
 //! sender: liquidier
+address admin = {{admin}};
 script{
-use {{admin}}::Token1;
+use admin::Token1;
 use 0x1::Account;
 fun main(signer: signer) {
     Account::do_accept_token<Token1::Token1>(&signer);
@@ -252,25 +258,28 @@ fun main(signer: signer) {
 //! new-transaction
 //! sender: admin
 // mint some token1 to liquidier
+address admin = {{admin}};
+address liquidier = {{liquidier}};
 script{
-use {{admin}}::Token1;
+use admin::Token1;
 
 use 0x1::Account;
 use 0x1::Token;
 fun main(signer: signer) {
     let token = Token::mint<Token1::Token1>(&signer, 100000000);
-    Account::deposit({{liquidier}}, token);
-    assert(Account::balance<Token1::Token1>({{liquidier}}) == 100000000, 42);
+    Account::deposit(@liquidier, token);
+    assert(Account::balance<Token1::Token1>(@liquidier) == 100000000, 42);
 }
 }
 
 //! new-transaction
 //! sender: liquidier
+address admin = {{admin}};
 script{
     use 0x1::STC;
-    use {{admin}}::Token1;
-    use {{admin}}::TokenSwap;
-    use {{admin}}::LiquidityToken::LiquidityToken;
+    use admin::Token1;
+    use admin::TokenSwap;
+    use admin::LiquidityToken::LiquidityToken;
     use 0x1::Account;
 
 
@@ -293,11 +302,12 @@ script{
 
 //! new-transaction
 //! sender: exchanger
+address admin = {{admin}};
 script {
     use 0x1::STC;
-    use {{admin}}::Token1;
-    use {{admin}}::TokenSwap;
-    use {{admin}}::TokenSwapHelper;
+    use admin::Token1;
+    use admin::TokenSwap;
+    use admin::TokenSwapHelper;
     use 0x1::Account;
     use 0x1::Token;
     fun main(signer: signer) {
@@ -317,13 +327,14 @@ script {
 
 //! new-transaction
 //! sender: liquidier
+address admin = {{admin}};
 script{
     use 0x1::STC;
     use 0x1::Account;
     use 0x1::Signer;
-    use {{admin}}::Token1;
-    use {{admin}}::TokenSwap;
-    use {{admin}}::LiquidityToken::LiquidityToken;
+    use admin::Token1;
+    use admin::TokenSwap;
+    use admin::LiquidityToken::LiquidityToken;
 
     // use 0x1::Debug;
 

@@ -2,7 +2,8 @@
 //! account: bob
 
 //! sender: alice
-module MyToken {
+address alice = {{alice}};
+module alice::MyToken {
     use 0x1::Token;
     use 0x1::Dao;
 
@@ -26,8 +27,9 @@ module MyToken {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-    use {{alice}}::MyToken::{MyToken, Self};
+    use alice::MyToken::{MyToken, Self};
     use 0x1::Account;
     use 0x1::Token;
 
@@ -62,10 +64,11 @@ script {
 //
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::UpgradeModuleDaoProposal;
     use 0x1::PackageTxnManager;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun plugin(account: signer) {
         let upgrade_plan_cap = PackageTxnManager::extract_submit_upgrade_plan_cap(&account);
@@ -79,12 +82,13 @@ script {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
     use 0x1::UpgradeModuleDaoProposal;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun propose_module_upgrade(account: signer) {
-        let module_address = {{alice}};
+        let module_address = @alice;
         let package_hash = x"1111111111111111";
         let version = 1;
         let exec_delay = 60 * 60 * 1000;
@@ -110,11 +114,12 @@ script {
 //! new-transaction
 //! sender: alice
 //! args: {{alice}}, 0, true, 500u128
+address alice = {{alice}};
 script {
     use 0x1::UpgradeModuleDaoProposal;
     use 0x1::Dao;
     use 0x1::Account;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun cast_vote(
         signer: signer,
@@ -139,10 +144,11 @@ script {
 //! new-transaction
 //! sender: alice
 //! args: {{alice}}, 0
+address alice = {{alice}};
 script {
     use 0x1::UpgradeModuleDaoProposal;
     use 0x1::Dao;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun queue_proposal_action(_signer: signer,
         proposer_address: address,
@@ -164,9 +170,10 @@ script {
 //! new-transaction
 //! sender: alice
 //! args: {{alice}}, 0
+address alice = {{alice}};
 script {
     use 0x1::UpgradeModuleDaoProposal;
-    use {{alice}}::MyToken::MyToken;
+    use alice::MyToken::MyToken;
 
     fun submit_module_upgrade_plan(_account: signer, proposer_address: address, proposal_id: u64) {
         UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);

@@ -2,7 +2,10 @@
 //! account: bob
 
 //! sender: alice
-module Example {
+address alice = {{alice}};
+address bob = {{bob}};
+module alice::Example {
+    use 0x1::Signer;
     public fun new(): R {
         R { x: true }
     }
@@ -23,14 +26,14 @@ module Example {
         let r = borrow_global<R>(sender);
         r.x
     }
-
-    use 0x1::Signer;
 }
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
+address bob = {{bob}};
 script {
-use {{alice}}::Example;
+use alice::Example;
 fun main() {
     let r = Example::new();
     Example::destroy(r);
@@ -39,8 +42,10 @@ fun main() {
 
 //! new-transaction
 //! sender: bob
+address alice = {{alice}};
+address bob = {{bob}};
 script {
-use {{alice}}::Example;
+use alice::Example;
 fun main(account: signer) {
     let r = Example::new();
     Example::save(&account, r);

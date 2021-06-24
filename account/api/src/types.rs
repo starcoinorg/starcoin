@@ -64,3 +64,8 @@ impl AccountInfo {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct DefaultAccountChangeEvent {
+    pub new_account: AccountInfo,
+}

@@ -1,40 +1,26 @@
-use actix::clock::Duration;
 use anyhow::anyhow;
 use anyhow::Result;
-use crypto::HashValue;
+use futures::{select, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 use futures_channel::mpsc;
 use futures_channel::oneshot;
-use futures::executor::block_on;
-use futures::stream::Fuse;
-use futures::{select, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
-use futures_channel::mpsc::UnboundedSender;
 use jsonrpc_core;
-use jsonrpc_core::{Id, Notification, Params, Version};
-use jsonrpc_core_client::RpcError;
-use jsonrpc_server_utils::codecs;
+use jsonrpc_core::{Params, Version};
 use jsonrpc_server_utils::codecs::StreamCodec;
-use jsonrpc_server_utils::tokio::macros::support::Poll;
 use jsonrpc_server_utils::tokio::net::TcpStream;
-use jsonrpc_server_utils::tokio::prelude::io::AsyncWriteExt;
 use jsonrpc_server_utils::tokio_util::codec::Decoder;
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use starcoin_service_registry::{
-    ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceContext,
-    ServiceFactory, ServiceHandler, ServiceRef, ServiceRequest,
+    ActorService, RegistryAsyncService, RegistryService, ServiceContext, ServiceFactory,
+    ServiceHandler, ServiceRequest,
 };
-pub use starcoin_stratum::rpc::{KeepalivedResult, LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse};
-use starcoin_types::block::BlockHeaderExtra;
-use std::borrow::BorrowMut;
+pub use starcoin_stratum::rpc::{
+    KeepalivedResult, LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
+};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::convert::TryInto;
-use std::io::Read;
-use std::net::Ipv4Addr;
 use std::pin::Pin;
-use std::sync::{atomic, Arc};
-use starcoin_config::{MinerClientConfig, NodeConfig};
 
 #[derive(Debug)]
 pub enum Request {
@@ -46,9 +32,7 @@ pub enum Request {
 }
 
 pub enum PendingRequest {
-    LoginRequest(
-        oneshot::Sender<mpsc::UnboundedReceiver<StratumJob>>,
-    ),
+    LoginRequest(oneshot::Sender<mpsc::UnboundedReceiver<StratumJob>>),
     SubmitSealRequest(oneshot::Sender<()>),
 }
 
@@ -169,9 +153,9 @@ pub struct StratumClientService {
 struct Inner {
     request_channel: mpsc::UnboundedReceiver<Request>,
     connections: HashMap<String, mpsc::UnboundedSender<StratumJob>>,
-    stream: Option<Pin<Box<Stream<Item=String>>>>,
+    stream: Option<Pin<Box<dyn Stream<Item = String>>>>,
     pending_requests: HashMap<u32, PendingRequest>,
-    sink: Pin<Box<Sink<String, Error=anyhow::Error>>>,
+    sink: Pin<Box<dyn Sink<String, Error = anyhow::Error>>>,
 }
 
 impl Inner {
@@ -179,7 +163,7 @@ impl Inner {
         let (s, channel) = mpsc::unbounded::<Request>();
         let (sink, stream) = StreamCodec::stream_incoming().framed(tcp_stream).split();
         let sink = Box::pin(sink.sink_map_err(|e| anyhow!(format!("{}", e))));
-        let mut stream = Box::pin(
+        let stream = Box::pin(
             stream
                 .map_err(|e| error!("stratum tcp stream error: {}", e))
                 .take_while(|x| futures::future::ready(x.is_ok()))
@@ -226,7 +210,9 @@ impl Inner {
                 }
             }
 
-            Response::Failure(e) => { error!("stratum client process output request error:{:?}", e); }
+            Response::Failure(e) => {
+                error!("stratum client process output request error:{:?}", e);
+            }
         }
         Ok(())
     }
@@ -283,7 +269,7 @@ impl ServiceHandler<StratumClientService, LoginRequest> for StratumClientService
     fn handle(
         &mut self,
         msg: LoginRequest,
-        ctx: &mut ServiceContext<StratumClientService>,
+        _ctx: &mut ServiceContext<StratumClientService>,
     ) -> <LoginRequest as ServiceRequest>::Response {
         if let Some(sender) = self.sender.clone().take() {
             let (s, r) = futures::channel::oneshot::channel();
@@ -312,7 +298,7 @@ impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientSe
 pub struct StratumClientServiceServiceFactory;
 
 impl ServiceFactory<StratumClientService> for StratumClientServiceServiceFactory {
-    fn create(ctx: &mut ServiceContext<StratumClientService>) -> Result<StratumClientService> {
+    fn create(_ctx: &mut ServiceContext<StratumClientService>) -> Result<StratumClientService> {
         let tcp_stream = Some(std::net::TcpStream::connect(&"cn2.stc.kelepool.com:9999")?);
         Ok(StratumClientService {
             sender: None,

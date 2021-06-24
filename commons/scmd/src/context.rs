@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::error::CmdError;
-use crate::{print_action_result, Command, CommandAction, CommandExec, OutputFormat};
+use crate::{print_action_result, Command, CommandAction, CommandExec, HistoryOp, OutputFormat};
 use anyhow::Result;
 use clap::{crate_authors, App, Arg, SubCommand};
 use once_cell::sync::Lazy;
@@ -10,7 +10,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs::File;
+use std::io::prelude::*;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use structopt::StructOpt;
 
@@ -18,14 +20,14 @@ pub use rustyline::{
     config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
     Editor,
 };
-use std::str::FromStr;
 
 pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
     ConsoleConfig::builder()
-        .max_history_size(100)
+        .max_history_size(1000)
         .history_ignore_space(true)
+        .history_ignore_dups(true)
         .completion_type(CompletionType::List)
-        .auto_add_history(true)
+        .auto_add_history(false)
         .edit_mode(EditMode::Emacs)
         .color_mode(ColorMode::Enabled)
         .build()
@@ -103,7 +105,7 @@ where
                     .short("o")
                     .help("set output-format, support [json|table]")
                     .takes_value(true)
-                    .default_value("table"),
+                    .default_value("json"),
             );
         app = Self::set_app_author(app);
         Self {
@@ -243,8 +245,9 @@ where
                 let cmd = self.commands.get_mut(cmd_name);
                 match (cmd, arg_matches) {
                     (Some(cmd), Some(arg_matches)) => {
-                        cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)
-                        //print_action_result(value, output_format)?;
+                        let (_, value) =
+                            cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
+                        Ok(value)
                     }
                     _ => Err(CmdError::need_help(Self::app_help_message(&mut app)).into()),
                 }
@@ -311,6 +314,7 @@ where
             match readline {
                 Ok(line) => {
                     let params: Vec<&str> = line
+                        .as_str()
                         .trim()
                         .split(' ')
                         .map(str::trim)
@@ -319,21 +323,14 @@ where
                     let cmd_name = if params.is_empty() { "" } else { params[0] };
                     match cmd_name {
                         "quit" | "exit" | "q!" => {
-                            let global_opt = Arc::try_unwrap(global_opt)
-                                .ok()
-                                .expect("unwrap opt must success when quit.");
-                            let state = Arc::try_unwrap(state)
-                                .ok()
-                                .expect("unwrap state must success when quit.");
-                            if let Some(history_file) = history_file.as_ref() {
-                                if let Err(e) = rl.save_history(history_file.as_path()) {
-                                    println!(
-                                        "Save history to file {:?} error: {:?}",
-                                        history_file, e
-                                    );
-                                }
-                            }
-                            quit_action(app.clone(), global_opt, state);
+                            Self::do_quit(
+                                app.clone(),
+                                global_opt,
+                                state,
+                                quit_action,
+                                rl,
+                                history_file,
+                            );
                             break;
                         }
                         "history" => {
@@ -366,14 +363,19 @@ where
                         }
                         "version" => {
                             let mut out = std::io::stdout();
-                            let _ = app.write_long_version(&mut out);
+                            let _ = app
+                                .write_long_version(&mut out)
+                                .expect("write version to stdout should success");
+                            // write a `\n` for flush stdout
+                            out.write_all("\n".as_bytes())
+                                .expect("write to stdout should success");
                         }
                         "output" => {
                             if params.len() == 1 {
                                 println!("Current format: {}", output_format);
                             } else if params.len() == 2 {
-                                output_format = OutputFormat::from_str(params[1])
-                                    .unwrap_or(OutputFormat::TABLE);
+                                output_format =
+                                    OutputFormat::from_str(params[1]).unwrap_or_default();
                                 println!("Set output format to: {}", output_format);
                             } else {
                                 println!("Usage: output [format] 'Output format: JSON|TABLE'");
@@ -388,11 +390,21 @@ where
                                     let app = cmd.get_app();
                                     match app.get_matches_from_safe_borrow(params) {
                                         Ok(arg_matches) => {
-                                            let result = cmd.exec(
+                                            let cmd_result = cmd.exec(
                                                 state.clone(),
                                                 global_opt.clone(),
                                                 &arg_matches,
                                             );
+                                            let (skip_history, result) = match cmd_result {
+                                                Ok((history_op, value)) => (
+                                                    matches!(history_op, HistoryOp::Skip),
+                                                    Ok(value),
+                                                ),
+                                                Err(err) => (false, Err(err)),
+                                            };
+                                            if !skip_history {
+                                                rl.add_history_entry(line.as_str());
+                                            }
                                             if let Err(err) =
                                                 print_action_result(output_format, result, true)
                                             {
@@ -400,11 +412,13 @@ where
                                             }
                                         }
                                         Err(e) => {
+                                            rl.add_history_entry(line.as_str());
                                             println!("{}", e);
                                         }
                                     }
                                 }
                                 _ => {
+                                    rl.add_history_entry(line.as_str());
                                     println!("Unknown command: {:?}", cmd_name);
                                     app.print_long_help().expect("print help should success.");
                                 }
@@ -414,10 +428,26 @@ where
                 }
                 Err(ReadlineError::Interrupted) => {
                     println!("CTRL-C");
+                    Self::do_quit(
+                        app.clone(),
+                        global_opt,
+                        state,
+                        quit_action,
+                        rl,
+                        history_file,
+                    );
                     break;
                 }
                 Err(ReadlineError::Eof) => {
                     println!("CTRL-D");
+                    Self::do_quit(
+                        app.clone(),
+                        global_opt,
+                        state,
+                        quit_action,
+                        rl,
+                        history_file,
+                    );
                     break;
                 }
                 Err(err) => {
@@ -426,5 +456,27 @@ where
                 }
             }
         }
+    }
+
+    fn do_quit(
+        app: App,
+        global_opt: Arc<GlobalOpt>,
+        state: Arc<State>,
+        quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+        mut rl: Editor<()>,
+        history_file: Option<PathBuf>,
+    ) {
+        let global_opt = Arc::try_unwrap(global_opt)
+            .ok()
+            .expect("unwrap opt must success when quit.");
+        let state = Arc::try_unwrap(state)
+            .ok()
+            .expect("unwrap state must success when quit.");
+        if let Some(history_file) = history_file.as_ref() {
+            if let Err(e) = rl.save_history(history_file.as_path()) {
+                println!("Save history to file {:?} error: {:?}", history_file, e);
+            }
+        }
+        quit_action(app, global_opt, state);
     }
 }

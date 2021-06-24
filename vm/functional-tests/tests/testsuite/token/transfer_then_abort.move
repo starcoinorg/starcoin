@@ -2,12 +2,12 @@
 //! account: bob, 10000 0x1::STC::STC
 
 //! sender: alice
-
+address bob = {{bob}};
 script {
     use 0x1::Account;
 
     fun main(account: signer) {
-        Account::pay_from<0x1::STC::STC>(&account, {{bob}}, 10);
+        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
         abort 41
     }
 }
@@ -17,13 +17,13 @@ script {
 
 //! new-transaction
 //! sender: bob
-
+address bob = {{bob}};
 script {
     use 0x1::Account;
 
     fun main() {
         // check the state is unchanged
-        assert(Account::balance<0x1::STC::STC>({{bob}}) == 10000, 42);
+        assert(Account::balance<0x1::STC::STC>(@bob) == 10000, 42);
     }
 }
 

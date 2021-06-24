@@ -31,7 +31,7 @@ module Errors {
     fun make(category: u8, reason: u64): u64 {
         (category as u64) + (reason << 8)
     }
-    spec fun make {
+    spec make {
         pragma opaque = true;
 	pragma verify = false;
         //ensures [concrete] result == category + (reason << 8);
@@ -79,7 +79,7 @@ module Errors {
 
     /// Create an error of `invalid_state`
     public fun invalid_state(reason: u64): u64 { make(INVALID_STATE, reason) }
-    spec fun invalid_state {
+    spec invalid_state {
         pragma opaque = true;
         aborts_if false;
         ensures result == INVALID_STATE;
@@ -87,7 +87,7 @@ module Errors {
 
     /// Create an error of `requires_address`.
     public fun requires_address(reason: u64): u64 { make(REQUIRES_ADDRESS, reason) }
-    spec fun requires_address {
+    spec requires_address {
         pragma opaque = true;
         aborts_if false;
         ensures result == REQUIRES_ADDRESS;
@@ -95,7 +95,7 @@ module Errors {
     
     /// Create an error of `requires_role`.
     public fun requires_role(reason: u64): u64 { make(REQUIRES_ROLE, reason) }
-    spec fun requires_role {
+    spec requires_role {
         pragma opaque = true;
         aborts_if false;
         ensures result == REQUIRES_ROLE;
@@ -103,7 +103,7 @@ module Errors {
 
     /// Create an error of `requires_capability`.
     public fun requires_capability(reason: u64): u64 { make(REQUIRES_CAPABILITY, reason) }
-    spec fun requires_capability {
+    spec requires_capability {
         pragma opaque = true;
         aborts_if false;
         ensures result == REQUIRES_CAPABILITY;
@@ -111,7 +111,7 @@ module Errors {
 
     /// Create an error of `not_published`.
     public fun not_published(reason: u64): u64 { make(NOT_PUBLISHED, reason) }
-    spec fun not_published {
+    spec not_published {
         pragma opaque = true;
         aborts_if false;
         ensures result == NOT_PUBLISHED;
@@ -119,7 +119,7 @@ module Errors {
 
     /// Create an error of `already_published`.
     public fun already_published(reason: u64): u64 { make(ALREADY_PUBLISHED, reason) }
-    spec fun already_published {
+    spec already_published {
         pragma opaque = true;
         aborts_if false;
         ensures result == ALREADY_PUBLISHED;
@@ -127,7 +127,7 @@ module Errors {
 
     /// Create an error of `invalid_argument`.
     public fun invalid_argument(reason: u64): u64 { make(INVALID_ARGUMENT, reason) }
-    spec fun invalid_argument {
+    spec invalid_argument {
         pragma opaque = true;
         aborts_if false;
         ensures result == INVALID_ARGUMENT;
@@ -135,7 +135,7 @@ module Errors {
 
     /// Create an error of `limit_exceeded`.
     public fun limit_exceeded(reason: u64): u64 { make(LIMIT_EXCEEDED, reason) }
-    spec fun limit_exceeded {
+    spec limit_exceeded {
         pragma opaque = true;
         aborts_if false;
         ensures result == LIMIT_EXCEEDED;
@@ -143,7 +143,7 @@ module Errors {
 
     /// Create an error of `internal`.
     public fun internal(reason: u64): u64 { make(INTERNAL, reason) }
-    spec fun internal {
+    spec internal {
         pragma opaque = true;
         aborts_if false;
         ensures result == INTERNAL;
@@ -151,7 +151,7 @@ module Errors {
 
     /// Create an error of `deprecated`.
     public fun deprecated(reason: u64): u64 { make(DEPRECATED, reason) }
-    spec fun deprecated {
+    spec deprecated {
         pragma opaque = true;
         aborts_if false;
         ensures result == DEPRECATED;
@@ -159,7 +159,7 @@ module Errors {
 
     /// Create an error of `custom`.
     public fun custom(reason: u64): u64 { make(CUSTOM, reason) }
-    spec fun custom {
+    spec custom {
         pragma opaque = true;
         aborts_if false;
         ensures result == CUSTOM;

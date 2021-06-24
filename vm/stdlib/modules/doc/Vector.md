@@ -7,7 +7,7 @@ A variable-sized container that can hold any type. Indexing is 0-based, and
 vectors are growable. This module has many native functions.
 Verification of modules that use this one uses model functions that are implemented
 directly in Boogie. The specification language has built-in functions operations such
-as <code>singleton_vector</code>. There are some helper functions defined here for specifications in other
+as <code>vec</code>. There are some helper functions defined here for specifications in other
 modules as well.
 
 >Note: We did not verify most of the
@@ -499,7 +499,7 @@ Aborts if <code>i</code> is out of bounds.
 Split a vector into sub-vectors of size sub_len,
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copy</b>, drop, store&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;
 </code></pre>
 
 
@@ -557,15 +557,14 @@ Split a vector into sub-vectors of size sub_len,
 
 ### Helper Functions
 
-
 Check whether a vector contains an element.
 
 
 <a name="0x1_Vector_spec_contains"></a>
 
 
-<pre><code><b>define</b> <a href="Vector.md#0x1_Vector_spec_contains">spec_contains</a>&lt;Element&gt;(v: vector&lt;Element&gt;, e: Element): bool {
-    <b>exists</b> x in v: x == e
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_spec_contains">spec_contains</a>&lt;Element&gt;(v: vector&lt;Element&gt;, e: Element): bool {
+   <b>exists</b> x in v: x == e
 }
 </code></pre>
 
@@ -576,10 +575,10 @@ Check if <code>v1</code> is equal to the result of adding <code>e</code> at the 
 <a name="0x1_Vector_eq_push_back"></a>
 
 
-<pre><code><b>define</b> <a href="Vector.md#0x1_Vector_eq_push_back">eq_push_back</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;, e: Element): bool {
-    len(v1) == len(v2) + 1 &&
-    v1[len(v1)-1] == e &&
-    v1[0..len(v1)-1] == v2[0..len(v2)]
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_eq_push_back">eq_push_back</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;, e: Element): bool {
+   len(v1) == len(v2) + 1 &&
+   v1[len(v1)-1] == e &&
+   v1[0..len(v1)-1] == v2[0..len(v2)]
 }
 </code></pre>
 
@@ -590,10 +589,10 @@ Check if <code>v</code> is equal to the result of concatenating <code>v1</code> 
 <a name="0x1_Vector_eq_append"></a>
 
 
-<pre><code><b>define</b> <a href="Vector.md#0x1_Vector_eq_append">eq_append</a>&lt;Element&gt;(v: vector&lt;Element&gt;, v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
-    len(v) == len(v1) + len(v2) &&
-    v[0..len(v1)] == v1 &&
-    v[len(v1)..len(v)] == v2
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_eq_append">eq_append</a>&lt;Element&gt;(v: vector&lt;Element&gt;, v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
+   len(v) == len(v1) + len(v2) &&
+   v[0..len(v1)] == v1 &&
+   v[len(v1)..len(v)] == v2
 }
 </code></pre>
 
@@ -604,9 +603,9 @@ Check <code>v1</code> is equal to the result of removing the first element of <c
 <a name="0x1_Vector_eq_pop_front"></a>
 
 
-<pre><code><b>define</b> <a href="Vector.md#0x1_Vector_eq_pop_front">eq_pop_front</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
-    len(v1) + 1 == len(v2) &&
-    v1 == v2[1..len(v2)]
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_eq_pop_front">eq_pop_front</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
+   len(v1) + 1 == len(v2) &&
+   v1 == v2[1..len(v2)]
 }
 </code></pre>
 
@@ -617,10 +616,10 @@ Check that <code>v1</code> is equal to the result of removing the element at ind
 <a name="0x1_Vector_eq_remove_elem_at_index"></a>
 
 
-<pre><code><b>define</b> <a href="Vector.md#0x1_Vector_eq_remove_elem_at_index">eq_remove_elem_at_index</a>&lt;Element&gt;(i: u64, v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
-    len(v1) + 1 == len(v2) &&
-    v1[0..i] == v2[0..i] &&
-    v1[i..len(v1)] == v2[i + 1..len(v2)]
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_eq_remove_elem_at_index">eq_remove_elem_at_index</a>&lt;Element&gt;(i: u64, v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
+   len(v1) + 1 == len(v2) &&
+   v1[0..i] == v2[0..i] &&
+   v1[i..len(v1)] == v2[i + 1..len(v2)]
 }
 </code></pre>
 
@@ -638,7 +637,7 @@ Check that <code>v1</code> is equal to the result of removing the element at ind
 
 
 <pre><code><b>aborts_if</b> <b>false</b>;
-<b>ensures</b> result == <a href="Vector.md#0x1_Vector_spec_singleton">spec_singleton</a>(e);
+<b>ensures</b> result == vec(e);
 </code></pre>
 
 
@@ -647,8 +646,8 @@ Check that <code>v1</code> is equal to the result of removing the element at ind
 <a name="0x1_Vector_spec_singleton"></a>
 
 
-<pre><code><b>define</b> <a href="Vector.md#0x1_Vector_spec_singleton">spec_singleton</a>&lt;Element&gt;(e: Element): vector&lt;Element&gt; {
-    singleton_vector(e)
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_spec_singleton">spec_singleton</a>&lt;Element&gt;(e: Element): vector&lt;Element&gt; {
+   vec(e)
 }
 </code></pre>
 
@@ -771,7 +770,7 @@ Check that <code>v1</code> is equal to the result of removing the element at ind
 ### Function `split`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_split">split</a>&lt;Element: <b>copy</b>, drop, store&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;
 </code></pre>
 
 

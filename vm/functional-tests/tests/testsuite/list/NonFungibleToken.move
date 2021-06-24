@@ -5,7 +5,8 @@
 
 //! new-transaction
 //! sender: sys
-module SortedLinkedList {
+address sys = {{sys}};
+module sys::SortedLinkedList {
     use 0x1::Compare;
     use 0x1::BCS;
     use 0x1::Signer;
@@ -254,8 +255,10 @@ module SortedLinkedList {
 // key is the token_id(:vector<u8>), stored in a sorted linked list
 // value is a struct 'NonFungibleToken', contains the non fungible token
 // the account address of each list node is actually the owner of the token
-module NonFungibleToken {
-    use {{sys}}::SortedLinkedList;
+address sys = {{sys}};
+address nftservice = {{nftservice}};
+module nftservice::NonFungibleToken {
+    use sys::SortedLinkedList;
     use 0x1::Option::{Self, Option};
     use 0x1::Signer;
     use 0x1::Vector;
@@ -283,7 +286,7 @@ module NonFungibleToken {
 
     public fun initialize<Token: store>(account: &signer, limited: bool, total: u64) {
         let sender = Signer::address_of(account);
-        assert(sender == {{nftservice}}, 8000);
+        assert(sender == @nftservice, 8000);
 
         let limited_meta = LimitedMeta {
             limited: limited,
@@ -348,7 +351,10 @@ module NonFungibleToken {
 
 //! new-transaction
 //! sender: nftservice
-module TestNft {
+address sys = {{sys}};
+address nftservice = {{nftservice}};
+
+module nftservice::TestNft {
     struct TestNft has copy, drop, store {}
     public fun new_test_nft(): TestNft {
         TestNft{}
@@ -359,9 +365,12 @@ module TestNft {
 //! new-transaction
 //! sender: alice
 // sample for moving Nft into another resource
-module MoveNft {
-    use {{nftservice}}::NonFungibleToken::{Self, NonFungibleToken};
-    use {{nftservice}}::TestNft::TestNft;
+address alice = {{alice}};
+address sys = {{sys}};
+address nftservice = {{nftservice}};
+module alice::MoveNft {
+    use nftservice::NonFungibleToken::{Self, NonFungibleToken};
+    use nftservice::TestNft::TestNft;
     use 0x1::Signer;
 
     struct MoveNft has key, store {
@@ -383,9 +392,11 @@ module MoveNft {
 
 //! new-transaction
 //! sender: nftservice
+address sys = {{sys}};
+address nftservice = {{nftservice}};
 script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
+use nftservice::NonFungibleToken;
+use nftservice::TestNft::TestNft;
 fun main(account: signer) {
     NonFungibleToken::initialize<TestNft>(&account, false, 0);
 }
@@ -395,15 +406,17 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
+address sys = {{sys}};
+address nftservice = {{nftservice}};
 script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::{Self, TestNft};
+use nftservice::NonFungibleToken;
+use nftservice::TestNft::{Self, TestNft};
 use 0x1::Hash;
 fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
     let token = TestNft::new_test_nft();
-    NonFungibleToken::preemptive<TestNft>(&account, {{nftservice}}, token_id, token);
+    NonFungibleToken::preemptive<TestNft>(&account, @nftservice, token_id, token);
 }
 }
 
@@ -411,8 +424,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
+address alice={{alice}};
 script {
-use {{alice}}::MoveNft;
+use alice::MoveNft;
 fun main(account: signer) {
     MoveNft::move_nft(&account);
 }
@@ -422,9 +436,12 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: bob
+address sys = {{sys}};
+address nftservice = {{nftservice}};
+
 script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
+use nftservice::NonFungibleToken;
+use nftservice::TestNft::TestNft;
 fun main(account: signer) {
     NonFungibleToken::accept_token<TestNft>(&account);
 }
@@ -434,14 +451,16 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
+address nftservice = {{nftservice}};
+address bob = {{bob}};
 script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
+use nftservice::NonFungibleToken;
+use nftservice::TestNft::TestNft;
 use 0x1::Hash;
 fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
-    NonFungibleToken::safe_transfer<TestNft>(&account, {{nftservice}}, token_id, {{bob}});
+    NonFungibleToken::safe_transfer<TestNft>(&account, @nftservice, token_id, @bob);
 }
 }
 
@@ -449,8 +468,9 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
+address alice = {{alice}};
 script {
-use {{alice}}::MoveNft;
+use alice::MoveNft;
 fun main(account: signer) {
     MoveNft::move_back_nft(&account);
 }
@@ -460,14 +480,16 @@ fun main(account: signer) {
 
 //! new-transaction
 //! sender: alice
+address nftservice = {{nftservice}};
+address bob = {{bob}};
 script {
-use {{nftservice}}::NonFungibleToken;
-use {{nftservice}}::TestNft::TestNft;
+use nftservice::NonFungibleToken;
+use nftservice::TestNft::TestNft;
 use 0x1::Hash;
 fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
-    NonFungibleToken::safe_transfer<TestNft>(&account, {{nftservice}}, token_id, {{bob}});
+    NonFungibleToken::safe_transfer<TestNft>(&account, @nftservice, token_id, @bob);
 }
 }
 

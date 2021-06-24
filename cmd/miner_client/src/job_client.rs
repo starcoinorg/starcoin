@@ -84,8 +84,8 @@ impl JobRpcClient {
     }
 
     fn spawn<F>(fut: F)
-        where
-            F: Future + Send + 'static,
+    where
+        F: Future + Send + 'static,
     {
         // if we use async spawn, RpcClient will panic when try reconnection.
         // refactor this after RpcClient refactor to async.
@@ -101,13 +101,10 @@ impl JobClient for JobRpcClient {
         Ok(self.forward_mint_block_stream())
     }
 
-    fn submit_seal(
-        &self,
-        seal: SealEvent,
-    ) -> Result<()> {
+    fn submit_seal(&self, seal: SealEvent) -> Result<()> {
         let extra = match &seal.extra {
-            None => { BlockHeaderExtra::default() }
-            Some(extra) => { extra.extra }
+            None => BlockHeaderExtra::default(),
+            Some(extra) => extra.extra,
         };
         self.seal_sender
             .unbounded_send((seal.minting_blob, seal.nonce, extra))?;

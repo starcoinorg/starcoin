@@ -1,5 +1,6 @@
-use crate::{BlockData, BlockWithMetadata};
+use crate::{BlockData, BlockSimplified, BlockWithMetadata, EventData};
 use anyhow::Result;
+use elasticsearch::http::response::Response;
 use elasticsearch::indices::{
     IndicesCreateParts, IndicesExistsParts, IndicesGetMappingParts, IndicesPutMappingParts,
 };
@@ -16,14 +17,18 @@ use tokio::sync::RwLock;
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
     pub block_index: String,
+    pub uncle_block_index: String,
     pub txn_info_index: String,
+    pub txn_event_index: String,
 }
 
 impl IndexConfig {
     pub fn new_with_prefix(prefix: impl AsRef<str>) -> Self {
         Self {
             block_index: format!("{}.blocks", prefix.as_ref()),
+            uncle_block_index: format!("{}.uncle_blocks", prefix.as_ref()),
             txn_info_index: format!("{}.txn_infos", prefix.as_ref()),
+            txn_event_index: format!("{}.txn_events", prefix.as_ref()),
         }
     }
 }
@@ -32,7 +37,9 @@ impl Default for IndexConfig {
     fn default() -> Self {
         Self {
             block_index: "blocks".to_string(),
+            uncle_block_index: "uncle_blocks".to_string(),
             txn_info_index: "txn_infos".to_string(),
+            txn_event_index: "txn_events".to_string(),
         }
     }
 }
@@ -86,15 +93,25 @@ impl EsSinker {
     /// init es indices
     pub async fn init_indices(&self) -> Result<()> {
         let block_index = self.config.block_index.as_str();
+        let uncle_block_index = self.config.uncle_block_index.as_str();
         let txn_info_index = self.config.txn_info_index.as_str();
+        let txn_event_index = self.config.txn_event_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
+        self.create_index_if_not_exists(uncle_block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
-        let tip = self._get_local_tip_header().await?;
-        self.state.write().await.tip = tip;
+        self.create_index_if_not_exists(txn_event_index).await?;
+        let tip = self.get_remote_tip_header().await?;
+        self.state.write().await.tip = tip.clone();
+        if let Some(tip_info) = tip {
+            info!(
+                "remote tips: {}, {}",
+                tip_info.block_hash, tip_info.block_number
+            );
+        }
         Ok(())
     }
 
-    async fn update_local_tip_header(
+    pub async fn update_remote_tip_header(
         &self,
         block_hash: HashValue,
         block_number: u64,
@@ -119,8 +136,21 @@ impl EsSinker {
             .await?;
         let resp = resp.error_for_status_code()?;
         let data = resp.json().await?;
-        self.state.write().await.tip = Some(tip_info);
+        // self.state.write().await.tip = Some(tip_info);
         Ok(data)
+    }
+
+    pub async fn update_local_tip_header(
+        &self,
+        block_hash: HashValue,
+        block_number: u64,
+    ) -> Result<()> {
+        let tip_info = LocalTipInfo {
+            block_number,
+            block_hash,
+        };
+        self.state.write().await.tip = Some(tip_info);
+        Ok(())
     }
 
     pub async fn get_local_tip_header(&self) -> Result<Option<LocalTipInfo>> {
@@ -128,7 +158,7 @@ impl EsSinker {
         Ok(tip)
     }
 
-    async fn _get_local_tip_header(&self) -> Result<Option<LocalTipInfo>> {
+    async fn get_remote_tip_header(&self) -> Result<Option<LocalTipInfo>> {
         let block_index = self.config.block_index.as_str();
         let resp_data: Value = self
             .es
@@ -169,6 +199,8 @@ impl EsSinker {
 
         // first, rollback tip header
         let rollback_to = (parent_hash, tip_header.block_number - 1);
+        self.update_remote_tip_header(rollback_to.0, rollback_to.1)
+            .await?;
         self.update_local_tip_header(rollback_to.0, rollback_to.1)
             .await?;
 
@@ -228,72 +260,68 @@ impl EsSinker {
     }
 
     pub async fn repair_block(&self, block: BlockData) -> Result<()> {
-        let BlockData { block, txns_data } = block;
-
-        let block_index = self.config.block_index.as_str();
-        let txn_info_index = self.config.txn_info_index.as_str();
-        let mut bulk_operations = BulkOperations::new();
-        bulk_operations.push(
-            BulkOperation::index(BlockWithMetadata {
-                block: block.clone(),
-                metadata: txns_data[0].block_metadata.clone(),
-            })
-            .id(block.header.block_hash.to_string())
-            .index(block_index),
-        )?;
-
-        for txn_data in txns_data {
-            bulk_operations.push(
-                BulkOperation::index(txn_data.clone())
-                    .id(txn_data.info.transaction_hash.to_string())
-                    .index(txn_info_index),
-            )?;
-        }
-
-        self.bulk(bulk_operations).await?;
-        Ok(())
-    }
-
-    /// write new block into es.
-    /// Caller need to make sure the block with right block number.
-    pub async fn write_next_block(&self, block: BlockData) -> Result<()> {
-        let BlockData { block, txns_data } = block;
-
-        // TODO: check against old tip info
-        let tip_info = LocalTipInfo {
-            block_hash: block.header.block_hash,
-            block_number: block.header.number.0,
-        };
-
-        let block_index = self.config.block_index.as_str();
-        let txn_info_index = self.config.txn_info_index.as_str();
-        let mut bulk_operations = BulkOperations::new();
-        bulk_operations.push(
-            BulkOperation::index(BlockWithMetadata {
-                block: block.clone(),
-                metadata: txns_data[0].block_metadata.clone(),
-            })
-            .id(block.header.block_hash.to_string())
-            .index(block_index),
-        )?;
-
-        for txn_data in txns_data {
-            bulk_operations.push(
-                BulkOperation::index(txn_data.clone())
-                    .id(txn_data.info.transaction_hash.to_string())
-                    .index(txn_info_index),
-            )?;
-        }
-
-        self.bulk(bulk_operations).await?;
-
-        self.update_local_tip_header(tip_info.block_hash, tip_info.block_number)
-            .await?;
+        self.bulk(vec![block]).await?;
         Ok(())
     }
 
     // bulk insert data into es.
-    async fn bulk(&self, bulk_operations: BulkOperations) -> anyhow::Result<()> {
+    pub async fn bulk(&self, blocks: Vec<BlockData>) -> anyhow::Result<()> {
+        if blocks.is_empty() {
+            return Ok(());
+        }
+        let mut bulk_operations = BulkOperations::new();
+        let block_index = self.config.block_index.as_str();
+        let txn_info_index = self.config.txn_info_index.as_str();
+        let uncle_index = self.config.uncle_block_index.as_str();
+        let event_index = self.config.txn_event_index.as_str();
+
+        for blockdata in blocks {
+            let BlockData { block, txns_data } = blockdata;
+            bulk_operations.push(
+                BulkOperation::index(BlockWithMetadata {
+                    block: block.clone(),
+                    metadata: txns_data[0].block_metadata.clone(),
+                })
+                .id(block.header.block_hash.to_string())
+                .index(block_index),
+            )?;
+            for txn_data in txns_data {
+                bulk_operations.push(
+                    BulkOperation::index(txn_data.clone())
+                        .id(txn_data.info.transaction_hash.to_string())
+                        .index(txn_info_index),
+                )?;
+                if !txn_data.events.is_empty() {
+                    // event_vec.extend_from_slice(txn_data.events.as_slice());
+                    for event in txn_data.events {
+                        let mut event_data = EventData::from(event.clone());
+                        event_data.timestamp = txn_data.timestamp;
+                        if let Some(tag_name) = event_data.clone().tag_name {
+                            let id = format!("{}_{}", tag_name, event.event_seq_number);
+                            bulk_operations
+                                .push(BulkOperation::index(event_data).id(id).index(event_index))?;
+                        } else {
+                            warn!("other event: {}", event_data.type_tag);
+                        }
+                    }
+                }
+            }
+
+            //add uncle
+            if !block.uncles.is_empty() {
+                for uncle in block.uncles {
+                    bulk_operations.push(
+                        BulkOperation::index(BlockSimplified {
+                            header: uncle.clone(),
+                            uncle_block_number: block.header.number,
+                        })
+                        .id(uncle.block_hash.to_string())
+                        .index(uncle_index),
+                    )?;
+                }
+            }
+        }
+
         let resp = self
             .es
             .bulk(BulkParts::None)
@@ -301,6 +329,39 @@ impl EsSinker {
             .send()
             .await?;
 
+        EsSinker::check_status_code(resp).await
+    }
+
+    // bulk insert data into es.
+    pub async fn bulk_uncle(&self, uncle_blocks: Vec<BlockData>) -> anyhow::Result<()> {
+        if uncle_blocks.is_empty() {
+            return Ok(());
+        }
+        let mut bulk_operations = BulkOperations::new();
+        let block_index = self.config.uncle_block_index.as_str();
+        for blockdata in uncle_blocks {
+            let BlockData { block, txns_data } = blockdata;
+            bulk_operations.push(
+                BulkOperation::index(BlockWithMetadata {
+                    block: block.clone(),
+                    metadata: txns_data[0].block_metadata.clone(),
+                })
+                .id(block.header.block_hash.to_string())
+                .index(block_index),
+            )?;
+        }
+
+        let resp = self
+            .es
+            .bulk(BulkParts::None)
+            .body(vec![bulk_operations])
+            .send()
+            .await?;
+
+        EsSinker::check_status_code(resp).await
+    }
+
+    async fn check_status_code(resp: Response) -> anyhow::Result<()> {
         // check response
         if resp.status_code().is_client_error() || resp.status_code().is_server_error() {
             let exception = resp.exception().await?;
@@ -355,7 +416,7 @@ mod tests {
         };
 
         let _ = sinker
-            .update_local_tip_header(tip_info.block_hash, tip_info.block_number)
+            .update_remote_tip_header(tip_info.block_hash, tip_info.block_number)
             .await
             .unwrap();
 

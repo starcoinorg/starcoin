@@ -145,7 +145,6 @@ impl StratumRpcImpl {
     }
 }
 
-
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct LoginRequest {
     pub login: String,
@@ -156,7 +155,8 @@ pub struct LoginRequest {
 }
 
 impl ServiceRequest for LoginRequest {
-    type Response = futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
+    type Response =
+        futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
 }
 
 impl LoginRequest {
@@ -198,7 +198,7 @@ impl StratumJob {
         if blob.len() != 76 {
             return Err(anyhow::anyhow!("Invalid stratum job"));
         }
-        let mut extra: [u8; 4] = blob[35..39].try_into()?;
+        let extra: [u8; 4] = blob[35..39].try_into()?;
 
         Ok(BlockHeaderExtra::new(extra))
     }
@@ -215,7 +215,7 @@ impl StratumJobResponse {
             id: worker_id_hex.clone(),
             status: "OK".into(),
             job: StratumJob {
-                height: e.block_number,
+                height: 0,
                 id: worker_id_hex,
                 target: difficulty_to_target_hex(e.difficulty),
                 job_id,
@@ -248,11 +248,11 @@ impl StratumRpc for StratumRpcImpl {
                 },
             })
         }
-            .map_err(|e: anyhow::Error| jsonrpc_core::Error {
-                code: ErrorCode::InvalidParams,
-                message: e.to_string(),
-                data: None,
-            });
+        .map_err(|e: anyhow::Error| jsonrpc_core::Error {
+            code: ErrorCode::InvalidParams,
+            message: e.to_string(),
+            data: None,
+        });
         Box::pin(fut.boxed())
     }
 

@@ -35,7 +35,7 @@ The <code><a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a></cod
 fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;
+<pre><code><b>struct</b> <a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt; has key
 </code></pre>
 
 
@@ -95,7 +95,7 @@ Called in genesis. Sets up the needed resources to collect transaction fees from
 publishing a wrapper of the <code>Preburn&lt;TokenType&gt;</code> resource under <code>fee_account</code>
 
 
-<pre><code><b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(account: &signer)
+<pre><code><b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType: store&gt;(account: &signer)
 </code></pre>
 
 
@@ -127,7 +127,7 @@ publishing a wrapper of the <code>Preburn&lt;TokenType&gt;</code> resource under
 Deposit <code>token</code> into the transaction fees bucket
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -157,7 +157,7 @@ If the <code>TokenType</code> is STC, it unpacks the token and preburns the
 underlying fiat.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(account: &signer): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType: store&gt;(account: &signer): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -222,7 +222,7 @@ underlying fiat.
 ### Function `add_txn_fee_token`
 
 
-<pre><code><b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(account: &signer)
+<pre><code><b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType: store&gt;(account: &signer)
 </code></pre>
 
 
@@ -238,7 +238,7 @@ underlying fiat.
 ### Function `pay_fee`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType: store&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -255,7 +255,7 @@ underlying fiat.
 ### Function `distribute_transaction_fees`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(account: &signer): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType: store&gt;(account: &signer): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 

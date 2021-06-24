@@ -32,6 +32,8 @@ module TreasuryWithdrawDaoProposal {
     const ERR_NOT_AUTHORIZED: u64 = 101;
     /// Only receiver can execute TreasuryWithdrawDaoProposal
     const ERR_NEED_RECEIVER_TO_EXECUTE: u64 = 102;
+    /// The withdraw amount of propose is too many.
+    const ERR_TOO_MANY_WITHDRAW_AMOUNT: u64 = 103;
 
     /// Plugin method of the module.
     /// Should be called by token issuer.
@@ -41,7 +43,7 @@ module TreasuryWithdrawDaoProposal {
         move_to(signer, WrappedWithdrawCapability<TokenT> { cap: cap });
     }
 
-    spec fun plugin {
+    spec plugin {
         pragma aborts_if_is_partial = false;
         let sender = Signer::address_of(signer);
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
@@ -55,17 +57,20 @@ module TreasuryWithdrawDaoProposal {
 
     /// Entrypoint for the proposal.
     public fun propose_withdraw<TokenT: copy + drop + store>(signer: &signer, receiver: address, amount: u128, period: u64, exec_delay: u64) {
+        let quorum_votes = Dao::quorum_votes<TokenT>();
+        assert(amount <= quorum_votes,  Errors::invalid_argument(ERR_TOO_MANY_WITHDRAW_AMOUNT));
         Dao::propose<TokenT, WithdrawToken>(
             signer,
             WithdrawToken { receiver, amount, period },
             exec_delay,
         );
     }
-    spec fun propose_withdraw {
+    spec propose_withdraw {
         use 0x1::Timestamp;
         use 0x1::CoreAddresses;
         pragma aborts_if_is_partial = false;
-
+        let quorum_votes = Dao::spec_quorum_votes<TokenT>();
+        aborts_if amount > quorum_votes;
         // copy from Dao::propose spec.
         include Dao::AbortIfDaoConfigNotExist<TokenT>;
         include Dao::AbortIfDaoInfoNotExist<TokenT>;
@@ -92,10 +97,10 @@ module TreasuryWithdrawDaoProposal {
         Treasury::add_linear_withdraw_capability(signer, linear_cap);
     }
 
-    spec fun execute_withdraw_proposal {
+    spec execute_withdraw_proposal {
         use 0x1::Option;
         pragma aborts_if_is_partial = true;
-        let expected_states = singleton_vector(6);
+        let expected_states = vec<u8>(6);
         include Dao::CheckProposalStates<TokenT, WithdrawToken>{expected_states};
         let proposal = global<Dao::Proposal<TokenT, WithdrawToken>>(proposer_address);
         aborts_if Option::is_none(proposal.action);

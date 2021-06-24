@@ -167,7 +167,7 @@ The module for init Genesis
     <a href="PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
         &genesis_account,
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_two_phase">PackageTxnManager::get_strategy_two_phase</a>(),
-        <a href="Option.md#0x1_Option_some">Option::some</a>(0),
+        <a href="Option.md#0x1_Option_some">Option::some</a>(0u64),
     );
     // stc should be initialized after genesis_account's <b>module</b> upgrade strategy set.
     {
@@ -332,7 +332,7 @@ The module for init Genesis
     <a href="PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
         &genesis_account,
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_two_phase">PackageTxnManager::get_strategy_two_phase</a>(),
-        <a href="Option.md#0x1_Option_some">Option::some</a>(0),
+        <a href="Option.md#0x1_Option_some">Option::some</a>(0u64),
     );
     <a href="BlockReward.md#0x1_BlockReward_initialize">BlockReward::initialize</a>(&genesis_account, reward_delay);
 

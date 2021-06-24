@@ -11,14 +11,15 @@ module TransactionTimeout {
       pragma verify;
       pragma aborts_if_is_strict;
 
-      define spec_is_valid_transaction_timestamp(txn_timestamp: u64):bool {
-        if (Block::get_current_block_number() == 0) {
-          txn_timestamp > Timestamp::now_seconds()
-        } else {
-            Timestamp::now_seconds() < txn_timestamp && txn_timestamp <
-            (Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds())
-        }
-      }
+  }
+
+  spec fun spec_is_valid_transaction_timestamp(txn_timestamp: u64):bool {
+    if (Block::get_current_block_number() == 0) {
+      txn_timestamp > Timestamp::now_seconds()
+    } else {
+        Timestamp::now_seconds() < txn_timestamp && txn_timestamp <
+        (Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds())
+    }
   }
 
   /// Check whether the given timestamp is valid for transactions.
@@ -33,7 +34,7 @@ module TransactionTimeout {
     let max_txn_time = current_block_time + timeout;
     current_block_time < txn_timestamp && txn_timestamp < max_txn_time
   }
-  spec fun is_valid_transaction_timestamp {
+  spec is_valid_transaction_timestamp {
     aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     include Timestamp::AbortsIfTimestampNotExists;

@@ -35,7 +35,7 @@
 A wrapper around value <code>offered</code> that can be claimed by the address stored in <code>for</code> when after lock time.
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt;
+<pre><code><b>struct</b> <a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt; has key
 </code></pre>
 
 
@@ -101,7 +101,7 @@ Publish a value of type <code>Offered</code> under the sender's account. The val
 either the <code>for</code> address or the transaction sender.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_create">create</a>&lt;Offered&gt;(account: &signer, offered: Offered, for: address, lock_period: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_create">create</a>&lt;Offered: store&gt;(account: &signer, offered: Offered, for: address, lock_period: u64)
 </code></pre>
 
 
@@ -131,7 +131,7 @@ publisher <code>offer_address</code>, and now >= time_lock
 Also fails if no such value exists.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(account: &signer, offer_address: address): Offered
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered: store&gt;(account: &signer, offer_address: address): Offered
 </code></pre>
 
 
@@ -161,7 +161,7 @@ Also fails if no such value exists.
 Returns true if an offer of type <code>Offered</code> exists at <code>offer_address</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_exists_at">exists_at</a>&lt;Offered&gt;(offer_address: address): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_exists_at">exists_at</a>&lt;Offered: store&gt;(offer_address: address): bool
 </code></pre>
 
 
@@ -187,7 +187,7 @@ Returns the address of the <code>Offered</code> type stored at <code>offer_addre
 Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_address_of">address_of</a>&lt;Offered&gt;(offer_address: address): address
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_address_of">address_of</a>&lt;Offered: store&gt;(offer_address: address): address
 </code></pre>
 
 
@@ -212,7 +212,7 @@ Fails if no such <code><a href="Offer.md#0x1_Offer">Offer</a></code> exists.
 Take Offer and put to signer's Collection<Offered>.
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: signer, offer_address: address)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered: store&gt;(signer: signer, offer_address: address)
 </code></pre>
 
 
@@ -251,7 +251,7 @@ Take Offer and put to signer's Collection<Offered>.
 ### Function `create`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_create">create</a>&lt;Offered&gt;(account: &signer, offered: Offered, for: address, lock_period: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_create">create</a>&lt;Offered: store&gt;(account: &signer, offered: Offered, for: address, lock_period: u64)
 </code></pre>
 
 
@@ -269,7 +269,7 @@ Take Offer and put to signer's Collection<Offered>.
 ### Function `redeem`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered&gt;(account: &signer, offer_address: address): Offered
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_redeem">redeem</a>&lt;Offered: store&gt;(account: &signer, offer_address: address): Offered
 </code></pre>
 
 
@@ -288,7 +288,7 @@ Take Offer and put to signer's Collection<Offered>.
 ### Function `exists_at`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_exists_at">exists_at</a>&lt;Offered&gt;(offer_address: address): bool
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_exists_at">exists_at</a>&lt;Offered: store&gt;(offer_address: address): bool
 </code></pre>
 
 
@@ -304,7 +304,7 @@ Take Offer and put to signer's Collection<Offered>.
 ### Function `address_of`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_address_of">address_of</a>&lt;Offered&gt;(offer_address: address): address
+<pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_address_of">address_of</a>&lt;Offered: store&gt;(offer_address: address): address
 </code></pre>
 
 
@@ -320,7 +320,7 @@ Take Offer and put to signer's Collection<Offered>.
 ### Function `take_offer`
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered&gt;(signer: signer, offer_address: address)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Offer.md#0x1_Offer_take_offer">take_offer</a>&lt;Offered: store&gt;(signer: signer, offer_address: address)
 </code></pre>
 
 

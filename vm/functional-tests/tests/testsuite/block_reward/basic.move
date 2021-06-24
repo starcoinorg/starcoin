@@ -1,6 +1,7 @@
 //! account: alice
 
 //! sender: genesis
+address alice = {{alice}};
 script {
     use 0x1::BlockReward;
     use 0x1::Vector;
@@ -8,7 +9,7 @@ script {
     fun process_block_reward(account: signer) {
         let current_number = 1;
         let current_reward = 1000;
-        let current_author = {{alice}};
+        let current_author = @alice;
         let auth_key_vec = Vector::empty<u8>();
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
     }
@@ -17,6 +18,8 @@ script {
 
 //! new-transaction
 //! sender: alice
+
+address alice = {{alice}};
 script {
     use 0x1::BlockReward;
     use 0x1::Vector;
@@ -24,7 +27,7 @@ script {
     fun process_block_reward(account: signer) {
         let current_number = 1;
         let current_reward = 1000;
-        let current_author = {{alice}};
+        let current_author = @alice;
         let auth_key_vec = Vector::empty<u8>();
         // failed with ENOT_GENESIS_ACCOUNT
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
@@ -34,6 +37,8 @@ script {
 
 //! new-transaction
 //! sender: genesis
+
+address alice = {{alice}};
 script {
     use 0x1::BlockReward;
     use 0x1::Vector;
@@ -41,7 +46,7 @@ script {
     fun process_block_reward(account: signer) {
         let current_number = 0; // if current_number == 0 then do_nothing
         let current_reward = 1000;
-        let current_author = {{alice}};
+        let current_author = @alice;
         let auth_key_vec = Vector::empty<u8>();
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
     }
@@ -50,6 +55,8 @@ script {
 
 //! new-transaction
 //! sender: genesis
+
+address alice = {{alice}};
 script {
     use 0x1::BlockReward;
     use 0x1::Vector;
@@ -57,7 +64,7 @@ script {
     fun process_block_reward(account: signer) {
         let current_number = 1; //failed with ECURRENT_NUMBER_IS_WRONG
         let current_reward = 1000;
-        let current_author = {{alice}};
+        let current_author = @alice;
         let auth_key_vec = Vector::empty<u8>();
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
     }
@@ -94,45 +101,10 @@ script {
         let current_number = 3;
         let current_reward = 1000;
 
-        let current_author = 0x2;
-        let auth_key_vec = x""; // failed with EAUTHOR_AUTH_KEY_IS_EMPTY
+        let current_author = @0x2;
+        // auth_key_vec argument is deprecated in stdlib v5
+        let auth_key_vec = x"";
 
-        BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
-    }
-}
-// check: "Keep(ABORTED { code: 25863"
-
-//! new-transaction
-//! sender: genesis
-// author account doesn't exist, process_block_reward() will create the account
-script {
-    use 0x1::BlockReward;
-    use 0x1::Authenticator;
-
-    fun process_block_reward(account: signer) {
-        let current_number = 3;
-        let current_reward = 1000;
-
-        let auth_key_vec = x"5e99e2e5fe070777cbdcf576c29ee715bf81dda7705a276ae07e93781fc1a3c0";
-        let _expected_address = Authenticator::derived_address(copy auth_key_vec); //0xbf81dda7705a276ae07e93781fc1a3c0
-        let current_author = 0x2; //wrong address
-        // EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH
-        BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
-    }
-}
-// check: "Keep(ABORTED { code: 26887"
-
-//! new-transaction
-//! sender: genesis
-script {
-    use 0x1::BlockReward;
-    use 0x1::Vector;
-
-    fun process_block_reward(account: signer) {
-        let current_number = 3;
-        let current_reward = 0;
-        let current_author = {{alice}};
-        let auth_key_vec = Vector::empty<u8>();
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
     }
 }
@@ -140,14 +112,16 @@ script {
 
 //! new-transaction
 //! sender: genesis
+
+address alice = {{alice}};
 script {
     use 0x1::BlockReward;
     use 0x1::Vector;
 
     fun process_block_reward(account: signer) {
         let current_number = 4;
-        let current_reward = 1000;
-        let current_author = {{alice}};
+        let current_reward = 0;
+        let current_author = @alice;
         let auth_key_vec = Vector::empty<u8>();
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
     }
@@ -156,6 +130,7 @@ script {
 
 //! new-transaction
 //! sender: genesis
+address alice = {{alice}};
 script {
     use 0x1::BlockReward;
     use 0x1::Vector;
@@ -163,7 +138,24 @@ script {
     fun process_block_reward(account: signer) {
         let current_number = 5;
         let current_reward = 1000;
-        let current_author = {{alice}};
+        let current_author = @alice;
+        let auth_key_vec = Vector::empty<u8>();
+        BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
+    }
+}
+// check: EXECUTED
+
+//! new-transaction
+//! sender: genesis
+address alice = {{alice}};
+script {
+    use 0x1::BlockReward;
+    use 0x1::Vector;
+
+    fun process_block_reward(account: signer) {
+        let current_number = 6;
+        let current_reward = 1000;
+        let current_author = @alice;
         let auth_key_vec = Vector::empty<u8>();
         BlockReward::process_block_reward(&account, current_number, current_reward, current_author, auth_key_vec, 0x1::Token::zero());
     }

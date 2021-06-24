@@ -32,7 +32,7 @@ Onchain configuration for timeout setting of transaction.
 config structs.
 
 
-<pre><code><b>struct</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">TransactionTimeoutConfig</a>
+<pre><code><b>struct</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">TransactionTimeoutConfig</a> has <b>copy</b>, drop, store
 </code></pre>
 
 

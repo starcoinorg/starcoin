@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::time::Duration;
 use structopt::StructOpt;
 
+/// Unlock the account
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "unlock")]
 pub struct UnlockOpt {
@@ -34,7 +35,7 @@ impl CommandAction for UnlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = UnlockOpt;
-    type ReturnItem = StringView;
+    type ReturnItem = AccountInfo;
 
     fn run(
         &self,
@@ -42,13 +43,18 @@ impl CommandAction for UnlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt: &UnlockOpt = ctx.opt();
-
-        let account = ctx.state().get_account_or_default(opt.account_address)?;
+        let account_address = if let Some(account_address) = opt.account_address {
+            account_address
+        } else {
+            ctx.state().default_account()?.address
+        };
 
         let duration = Duration::from_secs(opt.duration as u64);
-        client.account_unlock(account.address, opt.password.clone(), duration)?;
-        Ok(StringView {
-            result: account.address.to_string(),
-        })
+        let account = client.account_unlock(account_address, opt.password.clone(), duration)?;
+        Ok(account)
+    }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
     }
 }

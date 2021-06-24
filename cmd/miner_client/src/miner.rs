@@ -6,22 +6,18 @@ use anyhow::Result;
 use futures::channel::mpsc;
 use futures::channel::mpsc::unbounded;
 use futures::executor::block_on;
-use futures::stream::StreamExt;
 use futures::SinkExt;
 use logger::prelude::*;
 use parking_lot::Mutex;
 use starcoin_config::MinerClientConfig;
-use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::genesis_config::ConsensusStrategy;
-use starcoin_types::system_events::MintBlockEvent;
-use starcoin_types::U256;
-use std::thread;
 use starcoin_miner_client_api::Solver;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_types::system_events::MintBlockEvent;
+use std::thread;
 
 pub struct MinerClient<C: JobClient> {
-    nonce_rx: Option<mpsc::UnboundedReceiver<(SealEvent)>>,
-    nonce_tx: mpsc::UnboundedSender<(SealEvent)>,
+    nonce_rx: Option<mpsc::UnboundedReceiver<SealEvent>>,
+    nonce_tx: mpsc::UnboundedSender<SealEvent>,
     job_client: C,
     num_seals_found: Mutex<u32>,
     solver: Box<dyn Solver>,
@@ -41,7 +37,6 @@ impl<C: JobClient> MinerClient<C> {
         })
     }
     fn submit_seal(&self, seal: SealEvent) {
-
         if let Err(err) = self.job_client.submit_seal(seal) {
             error!("Submit seal to failed: {}", err);
             return;
@@ -80,7 +75,6 @@ pub struct MinerClientService<C: JobClient> {
 
 impl<C: JobClient> ActorService for MinerClientService<C> {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-
         let jobs = self.inner.job_client.subscribe()?;
         ctx.add_stream(jobs);
         let seals = self
@@ -109,14 +103,12 @@ impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> 
         event: MintBlockEvent,
         _ctx: &mut ServiceContext<MinerClientService<C>>,
     ) {
-        self.inner
-            .start_mint_work(event);
+        self.inner.start_mint_work(event);
     }
 }
 
 impl<C: JobClient> EventHandler<Self, SealEvent> for MinerClientService<C> {
     fn handle_event(&mut self, event: SealEvent, _ctx: &mut ServiceContext<MinerClientService<C>>) {
-        self.inner
-            .submit_seal(event)
+        self.inner.submit_seal(event)
     }
 }

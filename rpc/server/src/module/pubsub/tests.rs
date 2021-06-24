@@ -24,7 +24,6 @@ use starcoin_storage::BlockStore;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::system_events::NewHeadBlock;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, U256};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
@@ -48,7 +47,6 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let txn = {
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             0,
             10000,
             config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
@@ -166,7 +164,6 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let account = AccountInfo::random();
         let txn = starcoin_executor::build_transfer_from_association(
             account.address,
-            Some(account.public_key.authentication_key()),
             0,
             10000,
             DEFAULT_EXPIRATION_TIME,

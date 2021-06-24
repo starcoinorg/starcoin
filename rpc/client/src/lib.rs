@@ -279,7 +279,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn set_default_account(&self, addr: AccountAddress) -> anyhow::Result<Option<AccountInfo>> {
+    pub fn set_default_account(&self, addr: AccountAddress) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| inner.account_client.set_default_account(addr))
             .map_err(map_err)
     }
@@ -344,7 +344,7 @@ impl RpcClient {
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| {
             inner
                 .account_client
@@ -353,7 +353,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<()> {
+    pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| inner.account_client.lock(address))
             .map_err(map_err)
     }
@@ -362,7 +362,7 @@ impl RpcClient {
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| {
             inner
                 .account_client
@@ -402,6 +402,15 @@ impl RpcClient {
         address: AccountAddress,
     ) -> anyhow::Result<Vec<TokenCode>> {
         self.call_rpc_blocking(|inner| inner.account_client.accepted_tokens(address))
+            .map_err(map_err)
+    }
+
+    pub fn account_remove(
+        &self,
+        address: AccountAddress,
+        password: Option<String>,
+    ) -> anyhow::Result<AccountInfo> {
+        self.call_rpc_blocking(|inner| inner.account_client.remove(address, password))
             .map_err(map_err)
     }
 

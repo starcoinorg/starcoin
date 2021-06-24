@@ -1,4 +1,3 @@
-use crate::dev::sign_txn_helper::{sign_txn_by_rpc_client, sign_txn_with_account_by_rpc_client};
 use crate::CliState;
 use anyhow::{format_err, Result};
 use starcoin_config::NodeConfig;
@@ -33,6 +32,54 @@ use std::sync::Arc;
 use std::{thread::sleep, time::Duration};
 use test_helper::executor::compile_modules_with_address;
 use test_helper::run_node_by_config;
+
+pub fn sign_txn_with_account_by_rpc_client(
+    cli_state: &CliState,
+    addr: AccountAddress,
+    max_gas_amount: u64,
+    gas_price: u64,
+    expiration_time: u64,
+    payload: TransactionPayload,
+) -> Result<SignedUserTransaction> {
+    sign_txn_by_rpc_client(
+        cli_state,
+        max_gas_amount,
+        gas_price,
+        expiration_time,
+        payload,
+        Some(addr),
+    )
+}
+
+pub fn sign_txn_by_rpc_client(
+    cli_state: &CliState,
+    max_gas_amount: u64,
+    gas_price: u64,
+    expiration_time: u64,
+    payload: TransactionPayload,
+    account_address: Option<AccountAddress>,
+) -> Result<SignedUserTransaction> {
+    let account = cli_state.get_account_or_default(account_address)?;
+    let client = cli_state.client();
+    let node_info = client.node_info()?;
+    let chain_state_reader = RemoteStateReader::new(client)?;
+    let account_state_reader = AccountStateReader::new(&chain_state_reader);
+    let account_resource = account_state_reader
+        .get_account_resource(account.address())?
+        .ok_or_else(|| format_err!("account {:?} must exist on chain.", account.address()))?;
+    let expiration_time = expiration_time + node_info.now_seconds;
+    let raw_txn = RawUserTransaction::new_with_default_gas_token(
+        account.address,
+        account_resource.sequence_number(),
+        payload,
+        max_gas_amount,
+        gas_price,
+        expiration_time,
+        cli_state.net().chain_id(),
+    );
+
+    client.account_sign_txn(raw_txn)
+}
 
 pub fn _sign_txn_with_association_account_by_rpc_client(
     cli_state: &CliState,
@@ -112,7 +159,6 @@ fn create_default_account(
     let transfer_raw_txn = starcoin_executor::build_transfer_txn(
         association_address(),
         default_account.address,
-        Some(default_account.public_key.authentication_key()),
         seq_num,
         transfer_amount,
         1,
@@ -162,7 +208,7 @@ fn test_upgrade_module() {
 
     // 1. proposal
     let test_upgrade_module_source = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }
@@ -450,7 +496,7 @@ fn test_only_new_module() {
 
     // 3. apply new module
     let test_upgrade_module_source_1 = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }
@@ -487,7 +533,7 @@ fn test_only_new_module() {
 
     // 4. 更新module
     let test_upgrade_module_source_2 = r#"
-        module TestModule {
+        module {{sender}}::TestModule {
             public fun is_test(): bool {
                 true
             }

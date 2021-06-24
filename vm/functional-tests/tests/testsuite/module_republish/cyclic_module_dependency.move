@@ -2,16 +2,18 @@
 //! account: bob, 90000 0x1::STC::STC
 
 //! sender: alice
-
-module N {
+address alice = {{alice}};
+address bob = {{bob}};
+module alice::N {
     public fun bar() {}
 }
 
 //! new-transaction
 //! sender: bob
-
-module M {
-    use {{alice}}::N;
+address alice = {{alice}};
+address bob = {{bob}};
+module bob::M {
+    use alice::N;
     public fun foo() {
         N::bar()
     }
@@ -21,9 +23,10 @@ module M {
 
 //! new-transaction
 //! sender: alice
-
-module N {
-    use {{bob}}::M;
+address alice = {{alice}};
+address bob = {{bob}};
+module alice::N {
+    use bob::M;
     public fun bar() {
       M::foo()
     }

@@ -19,3 +19,8 @@ Version 3
 Version 4
     
     - remove deprecated methods
+
+Version 5
+    
+    - Add max amount limit to treasury withdraw propose.
+    - New authentication_key check strategy, create account do not need authentication_key. Provider Account::create_account_with_address, and TransactionManager::epilogue_v2

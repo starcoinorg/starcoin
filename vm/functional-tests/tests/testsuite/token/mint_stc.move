@@ -4,6 +4,7 @@
 
 // Minting by genesis
 //! sender: genesis
+address alice = {{alice}};
 script {
 use 0x1::STC::{STC};
 use 0x1::Token;
@@ -16,7 +17,7 @@ fun main(account: signer) {
     assert(Token::market_cap<STC>() == old_market_cap + 100, 8001);
 
     // get rid of the coin
-    Account::deposit({{alice}}, coin);
+    Account::deposit(@alice, coin);
 }
 }
 

@@ -72,13 +72,14 @@ members = [
     "vm/vm-runtime",
     "vm/stdlib",
     "vm/compiler",
-    "vm/move-prover",
+    # "vm/move-prover",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/dev",
     "vm/move-explain",
+    "vm/move-cli",
     "test-helper",
     "cmd/starcoin",
     "cmd/faucet",
@@ -167,13 +168,14 @@ default-members = [
     "vm/vm-runtime",
     "vm/stdlib",
     "vm/compiler",
-    "vm/move-prover",
+    #"vm/move-prover",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/dev",
     "vm/move-explain",
+    "vm/move-cli",
     "test-helper",
     "cmd/starcoin",
     "cmd/faucet",
@@ -217,3 +219,4 @@ starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
+

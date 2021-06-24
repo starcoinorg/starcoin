@@ -6,14 +6,16 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::execute_readonly_function;
 use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
+use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::TwoPhaseUpgradeV2Resource;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::ScriptFunction;
+use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{association_address, core_code_address};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
-use starcoin_vm_types::on_chain_config::TransactionPublishOption;
+use starcoin_vm_types::on_chain_config::{TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
@@ -398,11 +400,16 @@ fn test_stdlib_upgrade() -> Result<()> {
             execute_script_function,
             proposal_id,
         )?;
-        association_execute_should_success(
+        let output = association_execute_should_success(
             &net,
             &chain_state,
             TransactionPayload::Package(package),
         )?;
+        let contract_event = expect_event::<UpgradeEvent>(&output);
+        let _upgrade_event = contract_event.decode_event::<UpgradeEvent>()?;
+
+        let _version_config_event = expect_event::<ConfigChangeEvent<Version>>(&output);
+
         ext_execute_after_upgrade(new_version, &net, &chain_state)?;
         proposal_id += 1;
         current_version = new_version;

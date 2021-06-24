@@ -48,7 +48,7 @@ The module provide configuration of consensus parameters.
 consensus configurations.
 
 
-<pre><code><b>struct</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>
+<pre><code><b>struct</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> has <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -686,7 +686,7 @@ Compute block reward given the <code>new_epoch_block_time_target</code>, and the
 <a name="0x1_ConsensusConfig_spec_get_config"></a>
 
 
-<pre><code><b>define</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_spec_get_config">spec_get_config</a>(): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_spec_get_config">spec_get_config</a>(): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
    <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).payload
 }
 </code></pre>

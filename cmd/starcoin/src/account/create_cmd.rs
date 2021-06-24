@@ -8,6 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use structopt::StructOpt;
 
+/// Create a new account
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "create")]
 pub struct CreateOpt {
@@ -30,5 +31,9 @@ impl CommandAction for CreateCommand {
         let client = ctx.state().client();
         let account = client.account_create(ctx.opt().password.clone())?;
         Ok(account)
+    }
+
+    fn skip_history(&self, _ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>) -> bool {
+        true
     }
 }
