@@ -69,34 +69,31 @@ pub struct TransactionOptions {
     /// the account address for signing transaction, if `sender` is absent, use default account.
     pub sender: Option<AccountAddress>,
 
-    #[structopt(
-        short = "g",
-        name = "max-gas-amount",
-        help = "max gas used to deploy the module"
-    )]
+    #[structopt(long = "sequence-number")]
+    /// transaction's sequence_number
+    /// if a transaction in the pool, you want to replace it, can use this option to set transaction's sequence_number
+    /// otherwise please let cli to auto get sequence_number from onchain and txpool.
+    pub sequence_number: Option<u64>,
+
+    #[structopt(short = "g", name = "max-gas-amount")]
+    /// max gas used to deploy the module
     pub max_gas_amount: Option<u64>,
 
     #[structopt(
         short = "p",
-        long = "gas-price",
-        name = "price of gas",
-        help = "gas price used to deploy the module"
+        long = "gas_unit_price",
+        alias = "gas-price",
+        name = "price of gas"
     )]
-    pub gas_price: Option<u64>,
+    /// gas price used to deploy the module
+    pub gas_unit_price: Option<u64>,
 
-    #[structopt(
-        name = "expiration-time-secs",
-        long = "expiration-time-secs",
-        help = "how long(in seconds) the txn stay alive from now"
-    )]
+    #[structopt(name = "expiration-time-secs", long = "expiration-time-secs")]
+    /// how long(in seconds) the txn stay alive from now
     pub expiration_time_secs: Option<u64>,
 
-    #[structopt(
-        short = "b",
-        name = "blocking-mode",
-        long = "blocking",
-        help = "blocking wait txn mined"
-    )]
+    #[structopt(short = "b", name = "blocking-mode", long = "blocking")]
+    /// blocking wait txn mined
     pub blocking: bool,
 
     #[structopt(long = "dry-run")]
@@ -295,8 +292,29 @@ impl From<ContractEvent> for EventView {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum ExecuteResultView {
-    DryRun((VMStatus, TransactionOutputView)),
+    DryRun(DryRunOutputView),
     Run(ExecutionOutputView),
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct DryRunOutputView {
+    pub vm_status: VMStatus,
+    pub output: TransactionOutputView,
+    pub raw_transaction_hex: String,
+}
+
+impl DryRunOutputView {
+    pub fn new(
+        vm_status: VMStatus,
+        output: TransactionOutputView,
+        raw_transaction_hex: String,
+    ) -> Self {
+        Self {
+            vm_status,
+            output,
+            raw_transaction_hex,
+        }
+    }
 }
 
 #[derive(Serialize, Debug, Clone)]
