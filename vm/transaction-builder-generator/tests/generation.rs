@@ -8,7 +8,7 @@ use starcoin_vm_types::transaction::ScriptABI;
 use std::{io::Write, path::Path, process::Command};
 use tempfile::tempdir;
 use transaction_builder_generator as buildgen;
-use transaction_builder_generator::SourceInstaller as _;
+use transaction_builder_generator::{is_supported_abi, SourceInstaller};
 
 fn get_starcoin_registry() -> Registry {
     let path = "../../testsuite/generate-format/tests/staged/starcoin.yaml";
@@ -18,15 +18,19 @@ fn get_starcoin_registry() -> Registry {
 
 fn get_stdlib_script_abis() -> Vec<ScriptABI> {
     let path = Path::new("../stdlib/compiled/latest/transaction_scripts/abi");
-    buildgen::read_abis(&path).expect("reading ABI files should not fail")
+    buildgen::read_abis(&path)
+        .expect("reading ABI files should not fail")
+        .into_iter()
+        .filter(is_supported_abi)
+        .collect()
 }
 
 const EXPECTED_OUTPUT : &str = "2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 15 84 114 97 110 115 102 101 114 83 99 114 105 112 116 115 26 112 101 101 114 95 116 111 95 112 101 101 114 95 119 105 116 104 95 109 101 116 97 100 97 116 97 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 83 84 67 3 83 84 67 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 4 32 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 2 135 214 18 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 \n";
 // const OUTPUT : &str = "181 1 161 28 235 11 1 0 0 0 6 1 0 2 3 2 17 4 19 4 5 23 28 7 51 56 8 107 16 0 0 0 1 0 1 1 1 0 2 2 3 0 0 3 4 1 1 1 0 6 2 6 2 5 10 2 0 1 5 1 1 4 6 12 5 4 10 2 5 6 12 5 10 2 4 10 2 1 9 0 7 65 99 99 111 117 110 116 14 99 114 101 97 116 101 95 97 99 99 111 117 110 116 9 101 120 105 115 116 115 95 97 116 22 112 97 121 95 102 114 111 109 95 119 105 116 104 95 109 101 116 97 100 97 116 97 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 5 1 14 10 1 17 1 32 3 5 5 8 10 1 11 2 56 0 11 0 10 1 10 3 11 4 56 1 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 76 66 82 3 76 66 82 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 4 32 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 2 135 214 18 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 \n";
 const OUTPUT: &str = "255 1 161 28 235 11 2 0 0 0 7 1 0 4 3 4 22 4 26 4 5 30 33 7 63 80 8 143 1 16 6 159 1 10 0 0 0 1 0 2 3 4 0 0 3 6 3 1 4 1 4 7 7 0 0 5 8 2 1 4 1 5 3 5 5 6 12 5 10 2 4 10 2 3 5 1 3 0 1 5 1 1 1 9 0 1 10 2 1 3 4 6 12 5 4 10 2 7 65 99 99 111 117 110 116 6 69 114 114 111 114 115 9 101 120 105 115 116 115 95 97 116 14 99 114 101 97 116 101 95 97 99 99 111 117 110 116 16 105 110 118 97 108 105 100 95 97 114 103 117 109 101 110 116 22 112 97 121 95 102 114 111 109 95 119 105 116 104 95 109 101 116 97 100 97 116 97 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 8 101 0 0 0 0 0 0 0 1 4 0 1 27 10 1 17 0 32 3 5 5 21 11 2 56 0 12 5 10 1 10 5 33 7 0 17 2 12 7 12 6 11 6 3 21 11 0 1 11 7 39 11 0 10 1 10 3 11 4 56 1 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 83 84 67 3 83 84 67 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 4 32 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 2 135 214 18 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 \n";
-// Cannot run this test in the CI of Diem.
-#[test]
+
 #[ignore]
+#[test]
 fn test_that_python_code_parses_and_passes_pyre_check() {
     let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
@@ -69,6 +73,10 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
         .arg(dir.path().join("src/stdlib_demo.py"))
         .output()
         .unwrap();
+    eprintln!(
+        "stderr: \n {}",
+        std::str::from_utf8(&output.stderr).unwrap()
+    );
     assert!(output.status.success());
     assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
 
@@ -222,8 +230,8 @@ fn test_that_cpp_code_compiles_and_demo_runs() {
     assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
 }
 
-#[test]
 #[ignore]
+#[test]
 fn test_that_java_code_compiles_and_demo_runs() {
     let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
