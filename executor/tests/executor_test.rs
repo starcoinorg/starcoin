@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use starcoin_executor::{encode_create_account_script_function, Account};
+use starcoin_executor::{encode_create_account_script_function, validate_transaction, Account};
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_transaction_builder::{
     raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
@@ -530,6 +530,74 @@ fn test_validate_sequence_number_too_old() -> Result<()> {
         "expect StatusCode SEQUENCE_NUMBER_TOO_OLD, but get: {:?}",
         status_code
     );
+    Ok(())
+}
+
+#[stest::test]
+fn test_validate_txn_args() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+
+    let account1 = Account::new();
+
+    let txn = {
+        let action = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScript").unwrap(),
+            ),
+            Identifier::new("peer_to_peer").unwrap(),
+            vec![stc_type_tag()],
+            vec![],
+        );
+        let txn = build_raw_txn(
+            *account1.address(),
+            &chain_state,
+            TransactionPayload::ScriptFunction(action),
+            net.chain_id(),
+        );
+        account1.sign_txn(txn)
+    };
+    assert!(validate_transaction(&chain_state, txn).is_some());
+
+    let txn = {
+        let action = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer_v2").unwrap(),
+            vec![stc_type_tag()],
+            vec![],
+        );
+        let txn = build_raw_txn(
+            *account1.address(),
+            &chain_state,
+            TransactionPayload::ScriptFunction(action),
+            net.chain_id(),
+        );
+        account1.sign_txn(txn)
+    };
+    assert!(validate_transaction(&chain_state, txn).is_some());
+
+    let txn = {
+        let action = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer_v2").unwrap(),
+            vec![stc_type_tag()],
+            vec![vec![0u8, 1u8]],
+        );
+        let txn = build_raw_txn(
+            *account1.address(),
+            &chain_state,
+            TransactionPayload::ScriptFunction(action),
+            net.chain_id(),
+        );
+        account1.sign_txn(txn)
+    };
+    assert!(validate_transaction(&chain_state, txn).is_some());
     Ok(())
 }
 

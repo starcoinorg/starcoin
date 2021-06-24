@@ -237,8 +237,27 @@ impl StarcoinVM {
                     }
                 }
             }
-            TransactionPayload::Script(_) => {}
-            TransactionPayload::ScriptFunction(_) => {}
+            TransactionPayload::Script(s) => {
+                session
+                    .verify_script_args(
+                        s.code().to_vec(),
+                        s.ty_args().to_vec(),
+                        s.args().to_vec(),
+                        vec![txn_data.sender()],
+                    )
+                    .map_err(|e| e.into_vm_status())?;
+            }
+            TransactionPayload::ScriptFunction(s) => {
+                session
+                    .verify_script_function_args(
+                        s.module(),
+                        s.function(),
+                        s.ty_args().to_vec(),
+                        s.args().to_vec(),
+                        vec![txn_data.sender()],
+                    )
+                    .map_err(|e| e.into_vm_status())?;
+            }
         }
         self.run_prologue(&mut session, &mut gas_status, &txn_data)
     }
