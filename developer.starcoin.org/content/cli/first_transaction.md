@@ -22,7 +22,7 @@ Let's say you've run up a starcoin dev node locally.
 
 After connecting to the node, let's first create two accounts. Here we assume that both accounts have been created successfully, 
 Alice is the default account with the address 0x988acf6d210701242af03cbb13780745 and Bob's address is 0x1179ec968815ded9c59775274446ad4c , 
-receipt_identifier is stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t .
+receipt_identifier is stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt .
 
 ### Use Faucet to top up your account
 
@@ -50,7 +50,7 @@ starcoin% account show 0x988acf6d210701242af03cbb13780745
 +--------------------+------------------------------------------------------------------------------------------+
 | auth_key           | 0x6d9ca71670371e406e6e7821c4560f31988acf6d210701242af03cbb13780745                       |
 +--------------------+------------------------------------------------------------------------------------------+
-| receipt_identifier | stc1pnz9v7mfpquqjg2hs8ja3x7q8g4keefckwqm3usrwdeuzr3zkpuce3zk0d5sswqfy9tcrewcn0qr528sv4vw |
+| receipt_identifier | stc1pnz9v7mfpquqjg2hs8ja3x7q8g5fsudrg |
 +--------------------+------------------------------------------------------------------------------------------+
 | sequence_number    | 0                                                                                        |
 +--------------------+------------------------------------------------------------------------------------------+
@@ -75,11 +75,11 @@ where `-p my-pass` is the password that was needed when creating the account, if
 Once the account is unlocked, execute the following command.
 
 ```bash
-starcoin% account transfer -s 0x988acf6d210701242af03cbb13780745 -r stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t -v 10000 -b
+starcoin% account transfer -s 0x988acf6d210701242af03cbb13780745 -r stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt -v 10000 -b
 ```
 
 - `-s 0x988acf6d210701242af03cbb13780745`: is Alice's account address.
-- `-r stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t`: is Bob's receipt_identifier.
+- `-r stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt`: is Bob's receipt_identifier.
 
 > If, Bob's account does not yet exist on the chain, the transfer transaction will automatically create Bob's account on the chain.
 
@@ -98,7 +98,7 @@ starcoin% account show 0x1179ec968815ded9c59775274446ad4c
 +----------------------------+------------------------------------------------------------------------------------------+
 | account.public_key         | 0xfacd584290ee7baea7fe8e22d13332633babca46e77c0ca941b6b5c6266523cb                       |
 +----------------------------+------------------------------------------------------------------------------------------+
-| account.receipt_identifier | stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t |
+| account.receipt_identifier | stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt |
 +----------------------------+------------------------------------------------------------------------------------------+
 | auth_key                   | 0xce10e8b810895d64f3d3fe1cd2307cf61179ec968815ded9c59775274446ad4c                       |
 +----------------------------+------------------------------------------------------------------------------------------+
