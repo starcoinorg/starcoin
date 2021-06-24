@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
-use crate::receipt_identifier::ReceiptIdentifier;
 use crate::sign_message::SigningMessage;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{ensure, Error, Result};
@@ -393,11 +392,6 @@ impl AccountPublicKey {
             Self::Single(public_key) => public_key.to_bytes().to_vec(),
             Self::Multi(public_key) => public_key.to_bytes().to_vec(),
         }
-    }
-
-    pub fn receipt_identifier(&self) -> ReceiptIdentifier {
-        let auth_key = self.authentication_key();
-        ReceiptIdentifier::v1(auth_key.derived_address())
     }
 
     /// Unique identifier for the signature scheme

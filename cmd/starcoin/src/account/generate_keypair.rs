@@ -10,7 +10,6 @@ use serde::Serialize;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use std::convert::TryInto;
@@ -65,10 +64,13 @@ impl CommandAction for GenerateKeypairCommand {
                 let (private_key, public_key) = key_gen.generate_keypair();
                 let account_public_key = AccountPublicKey::single(public_key);
                 let account_private_key = AccountPrivateKey::Single(private_key);
+
+                let address = account_public_key.derived_address();
+                let receipt_identifier = address.to_bech32();
                 GenerateKeypairData {
-                    address: account_public_key.derived_address(),
+                    address,
                     auth_key: account_public_key.authentication_key(),
-                    receipt_identifier: account_public_key.receipt_identifier(),
+                    receipt_identifier,
                     public_key: account_public_key,
                     private_key: account_private_key
                         .to_encoded_string()
@@ -85,7 +87,7 @@ impl CommandAction for GenerateKeypairCommand {
 pub struct GenerateKeypairData {
     pub address: AccountAddress,
     pub auth_key: AuthenticationKey,
-    pub receipt_identifier: ReceiptIdentifier,
+    pub receipt_identifier: String,
     pub public_key: AccountPublicKey,
     pub private_key: String,
 }

@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::{AddressOrReceipt, ExecuteResultView, TransactionOptions};
+use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
@@ -16,8 +17,8 @@ use structopt::StructOpt;
 #[structopt(name = "transfer")]
 pub struct TransferOpt {
     #[structopt(short = "r", long = "receiver", alias = "receipt")]
-    /// transfer to, accept address (start with 0x) or receipt_identifier (start with stc1)
-    receiver: AddressOrReceipt,
+    /// transfer to, accept address (start with 0x) or receipt_identifier (start with stc)
+    receiver: AccountAddress,
 
     #[structopt(short = "k", name = "public-key", long = "public-key")]
     /// this option is deprecated
@@ -51,7 +52,7 @@ impl CommandAction for TransferCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let receiver_address = opt.receiver.address();
+        let receiver_address = opt.receiver;
 
         let token_code = opt
             .token_code

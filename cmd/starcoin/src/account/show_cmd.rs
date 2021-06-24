@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::{AccountWithStateView, AddressOrReceipt};
+use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_vm_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use structopt::StructOpt;
 
@@ -17,8 +18,8 @@ use structopt::StructOpt;
 #[structopt(name = "show")]
 pub struct ShowOpt {
     #[structopt(name = "address_or_receipt")]
-    /// The account's address or receipt to show, if absent, show the default account.
-    address_or_receipt: Option<AddressOrReceipt>,
+    /// The account's address to show, if absent, show the default account.
+    address_or_receipt: Option<AccountAddress>,
 
     #[structopt(name = "block_id", short = "b")]
     block_id: Option<HashValue>,
@@ -39,7 +40,7 @@ impl CommandAction for ShowCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let account_address = if let Some(address_or_receipt) = opt.address_or_receipt {
-            address_or_receipt.address()
+            address_or_receipt
         } else {
             let default_account = client
                 .account_default()?
