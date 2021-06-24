@@ -12,6 +12,7 @@ use serde_reflection::Registry;
 use std::path::PathBuf;
 use structopt::{clap::arg_enum, StructOpt};
 use transaction_builder_generator as buildgen;
+use transaction_builder_generator::is_supported_abi;
 
 arg_enum! {
 #[derive(Debug, StructOpt)]
@@ -76,7 +77,10 @@ fn main() {
     let options = Options::from_args();
     let abis =
         buildgen::read_abis(&options.abi_directory).expect("Failed to read ABI in directory");
-
+    let abis = abis
+        .into_iter()
+        .filter(is_supported_abi)
+        .collect::<Vec<_>>();
     let install_dir = match options.target_source_dir {
         None => {
             // Nothing to install. Just print to stdout.

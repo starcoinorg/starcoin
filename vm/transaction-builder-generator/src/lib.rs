@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde_generate::CustomCode;
+use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::transaction::ScriptABI;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
 
@@ -89,4 +90,24 @@ where
             (container_path, code)
         })
         .collect()
+}
+
+/// Check the abi is supported by generator
+pub fn is_supported_abi(abi: &ScriptABI) -> bool {
+    for arg in abi.args() {
+        if let TypeTag::Vector(type_tag) = arg.type_tag() {
+            match type_tag.as_ref() {
+                TypeTag::U8 => continue,
+                _ => {
+                    eprintln!(
+                        "{} function's argument {:?}, the generator do not support, skip it.",
+                        abi.name(),
+                        arg
+                    );
+                    return false;
+                }
+            }
+        }
+    }
+    true
 }
