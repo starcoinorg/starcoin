@@ -3,16 +3,15 @@ use anyhow::Result;
 use futures::{select, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 use futures_channel::mpsc;
 use futures_channel::oneshot;
-use jsonrpc_core;
 use jsonrpc_core::{Params, Version};
 use jsonrpc_server_utils::codecs::StreamCodec;
 use jsonrpc_server_utils::tokio::net::TcpStream;
 use jsonrpc_server_utils::tokio_util::codec::Decoder;
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
+use starcoin_config::MinerClientConfig;
 use starcoin_service_registry::{
-    ActorService, RegistryAsyncService, RegistryService, ServiceContext, ServiceFactory,
-    ServiceHandler, ServiceRequest,
+    ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 pub use starcoin_stratum::rpc::{
     KeepalivedResult, LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
@@ -183,7 +182,9 @@ impl Inner {
 
     pub async fn process_output(&mut self, response: String) -> Result<()> {
         debug!(target: "stratum", "Process response:{:?}", response);
-        let resp: Response = response.try_into()?;
+        let resp: Response = response
+            .try_into()
+            .map_err(|e| anyhow!("stratum receive invalid response types:{}", e))?;
 
         match resp {
             Response::Output(output) => {
@@ -194,7 +195,9 @@ impl Inner {
                                 let (mut s, r) = mpsc::unbounded();
                                 s.send(job.job).await?;
                                 self.connections.insert(job.id, s);
-                                sender.send(r);
+                                sender
+                                    .send(r)
+                                    .map_err(|_| anyhow!("write channel failed"))?;
                             }
                         }
                         OutputResponse::Status(status) => {
@@ -229,13 +232,19 @@ impl Inner {
                         Request::LoginRequest(login_req, s)=>{
                             let req_str = build_request_string("login", &login_req, request_id).expect("build stratum login request failed never happen");
                             debug!("stratum client send request:{}",req_str);
-                            self.sink.send(req_str).await;
+                            if let Err(err) = self.sink.send(req_str).await{
+                                error!("stratum send request failed: {}", err);
+                                continue
+                            }
                             self.pending_requests.insert(request_id, PendingRequest::LoginRequest(s));
                         }
                         Request::SubmitSealRequest(seal_req)=>{
                             let req_str = build_request_string("submit", &seal_req, request_id).expect("build stratum login request failed never happen");
                             debug!("stratum send request:{}",req_str);
-                            self.sink.send(req_str).await;
+                            if let Err(err) = self.sink.send(req_str).await{
+                                error!("stratum send request failed: {}", err);
+                                continue
+                            }
                         }
                     }
                 },
@@ -256,7 +265,7 @@ impl ActorService for StratumClientService {
         let tcp_stream = TcpStream::from_std(
             self.tcp_stream
                 .take()
-                .ok_or(anyhow!("stratum client not got a tcp stream"))?,
+                .ok_or_else(|| anyhow!("stratum client not got a tcp stream"))?,
         )?;
         let (inner, sender) = Inner::new(tcp_stream);
         self.sender = Some(sender);
@@ -273,7 +282,9 @@ impl ServiceHandler<StratumClientService, LoginRequest> for StratumClientService
     ) -> <LoginRequest as ServiceRequest>::Response {
         if let Some(sender) = self.sender.clone().take() {
             let (s, r) = futures::channel::oneshot::channel();
-            sender.unbounded_send(Request::LoginRequest(msg, s));
+            if let Err(err) = sender.unbounded_send(Request::LoginRequest(msg, s)) {
+                error!("stratum handle login_request failed: {}", err);
+            }
             r
         } else {
             unreachable!()
@@ -288,7 +299,9 @@ impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientSe
         _ctx: &mut ServiceContext<StratumClientService>,
     ) -> <SubmitSealRequest as ServiceRequest>::Response {
         if let Some(sender) = self.sender.clone().take() {
-            sender.unbounded_send(Request::SubmitSealRequest(msg));
+            if let Err(e) = sender.unbounded_send(Request::SubmitSealRequest(msg)) {
+                error!("stratum handle submit seal request failed:{}", e);
+            }
         } else {
             unreachable!()
         }
@@ -298,56 +311,13 @@ impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientSe
 pub struct StratumClientServiceServiceFactory;
 
 impl ServiceFactory<StratumClientService> for StratumClientServiceServiceFactory {
-    fn create(_ctx: &mut ServiceContext<StratumClientService>) -> Result<StratumClientService> {
-        let tcp_stream = Some(std::net::TcpStream::connect(&"cn2.stc.kelepool.com:9999")?);
+    fn create(ctx: &mut ServiceContext<StratumClientService>) -> Result<StratumClientService> {
+        let cfg = ctx.get_shared::<MinerClientConfig>()?;
+        let addr = cfg.server.unwrap_or_else(|| "127.0.0.1:9880".into());
+        let tcp_stream = Some(std::net::TcpStream::connect(&addr)?);
         Ok(StratumClientService {
             sender: None,
             tcp_stream,
         })
-    }
-}
-
-#[stest::test(timeout = 120)]
-async fn test() {
-    let registry = RegistryService::launch();
-    let r = registry
-        .register_by_factory::<StratumClientService, StratumClientServiceServiceFactory>()
-        .await
-        .unwrap();
-    assert!(registry
-        .start_service(StratumClientService::service_name())
-        .await
-        .is_ok());
-    let mut stream = r
-        .send(LoginRequest {
-            login: "fikgol".to_string(),
-            pass: "test".to_string(),
-            agent: "test".to_string(),
-            algo: None,
-        })
-        .await
-        .unwrap()
-        .await
-        .unwrap();
-    let mut stream1 = r
-        .send(LoginRequest {
-            login: "test".to_string(),
-            pass: "test".to_string(),
-            agent: "test".to_string(),
-            algo: None,
-        })
-        .await
-        .unwrap()
-        .await
-        .unwrap();
-    for i in 1..5 {
-        select! {
-            value = stream.select_next_some() =>{
-                println ! ("receive :{:?}", value);
-            }
-            value1 = stream1.select_next_some() =>{
-                println ! ("receive1 :{:?}", value1);
-            }
-        }
     }
 }

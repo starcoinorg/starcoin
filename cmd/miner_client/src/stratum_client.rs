@@ -5,8 +5,7 @@ use async_std::sync::Arc;
 use byteorder::{LittleEndian, WriteBytesExt};
 use futures::executor::block_on;
 use futures::future;
-use futures::stream::BoxStream;
-use futures::stream::StreamExt;
+use futures::stream::{BoxStream, StreamExt};
 use starcoin_service_registry::ServiceRef;
 use starcoin_stratum::rpc::LoginRequest;
 use starcoin_stratum::target_hex_to_difficulty;
@@ -38,7 +37,7 @@ impl JobClient for StratumJobClient {
         let fut = async move {
             let stream = srv
                 .send(LoginRequest {
-                    login: "fikgol.S10B11021C4F58S10B11021C4F42".to_string(),
+                    login: "fikgol.abc".to_string(),
                     pass: "test".to_string(),
                     agent: "Ibctminer/1.0.0".to_string(),
                     algo: None,
@@ -71,18 +70,21 @@ impl JobClient for StratumJobClient {
                     })
                     .boxed()
                 })?;
-            Ok::<_, anyhow::Error>(stream.boxed())
+            Ok::<BoxStream<MintBlockEvent>, anyhow::Error>(stream.boxed())
         };
         block_on(fut)
     }
 
+    #[allow(clippy::unit_arg)]
     fn submit_seal(&self, seal: SealEvent) -> Result<()> {
         let srv = self.stratum_cli_srv.clone();
         let fut = async move {
             let mut n = Vec::new();
             n.write_u32::<LittleEndian>(seal.nonce)?;
             let nonce = hex::encode(n);
-            let mint_extra = seal.extra.ok_or(anyhow::anyhow!("submit missing field"))?;
+            let mint_extra = seal
+                .extra
+                .ok_or_else(|| anyhow::anyhow!("submit missing field"))?;
             let r = srv
                 .send(SubmitSealRequest {
                     0: ShareRequest {
@@ -93,7 +95,7 @@ impl JobClient for StratumJobClient {
                     },
                 })
                 .await?;
-            Ok::<_, anyhow::Error>(r)
+            Ok::<(), anyhow::Error>(r)
         };
 
         block_on(fut)
