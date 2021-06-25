@@ -33,7 +33,7 @@ impl CommandAction for GetEventsCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let events = client.chain_get_events_by_txn_hash(opt.hash)?;
-        let events = events.into_iter().map(|e| e.into()).collect::<Vec<_>>();
+        let events: Vec<EventView> = events.into_iter().map(|e| e.into()).collect::<Vec<_>>();
         Ok(events)
     }
 }

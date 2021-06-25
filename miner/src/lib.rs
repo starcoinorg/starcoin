@@ -17,13 +17,11 @@ use std::time::Duration;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
-pub mod job_bus_client;
 mod metrics;
 pub mod task;
 
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
 use crypto::HashValue;
-pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 use std::fmt;
 use thiserror::Error;
 pub use types::block::BlockHeaderExtra;
@@ -101,6 +99,7 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
             minting_blob: task.minting_blob.clone(),
             difficulty: task.block_template.difficulty,
             block_number: task.block_template.number,
+            extra: None,
         })
     }
 }
@@ -179,6 +178,7 @@ impl MinerService {
                 mining_blob,
                 difficulty,
                 number,
+                None,
             ));
             Ok(())
         }

@@ -93,7 +93,8 @@ members = [
     "cmd/merkle-generator",
     "cmd/peer-watcher",
     "cmd/airdrop",
-    "stratum"
+    "stratum",
+    "cmd/miner_client/api",
 ]
 
 default-members = [
@@ -188,7 +189,8 @@ default-members = [
     "cmd/merkle-generator",
     "cmd/peer-watcher",
     "cmd/airdrop",
-    "stratum"
+    "stratum",
+    "cmd/miner_client/api",
 ]
 
 [profile.dev]

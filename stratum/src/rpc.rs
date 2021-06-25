@@ -75,18 +75,18 @@ pub struct SubmitResult {
     pub result: Status,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct KeepalivedResult {
     pub result: Status,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct Status {
     pub status: String,
 }
 
 #[allow(clippy::needless_return)]
-#[rpc(server)]
+#[rpc]
 pub trait StratumRpc {
     type Metadata;
     #[rpc(name = "keepalived", raw_params)]
@@ -129,7 +129,7 @@ impl ServiceRequest for SubscribeJobEvent {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct SubmitShareEvent(pub(crate) ShareRequest);
+pub struct SubmitShareEvent(pub ShareRequest);
 
 impl ServiceRequest for SubmitShareEvent {
     type Response = anyhow::Result<()>;
@@ -145,13 +145,18 @@ impl StratumRpcImpl {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct LoginRequest {
-    login: String,
-    pass: String,
-    agent: String,
+    pub login: String,
+    pub pass: String,
+    pub agent: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    algo: Option<Vec<String>>,
+    pub algo: Option<Vec<String>>,
+}
+
+impl ServiceRequest for LoginRequest {
+    type Response =
+        futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
 }
 
 impl LoginRequest {
@@ -169,7 +174,7 @@ impl LoginRequest {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct StratumJobResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub login: Option<LoginRequest>,
@@ -178,7 +183,7 @@ pub struct StratumJobResponse {
     pub job: StratumJob,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct StratumJob {
     pub height: u64,
     pub id: String,
@@ -187,11 +192,24 @@ pub struct StratumJob {
     pub blob: String,
 }
 
+impl StratumJob {
+    pub fn get_extra(&self) -> anyhow::Result<BlockHeaderExtra> {
+        let blob = hex::decode(&self.blob)?;
+        if blob.len() != 76 {
+            return Err(anyhow::anyhow!("Invalid stratum job"));
+        }
+        let extra: [u8; 4] = blob[35..39].try_into()?;
+
+        Ok(BlockHeaderExtra::new(extra))
+    }
+}
+
 impl StratumJobResponse {
     pub fn from(e: &MintBlockEvent, login: Option<LoginRequest>, worker_id: [u8; 4]) -> Self {
         let mut minting_blob = e.minting_blob.clone();
         let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id);
         let worker_id_hex = hex::encode(&worker_id);
+        let job_id = hex::encode(&e.minting_blob[0..8]);
         Self {
             login,
             id: worker_id_hex.clone(),
@@ -200,7 +218,7 @@ impl StratumJobResponse {
                 height: 0,
                 id: worker_id_hex,
                 target: difficulty_to_target_hex(e.difficulty),
-                job_id: hex::encode(&e.minting_blob[0..8]),
+                job_id,
                 blob: hex::encode(&minting_blob),
             },
         }

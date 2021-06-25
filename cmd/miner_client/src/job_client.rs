@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::JobClient;
+use crate::{JobClient, SealEvent};
 use anyhow::Result;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, Future, TryStreamExt};
@@ -101,14 +101,13 @@ impl JobClient for JobRpcClient {
         Ok(self.forward_mint_block_stream())
     }
 
-    fn submit_seal(
-        &self,
-        minting_blob: Vec<u8>,
-        nonce: u32,
-        extra: BlockHeaderExtra,
-    ) -> Result<()> {
+    fn submit_seal(&self, seal: SealEvent) -> Result<()> {
+        let extra = match &seal.extra {
+            None => BlockHeaderExtra::default(),
+            Some(extra) => extra.extra,
+        };
         self.seal_sender
-            .unbounded_send((minting_blob, nonce, extra))?;
+            .unbounded_send((seal.minting_blob, seal.nonce, extra))?;
         Ok(())
     }
 

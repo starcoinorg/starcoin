@@ -59,7 +59,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ca8ce00b267af8ccebbd647de0d61e0674b6e61185cc7a592ff88772bed655"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -100,7 +100,7 @@ checksum = "b95aceadaf327f18f0df5962fedc1bde2f870566a0b9f65c89508a3b1f79334c"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -309,7 +309,7 @@ dependencies = [
  "futures-retry",
  "futures-util",
  "hex",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword",
  "serde",
  "serde_json",
@@ -403,7 +403,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d0864d84b8e07b145449be9a8537db86bf9de5ce03b913214694643b4743502"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -539,7 +539,7 @@ checksum = "0b98e84bbb4cbcdd97da190ba0c58a1bb0de2c1fdf67d159e192ed766aeca722"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -691,9 +691,9 @@ dependencies = [
 
 [[package]]
 name = "bech32"
-version = "0.8.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf9ff0bbfd639f15c74af777d81383cf53efb7c93613f6cab67c6c11e05bbf8b"
+checksum = "6c7f7096bc256f5e5cb960f60dfc4f4ef979ca65abe7fb9d5a4f77150d3783d4"
 
 [[package]]
 name = "bencher"
@@ -708,7 +708,7 @@ dependencies = [
  "anyhow",
  "criterion",
  "forkable-jellyfish-merkle",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "network-api",
  "parking_lot 0.11.1",
@@ -917,7 +917,7 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "diem-workspace-hack",
- "futures 0.3.15",
+ "futures 0.3.13",
  "itertools 0.10.1",
  "log 0.4.14",
  "move-binary-format",
@@ -1095,6 +1095,12 @@ name = "bytes"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
+
+[[package]]
+name = "bytes"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0dcbc35f504eb6fc275a6d20e4ebcda18cf50d40ba6fabff8c711fa16cb3b16"
 
 [[package]]
 name = "bytes"
@@ -1314,7 +1320,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1751,7 +1757,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e98e2ad1a782e33928b96fc3948e7c355e5af34ba4de7670fe8bac2a3b2006d"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1871,7 +1877,7 @@ dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
  "strsim 0.9.3",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1885,7 +1891,7 @@ dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
  "strsim 0.10.0",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1907,7 +1913,7 @@ checksum = "d9b5a2f4ac4969822c62224815d069952656cadc7084fdca9751e6d959189b72"
 dependencies = [
  "darling_core 0.10.2",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1918,7 +1924,7 @@ checksum = "c0220073ce504f12a70efc4e7cdaea9e9b1b324872e7ad96a208056d7a638b81"
 dependencies = [
  "darling_core 0.12.2",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1977,7 +1983,7 @@ checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -2014,7 +2020,7 @@ dependencies = [
  "convert_case",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -2078,7 +2084,7 @@ source = "git+https://github.com/starcoinorg/diem?rev=11dc6d890b48af4f85c1a75bbe
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -2112,7 +2118,7 @@ dependencies = [
  "diem-workspace-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -2209,7 +2215,7 @@ dependencies = [
  "crossbeam-deque 0.8.0",
  "crossbeam-utils 0.8.3",
  "either",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-channel",
  "futures-core",
  "futures-io",
@@ -2243,7 +2249,7 @@ dependencies = [
  "standback",
  "subtle 2.4.0",
  "syn 0.15.44",
- "syn 1.0.73",
+ "syn 1.0.72",
  "tiny-keccak 2.0.2",
  "tokio 1.4.0",
  "tokio-util 0.6.5",
@@ -2474,7 +2480,7 @@ dependencies = [
  "heck",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -2745,9 +2751,9 @@ checksum = "3a471a38ef8ed83cd6e40aa59c1ffe17db6855c18e3604d9c4ed8c08ebc28678"
 
 [[package]]
 name = "futures"
-version = "0.3.15"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e7e43a803dae2fa37c1f6a8fe121e1f7bf9548b4dfc0522a42f34145dadfc27"
+checksum = "7f55667319111d593ba876406af7c409c0ebb44dc4be6132a783ccf163ea14c1"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -2791,9 +2797,9 @@ checksum = "b35b6263fb1ef523c3056565fa67b1d16f0a8604ff12b11b08c25f28a734c60a"
 
 [[package]]
 name = "futures-executor"
-version = "0.3.15"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "badaa6a909fac9e7236d0620a2f57f7664640c56575b71a7552fbd68deafab79"
+checksum = "891a4b7b96d84d5940084b2a37632dd65deeae662c114ceaa2c879629c9c0ad1"
 dependencies = [
  "futures-core",
  "futures-task",
@@ -2832,7 +2838,7 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -2841,7 +2847,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "759bfe7464299589f02197a973e0e01f17c4cdcef87b454579af8b0629ba7420"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "pin-project 0.4.28",
  "tokio 0.2.25",
 ]
@@ -3012,7 +3018,7 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -3075,7 +3081,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06c5d2f987ee8f6dff3fa1a352058dc59b990e447e4c7846aa7d804971314f7b"
 dependencies = [
  "dashmap",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "no-std-compat",
  "nonzero_ext",
@@ -3514,7 +3520,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97b8538953a3f0d0d3868f0a706eb4273535e10d72acb5c82c1c23ae48835c85"
 dependencies = [
  "async-io",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-lite",
  "if-addrs",
  "ipnet",
@@ -3603,7 +3609,7 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -3645,9 +3651,9 @@ dependencies = [
 
 [[package]]
 name = "internment"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19bd5ed779a9be4a81a0fd614deedb2f8bed6cbc8fa002ba7949740521b96d86"
+checksum = "28dd2533247278c752288772dabf321a22ed85213e4543d3ad51e5d1288098c8"
 dependencies = [
  "ahash 0.3.8",
  "dashmap",
@@ -3801,7 +3807,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2f81014e2706fde057e9dcb1036cf6bbf9418d972c597be5c7158c984656722"
 dependencies = [
  "derive_more",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hyper 0.13.10",
  "hyper-tls 0.4.3",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3817,12 +3823,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-client-transports"
+version = "17.1.0"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
+dependencies = [
+ "derive_more",
+ "futures 0.3.13",
+ "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
+ "jsonrpc-pubsub 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
+ "log 0.4.14",
+ "serde",
+ "serde_json",
+ "url 1.7.2",
+]
+
+[[package]]
 name = "jsonrpc-core"
 version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4467ab6dfa369b69e52bd0692e480c4d117410538526a57a304a0f2250fd95e"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-executor",
  "futures-util",
  "log 0.4.14",
@@ -3834,9 +3855,9 @@ dependencies = [
 [[package]]
 name = "jsonrpc-core"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-executor",
  "futures-util",
  "log 0.4.14",
@@ -3851,8 +3872,17 @@ version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c366c092d6bccc6e7ab44dd635a0f22ab2f201215339915fb7ff9508404f431"
 dependencies = [
- "futures 0.3.15",
- "jsonrpc-client-transports",
+ "futures 0.3.13",
+ "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "jsonrpc-core-client"
+version = "17.1.0"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
+dependencies = [
+ "futures 0.3.13",
+ "jsonrpc-client-transports 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
 ]
 
 [[package]]
@@ -3864,18 +3894,18 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
 name = "jsonrpc-derive"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -3884,7 +3914,7 @@ version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "522a047cac0958097ee71d047dd71cb84979fd2fa21c7a68fbe12736bef870a2"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "hyper 0.13.10",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3900,7 +3930,7 @@ version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b1d782052ef17051d12681bcc2fa2e9e1aabf3f634588125493d63ddcca6fe1"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.14",
@@ -3915,7 +3945,7 @@ version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14739e5523a40739882cc34a44ab2dd9356bce5ce102513f5984a9efbe342f3d"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
  "log 0.4.14",
@@ -3927,10 +3957,10 @@ dependencies = [
 [[package]]
 name = "jsonrpc-pubsub"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
- "futures 0.3.15",
- "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c)",
+ "futures 0.3.13",
+ "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
  "lazy_static",
  "log 0.4.14",
  "parking_lot 0.11.1",
@@ -3946,7 +3976,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bce68fa279a2822b3619369cd024f8a4f8e5ce485468834f8679a3c7919aae2d"
 dependencies = [
  "bytes 0.5.6",
- "futures 0.3.15",
+ "futures 0.3.13",
  "globset",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
@@ -3959,12 +3989,12 @@ dependencies = [
 [[package]]
 name = "jsonrpc-server-utils"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
  "bytes 0.5.6",
- "futures 0.3.15",
+ "futures 0.3.13",
  "globset",
- "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c)",
+ "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
  "lazy_static",
  "log 0.4.14",
  "tokio 0.2.25",
@@ -3988,10 +4018,10 @@ dependencies = [
 [[package]]
 name = "jsonrpc-tcp-server"
 version = "17.1.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c#a913ce4632c1989c8fa1810823ec7c209a50d26c"
+source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
 dependencies = [
- "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c)",
- "jsonrpc-server-utils 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c)",
+ "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
+ "jsonrpc-server-utils 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
  "log 0.4.14",
  "parking_lot 0.11.1",
  "tower-service",
@@ -4003,7 +4033,7 @@ version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1d267a8649ec37e4452dd7b3f48827c9cdf36de3a3539cf73242c222ba2eb50"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.14",
@@ -4070,9 +4100,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.97"
+version = "0.2.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12b8adadd720df158f4d70dfe7ccc6adb0472d7c55ca83445f6a5ab3e36f8fb6"
+checksum = "789da6d93f1b866ffe175afc5322a4d76c038605a1c3319bb57b06967ca98a36"
 
 [[package]]
 name = "libloading"
@@ -4092,7 +4122,7 @@ checksum = "adc225a49973cf9ab10d0cdd6a4b8f0cda299df9b760824bbb623f15f8f0c95a"
 dependencies = [
  "atomic",
  "bytes 1.0.1",
- "futures 0.3.15",
+ "futures 0.3.13",
  "lazy_static",
  "libp2p-core",
  "libp2p-dns",
@@ -4127,7 +4157,7 @@ dependencies = [
  "ed25519-dalek",
  "either",
  "fnv",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "lazy_static",
  "libsecp256k1",
@@ -4156,7 +4186,7 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5153b6db68fd4baa3b304e377db744dd8fea8ff4e4504509ee636abcde88d3e3"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "log 0.4.14",
 ]
@@ -4167,7 +4197,7 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b40fb36a059b7a8cce1514bd8b546fa612e006c9937caa7f5950cb20021fe91e"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.14",
@@ -4188,7 +4218,7 @@ dependencies = [
  "bytes 1.0.1",
  "either",
  "fnv",
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.14",
@@ -4212,7 +4242,7 @@ dependencies = [
  "async-io",
  "data-encoding",
  "dns-parser",
- "futures 0.3.15",
+ "futures 0.3.13",
  "if-watch",
  "lazy_static",
  "libp2p-core",
@@ -4232,7 +4262,7 @@ checksum = "350ce8b3923594aedabd5d6e3f875d058435052a29c3f32df378bc70d10be464"
 dependencies = [
  "asynchronous-codec 0.6.0",
  "bytes 1.0.1",
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "log 0.4.14",
  "nohash-hasher",
@@ -4250,7 +4280,7 @@ checksum = "4aca322b52a0c5136142a7c3971446fb1e9964923a526c9cc6ef3b7c94e57778"
 dependencies = [
  "bytes 1.0.1",
  "curve25519-dalek",
- "futures 0.3.15",
+ "futures 0.3.13",
  "lazy_static",
  "libp2p-core",
  "log 0.4.14",
@@ -4270,7 +4300,7 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f3813276d0708c8db0f500d8beda1bda9ad955723b9cb272c41f4727256f73c"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.14",
@@ -4287,7 +4317,7 @@ checksum = "10e5552827c33d8326502682da73a0ba4bfa40c1b55b216af3c303f32169dd89"
 dependencies = [
  "async-trait",
  "bytes 1.0.1",
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.14",
@@ -4306,7 +4336,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7955b973e1fd2bd61ffd43ce261c1223f61f4aacd5bae362a924993f9a25fd98"
 dependencies = [
  "either",
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "log 0.4.14",
  "rand 0.7.3",
@@ -4322,7 +4352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c564ebaa36a64839f51eaddb0243aaaa29ce64affb56129193cc3248b72af273"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -4332,7 +4362,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88a5aef80e519a6cb8e2663605142f97baaaea1a252eecbf8756184765f7471b"
 dependencies = [
  "async-io",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "if-watch",
  "ipnet",
@@ -4348,7 +4378,7 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6149c46cb76935c80bc8be6ec6e3ebd5f5e1679765a255fb34331d54610f15dd"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "js-sys",
  "libp2p-core",
  "parity-send-wrapper",
@@ -4363,7 +4393,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3b1c6a3431045da8b925ed83384e4c5163e14b990572307fca9c507435d4d22"
 dependencies = [
  "either",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-rustls",
  "libp2p-core",
  "log 0.4.14",
@@ -4380,7 +4410,7 @@ version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4819358c542a86ff95f6ae691efb4b94ddaf477079b01a686f5705b79bfc232a"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p-core",
  "parking_lot 0.11.1",
  "thiserror",
@@ -4677,7 +4707,7 @@ checksum = "19ce18b5423c573a13e80cb3046ea0af6379ef725dc3af4886bdb8f4e5093068"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -4812,11 +4842,11 @@ dependencies = [
  "difference",
  "disassembler",
  "errmapgen",
- "futures 0.3.15",
+ "futures 0.3.13",
  "include_dir",
  "itertools 0.10.1",
- "jsonrpc-client-transports",
- "jsonrpc-core-client",
+ "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "move-binary-format",
  "move-core-types",
  "move-coverage 1.2.0",
@@ -4989,7 +5019,7 @@ dependencies = [
  "diem-workspace-hack",
  "docgen",
  "errmapgen",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "itertools 0.10.1",
  "log 0.4.14",
@@ -5130,7 +5160,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
  "synstructure",
 ]
 
@@ -5165,7 +5195,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d91ec0a2440aaff5f78ec35631a7027d50386c6163aa975f7caa0d5da4b6ff8"
 dependencies = [
  "bytes 1.0.1",
- "futures 0.3.15",
+ "futures 0.3.13",
  "log 0.4.14",
  "pin-project 1.0.6",
  "smallvec 1.6.1",
@@ -5233,7 +5263,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "itertools 0.10.1",
  "network-p2p-types",
@@ -5261,7 +5291,7 @@ dependencies = [
  "derive_more",
  "either",
  "fnv",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "ip_network",
@@ -5312,7 +5342,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "log 0.4.14",
  "network-rpc-derive",
  "num_enum",
@@ -5328,7 +5358,7 @@ dependencies = [
  "anyhow",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5483,7 +5513,7 @@ checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5536,7 +5566,7 @@ dependencies = [
  "diem-workspace-hack",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5568,7 +5598,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5679,7 +5709,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5724,7 +5754,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd7f6c69d7687501b2205fe51ade1d7b8797bb3aa141fe5bf13dd78c0483bc89"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "libc",
  "log 0.4.14",
  "mio-named-pipes",
@@ -5909,7 +5939,7 @@ dependencies = [
  "pest_meta",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5959,7 +5989,7 @@ checksum = "3be26700300be6d9d23264c73211d8190e755b6b5ca7a1b28230025511b52a5e"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5970,7 +6000,7 @@ checksum = "a490329918e856ed1b083f244e3bfe2d8c4f336407e4ea9e1a9f479ff09049e5"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -6128,7 +6158,7 @@ dependencies = [
  "proc-macro-error-attr",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
  "version_check 0.9.3",
 ]
 
@@ -6259,7 +6289,7 @@ dependencies = [
  "itertools 0.9.0",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -6708,7 +6738,7 @@ checksum = "4c38e3aecd2b21cb3959637b883bb3714bc7e43f0268b9a29d3743ee3e55cdd2"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -6902,7 +6932,7 @@ checksum = "e33d7b2abe0c340d8797fe2907d3f20d3b5ea5908683618bfe80df7f621f672a"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -6970,7 +7000,7 @@ dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
  "rust-embed-utils",
- "syn 1.0.73",
+ "syn 1.0.72",
  "walkdir",
 ]
 
@@ -7088,7 +7118,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4da5fcb054c46f5a5dff833b129285a93d3f0179531735e6c866e8cc307d2020"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "pin-project 0.4.28",
  "static_assertions",
 ]
@@ -7118,7 +7148,7 @@ dependencies = [
 name = "sc-peerset"
 version = "1.2.0"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "libp2p",
  "log 0.4.14",
  "rand 0.8.4",
@@ -7338,7 +7368,7 @@ checksum = "963a7dbc9895aeac7ac90e74f34a5d5261828f79df35cbed41e10189d3804d43"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -7385,7 +7415,7 @@ dependencies = [
  "darling 0.12.2",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -7676,7 +7706,7 @@ dependencies = [
  "base64 0.12.3",
  "bytes 0.5.6",
  "flate2",
- "futures 0.3.15",
+ "futures 0.3.13",
  "httparse",
  "log 0.4.14",
  "rand 0.7.3",
@@ -7687,7 +7717,7 @@ dependencies = [
 name = "sp-utils"
 version = "1.2.0"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-core",
  "lazy_static",
  "once_cell",
@@ -7724,7 +7754,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "parking_lot 0.11.1",
  "rand 0.8.4",
@@ -7747,7 +7777,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "rand 0.8.4",
  "rand_core 0.6.3",
@@ -7766,7 +7796,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "starcoin-account",
  "starcoin-account-api",
  "starcoin-chain-notify",
@@ -7807,7 +7837,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "network-api",
  "once_cell",
@@ -7873,7 +7903,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "futures 0.3.15",
+ "futures 0.3.13",
  "network-api",
  "rand 0.8.4",
  "rand_core 0.6.3",
@@ -7893,7 +7923,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "once_cell",
  "parking_lot 0.11.1",
@@ -7937,7 +7967,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "futures 0.3.15",
+ "futures 0.3.13",
  "rand 0.8.4",
  "rand_core 0.6.3",
  "serde",
@@ -7965,7 +7995,7 @@ dependencies = [
  "crossbeam-channel 0.5.1",
  "errmapgen",
  "forkable-jellyfish-merkle",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "itertools 0.10.1",
  "network-api",
@@ -8046,7 +8076,7 @@ dependencies = [
  "anyhow",
  "byteorder 1.4.3",
  "cryptonight-rs",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "once_cell",
  "proptest",
@@ -8089,7 +8119,7 @@ version = "1.2.0"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -8197,7 +8227,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "ascii",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "rust-embed",
@@ -8250,7 +8280,7 @@ name = "starcoin-generator"
 version = "1.2.0"
 dependencies = [
  "anyhow",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "scmd",
@@ -8307,7 +8337,7 @@ dependencies = [
  "elasticsearch",
  "futures-retry",
  "futures-util",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
  "starcoin-crypto",
@@ -8340,7 +8370,7 @@ name = "starcoin-metrics"
 version = "1.2.0"
 dependencies = [
  "anyhow",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hyper 0.13.10",
  "once_cell",
  "prometheus",
@@ -8356,7 +8386,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "once_cell",
@@ -8373,7 +8403,6 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-miner-client",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node",
@@ -8406,11 +8435,13 @@ dependencies = [
  "async-std",
  "byteorder 1.4.3",
  "dyn-clone",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-channel",
  "futures-timer",
  "hex",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libloading",
  "parking_lot 0.11.1",
  "rand 0.8.4",
@@ -8423,14 +8454,26 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-miner",
+ "starcoin-miner-client-api",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-service-registry",
+ "starcoin-stratum",
  "starcoin-types",
  "stest",
  "structopt",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 0.3.7",
+]
+
+[[package]]
+name = "starcoin-miner-client-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dyn-clone",
+ "futures 0.3.13",
+ "starcoin-types",
 ]
 
 [[package]]
@@ -8474,7 +8517,7 @@ dependencies = [
  "bytes 1.0.1",
  "derive_more",
  "fnv",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "log 0.4.14",
@@ -8515,7 +8558,7 @@ dependencies = [
  "api-limiter",
  "bcs-ext",
  "bytes 1.0.1",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "network-api",
@@ -8559,7 +8602,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "network-rpc-core",
  "network-rpc-derive",
  "once_cell",
@@ -8583,7 +8626,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "chrono",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "network-api",
  "network-rpc-core",
@@ -8602,6 +8645,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-miner",
+ "starcoin-miner-client",
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
@@ -8632,7 +8676,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "backtrace",
- "futures 0.3.15",
+ "futures 0.3.13",
  "serde",
  "starcoin-config",
  "starcoin-consensus",
@@ -8653,7 +8697,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "once_cell",
  "parking_lot 0.11.1",
  "starcoin-accumulator",
@@ -8676,7 +8720,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "async-std",
- "futures 0.3.15",
+ "futures 0.3.13",
  "network-p2p",
  "network-p2p-types",
  "starcoin-config",
@@ -8732,10 +8776,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -8767,12 +8811,12 @@ dependencies = [
  "anyhow",
  "async-std",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
- "jsonrpc-client-transports",
+ "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -8806,7 +8850,7 @@ name = "starcoin-rpc-middleware"
 version = "1.2.0"
 dependencies = [
  "anyhow",
- "futures 0.3.15",
+ "futures 0.3.13",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell",
  "rand 0.8.4",
@@ -8826,12 +8870,12 @@ dependencies = [
  "api-limiter",
  "bcs-ext",
  "dashmap",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-channel",
  "governor",
  "hex",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
@@ -8894,7 +8938,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "log 0.4.14",
  "once_cell",
@@ -8925,7 +8969,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "futures 0.3.15",
+ "futures 0.3.13",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
@@ -9016,11 +9060,12 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "byteorder 1.4.3",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
- "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c)",
+ "jsonrpc-core 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
+ "jsonrpc-core-client 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
  "jsonrpc-derive 17.1.0",
- "jsonrpc-pubsub 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=a913ce4632c1989c8fa1810823ec7c209a50d26c)",
+ "jsonrpc-pubsub 17.1.0 (git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95)",
  "jsonrpc-tcp-server 17.1.0",
  "serde",
  "serde_json",
@@ -9042,7 +9087,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "forkable-jellyfish-merkle",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-retry",
  "futures-timer",
  "hex",
@@ -9136,7 +9181,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "ctrlc",
- "futures 0.3.15",
+ "futures 0.3.13",
  "starcoin-account-api",
  "starcoin-config",
  "starcoin-crypto",
@@ -9157,7 +9202,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "forkable-jellyfish-merkle",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-channel",
  "linked-hash-map",
  "log 0.4.14",
@@ -9226,7 +9271,7 @@ dependencies = [
  "byteorder 1.4.3",
  "bytes 1.0.1",
  "forkable-jellyfish-merkle",
- "futures 0.3.15",
+ "futures 0.3.13",
  "hex",
  "itertools 0.10.1",
  "mirai-annotations",
@@ -9377,7 +9422,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
- "futures 0.3.15",
+ "futures 0.3.13",
  "log 0.4.14",
  "starcoin-logger",
  "stest-macro",
@@ -9394,7 +9439,7 @@ dependencies = [
  "darling 0.10.2",
  "quote 1.0.9",
  "stest",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -9425,7 +9470,7 @@ version = "1.2.0"
 dependencies = [
  "anyhow",
  "async-std",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-retry",
  "futures-timer",
  "log 0.4.14",
@@ -9483,7 +9528,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -9528,9 +9573,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.73"
+version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f71489ff30030d2ae598524f61326b902466f72a0fb1a8564c001cc63425bcc7"
+checksum = "a1e8cdbefb79a9a5a65e0db8b47b723ee907b7c7f8496c76a1770b5c310bab82"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
@@ -9554,7 +9599,7 @@ checksum = "b834f2d66f734cb897113e34aaff2f1ab4719ca946f9a7358dba8f8064148701"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
  "unicode-xid 0.2.1",
 ]
 
@@ -9679,7 +9724,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "bcs-ext",
- "futures 0.3.15",
+ "futures 0.3.13",
  "futures-timer",
  "hex",
  "network-api",
@@ -9822,7 +9867,7 @@ checksum = "8a36768c0fbf1bb15eca10defa29526bda730a2376c2ab4393ccfa16fb1a318d"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -9955,6 +10000,28 @@ dependencies = [
 
 [[package]]
 name = "tokio"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46409491c9375a693ce7032101970a54f8a2010efb77e13f70788f0d84489e39"
+dependencies = [
+ "autocfg 1.0.1",
+ "bytes 0.6.0",
+ "futures-core",
+ "libc",
+ "memchr",
+ "mio 0.7.11",
+ "num_cpus",
+ "once_cell",
+ "parking_lot 0.11.1",
+ "pin-project-lite 0.2.6",
+ "signal-hook-registry",
+ "slab",
+ "tokio-macros 0.3.2",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "tokio"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134af885d758d645f0f0505c9a8b3f9bf8a348fd822e112ab5248138348f1722"
@@ -10024,7 +10091,18 @@ checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46dfffa59fc3c8aad216ed61bdc2c263d2b9d87a9c8ac9de0c11a813e51b6db7"
+dependencies = [
+ "proc-macro2 1.0.27",
+ "quote 1.0.9",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -10035,7 +10113,7 @@ checksum = "caf7b11a536f46a809a8a9f0bb4237020f70ecbf115b842360afb127ea2fda57"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -10233,7 +10311,7 @@ checksum = "c42e6fa53307c8a17e4ccd4dc81cf5ec38db9209f59b222210375b54ee40d1e2"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -10300,7 +10378,7 @@ dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
  "enum-as-inner",
- "futures 0.3.15",
+ "futures 0.3.13",
  "idna 0.2.2",
  "lazy_static",
  "log 0.4.14",
@@ -10318,7 +10396,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "710f593b371175db53a26d0b38ed2978fafb9e9e8d3868b1acd753ea18df0ceb"
 dependencies = [
  "cfg-if 0.1.10",
- "futures 0.3.15",
+ "futures 0.3.13",
  "ipconfig",
  "lazy_static",
  "log 0.4.14",
@@ -10750,7 +10828,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "332d47745e9a0c38636dbd454729b147d16bd1ed08ae67b3ab281c4506771054"
 dependencies = [
  "bytes 1.0.1",
- "futures 0.3.15",
+ "futures 0.3.13",
  "headers",
  "http",
  "hyper 0.14.5",
@@ -10808,7 +10886,7 @@ dependencies = [
  "log 0.4.14",
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
  "wasm-bindgen-shared",
 ]
 
@@ -10842,7 +10920,7 @@ checksum = "d53739ff08c8a68b0fdbcd54c372b8ab800b1449ab3c9d706503bc7dd1621b2c"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -10859,7 +10937,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "js-sys",
  "parking_lot 0.11.1",
  "pin-utils",
@@ -11138,7 +11216,7 @@ version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cc7bd8c983209ed5d527f44b01c41b7dc146fd960c61cf9e1d25399841dc271"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "log 0.4.14",
  "nohash-hasher",
  "parking_lot 0.11.1",
@@ -11152,7 +11230,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7d9028f208dd5e63c614be69f115c1b53cacc1111437d4c765185856666c107"
 dependencies = [
- "futures 0.3.15",
+ "futures 0.3.13",
  "log 0.4.14",
  "nohash-hasher",
  "parking_lot 0.11.1",
@@ -11177,6 +11255,6 @@ checksum = "c3f369ddb18862aba61aa49bf31e74d29f0f162dec753063200e1dc084345d16"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
- "syn 1.0.73",
+ "syn 1.0.72",
  "synstructure",
 ]

@@ -1,26 +1,23 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 use crate::solver::create_solver;
-use crate::{JobClient, SealEvent, Solver};
+use crate::{JobClient, SealEvent};
 use anyhow::Result;
 use futures::channel::mpsc;
 use futures::channel::mpsc::unbounded;
 use futures::executor::block_on;
-use futures::stream::StreamExt;
 use futures::SinkExt;
 use logger::prelude::*;
 use parking_lot::Mutex;
 use starcoin_config::MinerClientConfig;
+use starcoin_miner_client_api::Solver;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
-use starcoin_types::U256;
 use std::thread;
 
 pub struct MinerClient<C: JobClient> {
-    nonce_rx: Option<mpsc::UnboundedReceiver<(Vec<u8>, u32)>>,
-    nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u32)>,
+    nonce_rx: Option<mpsc::UnboundedReceiver<SealEvent>>,
+    nonce_tx: mpsc::UnboundedSender<SealEvent>,
     job_client: C,
     num_seals_found: Mutex<u32>,
     solver: Box<dyn Solver>,
@@ -39,8 +36,8 @@ impl<C: JobClient> MinerClient<C> {
             current_task: None,
         })
     }
-    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra) {
-        if let Err(err) = self.job_client.submit_seal(minting_blob, nonce, extra) {
+    fn submit_seal(&self, seal: SealEvent) {
+        if let Err(err) = self.job_client.submit_seal(seal) {
             error!("Submit seal to failed: {}", err);
             return;
         }
@@ -54,7 +51,7 @@ impl<C: JobClient> MinerClient<C> {
         }
     }
 
-    fn start_mint_work(&mut self, strategy: ConsensusStrategy, minting_hash: &[u8], diff: U256) {
+    fn start_mint_work(&mut self, event: MintBlockEvent) {
         let (stop_tx, stop_rx) = unbounded();
         if let Some(mut task) = self.current_task.take() {
             if let Err(e) = block_on(task.send(true)) {
@@ -66,11 +63,9 @@ impl<C: JobClient> MinerClient<C> {
         }
         self.current_task = Some(stop_tx);
         let nonce_tx = self.nonce_tx.clone();
-        let minting_hash = minting_hash.to_owned();
-
         let mut solver = dyn_clone::clone_box(&*self.solver);
         //this will block on handle Sealevent if use actix spawn
-        thread::spawn(move || solver.solve(strategy, &minting_hash, diff, nonce_tx, stop_rx));
+        thread::spawn(move || solver.solve(event, nonce_tx, stop_rx));
     }
 }
 
@@ -86,12 +81,7 @@ impl<C: JobClient> ActorService for MinerClientService<C> {
             .inner
             .nonce_rx
             .take()
-            .expect("Inner error for take nonce rx")
-            .map(|(minting_blob, nonce)| SealEvent {
-                minting_blob,
-                nonce,
-                extra: BlockHeaderExtra::new([0u8; 4]),
-            });
+            .expect("Inner error for take nonce rx");
         ctx.add_stream(seals);
         Ok(())
     }
@@ -113,14 +103,12 @@ impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> 
         event: MintBlockEvent,
         _ctx: &mut ServiceContext<MinerClientService<C>>,
     ) {
-        self.inner
-            .start_mint_work(event.strategy, &event.minting_blob, event.difficulty);
+        self.inner.start_mint_work(event);
     }
 }
 
 impl<C: JobClient> EventHandler<Self, SealEvent> for MinerClientService<C> {
     fn handle_event(&mut self, event: SealEvent, _ctx: &mut ServiceContext<MinerClientService<C>>) {
-        self.inner
-            .submit_seal(event.minting_blob, event.nonce, event.extra)
+        self.inner.submit_seal(event)
     }
 }

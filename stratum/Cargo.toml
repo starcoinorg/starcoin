@@ -6,21 +6,22 @@ edition = "2018"
 
 [dependencies]
 
-jsonrpc-tcp-server = { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913ce4632c1989c8fa1810823ec7c209a50d26c"}
-jsonrpc-derive =  { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913ce4632c1989c8fa1810823ec7c209a50d26c"}
-jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913ce4632c1989c8fa1810823ec7c209a50d26c",features=["arbitrary_precision"]}
-jsonrpc-pubsub = { git = "https://github.com/starcoinorg/jsonrpc", rev = "a913ce4632c1989c8fa1810823ec7c209a50d26c"}
-serde_json = { version="1.0", features = ["arbitrary_precision"]}
+jsonrpc-tcp-server = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
+jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
+jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95", features = ["arbitrary_precision"] }
+jsonrpc-pubsub = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
+jsonrpc-core-client = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 serde = { version = "1.0.126" }
 hex = { version = "0.4.3", default-features = false }
 byteorder = "1.3.4"
 anyhow = "1.0.41"
 futures = "0.3.12"
 starcoin-service-registry = { path = "../commons/service-registry" }
-starcoin-types = {path = "../types"}
+starcoin-types = { path = "../types" }
 starcoin-miner = { path = "../miner" }
 starcoin-logger = { path = "../commons/logger" }
 starcoin-crypto = { path = "../commons/crypto" }
-starcoin-config ={ path = "../config"}
+starcoin-config = { path = "../config" }
 [dev-dependencies]
-stest = { path = "../commons/stest"}
+stest = { path = "../commons/stest" }

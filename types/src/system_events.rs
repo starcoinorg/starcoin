@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, ExecutedBlock};
+use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use serde::{Deserialize, Serialize};
@@ -47,6 +47,15 @@ pub struct MintBlockEvent {
     pub minting_blob: Vec<u8>,
     pub difficulty: U256,
     pub block_number: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extra: Option<MintEventExtra>,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MintEventExtra {
+    pub worker_id: String,
+    pub job_id: String,
+    pub extra: BlockHeaderExtra,
 }
 
 impl MintBlockEvent {
@@ -56,6 +65,7 @@ impl MintBlockEvent {
         minting_blob: Vec<u8>,
         difficulty: U256,
         block_number: u64,
+        extra: Option<MintEventExtra>,
     ) -> Self {
         Self {
             parent_hash,
@@ -63,6 +73,15 @@ impl MintBlockEvent {
             minting_blob,
             difficulty,
             block_number,
+            extra,
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct SealEvent {
+    pub minting_blob: Vec<u8>,
+    pub nonce: u32,
+    pub extra: Option<MintEventExtra>,
+    pub hash_result: String,
 }

@@ -1,12 +1,12 @@
-use crate::{BlockHeaderExtra, MinerService, MintBlockEvent, SubmitSealRequest};
+use crate::{BlockHeaderExtra, JobClient, MintBlockEvent, SealEvent};
 use anyhow::Result;
 use futures::executor::block_on;
 use futures::stream::BoxStream;
 use futures::stream::StreamExt;
-use starcoin_miner_client::JobClient;
+use starcoin_miner::{MinerService, SubmitSealRequest};
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
-use starcoin_vm_types::time::TimeService;
+use starcoin_types::time::TimeService;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -36,14 +36,13 @@ impl JobClient for JobBusClient {
         block_on(async move { bus.channel::<MintBlockEvent>().await.map(|s| s.boxed()) })
     }
 
-    fn submit_seal(
-        &self,
-        minting_blob: Vec<u8>,
-        nonce: u32,
-        extra: BlockHeaderExtra,
-    ) -> Result<()> {
+    fn submit_seal(&self, seal: SealEvent) -> Result<()> {
+        let extra = match &seal.extra {
+            None => BlockHeaderExtra::default(),
+            Some(extra) => extra.extra,
+        };
         self.miner_service
-            .try_send(SubmitSealRequest::new(minting_blob, nonce, extra))
+            .try_send(SubmitSealRequest::new(seal.minting_blob, seal.nonce, extra))
             .map_err(|e| e.into())
     }
 

@@ -221,6 +221,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
         header_hash.clone(),
         diff,
         0,
+        None,
     );
     bus.broadcast(mint_block_event.clone()).unwrap();
     let res = timeout(Duration::from_secs(1), receiver.next())
