@@ -1,4 +1,4 @@
-$llvmVersion = "8.0.0"
+$llvmVersion = "12.0.0"
 Write-Host "Installing LLVM $llvmVersion ..." -ForegroundColor Cyan
 Write-Host "Downloading..."
 $exePath = "$env:temp\LLVM-$llvmVersion-win64.exe"
