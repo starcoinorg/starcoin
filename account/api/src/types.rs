@@ -8,7 +8,6 @@ use starcoin_types::{
     transaction::authenticator::AuthenticationKey,
 };
 
-use starcoin_types::receipt_identifier::ReceiptIdentifier;
 pub use starcoin_types::transaction::authenticator::{
     AccountPrivateKey, AccountPublicKey, AccountSignature,
 };
@@ -21,7 +20,7 @@ pub struct AccountInfo {
     pub is_default: bool,
     pub is_readonly: bool,
     pub public_key: AccountPublicKey,
-    pub receipt_identifier: ReceiptIdentifier,
+    pub receipt_identifier: String,
 }
 
 impl AccountInfo {
@@ -31,13 +30,12 @@ impl AccountInfo {
         is_default: bool,
         is_readonly: bool,
     ) -> Self {
-        let auth_key = public_key.authentication_key();
         Self {
             address,
             public_key,
             is_default,
             is_readonly,
-            receipt_identifier: ReceiptIdentifier::V1(address, Some(auth_key)),
+            receipt_identifier: address.to_bech32(),
         }
     }
 
@@ -54,13 +52,12 @@ impl AccountInfo {
         let (_private_key, public_key) = key_gen.generate_keypair();
         let address = account_address::from_public_key(&public_key);
         let account_public_key = AccountPublicKey::Single(public_key);
-        let auth_key = account_public_key.authentication_key();
         AccountInfo {
             address,
             is_default: false,
             is_readonly: false,
             public_key: account_public_key,
-            receipt_identifier: ReceiptIdentifier::V1(address, Some(auth_key)),
+            receipt_identifier: address.to_bech32(),
         }
     }
 }

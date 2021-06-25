@@ -24,7 +24,7 @@ weight: 3
 
 ### 创建账户
 
-连接到节点后，我们先来创建两个账户。这里我们假设两个账号已经创建成功，Alice 是默认账号，的地址是 0x988acf6d210701242af03cbb13780745， Bob 的地址是 0x1179ec968815ded9c59775274446ad4c， 收款识别码（receipt_identifier）是 stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t。
+连接到节点后，我们先来创建两个账户。这里我们假设两个账号已经创建成功，Alice 是默认账号，的地址是 0x988acf6d210701242af03cbb13780745， Bob 的地址是 0x1179ec968815ded9c59775274446ad4c， 收款识别码（receipt_identifier）是 stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt。
 
 ### 使用 Faucet 给账户充钱
 
@@ -51,7 +51,7 @@ starcoin% account show 0x988acf6d210701242af03cbb13780745
 +--------------------+------------------------------------------------------------------------------------------+
 | auth_key           | 0x6d9ca71670371e406e6e7821c4560f31988acf6d210701242af03cbb13780745                       |
 +--------------------+------------------------------------------------------------------------------------------+
-| receipt_identifier | stc1pnz9v7mfpquqjg2hs8ja3x7q8g4keefckwqm3usrwdeuzr3zkpuce3zk0d5sswqfy9tcrewcn0qr528sv4vw |
+| receipt_identifier | stc1pnz9v7mfpquqjg2hs8ja3x7q8g5fsudrg |
 +--------------------+------------------------------------------------------------------------------------------+
 | sequence_number    | 0                                                                                        |
 +--------------------+------------------------------------------------------------------------------------------+
@@ -74,13 +74,13 @@ account unlock -p my-pass 0x988acf6d210701242af03cbb13780745
 账户解锁后，执行以下命令：
 
 ```bash
-starcoin% account transfer -s 0x988acf6d210701242af03cbb13780745 -r stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t -v 10000 -b
+starcoin% account transfer -s 0x988acf6d210701242af03cbb13780745 -r stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt -v 10000 -b
 ```
 
 其中：
 
 - `-s 0x988acf6d210701242af03cbb13780745`: 是 Alice 的账户地址。
-- `-r stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t`：是 Bob 的收款识别码(receipt_identifier)。
+- `-r stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt`：是 Bob 的收款识别码(receipt_identifier)。
 
 > 如果，Bob 的账户在链上还不存在，转账交易会自动在链上创建 Bob 的账户。
 
@@ -97,7 +97,7 @@ starcoin% account show 0x1179ec968815ded9c59775274446ad4c
 +----------------------------+------------------------------------------------------------------------------------------+
 | account.public_key         | 0xfacd584290ee7baea7fe8e22d13332633babca46e77c0ca941b6b5c6266523cb                       |
 +----------------------------+------------------------------------------------------------------------------------------+
-| account.receipt_identifier | stc1pz9u7e95gzh0dn3vhw5n5g34dfn8pp69czzy46e8n60lpe53s0nmpz70vj6ypthkeckth2f6yg6k5cslzx6t |
+| account.receipt_identifier | stc1pz9u7e95gzh0dn3vhw5n5g34dfsxum2pt |
 +----------------------------+------------------------------------------------------------------------------------------+
 | auth_key                   | 0xce10e8b810895d64f3d3fe1cd2307cf61179ec968815ded9c59775274446ad4c                       |
 +----------------------------+------------------------------------------------------------------------------------------+

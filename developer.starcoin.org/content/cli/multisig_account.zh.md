@@ -98,7 +98,7 @@ starcoin% account show 0xdec266f6749fa0b193f3a7f89d3cd9f2
       "public_key": "0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b5843db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da70640666cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c0303402"
     },
     "auth_key": "0x0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2",
-    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7g8d27hgxte5l3d35azv03lkte0aasnx7e6flg93j0e607ya8nvly44eynp",
+    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7gc7dfz6",
     "sequence_number": null,
     "balances": {}
   }
@@ -129,7 +129,7 @@ starcoin% account show 0xdec266f6749fa0b193f3a7f89d3cd9f2
       "public_key": "0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b5843db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da70640666cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c0303402"
     },
     "auth_key": "0x0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2",
-    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7g8d27hgxte5l3d35azv03lkte0aasnx7e6flg93j0e607ya8nvly44eynp",
+    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7gc7dfz6",
     "sequence_number": 0,
     "balances": {
       "STC": 1000000000000
@@ -208,7 +208,7 @@ starcoin% account show 0xdec266f6749fa0b193f3a7f89d3cd9f2
       "public_key": "0x2ffe29f29064bf839c3194bf852b00f35fd9351afb602832ae64a754e8c2b5843db1b2a0172f8fb857afc5abebd98ecf969a2fcf2ba90e4b759ebc3da70640666cbe3fb3639a98fc5b8637b8280a8d5bb927b50fa2e2cdfa53a5de9395c0303402"
     },
     "auth_key": "0x0ed57ae832f34fc5b1a744c7c7f65e5fdec266f6749fa0b193f3a7f89d3cd9f2",
-    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7g8d27hgxte5l3d35azv03lkte0aasnx7e6flg93j0e607ya8nvly44eynp",
+    "receipt_identifier": "stc1pmmpxdan5n7stryln5luf60xe7gc7dfz6",
     "sequence_number": 1,
     "balances": {
       "STC": 998998928221

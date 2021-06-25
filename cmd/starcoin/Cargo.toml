@@ -46,10 +46,10 @@ starcoin-genesis = { path = "../../genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="b5d4b28697d26b330e5f77296f92080214b601c0" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="11dc6d890b48af4f85c1a75bbe690501e8994e21" }
 network-api = {path = "../../network/api", package="network-api"}
 starcoin-network-rpc-api = {path = "../../network-rpc/api"}
-short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="b5d4b28697d26b330e5f77296f92080214b601c0" }
+short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="11dc6d890b48af4f85c1a75bbe690501e8994e21" }
 
 
 [dev-dependencies]

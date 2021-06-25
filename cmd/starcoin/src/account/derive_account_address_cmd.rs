@@ -11,7 +11,6 @@ use serde::Serialize;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use structopt::StructOpt;
@@ -65,11 +64,12 @@ impl CommandAction for DeriveAddressCommand {
                 .collect::<Vec<_>>();
             AccountPublicKey::multi(pubkeys, threshold)?
         };
-
+        let address = account_key.derived_address();
+        let receipt_identifier = address.to_bech32();
         Ok(DerivedAddressData {
-            address: account_key.derived_address(),
+            address,
             auth_key: account_key.authentication_key(),
-            receipt_identifier: account_key.receipt_identifier(),
+            receipt_identifier,
             public_key: account_key,
         })
     }
@@ -79,6 +79,6 @@ impl CommandAction for DeriveAddressCommand {
 pub struct DerivedAddressData {
     pub address: AccountAddress,
     pub auth_key: AuthenticationKey,
-    pub receipt_identifier: ReceiptIdentifier,
+    pub receipt_identifier: String,
     pub public_key: AccountPublicKey,
 }

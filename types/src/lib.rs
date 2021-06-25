@@ -88,7 +88,3 @@ pub mod sync_status;
 pub mod proof {
     pub use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 }
-
-pub mod receipt_identifier {
-    pub use starcoin_vm_types::receipt_identifier::*;
-}

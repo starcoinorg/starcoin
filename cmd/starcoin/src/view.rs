@@ -11,57 +11,13 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
-use starcoin_types::receipt_identifier::ReceiptIdentifier;
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::collections::HashMap;
-use std::str::FromStr;
 use structopt::StructOpt;
-
-#[derive(Clone, Copy, Debug)]
-pub enum AddressOrReceipt {
-    Address(AccountAddress),
-    Receipt(ReceiptIdentifier),
-}
-
-impl AddressOrReceipt {
-    pub fn is_address(&self) -> bool {
-        matches!(self, AddressOrReceipt::Address(_))
-    }
-
-    pub fn address(&self) -> AccountAddress {
-        match self {
-            AddressOrReceipt::Address(address) => *address,
-            AddressOrReceipt::Receipt(receipt) => receipt.address(),
-        }
-    }
-
-    pub fn is_receipt(&self) -> bool {
-        matches!(self, AddressOrReceipt::Receipt(_))
-    }
-
-    pub fn as_receipt(&self) -> Option<ReceiptIdentifier> {
-        match self {
-            AddressOrReceipt::Receipt(receipt) => Some(*receipt),
-            _ => None,
-        }
-    }
-}
-
-impl FromStr for AddressOrReceipt {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(if s.starts_with("stc") {
-            AddressOrReceipt::Receipt(ReceiptIdentifier::decode(s)?)
-        } else {
-            AddressOrReceipt::Address(AccountAddress::from_hex_literal(s)?)
-        })
-    }
-}
 
 #[derive(Debug, Clone, StructOpt, Default)]
 pub struct TransactionOptions {
