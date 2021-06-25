@@ -5,9 +5,8 @@ use crate::access_path::AccessPath;
 use crate::account_address::AccountAddress;
 use crate::account_config::CORE_CODE_ADDRESS;
 use crate::event::EventHandle;
-use crate::language_storage::StructTag;
+use crate::language_storage::{StructTag, TypeTag};
 use crate::move_resource::MoveResource;
-use crate::token::token_code::TokenCode;
 use serde::{Deserialize, Serialize};
 
 /// A Rust representation of a Treasury resource.
@@ -26,17 +25,20 @@ impl MoveResource for Treasury {
 }
 
 impl Treasury {
-    pub fn struct_tag_for(token_code: TokenCode) -> StructTag {
+    pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             module: Self::module_identifier(),
             name: Self::struct_identifier(),
-            type_params: vec![token_code.into()],
+            type_params: vec![TypeTag::Struct(token_type_tag)],
         }
     }
 
-    pub fn resource_path_for(token_code: TokenCode) -> AccessPath {
-        AccessPath::resource_access_path(token_code.address, Self::struct_tag_for(token_code))
+    pub fn resource_path_for(token_type_tag: StructTag) -> AccessPath {
+        AccessPath::resource_access_path(
+            token_type_tag.address,
+            Self::struct_tag_for(token_type_tag),
+        )
     }
 }
 
@@ -54,16 +56,16 @@ impl MoveResource for LinearWithdrawCapability {
 }
 
 impl LinearWithdrawCapability {
-    pub fn struct_tag_for(token_code: TokenCode) -> StructTag {
+    pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             module: Self::module_identifier(),
             name: Self::struct_identifier(),
-            type_params: vec![token_code.into()],
+            type_params: vec![TypeTag::Struct(token_type_tag)],
         }
     }
 
-    pub fn resource_path_for(address: AccountAddress, token_code: TokenCode) -> AccessPath {
-        AccessPath::resource_access_path(address, Self::struct_tag_for(token_code))
+    pub fn resource_path_for(address: AccountAddress, token_type_tag: StructTag) -> AccessPath {
+        AccessPath::resource_access_path(address, Self::struct_tag_for(token_type_tag))
     }
 }

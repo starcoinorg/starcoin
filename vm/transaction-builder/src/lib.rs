@@ -22,6 +22,7 @@ use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
     TransactionPayload,
 };
+use std::convert::TryInto;
 use stdlib::stdlib_package;
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
@@ -187,7 +188,7 @@ pub fn raw_accept_token_txn(
     let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
         Identifier::new("accept_token").unwrap(),
-        vec![token_code.into()],
+        vec![TypeTag::Struct(token_code.try_into().unwrap())],
         vec![],
     ));
 
@@ -236,7 +237,7 @@ pub fn encode_transfer_script_by_token_code(
             Identifier::new("TransferScripts").unwrap(),
         ),
         Identifier::new("peer_to_peer_v2").unwrap(),
-        vec![token_code.into()],
+        vec![TypeTag::Struct(token_code.try_into().unwrap())],
         vec![
             bcs_ext::to_bytes(&recipient).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),

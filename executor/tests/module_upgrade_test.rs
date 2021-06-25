@@ -21,6 +21,7 @@ use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::VMValueCast;
 use statedb::ChainStateDB;
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use stdlib::{load_upgrade_package, StdlibCompat, STDLIB_VERSIONS};
@@ -481,7 +482,7 @@ where
                 .get_resource_by_access_path::<LinearWithdrawCapability>(
                     LinearWithdrawCapability::resource_path_for(
                         association_address(),
-                        STC_TOKEN_CODE.clone(),
+                        STC_TOKEN_CODE.clone().try_into()?,
                     ),
                 )?;
             assert!(
