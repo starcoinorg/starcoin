@@ -6,6 +6,7 @@ use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
@@ -13,7 +14,6 @@ use starcoin_types::{
     account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
     account_state::AccountState,
-    language_storage::TypeTag,
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
@@ -29,7 +29,7 @@ use starcoin_vm_types::token::token_info::TokenInfo;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
 };
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
@@ -263,7 +263,7 @@ pub trait StateReaderExt: ChainStateReader {
     fn get_balance_by_type(
         &self,
         address: AccountAddress,
-        type_tag: TypeTag,
+        type_tag: StructTag,
     ) -> Result<Option<u128>> {
         Ok(self
             .get(&AccessPath::new(
@@ -284,7 +284,7 @@ pub trait StateReaderExt: ChainStateReader {
         address: AccountAddress,
         token_code: TokenCode,
     ) -> Result<Option<u128>> {
-        self.get_balance_by_type(address, token_code.into())
+        self.get_balance_by_type(address, token_code.try_into()?)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
@@ -324,7 +324,8 @@ pub trait StateReaderExt: ChainStateReader {
     }
 
     fn get_token_info(&self, token_code: TokenCode) -> Result<Option<TokenInfo>> {
-        let access_path = TokenInfo::resource_path_for(token_code);
+        let type_tag = token_code.try_into()?;
+        let access_path = TokenInfo::resource_path_for(type_tag);
         self.get_resource_by_access_path(access_path)
     }
 
@@ -333,7 +334,7 @@ pub trait StateReaderExt: ChainStateReader {
     }
 
     fn get_treasury(&self, token_code: TokenCode) -> Result<Option<Treasury>> {
-        let access_path = Treasury::resource_path_for(token_code);
+        let access_path = Treasury::resource_path_for(token_code.try_into()?);
         self.get_resource_by_access_path(access_path)
     }
 
@@ -345,7 +346,7 @@ pub trait StateReaderExt: ChainStateReader {
     where
         A: ProposalAction + DeserializeOwned,
     {
-        let access_path = Proposal::<A>::resource_path_for(token_code);
+        let access_path = Proposal::<A>::resource_path_for(token_code.try_into()?);
         self.get_resource_by_access_path(access_path)
     }
 
@@ -406,7 +407,7 @@ where
     pub fn get_balance_by_type(
         &self,
         address: &AccountAddress,
-        type_tag: TypeTag,
+        type_tag: StructTag,
     ) -> Result<Option<u128>> {
         self.reader.get_balance_by_type(*address, type_tag)
     }

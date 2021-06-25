@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::DataPath;
-use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
     account_config::constants::{stc_type_tag, ACCOUNT_MODULE_NAME, CORE_CODE_ADDRESS},
@@ -27,21 +26,17 @@ impl BalanceResource {
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
-    pub fn struct_tag_for_token(token_type_tag: TypeTag) -> StructTag {
+    pub fn struct_tag_for_token(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             name: BalanceResource::struct_identifier(),
             module: BalanceResource::module_identifier(),
-            type_params: vec![token_type_tag],
+            type_params: vec![TypeTag::Struct(token_type_tag)],
         }
     }
 
-    pub fn struct_tag_for_token_code(token_code: TokenCode) -> StructTag {
-        Self::struct_tag_for_token(token_code.into())
-    }
-
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
-    pub fn access_path_for(token_type_tag: TypeTag) -> DataPath {
+    pub fn access_path_for(token_type_tag: StructTag) -> DataPath {
         AccessPath::resource_data_path(BalanceResource::struct_tag_for_token(token_type_tag))
     }
 }

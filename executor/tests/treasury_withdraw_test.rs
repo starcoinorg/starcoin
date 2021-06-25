@@ -18,6 +18,7 @@ use starcoin_vm_types::transaction::{
     RawUserTransaction, ScriptFunction, Transaction, TransactionPayload,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
+use std::convert::TryInto;
 use test_helper::dao::dao_vote_test;
 use test_helper::executor::{execute_and_apply, prepare_genesis};
 use test_helper::Account;
@@ -71,7 +72,10 @@ fn test_treasury_withdraw() -> Result<()> {
     )?;
 
     let cap = chain_state.get_resource_by_access_path::<LinearWithdrawCapability>(
-        LinearWithdrawCapability::resource_path_for(*alice.address(), STC_TOKEN_CODE.clone()),
+        LinearWithdrawCapability::resource_path_for(
+            *alice.address(),
+            STC_TOKEN_CODE.clone().try_into()?,
+        ),
     )?;
     assert!(cap.is_some(), "expect LinearWithdrawCapability exist.");
     let cap = cap.unwrap();

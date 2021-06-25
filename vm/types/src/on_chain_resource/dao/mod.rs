@@ -5,9 +5,8 @@ use crate::access_path::AccessPath;
 use crate::account_address::AccountAddress;
 use crate::account_config::CORE_CODE_ADDRESS;
 use crate::event::EventHandle;
-use crate::language_storage::StructTag;
+use crate::language_storage::{StructTag, TypeTag};
 use crate::move_resource::MoveResource;
-use crate::token::token_code::TokenCode;
 use serde::{Deserialize, Serialize};
 
 mod actions;
@@ -29,19 +28,19 @@ impl MoveResource for DaoGlobalInfo {
 }
 
 impl DaoGlobalInfo {
-    pub fn struct_tag_for(token_code: TokenCode) -> StructTag {
+    pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             module: DaoGlobalInfo::module_identifier(),
             name: DaoGlobalInfo::struct_identifier(),
-            type_params: vec![token_code.into()],
+            type_params: vec![TypeTag::Struct(token_type_tag)],
         }
     }
 
-    pub fn resource_path_for(token_code: TokenCode) -> AccessPath {
+    pub fn resource_path_for(token_type_tag: StructTag) -> AccessPath {
         AccessPath::resource_access_path(
-            token_code.address,
-            DaoGlobalInfo::struct_tag_for(token_code),
+            token_type_tag.address,
+            DaoGlobalInfo::struct_tag_for(token_type_tag),
         )
     }
 }
@@ -85,17 +84,20 @@ impl<A> Proposal<A>
 where
     A: ProposalAction,
 {
-    pub fn struct_tag_for(token_code: TokenCode) -> StructTag {
+    pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             module: Self::module_identifier(),
             name: Self::struct_identifier(),
-            type_params: vec![token_code.into(), A::type_tag()],
+            type_params: vec![TypeTag::Struct(token_type_tag), A::type_tag()],
         }
     }
 
-    pub fn resource_path_for(token_code: TokenCode) -> AccessPath {
-        AccessPath::resource_access_path(token_code.address, Self::struct_tag_for(token_code))
+    pub fn resource_path_for(token_type_tag: StructTag) -> AccessPath {
+        AccessPath::resource_access_path(
+            token_type_tag.address,
+            Self::struct_tag_for(token_type_tag),
+        )
     }
 }
 

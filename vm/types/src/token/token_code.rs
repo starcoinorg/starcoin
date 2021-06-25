@@ -7,10 +7,9 @@ use crate::parser::parse_type_tag;
 use crate::token::TOKEN_MODULE_NAME;
 use anyhow::{bail, ensure, Result};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::StructTag;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::str::FromStr;
 
@@ -52,22 +51,25 @@ impl TryFrom<TypeTag> for TokenCode {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value {
-            TypeTag::Struct(struct_tag) => {
-                ensure!(
-                    struct_tag.type_params.is_empty(),
-                    "Token's type tag should not contains type_params."
-                );
-                Ok(Self::new(
-                    struct_tag.address,
-                    struct_tag.module.into_string(),
-                    struct_tag.name.into_string(),
-                ))
-            }
+            TypeTag::Struct(struct_tag) => TokenCode::try_from(struct_tag),
             type_tag => bail!("{:?} is not a Token's type tag", type_tag),
         }
     }
 }
+impl TryFrom<StructTag> for TokenCode {
+    type Error = anyhow::Error;
 
+    fn try_from(struct_tag: StructTag) -> Result<Self, Self::Error> {
+        let tag_str = struct_tag.to_string();
+        let s: Vec<_> = tag_str.splitn(3, "::").collect();
+        ensure!(s.len() == 3, "invalid struct tag format");
+        Ok(Self::new(
+            struct_tag.address,
+            struct_tag.module.into_string(),
+            s[2].to_string(),
+        ))
+    }
+}
 impl FromStr for TokenCode {
     type Err = anyhow::Error;
 
@@ -78,14 +80,30 @@ impl FromStr for TokenCode {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<TypeTag> for TokenCode {
-    fn into(self) -> TypeTag {
-        TypeTag::Struct(StructTag {
-            address: self.address,
-            module: Identifier::new(self.module)
-                .expect("TokenCode's module should been Identifier"),
-            name: Identifier::new(self.name).expect("TokenCode's name should been Identifier"),
-            type_params: vec![],
-        })
+impl TryInto<StructTag> for TokenCode {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<StructTag, Self::Error> {
+        match parse_type_tag(self.to_string().as_str())? {
+            TypeTag::Struct(s) => Ok(s),
+            t => bail!("expect token code to be a struct tag, but receive {}", t),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::language_storage::{StructTag, TypeTag};
+    use crate::parser::parse_type_tag;
+    use crate::token::token_code::TokenCode;
+    use std::convert::TryInto;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_token_code() {
+        let token = "0x2::LiquidityToken::LiquidityToken<0x569ab535990a17ac9afd1bc57faec683::Ddd::Ddd, 0x569ab535990a17ac9afd1bc57faec683::Bot::Bot>";
+        let tc = TokenCode::from_str(token).unwrap();
+        let type_tag: StructTag = tc.try_into().unwrap();
+        assert_eq!(parse_type_tag(token).unwrap(), TypeTag::Struct(type_tag));
     }
 }

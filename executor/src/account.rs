@@ -35,6 +35,7 @@ use starcoin_vm_types::{
     values::{Struct, Value},
 };
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -140,8 +141,11 @@ impl Account {
     pub fn make_balance_access_path(&self, token_code_str: &str) -> AccessPath {
         let token_code =
             TokenCode::from_str(token_code_str).expect("token code str should been valid.");
+        let token_type_tag = token_code
+            .try_into()
+            .expect("token code to type tag should be ok");
         // TODO/XXX: Convert this to BalanceResource::struct_tag once that takes type args
-        self.make_access_path(BalanceResource::struct_tag_for_token_code(token_code))
+        self.make_access_path(BalanceResource::struct_tag_for_token(token_type_tag))
     }
 
     fn make_access_path(&self, tag: StructTag) -> AccessPath {
