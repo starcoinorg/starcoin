@@ -40,7 +40,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --all
+          args: --release
       - name: build release asset
         run: bash ./scripts/release.sh ${{ matrix.platform }}
       - name: upload artifact asset
