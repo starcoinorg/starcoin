@@ -1,6 +1,6 @@
 [package]
 name = "move-coverage"
-version = "1.2.0"
+version = "1.3.0"
 authors = ["Diem Association <opensource@diem.org>", "Starcoin Core Dev <dev@starcoin.org>"]
 description = "starcoin Move VM code coverage"
 license = "Apache-2.0"
@@ -18,8 +18,8 @@ colored = "2.0.0"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types"}
-bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="11dc6d890b48af4f85c1a75bbe690501e8994e21" }
-bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="11dc6d890b48af4f85c1a75bbe690501e8994e21" }
+bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
+bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
 
 [features]
 default = []
