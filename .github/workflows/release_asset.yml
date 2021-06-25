@@ -31,6 +31,14 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: .\scripts\install_llvm.ps1
         shell: powershell
+      - name: Set up MSYS2 for Windows
+        if: matrix.platform == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          release: false
+          update: false
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
         with:
