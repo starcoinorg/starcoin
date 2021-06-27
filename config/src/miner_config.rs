@@ -69,11 +69,13 @@ pub struct MinerClientConfig {
     pub miner_thread: u16,
     pub enable_stderr: bool,
 }
+
 impl MinerClientConfig {
     pub fn miner_thread(&self) -> u16 {
         self.miner_thread
     }
 }
+
 impl Default for MinerClientConfig {
     fn default() -> Self {
         Self {
@@ -84,6 +86,7 @@ impl Default for MinerClientConfig {
         }
     }
 }
+
 impl ConfigModule for MinerConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);

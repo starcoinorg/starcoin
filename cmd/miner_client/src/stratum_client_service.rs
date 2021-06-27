@@ -184,7 +184,7 @@ impl Inner {
         debug!(target: "stratum", "Process response:{:?}", response);
         let resp: Response = response
             .try_into()
-            .map_err(|e| anyhow!("stratum receive invalid response types:{}", e))?;
+            .map_err(|e| anyhow!("stratum receive invalid types:{}", e))?;
 
         match resp {
             Response::Output(output) => {
@@ -251,7 +251,7 @@ impl Inner {
 
                 resp = stream_fuse.select_next_some() => {
                     if let Err(err) = self.process_output(resp).await{
-                        error!("process output error:{:?}",err);
+                        debug!("process output error:{:?}", err);
                     }
 
                 },
