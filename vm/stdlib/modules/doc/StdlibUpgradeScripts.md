@@ -8,6 +8,7 @@ The module for StdlibUpgrade init scripts
 
 -  [Function `upgrade_from_v2_to_v3`](#0x1_StdlibUpgradeScripts_upgrade_from_v2_to_v3)
 -  [Function `take_linear_withdraw_capability`](#0x1_StdlibUpgradeScripts_take_linear_withdraw_capability)
+-  [Specification](#@Specification_0)
 
 
 <pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
@@ -88,3 +89,13 @@ association account should call this script after upgrade from v2 to v3.
 
 
 </details>
+
+<a name="@Specification_0"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
+</code></pre>
