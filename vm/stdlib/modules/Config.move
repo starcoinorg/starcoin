@@ -7,7 +7,7 @@ module Config {
     use 0x1::Errors;
 
     spec module {
-        pragma verify;
+        pragma verify = false;
         pragma aborts_if_is_strict;
     }
 

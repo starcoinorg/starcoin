@@ -11,6 +11,11 @@ module StdlibUpgradeScripts {
         use 0x1::Timestamp;
         use 0x1::Collection;
 
+        spec module {
+            pragma verify = false;
+            pragma aborts_if_is_strict = true;
+        }
+
         /// Stdlib upgrade script from v2 to v3
         public(script) fun upgrade_from_v2_to_v3(account: signer, total_stc_amount: u128 ) {
             CoreAddresses::assert_genesis_address(&account);
