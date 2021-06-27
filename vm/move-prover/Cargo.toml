@@ -9,7 +9,6 @@ license = "Apache-2.0"
 [dependencies]
 ## diem dependencies
 diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
-gen = { git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
 move-prover = { git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
 
 # external dependencies
