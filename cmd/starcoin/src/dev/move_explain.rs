@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::MoveExplainView;
+
+use crate::vm_status_translator::{explain_move_abort, MoveAbortExplain};
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_move_explain::get_explanation;
+
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::vm_status::AbortLocation;
 use starcoin_vm_types::{identifier::Identifier, language_storage::ModuleId};
 use structopt::StructOpt;
 
@@ -30,15 +32,13 @@ impl CommandAction for MoveExplain {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = MoveExplainOpt;
-    type ReturnItem = Option<MoveExplainView>;
+    type ReturnItem = MoveAbortExplain;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let category = opt.abort_code & 0xFFu64;
-        let reason_code = opt.abort_code >> 8;
         match opt.location {
             Some(_) => {
                 let mut location = opt.location.as_ref().unwrap().trim().split("::");
@@ -58,28 +58,11 @@ impl CommandAction for MoveExplain {
                     Identifier::new(module_name)?,
                 );
 
-                let error_ctx = get_explanation(&module_id, opt.abort_code);
+                let explain = explain_move_abort(AbortLocation::Module(module_id), opt.abort_code);
 
-                let (category_name, reason_name) = match error_ctx {
-                    Some(_) => (
-                        Some(error_ctx.clone().unwrap().category.code_name),
-                        Some(error_ctx.unwrap().reason.code_name),
-                    ),
-                    None => (None, None),
-                };
-                Ok(Some(MoveExplainView {
-                    category_code: category,
-                    category_name,
-                    reason_code,
-                    reason_name,
-                }))
+                Ok(explain)
             }
-            None => Ok(Some(MoveExplainView {
-                category_code: category,
-                category_name: None,
-                reason_code,
-                reason_name: None,
-            })),
+            None => Ok(explain_move_abort(AbortLocation::Script, opt.abort_code)),
         }
     }
 }
