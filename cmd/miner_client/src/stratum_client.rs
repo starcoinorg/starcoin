@@ -17,16 +17,19 @@ use starcoin_types::time::TimeService;
 pub struct StratumJobClient {
     stratum_cli_srv: ServiceRef<StratumClientService>,
     time_service: Arc<dyn TimeService>,
+    login: LoginRequest,
 }
 
 impl StratumJobClient {
     pub fn new(
         stratum_cli_srv: ServiceRef<StratumClientService>,
         time_service: Arc<dyn TimeService>,
+        login: LoginRequest,
     ) -> Self {
         Self {
             stratum_cli_srv,
             time_service,
+            login,
         }
     }
 }
@@ -34,14 +37,10 @@ impl StratumJobClient {
 impl JobClient for StratumJobClient {
     fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let srv = self.stratum_cli_srv.clone();
+        let login = self.login.clone();
         let fut = async move {
             let stream = srv
-                .send(LoginRequest {
-                    login: "fikgol.abc".to_string(),
-                    pass: "test".to_string(),
-                    agent: "Ibctminer/1.0.0".to_string(),
-                    algo: None,
-                })
+                .send(login)
                 .await?
                 .await
                 .map_err(|e| anyhow::anyhow!(format!("{}", e)))
