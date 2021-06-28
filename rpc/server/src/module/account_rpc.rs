@@ -56,12 +56,11 @@ where
             node_config,
         }
     }
-    fn txn_request_filler(&self) -> TransactionRequestFiller<Account, Pool, State, Chain> {
+    fn txn_request_filler(&self) -> TransactionRequestFiller<Account, Pool, State> {
         TransactionRequestFiller {
             account: Some(self.account.clone()),
             pool: self.pool.clone(),
             chain_state: self.chain_state.clone(),
-            chain: self.chain.clone(),
             node_config: self.node_config.clone(),
         }
     }
