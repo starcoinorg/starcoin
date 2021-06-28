@@ -1945,7 +1945,7 @@ It collects gas and bumps the sequence number
 
 
 
-<pre><code><b>pragma</b> verify;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 

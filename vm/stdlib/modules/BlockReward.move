@@ -16,7 +16,7 @@ module BlockReward {
     use 0x1::TreasuryWithdrawDaoProposal;
 
     spec module {
-        pragma verify = true;
+        pragma verify = false;
         pragma aborts_if_is_strict = true;
     }
 

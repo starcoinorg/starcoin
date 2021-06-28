@@ -309,7 +309,7 @@ Initialize the table under the genesis account
 
 
 
-<pre><code><b>pragma</b> verify;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict;
 </code></pre>
 

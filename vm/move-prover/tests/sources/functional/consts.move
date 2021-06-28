@@ -1,4 +1,4 @@
-module TestConst {
+module 0x42::TestConst {
 
     struct T {
         x: u64,
@@ -9,22 +9,22 @@ module TestConst {
     const FORTY_TWO: u64 = 42;
     const INIT_VAL_BOOL: bool = true;
     const ONE: u64 = 1;
-    const ADDR: address = 0x2;
+    const ADDR: address = @0x2;
 
     public fun init(): T {
         T { x: 43, b: !INIT_VAL_BOOL, a: ADDR }
     }
 
-    spec fun init {
+    spec init {
         ensures result.x == INIT_VAL_U64 + 1;
         ensures !result.b;
     }
 
     public fun init_incorrect(): T {
-        T { x: 43, b: INIT_VAL_BOOL, a: 0x1 }
+        T { x: 43, b: INIT_VAL_BOOL, a: @0x1 }
     }
 
-    spec fun init_incorrect {
+    spec init_incorrect {
         ensures result.x == FORTY_TWO + ONE;
         ensures !result.b;
     }

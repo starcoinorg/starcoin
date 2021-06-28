@@ -7,7 +7,7 @@ module RewardConfig {
     use 0x1::Config;
 
     spec module {
-        pragma verify = true;
+        pragma verify = false;
         pragma aborts_if_is_strict = true;
     }
 

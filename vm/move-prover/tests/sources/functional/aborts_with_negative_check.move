@@ -1,4 +1,4 @@
-module TestAbortsWithCheck {
+module 0x42::TestAbortsWithCheck {
     /*
     TODO(refactoring): this test is deactivated until we have ported this (or a similar) feature, or decided to
       drop it in which case the test should be removed.
@@ -12,7 +12,7 @@ module TestAbortsWithCheck {
         };
         x
     }
-    spec fun aborts_with_check_too_many_incorrect {
+    spec aborts_with_check_too_many_incorrect {
         aborts_if x == 1 with 2;
         aborts_if y == 2 with 3;
         aborts_with [check] 2, 3, 4;

@@ -3,7 +3,7 @@ error: abort not covered by any of the `aborts_if` clauses
 
     ┌── tests/sources/functional/script_incorrect.move:10:1 ───
     │
- 10 │ ╭ spec fun main {
+ 10 │ ╭ spec main {
  11 │ │     pragma verify = true;
  12 │ │     aborts_if false;
  13 │ │ }
@@ -21,6 +21,6 @@ error: abort not covered by any of the `aborts_if` clauses
 
     ┌── tests/sources/functional/script_provider.move:18:9 ───
     │
- 18 │         assert(Signer::address_of(account) == 0x1, 1);
-    │         --------------------------------------------- abort happened here with code 0x1
+ 18 │         assert(Signer::address_of(account) == @0x1, 1);
+    │         ---------------------------------------------- abort happened here with code 0x1
     │

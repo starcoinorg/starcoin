@@ -1,7 +1,5 @@
-// This file consists of test cases for invariants with hand-written triggers.
-module TestQuantInvariant {
+module 0x42::TestQuantInvariant {
     use 0x1::Vector;
-
     spec module {
         pragma verify = true;
     }
@@ -13,12 +11,12 @@ module TestQuantInvariant {
         Vector::push_back(&mut v, 3);
         v
     }
-    spec fun vector_of_proper_positives {
+    spec vector_of_proper_positives {
         aborts_if false;
         ensures forall n in result: n > 0;
         ensures forall i in 0..len(result), j in 0..len(result) where result[i] == result[j] : i == j;
         ensures forall i : u64, j : u64 { result[i], result[j] }
             where result[i] == result[j] && i >= 0 && i < len(result) && j >= 0 && j < len(result) : i == j;
-        ensures forall i in 0..len(result) { result[i], result[i] } { result[i] }: {let i = result[i]; i > 0};
+        ensures forall i in 0..len(result) { result[i] }: {let i = result[i]; i > 0};
     }
 }

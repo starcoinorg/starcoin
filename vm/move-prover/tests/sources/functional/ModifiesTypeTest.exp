@@ -1,9 +1,9 @@
-Move prover returns: exiting with transformation errors
+Move prover returns: exiting with bytecode transformation errors
 error: function `A::mutate_at` is opaque but its specification does not have a modifies clause for `A::S`
 
     ┌── tests/sources/functional/ModifiesTypeTest.move:21:5 ───
     │
- 21 │ ╭     spec fun mutate_at {
+ 21 │ ╭     spec mutate_at {
  22 │ │         pragma opaque = true;
  23 │ │     }
     │ ╰─────^
