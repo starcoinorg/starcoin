@@ -135,7 +135,6 @@ where
         let service = self.chain_state.clone();
         let txn_builder = self.txn_request_filler();
         let playground = self.playground.clone();
-        let account_service = self.account.clone();
         let f = async move {
             let state_root = service.state_root().await?;
             let DryRunTransactionRequest {
@@ -144,25 +143,12 @@ where
             } = txn;
 
             let txn = txn_builder.fill_transaction(transaction).await?;
-            let sender_public_key = match sender_public_key {
-                None => match account_service {
-                    Some(account) => account
-                        .get_account(txn.sender())
-                        .await?
-                        .map(|a| a.public_key)
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("cannot fill public key of txn sender {}", txn.sender())
-                        })?,
-                    None => anyhow::bail!("account api is disabled"),
-                },
-                Some(p) => p.0,
-            };
 
             let output = playground.dry_run(
                 state_root,
                 DryRunTransaction {
                     raw_txn: txn,
-                    public_key: sender_public_key,
+                    public_key: sender_public_key.0,
                 },
             )?;
             Ok(output.1.into())
