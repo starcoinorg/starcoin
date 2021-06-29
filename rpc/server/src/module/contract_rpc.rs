@@ -6,7 +6,6 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::AccountAsyncService;
-use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::contract_api::ContractApi;
@@ -19,60 +18,56 @@ use starcoin_state_api::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
-use starcoin_types::transaction::DryRunTransaction;
+use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
+use std::str::FromStr;
 use std::sync::Arc;
 
-pub struct ContractRpcImpl<Account, Pool, State, Chain> {
+pub struct ContractRpcImpl<Account, Pool, State> {
     pub(crate) account: Option<Account>,
     pub(crate) pool: Pool,
     pub(crate) chain_state: State,
-    pub(crate) chain: Chain,
     pub(crate) node_config: Arc<NodeConfig>,
     playground: PlaygroudService,
 }
 
-impl<Account, Pool, State, Chain> ContractRpcImpl<Account, Pool, State, Chain>
+impl<Account, Pool, State> ContractRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService + 'static,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
-    Chain: ChainAsyncService + 'static,
 {
     pub fn new(
         node_config: Arc<NodeConfig>,
         account: Option<Account>,
         pool: Pool,
         chain_state: State,
-        chain: Chain,
         playground: PlaygroudService,
     ) -> Self {
         Self {
             account,
             pool,
             chain_state,
-            chain,
             node_config,
             playground,
         }
     }
-    fn txn_request_filler(&self) -> TransactionRequestFiller<Account, Pool, State, Chain> {
+    fn txn_request_filler(&self) -> TransactionRequestFiller<Account, Pool, State> {
         TransactionRequestFiller {
             account: self.account.clone(),
             pool: self.pool.clone(),
             chain_state: self.chain_state.clone(),
-            chain: self.chain.clone(),
             node_config: self.node_config.clone(),
         }
     }
 }
 
-impl<Account, Pool, State, Chain> ContractApi for ContractRpcImpl<Account, Pool, State, Chain>
+impl<Account, Pool, State> ContractApi for ContractRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService + 'static,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
-    Chain: ChainAsyncService + 'static,
 {
     fn get_code(&self, module_id: StrView<ModuleId>) -> FutureResult<Option<StrView<Vec<u8>>>> {
         let service = self.chain_state.clone();
@@ -135,7 +130,6 @@ where
         let service = self.chain_state.clone();
         let txn_builder = self.txn_request_filler();
         let playground = self.playground.clone();
-        let account_service = self.account.clone();
         let f = async move {
             let state_root = service.state_root().await?;
             let DryRunTransactionRequest {
@@ -144,25 +138,35 @@ where
             } = txn;
 
             let txn = txn_builder.fill_transaction(transaction).await?;
-            let sender_public_key = match sender_public_key {
-                None => match account_service {
-                    Some(account) => account
-                        .get_account(txn.sender())
-                        .await?
-                        .map(|a| a.public_key)
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("cannot fill public key of txn sender {}", txn.sender())
-                        })?,
-                    None => anyhow::bail!("account api is disabled"),
-                },
-                Some(p) => p.0,
-            };
 
             let output = playground.dry_run(
                 state_root,
                 DryRunTransaction {
                     raw_txn: txn,
-                    public_key: sender_public_key,
+                    public_key: sender_public_key.0,
+                },
+            )?;
+            Ok(output.1.into())
+        }
+        .map_err(map_err);
+        Box::pin(f.boxed())
+    }
+
+    fn dry_run_raw(
+        &self,
+        raw_txn: String,
+        sender_public_key: StrView<AccountPublicKey>,
+    ) -> FutureResult<TransactionOutputView> {
+        let service = self.chain_state.clone();
+        let playground = self.playground.clone();
+        let f = async move {
+            let state_root = service.state_root().await?;
+            let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
+            let output = playground.dry_run(
+                state_root,
+                DryRunTransaction {
+                    raw_txn,
+                    public_key: sender_public_key.0,
                 },
             )?;
             Ok(output.1.into())

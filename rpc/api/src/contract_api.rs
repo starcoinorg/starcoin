@@ -8,6 +8,7 @@ use crate::types::{
 use crate::FutureResult;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 
 #[rpc]
 pub trait ContractApi {
@@ -29,4 +30,12 @@ pub trait ContractApi {
 
     #[rpc(name = "contract.dry_run")]
     fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<TransactionOutputView>;
+
+    /// Dry run RawUserTransaction, the raw_txn parameter is RawUserTransaction's hex
+    #[rpc(name = "contract.dry_run_raw")]
+    fn dry_run_raw(
+        &self,
+        raw_txn: String,
+        sender_public_key: StrView<AccountPublicKey>,
+    ) -> FutureResult<TransactionOutputView>;
 }

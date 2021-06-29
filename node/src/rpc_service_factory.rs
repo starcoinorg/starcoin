@@ -80,7 +80,6 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
                 account_service,
                 txpool_service,
                 chain_state_service,
-                chain_service,
                 dev_playground,
             )
         };

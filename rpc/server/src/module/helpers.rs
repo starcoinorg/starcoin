@@ -1,5 +1,4 @@
 use starcoin_account_api::AccountAsyncService;
-use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::TransactionRequest;
 use starcoin_state_api::ChainStateAsyncService;
@@ -9,20 +8,18 @@ use starcoin_types::transaction::{Module, Package, RawUserTransaction, Transacti
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub(crate) struct TransactionRequestFiller<Account, Pool, State, Chain> {
+pub(crate) struct TransactionRequestFiller<Account, Pool, State> {
     pub(crate) account: Option<Account>,
     pub(crate) pool: Pool,
     pub(crate) chain_state: State,
-    pub(crate) chain: Chain,
     pub(crate) node_config: Arc<NodeConfig>,
 }
 
-impl<Account, Pool, State, Chain> TransactionRequestFiller<Account, Pool, State, Chain>
+impl<Account, Pool, State> TransactionRequestFiller<Account, Pool, State>
 where
     Account: AccountAsyncService + 'static,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
-    Chain: ChainAsyncService + 'static,
 {
     pub(crate) async fn fill_transaction(
         &self,
@@ -51,7 +48,7 @@ where
         let sender = match txn_request.sender {
             Some(s) => s,
             None => match self.account.as_ref() {
-                None => anyhow::bail!("sender "),
+                None => anyhow::bail!("please set txn request's sender"),
                 Some(account_service) => {
                     account_service
                         .get_default_account()
@@ -61,6 +58,7 @@ where
                 }
             },
         };
+
         let next_seq_number = match txn_request
             .sequence_number
             .or_else(|| self.pool.next_sequence_number(sender))
@@ -82,7 +80,7 @@ where
             .expiration_timestamp_secs
             .unwrap_or_else(|| self.node_config.net().time_service().now_secs() + 60 * 60 * 12); // default to 0.5d
 
-        let chain_id = self.chain.main_status().await?.head().chain_id();
+        let chain_id = self.node_config.net().chain_id();
         if let Some(cid) = txn_request.chain_id {
             if cid != chain_id.id() {
                 anyhow::bail!(

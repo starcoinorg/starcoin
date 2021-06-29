@@ -170,12 +170,12 @@ impl From<RawUserTransaction> for TransactionRequest {
     }
 }
 
-#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct DryRunTransactionRequest {
     #[serde(flatten)]
     pub transaction: TransactionRequest,
     /// Sender's public key
-    pub sender_public_key: Option<StrView<AccountPublicKey>>,
+    pub sender_public_key: StrView<AccountPublicKey>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

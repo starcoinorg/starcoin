@@ -39,6 +39,7 @@ pub use script::{
     TypeArgumentABI,
 };
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
+use std::str::FromStr;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
@@ -276,6 +277,14 @@ impl RawUserTransaction {
             .len()
     }
 
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
+        Self::from_bytes(hex::decode(hex)?)
+    }
+
+    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
+        bcs_ext::from_bytes(bytes.as_ref())
+    }
+
     pub fn mock() -> Self {
         Self::mock_by_sender(AccountAddress::random())
     }
@@ -302,6 +311,31 @@ impl RawUserTransaction {
             u64::max_value(),
             ChainId::test(),
         )
+    }
+}
+
+impl FromStr for RawUserTransaction {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("0x").unwrap_or(s);
+        Self::from_hex(s)
+    }
+}
+
+impl TryFrom<&[u8]> for RawUserTransaction {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
+    }
+}
+
+impl TryFrom<Vec<u8>> for RawUserTransaction {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
     }
 }
 
