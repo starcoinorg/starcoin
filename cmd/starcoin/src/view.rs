@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::vm_status_translator::MoveAbortExplain;
 use anyhow::format_err;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
@@ -11,11 +12,12 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_types::vm_error::AbortLocation;
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::vm_status::VMStatus;
+
 use std::collections::HashMap;
 use structopt::StructOpt;
 
@@ -254,14 +256,14 @@ pub enum ExecuteResultView {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct DryRunOutputView {
-    pub vm_status: VMStatus,
+    pub vm_status: VmStatusExplainView,
     pub output: TransactionOutputView,
     pub raw_transaction_hex: String,
 }
 
 impl DryRunOutputView {
     pub fn new(
-        vm_status: VMStatus,
+        vm_status: VmStatusExplainView,
         output: TransactionOutputView,
         raw_transaction_hex: String,
     ) -> Self {
@@ -274,9 +276,37 @@ impl DryRunOutputView {
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub enum VmStatusExplainView {
+    /// The VM status corresponding to an EXECUTED status code
+    Executed,
+    /// Indicates an error from the VM, e.g. OUT_OF_GAS, INVALID_AUTH_KEY, RET_TYPE_MISMATCH_ERROR
+    /// etc.
+    /// The code will neither EXECUTED nor ABORTED
+    Error(String),
+
+    /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
+    MoveAbort {
+        location: AbortLocation,
+        abort_code: u64,
+        explain: MoveAbortExplain,
+    },
+
+    /// Indicates an failure from inside Move code, where the VM could not continue exection, e.g.
+    /// dividing by zero or a missing resource
+    ExecutionFailure {
+        status_code: String,
+        location: AbortLocation,
+        function: u16,
+        function_name: Option<String>,
+        code_offset: u16,
+    },
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
+    pub txn_status: Option<VmStatusExplainView>,
     pub events: Option<Vec<TransactionEventView>>,
 }
 
@@ -285,6 +315,7 @@ impl ExecutionOutputView {
         Self {
             txn_hash,
             txn_info: None,
+            txn_status: None,
             events: None,
         }
     }

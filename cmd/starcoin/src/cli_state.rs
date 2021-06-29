@@ -1,7 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::{DryRunOutputView, ExecuteResultView, ExecutionOutputView, TransactionOptions};
+use crate::view::{
+    DryRunOutputView, ExecuteResultView, ExecutionOutputView, TransactionOptions,
+    VmStatusExplainView,
+};
+use crate::vm_status_translator::{explain_move_abort, VmStatusTranslator};
 use anyhow::{bail, format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetworkID, DataDirPath};
@@ -12,6 +16,7 @@ use starcoin_rpc_api::types::TransactionInfoView;
 use starcoin_rpc_client::chain_watcher::ThinHeadBlock;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::StateReaderExt;
+use starcoin_types::vm_error::VMStatus;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
@@ -233,6 +238,33 @@ impl CliState {
                 },
             )?
         };
+        let state_view = RemoteStateReader::new(&self.client)?;
+        let vm_status_explain = match &vm_status {
+            VMStatus::Executed => VmStatusExplainView::Executed,
+            VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
+            VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
+                location: location.clone(),
+                abort_code: *abort_code,
+                explain: explain_move_abort(location.clone(), *abort_code),
+            },
+            VMStatus::ExecutionFailure {
+                status_code,
+                location,
+                function,
+                code_offset,
+            } => {
+                let t = VmStatusTranslator::new(state_view);
+                VmStatusExplainView::ExecutionFailure {
+                    status_code: format!("{:?}", status_code),
+                    location: location.clone(),
+                    function: *function,
+                    function_name: t
+                        .locate_execution_failure(location.clone(), *function)?
+                        .map(|l| l.1.to_string()),
+                    code_offset: *code_offset,
+                }
+            }
+        };
         if only_dry_run
             || !matches!(
                 output.status(),
@@ -241,7 +273,7 @@ impl CliState {
         {
             eprintln!("txn dry run failed");
             return Ok(ExecuteResultView::DryRun(DryRunOutputView::new(
-                vm_status,
+                vm_status_explain,
                 output.into(),
                 hex::encode(bcs_ext::to_bytes(&raw_txn)?),
             )));
@@ -254,6 +286,7 @@ impl CliState {
         let mut output = ExecutionOutputView::new(txn_hash);
         if blocking {
             let (_block, txn_info) = self.watch_txn(txn_hash)?;
+            output.txn_status = Some(vm_status_explain);
             output.txn_info = txn_info;
             let events = self.client.chain_get_events_by_txn_hash(txn_hash)?;
             output.events = Some(events);

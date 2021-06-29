@@ -12,6 +12,9 @@ pub mod node;
 pub mod state;
 mod txpool;
 pub mod view;
+
+pub(crate) mod vm_status_translator;
+
 pub use cli_state::CliState;
 use scmd::{CmdContext, Command};
 pub use starcoin_config::StarcoinOpt;
