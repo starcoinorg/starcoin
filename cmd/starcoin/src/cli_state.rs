@@ -3,7 +3,7 @@
 
 use crate::view::{
     DryRunOutputView, ExecuteResultView, ExecutionOutputView, TransactionOptions,
-    VMStatusExplainView,
+    VmStatusExplainView,
 };
 use crate::vm_status_translator::{explain_move_abort, VmStatusTranslator};
 use anyhow::{bail, format_err, Result};
@@ -240,9 +240,9 @@ impl CliState {
         };
         let state_view = RemoteStateReader::new(&self.client)?;
         let vm_status_explain = match &vm_status {
-            VMStatus::Executed => VMStatusExplainView::Executed,
-            VMStatus::Error(c) => VMStatusExplainView::Error(*c),
-            VMStatus::MoveAbort(location, abort_code) => VMStatusExplainView::MoveAbort {
+            VMStatus::Executed => VmStatusExplainView::Executed,
+            VMStatus::Error(c) => VmStatusExplainView::Error(*c),
+            VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
                 location: location.clone(),
                 abort_code: *abort_code,
                 explain: explain_move_abort(location.clone(), *abort_code),
@@ -254,7 +254,7 @@ impl CliState {
                 code_offset,
             } => {
                 let t = VmStatusTranslator::new(state_view);
-                VMStatusExplainView::ExecutionFailure {
+                VmStatusExplainView::ExecutionFailure {
                     status_code: *status_code,
                     location: location.clone(),
                     function: *function,

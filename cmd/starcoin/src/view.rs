@@ -256,14 +256,14 @@ pub enum ExecuteResultView {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct DryRunOutputView {
-    pub vm_status: VMStatusExplainView,
+    pub vm_status: VmStatusExplainView,
     pub output: TransactionOutputView,
     pub raw_transaction_hex: String,
 }
 
 impl DryRunOutputView {
     pub fn new(
-        vm_status: VMStatusExplainView,
+        vm_status: VmStatusExplainView,
         output: TransactionOutputView,
         raw_transaction_hex: String,
     ) -> Self {
@@ -276,7 +276,7 @@ impl DryRunOutputView {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub enum VMStatusExplainView {
+pub enum VmStatusExplainView {
     /// The VM status corresponding to an EXECUTED status code
     Executed,
     /// Indicates an error from the VM, e.g. OUT_OF_GAS, INVALID_AUTH_KEY, RET_TYPE_MISMATCH_ERROR
@@ -306,7 +306,7 @@ pub enum VMStatusExplainView {
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
-    pub txn_status: Option<VMStatusExplainView>,
+    pub txn_status: Option<VmStatusExplainView>,
     pub events: Option<Vec<TransactionEventView>>,
 }
 
