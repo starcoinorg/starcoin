@@ -12,7 +12,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
-use starcoin_types::vm_error::{AbortLocation, StatusCode};
+use starcoin_types::vm_error::AbortLocation;
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
@@ -282,7 +282,7 @@ pub enum VmStatusExplainView {
     /// Indicates an error from the VM, e.g. OUT_OF_GAS, INVALID_AUTH_KEY, RET_TYPE_MISMATCH_ERROR
     /// etc.
     /// The code will neither EXECUTED nor ABORTED
-    Error(StatusCode),
+    Error(String),
 
     /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
     MoveAbort {
@@ -294,7 +294,7 @@ pub enum VmStatusExplainView {
     /// Indicates an failure from inside Move code, where the VM could not continue exection, e.g.
     /// dividing by zero or a missing resource
     ExecutionFailure {
-        status_code: StatusCode,
+        status_code: String,
         location: AbortLocation,
         function: u16,
         function_name: Option<String>,

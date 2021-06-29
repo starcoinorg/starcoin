@@ -241,7 +241,7 @@ impl CliState {
         let state_view = RemoteStateReader::new(&self.client)?;
         let vm_status_explain = match &vm_status {
             VMStatus::Executed => VmStatusExplainView::Executed,
-            VMStatus::Error(c) => VmStatusExplainView::Error(*c),
+            VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
             VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
                 location: location.clone(),
                 abort_code: *abort_code,
@@ -255,7 +255,7 @@ impl CliState {
             } => {
                 let t = VmStatusTranslator::new(state_view);
                 VmStatusExplainView::ExecutionFailure {
-                    status_code: *status_code,
+                    status_code: format!("{:?}", status_code),
                     location: location.clone(),
                     function: *function,
                     function_name: t
