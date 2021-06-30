@@ -7,4 +7,4 @@ weight: 1
 
 <!--more-->
 
-TODO 请先参看英文版本 
+{{< todo >}}

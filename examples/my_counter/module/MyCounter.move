@@ -1,15 +1,22 @@
 module {{sender}}::MyCounter {
      use 0x1::Signer;
 
-     struct T has key, store {
+     struct Counter has key, store {
         value:u64,
      }
      public fun init(account: &signer){
-        move_to(account, T{value:0});
+        move_to(account, Counter{value:0});
      }
-     public fun incr(account: &signer) acquires T {
-        let counter = borrow_global_mut<T>(Signer::address_of(account));
+     public fun incr(account: &signer) acquires Counter {
+        let counter = borrow_global_mut<Counter>(Signer::address_of(account));
         counter.value = counter.value + 1;
      }
 
+     public(script) fun init_counter(account: signer){
+        Self::init(&account)
+     }
+
+     public(script) fun incr_counter(account: signer)  acquires Counter {
+        Self::incr(&account)
+     }
 }
