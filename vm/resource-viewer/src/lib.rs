@@ -28,6 +28,7 @@ use std::{
     fmt::{Display, Formatter},
 };
 
+pub mod abi_resolver;
 mod fat_type;
 mod module_cache;
 mod resolver;

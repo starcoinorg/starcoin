@@ -3,7 +3,7 @@
 //! Scratchpad for on chain values during the execution.
 
 use crate::create_access_path;
-use move_vm_runtime::data_cache::MoveStorage;
+pub use move_vm_runtime::data_cache::MoveStorage;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::{
