@@ -7,9 +7,11 @@ use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
+use starcoin_rpc_api::types::AnnotatedMoveValueView;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::BalanceResource;
 use std::collections::HashMap;
 use structopt::StructOpt;
 
@@ -64,14 +66,24 @@ impl CommandAction for ShowCommand {
             .get_account_resource(account.address())?
             .map(|res| res.sequence_number());
 
-        let accepted_tokens = client.account_accepted_tokens(account_address)?;
-        let mut balances = HashMap::with_capacity(accepted_tokens.len());
-        for token in accepted_tokens {
-            let token_name = token.name.clone();
-            let balance =
-                account_state_reader.get_balance_by_token_code(account.address(), token)?;
-            if let Some(b) = balance {
-                balances.insert(token_name, b);
+        let mut balances = HashMap::new();
+
+        let state = client.get_account_state_set(*account.address(), None)?;
+        if let Some(state) = state {
+            for (token_code, resource) in state.resources.into_iter().filter_map(|(k, v)| {
+                BalanceResource::token_code(&k.0).map(|token_code| (token_code, v))
+            }) {
+                let balance = if let AnnotatedMoveValueView::Struct(token) = &resource.value[0].1 {
+                    if let AnnotatedMoveValueView::U128(value) = token.value[0].1 {
+                        value.0
+                    } else {
+                        0
+                    }
+                } else {
+                    //this should not happen
+                    0
+                };
+                balances.insert(token_code.to_string(), balance);
             }
         }
         let auth_key = account.public_key.authentication_key();
