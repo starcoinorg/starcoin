@@ -65,13 +65,15 @@ impl CommandAction for DeployCommand {
                 ensure!(*sender == package_address, "please use package address({}) account to deploy package, currently sender is {}.", package_address,sender);
             }
             None => {
+                eprintln!(
+                    "Use package address ({}) as transaction sender",
+                    package_address
+                );
                 transaction_opts.sender = Some(package_address);
             }
         };
 
-        ctx.state().build_and_execute_transaction(
-            opt.transaction_opts.clone(),
-            TransactionPayload::Package(package),
-        )
+        ctx.state()
+            .build_and_execute_transaction(transaction_opts, TransactionPayload::Package(package))
     }
 }
