@@ -1,6 +1,6 @@
 use crate::language_storage::ModuleId;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-
 /// How to call a particular Move script (aka. an "ABI").
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
@@ -209,6 +209,7 @@ pub enum TypeABI {
     Signer,
     Vector(Box<TypeABI>),
     Struct(StructABI),
+    TypeParameter(usize),
 }
 impl TypeABI {
     pub fn new_vector(subtype: TypeABI) -> Self {
@@ -216,6 +217,29 @@ impl TypeABI {
     }
     pub fn new_struct(s: StructABI) -> Self {
         TypeABI::Struct(s)
+    }
+
+    pub fn subst(&self, ty_args: &[TypeABI]) -> Result<TypeABI> {
+        use TypeABI::*;
+        Ok(match self {
+            TypeParameter(idx) => match ty_args.get(*idx) {
+                Some(ty) => ty.clone(),
+                None => anyhow::bail!(
+                    "type abi substitution failed: index out of bounds -- len {} got {}",
+                    ty_args.len(),
+                    idx
+                ),
+            },
+
+            Bool => Bool,
+            U8 => U8,
+            U64 => U64,
+            U128 => U128,
+            Address => Address,
+            Signer => Signer,
+            Vector(ty) => Vector(Box::new(ty.subst(ty_args)?)),
+            Struct(struct_ty) => Struct(struct_ty.subst(ty_args)?),
+        })
     }
 }
 
@@ -251,6 +275,25 @@ impl StructABI {
     }
     pub fn module_name(&self) -> &ModuleId {
         &self.module_name
+    }
+
+    pub fn subst(&self, ty_args: &[TypeABI]) -> Result<StructABI> {
+        Ok(Self {
+            name: self.name.clone(),
+            module_name: self.module_name.clone(),
+            doc: self.doc.clone(),
+            fields: self
+                .fields
+                .iter()
+                .map(|f| {
+                    Ok(FieldABI::new(
+                        f.name.clone(),
+                        f.doc.clone(),
+                        f.type_abi.subst(ty_args)?,
+                    ))
+                })
+                .collect::<Result<_>>()?,
+        })
     }
 }
 

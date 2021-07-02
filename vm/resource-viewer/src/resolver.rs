@@ -104,13 +104,6 @@ impl<'a> Resolver<'a> {
                 .collect()),
         }
     }
-    pub(crate) fn resolve_function(
-        &self,
-        function_name: &IdentStr,
-        module_id: &ModuleId,
-    ) -> Result<()> {
-        todo!()
-    }
 
     pub(crate) fn resolve_signature(
         &self,
