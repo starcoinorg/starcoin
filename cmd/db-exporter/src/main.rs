@@ -1,6 +1,7 @@
 use anyhow::{bail, Result};
 use bcs_ext::Sample;
 use csv::Writer;
+use starcoin_storage::block::FailedBlock;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
 use starcoin_types::block::{Block, BlockHeader};
@@ -66,6 +67,7 @@ pub fn export<W: std::io::Write>(
 pub enum DbSchema {
     Block,
     BlockHeader,
+    FailedBlock,
 }
 
 impl DbSchema {
@@ -79,6 +81,8 @@ impl DbSchema {
                 serde_json::to_value(Block::sample()).expect("block to json should success")
             }
             DbSchema::BlockHeader => serde_json::to_value(BlockHeader::sample())
+                .expect("block header to json should success"),
+            DbSchema::FailedBlock => serde_json::to_value(FailedBlock::sample())
                 .expect("block header to json should success"),
         };
         sample_json
@@ -99,6 +103,11 @@ impl DbSchema {
                     arg.as_slice(),
                 )?)?)
             },
+            DbSchema::FailedBlock => |arg| -> Result<serde_json::Value> {
+                Ok(serde_json::to_value(FailedBlock::decode_value(
+                    arg.as_slice(),
+                )?)?)
+            },
         })
     }
 }
@@ -108,6 +117,7 @@ impl std::fmt::Display for DbSchema {
         match self {
             DbSchema::Block => write!(f, "block"),
             DbSchema::BlockHeader => write!(f, "block_header"),
+            DbSchema::FailedBlock => write!(f, "failed_block"),
         }
     }
 }
@@ -119,6 +129,7 @@ impl FromStr for DbSchema {
         let schema = match s {
             "block" => DbSchema::Block,
             "block_header" => DbSchema::BlockHeader,
+            "failed_block" => DbSchema::FailedBlock,
             _ => {
                 bail!("Unsupported schema: {}", s)
             }
