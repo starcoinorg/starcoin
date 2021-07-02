@@ -5,10 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    fat_type::{FatStructType, FatType, WrappedAbilitySet},
+    fat_type::{FatStructType, FatType},
     module_cache::ModuleCache,
 };
 use anyhow::{anyhow, Result};
+use starcoin_vm_types::abi::WrappedAbilitySet;
 use starcoin_vm_types::{
     access::ModuleAccess,
     access_path::AccessPath,

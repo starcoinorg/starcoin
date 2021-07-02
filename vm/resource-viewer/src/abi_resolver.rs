@@ -44,24 +44,16 @@ impl<'a> ABIResolver<'a> {
     }
 
     pub fn resolve_struct_tag(&self, struct_tag: &StructTag) -> Result<StructABI> {
-        let fat_struct_type = self.resolver.resolve_struct(struct_tag)?;
-        let field_names = self.resolver.get_field_names(&fat_struct_type)?;
-        let mut fields = Vec::with_capacity(field_names.len());
-        for (layout, field) in fat_struct_type.layout.iter().zip(field_names.iter()) {
-            let field = FieldABI::new(
-                field.to_string(),
-                String::new(),
-                self.resolve_type_tag(&layout.type_tag().map_err(|e| anyhow::anyhow!("{:?}", e))?)?,
-            );
-            fields.push(field);
-        }
-        Ok(StructABI::new(
-            fat_struct_type.name.to_string(),
-            ModuleId::new(fat_struct_type.address, fat_struct_type.module),
-            String::new(),
-            fields,
-        ))
+        let struct_abi =
+            self.resolve_struct(&struct_tag.module_id(), struct_tag.name.as_ident_str())?;
+        let ty_args = struct_tag
+            .type_params
+            .iter()
+            .map(|ty| self.resolve_type_tag(ty))
+            .collect::<Result<Vec<_>>>()?;
+        struct_abi.subst(&ty_args)
     }
+
     pub fn resolve_type_tag(&self, type_tag: &TypeTag) -> Result<TypeABI> {
         Ok(match type_tag {
             TypeTag::Bool => TypeABI::Bool,
@@ -121,8 +113,8 @@ impl<'a> ABIResolver<'a> {
     }
     pub fn resolve_function(
         &self,
-        function_name: &IdentStr,
         module_id: &ModuleId,
+        function_name: &IdentStr,
     ) -> Result<ScriptFunctionABI> {
         let module = self
             .resolver
@@ -133,6 +125,38 @@ impl<'a> ABIResolver<'a> {
             move_binary_format::normalized::Function::new(module.as_ref(), function_def);
         self.function_to_abi(module_id, function_name, &func)
     }
+
+    /// resolve function with concrete type args.
+    pub fn resolve_function_instantiation(
+        &self,
+        module_id: &ModuleId,
+        function_name: &IdentStr,
+        type_args: &[TypeTag],
+    ) -> Result<ScriptFunctionABI> {
+        let script_function_abi = self.resolve_function(module_id, function_name)?;
+        let type_args = type_args
+            .iter()
+            .map(|t| self.resolve_type_tag(t))
+            .collect::<Result<Vec<_>>>()?;
+        Ok(ScriptFunctionABI::new(
+            script_function_abi.name().to_string(),
+            script_function_abi.module_name().clone(),
+            script_function_abi.doc().to_string(),
+            script_function_abi.ty_args().to_vec(),
+            script_function_abi
+                .args()
+                .iter()
+                .map(|arg| {
+                    Ok(ArgumentABI::new(
+                        arg.name().to_string(),
+                        arg.type_abi().subst(&type_args)?,
+                        arg.doc().to_string(),
+                    ))
+                })
+                .collect::<Result<Vec<_>>>()?,
+        ))
+    }
+
     fn struct_to_abi(
         &self,
         module_id: &ModuleId,
@@ -150,7 +174,20 @@ impl<'a> ABIResolver<'a> {
                 ))
             })
             .collect();
-        let abi = StructABI::new(name.to_string(), module_id.clone(), String::new(), fields?);
+        let type_parameters = s
+            .type_parameters
+            .iter()
+            .enumerate()
+            .map(|(i, ab)| TypeArgumentABI::new(format!("T{}", i), *ab))
+            .collect();
+        let abi = StructABI::new(
+            name.to_string(),
+            module_id.clone(),
+            String::new(),
+            type_parameters,
+            fields?,
+            s.abilities,
+        );
         Ok(abi)
     }
 
@@ -164,7 +201,7 @@ impl<'a> ABIResolver<'a> {
             .type_parameters
             .iter()
             .enumerate()
-            .map(|(i, _)| TypeArgumentABI::new(format!("T{}", i)))
+            .map(|(i, ab)| TypeArgumentABI::new(format!("T{}", i), *ab))
             .collect();
         let parameters = func
             .parameters
@@ -231,17 +268,17 @@ mod tests {
     use starcoin_vm_types::state_view::StateView;
     use std::collections::BTreeMap;
 
-    pub struct StdlibView {
+    pub struct InMemoryStateView {
         modules: BTreeMap<ModuleId, CompiledModule>,
     }
-    impl StdlibView {
+    impl InMemoryStateView {
         pub fn new(modules: Vec<CompiledModule>) -> Self {
             Self {
                 modules: modules.into_iter().map(|m| (m.self_id(), m)).collect(),
             }
         }
     }
-    impl StateView for StdlibView {
+    impl StateView for InMemoryStateView {
         fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
             let module_id = match &access_path.path {
                 DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
@@ -266,20 +303,34 @@ mod tests {
     #[test]
     fn test_resolver_abi() {
         let modules = stdlib::load_latest_stable_compiled_modules().unwrap().1;
-        let view = StdlibView::new(modules);
+        let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
+        // test module ok
         {
             let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
-            let module_abi = r.resolve_module(&m).unwrap();
-            println!("{}", serde_json::to_string_pretty(&module_abi).unwrap());
+            r.resolve_module(&m).unwrap();
         }
+        // test struct tag
         {
             let st = parse_struct_tag(
                 "0x1::Dao::Proposal<0x1::STC::STC, 0x1::MintDaoProposal::MintToken>",
             )
             .unwrap();
-            let abi = r.resolve_struct_tag(&st).unwrap();
-            println!("{}", serde_json::to_string_pretty(&abi).unwrap());
+            r.resolve_struct_tag(&st).unwrap();
+        }
+        // test struct def
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let s = Identifier::new("Proposal").unwrap();
+            let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
+            println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
+        }
+        // test function
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let func = Identifier::new("queue_proposal_action").unwrap();
+            let func_abi = r.resolve_function(&m, func.as_ident_str()).unwrap();
+            println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
         }
     }
 
@@ -292,7 +343,6 @@ mod tests {
                 m.self_id() == ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap())
             })
             .unwrap();
-        let m = move_binary_format::normalized::Module::new(dao);
-        println!("{:#?}", m)
+        let _m = move_binary_format::normalized::Module::new(dao);
     }
 }

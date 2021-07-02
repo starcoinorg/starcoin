@@ -1,6 +1,8 @@
+use crate::file_format::AbilitySet;
 use crate::language_storage::ModuleId;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 /// How to call a particular Move script (aka. an "ABI").
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
@@ -179,6 +181,9 @@ impl ArgumentABI {
     pub fn type_abi(&self) -> &TypeABI {
         &self.type_tag
     }
+    pub fn doc(&self) -> &str {
+        &self.doc
+    }
 }
 
 /// The description of a type argument in a script.
@@ -187,14 +192,21 @@ impl ArgumentABI {
 pub struct TypeArgumentABI {
     /// The name of the argument.
     name: String,
+    abilities: WrappedAbilitySet,
 }
 impl TypeArgumentABI {
-    pub fn new(name: String) -> Self {
-        Self { name }
+    pub fn new(name: String, abilities: AbilitySet) -> Self {
+        Self {
+            name,
+            abilities: WrappedAbilitySet(abilities),
+        }
     }
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+    pub fn ability_set(&self) -> AbilitySet {
+        self.abilities.0
     }
 }
 
@@ -250,18 +262,29 @@ pub struct StructABI {
     name: String,
     /// module contains the struct
     module_name: ModuleId,
+    ty_args: Vec<TypeArgumentABI>,
     /// fields of the structs.
     fields: Vec<FieldABI>,
     /// The doc of the struct
     doc: String,
+    abilities: WrappedAbilitySet,
 }
 impl StructABI {
-    pub fn new(name: String, module_name: ModuleId, doc: String, fields: Vec<FieldABI>) -> Self {
+    pub fn new(
+        name: String,
+        module_name: ModuleId,
+        doc: String,
+        ty_args: Vec<TypeArgumentABI>,
+        fields: Vec<FieldABI>,
+        abilities: AbilitySet,
+    ) -> Self {
         Self {
             name,
             module_name,
+            ty_args,
             doc,
             fields,
+            abilities: WrappedAbilitySet(abilities),
         }
     }
     pub fn name(&self) -> &str {
@@ -276,12 +299,16 @@ impl StructABI {
     pub fn module_name(&self) -> &ModuleId {
         &self.module_name
     }
-
+    pub fn ability_set(&self) -> AbilitySet {
+        self.abilities.0
+    }
     pub fn subst(&self, ty_args: &[TypeABI]) -> Result<StructABI> {
         Ok(Self {
             name: self.name.clone(),
             module_name: self.module_name.clone(),
             doc: self.doc.clone(),
+            abilities: self.abilities,
+            ty_args: self.ty_args.clone(),
             fields: self
                 .fields
                 .iter()
@@ -329,30 +356,54 @@ impl FieldABI {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ModuleABI {
-    module_id: ModuleId,
+    module_name: ModuleId,
     structs: Vec<StructABI>,
     script_functions: Vec<ScriptFunctionABI>,
 }
 
 impl ModuleABI {
     pub fn new(
-        module_id: ModuleId,
+        module_name: ModuleId,
         structs: Vec<StructABI>,
         script_functions: Vec<ScriptFunctionABI>,
     ) -> Self {
         Self {
-            module_id,
+            module_name,
             structs,
             script_functions,
         }
     }
-    pub fn module_id(&self) -> &ModuleId {
-        &self.module_id
+    pub fn module_name(&self) -> &ModuleId {
+        &self.module_name
     }
     pub fn structs(&self) -> &[StructABI] {
         &self.structs
     }
     pub fn script_functions(&self) -> &[ScriptFunctionABI] {
         &self.script_functions
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+pub struct WrappedAbilitySet(pub AbilitySet);
+
+impl Serialize for WrappedAbilitySet {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.into_u8().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for WrappedAbilitySet {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let byte = u8::deserialize(deserializer)?;
+        Ok(WrappedAbilitySet(AbilitySet::from_u8(byte).ok_or_else(
+            || serde::de::Error::custom(format!("Invalid ability set: {:X}", byte)),
+        )?))
     }
 }
