@@ -326,13 +326,6 @@ mod tests {
             let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
             println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
         }
-        // test function
-        {
-            let m = ModuleId::new(genesis_address(), Identifier::new("Account").unwrap());
-            let func = Identifier::new("deposit_to_self").unwrap();
-            let func_abi = r.resolve_function(&m, func.as_ident_str()).unwrap();
-            println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
-        }
     }
 
     #[test]
