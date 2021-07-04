@@ -7,6 +7,7 @@
 use starcoin_vm_types::{file_format::CompiledModule, language_storage::ModuleId};
 use std::{cell::RefCell, collections::hash_map::HashMap, hash::Hash, rc::Rc};
 
+#[derive(Clone)]
 pub struct ModuleCacheImpl<K, V> {
     id_map: RefCell<HashMap<K, usize>>,
     modules: RefCell<Vec<Rc<V>>>,
@@ -16,6 +17,7 @@ impl<K, V> ModuleCacheImpl<K, V>
 where
     K: Eq + Hash,
 {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             id_map: RefCell::new(HashMap::new()),

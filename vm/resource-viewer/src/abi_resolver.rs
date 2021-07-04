@@ -13,6 +13,7 @@ use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::state_view::StateView;
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct ABIResolver<'a> {
     resolver: Resolver<'a>,
 }
@@ -107,7 +108,7 @@ impl<'a> ABIResolver<'a> {
             Type::Vector(sub_ty) => TypeABI::new_vector(self.resolve_type(&sub_ty)?),
             Type::TypeParameter(i) => TypeABI::TypeParameter(*i as usize),
             Type::Reference(_) | Type::MutableReference(_) => {
-                anyhow::bail!("")
+                anyhow::bail!("cannot resolve type api for {:?}", &ty)
             }
         })
     }
@@ -327,8 +328,8 @@ mod tests {
         }
         // test function
         {
-            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
-            let func = Identifier::new("queue_proposal_action").unwrap();
+            let m = ModuleId::new(genesis_address(), Identifier::new("Account").unwrap());
+            let func = Identifier::new("deposit_to_self").unwrap();
             let func_abi = r.resolve_function(&m, func.as_ident_str()).unwrap();
             println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
         }

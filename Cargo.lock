@@ -11,19 +11,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "abi-resolver"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "hex",
- "once_cell",
- "serde",
- "serde_json",
- "starcoin-vm-runtime",
- "starcoin-vm-types",
-]
-
-[[package]]
 name = "abigen"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=e22e951caa6dc230b1e866c89018eeb26bc73a45#e22e951caa6dc230b1e866c89018eeb26bc73a45"
