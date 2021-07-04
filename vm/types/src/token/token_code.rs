@@ -5,7 +5,7 @@ use crate::language_storage::TypeTag;
 use crate::move_resource::MoveResource;
 use crate::parser::parse_type_tag;
 use crate::token::TOKEN_MODULE_NAME;
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use serde::{Deserialize, Serialize};
@@ -15,11 +15,11 @@ use std::str::FromStr;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
 pub struct TokenCode {
-    //Token module's address
+    ///Token module's address
     pub address: AccountAddress,
-    //Token module's name
+    ///Token module's name
     pub module: String,
-    //Token's struct name
+    ///Token's struct name
     pub name: String,
 }
 
@@ -51,23 +51,22 @@ impl TryFrom<TypeTag> for TokenCode {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value {
-            TypeTag::Struct(struct_tag) => TokenCode::try_from(struct_tag),
+            TypeTag::Struct(struct_tag) => Ok(TokenCode::from(struct_tag)),
             type_tag => bail!("{:?} is not a Token's type tag", type_tag),
         }
     }
 }
-impl TryFrom<StructTag> for TokenCode {
-    type Error = anyhow::Error;
-
-    fn try_from(struct_tag: StructTag) -> Result<Self, Self::Error> {
+impl From<StructTag> for TokenCode {
+    fn from(struct_tag: StructTag) -> Self {
         let tag_str = struct_tag.to_string();
         let s: Vec<_> = tag_str.splitn(3, "::").collect();
-        ensure!(s.len() == 3, "invalid struct tag format");
-        Ok(Self::new(
+        //this should not happen
+        assert_eq!(s.len(), 3, "invalid struct tag format");
+        Self::new(
             struct_tag.address,
             struct_tag.module.into_string(),
             s[2].to_string(),
-        ))
+        )
     }
 }
 impl FromStr for TokenCode {
@@ -101,9 +100,14 @@ mod test {
 
     #[test]
     fn test_token_code() {
-        let token = "0x2::LiquidityToken::LiquidityToken<0x569ab535990a17ac9afd1bc57faec683::Ddd::Ddd, 0x569ab535990a17ac9afd1bc57faec683::Bot::Bot>";
+        let token = "0x00000000000000000000000000000002::LiquidityToken::LiquidityToken<0x569ab535990a17ac9afd1bc57faec683::Ddd::Ddd, 0x569ab535990a17ac9afd1bc57faec683::Bot::Bot>";
         let tc = TokenCode::from_str(token).unwrap();
-        let type_tag: StructTag = tc.try_into().unwrap();
-        assert_eq!(parse_type_tag(token).unwrap(), TypeTag::Struct(type_tag));
+        let type_tag: StructTag = tc.clone().try_into().unwrap();
+        assert_eq!(token.to_string(), tc.to_string());
+        assert_eq!(
+            parse_type_tag(token).unwrap(),
+            TypeTag::Struct(type_tag.clone())
+        );
+        assert_eq!(tc, type_tag.try_into().unwrap());
     }
 }
