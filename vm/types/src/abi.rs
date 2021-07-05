@@ -220,7 +220,7 @@ pub enum TypeABI {
     Address,
     Signer,
     Vector(Box<TypeABI>),
-    Struct(StructABI),
+    Struct(Box<StructABI>),
     TypeParameter(usize),
 }
 impl TypeABI {
@@ -228,7 +228,7 @@ impl TypeABI {
         TypeABI::Vector(Box::new(subtype))
     }
     pub fn new_struct(s: StructABI) -> Self {
-        TypeABI::Struct(s)
+        TypeABI::Struct(Box::new(s))
     }
 
     pub fn subst(&self, ty_args: &[TypeABI]) -> Result<TypeABI> {
@@ -250,7 +250,7 @@ impl TypeABI {
             Address => Address,
             Signer => Signer,
             Vector(ty) => Vector(Box::new(ty.subst(ty_args)?)),
-            Struct(struct_ty) => Struct(struct_ty.subst(ty_args)?),
+            Struct(struct_ty) => Struct(Box::new(struct_ty.subst(ty_args)?)),
         })
     }
 }
@@ -332,14 +332,14 @@ pub struct FieldABI {
     /// doc of the field
     doc: String,
     /// type of the field
-    type_abi: Box<TypeABI>,
+    type_abi: TypeABI,
 }
 impl FieldABI {
     pub fn new(name: String, doc: String, type_abi: TypeABI) -> Self {
         Self {
             name,
             doc,
-            type_abi: Box::new(type_abi),
+            type_abi,
         }
     }
     pub fn name(&self) -> &str {

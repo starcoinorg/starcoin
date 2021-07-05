@@ -103,7 +103,7 @@ impl<'a> ABIResolver<'a> {
                     .map(|t| self.resolve_type(t))
                     .collect::<Result<Vec<_>>>()?;
                 let inst_struct_abi = struct_abi.subst(&type_args)?;
-                TypeABI::Struct(inst_struct_abi)
+                TypeABI::new_struct(inst_struct_abi)
             }
             Type::Vector(sub_ty) => TypeABI::new_vector(self.resolve_type(&sub_ty)?),
             Type::TypeParameter(i) => TypeABI::TypeParameter(*i as usize),
