@@ -26,6 +26,7 @@ use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::data_cache::MoveStorage;
 use move_vm_runtime::{logging::NoContextLog, move_vm::MoveVM};
 use starcoin_config::INITIAL_GAS_SCHEDULE;
+use starcoin_functional_tests::testsuite::PRETTY;
 use starcoin_vm_types::gas_schedule::GasStatus;
 use std::{
     collections::BTreeMap,
@@ -33,7 +34,9 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+use stdlib::restore_stdlib_in_dir;
 use structopt::StructOpt;
+use tempfile::tempdir;
 use vm::errors::Location;
 use vm::normalized::Module;
 use vm::{
@@ -166,6 +169,15 @@ pub enum Command {
         dry_run: bool,
     },
 
+    /// run functional test under tests dir.
+    #[structopt(name = "functional-test", alias = "ft")]
+    FunctionalTest {
+        /// A filter string to determine which tests to run, default to all move test
+        #[structopt(name = "filter", short = "f", long = "filter")]
+        filter: Option<String>,
+    },
+
+    /// Run unit test in move source files.
     #[structopt(name = "unit-test")]
     UnitTest {
         /// Bound the number of instructions that can be executed by any one test.
@@ -1279,6 +1291,25 @@ fn main() -> Result<()> {
                 *dry_run,
                 move_args.verbose,
             )
+        }
+        Command::FunctionalTest { filter, .. } => {
+            let mut requirements = Vec::new();
+            let filter = filter.clone().unwrap_or_else(|| r".*\.move".to_string());
+            requirements.push(datatest_stable::Requirements::new(
+                |path| {
+                    std::env::set_var(PRETTY, "true");
+                    let temp_dir = tempdir()?;
+                    let mut deps = restore_stdlib_in_dir(temp_dir.path())?;
+                    deps.push(DEFAULT_SOURCE_DIR.to_string());
+                    let compiler = crate::functional_test::MoveSourceCompiler::new(deps);
+                    starcoin_functional_tests::testsuite::functional_tests(compiler, path)
+                },
+                "functional-test".to_string(),
+                DEFAULT_TEST_DIR.to_string(),
+                filter,
+            ));
+            datatest_stable::runner(&requirements);
+            Ok(())
         }
         Command::UnitTest {
             instruction_execution_bound,

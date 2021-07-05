@@ -4903,6 +4903,9 @@ dependencies = [
  "once_cell",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-functional-tests",
+ "starcoin-logger",
+ "starcoin-move-compiler",
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
@@ -4910,6 +4913,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "structopt 0.3.21",
+ "tempfile",
  "tokio 0.2.25",
  "walkdir",
 ]
