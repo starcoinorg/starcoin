@@ -73,14 +73,14 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));
 
         let contract_api = {
-            let dev_playground = PlaygroudService::new(storage);
-
+            let dev_playground = PlaygroudService::new(storage.clone());
             ContractRpcImpl::new(
                 config.clone(),
                 account_service,
                 txpool_service,
                 chain_state_service,
                 dev_playground,
+                storage,
             )
         };
 

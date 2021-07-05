@@ -8,17 +8,21 @@ use futures::FutureExt;
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
+use starcoin_resource_viewer::abi_resolver::ABIResolver;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunTransactionRequest,
-    StrView, TransactionOutputView,
+    FunctionIdView, ModuleIdView, StrView, StructTagView, TransactionOutputView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Storage;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction};
+use starcoin_vm_types::abi::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use std::str::FromStr;
@@ -30,6 +34,7 @@ pub struct ContractRpcImpl<Account, Pool, State> {
     pub(crate) chain_state: State,
     pub(crate) node_config: Arc<NodeConfig>,
     playground: PlaygroudService,
+    storage: Arc<Storage>,
 }
 
 impl<Account, Pool, State> ContractRpcImpl<Account, Pool, State>
@@ -44,6 +49,7 @@ where
         pool: Pool,
         chain_state: State,
         playground: PlaygroudService,
+        storage: Arc<Storage>,
     ) -> Self {
         Self {
             account,
@@ -51,6 +57,7 @@ where
             chain_state,
             node_config,
             playground,
+            storage,
         }
     }
     fn txn_request_filler(&self) -> TransactionRequestFiller<Account, Pool, State> {
@@ -173,5 +180,39 @@ where
         }
         .map_err(map_err);
         Box::pin(f.boxed())
+    }
+
+    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<ScriptFunctionABI> {
+        let service = self.chain_state.clone();
+        let storage = self.storage.clone();
+        let fut = async move {
+            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            ABIResolver::new(&state)
+                .resolve_function(&function_id.0.module, function_id.0.function.as_ident_str())
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn resolve_struct_tag(&self, struct_tag: StructTagView) -> FutureResult<StructABI> {
+        let service = self.chain_state.clone();
+        let storage = self.storage.clone();
+        let fut = async move {
+            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            ABIResolver::new(&state).resolve_struct_tag(&struct_tag.0)
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn resolve_module(&self, module_id: ModuleIdView) -> FutureResult<ModuleABI> {
+        let service = self.chain_state.clone();
+        let storage = self.storage.clone();
+        let fut = async move {
+            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            ABIResolver::new(&state).resolve_module(&module_id.0)
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
     }
 }

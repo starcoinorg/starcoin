@@ -9,7 +9,6 @@ pub mod starcoin_vm;
 pub use move_vm_runtime::move_vm;
 mod access_path_cache;
 mod errors;
-
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::StructTag;

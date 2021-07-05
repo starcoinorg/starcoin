@@ -6,41 +6,17 @@
 
 //! Loaded representation for runtime types.
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
+use starcoin_vm_types::abi::WrappedAbilitySet;
 use starcoin_vm_types::{
     account_address::AccountAddress,
     errors::{PartialVMError, PartialVMResult},
-    file_format::AbilitySet,
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
     value::{MoveStructLayout, MoveTypeLayout},
     vm_status::StatusCode,
 };
 use std::convert::TryInto;
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct WrappedAbilitySet(pub AbilitySet);
-
-impl Serialize for WrappedAbilitySet {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.into_u8().serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for WrappedAbilitySet {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let byte = u8::deserialize(deserializer)?;
-        Ok(WrappedAbilitySet(AbilitySet::from_u8(byte).ok_or_else(
-            || serde::de::Error::custom(format!("Invalid ability set: {:X}", byte)),
-        )?))
-    }
-}
 
 /// VM representation of a struct type in Move.
 #[derive(Debug, Clone, Serialize, Deserialize)]

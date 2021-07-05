@@ -3,9 +3,10 @@ use jsonrpc_derive::rpc;
 pub use self::gen_client::Client as ContractClient;
 use crate::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunTransactionRequest,
-    StrView, TransactionOutputView,
+    FunctionIdView, ModuleIdView, StrView, StructTagView, TransactionOutputView,
 };
 use crate::FutureResult;
+use starcoin_vm_types::abi::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
@@ -38,4 +39,11 @@ pub trait ContractApi {
         raw_txn: String,
         sender_public_key: StrView<AccountPublicKey>,
     ) -> FutureResult<TransactionOutputView>;
+
+    #[rpc(name = "contract.resolve_function")]
+    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<ScriptFunctionABI>;
+    #[rpc(name = "contract.resolve_struct_tag")]
+    fn resolve_struct_tag(&self, struct_tag: StructTagView) -> FutureResult<StructABI>;
+    #[rpc(name = "contract.resolve_module")]
+    fn resolve_module(&self, module_id: ModuleIdView) -> FutureResult<ModuleABI>;
 }
