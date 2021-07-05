@@ -10,7 +10,7 @@ use starcoin_account_api::AccountPublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_dev::playground;
-use starcoin_rpc_api::types::{FunctionIdView, TransactionOutputView, TransactionVMStatus};
+use starcoin_rpc_api::types::{FunctionIdView, TransactionOutputView, TransactionStatusView};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::authenticator::TransactionAuthenticator;
@@ -197,10 +197,10 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 serde_json::to_string_pretty(&output)?
             );
             match output.status {
-                TransactionVMStatus::Discard { status_code } => {
+                TransactionStatusView::Discard { status_code } => {
                     bail!("TransactionStatus is discard: {:?}", status_code)
                 }
-                TransactionVMStatus::Executed => {}
+                TransactionStatusView::Executed => {}
                 s => {
                     bail!("pre-run failed, status: {:?}", s);
                 }

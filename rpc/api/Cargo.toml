@@ -31,6 +31,7 @@ starcoin-logger = { path = "../../commons/logger"}
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+vm-status-translator = {path = "../../vm/vm-status-translator"}
 serde-helpers = {path = "../../commons/serde-helpers"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}

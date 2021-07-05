@@ -8164,6 +8164,7 @@ dependencies = [
  "structopt 0.3.21",
  "test-helper",
  "tokio 0.2.25",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -8932,6 +8933,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "thiserror",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -9059,6 +9061,7 @@ dependencies = [
  "test-helper",
  "thiserror",
  "tokio 0.2.25",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -10943,6 +10946,16 @@ name = "version_check"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
+
+[[package]]
+name = "vm-status-translator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "starcoin-move-explain",
+ "starcoin-vm-types",
+]
 
 [[package]]
 name = "void"

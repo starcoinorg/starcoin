@@ -3,11 +3,14 @@
 
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
+pub use crate::remote_state_reader::RemoteStateReader;
 use actix::{Addr, System};
 use anyhow::anyhow;
+use bcs_ext::BCSCodec;
 use futures::channel::oneshot;
 use futures::{TryStream, TryStreamExt};
 use jsonrpc_client_transports::RawClient;
+pub use jsonrpc_core::Params;
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
@@ -21,10 +24,10 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
-    BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunTransactionRequest,
-    EpochUncleSummaryView, FactoryAction, MintedBlockView, PeerInfoView, SignedUserTransactionView,
-    StateWithProofView, StrView, TransactionInfoView, TransactionOutputView, TransactionRequest,
-    TransactionView,
+    BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunOutputView,
+    DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, MintedBlockView, PeerInfoView,
+    SignedUserTransactionView, StateWithProofView, StrView, TransactionInfoView,
+    TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -40,25 +43,23 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::peer_info::{Multiaddr, PeerId};
+use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::transaction::DryRunTransaction;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 use std::time::Duration;
+use tokio::runtime::Runtime;
 
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
-
-pub use crate::remote_state_reader::RemoteStateReader;
-pub use jsonrpc_core::Params;
-use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::system_events::MintBlockEvent;
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
-use tokio::runtime::Runtime;
 
 #[derive(Clone)]
 enum ConnSource {
@@ -651,9 +652,22 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<TransactionOutputView> {
+    pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<DryRunOutputView> {
         self.call_rpc_blocking(|inner| inner.contract_client.dry_run(txn))
             .map_err(map_err)
+    }
+    pub fn dry_run_raw(&self, txn: DryRunTransaction) -> anyhow::Result<DryRunOutputView> {
+        let DryRunTransaction {
+            raw_txn,
+            public_key,
+        } = txn;
+        let raw_txn_str = hex::encode(raw_txn.encode()?);
+        self.call_rpc_blocking(|inner| {
+            inner
+                .contract_client
+                .dry_run_raw(raw_txn_str, StrView(public_key))
+        })
+        .map_err(map_err)
     }
     pub fn miner_submit(
         &self,

@@ -1,11 +1,10 @@
-use jsonrpc_derive::rpc;
-
 pub use self::gen_client::Client as ContractClient;
 use crate::types::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunTransactionRequest,
-    FunctionIdView, ModuleIdView, StrView, StructTagView, TransactionOutputView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
+    DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
 };
 use crate::FutureResult;
+use jsonrpc_derive::rpc;
 use starcoin_vm_types::abi::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
@@ -30,7 +29,7 @@ pub trait ContractApi {
     fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValueView>>;
 
     #[rpc(name = "contract.dry_run")]
-    fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<TransactionOutputView>;
+    fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<DryRunOutputView>;
 
     /// Dry run RawUserTransaction, the raw_txn parameter is RawUserTransaction's hex
     #[rpc(name = "contract.dry_run_raw")]
@@ -38,7 +37,7 @@ pub trait ContractApi {
         &self,
         raw_txn: String,
         sender_public_key: StrView<AccountPublicKey>,
-    ) -> FutureResult<TransactionOutputView>;
+    ) -> FutureResult<DryRunOutputView>;
 
     #[rpc(name = "contract.resolve_function")]
     fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<ScriptFunctionABI>;

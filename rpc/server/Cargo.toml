@@ -56,6 +56,7 @@ starcoin-dev = { path = "../../vm/dev" }
 starcoin-miner = { path = "../../miner" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+vm-status-translator = {path = "../../vm/vm-status-translator"}
 network-api = { path = "../../network/api" }
 starcoin-node-api = { path = "../../node/api"}
 starcoin-sync-api = { path = "../../sync/api"}

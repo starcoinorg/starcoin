@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockMetadataView, BlockView, SignedUserTransactionView, StrView,
-    TransactionEventView, TransactionInfoView, TransactionVMStatus, TypeTagView,
+    TransactionEventView, TransactionInfoView, TransactionStatusView, TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::BlockNumber;
@@ -112,19 +112,19 @@ pub enum TransactionVMStatusEsView {
     },
 }
 
-impl From<TransactionVMStatus> for TransactionVMStatusEsView {
-    fn from(s: TransactionVMStatus) -> Self {
+impl From<TransactionStatusView> for TransactionVMStatusEsView {
+    fn from(s: TransactionStatusView) -> Self {
         match s {
-            TransactionVMStatus::Executed => Self::Executed,
-            TransactionVMStatus::OutOfGas => Self::OutOfGas,
-            TransactionVMStatus::MoveAbort {
+            TransactionStatusView::Executed => Self::Executed,
+            TransactionStatusView::OutOfGas => Self::OutOfGas,
+            TransactionStatusView::MoveAbort {
                 location,
                 abort_code,
             } => Self::MoveAbort {
                 location,
                 abort_code,
             },
-            TransactionVMStatus::ExecutionFailure {
+            TransactionStatusView::ExecutionFailure {
                 location,
                 function,
                 code_offset,
@@ -133,8 +133,8 @@ impl From<TransactionVMStatus> for TransactionVMStatusEsView {
                 function,
                 code_offset,
             },
-            TransactionVMStatus::MiscellaneousError => Self::MiscellaneousError,
-            TransactionVMStatus::Discard { status_code } => Self::Discard { status_code },
+            TransactionStatusView::MiscellaneousError => Self::MiscellaneousError,
+            TransactionStatusView::Discard { status_code } => Self::Discard { status_code },
         }
     }
 }

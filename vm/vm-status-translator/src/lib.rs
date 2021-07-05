@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::Deserialize;
 use serde::Serialize;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::access_path::AccessPath;
@@ -47,7 +48,7 @@ impl<M: StateView> VmStatusTranslator<M> {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoveAbortExplain {
     pub category_code: u64,
     pub category_name: Option<String>,
