@@ -11,7 +11,7 @@ name = "starcoin_replay"
 path = "src/main.rs"
 
 [dependencies]
-structopt = "0.3.21"
+structopt = "0.3.22"
 starcoin-config = { path = "../../config"}
 starcoin-chain = { path = "../../chain"}
 starcoin-genesis = { path = "../../genesis"}

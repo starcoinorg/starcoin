@@ -15,7 +15,7 @@ crossbeam-channel = "0.5.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-structopt = "0.3.21"
+structopt = "0.3.22"
 itertools = "0.10.1"
 
 starcoin-logger = { path = "../../commons/logger" }

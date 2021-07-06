@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 once_cell = "1.8.0"
 petgraph = "0.5.1"
-structopt = "0.3.21"
+structopt = "0.3.22"
 serde = { version = "1.0.126", default-features = false }
 anyhow = "1.0.41"
 codespan = { version = "0.8.0", features = ["serialization"] }

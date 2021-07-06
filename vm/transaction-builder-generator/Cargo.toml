@@ -12,7 +12,7 @@ edition = "2018"
 anyhow = "1.0.41"
 heck = "0.3.3"
 regex = "1.4.3"
-structopt = "0.3.21"
+structopt = "0.3.22"
 textwrap = "0.14.0"
 serde_yaml = "0.8.17"
 serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="694048797338ff7385006d968e786b6d9dbdeb8b"}

@@ -11,7 +11,7 @@ anyhow = "1.0.41"
 thiserror = "1.0"
 serde = { version = "1.0.126", features = ["derive"] }
 rustyline = "8.2.0"
-structopt = "0.3.21"
+structopt = "0.3.22"
 clap = "2.33.3"
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 rust-flatten-json = "0.2.0"
