@@ -63,6 +63,20 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
+      - name: starcoin-faucet
+        image: starcoin/starcoin:master
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - /starcoin/starcoin_faucet --ipc-path /sc-data/halley/starcoin.ipc
+        ports:
+          - containerPort: 8000
+            hostPort: 8000
+        volumeMounts:
+          - name: starcoin-volume
+            mountPath: /sc-data
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume
