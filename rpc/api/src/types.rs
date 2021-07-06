@@ -48,6 +48,7 @@ use starcoin_vm_types::write_set::WriteOp;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
+use vm_status_translator::MoveAbortExplain;
 
 pub type ByteCode = Vec<u8>;
 
@@ -675,7 +676,7 @@ pub struct TransactionInfoView {
     /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
     /// failures and Move abort's receive more detailed information. But other errors are generally
     /// categorized with no status code or other information
-    pub status: TransactionVMStatus,
+    pub status: TransactionStatusView,
 }
 
 impl TransactionInfoView {
@@ -697,14 +698,14 @@ impl TransactionInfoView {
             state_root_hash: txn_info.state_root_hash(),
             event_root_hash: txn_info.event_root_hash(),
             gas_used: txn_info.gas_used().into(),
-            status: TransactionVMStatus::from(txn_info.status().clone()),
+            status: TransactionStatusView::from(txn_info.status().clone()),
         })
     }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
-pub enum TransactionVMStatus {
+pub enum TransactionStatusView {
     Executed,
     OutOfGas,
     MoveAbort {
@@ -721,7 +722,7 @@ pub enum TransactionVMStatus {
         status_code: StrView<u64>,
     },
 }
-impl From<TransactionStatus> for TransactionVMStatus {
+impl From<TransactionStatus> for TransactionStatusView {
     fn from(s: TransactionStatus) -> Self {
         match s {
             TransactionStatus::Discard(d) => d.into(),
@@ -730,12 +731,12 @@ impl From<TransactionStatus> for TransactionVMStatus {
     }
 }
 
-impl From<KeptVMStatus> for TransactionVMStatus {
+impl From<KeptVMStatus> for TransactionStatusView {
     fn from(origin: KeptVMStatus) -> Self {
         match origin {
-            KeptVMStatus::Executed => TransactionVMStatus::Executed,
-            KeptVMStatus::OutOfGas => TransactionVMStatus::OutOfGas,
-            KeptVMStatus::MoveAbort(l, c) => TransactionVMStatus::MoveAbort {
+            KeptVMStatus::Executed => TransactionStatusView::Executed,
+            KeptVMStatus::OutOfGas => TransactionStatusView::OutOfGas,
+            KeptVMStatus::MoveAbort(l, c) => TransactionStatusView::MoveAbort {
                 location: l,
                 abort_code: c.into(),
             },
@@ -743,16 +744,16 @@ impl From<KeptVMStatus> for TransactionVMStatus {
                 location,
                 function,
                 code_offset,
-            } => TransactionVMStatus::ExecutionFailure {
+            } => TransactionStatusView::ExecutionFailure {
                 location,
                 function,
                 code_offset,
             },
-            KeptVMStatus::MiscellaneousError => TransactionVMStatus::MiscellaneousError,
+            KeptVMStatus::MiscellaneousError => TransactionStatusView::MiscellaneousError,
         }
     }
 }
-impl From<DiscardedVMStatus> for TransactionVMStatus {
+impl From<DiscardedVMStatus> for TransactionStatusView {
     fn from(s: DiscardedVMStatus) -> Self {
         Self::Discard {
             status_code: StrView(s.into()),
@@ -823,11 +824,45 @@ impl TransactionEventView {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum VmStatusExplainView {
+    /// The VM status corresponding to an EXECUTED status code
+    Executed,
+    /// Indicates an error from the VM, e.g. OUT_OF_GAS, INVALID_AUTH_KEY, RET_TYPE_MISMATCH_ERROR
+    /// etc.
+    /// The code will neither EXECUTED nor ABORTED
+    Error(String),
+
+    /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
+    MoveAbort {
+        location: AbortLocation,
+        abort_code: u64,
+        explain: MoveAbortExplain,
+    },
+
+    /// Indicates an failure from inside Move code, where the VM could not continue exection, e.g.
+    /// dividing by zero or a missing resource
+    ExecutionFailure {
+        status_code: String,
+        location: AbortLocation,
+        function: u16,
+        function_name: Option<String>,
+        code_offset: u16,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DryRunOutputView {
+    pub explained_status: VmStatusExplainView,
+    #[serde(flatten)]
+    pub txn_output: TransactionOutputView,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionOutputView {
     pub events: Vec<TransactionEventView>,
     pub gas_used: StrView<u64>,
-    pub status: TransactionVMStatus,
+    pub status: TransactionStatusView,
     pub write_set: Vec<TransactionOutputAction>,
 }
 

@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-
-use crate::vm_status_translator::{explain_move_abort, MoveAbortExplain};
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::vm_status::AbortLocation;
 use starcoin_vm_types::{identifier::Identifier, language_storage::ModuleId};
 use structopt::StructOpt;
+use vm_status_translator::{explain_move_abort, MoveAbortExplain};
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.

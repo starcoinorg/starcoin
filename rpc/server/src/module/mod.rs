@@ -35,7 +35,7 @@ use anyhow::Error;
 use hex::FromHexError;
 use jsonrpc_core::ErrorCode;
 use starcoin_account_api::error::AccountError;
-use starcoin_rpc_api::types::TransactionVMStatus;
+use starcoin_rpc_api::types::TransactionStatusView;
 use starcoin_vm_types::transaction::{CallError, TransactionError, TransactionStatus};
 use starcoin_vm_types::vm_status::VMStatus;
 
@@ -138,7 +138,7 @@ impl From<TransactionError> for RpcError {
                     ErrorCode::ServerError(TXN_ERROR_BASE + 2),
                     Some(
                         // translate to jsonrpc types
-                        serde_json::to_value(TransactionVMStatus::from(TransactionStatus::from(
+                        serde_json::to_value(TransactionStatusView::from(TransactionStatus::from(
                             vm_status,
                         )))
                         .expect("vm status to json should be ok"),
@@ -190,7 +190,7 @@ impl From<VMStatus> for RpcError {
             message: vm_status.to_string(),
             data: Some(
                 // use jsonrpc types do serialization.
-                serde_json::to_value(TransactionVMStatus::from(TransactionStatus::from(
+                serde_json::to_value(TransactionStatusView::from(TransactionStatus::from(
                     vm_status,
                 )))
                 .expect("vm status to json should be ok"),

@@ -46,6 +46,7 @@ starcoin-genesis = { path = "../../genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
+vm-status-translator = {path = "../../vm/vm-status-translator"}
 errmapgen = { git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
 network-api = {path = "../../network/api", package="network-api"}
 starcoin-network-rpc-api = {path = "../../network-rpc/api"}

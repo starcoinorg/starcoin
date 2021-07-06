@@ -4,7 +4,7 @@ use clap::Clap;
 use jsonrpc_core_client::{RpcChannel, RpcError};
 use serde::Deserialize;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
-use starcoin_rpc_api::types::{TransactionInfoView, TransactionVMStatus};
+use starcoin_rpc_api::types::{TransactionInfoView, TransactionStatusView};
 use starcoin_rpc_api::{
     chain::ChainClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
 };
@@ -175,7 +175,7 @@ async fn main() -> Result<()> {
                 }
             }
         };
-        if txn_info.status != TransactionVMStatus::Executed {
+        if txn_info.status != TransactionStatusView::Executed {
             eprintln!(
                 "txn {:?} error: {:?}, please resume from user: {}",
                 txn_hash,

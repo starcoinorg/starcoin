@@ -4,7 +4,7 @@ use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::types::{
-    AnnotatedMoveValueView, ContractCall, FunctionIdView, TransactionVMStatus,
+    AnnotatedMoveValueView, ContractCall, FunctionIdView, TransactionStatusView,
 };
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
@@ -184,7 +184,7 @@ fn create_default_account(
         .chain_get_transaction_info(transfer_txn_id)
         .unwrap()
         .unwrap();
-    assert_eq!(transfer_txn_info.status, TransactionVMStatus::Executed);
+    assert_eq!(transfer_txn_info.status, TransactionStatusView::Executed);
     transfer_amount
 }
 
@@ -253,7 +253,7 @@ fn test_upgrade_module() {
         .unwrap()
         .unwrap();
     info!("step1 txn status : {:?}", proposal_txn_info);
-    assert_eq!(proposal_txn_info.status, TransactionVMStatus::Executed);
+    assert_eq!(proposal_txn_info.status, TransactionStatusView::Executed);
 
     // 2. transfer
     cli_state
@@ -313,7 +313,7 @@ fn test_upgrade_module() {
         .chain_get_transaction_info(vote_txn_id)
         .unwrap()
         .unwrap();
-    assert_eq!(vote_txn_info.status, TransactionVMStatus::Executed);
+    assert_eq!(vote_txn_info.status, TransactionStatusView::Executed);
 
     // 4. sleep
     cli_state.client().sleep(dao_config.voting_period).unwrap();
@@ -350,7 +350,7 @@ fn test_upgrade_module() {
         .unwrap()
         .unwrap();
     info!("queue txn info : {:?}", queue_txn_info);
-    assert_eq!(queue_txn_info.status, TransactionVMStatus::Executed);
+    assert_eq!(queue_txn_info.status, TransactionStatusView::Executed);
 
     // 6. sleep
     cli_state.client().sleep(dao_config.voting_period).unwrap();
@@ -382,7 +382,7 @@ fn test_upgrade_module() {
         .chain_get_transaction_info(plan_txn_id)
         .unwrap()
         .unwrap();
-    assert_eq!(plan_txn_info.status, TransactionVMStatus::Executed);
+    assert_eq!(plan_txn_info.status, TransactionStatusView::Executed);
 
     // 8. exe package
     let package_txn = _sign_txn_with_association_account_by_rpc_client(
@@ -407,7 +407,7 @@ fn test_upgrade_module() {
         .chain_get_transaction_info(package_txn_id)
         .unwrap()
         .unwrap();
-    assert_eq!(package_txn_info.status, TransactionVMStatus::Executed);
+    assert_eq!(package_txn_info.status, TransactionStatusView::Executed);
 
     // 9. verify
     let call = ContractCall {
@@ -491,7 +491,7 @@ fn test_only_new_module() {
         .unwrap();
     assert_eq!(
         only_new_module_strategy_txn_info.status,
-        TransactionVMStatus::Executed
+        TransactionStatusView::Executed
     );
 
     // 3. apply new module
@@ -529,7 +529,7 @@ fn test_only_new_module() {
         .chain_get_transaction_info(package_txn_id_1)
         .unwrap()
         .unwrap();
-    assert_eq!(package_txn_info_1.status, TransactionVMStatus::Executed);
+    assert_eq!(package_txn_info_1.status, TransactionStatusView::Executed);
 
     // 4. 更新module
     let test_upgrade_module_source_2 = r#"
