@@ -69,7 +69,7 @@ fn padding_zero(origin: &str, scale: u32, left: bool) -> String {
     result
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct TokenValue<U>
 where
     U: TokenUnit,

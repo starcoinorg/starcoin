@@ -8366,6 +8366,8 @@ dependencies = [
  "futures-timer",
  "hex",
  "rust-embed",
+ "serde",
+ "serde_json",
  "starcoin-account-api",
  "starcoin-config",
  "starcoin-crypto",

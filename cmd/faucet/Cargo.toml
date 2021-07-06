@@ -17,6 +17,8 @@ futures-timer = "3.0"
 ascii = "0.8"
 rust-embed = "5.9.0"
 structopt = "0.3.21"
+serde = { version = "1.0.126" }
+serde_json = { version="1.0", features = ["arbitrary_precision"]}
 
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
