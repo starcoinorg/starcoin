@@ -1,9 +1,15 @@
-use crate::{faucet::Faucet, unwrap_or_return};
-use anyhow::Result;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::{faucet::Faucet, unwrap_or_handle_error};
+use anyhow::{Error, Result};
 use ascii::AsciiString;
 use rust_embed::RustEmbed;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_value::TokenValue;
+use starcoin_types::account_config::STCUnit;
 use std::fmt::{Debug, Formatter};
 use std::io::Cursor;
 use std::str::FromStr;
@@ -27,14 +33,31 @@ fn response_custom(status_code: u16, data: &str) -> Response<Cursor<String>> {
         .with_header(Header::from_str("Access-Control-Allow-Origin: *").unwrap())
 }
 
+fn response_error(error: Error) -> Response<Cursor<String>> {
+    warn!("invalid request: {}", error);
+    let data = format!("Invalid request: {}", error);
+    let data_len = data.len();
+    Response::empty(400)
+        .with_data(Cursor::new(data), Some(data_len))
+        .with_header(Header::from_str("Access-Control-Allow-Origin: *").unwrap())
+}
+
+fn response_ok(txn_hash: HashValue) -> Response<Cursor<String>> {
+    let resp_json = serde_json::json!({
+       "transaction_id": txn_hash.to_string()
+    });
+    response_custom(200, resp_json.to_string().as_str())
+}
+
 async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
-    let query_param =
-        unwrap_or_return!(parse_query(query), response_custom(400, "Invalid request"));
-    info!("Fund query params: {:?}", query_param);
-    match faucet.transfer(query_param.amount, query_param.address) {
-        Ok(_) => response_custom(200, "Success"),
-        Err(e) => response_custom(400, &e.to_string()),
-    }
+    info!("Fund query: {:?}", query);
+    let query_param = unwrap_or_handle_error!(parse_query(query), response_error);
+
+    let txn_hash = unwrap_or_handle_error!(
+        faucet.transfer(query_param.amount, query_param.address),
+        response_error
+    );
+    response_ok(txn_hash)
 }
 
 pub async fn run(server: Server, faucet: Faucet) {
@@ -68,7 +91,7 @@ pub async fn run(server: Server, faucet: Faucet) {
 
 struct QueryParam {
     address: AccountAddress,
-    amount: u128,
+    amount: Option<TokenValue<STCUnit>>,
 }
 
 impl Debug for QueryParam {
@@ -93,7 +116,7 @@ fn parse_query(query: &str) -> Result<QueryParam> {
         }
     }
     let address = AccountAddress::from_str(address)?;
-    let amount = u128::from_str(amount)?;
+    let amount = TokenValue::<STCUnit>::from_str(amount).ok();
     let query_param = QueryParam { address, amount };
     Ok(query_param)
 }
