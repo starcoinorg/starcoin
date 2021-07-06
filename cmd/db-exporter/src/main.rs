@@ -1,9 +1,15 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{bail, Result};
 use bcs_ext::Sample;
 use csv::Writer;
 use starcoin_storage::block::FailedBlock;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
+use starcoin_storage::{
+    BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, VEC_PREFIX_NAME,
+};
 use starcoin_types::block::{Block, BlockHeader};
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
@@ -15,7 +21,8 @@ pub fn export<W: std::io::Write>(
     mut csv_writer: Writer<W>,
     schema: DbSchema,
 ) -> anyhow::Result<()> {
-    let db_storage = DBStorage::new(db, Default::default())?;
+    let db_storage =
+        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default())?;
     let mut iter = db_storage.iter(schema.to_string().as_str())?;
     iter.seek_to_first();
     let key_codec = schema.get_key_codec();
@@ -110,15 +117,19 @@ impl DbSchema {
             },
         })
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            DbSchema::Block => BLOCK_PREFIX_NAME,
+            DbSchema::BlockHeader => BLOCK_HEADER_PREFIX_NAME,
+            DbSchema::FailedBlock => FAILED_BLOCK_PREFIX_NAME,
+        }
+    }
 }
 
 impl std::fmt::Display for DbSchema {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DbSchema::Block => write!(f, "block"),
-            DbSchema::BlockHeader => write!(f, "block_header"),
-            DbSchema::FailedBlock => write!(f, "failed_block"),
-        }
+        write!(f, "{}", self.name())
     }
 }
 
@@ -127,9 +138,9 @@ impl FromStr for DbSchema {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let schema = match s {
-            "block" => DbSchema::Block,
-            "block_header" => DbSchema::BlockHeader,
-            "failed_block" => DbSchema::FailedBlock,
+            BLOCK_PREFIX_NAME => DbSchema::Block,
+            BLOCK_HEADER_PREFIX_NAME => DbSchema::BlockHeader,
+            FAILED_BLOCK_PREFIX_NAME => DbSchema::FailedBlock,
             _ => {
                 bail!("Unsupported schema: {}", s)
             }
@@ -158,7 +169,7 @@ fn main() -> anyhow::Result<()> {
     let output = option.output.as_deref();
     let mut writer_builder = csv::WriterBuilder::new();
     let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
-    match output {
+    let result = match output {
         Some(output) => {
             let writer = writer_builder.from_path(output)?;
             export(
@@ -175,5 +186,25 @@ fn main() -> anyhow::Result<()> {
                 option.schema,
             )
         }
+    };
+    if let Err(err) = result {
+        let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
+            if let csv::ErrorKind::Io(io_err) = err.kind() {
+                if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                    Some(io_err)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        });
+        //ignore BrokenPipe
+        return if let Some(_broken_pipe_err) = broken_pipe_err {
+            Ok(())
+        } else {
+            Err(err)
+        };
     }
+    result
 }
