@@ -30,6 +30,7 @@ use vm::{
 
 pub(crate) mod dependencies;
 pub mod function_resolver;
+pub mod functional_test;
 pub mod package;
 pub mod remote_state;
 pub mod test;
@@ -39,6 +40,9 @@ pub const DEFAULT_STORAGE_DIR: &str = "storage";
 
 /// Default directory where Move modules live
 pub const DEFAULT_SOURCE_DIR: &str = "src";
+
+/// Default directory where test live
+pub const DEFAULT_TEST_DIR: &str = "tests";
 
 /// Default directory where Move packages live under build_dir
 pub const DEFAULT_PACKAGE_DIR: &str = "package";

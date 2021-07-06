@@ -1,7 +1,10 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{DEFAULT_BUILD_DIR, DEFAULT_PACKAGE_DIR, DEFAULT_SOURCE_DIR, DEFAULT_STORAGE_DIR};
+use crate::{
+    DEFAULT_BUILD_DIR, DEFAULT_PACKAGE_DIR, DEFAULT_SOURCE_DIR, DEFAULT_STORAGE_DIR,
+    DEFAULT_TEST_DIR,
+};
 use anyhow::anyhow;
 use move_coverage::coverage_map::{CoverageMap, ExecCoverageMapWithModules};
 use move_lang::{
@@ -321,6 +324,9 @@ pub fn create_test_scaffold(path: &str) -> anyhow::Result<()> {
     for dir in &dirs {
         fs::create_dir_all(&path.canonicalize()?.join(format_src_dir(dir)))?;
     }
+
+    // create tests dir
+    fs::create_dir_all(&path.canonicalize()?.join(DEFAULT_TEST_DIR))?;
 
     for (file, possible_contents) in &files {
         let mut file_handle = fs::File::create(path.canonicalize()?.join(file))?;

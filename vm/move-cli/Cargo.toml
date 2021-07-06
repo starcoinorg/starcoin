@@ -17,6 +17,7 @@ once_cell = "1.8.0"
 structopt = "0.3.21"
 
 bcs = "0.1.2"
+starcoin-logger = {path = "../../commons/logger"}
 bytecode-verifier = { package = "bytecode-verifier", git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
 # diem-framework-releases = { path = "../../diem-framework/releases" }
 disassembler = { package = "disassembler", git = "https://github.com/starcoinorg/diem", rev="e22e951caa6dc230b1e866c89018eeb26bc73a45" }
@@ -37,6 +38,7 @@ starcoin-config ={path = "../../config"}
 stdlib = {path = "../stdlib"}
 # diem-framework = { path = "../../diem-framework" }
 vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/diem", rev = "e22e951caa6dc230b1e866c89018eeb26bc73a45"}
+starcoin-functional-tests = {path = "../functional-tests"}
 # vm-genesis = { path = "../vm-genesis" }
 walkdir = "2.3.1"
 itertools = "0.10"
@@ -45,12 +47,12 @@ starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
-
+starcoin-move-compiler = {path = "../compiler"}
 futures = "0.3"
 tokio = {version = "0.2", features = ["full"]}
-
-[dev-dependencies]
 datatest-stable = "0.1"
+tempfile = "~3"
+[dev-dependencies]
 [[bin]]
 name = "move"
 path = "src/main.rs"
