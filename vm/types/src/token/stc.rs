@@ -111,10 +111,18 @@ impl FromStr for STCUnit {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
         for unit in STCUnit::units() {
-            if unit.symbol() == s {
+            if unit.symbol().eq_ignore_ascii_case(s) {
                 return Ok(unit);
             }
         }
         bail!("Unsupported unit type: {}", s)
+    }
+}
+
+impl FromStr for TokenValue<STCUnit> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        STCUnit::parse(s)
     }
 }
