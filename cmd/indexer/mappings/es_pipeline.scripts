@@ -75,6 +75,12 @@ PUT _component_template/block-mappings
     "composed_of": [ "txn_info-mappings" ]
   }
 
+  PUT _index_template/pending-txn-template
+  {
+    "index_patterns": ["*.pending_txns"],
+    "priority": 500,
+    "composed_of": [ "pending-txn-mappings" ]
+  }
   PUT _index_template/event-template
   {
     "index_patterns": ["*.txn_events"],

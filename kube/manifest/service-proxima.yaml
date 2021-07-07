@@ -19,6 +19,10 @@ spec:
       port: 9870
       targetPort: 9870
       name: ws-rpc
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      name: http-faucet
   type: LoadBalancer
 ---
 apiVersion: v1

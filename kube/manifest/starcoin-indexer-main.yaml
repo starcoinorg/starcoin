@@ -21,7 +21,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin-indexer
-        image: starcoin/starcoin:feature-index_event
+        image: starcoin/starcoin:v1.3.0
         imagePullPolicy: Always
         command:
           - bash

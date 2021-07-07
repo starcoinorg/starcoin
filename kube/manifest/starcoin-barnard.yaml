@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.2.0
+        image: starcoin/starcoin:v1.3.0
         imagePullPolicy: Always
         command:
           - bash
@@ -91,6 +91,20 @@ spec:
           - mountPath: /sc-data
             readOnly: true
             name: starcoin-volume
+      - name: starcoin-faucet
+        image: starcoin/starcoin:sha-dd2b097
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - /starcoin/starcoin_faucet --ipc-path /sc-data/barnard/starcoin.ipc
+        ports:
+          - containerPort: 8000
+            hostPort: 8000
+        volumeMounts:
+          - name: starcoin-volume
+            mountPath: /sc-data
       volumes:
         - name: config
           configMap:

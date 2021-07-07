@@ -1,0 +1,93 @@
+{
+  "template":
+  {
+    "mappings": {
+      "properties": {
+        "authenticator": {
+          "properties": {
+            "Ed25519": {
+              "properties": {
+                "public_key": {
+                  "type": "text",
+                  "fields": {
+                    "keyword": {
+                      "type": "keyword",
+                      "ignore_above": 256
+                    }
+                  }
+                },
+                "signature": {
+                  "type": "text",
+                  "fields": {
+                    "keyword": {
+                      "type": "keyword",
+                      "ignore_above": 256
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "raw_txn": {
+          "properties": {
+            "chain_id": {
+              "type": "long"
+            },
+            "expiration_timestamp_secs": {
+              "type": "date"
+            },
+            "gas_token_code": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "gas_unit_price": {
+              "type": "long"
+            },
+            "max_gas_amount": {
+              "type": "long"
+            },
+            "payload": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "sender": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "sequence_number": {
+              "type": "long"
+            }
+          }
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "transaction_hash": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    }
+  }
+}
