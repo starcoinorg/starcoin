@@ -16,7 +16,7 @@ regex = { version = "1.4.3", default-features = false, features = ["std", "perf"
 thiserror = "1.0"
 aho-corasick = "0.7.18"
 termcolor = "1.1.2"
-mirai-annotations = "1.10.1"
+mirai-annotations = "1.12.0"
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types" ,default-features = false, features = ["fuzzing"]}
 starcoin-vm-runtime = { path = "../vm-runtime", features = ["debug_module"] }
