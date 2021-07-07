@@ -148,7 +148,7 @@ where
     fn get_code(
         &self,
         module_id: StrView<ModuleId>,
-        _option: GetCodeOption,
+        _option: Option<GetCodeOption>,
     ) -> FutureResult<Option<GetCodeResponse>> {
         let service = self.service.clone();
         let f = async move {
@@ -168,10 +168,11 @@ where
         &self,
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
-        option: GetResourceOption,
+        option: Option<GetResourceOption>,
     ) -> FutureResult<Option<GetResourceResponse>> {
         let service = self.service.clone();
         let state_store = self.state_store.clone();
+        let option = option.unwrap_or_default();
         let f = async move {
             let state_root = service.clone().state_root().await?;
             let data = service

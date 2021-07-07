@@ -48,7 +48,7 @@ pub trait StateApi {
     fn get_code(
         &self,
         module_id: StrView<ModuleId>,
-        option: GetCodeOption,
+        option: Option<GetCodeOption>,
     ) -> FutureResult<Option<GetCodeResponse>>;
 
     /// get resource data of `addr`
@@ -57,7 +57,7 @@ pub trait StateApi {
         &self,
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
-        option: GetResourceOption,
+        option: Option<GetResourceOption>,
     ) -> FutureResult<Option<GetResourceResponse>>;
 }
 
@@ -70,5 +70,5 @@ pub struct GetResourceOption {
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
 #[serde(default)]
 pub struct GetCodeOption {
-    pub gen_interface: bool,
+    // pub gen_interface: bool,
 }

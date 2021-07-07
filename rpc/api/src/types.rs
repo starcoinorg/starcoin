@@ -101,6 +101,7 @@ pub struct GetResourceResponse {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetCodeResponse {
     pub code: StrView<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub interface: Option<String>,
 }
 
