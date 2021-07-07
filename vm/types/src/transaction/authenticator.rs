@@ -182,6 +182,8 @@ impl AuthenticationKey {
     /// The number of bytes in an authentication key.
     pub const LENGTH: usize = 32;
 
+    pub const DUMMY_KEY: [u8; AuthenticationKey::LENGTH] = [0; AuthenticationKey::LENGTH];
+
     /// Create an authentication key from a preimage by taking its sha3 hash
     pub fn from_preimage(preimage: &AuthenticationKeyPreimage) -> AuthenticationKey {
         AuthenticationKey::new(*HashValue::sha3_256_of(&preimage.0).as_ref())
@@ -223,6 +225,11 @@ impl AuthenticationKey {
         let mut rng = OsRng;
         let buf: [u8; Self::LENGTH] = rng.gen();
         AuthenticationKey::new(buf)
+    }
+
+    /// Check the auth key is dummy empty key
+    pub fn is_dummy(&self) -> bool {
+        self.0 == Self::DUMMY_KEY
     }
 }
 

@@ -56,11 +56,18 @@ impl SignedMessage {
 
     /// Checks the account by on chain account resource, please ensure the AccountResource's address == message.account
     pub fn check_account(&self, account_resource: &AccountResource) -> Result<()> {
-        ensure!(
-            self.authenticator.authentication_key().as_ref()
-                == account_resource.authentication_key(),
-            "authenticator's public key do not match the account resource on chain"
-        );
+        let authkey = self.authenticator.authentication_key();
+        if authkey.is_dummy() {
+            ensure!(
+                authkey.derived_address() == self.account,
+                "authenticator's address do not match the signed message account"
+            )
+        } else {
+            ensure!(
+                authkey.as_ref() == account_resource.authentication_key(),
+                "authenticator's public key do not match the account resource on chain"
+            );
+        }
         Ok(())
     }
 
