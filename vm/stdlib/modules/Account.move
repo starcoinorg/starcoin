@@ -94,6 +94,14 @@ module Account {
         token_code: Token::TokenCode,
     }
 
+    // SignerDelegated can only be stored under address, not in other structs.
+    struct SignerDelegated has key {}
+    // SignerCapability can only be stored in other structs, not under address.
+    // So that the capability is always controlled by contracts, not by some EOA.
+    struct SignerCapability has store { addr: address }
+    /// As `signer` can be auto dropped, a wrapper is needed to make a not `drop`-able signer.
+    struct WrappedSigner {signer: signer }
+
     const MAX_U64: u128 = 18446744073709551615;
 
     const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
@@ -116,6 +124,46 @@ module Account {
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
+
+    // cannot be dummy key
+    const AUTH_KEY_PLACEHOLDER:vector<u8> = x"1000000000000000000000000000000000000000000000000000000000000000";
+
+    /// A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
+    public fun remove_signer_capability(s: &signer): SignerCapability
+    acquires Account {
+        let signer_addr = Signer::address_of(s);
+        // check signer not delegated.
+        let already_delegated = exists<SignerDelegated>(signer_addr);
+        assert(!already_delegated, 401);
+
+        // set to account auth key to noop.
+            {
+                let key_rotation_capability = extract_key_rotation_capability(s);
+                rotate_authentication_key_with_capability(&key_rotation_capability, AUTH_KEY_PLACEHOLDER);
+                restore_key_rotation_capability(key_rotation_capability);
+            };
+        move_to(s, SignerDelegated {});
+        let signer_cap = SignerCapability {addr: signer_addr };
+        signer_cap
+    }
+
+    public fun create_signer_with_capability(cap: &SignerCapability): WrappedSigner {
+        let signer_addr = cap.addr;
+        // check this signer cap is delegated indeed.
+        assert(exists<SignerDelegated>(signer_addr), 401);
+        WrappedSigner {signer: create_signer(signer_addr)}
+    }
+    public fun borrow_signer(s: &WrappedSigner): &signer {
+        &s.signer
+    }
+
+    public fun return_signer(signer: WrappedSigner) {
+        let WrappedSigner {signer} = signer;
+        destroy_signer(signer)
+    }
+    public fun signer_delagated(addr: address): bool {
+        exists<SignerDelegated>(addr)
+    }
 
     /// Create an genesis account at `new_account_address` and return signer.
     /// Genesis authentication_key is zero bytes.

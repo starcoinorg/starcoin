@@ -1,7 +1,7 @@
 //! account: admin
 //! account: liquidier
 //! account: exchanger
-
+//! account: tokenissuer
 
 // check: EXECUTED
 
@@ -50,8 +50,12 @@ module admin::TokenSwap {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Math;
+    use 0x1::Account;
     use admin::LiquidityToken::LiquidityToken;
 
+    struct WrappedAdminSignerCapability has key {
+        cap: Account::SignerCapability,
+    }
     // Liquidity Token
     // TODO: token should be generic on <X, Y>
     // struct T {
@@ -70,17 +74,25 @@ module admin::TokenSwap {
         last_k: u128,
     }
 
+    public fun initialize(signer: &signer) {
+        let signer_cap = Account::remove_signer_capability(signer);
+        let cap = WrappedAdminSignerCapability {cap: signer_cap};
+        move_to(signer, cap);
+    }
 
 
     /// TODO: check X,Y is token, and X,Y is sorted.
 
 
     // for now, only admin can register token pair
-    public fun register_swap_pair<X: store, Y: store>(signer: &signer) {
-        assert_admin(signer);
+    public fun register_swap_pair<X: store, Y: store>(_signer: &signer) acquires WrappedAdminSignerCapability {
+        let cap = borrow_global<WrappedAdminSignerCapability>(admin_address());
+        let admin = Account::create_signer_with_capability(&cap.cap);
+        let admin_ref = Account::borrow_signer(&admin);
         let token_pair = make_token_pair<X, Y>();
-        move_to(signer, token_pair);
-        register_liquidity_token<X, Y>(signer);
+        move_to(admin_ref, token_pair);
+        register_liquidity_token<X, Y>(admin_ref);
+        Account::return_signer(admin);
     }
 
     fun register_liquidity_token<X: store, Y: store>(signer: &signer) {
@@ -215,22 +227,36 @@ module admin::TokenSwap {
 }
 // check: EXECUTED
 
+
 //! new-transaction
 //! sender: admin
+
 address admin = {{admin}};
-module admin::Token1 {
+script {
+use admin::TokenSwap;
+fun main(signer: signer) {
+TokenSwap::initialize(&signer);
+}
+}
+// check: EXECUTED
+
+//! new-transaction
+//! sender: tokenissuer
+address tokenissuer = {{tokenissuer}};
+module tokenissuer::Token1 {
     struct Token1 has copy, drop, store {}
 }
 // check: EXECUTED
 
 //! new-transaction
-//! sender: admin
+//! sender: tokenissuer
 
 // register a token pair STC/Token1
 address admin = {{admin}};
+address tokenissuer = {{tokenissuer}};
 script {
 use admin::TokenSwap;
-use admin::Token1;
+use tokenissuer::Token1;
 use 0x1::Token;
 use 0x1::STC;
 fun main(signer: signer) {
@@ -245,9 +271,9 @@ fun main(signer: signer) {
 
 //! new-transaction
 //! sender: liquidier
-address admin = {{admin}};
+address tokenissuer = {{tokenissuer}};
 script{
-use admin::Token1;
+use tokenissuer::Token1;
 use 0x1::Account;
 fun main(signer: signer) {
     Account::do_accept_token<Token1::Token1>(&signer);
@@ -256,12 +282,12 @@ fun main(signer: signer) {
 // check: EXECUTED
 
 //! new-transaction
-//! sender: admin
+//! sender: tokenissuer
 // mint some token1 to liquidier
-address admin = {{admin}};
+address tokenissuer = {{tokenissuer}};
 address liquidier = {{liquidier}};
 script{
-use admin::Token1;
+use tokenissuer::Token1;
 
 use 0x1::Account;
 use 0x1::Token;
@@ -275,9 +301,10 @@ fun main(signer: signer) {
 //! new-transaction
 //! sender: liquidier
 address admin = {{admin}};
+address tokenissuer = {{tokenissuer}};
 script{
     use 0x1::STC;
-    use admin::Token1;
+    use tokenissuer::Token1;
     use admin::TokenSwap;
     use admin::LiquidityToken::LiquidityToken;
     use 0x1::Account;
@@ -303,9 +330,11 @@ script{
 //! new-transaction
 //! sender: exchanger
 address admin = {{admin}};
+address tokenissuer = {{tokenissuer}};
+
 script {
     use 0x1::STC;
-    use admin::Token1;
+    use tokenissuer::Token1;
     use admin::TokenSwap;
     use admin::TokenSwapHelper;
     use 0x1::Account;
@@ -328,11 +357,12 @@ script {
 //! new-transaction
 //! sender: liquidier
 address admin = {{admin}};
+address tokenissuer = {{tokenissuer}};
 script{
     use 0x1::STC;
     use 0x1::Account;
     use 0x1::Signer;
-    use admin::Token1;
+    use tokenissuer::Token1;
     use admin::TokenSwap;
     use admin::LiquidityToken::LiquidityToken;
 

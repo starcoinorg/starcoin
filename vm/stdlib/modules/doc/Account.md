@@ -13,7 +13,15 @@ The module for the account resource that governs every account
 -  [Struct `WithdrawEvent`](#0x1_Account_WithdrawEvent)
 -  [Struct `DepositEvent`](#0x1_Account_DepositEvent)
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
+-  [Resource `SignerDelegated`](#0x1_Account_SignerDelegated)
+-  [Struct `SignerCapability`](#0x1_Account_SignerCapability)
+-  [Struct `WrappedSigner`](#0x1_Account_WrappedSigner)
 -  [Constants](#@Constants_0)
+-  [Function `remove_signer_capability`](#0x1_Account_remove_signer_capability)
+-  [Function `create_signer_with_capability`](#0x1_Account_create_signer_with_capability)
+-  [Function `borrow_signer`](#0x1_Account_borrow_signer)
+-  [Function `return_signer`](#0x1_Account_return_signer)
+-  [Function `signer_delagated`](#0x1_Account_signer_delagated)
 -  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
 -  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
 -  [Function `create_account`](#0x1_Account_create_account)
@@ -392,6 +400,88 @@ Message for accept token events
 
 </details>
 
+<a name="0x1_Account_SignerDelegated"></a>
+
+## Resource `SignerDelegated`
+
+
+
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> has key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dummy_field: bool</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Account_SignerCapability"></a>
+
+## Struct `SignerCapability`
+
+
+
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> has store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>addr: address</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Account_WrappedSigner"></a>
+
+## Struct `WrappedSigner`
+
+As <code>signer</code> can be auto dropped, a wrapper is needed to make a not <code>drop</code>-able signer.
+
+
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_WrappedSigner">WrappedSigner</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>signer: signer</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -420,6 +510,15 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x1_Account_AUTH_KEY_PLACEHOLDER"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 </code></pre>
 
 
@@ -549,6 +648,145 @@ Message for accept token events
 </code></pre>
 
 
+
+<a name="0x1_Account_remove_signer_capability"></a>
+
+## Function `remove_signer_capability`
+
+A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(s: &signer): <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(s: &signer): <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    <b>let</b> signer_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(s);
+    // check signer not delegated.
+    <b>let</b> already_delegated = <b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(signer_addr);
+    <b>assert</b>(!already_delegated, 401);
+
+    // set <b>to</b> account auth key <b>to</b> noop.
+        {
+            <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(s);
+            <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>);
+            <a href="Account.md#0x1_Account_restore_key_rotation_capability">restore_key_rotation_capability</a>(key_rotation_capability);
+        };
+    move_to(s, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
+    <b>let</b> signer_cap = <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: signer_addr };
+    signer_cap
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_signer_with_capability"></a>
+
+## Function `create_signer_with_capability`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer_with_capability">create_signer_with_capability</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>): <a href="Account.md#0x1_Account_WrappedSigner">Account::WrappedSigner</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer_with_capability">create_signer_with_capability</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>): <a href="Account.md#0x1_Account_WrappedSigner">WrappedSigner</a> {
+    <b>let</b> signer_addr = cap.addr;
+    // check this signer cap is delegated indeed.
+    <b>assert</b>(<b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(signer_addr), 401);
+    <a href="Account.md#0x1_Account_WrappedSigner">WrappedSigner</a> {signer: <a href="Account.md#0x1_Account_create_signer">create_signer</a>(signer_addr)}
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_borrow_signer"></a>
+
+## Function `borrow_signer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_borrow_signer">borrow_signer</a>(s: &<a href="Account.md#0x1_Account_WrappedSigner">Account::WrappedSigner</a>): &signer
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_borrow_signer">borrow_signer</a>(s: &<a href="Account.md#0x1_Account_WrappedSigner">WrappedSigner</a>): &signer {
+    &s.signer
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_return_signer"></a>
+
+## Function `return_signer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_return_signer">return_signer</a>(signer: <a href="Account.md#0x1_Account_WrappedSigner">Account::WrappedSigner</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_return_signer">return_signer</a>(signer: <a href="Account.md#0x1_Account_WrappedSigner">WrappedSigner</a>) {
+    <b>let</b> <a href="Account.md#0x1_Account_WrappedSigner">WrappedSigner</a> {signer} = signer;
+    <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(signer)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_signer_delagated"></a>
+
+## Function `signer_delagated`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_delagated">signer_delagated</a>(addr: address): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_delagated">signer_delagated</a>(addr: address): bool {
+    <b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(addr)
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x1_Account_create_genesis_account"></a>
 
