@@ -7,7 +7,7 @@ use crate::{
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
 };
 use anyhow::{bail, Result};
-use bcs_ext::BCSCodec;
+use bcs_ext::{BCSCodec, Sample};
 use crypto::HashValue;
 use logger::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,16 @@ impl From<(Block, Option<PeerId>, String)> for FailedBlock {
             block: block.0,
             peer_id: block.1,
             failed: block.2,
+        }
+    }
+}
+
+impl Sample for FailedBlock {
+    fn sample() -> Self {
+        Self {
+            block: Block::sample(),
+            peer_id: Some(PeerId::random()),
+            failed: "Unknown reason".to_string(),
         }
     }
 }

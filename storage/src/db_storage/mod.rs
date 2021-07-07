@@ -24,6 +24,7 @@ impl DBStorage {
         db_root_path: P,
         rocksdb_config: RocksdbConfig,
     ) -> Result<Self> {
+        //TODO find a compat way to remove the `starcoindb` path
         let path = db_root_path.as_ref().join("starcoindb");
         Self::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), false, rocksdb_config)
     }

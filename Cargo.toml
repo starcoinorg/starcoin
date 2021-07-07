@@ -96,6 +96,7 @@ members = [
     "cmd/airdrop",
     "stratum",
     "cmd/miner_client/api",
+    "cmd/db-exporter",
 ]
 
 default-members = [

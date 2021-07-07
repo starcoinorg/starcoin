@@ -1992,6 +1992,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "db-exporter"
+version = "1.3.0"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "csv",
+ "hex",
+ "serde",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "structopt 0.3.21",
+]
+
+[[package]]
 name = "derivative"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
