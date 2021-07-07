@@ -6,15 +6,18 @@ use bcs_ext::BCSCodec;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_crypto::HashValue;
+use starcoin_dev::playground::view_resource;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::state::StateApi;
+use starcoin_rpc_api::state::{GetCodeOption, GetResourceOption, StateApi};
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, StateWithProofView, StrView, StructTagView,
+    AccountStateSetView, AnnotatedMoveStructView, GetCodeResponse, GetResourceResponse,
+    StateWithProofView, StrView, StructTagView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::language_storage::ModuleId;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
@@ -141,5 +144,61 @@ where
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
+    }
+    fn get_code(
+        &self,
+        module_id: StrView<ModuleId>,
+        _option: Option<GetCodeOption>,
+    ) -> FutureResult<Option<GetCodeResponse>> {
+        let service = self.service.clone();
+        let f = async move {
+            let code = service.get(AccessPath::from(&module_id.0)).await?;
+            Ok(match code {
+                None => None,
+                Some(c) => Some(GetCodeResponse {
+                    code: StrView(c),
+                    interface: None,
+                }),
+            })
+        };
+        Box::pin(f.map_err(map_err).boxed())
+    }
+
+    fn get_resource(
+        &self,
+        addr: AccountAddress,
+        resource_type: StrView<StructTag>,
+        option: Option<GetResourceOption>,
+    ) -> FutureResult<Option<GetResourceResponse>> {
+        let service = self.service.clone();
+        let state_store = self.state_store.clone();
+        let option = option.unwrap_or_default();
+        let f = async move {
+            let state_root = service.clone().state_root().await?;
+            let data = service
+                .get(AccessPath::resource_access_path(
+                    addr,
+                    resource_type.0.clone(),
+                ))
+                .await?;
+            Ok(match data {
+                None => None,
+                Some(d) => {
+                    let decoded = if option.decode {
+                        let chain_state = ChainStateDB::new(state_store, Some(state_root));
+                        let value = view_resource(&chain_state, resource_type.0, d.as_slice())?;
+                        Some(value.into())
+                    } else {
+                        None
+                    };
+
+                    Some(GetResourceResponse {
+                        raw: StrView(d),
+                        json: decoded,
+                    })
+                }
+            })
+        };
+        Box::pin(f.map_err(map_err).boxed())
     }
 }

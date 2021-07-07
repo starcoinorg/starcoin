@@ -56,6 +56,54 @@ pub type ByteCode = Vec<u8>;
 pub struct MintedBlockView {
     pub block_hash: HashValue,
 }
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct MoveValueView(pub serde_json::Value);
+
+fn struct_to_json(origin: AnnotatedMoveStruct) -> serde_json::Value {
+    let mut map = serde_json::Map::with_capacity(origin.value.len());
+    for (field_name, fv) in origin.value.into_iter() {
+        map.insert(field_name.to_string(), value_to_json(fv));
+    }
+    serde_json::Value::Object(map)
+}
+
+fn value_to_json(origin: AnnotatedMoveValue) -> serde_json::Value {
+    use serde_json::Value;
+    match origin {
+        AnnotatedMoveValue::U8(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::U64(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::U128(v) => Value::Number(v.into()),
+        AnnotatedMoveValue::Bool(v) => Value::Bool(v),
+        AnnotatedMoveValue::Address(v) => Value::String(v.to_string()),
+        AnnotatedMoveValue::Vector(v) => Value::Array(v.into_iter().map(value_to_json).collect()),
+        AnnotatedMoveValue::Bytes(v) => Value::String(format!("0x{}", hex::encode(&v))), // encode bytes to hex string.
+        AnnotatedMoveValue::Struct(v) => struct_to_json(v),
+    }
+}
+impl From<AnnotatedMoveStruct> for MoveValueView {
+    fn from(origin: AnnotatedMoveStruct) -> Self {
+        MoveValueView(struct_to_json(origin))
+    }
+}
+impl From<AnnotatedMoveValue> for MoveValueView {
+    fn from(origin: AnnotatedMoveValue) -> Self {
+        MoveValueView(value_to_json(origin))
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GetResourceResponse {
+    pub raw: StrView<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub json: Option<MoveValueView>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GetCodeResponse {
+    pub code: StrView<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface: Option<String>,
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStructView {

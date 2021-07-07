@@ -1,6 +1,8 @@
 use crate::file_format::AbilitySet;
 use crate::language_storage::ModuleId;
+
 use anyhow::Result;
+use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// How to call a particular Move script (aka. an "ABI").
@@ -230,7 +232,21 @@ impl TypeABI {
     pub fn new_struct(s: StructABI) -> Self {
         TypeABI::Struct(Box::new(s))
     }
+    pub fn layout(&self) -> Result<MoveTypeLayout> {
+        Ok(match self {
+            TypeABI::Bool => MoveTypeLayout::Bool,
+            TypeABI::U8 => MoveTypeLayout::U8,
 
+            TypeABI::U64 => MoveTypeLayout::U64,
+            TypeABI::U128 => MoveTypeLayout::U128,
+            TypeABI::Address => MoveTypeLayout::Address,
+            TypeABI::Signer => MoveTypeLayout::Signer,
+
+            TypeABI::Vector(t) => MoveTypeLayout::Vector(Box::new(t.layout()?)),
+            TypeABI::Struct(s) => MoveTypeLayout::Struct(s.layout()?),
+            TypeABI::TypeParameter(_) => anyhow::bail!("get type layout failed -- {:?}", self),
+        })
+    }
     pub fn subst(&self, ty_args: &[TypeABI]) -> Result<TypeABI> {
         use TypeABI::*;
         Ok(match self {
@@ -301,6 +317,14 @@ impl StructABI {
     }
     pub fn ability_set(&self) -> AbilitySet {
         self.abilities.0
+    }
+    pub fn layout(&self) -> Result<MoveStructLayout> {
+        let fs = self
+            .fields
+            .iter()
+            .map(|f| f.type_abi.layout())
+            .collect::<Result<Vec<_>>>()?;
+        Ok(MoveStructLayout::new(fs))
     }
     pub fn subst(&self, ty_args: &[TypeABI]) -> Result<StructABI> {
         Ok(Self {

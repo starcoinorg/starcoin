@@ -1,15 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+pub use self::gen_client::Client as StateClient;
+use crate::types::{
+    AccountStateSetView, GetCodeResponse, GetResourceResponse, StateWithProofView, StrView,
+};
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
+use serde::Deserialize;
+use serde::Serialize;
 use starcoin_crypto::HashValue;
+use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
-
-pub use self::gen_client::Client as StateClient;
-use crate::types::{AccountStateSetView, StateWithProofView};
 
 #[rpc]
 pub trait StateApi {
@@ -38,4 +42,33 @@ pub trait StateApi {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> FutureResult<StateWithProofView>;
+
+    /// get code of module
+    #[rpc(name = "state.get_code")]
+    fn get_code(
+        &self,
+        module_id: StrView<ModuleId>,
+        option: Option<GetCodeOption>,
+    ) -> FutureResult<Option<GetCodeResponse>>;
+
+    /// get resource data of `addr`
+    #[rpc(name = "state.get_resource")]
+    fn get_resource(
+        &self,
+        addr: AccountAddress,
+        resource_type: StrView<StructTag>,
+        option: Option<GetResourceOption>,
+    ) -> FutureResult<Option<GetResourceResponse>>;
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
+#[serde(default)]
+pub struct GetResourceOption {
+    pub decode: bool,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
+#[serde(default)]
+pub struct GetCodeOption {
+    // pub gen_interface: bool,
 }
