@@ -18,6 +18,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::value::MoveValue;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -151,7 +152,7 @@ async fn main() -> Result<()> {
             ChainId::new(chain_id),
         );
         let signature = private_key.sign(&txn);
-        let signed_txn = signature.build_transaction(txn)?;
+        let signed_txn = SignedUserTransaction::new(txn, signature);
 
         let signed_txn_hex = hex::encode(signed_txn.encode()?);
         let txn_hash: HashValue = txpool_client

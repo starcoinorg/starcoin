@@ -26,7 +26,7 @@ use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
     BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunOutputView,
     DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, MintedBlockView, PeerInfoView,
-    SignedUserTransactionView, StateWithProofView, StrView, TransactionInfoView,
+    SignedMessageView, SignedUserTransactionView, StateWithProofView, StrView, TransactionInfoView,
     TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
@@ -336,7 +336,7 @@ impl RpcClient {
         &self,
         signer: AccountAddress,
         message: SigningMessage,
-    ) -> anyhow::Result<StrView<Vec<u8>>> {
+    ) -> anyhow::Result<SignedMessageView> {
         self.call_rpc_blocking(|inner| inner.account_client.sign(signer, message))
             .map_err(map_err)
     }

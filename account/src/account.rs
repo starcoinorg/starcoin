@@ -13,8 +13,8 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::transaction::authenticator::{AccountSignature, AuthenticationKey};
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 pub struct Account {
@@ -118,11 +118,13 @@ impl Account {
         )
     }
 
-    pub fn sign_message(&self, message: SigningMessage) -> Result<AccountSignature> {
-        self.private_key
+    pub fn sign_message(&self, message: SigningMessage) -> Result<SignedMessage> {
+        let authenticator = self
+            .private_key
             .as_ref()
-            .map(|private_key| private_key.sign_message(message))
-            .ok_or_else(|| format_err!("Readonly account can not sign message."))
+            .map(|private_key| private_key.sign_message(&message))
+            .ok_or_else(|| format_err!("Readonly account can not sign message."))?;
+        Ok(SignedMessage::new(self.addr, message, authenticator))
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
@@ -131,7 +133,7 @@ impl Account {
             .as_ref()
             .map(|private_key| private_key.sign(&raw_txn))
             .ok_or_else(|| format_err!("Readonly account can not sign txn"))?;
-        signature.build_transaction(raw_txn)
+        Ok(SignedUserTransaction::new(raw_txn, signature))
     }
 
     pub fn destroy(self) -> Result<()> {

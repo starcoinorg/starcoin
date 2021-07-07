@@ -3,6 +3,7 @@
 
 use crate::view::{DryRunOutputView, ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use anyhow::{bail, format_err, Result};
+use serde::de::DeserializeOwned;
 use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
@@ -13,8 +14,10 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_client::chain_watcher::ThinHeadBlock;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::StateReaderExt;
+use starcoin_types::account_config::AccountResource;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
 use std::path::{Path, PathBuf};
@@ -122,6 +125,18 @@ impl CliState {
         }
     }
 
+    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    where
+        R: MoveResource + DeserializeOwned,
+    {
+        let chain_state_reader = RemoteStateReader::new(&self.client)?;
+        chain_state_reader.get_resource::<R>(address)
+    }
+
+    pub fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
+        self.get_resource::<AccountResource>(address)
+    }
+
     pub fn association_account(&self) -> Result<Option<AccountInfo>> {
         self.client.account_get(association_address())
     }
@@ -181,18 +196,15 @@ impl CliState {
                     eprintln!("get sequence_number {} from txpool", sequence_number);
                     (sequence_number, true)
                 }
-                None => {
-                    let chain_state_reader = RemoteStateReader::new(&self.client)?;
-                    chain_state_reader
-                        .get_account_resource(*sender.address())?
-                        .map(|account| (account.sequence_number(), false))
-                        .ok_or_else(|| {
-                            format_err!(
-                                "Can not find account on chain by address:{}",
-                                sender.address()
-                            )
-                        })?
-                }
+                None => self
+                    .get_account_resource(*sender.address())?
+                    .map(|account| (account.sequence_number(), false))
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Can not find account on chain by address:{}",
+                            sender.address()
+                        )
+                    })?,
             },
         };
         let node_info = self.client.node_info()?;

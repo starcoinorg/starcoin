@@ -327,7 +327,7 @@ fn make_script_transaction(
         ChainId::test(),
     );
     let signature = params.privkey.sign(&raw_txn);
-    signature.build_transaction(raw_txn)
+    Ok(SignedUserTransaction::new(raw_txn, signature))
 }
 
 /// Creates and signs a module transaction.
@@ -351,7 +351,7 @@ fn make_module_transaction(
         ChainId::test(),
     );
     let signature = params.privkey.sign(&raw_txn);
-    signature.build_transaction(raw_txn)
+    Ok(SignedUserTransaction::new(raw_txn, signature))
 }
 
 /// Runs a single transaction using the fake executor.
