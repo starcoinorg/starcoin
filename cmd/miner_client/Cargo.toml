@@ -30,7 +30,7 @@ byteorder = "1.4.3"
 futures-timer = "3.0"
 hex = { version = "0.4.3", default-features = false }
 thiserror = "1.0"
-structopt = "0.3.21"
+structopt = "0.3.22"
 starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-rpc-api = { path = "../../rpc/api" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
