@@ -8,6 +8,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
+use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_api::types::{
     DryRunOutputView as ServerDryRunOutputView, TransactionInfoView, TransactionStatusView,
 };
@@ -260,7 +261,9 @@ impl CliState {
             let (_block, txn_info) = self.watch_txn(txn_hash)?;
             output.txn_status = Some(explained_status);
             output.txn_info = txn_info;
-            let events = self.client.chain_get_events_by_txn_hash(txn_hash)?;
+            let events = self
+                .client
+                .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
             output.events = Some(events);
         }
         Ok(ExecuteResultView::Run(output))

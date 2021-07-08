@@ -29,6 +29,8 @@ fn test_chain_filter_events() {
             from_block: 1,
             to_block: 5,
             event_keys: vec![evt_key],
+            addrs: vec![],
+            type_tags: vec![],
             limit: None,
             reverse: false,
         };
@@ -45,6 +47,8 @@ fn test_chain_filter_events() {
             from_block: 1,
             to_block: 10,
             event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            addrs: vec![],
+            type_tags: vec![],
             limit: Some(5),
             reverse: false,
         };
@@ -59,6 +63,8 @@ fn test_chain_filter_events() {
             from_block: 1,
             to_block: 10,
             event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            addrs: vec![],
+            type_tags: vec![],
             limit: Some(5),
             reverse: true,
         };
@@ -75,6 +81,8 @@ fn test_chain_filter_events() {
             from_block: 0,
             to_block: 10,
             event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            addrs: vec![],
+            type_tags: vec![],
             limit: Some(20),
             reverse: true,
         };
@@ -91,6 +99,8 @@ fn test_chain_filter_events() {
             from_block: 0,
             to_block: 20,
             event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            addrs: vec![],
+            type_tags: vec![],
             limit: Some(20),
             reverse: true,
         };

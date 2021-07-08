@@ -78,7 +78,11 @@ fn value_to_json(origin: AnnotatedMoveValue) -> serde_json::Value {
         AnnotatedMoveValue::Bool(v) => Value::Bool(v),
         AnnotatedMoveValue::Address(v) => Value::String(v.to_string()),
         AnnotatedMoveValue::Vector(v) => Value::Array(v.into_iter().map(value_to_json).collect()),
-        AnnotatedMoveValue::Bytes(v) => Value::String(format!("0x{}", hex::encode(&v))), // encode bytes to hex string.
+        // try bytes to string, or else to hex string.
+        AnnotatedMoveValue::Bytes(v) => match String::from_utf8(v) {
+            Ok(s) => Value::String(s),
+            Err(e) => Value::String(format!("0x{}", hex::encode(e.as_bytes()))),
+        },
         AnnotatedMoveValue::Struct(v) => struct_to_json(v),
     }
 }

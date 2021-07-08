@@ -19,6 +19,7 @@ use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
+use starcoin_rpc_api::chain::{GetEventOption, GetEventResponse};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
@@ -626,8 +627,9 @@ impl RpcClient {
     pub fn chain_get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
-    ) -> anyhow::Result<Vec<TransactionEventView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash))
+        option: Option<GetEventOption>,
+    ) -> anyhow::Result<Vec<GetEventResponse>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash, option))
             .map_err(map_err)
     }
 

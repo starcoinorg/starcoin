@@ -51,7 +51,9 @@ impl CommandAction for SubscribeEventCommand {
         let filter = EventFilter {
             from_block: ctx.opt().from_block,
             to_block: ctx.opt().to_block,
-            event_keys: ctx.opt().event_key.clone().unwrap_or_default(),
+            event_keys: ctx.opt().event_key.clone(),
+            addrs: None,
+            type_tags: None,
             limit: ctx.opt().limit,
         };
 

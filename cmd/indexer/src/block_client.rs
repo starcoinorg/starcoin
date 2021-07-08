@@ -57,8 +57,11 @@ impl BlockClient {
 
             let events: Vec<TransactionEventView> = self
                 .node_client
-                .get_events_by_txn_hash(txn_info.transaction_hash)
-                .await?;
+                .get_events_by_txn_hash(txn_info.transaction_hash, None)
+                .await?
+                .into_iter()
+                .map(|d| d.event)
+                .collect();
             txns_data.push(TransactionData {
                 info: txn_info.into(),
                 block_metadata: txn.block_metadata,
@@ -74,7 +77,7 @@ impl BlockClient {
         let fetch_events_tasks = txn_infos
             .iter()
             .map(|txn_info| txn_info.transaction_hash)
-            .map(|txn_hash| self.node_client.get_events_by_txn_hash(txn_hash));
+            .map(|txn_hash| self.node_client.get_events_by_txn_hash(txn_hash, None));
 
         let events = futures_util::future::try_join_all(fetch_events_tasks).await?;
 
@@ -83,7 +86,10 @@ impl BlockClient {
         {
             txns_data.push(TransactionData {
                 info: txn_info.into(),
-                events: events.iter().map(|event| event.clone().into()).collect(),
+                events: events
+                    .iter()
+                    .map(|event| event.event.clone().into())
+                    .collect(),
                 user_transaction: Some(user_txn),
                 block_metadata: None,
                 timestamp: block.header.timestamp.0,

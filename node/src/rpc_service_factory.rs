@@ -45,7 +45,12 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let chain_api = ctx
             .service_ref_opt::<ChainReaderService>()?
             .map(|service_ref| {
-                ChainRpcImpl::new(config.clone(), genesis.block().id(), service_ref.clone())
+                ChainRpcImpl::new(
+                    config.clone(),
+                    genesis.block().id(),
+                    storage.clone(),
+                    service_ref.clone(),
+                )
             });
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
         let txpool_api = Some(TxPoolRpcImpl::new(txpool_service.clone()));

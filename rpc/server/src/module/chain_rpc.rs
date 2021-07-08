@@ -6,13 +6,16 @@ use futures::future::{FutureExt, TryFutureExt};
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::ChainApi;
+use starcoin_resource_viewer::MoveValueAnnotator;
+use starcoin_rpc_api::chain::{ChainApi, GetEventOption, GetEventResponse};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
-    TransactionEventView, TransactionInfoView, TransactionView,
+    TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Storage;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
@@ -27,6 +30,7 @@ where
 {
     config: Arc<NodeConfig>,
     genesis_hash: HashValue,
+    storage: Arc<Storage>,
     service: S,
 }
 
@@ -34,10 +38,16 @@ impl<S> ChainRpcImpl<S>
 where
     S: ChainAsyncService,
 {
-    pub fn new(config: Arc<NodeConfig>, genesis_hash: HashValue, service: S) -> Self {
+    pub fn new(
+        config: Arc<NodeConfig>,
+        genesis_hash: HashValue,
+        storage: Arc<Storage>,
+        service: S,
+    ) -> Self {
         Self {
             config,
             genesis_hash,
+            storage,
             service,
         }
     }
@@ -242,20 +252,54 @@ where
     fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
-    ) -> FutureResult<Vec<TransactionEventView>> {
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<GetEventResponse>> {
+        let event_option = option.unwrap_or_default();
         let service = self.service.clone();
+        let storage = self.storage.clone();
         let fut = async move {
             let events = service.get_events_by_txn_hash(txn_hash).await?;
-            Ok(events.into_iter().map(Into::into).collect())
+            let state_root = if event_option.decode {
+                Some(service.main_head_header().await?.state_root())
+            } else {
+                None
+            };
+
+            let mut resp_data: Vec<_> = events
+                .into_iter()
+                .map(|e| GetEventResponse {
+                    event: e.into(),
+                    decode_event_data: None,
+                })
+                .collect();
+
+            if let Some(state_root) = state_root {
+                let state = ChainStateDB::new(storage, Some(state_root));
+                let annotator = MoveValueAnnotator::new(&state);
+                for elem in resp_data.iter_mut() {
+                    elem.decode_event_data = Some(
+                        annotator
+                            .view_value(&elem.event.type_tag, elem.event.data.0.as_slice())?
+                            .into(),
+                    );
+                }
+            }
+            Ok(resp_data)
         }
         .map_err(map_err);
 
         Box::pin(fut.boxed())
     }
 
-    fn get_events(&self, mut filter: EventFilter) -> FutureResult<Vec<TransactionEventView>> {
+    fn get_events(
+        &self,
+        mut filter: EventFilter,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<GetEventResponse>> {
+        let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let config = self.config.clone();
+        let storage = self.storage.clone();
         let fut = async move {
             if filter.to_block.is_none() {
                 // if user hasn't specify the `to_block`, we use latest block as the to_block.
@@ -280,9 +324,33 @@ where
                 .into());
             }
 
-            service.main_events(filter).await
+            let state_root = if event_option.decode {
+                Some(service.main_head_header().await?.state_root())
+            } else {
+                None
+            };
+            let mut data: Vec<_> = service
+                .main_events(filter)
+                .await?
+                .into_iter()
+                .map(|e| GetEventResponse {
+                    event: e.into(),
+                    decode_event_data: None,
+                })
+                .collect();
+            if let Some(state_root) = state_root {
+                let state = ChainStateDB::new(storage, Some(state_root));
+                let annotator = MoveValueAnnotator::new(&state);
+                for elem in data.iter_mut() {
+                    elem.decode_event_data = Some(
+                        annotator
+                            .view_value(&elem.event.type_tag, elem.event.data.0.as_slice())?
+                            .into(),
+                    );
+                }
+            }
+            Ok(data)
         }
-        .map_ok(|d| d.into_iter().map(|e| e.into()).collect())
         .map_err(map_err);
 
         Box::pin(fut.boxed())
