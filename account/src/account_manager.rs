@@ -11,8 +11,7 @@ use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, Acc
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{Uniform, ValidCryptoMaterial};
 use starcoin_logger::prelude::*;
-use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::transaction::authenticator::AccountSignature;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::{
     account_address::AccountAddress,
     account_config::token_code::TokenCode,
@@ -218,7 +217,7 @@ impl AccountManager {
         &self,
         signer_address: AccountAddress,
         message: SigningMessage,
-    ) -> AccountResult<AccountSignature> {
+    ) -> AccountResult<SignedMessage> {
         let pass = self.key_cache.write().get_pass(&signer_address);
         match pass {
             None => Err(AccountError::AccountLocked(signer_address)),

@@ -277,7 +277,7 @@ fn build_signed_txn(
 ) -> SignedUserTransaction {
     let txn = build_raw_txn(user_address, state, payload, net.chain_id());
     let signature = prikey.sign(&txn);
-    signature.build_transaction(txn).unwrap()
+    SignedUserTransaction::new(txn, signature)
 }
 
 #[allow(clippy::unnecessary_wraps)]

@@ -8,9 +8,7 @@ use starcoin_types::{
     transaction::authenticator::AuthenticationKey,
 };
 
-pub use starcoin_types::transaction::authenticator::{
-    AccountPrivateKey, AccountPublicKey, AccountSignature,
-};
+pub use starcoin_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AccountInfo {

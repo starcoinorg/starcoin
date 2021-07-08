@@ -8,7 +8,7 @@ use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
-use starcoin_rpc_api::types::{StrView, TransactionRequest};
+use starcoin_rpc_api::types::{SignedMessageView, TransactionRequest};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -126,7 +126,7 @@ where
         &self,
         address: AccountAddress,
         data: SigningMessage,
-    ) -> FutureResult<StrView<Vec<u8>>> {
+    ) -> FutureResult<SignedMessageView> {
         let account_service = self.account.clone();
         let f = async move {
             let signature = account_service.sign_message(address, data).await?;

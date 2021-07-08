@@ -6,20 +6,15 @@ use crate::view::BoolView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountSignature;
-use starcoin_crypto::ValidCryptoMaterialStringExt;
-use starcoin_types::sign_message::SigningMessage;
+use starcoin_types::sign_message::SignedMessage;
 use structopt::StructOpt;
 
 /// Verify the the message signed by the sign command.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "verify-sign-message")]
 pub struct VerifySignMessageOpt {
-    #[structopt(short = "m", long = "source", name = "source-message")]
-    source: SigningMessage,
-
-    #[structopt(short = "d", long = "signed", name = "signed-message")]
-    signed: String,
+    #[structopt(short = "m")]
+    signed_message: SignedMessage,
 }
 
 pub struct VerifySignMessageCmd;
@@ -35,8 +30,16 @@ impl CommandAction for VerifySignMessageCmd {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let signed = AccountSignature::from_encoded_string(opt.signed.as_str())?;
-        let result = signed.verify(&opt.source);
+        let state = ctx.state();
+        let signed_message = opt.signed_message.clone();
+        let account_resource = state.get_account_resource(signed_message.account)?;
+
+        let result = signed_message
+            .check_signature()
+            .and_then(|_| signed_message.check_account(account_resource.as_ref()));
+        if let Err(e) = result.as_ref() {
+            eprintln!("check signed message error: {}", e)
+        }
         Ok(BoolView {
             result: result.is_ok(),
         })

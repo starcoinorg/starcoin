@@ -3,7 +3,6 @@
 
 use crate::account_address::AccountAddress;
 use crate::sign_message::SigningMessage;
-use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
@@ -11,11 +10,8 @@ use rand::{rngs::OsRng, Rng};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{
     Ed25519PrivateKey, ED25519_PRIVATE_KEY_LENGTH, ED25519_PUBLIC_KEY_LENGTH,
-    ED25519_SIGNATURE_LENGTH,
 };
-use starcoin_crypto::multi_ed25519::multi_shard::{
-    MultiEd25519KeyShard, MultiEd25519SignatureShard,
-};
+use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
 use starcoin_crypto::{
     derive::{DeserializeKey, SerializeKey},
     ed25519::{Ed25519PublicKey, Ed25519Signature},
@@ -57,7 +53,7 @@ impl fmt::Display for Scheme {
         write!(f, "Scheme::{}", display)
     }
 }
-
+//TODO should rename TransactionAuthenticator to Authenticator
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum TransactionAuthenticator {
     /// Single signature
@@ -149,6 +145,16 @@ impl TransactionAuthenticator {
     }
 }
 
+impl FromStr for TransactionAuthenticator {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("0x").unwrap_or(s);
+        let bytes = hex::decode(s)?;
+        bcs_ext::from_bytes(bytes.as_slice())
+    }
+}
+
 /// A struct that represents an account authentication key. An account's address is the last 16
 /// bytes of authentication key used to create it
 #[derive(
@@ -175,6 +181,8 @@ impl AuthenticationKey {
 
     /// The number of bytes in an authentication key.
     pub const LENGTH: usize = 32;
+
+    pub const DUMMY_KEY: [u8; AuthenticationKey::LENGTH] = [0; AuthenticationKey::LENGTH];
 
     /// Create an authentication key from a preimage by taking its sha3 hash
     pub fn from_preimage(preimage: &AuthenticationKeyPreimage) -> AuthenticationKey {
@@ -217,6 +225,11 @@ impl AuthenticationKey {
         let mut rng = OsRng;
         let buf: [u8; Self::LENGTH] = rng.gen();
         AuthenticationKey::new(buf)
+    }
+
+    /// Check the auth key is dummy empty key
+    pub fn is_dummy(&self) -> bool {
+        self.0 == Self::DUMMY_KEY
     }
 }
 
@@ -328,27 +341,6 @@ pub enum AccountPrivateKey {
     Multi(MultiEd25519KeyShard),
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, DeserializeKey, SerializeKey, Eq)]
-pub enum AccountSignature {
-    Single(Ed25519PublicKey, Ed25519Signature),
-    Multi(MultiEd25519PublicKey, MultiEd25519SignatureShard),
-}
-impl ValidCryptoMaterial for AccountSignature {
-    fn to_bytes(&self) -> Vec<u8> {
-        match self {
-            Self::Single(public_key, signature) => {
-                let mut bytes = public_key.to_bytes().to_vec();
-                bytes.extend(signature.to_bytes().to_vec());
-                bytes
-            }
-            Self::Multi(multi_key, multi_signed_shard) => {
-                let mut bytes = multi_key.to_bytes().to_vec();
-                bytes.extend(multi_signed_shard.to_bytes().to_vec());
-                bytes
-            }
-        }
-    }
-}
 impl ValidCryptoMaterial for AccountPublicKey {
     fn to_bytes(&self) -> Vec<u8> {
         match self {
@@ -460,15 +452,19 @@ impl AccountPrivateKey {
         }
     }
 
-    pub fn sign<T: CryptoHash + Serialize>(&self, message: &T) -> AccountSignature {
+    pub fn sign<T: CryptoHash + Serialize>(&self, message: &T) -> TransactionAuthenticator {
         match self {
-            Self::Single(key) => AccountSignature::Single(key.public_key(), key.sign(message)),
-            Self::Multi(key) => AccountSignature::Multi(key.public_key(), key.sign(message)),
+            Self::Single(key) => {
+                TransactionAuthenticator::ed25519(key.public_key(), key.sign(message))
+            }
+            Self::Multi(key) => {
+                TransactionAuthenticator::multi_ed25519(key.public_key(), key.sign(message).into())
+            }
         }
     }
 
-    pub fn sign_message(&self, message: SigningMessage) -> AccountSignature {
-        self.sign(&message)
+    pub fn sign_message(&self, message: &SigningMessage) -> TransactionAuthenticator {
+        self.sign(message)
     }
 }
 
@@ -494,52 +490,6 @@ impl TryFrom<&[u8]> for AccountPrivateKey {
             Ed25519PrivateKey::try_from(value).map(Self::Single)
         } else {
             MultiEd25519KeyShard::try_from(value).map(Self::Multi)
-        }
-    }
-}
-
-impl TryFrom<&[u8]> for AccountSignature {
-    type Error = CryptoMaterialError;
-
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let length = value.len();
-        if length == ED25519_PUBLIC_KEY_LENGTH + ED25519_SIGNATURE_LENGTH {
-            let public_key = Ed25519PublicKey::try_from(&value[..ED25519_PUBLIC_KEY_LENGTH])?;
-            let signature = Ed25519Signature::try_from(&value[ED25519_PUBLIC_KEY_LENGTH..])?;
-            Ok(Self::Single(public_key, signature))
-        } else {
-            // 1 is MultiEd25519PublicKey's threshold
-            // 4 is  MultiEd25519Signature's bitmap
-            // 1 is MultiEd25519SignatureShard's threshold
-            let key_size =
-                (length - 1 - 4 - 1) / (ED25519_PUBLIC_KEY_LENGTH + ED25519_SIGNATURE_LENGTH);
-            let key_len = key_size * ED25519_PUBLIC_KEY_LENGTH + 1;
-            let multi_public_key = MultiEd25519PublicKey::try_from(&value[..key_len])?;
-            let multi_signature = MultiEd25519Signature::try_from(&value[key_len..length - 1])?;
-            Ok(Self::Multi(
-                multi_public_key,
-                MultiEd25519SignatureShard::new(multi_signature, value[length]),
-            ))
-        }
-    }
-}
-
-impl AccountSignature {
-    pub fn build_transaction(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        Ok(match self {
-            Self::Single(public_key, signature) => {
-                SignedUserTransaction::ed25519(raw_txn, public_key, signature)
-            }
-            Self::Multi(public_key, signature) => {
-                SignedUserTransaction::multi_ed25519(raw_txn, public_key, signature.into())
-            }
-        })
-    }
-
-    pub fn verify<T: Serialize + CryptoHash>(&self, message: &T) -> Result<()> {
-        match self {
-            Self::Single(public_key, signature) => signature.verify(message, public_key),
-            Self::Multi(public_key, signature) => signature.verify(message, public_key),
         }
     }
 }

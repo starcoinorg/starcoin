@@ -37,6 +37,7 @@ use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{FunctionId, ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
+use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
     Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
@@ -1126,6 +1127,24 @@ where
         StrView::<T>::from_str(&s).map_err(D::Error::custom)
     }
 }
+
+pub type SignedMessageView = StrView<SignedMessage>;
+
+impl FromStr for SignedMessageView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(SignedMessage::from_str(s)?))
+    }
+}
+
+impl std::fmt::Display for SignedMessageView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+//TODO auto implement FromStr for StrView<T> where T:FromStr
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;

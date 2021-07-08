@@ -4,7 +4,7 @@
 use jsonrpc_derive::rpc;
 
 pub use self::gen_client::Client as AccountClient;
-use crate::types::{StrView, TransactionRequest};
+use crate::types::{SignedMessageView, TransactionRequest};
 use crate::FutureResult;
 use starcoin_account_api::AccountInfo;
 use starcoin_types::account_address::AccountAddress;
@@ -29,8 +29,11 @@ pub trait AccountApi {
     fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountInfo>>;
 
     #[rpc(name = "account.sign")]
-    fn sign(&self, address: AccountAddress, data: SigningMessage)
-        -> FutureResult<StrView<Vec<u8>>>;
+    fn sign(
+        &self,
+        address: AccountAddress,
+        data: SigningMessage,
+    ) -> FutureResult<SignedMessageView>;
 
     /// sign a txn request, return hex encoded bcs_ext bytes of signed user txn.
     #[rpc(name = "account.sign_txn_request")]
@@ -83,6 +86,7 @@ pub trait AccountApi {
         new_password: String,
     ) -> FutureResult<AccountInfo>;
 
+    //TODO remove this api
     #[rpc(name = "account.accepted_tokens")]
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>>;
 

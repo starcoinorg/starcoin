@@ -6,8 +6,7 @@ use anyhow::Result;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
-use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::transaction::authenticator::AccountSignature;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
 
@@ -64,6 +63,6 @@ pub enum AccountResponse {
     UnlockAccountResponse,
     ExportAccountResponse(Vec<u8>),
     AcceptedTokens(Vec<TokenCode>),
-    MessageSignature(Box<AccountSignature>),
+    SignedMessage(Box<SignedMessage>),
     None,
 }

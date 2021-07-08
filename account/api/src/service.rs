@@ -4,12 +4,10 @@
 use crate::message::{AccountRequest, AccountResponse};
 use crate::AccountInfo;
 use anyhow::Result;
-use starcoin_crypto::multi_ed25519::MultiEd25519Signature;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
-use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::transaction::authenticator::AccountSignature;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 #[async_trait::async_trait]
@@ -29,7 +27,7 @@ pub trait AccountAsyncService:
         &self,
         address: AccountAddress,
         message: SigningMessage,
-    ) -> Result<Vec<u8>>;
+    ) -> Result<SignedMessage>;
 
     async fn sign_txn(
         &self,
@@ -131,26 +129,15 @@ where
         &self,
         address: AccountAddress,
         message: SigningMessage,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<SignedMessage> {
         let response = self
             .send(AccountRequest::SignMessage {
                 signer: address,
                 message,
             })
             .await??;
-        if let AccountResponse::MessageSignature(signature) = response {
-            Ok(match *signature {
-                AccountSignature::Single(p, s) => {
-                    let mut bytes = p.to_bytes().to_vec();
-                    bytes.extend(s.to_bytes().to_vec());
-                    bytes
-                }
-                AccountSignature::Multi(p, s) => {
-                    let mut bytes = p.to_bytes().to_vec();
-                    bytes.extend(Into::<MultiEd25519Signature>::into(s).to_bytes().to_vec());
-                    bytes
-                }
-            })
+        if let AccountResponse::SignedMessage(signed_message) = response {
+            Ok(*signed_message)
         } else {
             panic!("Unexpected response type.")
         }

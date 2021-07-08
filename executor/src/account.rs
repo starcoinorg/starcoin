@@ -203,9 +203,7 @@ impl Account {
             chain_id,
         );
         let signature = self.private_key.sign(&raw_txn);
-        signature
-            .build_transaction(raw_txn)
-            .expect("Build transaction should success")
+        SignedUserTransaction::new(raw_txn, signature)
     }
 
     // get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
@@ -231,9 +229,7 @@ impl Account {
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> SignedUserTransaction {
         let signature = self.private_key.sign(&raw_txn);
-        signature
-            .build_transaction(raw_txn)
-            .expect("build txn should success")
+        SignedUserTransaction::new(raw_txn, signature)
     }
 }
 
