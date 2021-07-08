@@ -39,7 +39,7 @@ impl CommandAction for ListResourceCmd {
         let account_addr = opt.account_address;
         let state_root = opt.state_root;
         let state = client
-            .get_account_state_set(account_addr, state_root)?
+            .state_get_account_state_set(account_addr, state_root)?
             .ok_or_else(|| format_err!("Account with address {} state not exist.", account_addr))?;
 
         Ok(state.resources)
