@@ -3,7 +3,7 @@
 
 use crate::account_address::AccountAddress;
 use crate::account_config::AccountResource;
-use crate::transaction::authenticator::TransactionAuthenticator;
+use crate::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use anyhow::{ensure, Error, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
@@ -55,16 +55,21 @@ impl SignedMessage {
     }
 
     /// Checks the account by on chain account resource, please ensure the AccountResource's address == message.account
-    pub fn check_account(&self, account_resource: &AccountResource) -> Result<()> {
-        let authkey = self.authenticator.authentication_key();
-        if authkey.is_dummy() {
+    /// if the `account_resource` is None, it means that the account is not create on chain
+    pub fn check_account(&self, account_resource: Option<&AccountResource>) -> Result<()> {
+        let authkey_in_message = self.authenticator.authentication_key();
+        let authkey_on_chain = account_resource
+            .map(|account| account.authentication_key())
+            .unwrap_or_else(|| AuthenticationKey::DUMMY_KEY.as_ref());
+        // if the account not exist on chain or the authentication_key on chain is dummy key, just check the derived_address.
+        if authkey_on_chain == AuthenticationKey::DUMMY_KEY.as_ref() {
             ensure!(
-                authkey.derived_address() == self.account,
+                authkey_in_message.derived_address() == self.account,
                 "authenticator's address do not match the signed message account"
             )
         } else {
             ensure!(
-                authkey.as_ref() == account_resource.authentication_key(),
+                authkey_in_message.as_ref() == authkey_on_chain,
                 "authenticator's public key do not match the account resource on chain"
             );
         }

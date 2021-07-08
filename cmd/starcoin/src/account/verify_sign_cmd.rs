@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::BoolView;
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::sign_message::SignedMessage;
 use structopt::StructOpt;
@@ -32,20 +32,13 @@ impl CommandAction for VerifySignMessageCmd {
         let opt = ctx.opt();
         let state = ctx.state();
         let signed_message = opt.signed_message.clone();
-        let account_resource = state
-            .get_account_resource(signed_message.account)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Can not find account on chain by signed message address:{}",
-                    signed_message.account
-                )
-            })?;
+        let account_resource = state.get_account_resource(signed_message.account)?;
 
         let result = signed_message
             .check_signature()
-            .and_then(|_| signed_message.check_account(&account_resource));
+            .and_then(|_| signed_message.check_account(account_resource.as_ref()));
         if let Err(e) = result.as_ref() {
-            eprintln!("check signed message error: {:?}", e)
+            eprintln!("check signed message error: {}", e)
         }
         Ok(BoolView {
             result: result.is_ok(),

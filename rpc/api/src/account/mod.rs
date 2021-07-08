@@ -86,6 +86,7 @@ pub trait AccountApi {
         new_password: String,
     ) -> FutureResult<AccountInfo>;
 
+    //TODO remove this api
     #[rpc(name = "account.accepted_tokens")]
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>>;
 

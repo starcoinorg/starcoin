@@ -103,7 +103,6 @@ Feature: cmd integration test
     Then cmd: "account remove @$.address@"
     Then cmd: "account list"
     Then cmd: "account show"
-#    Then cmd: "account execute-builtin --blocking --script empty_script -s @$.account.address@"
     Then cmd: "account accept-token 0x1::DummyToken::DummyToken"
     Then stop
 
@@ -113,9 +112,24 @@ Feature: cmd integration test
 
 #account sign message
   Scenario Outline: [cmd] account sign message
+    # test the account do not exist on chain
     Then cmd: "account unlock"
-    Then cmd: "account sign-message  -m ssyuan"
-    Then cmd: "account verify-sign-message -m ssyuan -d @$.result@"
+    Then cmd: "account sign-message -m helloworld"
+    Then cmd: "account verify-sign-message -m @$.result@"
+    Then assert: "$.result true"
+    # create the account on chain
+    Then cmd: "dev get-coin"
+    Then cmd: "account sign-message  -m helloworld"
+    Then cmd: "account verify-sign-message -m @$.result@"
+    Then assert: "$.result true"
+    # init the auth key on chain by send the first transaction, test authkey is not dummy key.
+    Then cmd: "account transfer -v 1000 -r 0xA550C18 -b"
+    Then cmd: "account sign-message -m helloworld"
+    Then cmd: "account verify-sign-message -m @$.result@"
+    Then assert: "$.result true"
+    # test multi sign account
+    Then cmd: "account sign-message -s 0xA550C18 -m helloworld"
+    Then cmd: "account verify-sign-message -m @$.result@"
     Then assert: "$.result true"
 
     Examples:
