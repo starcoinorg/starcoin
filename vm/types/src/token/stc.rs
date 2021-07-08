@@ -35,6 +35,11 @@ pub const SYMBOL_MICROSTC: &str = "microSTC";
 pub const SYMBOL_MILLISTC: &str = "milliSTC";
 pub const SYMBOL_STC: &str = STC_NAME;
 
+pub const SYMBOL_NANOSTC_LOWER: &str = "nanostc";
+pub const SYMBOL_MICROSTC_LOWER: &str = "microstc";
+pub const SYMBOL_MILLISTC_LOWER: &str = "millistc";
+pub const SYMBOL_STC_LOWER: &str = "stc";
+
 pub static SCALE_NANOSTC: u32 = 0;
 pub static SCALE_MICROSTC: u32 = 3;
 pub static SCALE_MILLISTC: u32 = 6;
@@ -56,6 +61,10 @@ impl Default for STCUnit {
 }
 
 impl STCUnit {
+    pub fn parse_value(value: &str) -> Result<TokenValue<STCUnit>> {
+        TokenValue::<STCUnit>::from_str(value)
+    }
+
     pub fn value_of(self, value: u128) -> TokenValue<STCUnit> {
         TokenValue::new(value, self)
     }
@@ -69,19 +78,14 @@ impl STCUnit {
         ]
     }
 
-    pub fn parse(value: &str) -> Result<TokenValue<STCUnit>> {
-        ensure!(
-            !value.is_empty(),
-            "Can not parse a empty string to TokenValue"
-        );
-        let parts: Vec<&str> = value.split(' ').collect();
-        ensure!(parts.len() <= 2, "Too many blank in value: {}", value);
-        let (decimal, unit) = if parts.len() == 1 {
-            (parts[0], STCUnit::default())
-        } else {
-            (parts[0], parts[1].parse()?)
-        };
-        unit.parse(decimal)
+    fn strip_unit_suffix(value: &str) -> (String, STCUnit) {
+        let value_lower = value.trim().to_lowercase();
+        for unit in STCUnit::units() {
+            if let Some(v) = value_lower.strip_suffix(unit.symbol_lowercase()) {
+                return (v.trim().to_string(), unit);
+            }
+        }
+        (value_lower, STCUnit::default())
     }
 }
 
@@ -92,6 +96,15 @@ impl TokenUnit for STCUnit {
             Self::MicroSTC => SYMBOL_MICROSTC,
             Self::MilliSTC => SYMBOL_MILLISTC,
             Self::STC => SYMBOL_STC,
+        }
+    }
+
+    fn symbol_lowercase(&self) -> &'static str {
+        match self {
+            Self::NanoSTC => SYMBOL_NANOSTC_LOWER,
+            Self::MicroSTC => SYMBOL_MICROSTC_LOWER,
+            Self::MilliSTC => SYMBOL_MILLISTC_LOWER,
+            Self::STC => SYMBOL_STC_LOWER,
         }
     }
 
@@ -123,6 +136,8 @@ impl FromStr for TokenValue<STCUnit> {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        STCUnit::parse(s)
+        ensure!(!s.is_empty(), "Can not parse a empty string to TokenValue");
+        let (decimal, unit) = STCUnit::strip_unit_suffix(s);
+        unit.parse(decimal.as_str())
     }
 }

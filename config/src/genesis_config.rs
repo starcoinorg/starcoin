@@ -179,6 +179,13 @@ impl BuiltinNetworkID {
             _ => format!("{}.seed.starcoin.org", self),
         }
     }
+
+    pub fn faucet_api(&self) -> Option<String> {
+        match self {
+            BuiltinNetworkID::Test | BuiltinNetworkID::Dev => None,
+            _ => Some(format!("http://{}.faucet.starcoin.org:8000/api/fund", self)),
+        }
+    }
 }
 
 impl Default for BuiltinNetworkID {
@@ -387,6 +394,13 @@ impl ChainNetworkID {
         match self {
             Self::Builtin(BuiltinNetworkID::Main) => 5,
             _ => 1,
+        }
+    }
+
+    pub fn faucet_api(&self) -> Option<String> {
+        match self {
+            Self::Builtin(net) => net.faucet_api(),
+            _ => None,
         }
     }
 }
