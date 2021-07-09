@@ -174,8 +174,8 @@ impl AccumulatorTree {
         Ok(hash)
     }
 
-    /// Get node for self package.
-    pub fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
+    /// Get node from store
+    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
         let updates = &self.update_nodes;
         if !updates.is_empty() {
             if let Some(node) = updates.get(&hash) {

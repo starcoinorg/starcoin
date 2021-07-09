@@ -5,6 +5,7 @@ use anyhow::Result;
 use consensus::Consensus;
 use crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
@@ -360,7 +361,7 @@ fn test_uncle_in_diff_epoch() {
 ///             ╭--> b3(t2)
 /// Genesis--> b1--> b2(t2)
 ///
-async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
+fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
@@ -395,7 +396,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let tnx_hash = signed_txn_t2.id();
+    let txn_hash = signed_txn_t2.id();
     let (template_b2, excluded) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.authentication_key()),
@@ -409,7 +410,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .consensus()
         .create_block(template_b2, config.net().time_service().as_ref())?;
 
-    block_chain.apply(block_b2)?;
+    block_chain.apply(block_b2.clone())?;
     let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.authentication_key()),
@@ -422,16 +423,46 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let block_b3 = block_chain2
         .consensus()
         .create_block(template_b3, config.net().time_service().as_ref())?;
-    block_chain2.apply(block_b3)?;
+    block_chain2.apply(block_b3.clone())?;
+
+    assert_ne!(
+        block_chain.get_txn_accumulator().root_hash(),
+        block_chain2.get_txn_accumulator().root_hash()
+    );
 
     let vec_txn = block_chain2
         .get_storage()
-        .get_transaction_info_ids_by_hash(tnx_hash)?;
+        .get_transaction_info_ids_by_hash(txn_hash)?;
 
     assert_eq!(vec_txn.len(), 2);
-    let txn_info = block_chain.get_transaction_info(tnx_hash)?;
-    assert!(txn_info.is_some());
-    assert_eq!(txn_info.unwrap().transaction_hash(), tnx_hash);
+    let txn_info1 = block_chain.get_transaction_info(txn_hash)?;
+    assert!(txn_info1.is_some());
+    let txn_info1 = txn_info1.unwrap();
+    assert!(vec_txn.contains(&txn_info1.id()));
+
+    let txn_info2 = block_chain2.get_transaction_info(txn_hash)?;
+    assert!(txn_info2.is_some());
+    let txn_info2 = txn_info2.unwrap();
+    assert!(vec_txn.contains(&txn_info2.id()));
+
+    assert_ne!(txn_info1, txn_info2);
+
+    assert_eq!(txn_info1.transaction_hash(), txn_hash);
+    assert_eq!(
+        txn_info1.block_id(),
+        block_b2.id(),
+        "txn_info's block id not as expect. {:?}",
+        txn_info1
+    );
+
+    assert_eq!(txn_info2.transaction_hash(), txn_hash);
+    assert_eq!(
+        txn_info2.block_id(),
+        block_b3.id(),
+        "txn_info's block id not as expect. {:?}",
+        txn_info2
+    );
+
     Ok(())
 }
 

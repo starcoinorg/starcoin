@@ -271,13 +271,6 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block hash by number {}", number))
     }
 
-    fn check_exist_transaction_info(&self, txn_info_id: HashValue) -> bool {
-        if let Ok(node) = self.txn_accumulator.get_node(txn_info_id) {
-            return node.is_some();
-        }
-        false
-    }
-
     fn check_exist_block(&self, block_id: HashValue, block_number: BlockNumber) -> Result<bool> {
         Ok(self
             .get_hash_by_number(block_number)?
@@ -504,6 +497,14 @@ impl BlockChain {
         storage.save_block_info(block_info)?;
         Ok(())
     }
+
+    pub fn get_txn_accumulator(&self) -> &MerkleAccumulator {
+        &self.txn_accumulator
+    }
+
+    pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
+        &self.block_accumulator
+    }
 }
 
 impl ChainReader for BlockChain {
@@ -582,8 +583,11 @@ impl ChainReader for BlockChain {
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<BlockTransactionInfo>> {
         let txn_info_ids = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
-            if self.check_exist_transaction_info(txn_info_id) {
-                return self.storage.get_transaction_info(txn_info_id);
+            let txn_info = self.storage.get_transaction_info(txn_info_id)?;
+            if let Some(txn_info) = txn_info {
+                if self.exist_block(txn_info.block_id())? {
+                    return Ok(Some(txn_info));
+                }
             }
         }
         Ok(None)
