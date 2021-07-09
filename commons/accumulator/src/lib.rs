@@ -41,8 +41,6 @@ pub trait Accumulator {
     fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
-    /// Get accumulator node by hash.
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>>;
     /// Flush node to storage.
     fn flush(&self) -> Result<()>;
     /// Get current accumulator tree root hash.
@@ -177,10 +175,6 @@ impl Accumulator for MerkleAccumulator {
 
         let siblings = tree_guard.get_siblings(leaf_index, |_p| true)?;
         Ok(Some(AccumulatorProof::new(siblings)))
-    }
-
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
-        self.tree.lock().get_node(hash)
     }
 
     fn flush(&self) -> Result<()> {
