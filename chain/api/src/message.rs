@@ -9,7 +9,7 @@ use starcoin_types::block::EpochUncleSummary;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::BlockTransactionInfo;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEventInfo,
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
@@ -64,7 +64,6 @@ impl ServiceRequest for ChainRequest {
 
 #[allow(clippy::upper_case_acronyms)]
 pub enum ChainResponse {
-    BlockTemplate(Box<BlockTemplate>),
     Block(Box<Block>),
     BlockOption(Option<Box<Block>>),
     BlockInfoOption(Box<Option<BlockInfo>>),

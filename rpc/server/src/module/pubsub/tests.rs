@@ -56,7 +56,6 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     };
     let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
-        Some(miner_account.public_key.authentication_key()),
         None,
         vec![txn.clone()],
         vec![],
