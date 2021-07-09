@@ -5,6 +5,7 @@ use anyhow::format_err;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::chain::GetEventResponse;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
     StrView, TransactionEventView, TransactionInfoView, VmStatusExplainView,
@@ -279,7 +280,7 @@ pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
     pub txn_status: Option<VmStatusExplainView>,
-    pub events: Option<Vec<TransactionEventView>>,
+    pub events: Option<Vec<GetEventResponse>>,
 }
 
 impl ExecutionOutputView {

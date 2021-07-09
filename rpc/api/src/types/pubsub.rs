@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventView};
+use crate::types::{BlockView, TransactionEventView, TypeTagView};
 use jsonrpc_core::error::Error as JsonRpcError;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::MintBlockEvent;
@@ -99,8 +100,19 @@ pub struct EventFilter {
     #[serde(default)]
     pub to_block: Option<u64>,
     /// Event keys
+    /// /// if `event_keys` is empty, event always match.
     #[serde(default)]
-    pub event_keys: Vec<EventKey>,
+    pub event_keys: Option<Vec<EventKey>>,
+    /// Account addresses which event comes from.
+    /// match if event belongs to any og the addresses.
+    /// if `addrs` is empty, event always match.
+    #[serde(default)]
+    pub addrs: Option<Vec<AccountAddress>>,
+    /// type tags of the event.
+    /// match if the event is any type of the type tags.
+    /// /// if `type_tags` is empty, event always match.
+    #[serde(default)]
+    pub type_tags: Option<Vec<TypeTagView>>,
     /// Limit: from latest to oldest
     #[serde(default)]
     pub limit: Option<usize>,
@@ -122,7 +134,14 @@ impl TryInto<Filter> for EventFilter {
         Ok(Filter {
             from_block: self.from_block.unwrap_or(0),
             to_block: self.to_block.unwrap_or(std::u64::MAX),
-            event_keys: self.event_keys,
+            event_keys: self.event_keys.unwrap_or_default(),
+            addrs: self.addrs.unwrap_or_default(),
+            type_tags: self
+                .type_tags
+                .unwrap_or_default()
+                .into_iter()
+                .map(|t| t.0)
+                .collect(),
             limit: self.limit,
             reverse: true,
         })

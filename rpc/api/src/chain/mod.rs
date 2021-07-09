@@ -5,11 +5,12 @@ pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
-    TransactionEventView, TransactionInfoView, TransactionView,
+    MoveValueView, TransactionEventView, TransactionInfoView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -64,10 +65,15 @@ pub trait ChainApi {
     fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
-    ) -> FutureResult<Vec<TransactionEventView>>;
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<GetEventResponse>>;
 
     #[rpc(name = "chain.get_events")]
-    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<TransactionEventView>>;
+    fn get_events(
+        &self,
+        filter: EventFilter,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<GetEventResponse>>;
 
     /// Get current epoch info.
     #[rpc(name = "chain.epoch")]
@@ -98,4 +104,17 @@ pub trait ChainApi {
         &self,
         number: BlockNumber,
     ) -> FutureResult<EpochUncleSummaryView>;
+}
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+pub struct GetEventOption {
+    #[serde(default)]
+    pub decode: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GetEventResponse {
+    pub decode_event_data: Option<MoveValueView>,
+    #[serde(flatten)]
+    pub event: TransactionEventView,
 }

@@ -1,8 +1,10 @@
 //! Blockchain filter
 
+use crate::account_address::AccountAddress;
 use crate::block::BlockNumber;
 use crate::contract_event::ContractEvent;
 use crate::event::EventKey;
+use crate::language_storage::TypeTag;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Filter {
@@ -16,6 +18,16 @@ pub struct Filter {
     /// If empty, match all.
     /// If specified, event must produced from one of the event keys.
     pub event_keys: Vec<EventKey>,
+
+    /// Account addresses which event comes from.
+    /// match if event belongs to any og the addresses.
+    /// if `addrs` is empty, event always match.
+    pub addrs: Vec<AccountAddress>,
+    /// type tags of the event.
+    /// match if the event is any type of the type tags.
+    /// if `type_tags` is empty, event always match.
+    pub type_tags: Vec<TypeTag>,
+
     /// Events limit
     ///
     /// If None, return all events
@@ -31,6 +43,8 @@ impl Default for Filter {
             from_block: 0,
             to_block: 0,
             event_keys: vec![],
+            type_tags: vec![],
+            addrs: vec![],
             limit: None,
             reverse: true,
         }
@@ -42,6 +56,8 @@ impl Filter {
         if self.from_block <= block_number
             && block_number <= self.to_block
             && (self.event_keys.is_empty() || self.event_keys.contains(e.key()))
+            && (self.addrs.is_empty() || self.addrs.contains(&e.key().get_creator_address()))
+            && (self.type_tags.is_empty() || self.type_tags.contains(e.type_tag()))
         {
             return true;
         }

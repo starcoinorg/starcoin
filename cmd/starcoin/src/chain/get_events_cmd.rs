@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::EventView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::chain::{GetEventOption, GetEventResponse};
 use structopt::StructOpt;
 
 /// Get chain's events by txn hash
@@ -24,7 +24,7 @@ impl CommandAction for GetEventsCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetEventsOpt;
-    type ReturnItem = Vec<EventView>;
+    type ReturnItem = Vec<GetEventResponse>;
 
     fn run(
         &self,
@@ -32,8 +32,8 @@ impl CommandAction for GetEventsCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let events = client.chain_get_events_by_txn_hash(opt.hash)?;
-        let events: Vec<EventView> = events.into_iter().map(|e| e.into()).collect::<Vec<_>>();
+        let events =
+            client.chain_get_events_by_txn_hash(opt.hash, Some(GetEventOption { decode: true }))?;
         Ok(events)
     }
 }
