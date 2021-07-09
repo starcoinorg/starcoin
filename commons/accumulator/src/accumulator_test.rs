@@ -3,7 +3,7 @@
 
 use crate::{
     node_index::NodeIndex, tree_store::mock::MockAccumulatorStore, Accumulator, AccumulatorNode,
-    LeafCount, MerkleAccumulator,
+    AccumulatorTreeStore, LeafCount, MerkleAccumulator,
 };
 use starcoin_crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
 use std::time::SystemTime;
@@ -100,14 +100,14 @@ fn test_multiple_chain() {
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots();
     for node in frozen_node.clone() {
-        let acc = accumulator
+        let acc = mock_store
             .get_node(node)
             .expect("get accumulator node by hash should success")
             .unwrap();
         if let AccumulatorNode::Internal(internal) = acc {
-            let left = accumulator.get_node(internal.left()).unwrap().unwrap();
+            let left = mock_store.get_node(internal.left()).unwrap().unwrap();
             assert_eq!(left.is_frozen(), true);
-            let right = accumulator.get_node(internal.right()).unwrap().unwrap();
+            let right = mock_store.get_node(internal.right()).unwrap().unwrap();
             assert_eq!(right.is_frozen(), true);
         }
     }
@@ -243,19 +243,19 @@ fn test_update_right_leaf() {
 #[test]
 fn test_flush() {
     let leaves = create_leaves(1000..1020);
-    let mock_store = MockAccumulatorStore::new();
+    let mock_store = Arc::new(MockAccumulatorStore::new());
     let accumulator = MerkleAccumulator::new(
         *ACCUMULATOR_PLACEHOLDER_HASH,
         vec![],
         0,
         0,
-        Arc::new(mock_store),
+        mock_store.clone(),
     );
     let _root_hash = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     //get from storage
     for node_hash in leaves.clone() {
-        let node = accumulator.get_node(node_hash).unwrap();
+        let node = mock_store.get_node(node_hash).unwrap();
         assert!(node.is_some());
     }
 }
