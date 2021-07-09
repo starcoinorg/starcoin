@@ -582,26 +582,35 @@ pub fn eval_block_metadata(
 /// Feeds all given transactions through the pipeline and produces an EvaluationLog.
 pub fn eval<TComp: Compiler>(
     config: &GlobalConfig,
-    mut compiler: TComp,
+    compiler: TComp,
     commands: &[Command],
 ) -> Result<EvaluationLog> {
-    let mut log = EvaluationLog { outputs: vec![] };
-
     // Set up a fake executor with the genesis block and create the accounts.
     let mut exec = FakeExecutor::new();
+    eval_with_executor(config, compiler, &mut exec, commands)
+}
+
+/// Feeds all given transactions through the pipeline and produces an EvaluationLog.
+pub fn eval_with_executor<TComp: Compiler>(
+    config: &GlobalConfig,
+    mut compiler: TComp,
+    exec: &mut FakeExecutor,
+    commands: &[Command],
+) -> Result<EvaluationLog> {
     for data in config.accounts.values() {
         exec.add_account_data(&data);
     }
 
+    let mut log = EvaluationLog { outputs: vec![] };
+
     for (idx, command) in commands.iter().enumerate() {
         match command {
             Command::Transaction(transaction) => {
-                let status =
-                    eval_transaction(&mut compiler, &mut exec, idx, transaction, &mut log)?;
+                let status = eval_transaction(&mut compiler, exec, idx, transaction, &mut log)?;
                 log.append(EvaluationOutput::Status(status));
             }
             Command::BlockMetadata(block_metadata) => {
-                let status = eval_block_metadata(&mut exec, block_metadata.clone(), &mut log)?;
+                let status = eval_block_metadata(exec, block_metadata.clone(), &mut log)?;
                 log.append(EvaluationOutput::Status(status));
             }
         }

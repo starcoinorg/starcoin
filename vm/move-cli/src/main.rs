@@ -26,8 +26,10 @@ use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::data_cache::MoveStorage;
 use move_vm_runtime::{logging::NoContextLog, move_vm::MoveVM};
 use starcoin_config::INITIAL_GAS_SCHEDULE;
+use starcoin_functional_tests::executor::FakeExecutor;
 use starcoin_functional_tests::testsuite::PRETTY;
 use starcoin_vm_types::gas_schedule::GasStatus;
+use std::num::NonZeroUsize;
 use std::{
     collections::BTreeMap,
     ffi::OsStr,
@@ -170,11 +172,27 @@ pub enum Command {
     },
 
     /// run functional test under tests dir.
-    #[structopt(name = "functional-test", alias = "ft")]
+    #[structopt(name = "functional-test")]
     FunctionalTest {
-        /// A filter string to determine which tests to run, default to all move test
-        #[structopt(name = "filter", short = "f", long = "filter")]
+        /// The FILTER string is tested against the name of all tests, and only those tests whose names
+        /// contain the filter are run.
         filter: Option<String>,
+        #[structopt(long = "exact")]
+        /// Exactly match filters rather than by substring
+        filter_exact: bool,
+        #[structopt(long, default_value = "32", env = "RUST_TEST_THREADS")]
+        /// Number of threads used for running tests in parallel
+        test_threads: NonZeroUsize,
+        #[structopt(short = "q", long)]
+        /// Output minimal information
+        quiet: bool,
+        #[structopt(long)]
+        /// List all tests
+        list: bool,
+        #[structopt(long)]
+        /// List or run ignored tests (always empty: it is currently not possible to mark tests as
+        /// ignored)
+        ignored: bool,
     },
 
     /// Run unit test in move source files.
@@ -1292,7 +1310,36 @@ fn main() -> Result<()> {
                 move_args.verbose,
             )
         }
-        Command::FunctionalTest { filter, .. } => {
+        Command::FunctionalTest {
+            filter,
+            filter_exact,
+            test_threads,
+            quiet,
+            list,
+            ignored,
+        } => {
+            let opts = datatest_stable::TestOpts {
+                filter: filter.clone(),
+                filter_exact: *filter_exact,
+                test_threads: *test_threads,
+                quiet: *quiet,
+                nocapture: false,
+                list: *list,
+                ignored: *ignored,
+                include_ignored: false,
+                force_run_in_process: false,
+                exclude_should_panic: false,
+                bench: false,
+                test: false,
+                logfile: None,
+                skip: vec![],
+                show_output: false,
+                color: None,
+                format: Default::default(),
+                report_time: None,
+                ensure_time: false,
+            };
+            // let inteface_dir = state.interface_files_dir()?;
             let mut requirements = Vec::new();
             let filter = filter.clone().unwrap_or_else(|| r".*\.move".to_string());
             requirements.push(datatest_stable::Requirements::new(
@@ -1300,15 +1347,41 @@ fn main() -> Result<()> {
                     std::env::set_var(PRETTY, "true");
                     let temp_dir = tempdir()?;
                     let mut deps = restore_stdlib_in_dir(temp_dir.path())?;
-                    deps.push(DEFAULT_SOURCE_DIR.to_string());
+
+                    let source_dir = DEFAULT_SOURCE_DIR.to_string();
+                    deps.push(source_dir);
                     let compiler = crate::functional_test::MoveSourceCompiler::new(deps);
-                    starcoin_functional_tests::testsuite::functional_tests(compiler, path)
+
+                    let mut exec = FakeExecutor::new();
+
+                    // add source modules to state.
+                    {
+                        let storage_dir = DEFAULT_STORAGE_DIR;
+                        for compiled_module_path in walkdir::WalkDir::new(storage_dir)
+                            .into_iter()
+                            .filter_map(|e| e.ok().filter(|d| d.path().is_file()))
+                            .map(|e| e.path().to_path_buf())
+                            .filter(move |path| {
+                                path.parent()
+                                    .map(|p| p.ends_with("modules"))
+                                    .unwrap_or_default()
+                            })
+                        {
+                            let compiled_module =
+                                CompiledModule::deserialize(&fs::read(compiled_module_path)?)?;
+                            exec.add_module(&compiled_module.self_id(), &compiled_module);
+                        }
+                    }
+
+                    starcoin_functional_tests::testsuite::functional_tests_with_executor(
+                        compiler, &mut exec, path,
+                    )
                 },
                 "functional-test".to_string(),
                 DEFAULT_TEST_DIR.to_string(),
                 filter,
             ));
-            datatest_stable::runner(&requirements);
+            datatest_stable::runner_with_opts(&requirements, opts);
             Ok(())
         }
         Command::UnitTest {
