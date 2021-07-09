@@ -3,61 +3,81 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::types::AnnotatedMoveStructView;
-use starcoin_rpc_client::RemoteStateReader;
-use starcoin_types::access_path::AccessPath;
+use serde::{Serialize, Serializer};
+use starcoin_rpc_api::types::{CodeView, ResourceView, StrView};
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::account_struct_tag;
-use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::parser::parse_struct_tag;
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use structopt::StructOpt;
 
-//TODO support custom access_path.
+/// Get contract data command
+///  Some examples:
+///  ``` shell
+///  state get code 0x1::Account
+///  state get resource 0x1 0x1::Account::Account
+///  ```
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get")]
-pub struct GetOpt {
-    #[structopt(short = "a", long = "addr")]
-    /// address which the resource is under of. Default to default account address.
-    account_address: Option<AccountAddress>,
-    #[structopt(name = "struct-tag", parse(try_from_str = parse_struct_tag))]
-    /// resource type to get. Default to 0x1::Account::Account
-    struct_tag: Option<StructTag>,
+pub enum GetOpt {
+    Code {
+        #[structopt(help = "module id like: 0x1::Account")]
+        module_id: StrView<ModuleId>,
+    },
+    Resource {
+        #[structopt(help = "account address")]
+        address: AccountAddress,
+        #[structopt(help = "resource struct tag,", default_value = "0x1::Account::Account")]
+        resource_type: StrView<StructTag>,
+    },
 }
 
 pub struct GetCommand;
+
+pub enum GetDataResult {
+    Code(Option<CodeView>),
+    Resource(Option<ResourceView>),
+}
+
+impl Serialize for GetDataResult {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Self::Code(c) => c.serialize(serializer),
+            Self::Resource(r) => r.serialize(serializer),
+        }
+    }
+}
 
 impl CommandAction for GetCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = AnnotatedMoveStructView;
+    type ReturnItem = GetDataResult;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
         let opt = ctx.opt();
-        let account_addr = match opt.account_address {
-            Some(addr) => addr,
-            None => ctx.state().default_account()?.address,
+        let result = match opt {
+            GetOpt::Code { module_id } => GetDataResult::Code(
+                ctx.state()
+                    .client()
+                    .state_get_code(module_id.0.clone(), true)?,
+            ),
+            GetOpt::Resource {
+                address,
+                resource_type,
+            } => GetDataResult::Resource(ctx.state().client().state_get_resource(
+                *address,
+                resource_type.0.clone(),
+                true,
+            )?),
         };
-        let struct_tag = match opt.struct_tag.as_ref() {
-            Some(s) => s.clone(),
-            None => account_struct_tag(),
-        };
-        let state = client
-            .state_get(AccessPath::resource_access_path(
-                account_addr,
-                struct_tag.clone(),
-            ))?
-            .ok_or_else(|| format_err!("Account with address {} state not exist.", account_addr))?;
-        let chain_state_reader = RemoteStateReader::new(client)?;
-        let viewer = MoveValueAnnotator::new(&chain_state_reader);
-        let annotated_resource = viewer.view_struct(struct_tag, state.as_slice())?;
-        Ok(annotated_resource.into())
+
+        Ok(result)
     }
 }

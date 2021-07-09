@@ -64,14 +64,11 @@ Feature: cmd integration test
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root"
     Then cmd: "dev get-coin"
-    Then assert: "$.raw_txn.gas_unit_price 1 $.raw_txn.sequence_number 0 $.raw_txn.sender 0x0000000000000000000000000a550c18"
     Then cmd: "account show"
-    Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"
     Then cmd: "account show"
-    Then cmd: "state get -a @$.account.address@"
-    Then cmd: "account show"
-    Then cmd: "state get -a @$.account.address@ 0x1::Account::Account"
+    Then cmd: "state get resource @$.account.address@ 0x1::Account::Account"
+    Then assert: "$.json.sequence_number 0 "
     Then stop
 
     Examples:

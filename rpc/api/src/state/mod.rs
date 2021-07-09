@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as StateClient;
-use crate::types::{
-    AccountStateSetView, GetCodeResponse, GetResourceResponse, StateWithProofView, StrView,
-};
+use crate::types::{AccountStateSetView, CodeView, ResourceView, StateWithProofView, StrView};
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use serde::Deserialize;
@@ -49,7 +47,7 @@ pub trait StateApi {
         &self,
         module_id: StrView<ModuleId>,
         option: Option<GetCodeOption>,
-    ) -> FutureResult<Option<GetCodeResponse>>;
+    ) -> FutureResult<Option<CodeView>>;
 
     /// get resource data of `addr`
     #[rpc(name = "state.get_resource")]
@@ -58,7 +56,13 @@ pub trait StateApi {
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
-    ) -> FutureResult<Option<GetResourceResponse>>;
+    ) -> FutureResult<Option<ResourceView>>;
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
+#[serde(default)]
+pub struct ListResourceOption {
+    pub decode: bool,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
@@ -70,5 +74,5 @@ pub struct GetResourceOption {
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
 #[serde(default)]
 pub struct GetCodeOption {
-    // pub gen_interface: bool,
+    pub resolve: bool,
 }

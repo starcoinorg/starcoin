@@ -68,7 +68,7 @@ impl CommandAction for ShowCommand {
 
         let mut balances = HashMap::new();
 
-        let state = client.get_account_state_set(*account.address(), None)?;
+        let state = client.state_get_account_state_set(*account.address(), None)?;
         if let Some(state) = state {
             for (token_code, resource) in state.resources.into_iter().filter_map(|(k, v)| {
                 BalanceResource::token_code(&k.0).map(|token_code| (token_code, v))

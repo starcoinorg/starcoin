@@ -22,13 +22,14 @@ use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{GetEventOption, GetEventResponse};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
+use starcoin_rpc_api::state::{GetCodeOption, GetResourceOption};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
-    BlockSummaryView, BlockView, ChainId, ChainInfoView, ContractCall, DryRunOutputView,
+    BlockSummaryView, BlockView, ChainId, ChainInfoView, CodeView, ContractCall, DryRunOutputView,
     DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, MintedBlockView, PeerInfoView,
-    SignedMessageView, SignedUserTransactionView, StateWithProofView, StrView, TransactionInfoView,
-    TransactionRequest, TransactionView,
+    ResourceView, SignedMessageView, SignedUserTransactionView, StateWithProofView, StrView,
+    TransactionInfoView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -475,7 +476,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn get_account_state_set(
+    pub fn state_get_account_state_set(
         &self,
         address: AccountAddress,
         state_root: Option<HashValue>,
@@ -484,6 +485,35 @@ impl RpcClient {
             inner
                 .state_client
                 .get_account_state_set(address, state_root)
+        })
+        .map_err(map_err)
+    }
+
+    pub fn state_get_resource(
+        &self,
+        address: AccountAddress,
+        resource_type: StructTag,
+        decode: bool,
+    ) -> anyhow::Result<Option<ResourceView>> {
+        self.call_rpc_blocking(|inner| {
+            inner.state_client.get_resource(
+                address,
+                StrView(resource_type),
+                Some(GetResourceOption { decode }),
+            )
+        })
+        .map_err(map_err)
+    }
+
+    pub fn state_get_code(
+        &self,
+        module_id: ModuleId,
+        resolve: bool,
+    ) -> anyhow::Result<Option<CodeView>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .state_client
+                .get_code(StrView(module_id), Some(GetCodeOption { resolve }))
         })
         .map_err(map_err)
     }

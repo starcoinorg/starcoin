@@ -7,11 +7,12 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
+use starcoin_resource_viewer::abi_resolver::ABIResolver;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::state::{GetCodeOption, GetResourceOption, StateApi};
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, GetCodeResponse, GetResourceResponse,
-    StateWithProofView, StrView, StructTagView,
+    AccountStateSetView, AnnotatedMoveStructView, CodeView, ResourceView, StateWithProofView,
+    StrView, StructTagView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
@@ -145,20 +146,33 @@ where
             .map_err(map_err);
         Box::pin(fut)
     }
+
     fn get_code(
         &self,
         module_id: StrView<ModuleId>,
-        _option: Option<GetCodeOption>,
-    ) -> FutureResult<Option<GetCodeResponse>> {
+        option: Option<GetCodeOption>,
+    ) -> FutureResult<Option<CodeView>> {
         let service = self.service.clone();
+        let state_store = self.state_store.clone();
         let f = async move {
+            let state_root = service.clone().state_root().await?;
             let code = service.get(AccessPath::from(&module_id.0)).await?;
             Ok(match code {
                 None => None,
-                Some(c) => Some(GetCodeResponse {
-                    code: StrView(c),
-                    interface: None,
-                }),
+                Some(c) => {
+                    let option = option.unwrap_or_default();
+                    let abi = if option.resolve {
+                        let state = ChainStateDB::new(state_store, Some(state_root));
+                        Some(ABIResolver::new(&state).resolve_module(&module_id.0)?)
+                    } else {
+                        None
+                    };
+
+                    Some(CodeView {
+                        code: StrView(c),
+                        abi,
+                    })
+                }
             })
         };
         Box::pin(f.map_err(map_err).boxed())
@@ -169,7 +183,7 @@ where
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
-    ) -> FutureResult<Option<GetResourceResponse>> {
+    ) -> FutureResult<Option<ResourceView>> {
         let service = self.service.clone();
         let state_store = self.state_store.clone();
         let option = option.unwrap_or_default();
@@ -192,7 +206,7 @@ where
                         None
                     };
 
-                    Some(GetResourceResponse {
+                    Some(ResourceView {
                         raw: StrView(d),
                         json: decoded,
                     })

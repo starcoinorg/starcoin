@@ -32,6 +32,7 @@ use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionA
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
+use starcoin_vm_types::abi::ModuleABI;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
@@ -98,16 +99,17 @@ impl From<AnnotatedMoveValue> for MoveValueView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GetResourceResponse {
+pub struct ResourceView {
     pub raw: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub json: Option<MoveValueView>,
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GetCodeResponse {
+pub struct CodeView {
     pub code: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub interface: Option<String>,
+    pub abi: Option<ModuleABI>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
