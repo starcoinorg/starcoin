@@ -25,6 +25,7 @@ use starcoin_types::transaction::{
     TransactionPayload,
 };
 use starcoin_types::write_set::{WriteOp, WriteSet};
+use starcoin_types::sign_message::{SigningMessage, SignedMessage};
 
 fn main() {
     generate().unwrap();
@@ -93,6 +94,8 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<AccessPath>(&samples)?;
     tracer.trace_type::<DataType>(&samples)?;
     tracer.trace_type::<ScriptABI>(&samples)?;
+    tracer.trace_type::<SigningMessage>(&samples)?;
+    tracer.trace_type::<SignedMessage>(&samples)?;
     let registry = tracer.registry()?;
     let data = serde_yaml::to_string(&registry).unwrap();
     std::fs::write("../etc/starcoin_types.yml", &data).unwrap();
