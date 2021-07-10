@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.41"
+anyhow = "1.0.42"
 tempfile = "3.1.0"
 datatest-stable = "0.1"
 stdlib = { package="stdlib", path = "../stdlib"}
