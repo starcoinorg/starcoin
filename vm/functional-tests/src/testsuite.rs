@@ -1,11 +1,13 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::evaluator::eval_with_executor;
+use crate::executor::FakeExecutor;
 use crate::{
     checker::*,
     compiler::Compiler,
     config::global::Config as GlobalConfig,
-    evaluator::{eval, EvaluationOutput},
+    evaluator::EvaluationOutput,
     preprocessor::{build_transactions, split_input},
 };
 use std::{env, fs::read_to_string, io::Write, iter, path::Path};
@@ -60,6 +62,15 @@ pub fn functional_tests<TComp: Compiler>(
     compiler: TComp,
     path: &Path,
 ) -> datatest_stable::Result<()> {
+    let mut exec = FakeExecutor::new();
+    functional_tests_with_executor(compiler, &mut exec, path)
+}
+
+pub fn functional_tests_with_executor<TComp: Compiler>(
+    compiler: TComp,
+    exec: &mut FakeExecutor,
+    path: &Path,
+) -> datatest_stable::Result<()> {
     let input = read_to_string(path)?;
 
     let lines: Vec<String> = input.lines().map(|line| line.to_string()).collect();
@@ -68,7 +79,7 @@ pub fn functional_tests<TComp: Compiler>(
     let config = GlobalConfig::build(&config)?;
     let commands = build_transactions(&config, &transactions)?;
 
-    let log = eval(&config, compiler, &commands)?;
+    let log = eval_with_executor(&config, compiler, exec, &commands)?;
 
     let res = match_output(&log, &directives);
 

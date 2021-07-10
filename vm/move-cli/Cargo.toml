@@ -50,7 +50,7 @@ jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws
 starcoin-move-compiler = {path = "../compiler"}
 futures = "0.3"
 tokio = {version = "0.2", features = ["full"]}
-datatest-stable = "0.1"
+datatest-stable = {git = "https://github.com/starcoinorg/diem-devtools", branch="feature/pub-test-opts"}
 tempfile = "~3"
 [dev-dependencies]
 [[bin]]
