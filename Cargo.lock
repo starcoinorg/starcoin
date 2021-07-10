@@ -1992,6 +1992,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "datatest-stable"
+version = "0.1.1"
+source = "git+https://github.com/starcoinorg/diem-devtools?branch=feature/pub-test-opts#8d13c496a7e2460c2c694639e8dd3a5a5f10f1c4"
+dependencies = [
+ "regex",
+ "structopt 0.3.22",
+ "termcolor",
+ "walkdir",
+]
+
+[[package]]
 name = "db-exporter"
 version = "1.3.0"
 dependencies = [
@@ -4901,7 +4912,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "bytecode-verifier",
- "datatest-stable",
+ "datatest-stable 0.1.1 (git+https://github.com/starcoinorg/diem-devtools?branch=feature/pub-test-opts)",
  "diem-workspace-hack",
  "difference",
  "disassembler",
@@ -5039,7 +5050,7 @@ name = "move-lang-test-utils"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=e22e951caa6dc230b1e866c89018eeb26bc73a45#e22e951caa6dc230b1e866c89018eeb26bc73a45"
 dependencies = [
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diem-workspace-hack",
  "walkdir",
 ]
@@ -5114,7 +5125,7 @@ dependencies = [
  "atty",
  "clap 2.33.3",
  "codespan-reporting 0.11.1",
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diem-temppath",
  "handlebars",
  "hex",
@@ -8407,7 +8418,7 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "bcs-ext",
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mirai-annotations",
  "move-lang",
  "once_cell",
@@ -9558,7 +9569,7 @@ dependencies = [
  "bcs-ext",
  "bytecode-verifier",
  "clap 2.33.3",
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra",
  "include_dir",
  "itertools 0.10.1",
