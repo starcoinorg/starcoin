@@ -126,7 +126,7 @@ module Account {
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
     // cannot be dummy key
-    const AUTH_KEY_PLACEHOLDER:vector<u8> = x"1000000000000000000000000000000000000000000000000000000000000000";
+    const AUTH_KEY_PLACEHOLDER:vector<u8> = x"";
 
     /// A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
     public fun remove_signer_capability(s: &signer): SignerCapability
@@ -140,7 +140,8 @@ module Account {
             {
                 let key_rotation_capability = extract_key_rotation_capability(s);
                 rotate_authentication_key_with_capability(&key_rotation_capability, AUTH_KEY_PLACEHOLDER);
-                restore_key_rotation_capability(key_rotation_capability);
+                // destroy account's key rotation capability
+                let KeyRotationCapability {account_address: _addr} = key_rotation_capability;
             };
         move_to(s, SignerDelegated {});
         let signer_cap = SignerCapability {addr: signer_addr };

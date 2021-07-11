@@ -518,7 +518,7 @@ As <code>signer</code> can be auto dropped, a wrapper is needed to make a not <c
 
 
 
-<pre><code><b>const</b> <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [];
 </code></pre>
 
 
@@ -676,7 +676,8 @@ A one-way action, once SignerCapability is removed from signer, the address cann
         {
             <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(s);
             <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>);
-            <a href="Account.md#0x1_Account_restore_key_rotation_capability">restore_key_rotation_capability</a>(key_rotation_capability);
+            // destroy account's key rotation capability
+            <b>let</b> <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a> {account_address: _addr} = key_rotation_capability;
         };
     move_to(s, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
     <b>let</b> signer_cap = <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: signer_addr };
