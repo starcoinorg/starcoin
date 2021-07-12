@@ -34,7 +34,6 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -206,7 +205,6 @@ impl BlockChain {
     pub fn create_block_template(
         &self,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -224,7 +222,6 @@ impl BlockChain {
 
         self.create_block_template_inner(
             author,
-            author_auth_key,
             previous_header,
             user_txns,
             uncles,
@@ -235,7 +232,6 @@ impl BlockChain {
     fn create_block_template_inner(
         &self,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -254,7 +250,6 @@ impl BlockChain {
             previous_header,
             final_block_gas_limit,
             author,
-            author_auth_key,
             self.time_service.now_millis(),
             uncles,
             difficulty,

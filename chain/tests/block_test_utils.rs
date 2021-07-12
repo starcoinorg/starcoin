@@ -69,7 +69,6 @@ fn gen_header(
         parent_header.timestamp() + 1,
         parent_header.number() + 1,
         parent_header.author(),
-        None,
         acc_root,
         //TODO fixme
         HashValue::random(),

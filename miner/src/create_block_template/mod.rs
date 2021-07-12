@@ -278,14 +278,7 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
 
-        let chain_state = self.chain.chain_state_reader();
         let author = *self.miner_account.address();
-        let author_auth_key = if chain_state.exist_account(self.miner_account.address())? {
-            None
-        } else {
-            Some(self.miner_account.public_key.authentication_key())
-        };
-
         let previous_header = self.chain.current_header();
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
@@ -315,7 +308,6 @@ where
             previous_header,
             block_gas_limit,
             author,
-            author_auth_key,
             now_millis,
             uncles,
             difficulty,

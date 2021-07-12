@@ -34,14 +34,8 @@ pub fn create_new_block(
     account: &Account,
     txns: Vec<SignedUserTransaction>,
 ) -> Result<Block> {
-    let (template, _) = chain.create_block_template(
-        *account.address(),
-        Some(account.auth_key()),
-        None,
-        txns,
-        vec![],
-        None,
-    )?;
+    let (template, _) =
+        chain.create_block_template(*account.address(), None, txns, vec![], None)?;
     chain
         .consensus()
         .create_block(template, chain.time_service().as_ref())
@@ -197,7 +191,6 @@ pub fn modify_on_chain_config_by_dao_block(
 
         let (template, _) = chain.create_block_template(
             address,
-            None,
             None,
             create_user_txn(
                 address,

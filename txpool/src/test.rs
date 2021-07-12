@@ -24,7 +24,6 @@ use storage::BlockStore;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
-    transaction::authenticator::AuthenticationKey,
     transaction::{SignedUserTransaction, Transaction, TransactionPayload},
     U256,
 };
@@ -175,7 +174,6 @@ async fn test_rollback() -> Result<()> {
             block_header,
             u64::MAX,
             account_address,
-            Some(AuthenticationKey::ed25519(&public_key)),
             (start_timestamp + 60 * 10) * 1000,
             vec![],
             U256::from(1024u64),

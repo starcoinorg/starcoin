@@ -7,6 +7,8 @@ use std::iter::repeat;
 pub trait TokenUnit: Clone + Copy {
     fn symbol(&self) -> &'static str;
 
+    fn symbol_lowercase(&self) -> &'static str;
+
     fn scale(&self) -> u32;
 
     fn scaling_factor(&self) -> u128 {
@@ -65,7 +67,6 @@ fn padding_zero(origin: &str, scale: u32, left: bool) -> String {
     } else {
         result.push_str(pad.as_str());
     }
-    println!("{} {} {}", origin, scale, result);
     result
 }
 
@@ -88,11 +89,11 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (p1, p2) = self.decimal();
         if p2 == 0 {
-            write!(f, "{} {}", p1, self.unit.symbol())
+            write!(f, "{}{}", p1, self.unit.symbol())
         } else {
             let p2_str = padding_zero(p2.to_string().as_str(), self.unit.scale(), true);
             let p2_str = p2_str.trim_end_matches('0');
-            write!(f, "{}.{} {}", p1, p2_str, self.unit.symbol())
+            write!(f, "{}.{}{}", p1, p2_str, self.unit.symbol())
         }
     }
 }

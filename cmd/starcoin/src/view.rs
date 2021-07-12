@@ -254,6 +254,15 @@ pub enum ExecuteResultView {
     Run(ExecutionOutputView),
 }
 
+impl ExecuteResultView {
+    pub fn get_transaction_info(&self) -> Option<TransactionInfoView> {
+        match self {
+            ExecuteResultView::Run(view) => view.txn_info.clone(),
+            ExecuteResultView::DryRun(_) => None,
+        }
+    }
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct DryRunOutputView {
     pub vm_status: VmStatusExplainView,

@@ -72,18 +72,18 @@
 	    $('.btn').click(function(){
 
 	    input = $("#url")[0].value;
-	    url = api+"?address="+input;
-	    $.ajax({
-	    type: "GET",
-	    url:  url,
-	    error: function(response) {
-	    noty({layout: 'bottomCenter', text: "Failed to fund, reason: "+response.responseText+" status code: "+response.status, type: 'error', timeout: 5000, progressBar: true});
-            },
-	    success: function() {
-            noty({layout: 'bottomCenter', text: "Fund success", type: 'success', timeout: 5000, progressBar: true});
-            }
-	    })
-	    
+		let request = { address: input, amount: "1stc" };
+		$.ajax({
+				type: "post",
+				url: api,
+				dataType : "json",
+				data: JSON.stringify(request),
+			}).done(function( response ) {
+			noty({layout: 'bottomCenter', text: "Fund success\n transaction_id:"+ response.transaction_id, type: 'success', timeout: 10000, progressBar: true});
+		}).fail(function(response){
+			noty({layout: 'bottomCenter', text: "Failed to fund, reason: "+response.responseText+" status code: "+response.status, type: 'error', timeout: 5000, progressBar: true});
+		});
+
 	    });
 	</script>
     </body>

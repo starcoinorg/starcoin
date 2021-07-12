@@ -129,6 +129,7 @@ pub struct BlockHeader {
     /// Block author.
     author: AccountAddress,
     /// Block author auth key.
+    /// this field is deprecated
     author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     txn_accumulator_root: HashValue,
@@ -156,7 +157,6 @@ impl BlockHeader {
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         txn_accumulator_root: HashValue,
         block_accumulator_root: HashValue,
         state_root: HashValue,
@@ -174,7 +174,7 @@ impl BlockHeader {
             number,
             timestamp,
             author,
-            author_auth_key,
+            author_auth_key: None,
             txn_accumulator_root,
             state_root,
             gas_used,
@@ -280,7 +280,6 @@ impl BlockHeader {
             timestamp,
             0,
             CORE_CODE_ADDRESS,
-            None,
             txn_accumulator_root,
             *ACCUMULATOR_PLACEHOLDER_HASH,
             state_root,
@@ -299,7 +298,6 @@ impl BlockHeader {
             rand::random(),
             rand::random(),
             AccountAddress::random(),
-            None,
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
@@ -341,23 +339,25 @@ impl<'de> Deserialize<'de> for BlockHeader {
             extra: BlockHeaderExtra,
         }
 
-        let header = BlockHeaderData::deserialize(deserializer)?;
-        Ok(Self::new(
-            header.parent_hash,
-            header.timestamp,
-            header.number,
-            header.author,
-            header.author_auth_key,
-            header.txn_accumulator_root,
-            header.block_accumulator_root,
-            header.state_root,
-            header.gas_used,
-            header.difficulty,
-            header.body_hash,
-            header.chain_id,
-            header.nonce,
-            header.extra,
-        ))
+        let header_data = BlockHeaderData::deserialize(deserializer)?;
+        let mut block_header = Self::new(
+            header_data.parent_hash,
+            header_data.timestamp,
+            header_data.number,
+            header_data.author,
+            header_data.txn_accumulator_root,
+            header_data.block_accumulator_root,
+            header_data.state_root,
+            header_data.gas_used,
+            header_data.difficulty,
+            header_data.body_hash,
+            header_data.chain_id,
+            header_data.nonce,
+            header_data.extra,
+        );
+        // author_auth_key is deprecated, but the old block contains this field should been read correctly.
+        block_header.author_auth_key = header_data.author_auth_key;
+        Ok(block_header)
     }
 }
 
@@ -368,7 +368,6 @@ impl Default for BlockHeader {
             0,
             0,
             AccountAddress::ZERO,
-            None,
             HashValue::zero(),
             HashValue::zero(),
             HashValue::zero(),
@@ -389,7 +388,6 @@ impl Sample for BlockHeader {
             1610110515000,
             0,
             genesis_address(),
-            None,
             *ACCUMULATOR_PLACEHOLDER_HASH,
             *ACCUMULATOR_PLACEHOLDER_HASH,
             *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -434,6 +432,7 @@ pub struct RawBlockHeader {
     /// Block author.
     pub author: AccountAddress,
     /// Block author auth key.
+    /// this field is deprecated
     pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
@@ -807,8 +806,6 @@ pub struct BlockTemplate {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
-    /// Block author auth key.
-    pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub txn_accumulator_root: HashValue,
     /// The block accumulator root hash.
@@ -841,7 +838,7 @@ impl BlockTemplate {
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
     ) -> Self {
-        let (parent_hash, timestamp, author, author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
             block_metadata.into_inner();
         Self {
             parent_hash,
@@ -849,7 +846,6 @@ impl BlockTemplate {
             timestamp,
             number,
             author,
-            author_auth_key,
             txn_accumulator_root: accumulator_root,
             state_root,
             gas_used,
@@ -867,7 +863,6 @@ impl BlockTemplate {
             self.timestamp,
             self.number,
             self.author,
-            self.author_auth_key,
             self.txn_accumulator_root,
             self.block_accumulator_root,
             self.state_root,
@@ -890,7 +885,7 @@ impl BlockTemplate {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
-            author_auth_key: self.author_auth_key,
+            author_auth_key: None,
             accumulator_root: self.txn_accumulator_root,
             parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
@@ -921,7 +916,6 @@ impl BlockTemplate {
             self.timestamp,
             self.number,
             self.author,
-            self.author_auth_key,
             self.txn_accumulator_root,
             self.block_accumulator_root,
             self.state_root,
@@ -932,25 +926,6 @@ impl BlockTemplate {
             nonce,
             extra,
         )
-    }
-
-    pub fn from_block(block: Block, strategy: ConsensusStrategy) -> Self {
-        BlockTemplate {
-            parent_hash: block.header().parent_hash,
-            block_accumulator_root: block.header().block_accumulator_root(),
-            timestamp: block.header().timestamp,
-            number: block.header().number,
-            author: block.header().author,
-            author_auth_key: block.header().author_auth_key,
-            txn_accumulator_root: block.header().txn_accumulator_root,
-            state_root: block.header().state_root,
-            gas_used: block.header().gas_used,
-            body: block.body,
-            body_hash: block.header.body_hash,
-            chain_id: block.header.chain_id,
-            difficulty: block.header.difficulty,
-            strategy,
-        }
     }
 }
 
