@@ -193,14 +193,7 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
 
 fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
     let (block_template, _) = branch
-        .create_block_template(
-            *miner.address(),
-            Some(miner.public_key.authentication_key()),
-            None,
-            Vec::new(),
-            uncles,
-            None,
-        )
+        .create_block_template(*miner.address(), None, Vec::new(), uncles, None)
         .unwrap();
     branch
         .consensus()
@@ -368,7 +361,6 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let miner_account = AccountInfo::random();
     let (template_b1, _) = block_chain.create_block_template(
         *miner_account.address(),
-        Some(miner_account.public_key.authentication_key()),
         Some(header.id()),
         vec![],
         vec![],
@@ -399,7 +391,6 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let txn_hash = signed_txn_t2.id();
     let (template_b2, excluded) = block_chain.create_block_template(
         *miner_account.address(),
-        Some(miner_account.public_key.authentication_key()),
         Some(block_b1.id()),
         vec![signed_txn_t2.clone()],
         vec![],
@@ -413,7 +404,6 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     block_chain.apply(block_b2.clone())?;
     let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
-        Some(miner_account.public_key.authentication_key()),
         Some(block_b1.id()),
         vec![signed_txn_t2],
         vec![],

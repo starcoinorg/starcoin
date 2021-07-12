@@ -74,14 +74,7 @@ pub fn new_block(
     let miner_address = *miner.address();
     let block_chain = writeable_block_chain_service.get_main();
     let (block_template, _) = block_chain
-        .create_block_template(
-            miner_address,
-            Some(miner.public_key.authentication_key()),
-            None,
-            Vec::new(),
-            vec![],
-            None,
-        )
+        .create_block_template(miner_address, None, Vec::new(), vec![], None)
         .unwrap();
     block_chain
         .consensus()
@@ -130,14 +123,7 @@ fn gen_fork_block_chain(
             )
             .unwrap();
             let (block_template, _) = block_chain
-                .create_block_template(
-                    *miner_account.address(),
-                    Some(miner_account.public_key.authentication_key()),
-                    None,
-                    Vec::new(),
-                    vec![],
-                    None,
-                )
+                .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
                 .unwrap();
             let block = block_chain
                 .consensus()

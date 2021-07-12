@@ -10,7 +10,6 @@ use starcoin_executor::{execute_block_transactions, execute_transactions};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -47,7 +46,6 @@ impl OpenedBlock {
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         block_timestamp: u64,
         uncles: Vec<BlockHeader>,
         difficulty: U256,
@@ -70,7 +68,7 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author,
-            author_auth_key,
+            None,
             uncles.len() as u64,
             previous_header.number() + 1,
             chain_id,
