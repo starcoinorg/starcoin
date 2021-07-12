@@ -19,13 +19,13 @@ use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::contract_event::{ContractEvent, ContractEventV0};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{
     Module, Package, Script, ScriptABI, SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
 };
 use starcoin_types::write_set::{WriteOp, WriteSet};
-use starcoin_types::sign_message::{SigningMessage, SignedMessage};
 
 fn main() {
     generate().unwrap();
