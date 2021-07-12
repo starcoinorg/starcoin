@@ -1441,7 +1441,7 @@ dependencies = [
  "getrandom 0.2.2",
  "lazy_static",
  "proc-macro-hack",
- "tiny-keccak 2.0.2",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -2117,7 +2117,7 @@ dependencies = [
  "sha2 0.9.3",
  "static_assertions",
  "thiserror",
- "tiny-keccak 2.0.2",
+ "tiny-keccak",
  "x25519-dalek-fiat",
 ]
 
@@ -2237,7 +2237,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "thiserror",
- "tiny-keccak 2.0.2",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -2294,7 +2294,7 @@ dependencies = [
  "subtle 2.4.0",
  "syn 0.15.44",
  "syn 1.0.73",
- "tiny-keccak 2.0.2",
+ "tiny-keccak",
  "tokio 1.4.0",
  "tokio-util 0.6.5",
  "toml",
@@ -2619,7 +2619,7 @@ dependencies = [
  "fixed-hash",
  "impl-rlp",
  "impl-serde",
- "tiny-keccak 2.0.2",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -2757,7 +2757,6 @@ dependencies = [
  "serde_bytes",
  "starcoin-crypto",
  "thiserror",
- "tiny-keccak 1.5.0",
 ]
 
 [[package]]
@@ -5207,7 +5206,7 @@ dependencies = [
  "once_cell",
  "sha2 0.9.3",
  "smallvec 1.6.1",
- "tiny-keccak 2.0.2",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -9446,16 +9445,13 @@ dependencies = [
  "futures 0.3.13",
  "hex",
  "itertools 0.10.1",
- "mirai-annotations",
  "network-p2p-types",
  "num_enum",
  "once_cell",
  "proptest",
  "proptest-derive",
- "prost",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "ref-cast",
  "serde",
  "serde_json",
  "starcoin-accumulator",
@@ -9463,7 +9459,6 @@ dependencies = [
  "starcoin-uint",
  "starcoin-vm-types",
  "thiserror",
- "tiny-keccak 1.5.0",
 ]
 
 [[package]]
@@ -10121,15 +10116,6 @@ version = "1.3.0"
 dependencies = [
  "anyhow",
  "thiserror",
-]
-
-[[package]]
-name = "tiny-keccak"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d8a021c69bb74a44ccedb824a046447e2c84a01df9e5c20779750acb38e11b2"
-dependencies = [
- "crunchy",
 ]
 
 [[package]]

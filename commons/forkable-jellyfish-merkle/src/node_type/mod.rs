@@ -34,7 +34,6 @@ use std::{
     mem::size_of,
 };
 use thiserror::Error;
-use tiny_keccak::Keccak;
 
 pub type NodeKey = HashValue;
 
@@ -705,17 +704,4 @@ where
     let byte = reader.read_u8()?;
     num |= u64::from(byte) << 56;
     Ok(num)
-}
-
-pub fn from_iter_sha3<'a, I>(buffers: I) -> HashValue
-where
-    I: IntoIterator<Item = &'a [u8]>,
-{
-    let mut sha3 = Keccak::new_sha3_256();
-    for buffer in buffers {
-        sha3.update(buffer);
-    }
-    let mut hash = [0; HashValue::LENGTH];
-    sha3.finalize(&mut hash);
-    HashValue::new(hash)
 }
