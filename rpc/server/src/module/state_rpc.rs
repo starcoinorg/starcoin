@@ -9,15 +9,17 @@ use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
 use starcoin_resource_viewer::abi_resolver::ABIResolver;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::state::{GetCodeOption, GetResourceOption, StateApi};
+use starcoin_rpc_api::state::{
+    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption, StateApi,
+};
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, CodeView, ResourceView, StateWithProofView,
-    StrView, StructTagView,
+    AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
+    ResourceView, StateWithProofView, StrView, StructTagView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_state_api::ChainStateAsyncService;
+use starcoin_state_api::{ChainStateAsyncService, StateView};
 use starcoin_state_tree::StateNodeStore;
-use starcoin_statedb::ChainStateDB;
+use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
@@ -83,12 +85,9 @@ where
         let state_service = self.service.clone();
         let db = self.state_store.clone();
         let fut = async move {
-            let state = state_service
-                .clone()
-                .get_account_state_set(address, state_root)
-                .await?;
             let state_root = state_root.unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
+            let state = statedb.get_account_state_set(&address)?;
             let annotator = MoveValueAnnotator::new(&statedb);
             match state {
                 None => Ok(None),
@@ -154,16 +153,18 @@ where
     ) -> FutureResult<Option<CodeView>> {
         let service = self.service.clone();
         let state_store = self.state_store.clone();
+        let option = option.unwrap_or_default();
         let f = async move {
-            let state_root = service.clone().state_root().await?;
-            let code = service.get(AccessPath::from(&module_id.0)).await?;
+            let state_root = option
+                .state_root
+                .unwrap_or(service.clone().state_root().await?);
+            let chain_state = ChainStateDB::new(state_store, Some(state_root));
+            let code = chain_state.get(&AccessPath::from(&module_id.0))?;
             Ok(match code {
                 None => None,
                 Some(c) => {
-                    let option = option.unwrap_or_default();
                     let abi = if option.resolve {
-                        let state = ChainStateDB::new(state_store, Some(state_root));
-                        Some(ABIResolver::new(&state).resolve_module(&module_id.0)?)
+                        Some(ABIResolver::new(&chain_state).resolve_module(&module_id.0)?)
                     } else {
                         None
                     };
@@ -188,18 +189,18 @@ where
         let state_store = self.state_store.clone();
         let option = option.unwrap_or_default();
         let f = async move {
-            let state_root = service.clone().state_root().await?;
-            let data = service
-                .get(AccessPath::resource_access_path(
-                    addr,
-                    resource_type.0.clone(),
-                ))
-                .await?;
+            let state_root = option
+                .state_root
+                .unwrap_or(service.clone().state_root().await?);
+            let chain_state = ChainStateDB::new(state_store, Some(state_root));
+            let data = chain_state.get(&AccessPath::resource_access_path(
+                addr,
+                resource_type.0.clone(),
+            ))?;
             Ok(match data {
                 None => None,
                 Some(d) => {
                     let decoded = if option.decode {
-                        let chain_state = ChainStateDB::new(state_store, Some(state_root));
                         let value = view_resource(&chain_state, resource_type.0, d.as_slice())?;
                         Some(value.into())
                     } else {
@@ -214,5 +215,105 @@ where
             })
         };
         Box::pin(f.map_err(map_err).boxed())
+    }
+
+    fn list_resource(
+        &self,
+        addr: AccountAddress,
+        option: Option<ListResourceOption>,
+    ) -> FutureResult<ListResourceView> {
+        let state_service = self.service.clone();
+        let db = self.state_store.clone();
+        let option = option.unwrap_or_default();
+        let fut = async move {
+            let state_root = option
+                .state_root
+                .unwrap_or(state_service.state_root().await?);
+            let statedb = ChainStateDB::new(db, Some(state_root));
+            //TODO implement list state by iter, and pagination
+            let state = statedb.get_account_state_set(&addr)?;
+            match state {
+                None => Ok(ListResourceView::default()),
+                Some(s) => {
+                    let resources: Result<BTreeMap<StructTagView, ResourceView>, anyhow::Error> = s
+                        .resource_set()
+                        .cloned()
+                        .unwrap_or_default()
+                        .iter()
+                        .map(|(k, v)| {
+                            let struct_tag = StructTag::decode(k.as_slice())?;
+                            let decoded = if option.decode {
+                                Some(
+                                    view_resource(&statedb, struct_tag.clone(), v.as_slice())?
+                                        .into(),
+                                )
+                            } else {
+                                None
+                            };
+
+                            Ok((
+                                StrView(struct_tag),
+                                ResourceView {
+                                    raw: StrView(v.clone()),
+                                    json: decoded,
+                                },
+                            ))
+                        })
+                        .collect();
+                    Ok(ListResourceView {
+                        resources: resources?,
+                    })
+                }
+            }
+        };
+        Box::pin(fut.map_err(map_err).boxed())
+    }
+
+    fn list_code(
+        &self,
+        addr: AccountAddress,
+        option: Option<ListCodeOption>,
+    ) -> FutureResult<ListCodeView> {
+        let state_service = self.service.clone();
+        let db = self.state_store.clone();
+        let option = option.unwrap_or_default();
+        let fut = async move {
+            let state_root = option
+                .state_root
+                .unwrap_or(state_service.state_root().await?);
+            let statedb = ChainStateDB::new(db, Some(state_root));
+            //TODO implement list state by iter, and pagination
+            let state = statedb.get_account_state_set(&addr)?;
+            match state {
+                None => Ok(ListCodeView::default()),
+                Some(s) => {
+                    let codes: Result<BTreeMap<Identifier, CodeView>, anyhow::Error> = s
+                        .code_set()
+                        .cloned()
+                        .unwrap_or_default()
+                        .iter()
+                        .map(|(k, v)| {
+                            let identifier = Identifier::decode(k.as_slice())?;
+                            let module_id = ModuleId::new(addr, identifier.clone());
+                            let abi = if option.resolve {
+                                Some(ABIResolver::new(&statedb).resolve_module(&module_id)?)
+                            } else {
+                                None
+                            };
+
+                            Ok((
+                                identifier,
+                                CodeView {
+                                    code: StrView(v.clone()),
+                                    abi,
+                                },
+                            ))
+                        })
+                        .collect();
+                    Ok(ListCodeView { codes: codes? })
+                }
+            }
+        };
+        Box::pin(fut.map_err(map_err).boxed())
     }
 }

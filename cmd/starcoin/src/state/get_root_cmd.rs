@@ -9,7 +9,7 @@ use starcoin_crypto::HashValue;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_root")]
+#[structopt(name = "get-root", alias = "get_root")]
 pub struct GetOpt {}
 
 pub struct GetRootCommand;
@@ -25,8 +25,6 @@ impl CommandAction for GetRootCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let root = client.state_get_state_root().unwrap();
-
-        Ok(root)
+        client.state_get_state_root()
     }
 }
