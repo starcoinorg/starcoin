@@ -180,12 +180,24 @@ ScriptFunctionABI:
     - args:
         SEQ:
           TYPENAME: ArgumentABI
+SignedMessage:
+  STRUCT:
+    - account:
+        TYPENAME: AccountAddress
+    - message:
+        TYPENAME: SigningMessage
+    - authenticator:
+        TYPENAME: TransactionAuthenticator
 SignedUserTransaction:
   STRUCT:
     - raw_txn:
         TYPENAME: RawUserTransaction
     - authenticator:
         TYPENAME: TransactionAuthenticator
+SigningMessage:
+  STRUCT:
+    - message:
+        SEQ: U8
 StructTag:
   STRUCT:
     - address:

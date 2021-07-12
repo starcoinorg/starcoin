@@ -19,6 +19,7 @@ use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::contract_event::{ContractEvent, ContractEventV0};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{
     Module, Package, Script, ScriptABI, SignedUserTransaction, Transaction, TransactionArgument,
@@ -93,6 +94,8 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<AccessPath>(&samples)?;
     tracer.trace_type::<DataType>(&samples)?;
     tracer.trace_type::<ScriptABI>(&samples)?;
+    tracer.trace_type::<SigningMessage>(&samples)?;
+    tracer.trace_type::<SignedMessage>(&samples)?;
     let registry = tracer.registry()?;
     let data = serde_yaml::to_string(&registry).unwrap();
     std::fs::write("../etc/starcoin_types.yml", &data).unwrap();
