@@ -43,7 +43,7 @@ starcoin-metrics = {path = "../commons/metrics"}
 starcoin-types = {path = "../types"}
 network-p2p-types = {path = "./types"}
 prometheus = "0.12.0"
-ip_network = "0.3.4"
+ip_network = "0.4.0"
 bs58 = "0.3.1"
 async-std = "1.9.0"
 
