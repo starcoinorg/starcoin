@@ -2286,7 +2286,7 @@ dependencies = [
  "rand_core 0.5.1",
  "regex",
  "regex-syntax",
- "reqwest 0.11.2",
+ "reqwest 0.11.4",
  "rusty-fork",
  "serde",
  "serde_json",
@@ -6360,7 +6360,7 @@ dependencies = [
  "memchr",
  "parking_lot 0.11.1",
  "protobuf",
- "reqwest 0.11.2",
+ "reqwest 0.11.4",
  "thiserror",
 ]
 
@@ -6971,9 +6971,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.2"
+version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf12057f289428dbf5c591c74bf10392e4a8003f993405a902f20117019022d4"
+checksum = "246e9f61b9bb77df069a947682be06e31ac43ea37862e244a69f177694ea6d22"
 dependencies = [
  "base64 0.13.0",
  "bytes 1.0.1",
@@ -8163,7 +8163,7 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "rand 0.8.4",
- "reqwest 0.11.2",
+ "reqwest 0.11.4",
  "scmd",
  "serde",
  "serde_json",
