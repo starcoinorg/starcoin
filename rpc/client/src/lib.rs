@@ -499,7 +499,10 @@ impl RpcClient {
             inner.state_client.get_resource(
                 address,
                 StrView(resource_type),
-                Some(GetResourceOption { decode }),
+                Some(GetResourceOption {
+                    decode,
+                    state_root: None,
+                }),
             )
         })
         .map_err(map_err)
@@ -511,9 +514,13 @@ impl RpcClient {
         resolve: bool,
     ) -> anyhow::Result<Option<CodeView>> {
         self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .get_code(StrView(module_id), Some(GetCodeOption { resolve }))
+            inner.state_client.get_code(
+                StrView(module_id),
+                Some(GetCodeOption {
+                    resolve,
+                    state_root: None,
+                }),
+            )
         })
         .map_err(map_err)
     }

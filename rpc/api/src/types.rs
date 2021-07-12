@@ -112,6 +112,16 @@ pub struct CodeView {
     pub abi: Option<ModuleABI>,
 }
 
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct ListResourceView {
+    pub resources: BTreeMap<StructTagView, ResourceView>,
+}
+
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+pub struct ListCodeView {
+    pub codes: BTreeMap<Identifier, CodeView>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
