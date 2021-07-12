@@ -1,11 +1,14 @@
+use crate::module_cache::ModuleCache;
 use crate::resolver::Resolver;
 use anyhow::anyhow;
 use anyhow::Result;
 use move_binary_format::access::ModuleAccess;
-use move_binary_format::file_format::{FunctionDefinitionIndex, StructDefinitionIndex, Visibility};
+use move_binary_format::file_format::{
+    CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex, Visibility,
+};
 use move_binary_format::normalized::{Struct, Type};
 use move_binary_format::CompiledModule;
-use starcoin_vm_types::abi::ArgumentABI;
+use starcoin_vm_types::abi::{ArgumentABI, TransactionScriptABI};
 use starcoin_vm_types::abi::{
     FieldABI, ModuleABI, ScriptFunctionABI, StructABI, TypeABI, TypeArgumentABI,
 };
@@ -22,6 +25,12 @@ impl<'a> ABIResolver<'a> {
     pub fn new(state: &'a dyn StateView) -> Self {
         Self {
             resolver: Resolver::new(state),
+        }
+    }
+
+    pub fn new_with_module_cache(state: &'a dyn StateView, cache: ModuleCache) -> Self {
+        Self {
+            resolver: Resolver::new_with_cache(state, cache),
         }
     }
 
@@ -42,6 +51,29 @@ impl<'a> ABIResolver<'a> {
             .map(|(name, func)| self.function_to_abi(module_id, name.as_ident_str(), func))
             .collect::<Result<Vec<_>>>()?;
         Ok(ModuleABI::new(m.module_id(), structs, functions))
+    }
+
+    pub fn resolve_script(&self, script_code: Vec<u8>) -> Result<TransactionScriptABI> {
+        let script = CompiledScript::deserialize(&script_code)?;
+        let script_mod = script.into_module().1;
+        let m = move_binary_format::normalized::Module::new(&script_mod);
+        anyhow::ensure!(
+            m.exposed_functions.len() == 1,
+            "script should only contain one function"
+        );
+        let mut functions = m
+            .exposed_functions
+            .iter()
+            .map(|(name, func)| self.function_to_abi(&m.module_id(), name.as_ident_str(), func))
+            .collect::<Result<Vec<_>>>()?;
+        let entrypoint = functions.pop().unwrap();
+        Ok(TransactionScriptABI::new(
+            entrypoint.name().to_string(),
+            entrypoint.doc().to_string(),
+            script_code,
+            entrypoint.ty_args().to_vec(),
+            entrypoint.args().to_vec(),
+        ))
     }
 
     pub fn resolve_struct_tag(&self, struct_tag: &StructTag) -> Result<StructABI> {
