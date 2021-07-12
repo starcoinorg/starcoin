@@ -22,14 +22,16 @@ use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{GetEventOption, GetEventResponse};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
-use starcoin_rpc_api::state::{GetCodeOption, GetResourceOption};
+use starcoin_rpc_api::state::{
+    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
+};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
     BlockSummaryView, BlockView, ChainId, ChainInfoView, CodeView, ContractCall, DryRunOutputView,
-    DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, MintedBlockView, PeerInfoView,
-    ResourceView, SignedMessageView, SignedUserTransactionView, StateWithProofView, StrView,
-    TransactionInfoView, TransactionRequest, TransactionView,
+    DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, ListCodeView, ListResourceView,
+    MintedBlockView, PeerInfoView, ResourceView, SignedMessageView, SignedUserTransactionView,
+    StateWithProofView, StrView, TransactionInfoView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -494,13 +496,28 @@ impl RpcClient {
         address: AccountAddress,
         resource_type: StructTag,
         decode: bool,
+        state_root: Option<HashValue>,
     ) -> anyhow::Result<Option<ResourceView>> {
         self.call_rpc_blocking(|inner| {
             inner.state_client.get_resource(
                 address,
                 StrView(resource_type),
-                Some(GetResourceOption { decode }),
+                Some(GetResourceOption { decode, state_root }),
             )
+        })
+        .map_err(map_err)
+    }
+
+    pub fn state_list_resource(
+        &self,
+        address: AccountAddress,
+        decode: bool,
+        state_root: Option<HashValue>,
+    ) -> anyhow::Result<ListResourceView> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .state_client
+                .list_resource(address, Some(ListResourceOption { decode, state_root }))
         })
         .map_err(map_err)
     }
@@ -509,11 +526,34 @@ impl RpcClient {
         &self,
         module_id: ModuleId,
         resolve: bool,
+        state_root: Option<HashValue>,
     ) -> anyhow::Result<Option<CodeView>> {
         self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .get_code(StrView(module_id), Some(GetCodeOption { resolve }))
+            inner.state_client.get_code(
+                StrView(module_id),
+                Some(GetCodeOption {
+                    resolve,
+                    state_root,
+                }),
+            )
+        })
+        .map_err(map_err)
+    }
+
+    pub fn state_list_code(
+        &self,
+        address: AccountAddress,
+        resolve: bool,
+        state_root: Option<HashValue>,
+    ) -> anyhow::Result<ListCodeView> {
+        self.call_rpc_blocking(|inner| {
+            inner.state_client.list_code(
+                address,
+                Some(ListCodeOption {
+                    resolve,
+                    state_root,
+                }),
+            )
         })
         .map_err(map_err)
     }

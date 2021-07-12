@@ -62,13 +62,17 @@ Feature: cmd integration test
 
 #state
   Scenario Outline: [cmd] state test
-    Then cmd: "state get_root"
+    Then cmd: "state get-root"
     Then cmd: "dev get-coin"
     Then cmd: "account show"
-    Then cmd: "state get_proof @$.account.address@"
+    Then cmd: "state get-proof @$.account.address@/1/0x1::Account::Account"
     Then cmd: "account show"
     Then cmd: "state get resource @$.account.address@ 0x1::Account::Account"
     Then assert: "$.json.sequence_number 0 "
+    Then cmd: "account show"
+    Then cmd: "state list resource @$.account.address@"
+    Then cmd: "account show"
+    Then cmd: "state list code @$.account.address@"
     Then stop
 
     Examples:

@@ -7,17 +7,15 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::StateWithProofView;
 use starcoin_types::access_path::AccessPath;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::AccountResource;
-use starcoin_vm_types::move_resource::MoveResource;
 use structopt::StructOpt;
 
-//TODO support custom access_path.
+/// Get state and proof with access_path, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_proof")]
+#[structopt(name = "get-proof", alias = "get_proof")]
 pub struct GetOpt {
-    #[structopt(name = "account_address")]
-    account_address: AccountAddress,
+    #[structopt(name = "access_path")]
+    /// access_path of code or resource, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
+    access_path: AccessPath,
 }
 
 pub struct GetProofCommand;
@@ -34,11 +32,7 @@ impl CommandAction for GetProofCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let proof = client.state_get_with_proof(AccessPath::new(
-            opt.account_address,
-            AccountResource::resource_path(),
-        ))?;
-
+        let proof = client.state_get_with_proof(opt.access_path.clone())?;
         Ok(proof)
     }
 }

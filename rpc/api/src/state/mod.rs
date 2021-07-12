@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as StateClient;
-use crate::types::{AccountStateSetView, CodeView, ResourceView, StateWithProofView, StrView};
+use crate::types::{
+    AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
+    StateWithProofView, StrView,
+};
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use serde::Deserialize;
@@ -57,22 +60,52 @@ pub trait StateApi {
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
     ) -> FutureResult<Option<ResourceView>>;
-}
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
-#[serde(default)]
-pub struct ListResourceOption {
-    pub decode: bool,
+    /// list resources data of `addr`
+    #[rpc(name = "state.list_resource")]
+    fn list_resource(
+        &self,
+        addr: AccountAddress,
+        option: Option<ListResourceOption>,
+    ) -> FutureResult<ListResourceView>;
+
+    /// list resources data of `addr`
+    #[rpc(name = "state.list_code")]
+    fn list_code(
+        &self,
+        addr: AccountAddress,
+        option: Option<ListCodeOption>,
+    ) -> FutureResult<ListCodeView>;
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
 #[serde(default)]
 pub struct GetResourceOption {
     pub decode: bool,
+    pub state_root: Option<HashValue>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
 #[serde(default)]
 pub struct GetCodeOption {
     pub resolve: bool,
+    pub state_root: Option<HashValue>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
+#[serde(default)]
+pub struct ListResourceOption {
+    pub decode: bool,
+    /// The state tree root, default is the latest block state root
+    pub state_root: Option<HashValue>,
+    //TODO support filter by type and pagination
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq)]
+#[serde(default)]
+pub struct ListCodeOption {
+    pub resolve: bool,
+    /// The state tree root, default is the latest block state root
+    pub state_root: Option<HashValue>,
+    //TODO support filter by type and pagination
 }
