@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BoolView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use serde::{Deserialize, Serialize};
 use starcoin_types::sign_message::SignedMessage;
 use structopt::StructOpt;
 
@@ -23,7 +23,7 @@ impl CommandAction for VerifySignMessageCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = VerifySignMessageOpt;
-    type ReturnItem = BoolView;
+    type ReturnItem = VerifyResult;
 
     fn run(
         &self,
@@ -34,14 +34,20 @@ impl CommandAction for VerifySignMessageCmd {
         let signed_message = opt.signed_message.clone();
         let account_resource = state.get_account_resource(signed_message.account)?;
 
-        let result = signed_message
-            .check_signature()
-            .and_then(|_| signed_message.check_account(account_resource.as_ref()));
-        if let Err(e) = result.as_ref() {
-            eprintln!("check signed message error: {}", e)
-        }
-        Ok(BoolView {
-            result: result.is_ok(),
+        let result = signed_message.check_signature().and_then(|_| {
+            signed_message.check_account(state.net().chain_id(), account_resource.as_ref())
+        });
+        Ok(VerifyResult {
+            ok: result.is_ok(),
+            error: result.err().map(|e| e.to_string()),
+            msg: signed_message,
         })
     }
+}
+
+#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
+pub struct VerifyResult {
+    pub ok: bool,
+    pub error: Option<String>,
+    pub msg: SignedMessage,
 }

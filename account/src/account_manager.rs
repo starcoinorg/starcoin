@@ -11,6 +11,7 @@ use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, Acc
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{Uniform, ValidCryptoMaterial};
 use starcoin_logger::prelude::*;
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::{
     account_address::AccountAddress,
@@ -27,6 +28,7 @@ use std::time::Instant;
 pub struct AccountManager {
     store: AccountStorage,
     key_cache: RwLock<PasswordCache>,
+    chain_id: ChainId,
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -62,10 +64,11 @@ impl PasswordCache {
 }
 
 impl AccountManager {
-    pub fn new(storage: AccountStorage) -> AccountResult<Self> {
+    pub fn new(storage: AccountStorage, chain_id: ChainId) -> AccountResult<Self> {
         let manager = Self {
             store: storage,
             key_cache: RwLock::new(PasswordCache::default()),
+            chain_id,
         };
         Ok(manager)
     }
@@ -225,7 +228,7 @@ impl AccountManager {
                 let account = Account::load(signer_address, Some(p), self.store.clone())?
                     .ok_or(AccountError::AccountNotExist(signer_address))?;
                 account
-                    .sign_message(message)
+                    .sign_message(message, self.chain_id)
                     .map_err(AccountError::MessageSignError)
             }
         }

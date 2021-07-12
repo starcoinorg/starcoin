@@ -15,16 +15,18 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::{IdentStr, Identifier};
 use starcoin_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionPayload,
 };
+use std::str::FromStr;
 use std::time::Duration;
 
 #[test]
 pub fn test_import_account() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
     let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
-    let manager = AccountManager::new(storage)?;
+    let manager = AccountManager::new(storage, ChainId::test())?;
 
     // should success
     let wallet = manager.create_account("hello")?;
@@ -47,7 +49,7 @@ pub fn test_import_account() -> Result<()> {
 pub fn test_wallet() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
     let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
-    let manager = AccountManager::new(storage.clone())?;
+    let manager = AccountManager::new(storage.clone(), ChainId::test())?;
 
     // should success
     let wallet = manager.create_account("hello")?;
@@ -80,7 +82,7 @@ pub fn test_wallet() -> Result<()> {
 pub fn test_readonly_account() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
     let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
-    let manager = AccountManager::new(storage.clone())?;
+    let manager = AccountManager::new(storage.clone(), ChainId::test())?;
     let mut key_gen = KeyGen::from_os_rng();
     let (_private_key, public_key) = key_gen.generate_keypair();
     let account_public_key = AccountPublicKey::Single(public_key);
@@ -109,7 +111,7 @@ pub fn test_readonly_account() -> Result<()> {
 pub fn test_wallet_unlock() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
     let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
-    let manager = AccountManager::new(storage)?;
+    let manager = AccountManager::new(storage, ChainId::test())?;
 
     let wallet = manager.create_account("hello")?;
 
@@ -139,6 +141,27 @@ pub fn test_wallet_unlock() -> Result<()> {
         // export private key should be ok
         let _ = manager.export_account(*wallet.address(), "hell0")?;
     }
+    Ok(())
+}
+
+#[test]
+pub fn test_sign_message() -> Result<()> {
+    let tempdir = tempfile::tempdir()?;
+    let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
+    let manager = AccountManager::new(storage, ChainId::test())?;
+
+    let account = manager.create_account("hello")?;
+    let _unlock_result =
+        manager.unlock_account(*account.address(), "hello", Duration::from_secs(100))?;
+    let signed_message =
+        account.sign_message(SigningMessage::from_str("hello")?, ChainId::test())?;
+    signed_message.check_signature()?;
+    signed_message.check_account(ChainId::test(), None)?;
+    let signed_message_hex = signed_message.to_hex();
+    let signed_message = SignedMessage::from_str(signed_message_hex.as_str())?;
+    println!("{:?}", serde_json::to_string(&signed_message));
+    signed_message.check_signature()?;
+    signed_message.check_account(ChainId::test(), None)?;
     Ok(())
 }
 

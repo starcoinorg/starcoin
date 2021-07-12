@@ -13,6 +13,7 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -118,13 +119,22 @@ impl Account {
         )
     }
 
-    pub fn sign_message(&self, message: SigningMessage) -> Result<SignedMessage> {
+    pub fn sign_message(
+        &self,
+        message: SigningMessage,
+        chain_id: ChainId,
+    ) -> Result<SignedMessage> {
         let authenticator = self
             .private_key
             .as_ref()
             .map(|private_key| private_key.sign_message(&message))
             .ok_or_else(|| format_err!("Readonly account can not sign message."))?;
-        Ok(SignedMessage::new(self.addr, message, authenticator))
+        Ok(SignedMessage::new(
+            self.addr,
+            message,
+            authenticator,
+            chain_id,
+        ))
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {

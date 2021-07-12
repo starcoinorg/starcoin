@@ -11,6 +11,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory, ServiceHandler};
 use starcoin_types::account_config::{association_address, STC_TOKEN_CODE};
+use starcoin_types::genesis_config::ChainId;
 use std::any::Any;
 use std::sync::Arc;
 
@@ -22,7 +23,7 @@ pub struct AccountService {
 
 impl AccountService {
     pub fn mock() -> Result<Self> {
-        let manager = AccountManager::new(AccountStorage::mock())?;
+        let manager = AccountManager::new(AccountStorage::mock(), ChainId::test())?;
         //auto create default account.
         manager.create_account("")?;
         Ok(Self { manager })
@@ -91,7 +92,8 @@ impl ActorService for AccountService {
 impl ServiceFactory<AccountService> for AccountService {
     fn create(ctx: &mut ServiceContext<AccountService>) -> Result<AccountService> {
         let account_storage = ctx.get_shared::<AccountStorage>()?;
-        let manager = AccountManager::new(account_storage)?;
+        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let manager = AccountManager::new(account_storage, config.net().chain_id())?;
         Ok(Self { manager })
     }
 }

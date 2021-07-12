@@ -116,22 +116,22 @@ Feature: cmd integration test
     # test the account do not exist on chain
     Then cmd: "account unlock"
     Then cmd: "account sign-message -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.result@"
-    Then assert: "$.result true"
+    Then cmd: "account verify-sign-message -m @$.hex@"
+    Then assert: "$.ok true"
     # create the account on chain
     Then cmd: "dev get-coin"
     Then cmd: "account sign-message  -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.result@"
-    Then assert: "$.result true"
+    Then cmd: "account verify-sign-message -m @$.hex@"
+    Then assert: "$.ok true"
     # init the auth key on chain by send the first transaction, test authkey is not dummy key.
     Then cmd: "account transfer -v 1000 -r 0xA550C18 -b"
     Then cmd: "account sign-message -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.result@"
-    Then assert: "$.result true"
+    Then cmd: "account verify-sign-message -m @$.hex@"
+    Then assert: "$.ok true"
     # test multi sign account
     Then cmd: "account sign-message -s 0xA550C18 -m helloworld"
-    Then cmd: "account verify-sign-message -m @$.result@"
-    Then assert: "$.result true"
+    Then cmd: "account verify-sign-message -m @$.hex@"
+    Then assert: "$.ok true"
 
     Examples:
       |  |

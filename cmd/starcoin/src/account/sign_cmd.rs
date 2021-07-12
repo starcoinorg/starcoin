@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::sign_message::SigningMessage;
+use serde::{Deserialize, Serialize};
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
@@ -28,7 +28,7 @@ impl CommandAction for SignMessageCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = SignMessageOpt;
-    type ReturnItem = StringView;
+    type ReturnItem = SignResult;
 
     fn run(
         &self,
@@ -38,8 +38,17 @@ impl CommandAction for SignMessageCmd {
         let client = ctx.state().client();
         let sender = ctx.state().get_account_or_default(opt.sender)?;
         let signed_message = client.account_sign_message(sender.address, opt.message.clone())?;
-        Ok(StringView {
-            result: signed_message.to_string(),
+
+        let hex = signed_message.to_string();
+        Ok(SignResult {
+            msg: signed_message.0,
+            hex,
         })
     }
+}
+
+#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
+pub struct SignResult {
+    pub msg: SignedMessage,
+    pub hex: String,
 }

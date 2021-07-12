@@ -36,7 +36,7 @@ pub fn init_or_load_data_dir(
     let vault_config = &config.vault;
     let account_storage =
         AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config())?;
-    let manager = AccountManager::new(account_storage)?;
+    let manager = AccountManager::new(account_storage, config.net().chain_id())?;
     let account = match manager.default_account_info()? {
         Some(account) => account,
         None => manager
