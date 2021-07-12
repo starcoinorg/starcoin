@@ -129,8 +129,8 @@ where
     ) -> FutureResult<SignedMessageView> {
         let account_service = self.account.clone();
         let f = async move {
-            let signature = account_service.sign_message(address, data).await?;
-            Ok(signature.into())
+            let signed_message = account_service.sign_message(address, data).await?;
+            Ok(signed_message.into())
         };
         Box::pin(f.map_err(map_err).boxed())
     }
