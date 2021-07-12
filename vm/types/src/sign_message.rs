@@ -27,7 +27,10 @@ impl FromStr for SigningMessage {
 
     fn from_str(s: &str) -> Result<Self> {
         ensure!(!s.is_empty(), "signing message should not be empty.",);
-        Ok(Self(s.as_bytes().to_vec()))
+        Ok(match s.strip_prefix("0x") {
+            Some(hex) => Self(hex::decode(hex)?),
+            None => Self(s.as_bytes().to_vec()),
+        })
     }
 }
 
