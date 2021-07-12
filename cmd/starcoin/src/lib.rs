@@ -50,7 +50,7 @@ pub fn add_command(
         )
         .command(
             Command::with_name("state")
-                .subcommand(state::ListResourceCmd)
+                .subcommand(state::ListCmd)
                 .subcommand(state::GetCommand)
                 .subcommand(state::GetProofCommand)
                 .subcommand(state::GetRootCommand),
