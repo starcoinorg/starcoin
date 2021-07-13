@@ -154,8 +154,8 @@ fn main() {
                 vec!["starcoin-types"],
             ),
             Language::Java => (
-                "com.starcoin.types".to_string(),
-                vec!["com", "starcoin", "types"],
+                "org.starcoin.types".to_string(),
+                vec!["org", "starcoin", "types"],
             ),
             _ => ("starcoin_types".to_string(), vec!["starcoin_types"]),
         };
