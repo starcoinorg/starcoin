@@ -12,6 +12,7 @@ use starcoin_transaction_builder::build_module_upgrade_queue;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
@@ -33,6 +34,14 @@ pub struct UpgradeModuleQueueOpt {
         help = "proposal id."
     )]
     proposal_id: u64,
+
+    #[structopt(
+        name = "dao-token",
+        long = "dao-token",
+        default_value = "0x1::STC::STC"
+    )]
+    /// The token for dao governance, default is 0x1::STC::STC
+    dao_token: TokenCode,
 }
 
 pub struct UpgradeModuleQueueCommand;
@@ -65,6 +74,7 @@ impl CommandAction for UpgradeModuleQueueCommand {
         let module_upgrade_queue = build_module_upgrade_queue(
             proposer_address,
             opt.proposal_id,
+            opt.dao_token.clone(),
             StdlibVersion::new(stdlib_version),
         );
         ctx.state().build_and_execute_transaction(

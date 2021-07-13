@@ -685,6 +685,7 @@ pub fn build_module_upgrade_proposal(
     version: u64,
     exec_delay: u64,
     enforced: bool,
+    token_code: TokenCode,
     stdlib_version: StdlibVersion,
 ) -> (ScriptFunction, HashValue) {
     let package_hash = package.crypto_hash();
@@ -719,7 +720,9 @@ pub fn build_module_upgrade_proposal(
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
             ),
             Identifier::new(function_name).unwrap(),
-            vec![stc_type_tag()],
+            vec![token_code
+                .try_into()
+                .expect("Token code to type tag should success")],
             args,
         ),
         package_hash,
@@ -747,6 +750,7 @@ pub fn build_module_upgrade_plan(
 pub fn build_module_upgrade_queue(
     proposal_address: AccountAddress,
     proposal_id: u64,
+    token_code: TokenCode,
     stdlib_version: StdlibVersion,
 ) -> ScriptFunction {
     let upgrade_module = if stdlib_version >= StdlibVersion::Version(2) {
@@ -768,7 +772,12 @@ pub fn build_module_upgrade_queue(
     ScriptFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
         Identifier::new("queue_proposal_action").unwrap(),
-        vec![stc_type_tag(), upgrade_module],
+        vec![
+            token_code
+                .try_into()
+                .expect("Token code to type tag should success"),
+            upgrade_module,
+        ],
         vec![
             bcs_ext::to_bytes(&proposal_address).unwrap(),
             bcs_ext::to_bytes(&proposal_id).unwrap(),

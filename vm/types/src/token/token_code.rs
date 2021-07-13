@@ -90,6 +90,14 @@ impl TryInto<StructTag> for TokenCode {
     }
 }
 
+impl TryInto<TypeTag> for TokenCode {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<TypeTag, Self::Error> {
+        Ok(TypeTag::Struct(self.try_into()?))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::language_storage::{StructTag, TypeTag};

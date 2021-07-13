@@ -6,13 +6,14 @@ use crate::dev::dev_helper;
 use crate::dev::sign_txn_helper::get_dao_config;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_proposal;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -40,6 +41,14 @@ pub struct UpgradeModuleProposalOpt {
     #[structopt(short = "v", name = "module-version", long = "module-version")]
     /// new version number for the modules
     version: u64,
+
+    #[structopt(
+        name = "dao-token",
+        long = "dao-token",
+        default_value = "0x1::STC::STC"
+    )]
+    /// The token for dao governance, default is 0x1::STC::STC
+    dao_token: TokenCode,
 }
 
 pub struct UpgradeModuleProposalCommand;
@@ -60,9 +69,16 @@ impl CommandAction for UpgradeModuleProposalCommand {
         let module_version = opt.version;
         let upgrade_package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
         eprintln!(
-            "upgrade package address : {:?}",
+            "upgrade package address : {}",
             upgrade_package.package_address()
         );
+        if upgrade_package.package_address() != opt.dao_token.address {
+            bail!(
+                "the package address {} not match the dao token: {}",
+                upgrade_package.package_address(),
+                opt.dao_token
+            );
+        }
         let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
         let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
         let stdlib_version = chain_state_reader
@@ -75,6 +91,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
             module_version,
             min_action_delay,
             opt.enforced,
+            opt.dao_token.clone(),
             StdlibVersion::new(stdlib_version),
         );
         eprintln!("package_hash {:?}", package_hash);
