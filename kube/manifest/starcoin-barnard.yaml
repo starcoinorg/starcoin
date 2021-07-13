@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.3.0
+        image: starcoin/starcoin:v1.4.0-beta
         imagePullPolicy: Always
         command:
           - bash
@@ -53,6 +53,20 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
+      - name: starcoin-faucet
+        image: starcoin/starcoin:v1.4.0-beta
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - /starcoin/starcoin_faucet --ipc-path /sc-data/barnard/starcoin.ipc
+        ports:
+          - containerPort: 8000
+            hostPort: 8000
+        volumeMounts:
+          - name: starcoin-volume
+            mountPath: /sc-data
       - name: filebeat
         image: docker.elastic.co/beats/filebeat:7.10.2
         args: [
@@ -91,20 +105,6 @@ spec:
           - mountPath: /sc-data
             readOnly: true
             name: starcoin-volume
-      - name: starcoin-faucet
-        image: starcoin/starcoin:sha-dd2b097
-        imagePullPolicy: Always
-        command:
-          - bash
-          - -c
-        args:
-          - /starcoin/starcoin_faucet --ipc-path /sc-data/barnard/starcoin.ipc
-        ports:
-          - containerPort: 8000
-            hostPort: 8000
-        volumeMounts:
-          - name: starcoin-volume
-            mountPath: /sc-data
       volumes:
         - name: config
           configMap:
