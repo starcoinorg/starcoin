@@ -10,14 +10,6 @@ use tempfile::tempdir;
 fn test_that_installed_rust_code_compiles() {
     let dir = tempdir().unwrap();
 
-    // let yaml_path = std::env::current_dir()
-    //     .unwrap()
-    //     .join("../../testsuite/generate-format/tests/staged/starcoin.yaml");
-    //
-    // let abi_dir_path = std::env::current_dir()
-    //     .unwrap()
-    //     .join("../../vm/stdlib/compiled/latest/transaction_scripts/abi");
-
     let status = Command::new("cargo")
         .current_dir("../..")
         .arg("run")
@@ -29,7 +21,7 @@ fn test_that_installed_rust_code_compiles() {
         .arg("--module-name")
         .arg("starcoin-stdlib:0.1.1")
         .arg("--with-diem-types")
-        .arg("testsuite/generate-format/tests/staged/starcoin.yaml")
+        .arg("etc/starcoin_types.yml")
         .arg("--target-source-dir")
         .arg(dir.path())
         .arg("vm/stdlib/compiled/latest/transaction_scripts/abi")

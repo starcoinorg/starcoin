@@ -53,7 +53,7 @@ To install Python3 modules `serde`, `lcs`, `libra_types`, and `libra_stdlib` int
 target/debug/generate-transaction-builders \
     --language python3 \
     --module-name starcoin_stdlib \
-    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "etc/starcoin_types.yml" \
     --diem-package-name "starcoin" \
     --serde-package-name "starcoin" \
     --target-source-dir "target/python" \
@@ -72,7 +72,7 @@ To install C++ files `serde.hpp`, `lcs.hpp`, `libra_types.hpp`, `libra_stdlib.hp
 target/debug/generate-transaction-builders \
     --language cpp \
     --module-name libra_stdlib \
-    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "etc/starcoin_types.yml" \
     --target-source-dir "target/cpp" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -90,7 +90,7 @@ To install Java source packages `com.facebook.serde`, `com.facebook.lcs`, `org.d
 target/debug/generate-transaction-builders \
     --language java \
     --module-name org.starcoin.stdlib.Stdlib \
-    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "etc/starcoin_types.yml" \
     --target-source-dir "target/java" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -108,7 +108,7 @@ To install dependency-free Rust crates `diem-types` and `diem-stdlib` into a tar
 target/debug/generate-transaction-builders \
     --language rust \
     --module-name diem-stdlib \
-    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "etc/starcoin_types.yml" \
     --target-source-dir "target/rust" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```

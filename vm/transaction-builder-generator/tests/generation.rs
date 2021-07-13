@@ -11,7 +11,7 @@ use transaction_builder_generator as buildgen;
 use transaction_builder_generator::{is_supported_abi, SourceInstaller};
 
 fn get_starcoin_registry() -> Registry {
-    let path = "../../testsuite/generate-format/tests/staged/starcoin.yaml";
+    let path = "../../etc/starcoin_types.yml";
     let content = std::fs::read_to_string(path).unwrap();
     serde_yaml::from_str::<Registry>(content.as_str()).unwrap()
 }
