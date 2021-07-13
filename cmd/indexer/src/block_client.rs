@@ -22,14 +22,14 @@ impl BlockClient {
         &self,
         block_hash: HashValue,
     ) -> Result<BlockData, RpcError> {
-        let block: Option<BlockView> = self.node_client.get_block_by_hash(block_hash).await?;
+        let block: Option<BlockView> = self.node_client.get_block_by_hash(block_hash, None).await?;
         let block = block
             .ok_or_else(|| RpcError::Client(format!("cannot find block of hash {}", block_hash)))?;
         self.get_block_data(block).await
     }
 
     pub async fn get_block_whole_by_height(&self, height: u64) -> Result<BlockData, RpcError> {
-        let block: Option<BlockView> = self.node_client.get_block_by_number(height).await?;
+        let block: Option<BlockView> = self.node_client.get_block_by_number(height, None).await?;
         let block = block
             .ok_or_else(|| RpcError::Client(format!("cannot find block of height {}", height)))?;
         self.get_block_data(block).await
@@ -46,7 +46,7 @@ impl BlockClient {
             let txn_info = txn_infos.remove(0);
             let txn: Option<TransactionView> = self
                 .node_client
-                .get_transaction(txn_info.transaction_hash)
+                .get_transaction(txn_info.transaction_hash, None)
                 .await?;
             let txn = txn.ok_or_else(|| {
                 RpcError::Client(format!(

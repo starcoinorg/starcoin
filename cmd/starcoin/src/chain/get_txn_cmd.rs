@@ -6,6 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::chain::GetTransactionOption;
 use starcoin_rpc_api::types::TransactionView;
 use structopt::StructOpt;
 
@@ -40,13 +41,17 @@ impl CommandAction for GetTransactionCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         match &opt.txn_hash {
-            Some(txn_hash) => Ok(client.chain_get_transaction(*txn_hash)?),
+            Some(txn_hash) => Ok(client
+                .chain_get_transaction(*txn_hash, Some(GetTransactionOption { decode: true }))?),
             None => {
                 let block_hash = opt.block_hash.expect("block-hash exists");
                 let idx = opt.idx.expect("idx exists");
                 let txn_info = client.chain_get_txn_info_by_block_and_index(block_hash, idx)?;
                 match txn_info {
-                    Some(info) => Ok(client.chain_get_transaction(info.transaction_hash)?),
+                    Some(info) => Ok(client.chain_get_transaction(
+                        info.transaction_hash,
+                        Some(GetTransactionOption { decode: true }),
+                    )?),
                     None => Ok(None),
                 }
             }

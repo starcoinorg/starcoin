@@ -9,6 +9,7 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::BlockView;
 use std::str::FromStr;
 use structopt::StructOpt;
+use starcoin_rpc_api::chain::GetBlockOption;
 
 #[derive(Debug, Clone, Copy)]
 pub enum HashOrNumber {
@@ -51,10 +52,10 @@ impl CommandAction for GetBlockCommand {
         let opt = ctx.opt();
         let block = match opt.hash_or_number {
             HashOrNumber::Hash(hash) => client
-                .chain_get_block_by_hash(hash)?
+                .chain_get_block_by_hash(hash, Some(GetBlockOption{decode: true}))?
                 .ok_or_else(|| anyhow::format_err!("block of hash {} not found", hash))?,
             HashOrNumber::Number(number) => client
-                .chain_get_block_by_number(number)?
+                .chain_get_block_by_number(number, Some(GetBlockOption{decode: true}))?
                 .ok_or_else(|| anyhow::format_err!("block of height {} not found", number))?,
         };
         Ok(block)

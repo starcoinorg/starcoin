@@ -67,7 +67,7 @@ impl RemoteStateAsyncView {
             }
             Some(n) => {
                 let b: Option<BlockView> = chain_client
-                    .get_block_by_number(n)
+                    .get_block_by_number(n, None)
                     .await
                     .map_err(|e| anyhow!(format!("{}", e)))?;
                 let b = b.ok_or_else(|| anyhow::anyhow!("cannot found block of height {}", n))?;

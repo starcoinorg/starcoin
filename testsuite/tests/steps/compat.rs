@@ -45,7 +45,7 @@ pub fn steps() -> Steps<MyWorld> {
                 // get txn_info from node1
                 let block = node2_client
                     .clone()
-                    .chain_get_block_by_hash(HashValue::from_hex(block_id).unwrap());
+                    .chain_get_block_by_hash(HashValue::from_hex(block_id).unwrap(), None);
                 assert!(block.is_ok());
                 info!("node2 block info: {:?}", block.unwrap());
             }

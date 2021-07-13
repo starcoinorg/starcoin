@@ -78,7 +78,7 @@ impl RpcFutureBlockParameterResolver {
                     difficulty,
                 })
             }
-            _ => match client.chain_get_block_by_number(block_number)? {
+            _ => match client.chain_get_block_by_number(block_number, None)? {
                 Some(block) => Ok(GenesisBlockParameter {
                     parent_hash: block.header.block_hash,
                     timestamp: block.header.timestamp.0,

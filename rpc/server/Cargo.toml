@@ -53,6 +53,7 @@ starcoin-executor = {path = "../../executor"}
 starcoin-vm-types = { path = "../../vm/types"}
 starcoin-abi-types = {path = "../../abi/types"}
 starcoin-abi-resolver = {path = "../../abi/resolver"}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-consensus= {path = "../../consensus"}
 starcoin-dev = { path = "../../vm/dev" }
 starcoin-miner = { path = "../../miner" }

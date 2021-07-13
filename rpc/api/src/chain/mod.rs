@@ -5,12 +5,13 @@ pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
-    MoveValueView, TransactionEventView, TransactionInfoView, TransactionView,
+    TransactionEventView, TransactionInfoView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
+use starcoin_abi_decoder::DecodedMoveValue;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -25,10 +26,18 @@ pub trait ChainApi {
     fn info(&self) -> FutureResult<ChainInfoView>;
     /// Get chain block info
     #[rpc(name = "chain.get_block_by_hash")]
-    fn get_block_by_hash(&self, block_hash: HashValue) -> FutureResult<Option<BlockView>>;
+    fn get_block_by_hash(
+        &self,
+        block_hash: HashValue,
+        option: Option<GetBlockOption>,
+    ) -> FutureResult<Option<BlockView>>;
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_number")]
-    fn get_block_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockView>>;
+    fn get_block_by_number(
+        &self,
+        number: BlockNumber,
+        option: Option<GetBlockOption>,
+    ) -> FutureResult<Option<BlockView>>;
     /// Get latest `count` blocks before `number`. if `number` is absent, use head block number.
     #[rpc(name = "chain.get_blocks_by_number")]
     fn get_blocks_by_number(
@@ -40,8 +49,11 @@ pub trait ChainApi {
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfo>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
-    fn get_transaction(&self, transaction_hash: HashValue)
-        -> FutureResult<Option<TransactionView>>;
+    fn get_transaction(
+        &self,
+        transaction_hash: HashValue,
+        option: Option<GetTransactionOption>,
+    ) -> FutureResult<Option<TransactionView>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction_info")]
     fn get_transaction_info(
@@ -107,6 +119,18 @@ pub trait ChainApi {
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
+pub struct GetTransactionOption {
+    #[serde(default)]
+    pub decode: bool,
+}
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+pub struct GetBlockOption {
+    #[serde(default)]
+    pub decode: bool,
+}
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct GetEventOption {
     #[serde(default)]
     pub decode: bool,
@@ -114,7 +138,7 @@ pub struct GetEventOption {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetEventResponse {
-    pub decode_event_data: Option<MoveValueView>,
+    pub decode_event_data: Option<DecodedMoveValue>,
     #[serde(flatten)]
     pub event: TransactionEventView,
 }
