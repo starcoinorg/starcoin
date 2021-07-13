@@ -119,7 +119,6 @@ pub mod bytecode_verifier {
     pub use bytecode_verifier::{dependencies, script_signature, verify_module, verify_script};
 }
 
-pub mod abi;
 pub mod access_path;
 pub mod account_config;
 pub mod block_metadata;

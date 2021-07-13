@@ -12,6 +12,7 @@ use jsonrpc_core_client::RpcChannel;
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
+use starcoin_abi_types::ModuleABI;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
@@ -32,7 +33,6 @@ use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionA
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
-use starcoin_vm_types::abi::ModuleABI;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;

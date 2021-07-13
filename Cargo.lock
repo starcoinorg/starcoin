@@ -7921,7 +7921,33 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
  "starcoin-resource-viewer",
+ "starcoin-vm-types",
+]
+
+[[package]]
+name = "starcoin-abi-resolver"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde_json",
+ "starcoin-abi-types",
+ "starcoin-resource-viewer",
+ "starcoin-vm-types",
+ "stdlib",
+]
+
+[[package]]
+name = "starcoin-abi-types"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "hex",
+ "serde",
+ "serde_bytes",
+ "serde_json",
  "starcoin-vm-types",
 ]
 
@@ -8952,7 +8978,6 @@ dependencies = [
  "serde",
  "serde_json",
  "starcoin-vm-types",
- "stdlib",
 ]
 
 [[package]]
@@ -8974,6 +8999,7 @@ dependencies = [
  "serde",
  "serde-helpers",
  "serde_json",
+ "starcoin-abi-types",
  "starcoin-account-api",
  "starcoin-config",
  "starcoin-crypto",
@@ -9077,6 +9103,8 @@ dependencies = [
  "parking_lot 0.11.1",
  "serde",
  "serde_json",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-chain",
