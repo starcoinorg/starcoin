@@ -39,9 +39,9 @@ pub struct TransactionOptions {
 
     #[structopt(
         short = "p",
-        long = "gas_unit_price",
+        long = "gas-unit-price",
         alias = "gas-price",
-        name = "price of gas"
+        name = "price of gas unit"
     )]
     /// gas price used to deploy the module
     pub gas_unit_price: Option<u64>,

@@ -17,6 +17,7 @@ pub(crate) mod call_api_cmd;
 mod call_contract_cmd;
 mod compile_cmd;
 mod deploy_cmd;
+pub(crate) mod dev_helper;
 pub(crate) mod gen_block_cmd;
 mod get_coin_cmd;
 pub(crate) mod log_cmd;
