@@ -28,10 +28,9 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-pub mod abi_resolver;
 mod fat_type;
 pub mod module_cache;
-mod resolver;
+pub mod resolver;
 
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);

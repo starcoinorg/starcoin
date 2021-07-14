@@ -29,6 +29,8 @@ starcoin-config = { path = "../../config"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-vm-types = { path = "../../vm/types" }
+starcoin-abi-types = {path = "../../abi/types"}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
 vm-status-translator = {path = "../../vm/vm-status-translator"}

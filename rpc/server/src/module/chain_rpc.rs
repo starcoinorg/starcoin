@@ -3,17 +3,21 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
+use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::chain::{ChainApi, GetEventOption, GetEventResponse};
+use starcoin_rpc_api::chain::{
+    ChainApi, GetBlockOption, GetEventOption, GetEventResponse, GetTransactionOption,
+};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
-    TransactionInfoView, TransactionView,
+    BlockHeaderView, BlockSummaryView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+    EpochUncleSummaryView, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
+use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_types::block::{BlockInfo, BlockNumber};
@@ -73,24 +77,55 @@ where
         Box::pin(fut.boxed().map_err(map_err))
     }
 
-    fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Option<BlockView>> {
+    fn get_block_by_hash(
+        &self,
+        hash: HashValue,
+        option: Option<GetBlockOption>,
+    ) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
-
+        let decode = option.unwrap_or_default().decode;
+        let storage = self.storage.clone();
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
-            result.map(|b| b.try_into()).transpose()
+            let mut block: Option<BlockView> = result.map(|b| b.try_into()).transpose()?;
+            if decode {
+                let state = ChainStateDB::new(
+                    storage,
+                    Some(service.main_head_header().await?.state_root()),
+                );
+                if let Some(block) = block.as_mut() {
+                    try_decode_block_txns(&state, block)?;
+                }
+            }
+            Ok(block)
         }
         .map_err(map_err);
 
         Box::pin(fut.boxed())
     }
 
-    fn get_block_by_number(&self, number: u64) -> FutureResult<Option<BlockView>> {
+    fn get_block_by_number(
+        &self,
+        number: u64,
+        option: Option<GetBlockOption>,
+    ) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
+        let decode = option.unwrap_or_default().decode;
+        let storage = self.storage.clone();
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
-            result.map(|b| b.try_into()).transpose()
+            let mut block: Option<BlockView> = result.map(|b| b.try_into()).transpose()?;
+            if decode {
+                let state = ChainStateDB::new(
+                    storage,
+                    Some(service.main_head_header().await?.state_root()),
+                );
+                if let Some(block) = block.as_mut() {
+                    try_decode_block_txns(&state, block)?;
+                }
+            }
+            Ok(block)
         }
         .map_err(map_err);
 
@@ -142,8 +177,11 @@ where
     fn get_transaction(
         &self,
         transaction_hash: HashValue,
+        option: Option<GetTransactionOption>,
     ) -> FutureResult<Option<TransactionView>> {
         let service = self.service.clone();
+        let decode_payload = option.unwrap_or_default().decode;
+        let storage = self.storage.clone();
         let fut = async move {
             let transaction = service.get_transaction(transaction_hash).await?;
             match transaction {
@@ -158,7 +196,21 @@ where
                                 transaction_hash
                             )
                         })?;
-                    TransactionView::new(t, &block).map(Some)
+
+                    let mut txn = TransactionView::new(t, &block)?;
+                    if decode_payload {
+                        let state = ChainStateDB::new(
+                            storage,
+                            Some(service.main_head_header().await?.state_root()),
+                        );
+                        if let Some(txn) = txn.user_transaction.as_mut() {
+                            let txn_payload =
+                                bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+                            txn.raw_txn.decoded_payload =
+                                Some(decode_txn_payload(&state, &txn_payload)?.into());
+                        }
+                    }
+                    Ok(Some(txn))
                 }
             }
         }
@@ -415,4 +467,14 @@ where
 
         Box::pin(fut.boxed())
     }
+}
+
+fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
+    if let BlockTransactionsView::Full(txns) = &mut block.body {
+        for txn in txns.iter_mut() {
+            let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+            txn.raw_txn.decoded_payload = Some(decode_txn_payload(state, &txn_payload)?.into());
+        }
+    }
+    Ok(())
 }

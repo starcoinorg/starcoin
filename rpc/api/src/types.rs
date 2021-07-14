@@ -12,6 +12,11 @@ use jsonrpc_core_client::RpcChannel;
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
+use starcoin_abi_decoder::{
+    DecodedMoveValue, DecodedPackage, DecodedScript, DecodedScriptFunction,
+    DecodedTransactionPayload,
+};
+use starcoin_abi_types::ModuleABI;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
@@ -32,7 +37,6 @@ use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionA
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
-use starcoin_vm_types::abi::ModuleABI;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
@@ -58,51 +62,12 @@ pub type ByteCode = Vec<u8>;
 pub struct MintedBlockView {
     pub block_hash: HashValue,
 }
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct MoveValueView(pub serde_json::Value);
-
-fn struct_to_json(origin: AnnotatedMoveStruct) -> serde_json::Value {
-    let mut map = serde_json::Map::with_capacity(origin.value.len());
-    for (field_name, fv) in origin.value.into_iter() {
-        map.insert(field_name.to_string(), value_to_json(fv));
-    }
-    serde_json::Value::Object(map)
-}
-
-fn value_to_json(origin: AnnotatedMoveValue) -> serde_json::Value {
-    use serde_json::Value;
-    match origin {
-        AnnotatedMoveValue::U8(v) => Value::Number(v.into()),
-        AnnotatedMoveValue::U64(v) => Value::Number(v.into()),
-        AnnotatedMoveValue::U128(v) => Value::Number(v.into()),
-        AnnotatedMoveValue::Bool(v) => Value::Bool(v),
-        AnnotatedMoveValue::Address(v) => Value::String(v.to_string()),
-        AnnotatedMoveValue::Vector(v) => Value::Array(v.into_iter().map(value_to_json).collect()),
-        // try bytes to string, or else to hex string.
-        AnnotatedMoveValue::Bytes(v) => match String::from_utf8(v) {
-            Ok(s) => Value::String(s),
-            Err(e) => Value::String(format!("0x{}", hex::encode(e.as_bytes()))),
-        },
-        AnnotatedMoveValue::Struct(v) => struct_to_json(v),
-    }
-}
-impl From<AnnotatedMoveStruct> for MoveValueView {
-    fn from(origin: AnnotatedMoveStruct) -> Self {
-        MoveValueView(struct_to_json(origin))
-    }
-}
-impl From<AnnotatedMoveValue> for MoveValueView {
-    fn from(origin: AnnotatedMoveValue) -> Self {
-        MoveValueView(value_to_json(origin))
-    }
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ResourceView {
     pub raw: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub json: Option<MoveValueView>,
+    pub json: Option<DecodedMoveValue>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -453,7 +418,7 @@ impl From<BlockHeader> for BlockHeaderView {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RawUserTransactionView {
     /// Sender's address.
     pub sender: AccountAddress,
@@ -462,7 +427,9 @@ pub struct RawUserTransactionView {
 
     // The transaction payload in bcs_ext bytes.
     pub payload: StrView<Vec<u8>>,
-
+    // decoded transaction payload
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decoded_payload: Option<TransactionPayloadView>,
     // Maximal total gas specified by wallet to spend for this transaction.
     pub max_gas_amount: StrView<u64>,
     // Maximal price can be paid per gas.
@@ -493,11 +460,85 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
             expiration_timestamp_secs: origin.expiration_timestamp_secs().into(),
             chain_id: origin.chain_id().id(),
             payload: StrView(origin.into_payload().encode()?),
+            decoded_payload: None,
         })
     }
 }
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum TransactionPayloadView {
+    /// A transaction that executes code.
+    Script(DecodedScriptView),
+    /// A transaction that publish or update module code by a package.
+    Package(DecodedPackageView),
+    /// A transaction that executes an existing script function published on-chain.
+    ScriptFunction(DecodedScriptFunctionView),
+}
+impl From<DecodedTransactionPayload> for TransactionPayloadView {
+    fn from(orig: DecodedTransactionPayload) -> Self {
+        match orig {
+            DecodedTransactionPayload::Script(s) => TransactionPayloadView::Script(s.into()),
+            DecodedTransactionPayload::Package(p) => TransactionPayloadView::Package(p.into()),
+            DecodedTransactionPayload::ScriptFunction(s) => {
+                TransactionPayloadView::ScriptFunction(s.into())
+            }
+        }
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct DecodedScriptView {
+    pub code: StrView<Vec<u8>>,
+    pub ty_args: Vec<TypeTagView>,
+    pub args: Vec<DecodedMoveValue>,
+}
+impl From<DecodedScript> for DecodedScriptView {
+    fn from(orig: DecodedScript) -> Self {
+        Self {
+            code: StrView(orig.code),
+            ty_args: orig.ty_args.into_iter().map(StrView).collect(),
+            args: orig.args,
+        }
+    }
+}
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct DecodedPackageView {
+    pub package_address: AccountAddress,
+    pub modules: Vec<StrView<Vec<u8>>>,
+    pub init_script: Option<DecodedScriptFunctionView>,
+}
+impl From<DecodedPackage> for DecodedPackageView {
+    fn from(orig: DecodedPackage) -> Self {
+        Self {
+            package_address: orig.package_address,
+            modules: orig
+                .modules
+                .into_iter()
+                .map(|m| StrView(m.code().to_vec()))
+                .collect(),
+            init_script: orig.init_script.map(Into::into),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct DecodedScriptFunctionView {
+    pub module: ModuleIdView,
+    pub function: Identifier,
+    pub ty_args: Vec<TypeTagView>,
+    pub args: Vec<DecodedMoveValue>,
+}
+impl From<DecodedScriptFunction> for DecodedScriptFunctionView {
+    fn from(orig: DecodedScriptFunction) -> Self {
+        Self {
+            module: StrView(orig.module),
+            function: orig.function,
+            ty_args: orig.ty_args.into_iter().map(StrView).collect(),
+            args: orig.args,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SignedUserTransactionView {
     pub transaction_hash: HashValue,
     /// The raw transaction
@@ -584,7 +625,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionView {
     pub block_hash: HashValue,
     pub block_number: StrView<BlockNumber>,
@@ -631,7 +672,7 @@ impl TransactionView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BlockTransactionsView {
     Hashes(Vec<HashValue>),
     Full(Vec<SignedUserTransactionView>),
@@ -664,7 +705,7 @@ impl From<Vec<HashValue>> for BlockTransactionsView {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockView {
     pub header: BlockHeaderView,
     pub body: BlockTransactionsView,

@@ -6,10 +6,11 @@ use crate::module::map_err;
 use anyhow::Result;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use starcoin_abi_resolver::ABIResolver;
+use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
-use starcoin_resource_viewer::abi_resolver::ABIResolver;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
@@ -24,7 +25,6 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction};
-use starcoin_vm_types::abi::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;

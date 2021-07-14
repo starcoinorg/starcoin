@@ -76,7 +76,7 @@ impl CommandAction for ListCmd {
                     Some(block_number) => ctx
                         .state()
                         .client()
-                        .chain_get_block_by_number(*block_number)?
+                        .chain_get_block_by_number(*block_number, None)?
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };
@@ -94,7 +94,7 @@ impl CommandAction for ListCmd {
                     Some(block_number) => ctx
                         .state()
                         .client()
-                        .chain_get_block_by_number(*block_number)?
+                        .chain_get_block_by_number(*block_number, None)?
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };

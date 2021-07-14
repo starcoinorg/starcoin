@@ -1,9 +1,14 @@
-use crate::file_format::AbilitySet;
-use crate::language_storage::ModuleId;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::file_format::AbilitySet;
+use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
+use std::fmt;
 
 /// How to call a particular Move script (aka. an "ABI").
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -405,6 +410,109 @@ impl ModuleABI {
     }
     pub fn script_functions(&self) -> &[ScriptFunctionABI] {
         &self.script_functions
+    }
+}
+
+impl<'d> serde::de::DeserializeSeed<'d> for &TypeABI {
+    type Value = serde_json::Value;
+
+    fn deserialize<D: serde::de::Deserializer<'d>>(
+        self,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        use serde_json::Value as V;
+        use TypeABI as ABI;
+        match &self {
+            ABI::Bool => bool::deserialize(deserializer).map(V::Bool),
+            ABI::U8 => u8::deserialize(deserializer).map(Into::into),
+            ABI::U64 => u64::deserialize(deserializer).map(Into::into),
+            ABI::U128 => u128::deserialize(deserializer).map(Into::into),
+            ABI::Address => {
+                AccountAddress::deserialize(deserializer).map(|addr| V::String(addr.to_string()))
+            }
+            ABI::Signer => {
+                AccountAddress::deserialize(deserializer).map(|addr| V::String(addr.to_string()))
+            }
+            ABI::Struct(ty) => Ok(ty.as_ref().deserialize(deserializer)?),
+            ABI::Vector(layout) => Ok(match layout.as_ref() {
+                TypeABI::U8 => {
+                    let bytes = <Vec<u8>>::deserialize(deserializer)?;
+                    match String::from_utf8(bytes) {
+                        Ok(s) => V::String(s),
+                        Err(e) => V::String(format!("0x{}", hex::encode(e.as_bytes()))),
+                    }
+                }
+                _ => V::Array(deserializer.deserialize_seq(VectorElementVisitor(layout.as_ref()))?),
+            }),
+            TypeABI::TypeParameter(_) => Err(D::Error::custom(
+                "type abi cannot be type parameter variant",
+            )),
+        }
+    }
+}
+
+struct VectorElementVisitor<'a>(&'a TypeABI);
+
+impl<'d, 'a> serde::de::Visitor<'d> for VectorElementVisitor<'a> {
+    type Value = Vec<serde_json::Value>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("Vector")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'d>,
+    {
+        let mut vals = Vec::new();
+        while let Some(elem) = seq.next_element_seed(self.0)? {
+            vals.push(elem)
+        }
+        Ok(vals)
+    }
+}
+
+struct StructFieldVisitor<'a>(&'a [FieldABI]);
+
+impl<'d, 'a> serde::de::Visitor<'d> for StructFieldVisitor<'a> {
+    type Value = Vec<serde_json::Value>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("Struct")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'d>,
+    {
+        let mut val = Vec::new();
+        for (i, field_type) in self.0.iter().enumerate() {
+            match seq.next_element_seed(field_type.type_abi())? {
+                Some(elem) => val.push(elem),
+                None => return Err(A::Error::invalid_length(i, &self)),
+            }
+        }
+        Ok(val)
+    }
+}
+
+impl<'d> serde::de::DeserializeSeed<'d> for &StructABI {
+    type Value = serde_json::Value;
+
+    fn deserialize<D: serde::de::Deserializer<'d>>(
+        self,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        let layout = &self;
+        let fields = deserializer
+            .deserialize_tuple(layout.fields().len(), StructFieldVisitor(layout.fields()))?;
+        let fields: serde_json::Map<_, _> = layout
+            .fields()
+            .iter()
+            .map(|f| f.name().to_string())
+            .zip(fields)
+            .collect();
+        Ok(serde_json::Value::Object(fields))
     }
 }
 

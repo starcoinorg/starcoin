@@ -24,7 +24,9 @@ pub fn steps() -> Steps<MyWorld> {
             assert!(status.is_ok());
             let list_block = client.chain_get_blocks_by_number(None, 1).unwrap();
             let max_num = list_block[0].header.number.0;
-            let local_max_block = local_client.chain_get_block_by_number(max_num).unwrap();
+            let local_max_block = local_client
+                .chain_get_block_by_number(max_num, None)
+                .unwrap();
             assert!(local_max_block.is_some());
             assert_eq!(local_max_block.unwrap(), list_block[0]);
         })

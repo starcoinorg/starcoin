@@ -5,11 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    fat_type::{FatStructType, FatType},
+    fat_type::{FatStructType, FatType, WrappedAbilitySet},
     module_cache::ModuleCache,
 };
 use anyhow::{anyhow, Result};
-use starcoin_vm_types::abi::WrappedAbilitySet;
 use starcoin_vm_types::{
     access::ModuleAccess,
     access_path::AccessPath,
@@ -25,7 +24,7 @@ use starcoin_vm_types::{
 };
 use std::rc::Rc;
 
-pub(crate) struct Resolver<'a> {
+pub struct Resolver<'a> {
     state: &'a dyn StateView,
     cache: ModuleCache,
 }
@@ -40,7 +39,7 @@ impl<'a> Resolver<'a> {
         Resolver { state, cache }
     }
 
-    pub(crate) fn get_module(
+    pub fn get_module(
         &self,
         address: &AccountAddress,
         name: &IdentStr,

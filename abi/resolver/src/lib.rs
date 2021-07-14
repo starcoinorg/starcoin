@@ -1,16 +1,21 @@
-use crate::resolver::Resolver;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::anyhow;
 use anyhow::Result;
-use move_binary_format::access::ModuleAccess;
-use move_binary_format::file_format::{FunctionDefinitionIndex, StructDefinitionIndex, Visibility};
-use move_binary_format::normalized::{Struct, Type};
-use move_binary_format::CompiledModule;
-use starcoin_vm_types::abi::ArgumentABI;
-use starcoin_vm_types::abi::{
-    FieldABI, ModuleABI, ScriptFunctionABI, StructABI, TypeABI, TypeArgumentABI,
+use starcoin_abi_types::{
+    ArgumentABI, FieldABI, ModuleABI, ScriptFunctionABI, StructABI, TransactionScriptABI, TypeABI,
+    TypeArgumentABI,
+};
+use starcoin_resource_viewer::module_cache::ModuleCache;
+use starcoin_resource_viewer::resolver::Resolver;
+use starcoin_vm_types::access::ModuleAccess;
+use starcoin_vm_types::file_format::{
+    CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex, Visibility,
 };
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
+use starcoin_vm_types::normalized::{Function, Module, Struct, Type};
 use starcoin_vm_types::state_view::StateView;
 
 #[allow(clippy::upper_case_acronyms)]
@@ -25,11 +30,17 @@ impl<'a> ABIResolver<'a> {
         }
     }
 
+    pub fn new_with_module_cache(state: &'a dyn StateView, cache: ModuleCache) -> Self {
+        Self {
+            resolver: Resolver::new_with_cache(state, cache),
+        }
+    }
+
     pub fn resolve_module(&self, module_id: &ModuleId) -> Result<ModuleABI> {
         let module = self
             .resolver
             .get_module(module_id.address(), module_id.name())?;
-        let m = move_binary_format::normalized::Module::new(&module);
+        let m = Module::new(&module);
         let structs = m
             .structs
             .iter()
@@ -42,6 +53,29 @@ impl<'a> ABIResolver<'a> {
             .map(|(name, func)| self.function_to_abi(module_id, name.as_ident_str(), func))
             .collect::<Result<Vec<_>>>()?;
         Ok(ModuleABI::new(m.module_id(), structs, functions))
+    }
+
+    pub fn resolve_script(&self, script_code: Vec<u8>) -> Result<TransactionScriptABI> {
+        let script = CompiledScript::deserialize(&script_code)?;
+        let script_mod = script.into_module().1;
+        let m = Module::new(&script_mod);
+        anyhow::ensure!(
+            m.exposed_functions.len() == 1,
+            "script should only contain one function"
+        );
+        let mut functions = m
+            .exposed_functions
+            .iter()
+            .map(|(name, func)| self.function_to_abi(&m.module_id(), name.as_ident_str(), func))
+            .collect::<Result<Vec<_>>>()?;
+        let entrypoint = functions.pop().unwrap();
+        Ok(TransactionScriptABI::new(
+            entrypoint.name().to_string(),
+            entrypoint.doc().to_string(),
+            script_code,
+            entrypoint.ty_args().to_vec(),
+            entrypoint.args().to_vec(),
+        ))
     }
 
     pub fn resolve_struct_tag(&self, struct_tag: &StructTag) -> Result<StructABI> {
@@ -76,8 +110,7 @@ impl<'a> ABIResolver<'a> {
             .resolver
             .get_module(module_id.address(), module_id.name())?;
         let struct_def = find_struct_def_in_module(module.as_ref(), name)?;
-        let (name, s) =
-            move_binary_format::normalized::Struct::new(&module, module.struct_def_at(struct_def));
+        let (name, s) = Struct::new(&module, module.struct_def_at(struct_def));
         self.struct_to_abi(module_id, &name, &s)
     }
     pub fn resolve_type(&self, ty: &Type) -> Result<TypeABI> {
@@ -122,8 +155,7 @@ impl<'a> ABIResolver<'a> {
             .get_module(module_id.address(), module_id.name())?;
         let function_def_idx = find_function_def_in_module(module.as_ref(), function_name)?;
         let function_def = module.function_def_at(function_def_idx);
-        let (_func_name, func) =
-            move_binary_format::normalized::Function::new(module.as_ref(), function_def);
+        let (_func_name, func) = Function::new(module.as_ref(), function_def);
         self.function_to_abi(module_id, function_name, &func)
     }
 
@@ -196,7 +228,7 @@ impl<'a> ABIResolver<'a> {
         &self,
         module_id: &ModuleId,
         name: &IdentStr,
-        func: &move_binary_format::normalized::Function,
+        func: &Function,
     ) -> Result<ScriptFunctionABI> {
         let type_parameters = func
             .type_parameters
@@ -258,13 +290,14 @@ fn find_struct_def_in_module(
 
 #[cfg(test)]
 mod tests {
-    use crate::abi_resolver::ABIResolver;
+    use crate::ABIResolver;
     use anyhow::Result;
-    use move_binary_format::CompiledModule;
     use starcoin_vm_types::access_path::{AccessPath, DataPath};
     use starcoin_vm_types::account_config::genesis_address;
+    use starcoin_vm_types::file_format::CompiledModule;
     use starcoin_vm_types::identifier::Identifier;
     use starcoin_vm_types::language_storage::ModuleId;
+    use starcoin_vm_types::normalized::Module;
     use starcoin_vm_types::parser::parse_struct_tag;
     use starcoin_vm_types::state_view::StateView;
     use std::collections::BTreeMap;
@@ -337,6 +370,6 @@ mod tests {
                 m.self_id() == ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap())
             })
             .unwrap();
-        let _m = move_binary_format::normalized::Module::new(dao);
+        let _m = Module::new(dao);
     }
 }

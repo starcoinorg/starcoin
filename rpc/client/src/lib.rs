@@ -19,7 +19,9 @@ use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
-use starcoin_rpc_api::chain::{GetEventOption, GetEventResponse};
+use starcoin_rpc_api::chain::{
+    GetBlockOption, GetEventOption, GetEventResponse, GetTransactionOption,
+};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::state::{
@@ -648,16 +650,21 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Option<BlockView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_hash(hash))
+    pub fn chain_get_block_by_hash(
+        &self,
+        hash: HashValue,
+        option: Option<GetBlockOption>,
+    ) -> anyhow::Result<Option<BlockView>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_hash(hash, option))
             .map_err(map_err)
     }
 
     pub fn chain_get_block_by_number(
         &self,
         number: BlockNumber,
+        option: Option<GetBlockOption>,
     ) -> anyhow::Result<Option<BlockView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_number(number))
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_by_number(number, option))
             .map_err(map_err)
     }
 
@@ -681,8 +688,9 @@ impl RpcClient {
     pub fn chain_get_transaction(
         &self,
         txn_id: HashValue,
+        option: Option<GetTransactionOption>,
     ) -> anyhow::Result<Option<TransactionView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction(txn_id))
+        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction(txn_id, option))
             .map_err(map_err)
     }
 

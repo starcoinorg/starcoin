@@ -5,7 +5,7 @@ use crate::types::{
 };
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
-use starcoin_vm_types::abi::{ModuleABI, ScriptFunctionABI, StructABI};
+use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
