@@ -21,7 +21,7 @@ fn parse_account_positive() {
         "//!    account     :bob,   0,  0",
         "//!\naccount\n:bob,\n0,\n0",
         "//!\taccount\t:bob,\t0,\t0",
-        "//! account: alice, 1000, 0, validator",
+        "//! account: alice, 1000, 0",
     ] {
         s.parse::<Entry>().unwrap();
     }

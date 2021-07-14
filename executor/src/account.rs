@@ -62,15 +62,20 @@ impl Account {
     /// This function returns distinct values upon every call.
     pub fn new() -> Self {
         let (privkey, pubkey) = KeyGen::from_os_rng().generate_keypair();
-        Self::with_keypair(privkey, pubkey)
+        Self::with_keypair(privkey, pubkey, None)
     }
 
     /// Creates a new account with the given keypair.
     ///
     /// Like with [`Account::new`], the account returned by this constructor is a purely logical
     /// entity.
-    pub fn with_keypair(privkey: Ed25519PrivateKey, pubkey: Ed25519PublicKey) -> Self {
-        let addr = starcoin_types::account_address::from_public_key(&pubkey);
+    pub fn with_keypair(
+        privkey: Ed25519PrivateKey,
+        pubkey: Ed25519PublicKey,
+        addr: Option<AccountAddress>,
+    ) -> Self {
+        let addr =
+            addr.unwrap_or_else(|| starcoin_types::account_address::from_public_key(&pubkey));
         Account {
             addr,
             private_key: Arc::new(AccountPrivateKey::Single(privkey)),
@@ -355,11 +360,12 @@ impl AccountData {
     pub fn with_keypair(
         privkey: Ed25519PrivateKey,
         pubkey: Ed25519PublicKey,
+        addr: Option<AccountAddress>,
         balance: u128,
         balance_token_code: &str,
         sequence_number: u64,
     ) -> Self {
-        let account = Account::with_keypair(privkey, pubkey);
+        let account = Account::with_keypair(privkey, pubkey, addr);
         Self::with_account(account, balance, balance_token_code, sequence_number)
     }
 

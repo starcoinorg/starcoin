@@ -8,6 +8,7 @@ use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
 use executor::account::{Account, AccountData};
 use once_cell::sync::Lazy;
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 use std::{
     collections::{btree_map, BTreeMap},
@@ -53,6 +54,7 @@ impl FromStr for Balance {
 pub struct AccountDefinition {
     /// Name of the account. The name is case insensitive.
     pub name: String,
+    pub addr: Option<AccountAddress>,
     /// The initial balance of the account.
     pub balance: Option<Balance>,
     /// The initial sequence number of the account.
@@ -80,26 +82,58 @@ impl FromStr for Entry {
                 .split(|c: char| c == ',' || c.is_whitespace())
                 .filter(|s| !s.is_empty())
                 .collect();
-            if v.is_empty() || v.len() > 4 {
+            if v.is_empty() || v.len() > 5 {
                 return Err(ErrorKind::Other(
                     "config 'account' takes 1 to 4 parameters".to_string(),
                 )
                 .into());
             }
-            let balance_config = v.get(1);
-            let balance = match balance_config {
-                Some(s) => Some(s.parse::<Balance>()?),
+            let name = v[0].to_string();
+            let mut i = 1;
+            let addr = match v.get(i) {
+                // only support address which starts with 0x.
+                Some(s) if s.starts_with("0x") => match s.parse::<AccountAddress>() {
+                    Ok(addr) => {
+                        i += 1;
+                        Some(addr)
+                    }
+                    Err(_) => None,
+                },
+                _ => None,
+            };
+            let balance = match v.get(i) {
+                Some(s) => match s.parse::<Balance>() {
+                    Ok(val) => {
+                        i += 1;
+                        Some(val)
+                    }
+                    Err(_) => None,
+                },
                 None => None,
             };
-            let sequence_number_config = v.get(2);
-            let sequence_number = match sequence_number_config {
-                Some(s) => Some(s.parse::<u64>()?),
+
+            let sequence_number = match v.get(i) {
+                Some(s) => match s.parse::<u64>() {
+                    Ok(val) => {
+                        i += 1;
+                        Some(val)
+                    }
+                    Err(_) => None,
+                },
                 None => None,
             };
+            if i < v.len() {
+                return Err(ErrorKind::Other(format!(
+                    "failed to parse '{}' as global config entry",
+                    s
+                ))
+                .into());
+            }
             // These two are mutually exclusive, so we can double-use the third position
 
             return Ok(Entry::AccountDefinition(AccountDefinition {
-                name: v[0].to_string(),
+                name,
+                addr,
                 balance,
                 sequence_number,
             }));
@@ -136,6 +170,7 @@ impl Config {
                     let account_data = AccountData::with_keypair(
                         privkey,
                         pubkey,
+                        def.addr,
                         balance.amount,
                         balance.token_code.as_str(),
                         def.sequence_number.unwrap_or(0),
@@ -163,6 +198,7 @@ impl Config {
             entry.insert(AccountData::with_keypair(
                 privkey,
                 pubkey,
+                None,
                 DEFAULT_BALANCE.amount,
                 DEFAULT_BALANCE.token_code.as_str(),
                 /* sequence_number */
