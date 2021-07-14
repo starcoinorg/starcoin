@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
+use crate::dev::dev_helper;
 use crate::dev::sign_txn_helper::get_dao_config;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_proposal;
-use starcoin_types::transaction::Package;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
-use std::fs::File;
-use std::io::Read;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -26,30 +25,30 @@ pub struct UpgradeModuleProposalOpt {
     #[structopt(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(
-        short = "e",
-        name = "enforced",
-        long = "enforced",
-        help = "enforced upgrade regardless of compatible or not"
-    )]
+    #[structopt(short = "e", name = "enforced", long = "enforced")]
+    /// enforced upgrade regardless of compatible or not
     enforced: bool,
 
     #[structopt(
         short = "m",
-        name = "module-package-file",
-        long = "module",
-        help = "path for module package file.",
+        name = "mv-or-package-file",
+        long = "mv-or-package-file",
         parse(from_os_str)
     )]
-    module_package_file: PathBuf,
+    /// path for module or package file.
+    mv_or_package_file: PathBuf,
+
+    #[structopt(short = "v", name = "module-version", long = "module-version")]
+    /// new version number for the modules
+    version: u64,
 
     #[structopt(
-        short = "v",
-        name = "module-version",
-        long = "module_version",
-        help = "new version number for the module"
+        name = "dao-token",
+        long = "dao-token",
+        default_value = "0x1::STC::STC"
     )]
-    version: u64,
+    /// The token for dao governance, default is 0x1::STC::STC
+    dao_token: TokenCode,
 }
 
 pub struct UpgradeModuleProposalCommand;
@@ -68,14 +67,18 @@ impl CommandAction for UpgradeModuleProposalCommand {
         let cli_state = ctx.state();
 
         let module_version = opt.version;
-        let module_file = opt.module_package_file.as_path();
-        let mut bytes = vec![];
-        File::open(module_file)?.read_to_end(&mut bytes)?;
-        let upgrade_package: Package = bcs_ext::from_bytes(&bytes)?;
+        let upgrade_package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
         eprintln!(
-            "upgrade package address : {:?}",
+            "upgrade package address : {}",
             upgrade_package.package_address()
         );
+        if upgrade_package.package_address() != opt.dao_token.address {
+            bail!(
+                "the package address {} not match the dao token: {}",
+                upgrade_package.package_address(),
+                opt.dao_token
+            );
+        }
         let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
         let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
         let stdlib_version = chain_state_reader
@@ -88,6 +91,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
             module_version,
             min_action_delay,
             opt.enforced,
+            opt.dao_token.clone(),
             StdlibVersion::new(stdlib_version),
         );
         eprintln!("package_hash {:?}", package_hash);

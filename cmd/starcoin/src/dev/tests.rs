@@ -18,6 +18,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
@@ -27,6 +28,7 @@ use starcoin_vm_types::{
     transaction::Package,
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{thread::sleep, time::Duration};
@@ -226,6 +228,7 @@ fn test_upgrade_module() {
         2,
         dao_config.min_action_delay,
         false,
+        STC_TOKEN_CODE.clone(),
         config.net().stdlib_version(),
     );
 
@@ -267,9 +270,8 @@ fn test_upgrade_module() {
     // 3. vote
     let proposal_id = 0;
     let mut type_tags: Vec<TypeTag> = Vec::new();
-    let stc = parse_type_tag("0x1::STC::STC").unwrap();
     let module = parse_type_tag("0x1::UpgradeModuleDaoProposal::UpgradeModuleV2").unwrap();
-    type_tags.push(stc);
+    type_tags.push(STC_TOKEN_CODE.clone().try_into().unwrap());
     type_tags.push(module);
     let mut args: Vec<TransactionArgument> = Vec::new();
     let arg_1 = parse_transaction_argument("0x0000000000000000000000000a550c18").unwrap();
@@ -324,6 +326,7 @@ fn test_upgrade_module() {
     let module_upgrade_queue = build_module_upgrade_queue(
         association_address(),
         proposal_id,
+        STC_TOKEN_CODE.clone(),
         config.net().stdlib_version(),
     );
     let queue_txn = sign_txn_with_account_by_rpc_client(
