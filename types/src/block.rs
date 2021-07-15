@@ -167,6 +167,41 @@ impl BlockHeader {
         nonce: u32,
         extra: BlockHeaderExtra,
     ) -> BlockHeader {
+        Self::new_with_auth_key(
+            parent_hash,
+            timestamp,
+            number,
+            author,
+            None,
+            txn_accumulator_root,
+            block_accumulator_root,
+            state_root,
+            gas_used,
+            difficulty,
+            body_hash,
+            chain_id,
+            nonce,
+            extra,
+        )
+    }
+
+    // the author_auth_key field is deprecated, but keep this fn for compat with old block.
+    fn new_with_auth_key(
+        parent_hash: HashValue,
+        timestamp: u64,
+        number: BlockNumber,
+        author: AccountAddress,
+        author_auth_key: Option<AuthenticationKey>,
+        txn_accumulator_root: HashValue,
+        block_accumulator_root: HashValue,
+        state_root: HashValue,
+        gas_used: u64,
+        difficulty: U256,
+        body_hash: HashValue,
+        chain_id: ChainId,
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> BlockHeader {
         let mut header = BlockHeader {
             id: None,
             parent_hash,
@@ -174,7 +209,7 @@ impl BlockHeader {
             number,
             timestamp,
             author,
-            author_auth_key: None,
+            author_auth_key,
             txn_accumulator_root,
             state_root,
             gas_used,
@@ -340,11 +375,12 @@ impl<'de> Deserialize<'de> for BlockHeader {
         }
 
         let header_data = BlockHeaderData::deserialize(deserializer)?;
-        let mut block_header = Self::new(
+        let block_header = Self::new_with_auth_key(
             header_data.parent_hash,
             header_data.timestamp,
             header_data.number,
             header_data.author,
+            header_data.author_auth_key,
             header_data.txn_accumulator_root,
             header_data.block_accumulator_root,
             header_data.state_root,
@@ -355,8 +391,6 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header_data.nonce,
             header_data.extra,
         );
-        // author_auth_key is deprecated, but the old block contains this field should been read correctly.
-        block_header.author_auth_key = header_data.author_auth_key;
         Ok(block_header)
     }
 }
