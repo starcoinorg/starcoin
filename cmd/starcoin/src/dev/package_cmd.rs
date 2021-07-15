@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
@@ -57,6 +57,10 @@ pub struct PackageOpt {
     #[structopt(short = "n", name = "package-name", long = "name")]
     /// package file name, if absent, use file hash as name.
     package_name: Option<String>,
+
+    #[structopt(long)]
+    /// Should output hex string of package.
+    hex: bool,
 }
 
 pub struct PackageCmd;
@@ -65,7 +69,7 @@ impl CommandAction for PackageCmd {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = PackageOpt;
-    type ReturnItem = StringView;
+    type ReturnItem = PackageResult;
 
     fn run(
         &self,
@@ -115,10 +119,16 @@ impl CommandAction for PackageCmd {
         };
         let mut file = File::create(output_file.as_path())?;
         let blob = bcs_ext::to_bytes(&package)?;
+        let hex = if opt.hex {
+            Some(format!("0x{}", hex::encode(blob.as_slice())))
+        } else {
+            None
+        };
         file.write_all(&blob)
             .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
-        Ok(StringView {
-            result: output_file.to_string_lossy().to_string(),
+        Ok(PackageResult {
+            file: output_file.to_string_lossy().to_string(),
+            hex,
         })
     }
 }
@@ -130,4 +140,11 @@ fn read_module(module_file: &Path) -> Result<Module> {
     let mut bytes = vec![];
     File::open(module_file)?.read_to_end(&mut bytes)?;
     Ok(Module::new(bytes))
+}
+
+#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
+pub struct PackageResult {
+    pub file: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hex: Option<String>,
 }
