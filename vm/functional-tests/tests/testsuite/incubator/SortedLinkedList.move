@@ -3,7 +3,7 @@
 //! account: bob
 //! account: carol
 //! account: david
-//! account: vivian, 1000000, 0, validator
+//! account: vivian, 1000000, 0
 
 address default={{default}};
 address alice = {{alice}};
