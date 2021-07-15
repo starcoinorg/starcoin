@@ -98,7 +98,7 @@ impl CommandAction for GetCoinCommand {
                 })?;
             if !opt.no_blocking {
                 eprintln!("waiting txn {} executed on chain", response.transaction_id);
-                ctx.state().watch_txn(response.transaction_id)?.1
+                ctx.state().watch_txn(response.transaction_id)?.txn_info
             } else {
                 None
             }

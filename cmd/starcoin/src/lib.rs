@@ -41,7 +41,7 @@ pub fn add_command(
                 .subcommand(account::ExecuteScriptFunctionCmd)
                 .subcommand(account::ExecuteScriptCommand)
                 .subcommand(account::sign_multisig_txn_cmd::GenerateMultisigTxnCommand)
-                .subcommand(account::submit_multisig_txn_cmd::SubmitMultiSignedTxnCommand)
+                .subcommand(account::submit_txn_cmd::SubmitSignedTxnCommand)
                 .subcommand(account::SignMessageCmd)
                 .subcommand(account::VerifySignMessageCmd)
                 .subcommand(account::DeriveAddressCommand)

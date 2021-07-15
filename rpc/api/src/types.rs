@@ -54,7 +54,6 @@ use starcoin_vm_types::write_set::WriteOp;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
-use vm_status_translator::MoveAbortExplain;
 
 pub type ByteCode = Vec<u8>;
 
@@ -826,6 +825,7 @@ pub enum TransactionStatusView {
     MiscellaneousError,
     Discard {
         status_code: StrView<u64>,
+        status_code_name: String,
     },
 }
 impl From<TransactionStatus> for TransactionStatusView {
@@ -863,6 +863,7 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
     fn from(s: DiscardedVMStatus) -> Self {
         Self::Discard {
             status_code: StrView(s.into()),
+            status_code_name: format!("{:?}", s),
         }
     }
 }
@@ -930,32 +931,8 @@ impl TransactionEventView {
         }
     }
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum VmStatusExplainView {
-    /// The VM status corresponding to an EXECUTED status code
-    Executed,
-    /// Indicates an error from the VM, e.g. OUT_OF_GAS, INVALID_AUTH_KEY, RET_TYPE_MISMATCH_ERROR
-    /// etc.
-    /// The code will neither EXECUTED nor ABORTED
-    Error(String),
 
-    /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
-    MoveAbort {
-        location: AbortLocation,
-        abort_code: u64,
-        explain: MoveAbortExplain,
-    },
-
-    /// Indicates an failure from inside Move code, where the VM could not continue exection, e.g.
-    /// dividing by zero or a missing resource
-    ExecutionFailure {
-        status_code: String,
-        location: AbortLocation,
-        function: u16,
-        function_name: Option<String>,
-        code_offset: u16,
-    },
-}
+pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DryRunOutputView {

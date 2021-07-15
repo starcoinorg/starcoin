@@ -1,18 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::{DryRunOutputView, ExecuteResultView, ExecutionOutputView, TransactionOptions};
+use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use anyhow::{bail, format_err, Result};
 use serde::de::DeserializeOwned;
+use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
-use starcoin_rpc_api::types::{
-    DryRunOutputView as ServerDryRunOutputView, TransactionInfoView, TransactionStatusView,
-};
-use starcoin_rpc_client::chain_watcher::ThinHeadBlock;
+use starcoin_rpc_api::types::{RawUserTransactionView, TransactionStatusView};
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_config::AccountResource;
@@ -21,6 +19,7 @@ use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
+use std::convert::TryInto;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -142,21 +141,29 @@ impl CliState {
         self.client.account_get(association_address())
     }
 
-    pub fn watch_txn(
-        &self,
-        txn_hash: HashValue,
-    ) -> Result<(ThinHeadBlock, Option<TransactionInfoView>)> {
+    pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ExecutionOutputView> {
         let block = self.client.watch_txn(txn_hash, Some(self.watch_timeout))?;
 
-        let mut txn_info = self.client.chain_get_transaction_info(txn_hash)?;
-        std::thread::sleep(Duration::from_secs(1));
-        if txn_info.is_none() {
-            txn_info = self.client.chain_get_transaction_info(txn_hash)?;
-        }
-        if txn_info.is_none() {
-            eprintln!("transaction execute success, but get transaction info return none");
-        }
-        Ok((block, txn_info))
+        let txn_info = {
+            if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
+                info
+            } else {
+                //sleep and try again.
+                std::thread::sleep(Duration::from_secs(1));
+                if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
+                    info
+                } else {
+                    bail!("transaction execute success, but get transaction info return none, block: {}", block.header.number);
+                }
+            }
+        };
+        let events = self
+            .client
+            .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
+
+        Ok(ExecutionOutputView::new_with_info(
+            txn_hash, txn_info, events,
+        ))
     }
 
     pub fn build_and_execute_transaction(
@@ -234,39 +241,45 @@ impl CliState {
         blocking: bool,
     ) -> Result<ExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
-        let ServerDryRunOutputView {
-            explained_status,
-            txn_output,
-        } = {
-            self.client.dry_run_raw(DryRunTransaction {
-                public_key: sender.public_key,
-                raw_txn: raw_txn.clone(),
-            })?
-        };
-        if only_dry_run || !matches!(txn_output.status, TransactionStatusView::Executed) {
+        let dry_output = self.client.dry_run_raw(DryRunTransaction {
+            public_key: sender.public_key,
+            raw_txn: raw_txn.clone(),
+        })?;
+        let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
+        raw_txn_view.decoded_payload =
+            Some(self.decode_txn_payload(raw_txn.payload())?.try_into()?);
+
+        let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
+
+        if only_dry_run
+            || !matches!(
+                execute_result.dry_run_output.txn_output.status,
+                TransactionStatusView::Executed
+            )
+        {
             eprintln!("txn dry run failed");
-            return Ok(ExecuteResultView::DryRun(DryRunOutputView::new(
-                explained_status,
-                txn_output,
-                hex::encode(bcs_ext::to_bytes(&raw_txn)?),
-            )));
+            return Ok(execute_result);
         }
         let signed_txn = self.client.account_sign_txn(raw_txn)?;
 
         let txn_hash = signed_txn.id();
         self.client.submit_transaction(signed_txn)?;
         eprintln!("txn {} submitted.", txn_hash);
-        let mut output = ExecutionOutputView::new(txn_hash);
-        if blocking {
-            let (_block, txn_info) = self.watch_txn(txn_hash)?;
-            output.txn_status = Some(explained_status);
-            output.txn_info = txn_info;
-            let events = self
-                .client
-                .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
-            output.events = Some(events);
-        }
-        Ok(ExecuteResultView::Run(output))
+        let execute_output = if blocking {
+            self.watch_txn(txn_hash)?
+        } else {
+            ExecutionOutputView::new(txn_hash)
+        };
+        execute_result.execute_output = Some(execute_output);
+        Ok(execute_result)
+    }
+
+    pub fn decode_txn_payload(
+        &self,
+        payload: &TransactionPayload,
+    ) -> Result<DecodedTransactionPayload> {
+        let chain_state_reader = RemoteStateReader::new(&self.client)?;
+        decode_txn_payload(&chain_state_reader, payload)
     }
 
     pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {

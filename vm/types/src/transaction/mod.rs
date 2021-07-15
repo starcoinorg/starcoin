@@ -285,6 +285,15 @@ impl RawUserTransaction {
         bcs_ext::from_bytes(bytes.as_ref())
     }
 
+    pub fn to_hex(&self) -> String {
+        format!(
+            "0x{}",
+            hex::encode(
+                bcs_ext::to_bytes(&self).expect("Serialize RawUserTransaction should success.")
+            )
+        )
+    }
+
     pub fn mock() -> Self {
         Self::mock_by_sender(AccountAddress::random())
     }
@@ -797,6 +806,10 @@ impl BlockTransactionInfo {
 
     pub fn block_id(&self) -> HashValue {
         self.block_id
+    }
+
+    pub fn txn_info(&self) -> &TransactionInfo {
+        &self.txn_info
     }
 }
 

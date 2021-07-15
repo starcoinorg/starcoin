@@ -134,7 +134,10 @@ impl From<TransactionStatusView> for TransactionVMStatusEsView {
                 code_offset,
             },
             TransactionStatusView::MiscellaneousError => Self::MiscellaneousError,
-            TransactionStatusView::Discard { status_code } => Self::Discard { status_code },
+            TransactionStatusView::Discard {
+                status_code,
+                status_code_name: _,
+            } => Self::Discard { status_code },
         }
     }
 }

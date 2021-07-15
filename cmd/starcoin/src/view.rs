@@ -8,7 +8,7 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetEventResponse;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
-    StrView, TransactionEventView, TransactionInfoView, VmStatusExplainView,
+    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventView, TransactionInfoView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
@@ -19,6 +19,8 @@ use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, 
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -57,6 +59,34 @@ pub struct TransactionOptions {
     #[structopt(long = "dry-run")]
     /// dry-run mode, only get transaction output, do not change chain state.
     pub dry_run: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum FilePathOrHex {
+    Path(PathBuf),
+    Hex(Vec<u8>),
+}
+
+impl FromStr for FilePathOrHex {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some(hex) = s.strip_prefix("0x") {
+            Ok(FilePathOrHex::Hex(hex::decode(hex)?))
+        } else {
+            Ok(FilePathOrHex::Path(PathBuf::from(s)))
+        }
+    }
+}
+
+impl FilePathOrHex {
+    pub fn as_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(match self {
+            FilePathOrHex::Path(path) => std::fs::read(path.as_path())
+                .map_err(|e| format_err!("read file {:?} error:{:?}", path, e))?,
+            FilePathOrHex::Hex(bytes) => bytes.clone(),
+        })
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -248,38 +278,31 @@ impl From<ContractEvent> for EventView {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(tag = "type")]
-pub enum ExecuteResultView {
-    DryRun(DryRunOutputView),
-    Run(ExecutionOutputView),
+pub struct ExecuteResultView {
+    pub raw_txn: RawUserTransactionView,
+    pub raw_txn_hex: String,
+    pub dry_run_output: DryRunOutputView,
+    pub execute_output: Option<ExecutionOutputView>,
 }
 
 impl ExecuteResultView {
-    pub fn get_transaction_info(&self) -> Option<TransactionInfoView> {
-        match self {
-            ExecuteResultView::Run(view) => view.txn_info.clone(),
-            ExecuteResultView::DryRun(_) => None,
-        }
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct DryRunOutputView {
-    pub vm_status: VmStatusExplainView,
-    pub output: TransactionOutputView,
-    pub raw_transaction_hex: String,
-}
-
-impl DryRunOutputView {
     pub fn new(
-        vm_status: VmStatusExplainView,
-        output: TransactionOutputView,
-        raw_transaction_hex: String,
+        raw_txn: RawUserTransactionView,
+        raw_txn_hex: String,
+        dry_run_output: DryRunOutputView,
     ) -> Self {
         Self {
-            vm_status,
-            output,
-            raw_transaction_hex,
+            raw_txn,
+            raw_txn_hex,
+            dry_run_output,
+            execute_output: None,
+        }
+    }
+    pub fn get_transaction_info(&self) -> Option<TransactionInfoView> {
+        if let Some(info) = &self.execute_output {
+            info.txn_info.clone()
+        } else {
+            None
         }
     }
 }
@@ -288,7 +311,6 @@ impl DryRunOutputView {
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
-    pub txn_status: Option<VmStatusExplainView>,
     pub events: Option<Vec<GetEventResponse>>,
 }
 
@@ -297,8 +319,19 @@ impl ExecutionOutputView {
         Self {
             txn_hash,
             txn_info: None,
-            txn_status: None,
             events: None,
+        }
+    }
+
+    pub fn new_with_info(
+        txn_hash: HashValue,
+        txn_info: TransactionInfoView,
+        events: Vec<GetEventResponse>,
+    ) -> Self {
+        Self {
+            txn_hash,
+            txn_info: Some(txn_info),
+            events: Some(events),
         }
     }
 }
