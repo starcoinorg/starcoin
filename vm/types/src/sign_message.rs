@@ -138,7 +138,12 @@ impl SignedMessage {
     }
 
     pub fn to_hex(&self) -> String {
-        hex::encode(bcs_ext::to_bytes(self).expect("SignedMessage bcs serialize should success."))
+        format!(
+            "0x{}",
+            hex::encode(
+                bcs_ext::to_bytes(self).expect("SignedMessage bcs serialize should success.")
+            )
+        )
     }
 }
 
@@ -154,6 +159,6 @@ impl FromStr for SignedMessage {
 
 impl std::fmt::Display for SignedMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{}", self.to_hex())
+        write!(f, "{}", self.to_hex())
     }
 }

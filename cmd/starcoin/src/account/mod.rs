@@ -37,7 +37,7 @@ pub mod remove_cmd;
 mod show_cmd;
 mod sign_cmd;
 pub mod sign_multisig_txn_cmd;
-pub mod submit_multisig_txn_cmd;
+pub mod submit_txn_cmd;
 mod transfer_cmd;
 mod unlock_cmd;
 mod verify_sign_cmd;

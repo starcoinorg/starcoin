@@ -8211,6 +8211,7 @@ dependencies = [
  "serde",
  "serde_json",
  "short-hex-str",
+ "starcoin-abi-decoder",
  "starcoin-account-api",
  "starcoin-config",
  "starcoin-consensus",

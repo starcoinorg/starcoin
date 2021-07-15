@@ -3,7 +3,6 @@
 
 use crate::module::helpers::TransactionRequestFiller;
 use crate::module::map_err;
-use anyhow::Result;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_abi_resolver::ABIResolver;
@@ -15,7 +14,6 @@ use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
     DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
-    VmStatusExplainView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
@@ -26,9 +24,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction};
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::vm_status::VMStatus;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -157,7 +153,7 @@ where
                     public_key: sender_public_key.0,
                 },
             )?;
-            let vm_status_explain = explain_vm_status(state_view, output.0)?;
+            let vm_status_explain = vm_status_translator::explain_vm_status(state_view, output.0)?;
             Ok(DryRunOutputView {
                 explained_status: vm_status_explain,
                 txn_output: output.1.into(),
@@ -185,7 +181,7 @@ where
                     public_key: sender_public_key.0,
                 },
             )?;
-            let vm_status_explain = explain_vm_status(state_view, output.0)?;
+            let vm_status_explain = vm_status_translator::explain_vm_status(state_view, output.0)?;
             Ok(DryRunOutputView {
                 explained_status: vm_status_explain,
                 txn_output: output.1.into(),
@@ -228,37 +224,4 @@ where
         .map_err(map_err);
         Box::pin(fut.boxed())
     }
-}
-
-pub fn explain_vm_status<S: StateView>(
-    state_view: S,
-    vm_status: VMStatus,
-) -> Result<VmStatusExplainView> {
-    let vm_status_explain = match &vm_status {
-        VMStatus::Executed => VmStatusExplainView::Executed,
-        VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
-        VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
-            location: location.clone(),
-            abort_code: *abort_code,
-            explain: vm_status_translator::explain_move_abort(location.clone(), *abort_code),
-        },
-        VMStatus::ExecutionFailure {
-            status_code,
-            location,
-            function,
-            code_offset,
-        } => {
-            let t = vm_status_translator::VmStatusTranslator::new(state_view);
-            VmStatusExplainView::ExecutionFailure {
-                status_code: format!("{:?}", status_code),
-                location: location.clone(),
-                function: *function,
-                function_name: t
-                    .locate_execution_failure(location.clone(), *function)?
-                    .map(|l| l.1.to_string()),
-                code_offset: *code_offset,
-            }
-        }
-    };
-    Ok(vm_status_explain)
 }

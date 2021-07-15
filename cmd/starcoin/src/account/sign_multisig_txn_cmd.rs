@@ -9,8 +9,7 @@ use short_hex_str::AsShortHexStr;
 use starcoin_account_api::AccountPublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
-use starcoin_dev::playground;
-use starcoin_rpc_api::types::{FunctionIdView, TransactionOutputView, TransactionStatusView};
+use starcoin_rpc_api::types::{FunctionIdView, RawUserTransactionView, TransactionStatusView};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::authenticator::TransactionAuthenticator;
@@ -23,6 +22,7 @@ use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use std::convert::TryInto;
 use std::env::current_dir;
 use std::fs::File;
 use std::path::PathBuf;
@@ -161,10 +161,16 @@ impl CommandAction for GenerateMultisigTxnCommand {
             } else {
                 unreachable!()
             };
+        let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
+        raw_txn_view.decoded_payload = Some(
+            ctx.state()
+                .decode_txn_payload(raw_txn.payload())?
+                .try_into()?,
+        );
         // Use `eprintln` instead of `println`, for keep the cli stdout's format(such as json) is not broken by print.
         eprintln!(
             "Prepare to sign the transaction: \n {}",
-            serde_json::to_string_pretty(&raw_txn)?
+            serde_json::to_string_pretty(&raw_txn_view)?
         );
         // sign the multi txn using my private keys.
         let sender = raw_txn.sender();
@@ -181,24 +187,25 @@ impl CommandAction for GenerateMultisigTxnCommand {
         };
         // pre-run the txn when first generation.
         if opt.multisig_txn_file.is_none() {
-            let output: TransactionOutputView = {
-                let state_view = RemoteStateReader::new(client)?;
-                playground::dry_run(
-                    &state_view,
-                    DryRunTransaction {
-                        public_key: AccountPublicKey::Multi(account_public_key.clone()),
-                        raw_txn: raw_txn.clone(),
-                    },
-                )
-                .map(|(_, b)| b.into())?
-            };
+            let output = ctx.state().client().dry_run_raw(DryRunTransaction {
+                public_key: AccountPublicKey::Multi(account_public_key.clone()),
+                raw_txn: raw_txn.clone(),
+            })?;
+
             eprintln!(
                 "Transaction dry run execute output: \n {}",
                 serde_json::to_string_pretty(&output)?
             );
-            match output.status {
-                TransactionStatusView::Discard { status_code } => {
-                    bail!("TransactionStatus is discard: {:?}", status_code)
+            match &output.txn_output.status {
+                TransactionStatusView::Discard {
+                    status_code,
+                    status_code_name,
+                } => {
+                    bail!(
+                        "TransactionStatus is discard: {:?}, {}",
+                        status_code,
+                        status_code_name
+                    )
                 }
                 TransactionStatusView::Executed => {}
                 s => {
