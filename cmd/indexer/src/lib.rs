@@ -267,6 +267,7 @@ mod tests {
             transaction_hash: Some(HashValue::zero()),
             transaction_index: Some(0),
             data: StrView(vec![0]),
+            decoded_data: None,
             type_tag: TypeTag::Bool,
             event_key: EventKey::new_from_address(&AccountAddress::ZERO, 0),
             event_seq_number: StrView(0),

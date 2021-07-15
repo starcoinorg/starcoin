@@ -874,7 +874,7 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct TransactionEventView {
     pub block_hash: Option<HashValue>,
     pub block_number: Option<StrView<BlockNumber>>,
@@ -883,6 +883,8 @@ pub struct TransactionEventView {
     pub transaction_index: Option<u32>,
 
     pub data: StrView<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decoded_data: Option<DecodedMoveValue>,
     pub type_tag: TypeTag,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
@@ -896,6 +898,7 @@ impl From<ContractEventInfo> for TransactionEventView {
             transaction_hash: Some(info.transaction_hash),
             transaction_index: Some(info.transaction_index),
             data: StrView(info.event.event_data().to_vec()),
+            decoded_data: None,
             type_tag: info.event.type_tag().clone(),
             event_key: *info.event.key(),
             event_seq_number: info.event.sequence_number().into(),
@@ -910,6 +913,7 @@ impl From<ContractEvent> for TransactionEventView {
             transaction_hash: None,
             transaction_index: None,
             data: StrView(event.event_data().to_vec()),
+            decoded_data: None,
             type_tag: event.type_tag().clone(),
             event_key: *event.key(),
             event_seq_number: event.sequence_number().into(),
@@ -931,6 +935,7 @@ impl TransactionEventView {
             transaction_hash,
             transaction_index,
             data: StrView(contract_event.event_data().to_vec()),
+            decoded_data: None,
             type_tag: contract_event.type_tag().clone(),
             event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),

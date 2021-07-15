@@ -96,7 +96,8 @@ impl ChainNotifyHandlerService {
                     .map(|evt| Event::new(block_id, block_number, txn_hash, Some(i as u32), evt)),
             );
         }
-        let events_notification: ContractEventNotification = Notification(all_events.into());
+        let events_notification: ContractEventNotification =
+            Notification((block.header.state_root(), all_events.into()));
         ctx.broadcast(events_notification);
         Ok(())
     }

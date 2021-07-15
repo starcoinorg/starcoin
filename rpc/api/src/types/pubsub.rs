@@ -63,7 +63,7 @@ pub enum Params {
     /// No parameters passed.
     None,
     /// Log parameters.
-    Events(EventFilter),
+    Events(EventParams),
 }
 
 impl Default for Params {
@@ -87,6 +87,14 @@ impl<'a> Deserialize<'a> for Params {
             .map(Params::Events)
             .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
     }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
+pub struct EventParams {
+    #[serde(flatten)]
+    pub filter: EventFilter,
+    #[serde(default)]
+    pub decode: bool,
 }
 
 /// Filter
