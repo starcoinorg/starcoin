@@ -25,6 +25,12 @@ fn parse_account_positive() {
     ] {
         s.parse::<Entry>().unwrap();
     }
+
+    let entry = "//! account: admin, 0x07fa08a855753f0ff7292fdcbe871216, 10000 0x1::STC::STC"
+        .parse::<Entry>()
+        .unwrap();
+    let Entry::AccountDefinition(ac) = entry;
+    assert_eq!(ac.name.as_str(), "admin");
 }
 
 #[test]
