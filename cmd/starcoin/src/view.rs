@@ -5,10 +5,10 @@ use anyhow::format_err;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::GetEventResponse;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
-    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventView, TransactionInfoView,
+    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventResponse,
+    TransactionEventView, TransactionInfoView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
@@ -312,7 +312,7 @@ impl ExecuteResultView {
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
-    pub events: Option<Vec<GetEventResponse>>,
+    pub events: Option<Vec<TransactionEventResponse>>,
 }
 
 impl ExecutionOutputView {
@@ -327,7 +327,7 @@ impl ExecutionOutputView {
     pub fn new_with_info(
         txn_hash: HashValue,
         txn_info: TransactionInfoView,
-        events: Vec<GetEventResponse>,
+        events: Vec<TransactionEventResponse>,
     ) -> Self {
         Self {
             txn_hash,

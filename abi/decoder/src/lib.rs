@@ -63,9 +63,9 @@ pub struct DecodedPackage {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct DecodedMoveValue(serde_json::Value);
-impl Into<serde_json::Value> for DecodedMoveValue {
-    fn into(self) -> serde_json::Value {
-        self.0
+impl From<DecodedMoveValue> for serde_json::Value {
+    fn from(v: DecodedMoveValue) -> Self {
+        v.0
     }
 }
 

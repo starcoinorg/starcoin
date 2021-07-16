@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventView, TypeTagView};
+use crate::types::{BlockView, TransactionEventResponse, TypeTagView};
 use jsonrpc_core::error::Error as JsonRpcError;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -39,7 +39,7 @@ pub enum Result {
     Block(Box<BlockView>),
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
-    Event(Box<TransactionEventView>),
+    Event(Box<TransactionEventResponse>),
     MintBlock(Box<MintBlockEvent>),
 }
 

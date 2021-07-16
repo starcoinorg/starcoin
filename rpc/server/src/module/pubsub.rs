@@ -16,7 +16,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{MinerService, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::metadata::Metadata;
-use starcoin_rpc_api::types::{BlockView, TransactionEventView};
+use starcoin_rpc_api::types::{BlockView, TransactionEventResponse, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::{
     ActorService, EventHandler as ActorEventHandler, ServiceContext, ServiceFactory,
@@ -551,15 +551,16 @@ impl EventHandler<ContractEventNotification> for ContractEventHandler {
                     }
                     None => None,
                 };
-                let mut evt = TransactionEventView::new(
-                    Some(e.block_hash),
-                    Some(e.block_number),
-                    Some(e.transaction_hash),
-                    e.transaction_index,
-                    &e.contract_event,
-                );
-                evt.decoded_data = decoded_data;
-                Ok(evt)
+                Ok(TransactionEventResponse {
+                    event: TransactionEventView::new(
+                        Some(e.block_hash),
+                        Some(e.block_number),
+                        Some(e.transaction_hash),
+                        e.transaction_index,
+                        &e.contract_event,
+                    ),
+                    decode_event_data: decoded_data,
+                })
             })
             .map(|e| {
                 e.map(|d| pubsub::Result::Event(Box::new(d)))

@@ -19,9 +19,7 @@ use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
-use starcoin_rpc_api::chain::{
-    GetBlockOption, GetEventOption, GetEventResponse, GetTransactionOption,
-};
+use starcoin_rpc_api::chain::{GetBlockOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::state::{
@@ -33,7 +31,8 @@ use starcoin_rpc_api::types::{
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, ListCodeView, ListResourceView,
     MintedBlockView, PeerInfoView, ResourceView, SignedMessageView, SignedUserTransactionView,
-    StateWithProofView, StrView, TransactionInfoView, TransactionRequest, TransactionView,
+    StateWithProofView, StrView, TransactionEventResponse, TransactionInfoView, TransactionRequest,
+    TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -706,7 +705,7 @@ impl RpcClient {
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> anyhow::Result<Vec<GetEventResponse>> {
+    ) -> anyhow::Result<Vec<TransactionEventResponse>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash, option))
             .map_err(map_err)
     }
