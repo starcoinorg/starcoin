@@ -46,8 +46,8 @@ pub trait ContractApi {
 
     #[rpc(name = "contract.resolve_function")]
     fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<ScriptFunctionABI>;
-    #[rpc(name = "contract.resolve_struct_tag")]
-    fn resolve_struct_tag(&self, struct_tag: StructTagView) -> FutureResult<StructABI>;
+    #[rpc(name = "contract.resolve_struct")]
+    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructABI>;
     #[rpc(name = "contract.resolve_module")]
     fn resolve_module(&self, module_id: ModuleIdView) -> FutureResult<ModuleABI>;
 }

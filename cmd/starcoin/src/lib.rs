@@ -116,6 +116,7 @@ pub fn add_command(
                 .subcommand(dev::UpgradeVMConfigProposalCommand)
                 .subcommand(dev::PackageCmd)
                 .subcommand(dev::CallContractCommand)
+                .subcommand(dev::resolve_cmd::ResolveCommand)
                 .subcommand(dev::call_api_cmd::CallApiCommand)
                 .subcommand(
                     Command::with_name("subscribe")

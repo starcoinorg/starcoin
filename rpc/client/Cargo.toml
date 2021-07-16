@@ -40,6 +40,7 @@ starcoin-service-registry = { path = "../../commons/service-registry" }
 network-p2p-types = { path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}
 futures-timer = "3.0"
+starcoin-abi-types = {path = "../../abi/types"}
 
 [dev-dependencies]
 starcoin-rpc-server = { path = "../server" }
