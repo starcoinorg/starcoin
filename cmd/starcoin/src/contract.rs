@@ -12,6 +12,7 @@ use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use structopt::StructOpt;
 
 /// Get contract data command
+/// Note: this command is deprecated, please use `state get` command.
 ///  Some examples:
 ///  ``` shell
 ///  contract get code 0x1::Account
@@ -63,6 +64,7 @@ impl CommandAction for GetContractDataCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
+        eprintln!("`contract get` command is deprecated, please use `state get` command.");
         let opt = ctx.opt();
         let result = match opt {
             GetContractDataOpt::Code { module_id } => {

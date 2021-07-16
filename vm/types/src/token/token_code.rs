@@ -8,12 +8,13 @@ use crate::token::TOKEN_MODULE_NAME;
 use anyhow::{bail, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
-use serde::{Deserialize, Serialize};
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone)]
 pub struct TokenCode {
     ///Token module's address
     pub address: AccountAddress,
@@ -95,6 +96,46 @@ impl TryInto<TypeTag> for TokenCode {
 
     fn try_into(self) -> Result<TypeTag, Self::Error> {
         Ok(TypeTag::Struct(self.try_into()?))
+    }
+}
+
+impl<'de> Deserialize<'de> for TokenCode {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            TokenCode::from_str(&s).map_err(D::Error::custom)
+        } else {
+            // In order to preserve the Serde data model and help analysis tools,
+            // make sure to wrap our value in a container with the same name
+            // as the original type.
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "TokenCode")]
+            struct Value {
+                address: AccountAddress,
+                module: String,
+                name: String,
+            }
+
+            let value = Value::deserialize(deserializer)?;
+            Ok(TokenCode::new(value.address, value.module, value.name))
+        }
+    }
+}
+
+impl Serialize for TokenCode {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            self.to_string().serialize(serializer)
+        } else {
+            // See comment in deserialize.
+            serializer.serialize_newtype_struct("TokenCode", &self)
+        }
     }
 }
 
