@@ -3,6 +3,7 @@
 
 use jsonrpc_core_client::*;
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::pubsub::EventParams;
 use starcoin_rpc_api::types::{pubsub::EventFilter, pubsub::Kind, BlockView, TransactionEventView};
 use starcoin_types::system_events::MintBlockEvent;
 
@@ -32,10 +33,11 @@ impl PubSubClient {
     pub async fn subscribe_events(
         &self,
         filter: EventFilter,
+        decode: bool,
     ) -> Result<TypedSubscriptionStream<TransactionEventView>, RpcError> {
         self.client.subscribe(
             STARCOIN_SUBSCRIBE,
-            (Kind::Events, filter),
+            (Kind::Events, EventParams { filter, decode }),
             STARCOIN_SUBSCRIPTION,
             STARCOIN_UNSUBSCRIBE,
             "Event",

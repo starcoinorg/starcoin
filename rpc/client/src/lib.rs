@@ -776,9 +776,10 @@ impl RpcClient {
     pub fn subscribe_events(
         &self,
         filter: EventFilter,
+        decode: bool,
     ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
-            let res = inner.pubsub_client.subscribe_events(filter).await;
+            let res = inner.pubsub_client.subscribe_events(filter, decode).await;
             res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)
