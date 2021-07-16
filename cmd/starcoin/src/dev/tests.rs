@@ -3,9 +3,7 @@ use anyhow::{format_err, Result};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
-use starcoin_rpc_api::types::{
-    AnnotatedMoveValueView, ContractCall, FunctionIdView, TransactionStatusView,
-};
+use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionStatusView};
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::{
@@ -421,7 +419,7 @@ fn test_upgrade_module() {
     let result = cli_state.client().contract_call(call).unwrap();
     assert!(!result.is_empty());
     info!("result: {:?}", result);
-    if let AnnotatedMoveValueView::Bool(flag) = result.get(0).unwrap() {
+    if let serde_json::Value::Bool(flag) = result.get(0).unwrap().clone().into() {
         assert!(flag);
     } else {
         unreachable!("result err.");

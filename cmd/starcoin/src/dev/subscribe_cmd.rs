@@ -4,6 +4,8 @@ use anyhow::Result;
 use futures::{StreamExt, TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::TypeTagView;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::event::EventKey;
 use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
@@ -29,13 +31,18 @@ pub struct SubscribeEventOpt {
         multiple = true
     )]
     event_key: Option<Vec<EventKey>>,
-    #[structopt(
-        short = "l",
-        long = "limit",
-        name = "limit",
-        help = "limit return size"
-    )]
+    #[structopt(long = "address", name = "address", multiple = true)]
+    /// events of which addresses to subscribe
+    addresses: Option<Vec<AccountAddress>>,
+    #[structopt(long = "type_tag", name = "type-tag", multiple = true)]
+    /// type tags of the events to subscribe
+    type_tags: Option<Vec<TypeTagView>>,
+    #[structopt(short = "l", long = "limit", name = "limit")]
+    /// limit return size
     limit: Option<usize>,
+    #[structopt(long = "decode")]
+    /// whether decode event
+    decode: bool,
 }
 
 pub struct SubscribeEventCommand;
@@ -52,12 +59,15 @@ impl CommandAction for SubscribeEventCommand {
             from_block: ctx.opt().from_block,
             to_block: ctx.opt().to_block,
             event_keys: ctx.opt().event_key.clone(),
-            addrs: None,
-            type_tags: None,
+            addrs: ctx.opt().addresses.clone(),
+            type_tags: ctx.opt().type_tags.clone(),
             limit: ctx.opt().limit,
         };
 
-        let event_stream = ctx.state().client().subscribe_events(filter)?;
+        let event_stream = ctx
+            .state()
+            .client()
+            .subscribe_events(filter, ctx.opt().decode)?;
         println!("Subscribe successful, Press `q` and Enter to quit");
         blocking_display_notification(event_stream, |evt| {
             serde_json::to_string(&evt).expect("should never fail")

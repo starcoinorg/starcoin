@@ -9106,6 +9106,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "api-limiter",
+ "bcs",
  "bcs-ext",
  "dashmap",
  "futures 0.3.13",

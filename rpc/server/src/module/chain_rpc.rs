@@ -8,13 +8,11 @@ use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::chain::{
-    ChainApi, GetBlockOption, GetEventOption, GetEventResponse, GetTransactionOption,
-};
+use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockSummaryView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    EpochUncleSummaryView, TransactionInfoView, TransactionView,
+    EpochUncleSummaryView, TransactionEventResponse, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
@@ -305,7 +303,7 @@ where
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<GetEventResponse>> {
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let storage = self.storage.clone();
@@ -319,7 +317,7 @@ where
 
             let mut resp_data: Vec<_> = events
                 .into_iter()
-                .map(|e| GetEventResponse {
+                .map(|e| TransactionEventResponse {
                     event: e.into(),
                     decode_event_data: None,
                 })
@@ -347,7 +345,7 @@ where
         &self,
         mut filter: EventFilter,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<GetEventResponse>> {
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let config = self.config.clone();
@@ -385,7 +383,7 @@ where
                 .main_events(filter)
                 .await?
                 .into_iter()
-                .map(|e| GetEventResponse {
+                .map(|e| TransactionEventResponse {
                     event: e.into(),
                     decode_event_data: None,
                 })

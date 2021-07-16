@@ -5,6 +5,7 @@ use crate::types::{
 };
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
+use starcoin_abi_decoder::DecodedMoveValue;
 use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
@@ -27,6 +28,10 @@ pub trait ContractApi {
     /// Call a move contract, return returned move values.
     #[rpc(name = "contract.call")]
     fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValueView>>;
+
+    /// Call a move contract, return move values.
+    #[rpc(name = "contract.call_v2")]
+    fn call_v2(&self, call: ContractCall) -> FutureResult<Vec<DecodedMoveValue>>;
 
     #[rpc(name = "contract.dry_run")]
     fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<DryRunOutputView>;

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::module::map_err;
 use anyhow::Result;
 use futures::channel::mpsc;
 use futures::future::AbortHandle;
@@ -8,17 +9,21 @@ use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
-use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
+use starcoin_abi_decoder::decode_move_value;
+use starcoin_abi_resolver::ABIResolver;
+use starcoin_chain_notify::message::{ContractEventNotification, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{MinerService, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::metadata::Metadata;
-use starcoin_rpc_api::types::{BlockView, TransactionEventView};
+use starcoin_rpc_api::types::{BlockView, TransactionEventResponse, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::{
     ActorService, EventHandler as ActorEventHandler, ServiceContext, ServiceFactory,
     ServiceHandler, ServiceRef, ServiceRequest,
 };
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Storage;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
@@ -100,13 +105,14 @@ impl PubSubImpl {
                 subscriber,
                 errors::invalid_params("newPendingTransactions", "Expected no parameters."),
             )),
-            (pubsub::Kind::Events, Some(pubsub::Params::Events(filter))) => {
-                match filter.try_into() {
+            (pubsub::Kind::Events, Some(pubsub::Params::Events(param))) => {
+                match param.filter.try_into() {
                     Ok(f) => self
                         .service
                         .try_send(SubscribeEvents {
                             subscriber,
                             filter: f,
+                            decode: param.decode,
                         })
                         .map_err(|e| {
                             let msg = map_send_err(&e);
@@ -182,9 +188,11 @@ pub struct PubSubServiceFactory;
 impl ServiceFactory<PubSubService> for PubSubServiceFactory {
     fn create(ctx: &mut ServiceContext<PubSubService>) -> Result<PubSubService> {
         let miner_service = ctx.service_ref::<MinerService>()?.clone();
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
         Ok(PubSubService::new(
             ctx.get_shared::<TxPoolService>()?,
             miner_service,
+            storage,
         ))
     }
 }
@@ -193,20 +201,26 @@ pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,
     txpool: TxPoolService,
     miner_service: ServiceRef<MinerService>,
-
+    storage: Arc<Storage>,
     new_header_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewHeadNotification>>,
-    new_event_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewEventNotification>>,
+    new_event_subscribers:
+        HashMap<SubscriptionId, mpsc::UnboundedSender<ContractEventNotification>>,
     mint_block_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<MintBlockEvent>>,
     new_pending_txn_tasks: Arc<RwLock<HashMap<SubscriptionId, AbortHandle>>>,
 }
 
 impl PubSubService {
-    fn new(txpool: TxPoolService, miner_service: ServiceRef<MinerService>) -> Self {
+    fn new(
+        txpool: TxPoolService,
+        miner_service: ServiceRef<MinerService>,
+        storage: Arc<Storage>,
+    ) -> Self {
         let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
         Self {
             subscriber_id,
             txpool,
             miner_service,
+            storage,
             new_event_subscribers: Default::default(),
             new_header_subscribers: Default::default(),
             mint_block_subscribers: Default::default(),
@@ -220,14 +234,13 @@ impl PubSubService {
 }
 
 type NewHeadNotification = Notification<ThinBlock>;
-type NewEventNotification = Notification<Arc<[Event]>>;
 // type NewTxns = Arc<[HashValue]>;
 
 impl ActorService for PubSubService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<NewHeadNotification>();
-        ctx.subscribe::<NewEventNotification>();
+        ctx.subscribe::<ContractEventNotification>();
         ctx.subscribe::<MintBlockEvent>();
 
         Ok(())
@@ -240,10 +253,10 @@ impl ActorEventHandler<Self, NewHeadNotification> for PubSubService {
     }
 }
 
-impl ActorEventHandler<Self, NewEventNotification> for PubSubService {
+impl ActorEventHandler<Self, ContractEventNotification> for PubSubService {
     fn handle_event(
         &mut self,
-        msg: NewEventNotification,
+        msg: ContractEventNotification,
         _ctx: &mut ServiceContext<PubSubService>,
     ) {
         send_to_all(&mut self.new_event_subscribers, msg);
@@ -324,6 +337,7 @@ impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
 struct SubscribeEvents {
     subscriber: Subscriber<pubsub::Result>,
     filter: Filter,
+    decode: bool,
 }
 
 impl ServiceRequest for SubscribeEvents {
@@ -332,7 +346,11 @@ impl ServiceRequest for SubscribeEvents {
 
 impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
     fn handle(&mut self, msg: SubscribeEvents, ctx: &mut ServiceContext<Self>) {
-        let SubscribeEvents { subscriber, filter } = msg;
+        let SubscribeEvents {
+            subscriber,
+            filter,
+            decode,
+        } = msg;
         let (sender, receiver) = mpsc::unbounded();
         let subscriber_id = self.next_id();
         self.new_event_subscribers
@@ -341,7 +359,11 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
             receiver,
             subscriber_id,
             subscriber,
-            ContractEventHandler { filter },
+            ContractEventHandler {
+                storage: self.storage.clone(),
+                filter,
+                decode,
+            },
         ));
     }
 }
@@ -493,11 +515,13 @@ impl EventHandler<MintBlockEvent> for NewMintBlockHandler {
 #[derive(Clone, Debug)]
 pub struct ContractEventHandler {
     filter: Filter,
+    decode: bool,
+    storage: Arc<Storage>,
 }
 
-impl EventHandler<Notification<Arc<[Event]>>> for ContractEventHandler {
-    fn handle(&self, msg: Notification<Arc<[Event]>>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
-        let Notification(events) = msg;
+impl EventHandler<ContractEventNotification> for ContractEventHandler {
+    fn handle(&self, msg: ContractEventNotification) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+        let Notification((state_root, events)) = msg;
         let filtered = events
             .as_ref()
             .iter()
@@ -511,18 +535,37 @@ impl EventHandler<Notification<Arc<[Event]>>> for ContractEventHandler {
             }
         };
 
+        let state = if self.decode {
+            Some(ChainStateDB::new(self.storage.clone(), Some(state_root)))
+        } else {
+            None
+        };
         filtered_events
             .into_iter()
             .map(|e| {
-                TransactionEventView::new(
-                    Some(e.block_hash),
-                    Some(e.block_number),
-                    Some(e.transaction_hash),
-                    e.transaction_index,
-                    &e.contract_event,
-                )
+                let decoded_data = match &state {
+                    Some(s) => {
+                        let abi =
+                            ABIResolver::new(s).resolve_type_tag(e.contract_event.type_tag())?;
+                        Some(decode_move_value(&abi, e.contract_event.event_data())?)
+                    }
+                    None => None,
+                };
+                Ok(TransactionEventResponse {
+                    event: TransactionEventView::new(
+                        Some(e.block_hash),
+                        Some(e.block_number),
+                        Some(e.transaction_hash),
+                        e.transaction_index,
+                        &e.contract_event,
+                    ),
+                    decode_event_data: decoded_data,
+                })
             })
-            .map(|e| Ok(pubsub::Result::Event(Box::new(e))))
+            .map(|e| {
+                e.map(|d| pubsub::Result::Event(Box::new(d)))
+                    .map_err(map_err)
+            })
             .collect()
     }
 }

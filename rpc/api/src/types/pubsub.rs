@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventView, TypeTagView};
+use crate::types::{BlockView, TransactionEventResponse, TypeTagView};
 use jsonrpc_core::error::Error as JsonRpcError;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -39,7 +39,7 @@ pub enum Result {
     Block(Box<BlockView>),
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
-    Event(Box<TransactionEventView>),
+    Event(Box<TransactionEventResponse>),
     MintBlock(Box<MintBlockEvent>),
 }
 
@@ -63,7 +63,7 @@ pub enum Params {
     /// No parameters passed.
     None,
     /// Log parameters.
-    Events(EventFilter),
+    Events(EventParams),
 }
 
 impl Default for Params {
@@ -87,6 +87,14 @@ impl<'a> Deserialize<'a> for Params {
             .map(Params::Events)
             .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
     }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
+pub struct EventParams {
+    #[serde(flatten)]
+    pub filter: EventFilter,
+    #[serde(default)]
+    pub decode: bool,
 }
 
 /// Filter

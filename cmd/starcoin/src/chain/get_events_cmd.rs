@@ -6,7 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::{GetEventOption, GetEventResponse};
+use starcoin_rpc_api::chain::GetEventOption;
+use starcoin_rpc_api::types::TransactionEventResponse;
 use structopt::StructOpt;
 
 /// Get chain's events by txn hash
@@ -24,7 +25,7 @@ impl CommandAction for GetEventsCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetEventsOpt;
-    type ReturnItem = Vec<GetEventResponse>;
+    type ReturnItem = Vec<TransactionEventResponse>;
 
     fn run(
         &self,

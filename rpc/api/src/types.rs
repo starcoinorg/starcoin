@@ -4,17 +4,16 @@
 mod node_api_types;
 pub mod pubsub;
 
-pub use node_api_types::*;
-
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
+pub use node_api_types::*;
 use serde::de::{DeserializeOwned, Error};
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
+pub use starcoin_abi_decoder::DecodedMoveValue;
 use starcoin_abi_decoder::{
-    DecodedMoveValue, DecodedPackage, DecodedScript, DecodedScriptFunction,
-    DecodedTransactionPayload,
+    DecodedPackage, DecodedScript, DecodedScriptFunction, DecodedTransactionPayload,
 };
 use starcoin_abi_types::ModuleABI;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
@@ -874,14 +873,21 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TransactionEventResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decode_event_data: Option<DecodedMoveValue>,
+    #[serde(flatten)]
+    pub event: TransactionEventView,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct TransactionEventView {
     pub block_hash: Option<HashValue>,
     pub block_number: Option<StrView<BlockNumber>>,
     pub transaction_hash: Option<HashValue>,
     // txn index in block
     pub transaction_index: Option<u32>,
-
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTag,
     pub event_key: EventKey,
