@@ -105,6 +105,13 @@ impl AccessPath {
         };
         AccessPath::new(AccountAddress::random(), DataPath::Resource(struct_tag))
     }
+
+    pub fn as_module_id(&self) -> Option<ModuleId> {
+        match &self.path {
+            DataPath::Code(module_name) => Some(ModuleId::new(self.address, module_name.clone())),
+            _ => None,
+        }
+    }
 }
 
 impl Serialize for AccessPath {

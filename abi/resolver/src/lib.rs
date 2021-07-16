@@ -40,17 +40,27 @@ impl<'a> ABIResolver<'a> {
         let module = self
             .resolver
             .get_module(module_id.address(), module_id.name())?;
+        self.resolve_compiled_module(module.as_ref())
+    }
+
+    pub fn resolve_module_code(&self, code: &[u8]) -> Result<ModuleABI> {
+        let module = CompiledModule::deserialize(code)?;
+        self.resolve_compiled_module(&module)
+    }
+
+    fn resolve_compiled_module(&self, module: &CompiledModule) -> Result<ModuleABI> {
         let m = Module::new(&module);
+        let module_id = m.module_id();
         let structs = m
             .structs
             .iter()
-            .map(|(name, s)| self.struct_to_abi(module_id, name, s))
+            .map(|(name, s)| self.struct_to_abi(&module_id, name, s))
             .collect::<Result<Vec<_>>>()?;
         let functions = m
             .exposed_functions
             .iter()
             .filter(|(_, func)| func.visibility == Visibility::Script) // only script functions
-            .map(|(name, func)| self.function_to_abi(module_id, name.as_ident_str(), func))
+            .map(|(name, func)| self.function_to_abi(&module_id, name.as_ident_str(), func))
             .collect::<Result<Vec<_>>>()?;
         Ok(ModuleABI::new(m.module_id(), structs, functions))
     }
