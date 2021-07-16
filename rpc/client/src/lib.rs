@@ -16,6 +16,7 @@ use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
 use parking_lot::Mutex;
 use serde_json::Value;
+use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
@@ -29,10 +30,10 @@ use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockSummaryView, BlockView,
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
-    DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, ListCodeView, ListResourceView,
-    MintedBlockView, PeerInfoView, ResourceView, SignedMessageView, SignedUserTransactionView,
-    StateWithProofView, StrView, TransactionEventResponse, TransactionInfoView, TransactionRequest,
-    TransactionView,
+    DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, FunctionIdView, ListCodeView,
+    ListResourceView, MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
+    SignedUserTransactionView, StateWithProofView, StrView, StructTagView,
+    TransactionEventResponse, TransactionInfoView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -561,6 +562,24 @@ impl RpcClient {
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {
         self.call_rpc_blocking(|inner| inner.contract_client.call_v2(call))
+            .map_err(map_err)
+    }
+
+    pub fn contract_resolve_function(
+        &self,
+        function_id: FunctionIdView,
+    ) -> anyhow::Result<ScriptFunctionABI> {
+        self.call_rpc_blocking(|inner| inner.contract_client.resolve_function(function_id))
+            .map_err(map_err)
+    }
+
+    pub fn contract_resolve_struct(&self, struct_tag: StructTagView) -> anyhow::Result<StructABI> {
+        self.call_rpc_blocking(|inner| inner.contract_client.resolve_struct(struct_tag))
+            .map_err(map_err)
+    }
+
+    pub fn contract_resolve_module(&self, module_id: ModuleIdView) -> anyhow::Result<ModuleABI> {
+        self.call_rpc_blocking(|inner| inner.contract_client.resolve_module(module_id))
             .map_err(map_err)
     }
 

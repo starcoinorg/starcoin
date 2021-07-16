@@ -54,7 +54,9 @@ Feature: cmd integration test
 
  #dev
   Scenario Outline: [cmd] dev test
-    Then cmd: "account unlock -d 30000 0x0000000000000000000000000A550C18"
+    Then cmd: "dev resolve function 0x1::TransferScripts::peer_to_peer_v2"
+    Then cmd: "dev resolve struct 0x1::Account::Account"
+    Then cmd: "dev resolve module 0x1::Account"
     Then stop
 
     Examples:

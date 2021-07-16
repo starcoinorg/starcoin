@@ -24,6 +24,7 @@ pub(crate) mod log_cmd;
 pub(crate) mod move_explain;
 mod package_cmd;
 pub(crate) mod panic_cmd;
+pub(crate) mod resolve_cmd;
 pub(crate) mod sign_txn_helper;
 pub(crate) mod sleep_cmd;
 mod subscribe_cmd;

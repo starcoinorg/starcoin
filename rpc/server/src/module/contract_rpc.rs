@@ -270,7 +270,7 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn resolve_struct_tag(&self, struct_tag: StructTagView) -> FutureResult<StructABI> {
+    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructABI> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
