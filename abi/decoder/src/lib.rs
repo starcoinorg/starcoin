@@ -63,6 +63,11 @@ pub struct DecodedPackage {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct DecodedMoveValue(serde_json::Value);
+impl Into<serde_json::Value> for DecodedMoveValue {
+    fn into(self) -> serde_json::Value {
+        self.0
+    }
+}
 
 /// Transform AnnotatedMoveValue into DecodedMoveValue.
 fn struct_to_json(origin: AnnotatedMoveStruct) -> serde_json::Value {

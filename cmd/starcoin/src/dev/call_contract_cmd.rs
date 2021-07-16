@@ -5,9 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::types::{
-    AnnotatedMoveValueView, ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView,
-};
+use starcoin_abi_decoder::DecodedMoveValue;
+use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView};
 use structopt::StructOpt;
 
 /// Call Contract command
@@ -46,7 +45,7 @@ impl CommandAction for CallContractCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = CallContractOpt;
-    type ReturnItem = Vec<AnnotatedMoveValueView>;
+    type ReturnItem = Vec<DecodedMoveValue>;
 
     fn run(
         &self,

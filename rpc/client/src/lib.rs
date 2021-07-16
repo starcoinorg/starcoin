@@ -29,8 +29,8 @@ use starcoin_rpc_api::state::{
 };
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, AnnotatedMoveValueView, BlockHeaderView,
-    BlockSummaryView, BlockView, ChainId, ChainInfoView, CodeView, ContractCall, DryRunOutputView,
+    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockSummaryView, BlockView,
+    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, ListCodeView, ListResourceView,
     MintedBlockView, PeerInfoView, ResourceView, SignedMessageView, SignedUserTransactionView,
     StateWithProofView, StrView, TransactionInfoView, TransactionRequest, TransactionView,
@@ -560,8 +560,8 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValueView>> {
-        self.call_rpc_blocking(|inner| inner.contract_client.call(call))
+    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {
+        self.call_rpc_blocking(|inner| inner.contract_client.call_v2(call))
             .map_err(map_err)
     }
 
