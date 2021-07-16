@@ -34,7 +34,7 @@ pub struct SubscribeEventOpt {
     #[structopt(long = "address", name = "address", multiple = true)]
     /// events of which addresses to subscribe
     addresses: Option<Vec<AccountAddress>>,
-    #[structopt(short = "t", long = "type_tag", name = "type-tag", multiple = true)]
+    #[structopt(long = "type_tag", name = "type-tag", multiple = true)]
     /// type tags of the events to subscribe
     type_tags: Option<Vec<TypeTagView>>,
     #[structopt(short = "l", long = "limit", name = "limit")]
