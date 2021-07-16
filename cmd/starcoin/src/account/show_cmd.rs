@@ -7,11 +7,11 @@ use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
-use starcoin_rpc_api::types::AnnotatedMoveValueView;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::BalanceResource;
+use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 use structopt::StructOpt;
 
@@ -66,26 +66,23 @@ impl CommandAction for ShowCommand {
             .get_account_resource(account.address())?
             .map(|res| res.sequence_number());
 
-        let mut balances = HashMap::new();
-
-        let state = client.state_get_account_state_set(*account.address(), None)?;
-        if let Some(state) = state {
-            for (token_code, resource) in state.resources.into_iter().filter_map(|(k, v)| {
-                BalanceResource::token_code(&k.0).map(|token_code| (token_code, v))
-            }) {
-                let balance = if let AnnotatedMoveValueView::Struct(token) = &resource.value[0].1 {
-                    if let AnnotatedMoveValueView::U128(value) = token.value[0].1 {
-                        value.0
-                    } else {
-                        0
-                    }
+        let resources = client.state_list_resource(*account.address(), false, None)?;
+        let balances: HashMap<TokenCode, u128> = resources
+            .resources
+            .into_iter()
+            .filter_map(|(resource_type, resource)| {
+                if let Some(token_code) = BalanceResource::token_code(&resource_type.0) {
+                    let balance = resource
+                        .decode::<BalanceResource>()
+                        .ok()
+                        .map(|balance| balance.token());
+                    Some((token_code, balance.unwrap_or(0)))
                 } else {
-                    //this should not happen
-                    0
-                };
-                balances.insert(token_code.to_string(), balance);
-            }
-        }
+                    None
+                }
+            })
+            .collect();
+
         let auth_key = account.public_key.authentication_key();
         Ok(AccountWithStateView {
             auth_key: auth_key.to_encoded_string()?,

@@ -18,6 +18,7 @@ use starcoin_vm_types::account_config::events::accept_token_payment::AcceptToken
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -104,7 +105,7 @@ pub struct AccountWithStateView {
     pub account: AccountInfo,
     pub auth_key: String,
     pub sequence_number: Option<u64>,
-    pub balances: HashMap<String, u128>,
+    pub balances: HashMap<TokenCode, u128>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]

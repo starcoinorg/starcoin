@@ -9,7 +9,7 @@ pub use node_api_types::*;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
-use serde::de::Error;
+use serde::de::{DeserializeOwned, Error};
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
 use starcoin_abi_decoder::{
@@ -67,6 +67,12 @@ pub struct ResourceView {
     pub raw: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub json: Option<DecodedMoveValue>,
+}
+
+impl ResourceView {
+    pub fn decode<R: MoveResource + DeserializeOwned>(&self) -> anyhow::Result<R> {
+        bcs_ext::from_bytes(self.raw.0.as_slice())
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -932,6 +938,7 @@ impl TransactionEventView {
     }
 }
 
+use starcoin_vm_types::move_resource::MoveResource;
 pub use vm_status_translator::VmStatusExplainView;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
