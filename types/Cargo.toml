@@ -20,7 +20,7 @@ rand_core = { version = "0.6.3", default-features = false }
 serde = { version = "1.0.126", default-features = false }
 serde_json = "1.0"
 thiserror = "1.0.26"
-num_enum = "0.5.1"
+num_enum = "0.5.2"
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-uint = {path = "uint"}
