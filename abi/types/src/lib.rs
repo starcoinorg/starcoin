@@ -437,10 +437,7 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeABI {
             ABI::Vector(layout) => Ok(match layout.as_ref() {
                 TypeABI::U8 => {
                     let bytes = <Vec<u8>>::deserialize(deserializer)?;
-                    match String::from_utf8(bytes) {
-                        Ok(s) => V::String(s),
-                        Err(e) => V::String(format!("0x{}", hex::encode(e.as_bytes()))),
-                    }
+                    V::String(format!("0x{}", hex::encode(&bytes)))
                 }
                 _ => V::Array(deserializer.deserialize_seq(VectorElementVisitor(layout.as_ref()))?),
             }),
