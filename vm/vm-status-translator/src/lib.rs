@@ -10,43 +10,33 @@ use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::TransactionStatus;
 use starcoin_vm_types::vm_status::{AbortLocation, KeptVMStatus, VMStatus};
 
-pub struct VmStatusTranslator<M: StateView> {
-    state: M,
-}
+pub fn locate_execution_failure(
+    state: &dyn StateView,
+    location: AbortLocation,
+    function: u16,
+) -> Result<Option<(ModuleId, Identifier)>> {
+    let module = match location {
+        AbortLocation::Module(module_id) => {
+            let ap =
+                AccessPath::code_access_path(*module_id.address(), module_id.name().to_owned());
 
-impl<M: StateView> VmStatusTranslator<M> {
-    pub fn new(s: M) -> Self {
-        Self { state: s }
-    }
-
-    pub fn locate_execution_failure(
-        &self,
-        location: AbortLocation,
-        function: u16,
-    ) -> Result<Option<(ModuleId, Identifier)>> {
-        let module = match location {
-            AbortLocation::Module(module_id) => {
-                let ap =
-                    AccessPath::code_access_path(*module_id.address(), module_id.name().to_owned());
-
-                match self.state.get(&ap)? {
-                    Some(bytes) => CompiledModule::deserialize(&bytes).ok(),
-                    None => None,
-                }
+            match state.get(&ap)? {
+                Some(bytes) => CompiledModule::deserialize(&bytes).ok(),
+                None => None,
             }
-            AbortLocation::Script => None,
-        };
-        Ok(match module {
-            Some(m) => {
-                let fd = m.function_def_at(FunctionDefinitionIndex(function));
-                let fh = m.function_handle_at(fd.function);
-                let func_name = m.identifier_at(fh.name).to_owned();
+        }
+        AbortLocation::Script => None,
+    };
+    Ok(match module {
+        Some(m) => {
+            let fd = m.function_def_at(FunctionDefinitionIndex(function));
+            let fh = m.function_handle_at(fd.function);
+            let func_name = m.identifier_at(fh.name).to_owned();
 
-                Some((m.self_id(), func_name))
-            }
-            None => None,
-        })
-    }
+            Some((m.self_id(), func_name))
+        }
+        None => None,
+    })
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
@@ -110,8 +100,8 @@ pub enum VmStatusExplainView {
     },
 }
 
-pub fn explain_vm_status<S: StateView>(
-    state_view: S,
+pub fn explain_vm_status(
+    state_view: &dyn StateView,
     vm_status: VMStatus,
 ) -> Result<VmStatusExplainView> {
     let vm_status_explain = match &vm_status {
@@ -127,24 +117,20 @@ pub fn explain_vm_status<S: StateView>(
             location,
             function,
             code_offset,
-        } => {
-            let t = VmStatusTranslator::new(state_view);
-            VmStatusExplainView::ExecutionFailure {
-                status_code: format!("{:?}", status_code),
-                location: location.clone(),
-                function: *function,
-                function_name: t
-                    .locate_execution_failure(location.clone(), *function)?
-                    .map(|l| l.1.to_string()),
-                code_offset: *code_offset,
-            }
-        }
+        } => VmStatusExplainView::ExecutionFailure {
+            status_code: format!("{:?}", status_code),
+            location: location.clone(),
+            function: *function,
+            function_name: locate_execution_failure(state_view, location.clone(), *function)?
+                .map(|l| l.1.to_string()),
+            code_offset: *code_offset,
+        },
     };
     Ok(vm_status_explain)
 }
 //should define a TransactionStatusExplainView?
-pub fn explain_transaction_status<S: StateView>(
-    state_view: S,
+pub fn explain_transaction_status(
+    state_view: &dyn StateView,
     txn_status: TransactionStatus,
 ) -> Result<VmStatusExplainView> {
     let vm_status_explain = match &txn_status {
@@ -159,18 +145,14 @@ pub fn explain_transaction_status<S: StateView>(
                 location,
                 function,
                 code_offset,
-            } => {
-                let t = VmStatusTranslator::new(state_view);
-                VmStatusExplainView::ExecutionFailure {
-                    status_code: "".to_string(),
-                    location: location.clone(),
-                    function: *function,
-                    function_name: t
-                        .locate_execution_failure(location.clone(), *function)?
-                        .map(|l| l.1.to_string()),
-                    code_offset: *code_offset,
-                }
-            }
+            } => VmStatusExplainView::ExecutionFailure {
+                status_code: "".to_string(),
+                location: location.clone(),
+                function: *function,
+                function_name: locate_execution_failure(state_view, location.clone(), *function)?
+                    .map(|l| l.1.to_string()),
+                code_offset: *code_offset,
+            },
             c => VmStatusExplainView::Error(format!("{:?}", c)),
         },
         TransactionStatus::Discard(c) => VmStatusExplainView::Error(format!("{:?}", c)),

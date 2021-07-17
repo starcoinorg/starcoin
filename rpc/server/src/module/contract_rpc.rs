@@ -3,9 +3,10 @@
 
 use crate::module::helpers::TransactionRequestFiller;
 use crate::module::map_err;
+use anyhow::format_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
-use starcoin_abi_decoder::DecodedMoveValue;
+use starcoin_abi_decoder::{decode_move_value, DecodedMoveValue};
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI, TypeABI};
 use starcoin_account_api::AccountAsyncService;
@@ -15,6 +16,7 @@ use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
     DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
+    TransactionOutputView, WriteOpValueView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
@@ -25,6 +27,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::TransactionArgument;
 use std::str::FromStr;
@@ -213,18 +216,13 @@ where
 
             let txn = txn_builder.fill_transaction(transaction).await?;
             let state_view = ChainStateDB::new(storage, Some(state_root));
-            let output = starcoin_dev::playground::dry_run(
+            dry_run(
                 &state_view,
                 DryRunTransaction {
                     raw_txn: txn,
                     public_key: sender_public_key.0,
                 },
-            )?;
-            let vm_status_explain = vm_status_translator::explain_vm_status(state_view, output.0)?;
-            Ok(DryRunOutputView {
-                explained_status: vm_status_explain,
-                txn_output: output.1.into(),
-            })
+            )
         }
         .map_err(map_err);
         Box::pin(f.boxed())
@@ -241,18 +239,13 @@ where
             let state_root = service.state_root().await?;
             let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
             let state_view = ChainStateDB::new(storage, Some(state_root));
-            let output = starcoin_dev::playground::dry_run(
+            dry_run(
                 &state_view,
                 DryRunTransaction {
                     raw_txn,
                     public_key: sender_public_key.0,
                 },
-            )?;
-            let vm_status_explain = vm_status_translator::explain_vm_status(state_view, output.0)?;
-            Ok(DryRunOutputView {
-                explained_status: vm_status_explain,
-                txn_output: output.1.into(),
-            })
+            )
         }
         .map_err(map_err);
         Box::pin(f.boxed())
@@ -291,4 +284,38 @@ where
         .map_err(map_err);
         Box::pin(fut.boxed())
     }
+}
+
+pub fn dry_run(
+    state_view: &dyn StateView,
+    txn: DryRunTransaction,
+) -> anyhow::Result<DryRunOutputView> {
+    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn)?;
+    let vm_status_explain = vm_status_translator::explain_vm_status(state_view, vm_status)?;
+    let mut txn_output: TransactionOutputView = output.into();
+    let resolver = ABIResolver::new(state_view);
+    for action in txn_output.write_set.iter_mut() {
+        let access_path = action.access_path.clone();
+        if let Some(value) = &mut action.value {
+            match value {
+                WriteOpValueView::Code(view) => {
+                    view.abi = Some(resolver.resolve_module_code(view.code.0.as_slice())?);
+                }
+                WriteOpValueView::Resource(view) => {
+                    let struct_tag = access_path.path.as_struct_tag().ok_or_else(|| {
+                        format_err!("invalid resource access path: {}", access_path)
+                    })?;
+                    let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
+                    view.json = Some(decode_move_value(
+                        &TypeABI::Struct(Box::new(struct_abi)),
+                        view.raw.0.as_slice(),
+                    )?)
+                }
+            }
+        }
+    }
+    Ok(DryRunOutputView {
+        explained_status: vm_status_explain,
+        txn_output,
+    })
 }

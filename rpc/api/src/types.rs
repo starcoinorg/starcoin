@@ -68,6 +68,15 @@ pub struct ResourceView {
     pub json: Option<DecodedMoveValue>,
 }
 
+impl From<Vec<u8>> for ResourceView {
+    fn from(v: Vec<u8>) -> Self {
+        Self {
+            raw: StrView(v),
+            json: None,
+        }
+    }
+}
+
 impl ResourceView {
     pub fn decode<R: MoveResource + DeserializeOwned>(&self) -> anyhow::Result<R> {
         bcs_ext::from_bytes(self.raw.0.as_slice())
@@ -79,6 +88,15 @@ pub struct CodeView {
     pub code: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub abi: Option<ModuleABI>,
+}
+
+impl From<Vec<u8>> for CodeView {
+    fn from(v: Vec<u8>) -> Self {
+        Self {
+            code: StrView(v),
+            abi: None,
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
@@ -971,9 +989,23 @@ impl From<TransactionOutput> for TransactionOutputView {
             status: status.into(),
             write_set: write_set
                 .into_iter()
-                .map(|(p, w)| TransactionOutputAction {
-                    access_path: p.into(),
-                    action: w.into(),
+                .map(|(p, w)| {
+                    let (action, value) = match w {
+                        WriteOp::Deletion => (WriteOpView::Deletion, None),
+                        WriteOp::Value(v) => (
+                            WriteOpView::Value,
+                            Some(if p.path.is_resource() {
+                                WriteOpValueView::Resource(v.into())
+                            } else {
+                                WriteOpValueView::Code(v.into())
+                            }),
+                        ),
+                    };
+                    TransactionOutputAction {
+                        access_path: p,
+                        action,
+                        value,
+                    }
                 })
                 .collect(),
         }
@@ -982,38 +1014,22 @@ impl From<TransactionOutput> for TransactionOutputView {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionOutputAction {
-    #[serde(flatten)]
-    pub access_path: AccessPathView,
+    pub access_path: AccessPath,
     pub action: WriteOpView,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<WriteOpValueView>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum WriteOpValueView {
+    Code(CodeView),
+    Resource(ResourceView),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum WriteOpView {
     Deletion,
-    Value(StrView<Vec<u8>>),
-}
-impl From<WriteOp> for WriteOpView {
-    fn from(op: WriteOp) -> Self {
-        match op {
-            WriteOp::Deletion => WriteOpView::Deletion,
-            WriteOp::Value(v) => WriteOpView::Value(StrView(v)),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AccessPathView {
-    pub address: AccountAddress,
-    pub path: String,
-}
-
-impl From<AccessPath> for AccessPathView {
-    fn from(ap: AccessPath) -> Self {
-        Self {
-            address: ap.address,
-            path: ap.path.to_string(),
-        }
-    }
+    Value,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
