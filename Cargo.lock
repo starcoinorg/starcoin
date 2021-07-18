@@ -8011,6 +8011,7 @@ dependencies = [
  "rand_core 0.6.3",
  "serde",
  "serde_bytes",
+ "serde_json",
  "starcoin-crypto",
  "starcoin-service-registry",
  "starcoin-types",

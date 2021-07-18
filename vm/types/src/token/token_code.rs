@@ -134,7 +134,10 @@ impl Serialize for TokenCode {
             self.to_string().serialize(serializer)
         } else {
             // See comment in deserialize.
-            serializer.serialize_newtype_struct("TokenCode", &self)
+            serializer.serialize_newtype_struct(
+                "TokenCode",
+                &(self.address, self.module.clone(), self.name.clone()),
+            )
         }
     }
 }
@@ -143,7 +146,9 @@ impl Serialize for TokenCode {
 mod test {
     use crate::language_storage::{StructTag, TypeTag};
     use crate::parser::parse_type_tag;
+    use crate::token::stc::STC_TOKEN_CODE;
     use crate::token::token_code::TokenCode;
+    use serde::{Deserialize, Serialize};
     use std::convert::TryInto;
     use std::str::FromStr;
 
@@ -158,5 +163,24 @@ mod test {
             TypeTag::Struct(type_tag.clone())
         );
         assert_eq!(tc, type_tag.try_into().unwrap());
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, Eq, PartialEq)]
+    struct Setting {
+        default_token: TokenCode,
+    }
+
+    #[test]
+    fn test_token_serialize() {
+        let setting = Setting {
+            default_token: STC_TOKEN_CODE.clone(),
+        };
+        let json = serde_json::to_string(&setting).unwrap();
+        let setting2: Setting = serde_json::from_str(json.as_str()).unwrap();
+        assert_eq!(setting, setting2);
+
+        let bytes = bcs_ext::to_bytes(&setting).unwrap();
+        let setting3: Setting = bcs_ext::from_bytes(bytes.as_slice()).unwrap();
+        assert_eq!(setting, setting3);
     }
 }
