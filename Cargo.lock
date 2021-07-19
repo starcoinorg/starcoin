@@ -7960,6 +7960,7 @@ dependencies = [
  "starcoin-resource-viewer",
  "starcoin-vm-types",
  "stdlib",
+ "test-helper",
 ]
 
 [[package]]
