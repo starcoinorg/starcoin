@@ -94,7 +94,7 @@ whitespace-exceptions = [
 ]
 
 [workspace.enforced-attributes]
-authors = ["Starcoin Association"]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 
 [workspace.banned-deps.direct]
