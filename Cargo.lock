@@ -298,7 +298,7 @@ dependencies = [
 
 [[package]]
 name = "airdrop"
-version = "0.1.0"
+version = "1.4.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8565,7 +8565,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-indexer"
-version = "0.1.0"
+version = "1.4.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8704,7 +8704,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner-client-api"
-version = "0.1.0"
+version = "1.4.0"
 dependencies = [
  "anyhow",
  "dyn-clone",
