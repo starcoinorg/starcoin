@@ -39,6 +39,10 @@ impl<'a> Resolver<'a> {
         Resolver { state, cache }
     }
 
+    pub fn update_cache(&self, module: CompiledModule) {
+        self.cache.insert(module.self_id(), module);
+    }
+
     pub fn get_module(
         &self,
         address: &AccountAddress,

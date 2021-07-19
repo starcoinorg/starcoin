@@ -43,8 +43,11 @@ impl<'a> ABIResolver<'a> {
         self.resolve_compiled_module(module.as_ref())
     }
 
+    /// Resolve module by code, the code do not on chain.
     pub fn resolve_module_code(&self, code: &[u8]) -> Result<ModuleABI> {
         let module = CompiledModule::deserialize(code)?;
+        // the code do not on chain, so put it to module cache.
+        self.resolver.update_cache(module.clone());
         self.resolve_compiled_module(&module)
     }
 
@@ -303,6 +306,7 @@ mod tests {
     use crate::ABIResolver;
     use anyhow::Result;
     use starcoin_vm_types::access_path::{AccessPath, DataPath};
+    use starcoin_vm_types::account_address::AccountAddress;
     use starcoin_vm_types::account_config::genesis_address;
     use starcoin_vm_types::file_format::CompiledModule;
     use starcoin_vm_types::identifier::Identifier;
@@ -381,5 +385,27 @@ mod tests {
             })
             .unwrap();
         let _m = Module::new(dao);
+    }
+
+    #[test]
+    fn test_resolve_self_dep_module_code() {
+        let test_source = r#"
+        module {{sender}}::TestModule {
+            struct A has copy, store{
+            } 
+            struct B has key{
+                a: vector<A>,
+            }
+        }
+        "#;
+        let address = AccountAddress::random();
+        let module: starcoin_vm_types::transaction::Module =
+            test_helper::executor::compile_modules_with_address(address, test_source)
+                .pop()
+                .unwrap();
+        let modules = stdlib::load_latest_stable_compiled_modules().unwrap().1;
+        let view = InMemoryStateView::new(modules);
+        let r = ABIResolver::new(&view);
+        let _abi = r.resolve_module_code(module.code()).unwrap();
     }
 }
