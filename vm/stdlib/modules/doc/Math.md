@@ -12,13 +12,16 @@ The module provide some improved math calculations.
 -  [Function `sqrt`](#0x1_Math_sqrt)
 -  [Function `pow`](#0x1_Math_pow)
 -  [Function `mul_div`](#0x1_Math_mul_div)
+-  [Function `sum`](#0x1_Math_sum)
+-  [Function `avg`](#0x1_Math_avg)
 -  [Specification](#@Specification_1)
     -  [Function `sqrt`](#@Specification_1_sqrt)
     -  [Function `pow`](#@Specification_1_pow)
     -  [Function `mul_div`](#@Specification_1_mul_div)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
 
 
 
@@ -200,6 +203,65 @@ calculate x * y /z with as little loss of precision as possible and avoid overfl
     <b>let</b> d = y % z;
     //y = c * z + d;
     a * b * z + a * d + b * c + b * d / z
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Math_sum"></a>
+
+## Function `sum`
+
+calculate sum of nums
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sum">sum</a>(nums: &vector&lt;u128&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sum">sum</a>(nums: &vector&lt;u128&gt;): u128 {
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(nums);
+    <b>let</b> i = 0;
+    <b>let</b> sum = 0;
+    <b>while</b> (i &lt; len){
+        sum = sum + *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(nums, i);
+        i = i + 1;
+    };
+    sum
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Math_avg"></a>
+
+## Function `avg`
+
+calculate average of nums
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_avg">avg</a>(nums: &vector&lt;u128&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_avg">avg</a>(nums: &vector&lt;u128&gt;): u128{
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(nums);
+    <b>let</b> sum = <a href="Math.md#0x1_Math_sum">sum</a>(nums);
+    sum/(len <b>as</b> u128)
 }
 </code></pre>
 
