@@ -20,7 +20,7 @@ actix = "0.10.0"
 actix-rt = "1.1"
 jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "17.0.0"
-jsonrpc-http-server = "17.1.0"
+jsonrpc-http-server = "18.0.0"
 jsonrpc-tcp-server = "17.0.0"
 jsonrpc-ipc-server = "17.1.0"
 jsonrpc-ws-server = "17.1.0"
