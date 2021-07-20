@@ -3954,6 +3954,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-core"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
+dependencies = [
+ "futures 0.3.13",
+ "futures-executor",
+ "futures-util",
+ "log 0.4.14",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "jsonrpc-core-client"
 version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4090,6 +4105,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-server-utils"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa4fdea130485b572c39a460d50888beb00afb3e35de23ccd7fad8ff19f0e0d4"
+dependencies = [
+ "bytes 1.0.1",
+ "futures 0.3.13",
+ "globset",
+ "jsonrpc-core 18.0.0",
+ "lazy_static",
+ "log 0.4.14",
+ "tokio 1.4.0",
+ "tokio-stream",
+ "tokio-util 0.6.5",
+ "unicase 2.6.0",
+]
+
+[[package]]
 name = "jsonrpc-tcp-server"
 version = "17.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4116,13 +4149,13 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-ws-server"
-version = "17.1.0"
+version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1d267a8649ec37e4452dd7b3f48827c9cdf36de3a3539cf73242c222ba2eb50"
+checksum = "f892c7d766369475ab7b0669f417906302d7c0fb521285c0a0c92e52e7c8e946"
 dependencies = [
  "futures 0.3.13",
- "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core 18.0.0",
+ "jsonrpc-server-utils 18.0.0",
  "log 0.4.14",
  "parity-ws",
  "parking_lot 0.11.1",
@@ -5898,9 +5931,9 @@ dependencies = [
 
 [[package]]
 name = "parity-ws"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e02a625dd75084c2a7024f07c575b61b782f729d18702dabb3cdbf31911dc61"
+checksum = "d0ab8a461779bd022964cae2b4989fa9c99deb270bec162da2125ec03c09fcaa"
 dependencies = [
  "byteorder 1.4.3",
  "bytes 0.4.12",
