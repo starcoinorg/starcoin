@@ -3954,6 +3954,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-core"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
+dependencies = [
+ "futures 0.3.13",
+ "futures-executor",
+ "futures-util",
+ "log 0.4.14",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "jsonrpc-core-client"
 version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4086,6 +4101,24 @@ dependencies = [
  "log 0.4.14",
  "tokio 0.2.25",
  "tokio-util 0.3.1",
+ "unicase 2.6.0",
+]
+
+[[package]]
+name = "jsonrpc-server-utils"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa4fdea130485b572c39a460d50888beb00afb3e35de23ccd7fad8ff19f0e0d4"
+dependencies = [
+ "bytes 1.0.1",
+ "futures 0.3.13",
+ "globset",
+ "jsonrpc-core 18.0.0",
+ "lazy_static",
+ "log 0.4.14",
+ "tokio 1.4.0",
+ "tokio-stream",
+ "tokio-util 0.6.5",
  "unicase 2.6.0",
 ]
 
@@ -8678,7 +8711,7 @@ dependencies = [
  "hex",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-server-utils 18.0.0",
  "libloading",
  "parking_lot 0.11.1",
  "rand 0.8.4",
@@ -9020,7 +9053,7 @@ dependencies = [
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-server-utils 18.0.0",
  "network-api",
  "network-p2p-types",
  "serde",
@@ -9060,7 +9093,7 @@ dependencies = [
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 17.0.0",
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-server-utils 18.0.0",
  "log 0.4.14",
  "network-api",
  "network-p2p-types",
@@ -9123,7 +9156,7 @@ dependencies = [
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-server-utils 18.0.0",
  "jsonrpc-tcp-server 17.0.0",
  "jsonrpc-ws-server",
  "log 0.4.14",
