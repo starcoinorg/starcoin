@@ -125,7 +125,7 @@ module Account {
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     // cannot be dummy key
-    const AUTH_KEY_PLACEHOLDER:vector<u8> = x"";
+    const AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
     /// A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
     public fun remove_signer_capability(s: &signer): SignerCapability
@@ -264,10 +264,6 @@ module Account {
         aborts_if len(authentication_key) != 32;
         aborts_if exists<Account>(Signer::address_of(new_account));
         ensures exists_at(Signer::address_of(new_account));
-    }
-
-    public(friend) fun create_signer_friendly(addr: address): signer {
-        create_signer(addr)
     }
 
     native fun create_signer(addr: address): signer;
