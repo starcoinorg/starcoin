@@ -15,7 +15,7 @@ serde = { version = "1.0.126", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 toml = { version = "0.5.8", default-features = false }
 structopt = "0.3.22"
-git-version = "0.3.4"
+git-version = "0.3.5"
 names = "0.11.0"
 starcoin-crypto = { path = "../commons/crypto"}
 once_cell = "1.8.0"
