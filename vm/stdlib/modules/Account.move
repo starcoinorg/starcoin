@@ -99,8 +99,8 @@ module Account {
     // SignerCapability can only be stored in other structs, not under address.
     // So that the capability is always controlled by contracts, not by some EOA.
     struct SignerCapability has store { addr: address }
-    /// As `signer` can be auto dropped, a wrapper is needed to make a not `drop`-able signer.
-    struct WrappedSigner {signer: signer }
+    /// Store borrower who can borrow signer of the address.
+    struct SignerBorrower<Borrower> has key {}
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -124,7 +124,6 @@ module Account {
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
-
     // cannot be dummy key
     const AUTH_KEY_PLACEHOLDER:vector<u8> = x"";
 
@@ -137,35 +136,46 @@ module Account {
         assert(!already_delegated, 401);
 
         // set to account auth key to noop.
-            {
-                let key_rotation_capability = extract_key_rotation_capability(s);
-                rotate_authentication_key_with_capability(&key_rotation_capability, AUTH_KEY_PLACEHOLDER);
-                // destroy account's key rotation capability
-                let KeyRotationCapability {account_address: _addr} = key_rotation_capability;
-            };
+        {
+            let key_rotation_capability = extract_key_rotation_capability(s);
+            rotate_authentication_key_with_capability(&key_rotation_capability, AUTH_KEY_PLACEHOLDER);
+            destroy_key_rotation_capability(key_rotation_capability);
+        };
         move_to(s, SignerDelegated {});
         let signer_cap = SignerCapability {addr: signer_addr };
         signer_cap
     }
 
-    public fun create_signer_with_capability(cap: &SignerCapability): WrappedSigner {
+    public fun allow_borrow_signer<Borrower: store + drop>(cap: &SignerCapability) {
+        move_to(&borrow_signer_with_capability(cap), SignerBorrower<Borrower>{});
+    }
+
+    public fun disallow_borrow_signer<Borrower: store + drop>(cap: &SignerCapability) acquires SignerBorrower {
+        let SignerBorrower<Borrower> {} = move_from<SignerBorrower<Borrower>>(cap.addr);
+    }
+
+    public fun borrow_signer<Borrower: store + drop>(_borrower: Borrower, addr: address): signer {
+        // check this signer cap is delegated indeed.
+        assert(exists<SignerDelegated>(addr), 401);
+        // check borrower is allowed to borrow signer.
+        assert(exists<SignerBorrower<Borrower>>(addr), 402);
+        create_signer(addr)
+    }
+
+    public fun borrow_signer_with_capability(cap: &SignerCapability): signer {
         let signer_addr = cap.addr;
         // check this signer cap is delegated indeed.
         assert(exists<SignerDelegated>(signer_addr), 401);
-        WrappedSigner {signer: create_signer(signer_addr)}
-    }
-    public fun borrow_signer(s: &WrappedSigner): &signer {
-        &s.signer
+        create_signer(signer_addr)
     }
 
-    public fun return_signer(signer: WrappedSigner) {
-        let WrappedSigner {signer} = signer;
-        destroy_signer(signer)
-    }
     public fun signer_delagated(addr: address): bool {
         exists<SignerDelegated>(addr)
     }
-
+    public fun signer_address(cap: &SignerCapability): address {
+        cap.addr
+    }
+ 
     /// Create an genesis account at `new_account_address` and return signer.
     /// Genesis authentication_key is zero bytes.
     public fun create_genesis_account(
@@ -254,6 +264,10 @@ module Account {
         aborts_if len(authentication_key) != 32;
         aborts_if exists<Account>(Signer::address_of(new_account));
         ensures exists_at(Signer::address_of(new_account));
+    }
+
+    public(friend) fun create_signer_friendly(addr: address): signer {
+        create_signer(addr)
     }
 
     native fun create_signer(addr: address): signer;
@@ -626,6 +640,9 @@ module Account {
     acquires Account {
         let account = borrow_global_mut<Account>(cap.account_address);
         Option::fill(&mut account.key_rotation_capability, cap)
+    }
+    public fun destroy_key_rotation_capability(cap: KeyRotationCapability) {
+        let KeyRotationCapability {account_address: _} = cap;
     }
 
     spec restore_key_rotation_capability {
