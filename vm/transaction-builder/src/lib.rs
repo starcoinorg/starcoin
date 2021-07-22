@@ -732,6 +732,7 @@ pub fn build_module_upgrade_proposal(
 pub fn build_module_upgrade_plan(
     proposer_address: AccountAddress,
     proposal_id: u64,
+    token_code: TokenCode,
 ) -> ScriptFunction {
     ScriptFunction::new(
         ModuleId::new(
@@ -739,7 +740,9 @@ pub fn build_module_upgrade_plan(
             Identifier::new("ModuleUpgradeScripts").unwrap(),
         ),
         Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![stc_type_tag()],
+        vec![token_code
+            .try_into()
+            .expect("Token code to type tag should success")],
         vec![
             bcs_ext::to_bytes(&proposer_address).unwrap(),
             bcs_ext::to_bytes(&proposal_id).unwrap(),

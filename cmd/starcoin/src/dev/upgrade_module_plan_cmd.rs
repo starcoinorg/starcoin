@@ -8,6 +8,7 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_transaction_builder::build_module_upgrade_plan;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
@@ -29,6 +30,14 @@ pub struct UpgradeModulePlanOpt {
         help = "proposal id."
     )]
     proposal_id: u64,
+
+    #[structopt(
+        name = "dao-token",
+        long = "dao-token",
+        default_value = "0x1::STC::STC"
+    )]
+    /// The token for dao governance, default is 0x1::STC::STC
+    dao_token: TokenCode,
 }
 
 pub struct UpgradeModulePlanCommand;
@@ -51,7 +60,8 @@ impl CommandAction for UpgradeModulePlanCommand {
         } else {
             ctx.state().default_account()?.address
         };
-        let module_upgrade_plan = build_module_upgrade_plan(proposer_address, opt.proposal_id);
+        let module_upgrade_plan =
+            build_module_upgrade_plan(proposer_address, opt.proposal_id, opt.dao_token.clone());
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
             TransactionPayload::ScriptFunction(module_upgrade_plan),
