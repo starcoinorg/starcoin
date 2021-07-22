@@ -2,27 +2,6 @@
 //! account: ds2
 //! account: alice
 
-address default = {{default}};
-module default::STCUSD {
-    use 0x1::PriceOracle;
-    struct STCUSD has copy,store,drop{}
-
-    public fun init(account: &signer){
-        PriceOracle::register_oracle<STCUSD>(account, 6);
-    }
-}
-// check: EXECUTED
-
-//! new-transaction
-//! sender: genesis
-address default = {{default}};
-script {
-    use default::STCUSD;
-    fun main(signer: signer) {
-        STCUSD::init(&signer)
-    }
-}
-
 // check: EXECUTED
 
 //! new-transaction
@@ -30,7 +9,7 @@ script {
 address default = {{default}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun main(signer: signer) {
         PriceOracle::init_data_source<STCUSD>(&signer, 100000);
     }
@@ -43,7 +22,7 @@ script {
 address default = {{default}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun main(signer: signer) {
         PriceOracle::init_data_source<STCUSD>(&signer, 110000);
     }
@@ -59,11 +38,13 @@ address ds1 = {{ds1}};
 address ds2 = {{ds2}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::{Self,STCUSD};
     fun test_read_price(_signer: signer) {
         assert(PriceOracle::read<STCUSD>(@ds1) == 100000, 1000);
+        assert(STCUSDOracle::read(@ds1) == 100000, 2000);
         assert(PriceOracle::read<STCUSD>(@ds2) == 110000, 1001);
-    }
+        assert(STCUSDOracle::read(@ds2) == 110000, 2001);
+}
 }
 
 // check: EXECUTED
@@ -78,7 +59,7 @@ script {
 address default = {{default}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun update_price(signer: signer) {
         PriceOracle::update<STCUSD>(&signer, 200000);
     }
@@ -93,7 +74,7 @@ address ds1 = {{ds1}};
 address ds2 = {{ds2}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun test_read_price(_signer: signer) {
         assert(PriceOracle::read<STCUSD>(@ds1) == 200000, 1002);
         assert(PriceOracle::read<STCUSD>(@ds2) == 110000, 1003);
@@ -114,7 +95,7 @@ address ds1 = {{ds1}};
 address ds2 = {{ds2}};
 script {
     use 0x1::PriceOracleAggregator;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     use 0x1::Vector;
     fun test_aggregator_price(_signer: signer) {
         let ds = Vector::empty();
@@ -135,7 +116,7 @@ address ds1 = {{ds1}};
 address ds2 = {{ds2}};
 script {
     use 0x1::PriceOracleAggregator;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     use 0x1::Vector;
     fun test_aggregator_price(_signer: signer) {
         let ds = Vector::empty();
@@ -152,11 +133,11 @@ script {
 //! sender: default
 address default = {{default}};
 module default::DelegateOracleDS{
-    use 0x1::Oracle::{Self,UpdateOracleCapability};
+    use 0x1::Oracle::{Self,UpdateCapability};
     use 0x1::PriceOracle;
 
     struct DelegateUpdateOracleCapability<OracleT: copy+store+drop> has key{
-        cap: UpdateOracleCapability<OracleT>,
+        cap: UpdateCapability<OracleT>,
     }
 
     public fun delegate<OracleT: copy+store+drop>(signer: &signer){
@@ -179,7 +160,7 @@ module default::DelegateOracleDS{
 address default = {{default}};
 script {
     use default::DelegateOracleDS;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun main(signer: signer) {
         DelegateOracleDS::delegate<STCUSD>(&signer);
     }
@@ -193,7 +174,7 @@ script {
 address default = {{default}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun update_price(signer: signer) {
         PriceOracle::update<STCUSD>(&signer, 0);
     }
@@ -205,7 +186,7 @@ script {
 //! sender: alice
 address default = {{default}};
 script {
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     use default::DelegateOracleDS;
     fun update_price(_signer: signer) {
         DelegateOracleDS::update_price_any<STCUSD>(@{{ds2}}, 0);
@@ -220,7 +201,7 @@ address default = {{default}};
 address ds2 = {{ds2}};
 script {
     use 0x1::PriceOracle;
-    use default::STCUSD::STCUSD;
+    use 0x1::STCUSDOracle::STCUSD;
     fun test_read_price(_signer: signer) {
         assert(PriceOracle::read<STCUSD>(@ds2) == 0, 1004);
     }

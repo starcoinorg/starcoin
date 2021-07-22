@@ -17,7 +17,7 @@ module Oracle {
     struct DataRecord<ValueT: copy+store+drop> has copy, store, drop {
         ///The data version
         version: u64,
-        ///The price value
+        ///The record value
         value: ValueT,
         ///Update timestamp millisecond
         updated_at: u64,
@@ -32,7 +32,7 @@ module Oracle {
         record: DataRecord<ValueT>,
     }
 
-    struct DataRecordSource<OracleT: copy+store+drop, ValueT: copy+store+drop> has key {
+    struct DataSource<OracleT: copy+store+drop, ValueT: copy+store+drop> has key {
         /// the id of data source of ValueT
         id: u64,
         /// the data version counter.
@@ -40,15 +40,16 @@ module Oracle {
         update_events: Event::EventHandle<OracleUpdateEvent<OracleT, ValueT>>,
     }
 
-    struct UpdateOracleCapability<OracleT: copy+store+drop> has store, key {
+    struct UpdateCapability<OracleT: copy+store+drop> has store, key {
         account: address,
     }
 
     /// No capability to update the oracle value.
     const ERR_NO_UPDATE_CAPABILITY: u64 = 101;
     const ERR_NO_DATA_SOURCE: u64 = 102;
+    const ERR_CAPABILITY_ACCOUNT_MISS_MATCH: u64 = 103;
 
-    /// Register `OracleT` as price oracle.
+    /// Register `OracleT` as an oracle type.
     public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(signer: &signer, info: Info){
         //TODO implement a global register by contact account.
         CoreAddresses::assert_genesis_address(signer);
@@ -81,26 +82,26 @@ module Oracle {
             }
         });
         let account = Signer::address_of(signer);
-        move_to(signer, DataRecordSource<OracleT, ValueT> {
+        move_to(signer, DataSource<OracleT, ValueT> {
             id: oracle_info.counter,
             counter: 1,
             update_events: Event::new_event_handle<OracleUpdateEvent<OracleT, ValueT>>(signer),
         });
-        move_to(signer, UpdateOracleCapability<OracleT>{account: account});
+        move_to(signer, UpdateCapability<OracleT>{account: account});
         oracle_info.counter = oracle_info.counter + 1;
     }
 
-    public fun update<OracleT: copy+store+drop, ValueT: copy+store+drop>(signer: &signer, value: ValueT) acquires UpdateOracleCapability, DataRecordSource, OracleFeed{
+    public fun update<OracleT: copy+store+drop, ValueT: copy+store+drop>(signer: &signer, value: ValueT) acquires UpdateCapability, DataSource, OracleFeed{
         let account = Signer::address_of(signer);
-        assert(exists<UpdateOracleCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
-        let cap = borrow_global_mut<UpdateOracleCapability<OracleT>>(account);
+        assert(exists<UpdateCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
+        let cap = borrow_global_mut<UpdateCapability<OracleT>>(account);
         update_by_cap(cap,value);
     }
 
-    public fun update_by_cap<OracleT: copy+store+drop, ValueT: copy+store+drop>(cap: &mut UpdateOracleCapability<OracleT>, value: ValueT) acquires DataRecordSource,OracleFeed  {
+    public fun update_by_cap<OracleT: copy+store+drop, ValueT: copy+store+drop>(cap: &mut UpdateCapability<OracleT>, value: ValueT) acquires DataSource,OracleFeed  {
         let account = cap.account;
-        assert(exists<DataRecordSource<OracleT, ValueT>>(account), Errors::requires_capability(ERR_NO_DATA_SOURCE));
-        let source = borrow_global_mut<DataRecordSource<OracleT, ValueT>>(account);
+        assert(exists<DataSource<OracleT, ValueT>>(account), Errors::requires_capability(ERR_NO_DATA_SOURCE));
+        let source = borrow_global_mut<DataSource<OracleT, ValueT>>(account);
         let now = Timestamp::now_milliseconds();
         let oracle_feed = borrow_global_mut<OracleFeed<OracleT, ValueT>>(account);
         oracle_feed.record.version = source.counter;
@@ -136,15 +137,16 @@ module Oracle {
         results
     }
 
-    /// Remove UpdateOracleCapability from current signer.
-    public fun remove_update_capability<OracleT:copy+store+drop>(signer: &signer):UpdateOracleCapability<OracleT> acquires UpdateOracleCapability{
+    /// Remove UpdateCapability from current signer.
+    public fun remove_update_capability<OracleT:copy+store+drop>(signer: &signer):UpdateCapability<OracleT> acquires UpdateCapability{
         let account = Signer::address_of(signer);
-        assert(exists<UpdateOracleCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
-        move_from<UpdateOracleCapability<OracleT>>(account)
+        assert(exists<UpdateCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
+        move_from<UpdateCapability<OracleT>>(account)
     }
 
-    /// Add UpdateOracleCapability to current signer
-    public fun add_update_capability<OracleT:copy+store+drop>(signer: &signer, update_cap: UpdateOracleCapability<OracleT>){
+    /// Add UpdateCapability to current signer
+    public fun add_update_capability<OracleT:copy+store+drop>(signer: &signer, update_cap: UpdateCapability<OracleT>){
+        assert(Signer::address_of(signer) == update_cap.account, Errors::invalid_argument(ERR_CAPABILITY_ACCOUNT_MISS_MATCH));
         move_to(signer, update_cap);
     }
 
@@ -155,7 +157,7 @@ module Oracle {
 }
 module PriceOracle{
     use 0x1::Math;
-    use 0x1::Oracle::{Self, DataRecord, UpdateOracleCapability};
+    use 0x1::Oracle::{Self, DataRecord, UpdateCapability};
 
     struct PriceOracleInfo has copy,store,drop{
         scaling_factor: u128,
@@ -181,7 +183,7 @@ module PriceOracle{
         Oracle::update<OracleT, u128>(signer, value);
     }
 
-    public fun update_by_cap<OracleT: copy+store+drop>(cap: &mut UpdateOracleCapability<OracleT>, value: u128) {
+    public fun update_by_cap<OracleT: copy+store+drop>(cap: &mut UpdateCapability<OracleT>, value: u128) {
         Oracle::update_by_cap<OracleT, u128>(cap, value);
     }
 
@@ -197,6 +199,37 @@ module PriceOracle{
         Oracle::read_records<OracleT, u128>(addrs)
     }
 
+}
+
+module STCUSDOracle{
+    use 0x1::PriceOracle;
+
+    /// The STC to USD price oracle
+    struct STCUSD has copy,store,drop {}
+
+    public fun register(signer: &signer){
+        PriceOracle::register_oracle<STCUSD>(signer, 6);
+    }
+
+    public fun read(addr: address) : u128{
+        PriceOracle::read<STCUSD>(addr)
+    }
+}
+
+module PriceOracleScripts{
+    use 0x1::PriceOracle;
+
+    public(script) fun register_oracle<OracleT: copy+store+drop>(signer: signer, precision: u8){
+        PriceOracle::register_oracle<OracleT>(&signer, precision)
+    }
+
+    public(script) fun init_data_source<OracleT: copy+store+drop>(signer: signer, init_value: u128){
+        PriceOracle::init_data_source<OracleT>(&signer, init_value);
+    }
+
+    public(script) fun update<OracleT: copy+store+drop>(signer: signer, value: u128){
+        PriceOracle::update<OracleT>(&signer, value);
+    }
 }
 
 module PriceOracleAggregator{
@@ -231,5 +264,6 @@ module PriceOracleAggregator{
         Math::avg(&prices)
     }
 }
+
 
 }
