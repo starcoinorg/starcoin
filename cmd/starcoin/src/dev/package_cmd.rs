@@ -7,6 +7,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
 use starcoin_vm_types::transaction::ScriptFunction;
@@ -106,13 +107,13 @@ impl CommandAction for PackageCmd {
         };
 
         let package = Package::new(modules, init_script)?;
-
+        let package_hash = package.crypto_hash();
         let output_file = {
             let mut output_dir = opt.out_dir.clone().unwrap_or(current_dir()?);
             output_dir.push(
                 opt.package_name
                     .clone()
-                    .unwrap_or_else(|| package.crypto_hash().to_string()),
+                    .unwrap_or_else(|| package_hash.to_string()),
             );
             output_dir.set_extension("blob");
             output_dir
@@ -128,6 +129,7 @@ impl CommandAction for PackageCmd {
             .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
         Ok(PackageResult {
             file: output_file.to_string_lossy().to_string(),
+            package_hash,
             hex,
         })
     }
@@ -145,6 +147,7 @@ fn read_module(module_file: &Path) -> Result<Module> {
 #[derive(Debug, Clone, Hash, Serialize, Deserialize)]
 pub struct PackageResult {
     pub file: String,
+    pub package_hash: HashValue,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hex: Option<String>,
 }
