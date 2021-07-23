@@ -359,7 +359,8 @@ fn test_upgrade_module() {
     node_handle.generate_block().unwrap();
 
     // 7. plan
-    let module_upgrade_plan = build_module_upgrade_plan(association_address(), proposal_id);
+    let module_upgrade_plan =
+        build_module_upgrade_plan(association_address(), proposal_id, STC_TOKEN_CODE.clone());
     let plan_txn = sign_txn_with_account_by_rpc_client(
         &cli_state,
         default_account.address,
