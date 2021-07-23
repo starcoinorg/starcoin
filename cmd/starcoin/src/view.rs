@@ -8,7 +8,7 @@ use starcoin_crypto::HashValue;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
     DryRunOutputView, RawUserTransactionView, StrView, TransactionEventResponse,
-    TransactionEventView, TransactionInfoView,
+    TransactionEventView, TransactionInfoView, TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
@@ -162,7 +162,10 @@ pub enum EventDataView {
         miner: AccountAddress,
     },
     #[serde(rename = "unknown")]
-    Unknown { type_tag: TypeTag, data: Vec<u8> },
+    Unknown {
+        type_tag: TypeTagView,
+        data: Vec<u8>,
+    },
 }
 
 impl EventDataView {
@@ -231,7 +234,7 @@ impl EventDataView {
                 .into())
         } else {
             Ok(EventDataView::Unknown {
-                type_tag: event_type_tag.clone(),
+                type_tag: event_type_tag.clone().into(),
                 data: event_data.to_vec(),
             })
         }
@@ -253,7 +256,7 @@ impl From<TransactionEventView> for EventView {
         EventView {
             key: event_view.event_key,
             sequence_number: event_view.event_seq_number.0,
-            data: EventDataView::new(&event_view.type_tag, &event_view.data.0).unwrap_or({
+            data: EventDataView::new(&event_view.type_tag.0, &event_view.data.0).unwrap_or({
                 EventDataView::Unknown {
                     data: event_view.data.0,
                     type_tag: event_view.type_tag,
@@ -272,7 +275,7 @@ impl From<ContractEvent> for EventView {
             sequence_number: event.sequence_number(),
             data: event_data.unwrap_or(EventDataView::Unknown {
                 data: event.event_data().to_vec(),
-                type_tag: event.type_tag().clone(),
+                type_tag: event.type_tag().clone().into(),
             }),
         }
     }
