@@ -45,7 +45,7 @@ impl From<TransactionEventView> for TransactionEventEsView {
             transaction_hash: event.transaction_hash,
             transaction_index: event.transaction_index,
             data: event.data,
-            type_tag: TypeTagView::from(event.type_tag),
+            type_tag: event.type_tag,
             event_key: event.event_key,
             event_seq_number: StrView(event.event_seq_number.0),
         }
@@ -267,7 +267,7 @@ mod tests {
             transaction_hash: Some(HashValue::zero()),
             transaction_index: Some(0),
             data: StrView(vec![0]),
-            type_tag: TypeTag::Bool,
+            type_tag: StrView(TypeTag::Bool),
             event_key: EventKey::new_from_address(&AccountAddress::ZERO, 0),
             event_seq_number: StrView(0),
         };

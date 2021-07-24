@@ -907,7 +907,7 @@ pub struct TransactionEventView {
     // txn index in block
     pub transaction_index: Option<u32>,
     pub data: StrView<Vec<u8>>,
-    pub type_tag: TypeTag,
+    pub type_tag: TypeTagView,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
 }
@@ -920,7 +920,7 @@ impl From<ContractEventInfo> for TransactionEventView {
             transaction_hash: Some(info.transaction_hash),
             transaction_index: Some(info.transaction_index),
             data: StrView(info.event.event_data().to_vec()),
-            type_tag: info.event.type_tag().clone(),
+            type_tag: info.event.type_tag().clone().into(),
             event_key: *info.event.key(),
             event_seq_number: info.event.sequence_number().into(),
         }
@@ -934,7 +934,7 @@ impl From<ContractEvent> for TransactionEventView {
             transaction_hash: None,
             transaction_index: None,
             data: StrView(event.event_data().to_vec()),
-            type_tag: event.type_tag().clone(),
+            type_tag: event.type_tag().clone().into(),
             event_key: *event.key(),
             event_seq_number: event.sequence_number().into(),
         }
@@ -955,7 +955,7 @@ impl TransactionEventView {
             transaction_hash,
             transaction_index,
             data: StrView(contract_event.event_data().to_vec()),
-            type_tag: contract_event.type_tag().clone(),
+            type_tag: contract_event.type_tag().clone().into(),
             event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),
         }
@@ -1255,7 +1255,7 @@ impl FromStr for StrView<ModuleId> {
         Ok(Self(ModuleId::new(module_addr, module_name)))
     }
 }
-impl std::fmt::Display for StrView<TypeTag> {
+impl std::fmt::Display for TypeTagView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
     }

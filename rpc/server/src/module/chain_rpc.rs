@@ -329,7 +329,7 @@ where
                 for elem in resp_data.iter_mut() {
                     elem.decode_event_data = Some(
                         annotator
-                            .view_value(&elem.event.type_tag, elem.event.data.0.as_slice())?
+                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
                             .into(),
                     );
                 }
@@ -394,7 +394,7 @@ where
                 for elem in data.iter_mut() {
                     elem.decode_event_data = Some(
                         annotator
-                            .view_value(&elem.event.type_tag, elem.event.data.0.as_slice())?
+                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
                             .into(),
                     );
                 }
