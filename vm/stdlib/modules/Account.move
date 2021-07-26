@@ -304,10 +304,7 @@ module Account {
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
     ) acquires Account, Balance {
-        // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
-
         // Deposit the `to_deposit` token
         deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
 
