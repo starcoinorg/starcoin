@@ -43,12 +43,14 @@ jobs:
           args: --release
       - name: build release asset
         run: bash ./scripts/release.sh ${{ matrix.platform }}
+
       - name: upload artifact asset
         uses: actions/upload-artifact@v2
         if: ${{ github.event_name != 'release'}}
         with:
           name: starcoin-${{ matrix.platform }}.zip
           path: ./starcoin-${{ matrix.platform }}.zip
+
       - name: upload release asset
         if: ${{ github.event_name == 'release'}}
         id: upload-release-asset
@@ -60,3 +62,12 @@ jobs:
           asset_path: ./starcoin-${{ matrix.platform }}.zip
           asset_name: starcoin-${{ matrix.platform }}.zip
           asset_content_type: application/zip
+      - name: upload move-cli release asset
+        if: ${{ github.event_name == 'release'}}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./target/release/move
+          asset_name: move-${{ matrix.platform }}
