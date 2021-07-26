@@ -10,7 +10,8 @@ use anyhow::Result;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
-use starcoin_state_api::StateView;
+use starcoin_logger::prelude::*;
+use starcoin_state_api::{ChainStateReader, StateView};
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::account_address::AccountAddress;
@@ -121,7 +122,6 @@ fn execute_create_account(
     chain_state: &ChainStateDB,
     net: &ChainNetwork,
     alice: &Account,
-    _bob: &Account,
     pre_mint_amount: u128,
     block_number: u64,
     block_timestamp: u64,
@@ -140,31 +140,27 @@ fn execute_create_account(
                 0,
             ),
         )?;
-        let script_function = encode_create_account_script_function(
-            net.stdlib_version(),
-            stc_type_tag(),
-            alice.address(),
-            alice.auth_key(),
-            pre_mint_amount / 4,
-        );
-        association_execute_should_success(
-            net,
-            &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
-        )?;
+        if !chain_state.exist_account(alice.address())? {
+            let init_balance = pre_mint_amount / 4;
+            let script_function = encode_create_account_script_function(
+                net.stdlib_version(),
+                stc_type_tag(),
+                alice.address(),
+                alice.auth_key(),
+                init_balance,
+            );
+            debug!(
+                "execute create account script: addr:{}, init_balance:{}",
+                alice.address(),
+                init_balance
+            );
+            association_execute_should_success(
+                net,
+                &chain_state,
+                TransactionPayload::ScriptFunction(script_function),
+            )?;
+        }
 
-        // let script_function = encode_create_account_script_function(
-        //     net.stdlib_version(),
-        //     stc_type_tag(),
-        //     bob.address(),
-        //     bob.auth_key(),
-        //     pre_mint_amount / 8,
-        // );
-        // association_execute_should_success(
-        //     net,
-        //     &chain_state,
-        //     TransactionPayload::ScriptFunction(script_function),
-        // )?;
         Ok(())
     }
 }
@@ -244,7 +240,7 @@ fn execute_cast_vote(
     let proposer_address = *alice.address();
     let proposer_id = proposal_id;
     let voting_power = get_balance(*alice.address(), chain_state);
-    println!("alice voting power: {}", voting_power);
+    debug!("{} voting power: {}", alice.address(), voting_power);
     let script_function = ScriptFunction::new(
         ModuleId::new(
             core_code_address(),
@@ -267,7 +263,10 @@ fn execute_cast_vote(
         TransactionPayload::ScriptFunction(script_function),
     )?;
     let quorum = quorum_vote(chain_state, stc_type_tag());
-    println!("quorum: {}", quorum);
+    debug!(
+        "proposer_id:{}, action: {}, quorum: {}",
+        dao_action_type_tag, proposer_id, quorum
+    );
 
     let state = proposal_state(
         chain_state,
@@ -276,7 +275,11 @@ fn execute_cast_vote(
         *alice.address(),
         proposal_id,
     );
-    assert_eq!(state, ACTIVE);
+    assert_eq!(
+        state, ACTIVE,
+        "expect proposer_id {}'s state ACTIVE, but got: {}",
+        proposer_id, state
+    );
     Ok(())
 }
 
@@ -421,7 +424,6 @@ pub fn dao_vote_test(
     execute_script: ScriptFunction,
     proposal_id: u64,
 ) -> Result<()> {
-    let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
@@ -431,7 +433,6 @@ pub fn dao_vote_test(
         chain_state,
         &net,
         alice,
-        &bob,
         pre_mint_amount,
         block_number,
         block_timestamp,
@@ -613,11 +614,50 @@ pub fn dao_vote_test(
         let state = proposal_state(
             chain_state,
             stc_type_tag(),
-            action_type_tag,
+            action_type_tag.clone(),
             *alice.address(),
             proposal_id,
         );
         assert_eq!(state, EXTRACTED);
+    }
+    {
+        //Unstack
+        let script_function = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("DaoVoteScripts").unwrap(),
+            ),
+            Identifier::new("unstake_vote").unwrap(),
+            vec![stc_type_tag(), action_type_tag.clone()],
+            vec![
+                bcs_ext::to_bytes(alice.address()).unwrap(),
+                bcs_ext::to_bytes(&proposal_id).unwrap(),
+            ],
+        );
+        account_execute_should_success(
+            net,
+            alice,
+            chain_state,
+            TransactionPayload::ScriptFunction(script_function),
+        )?;
+    }
+    {
+        //Unstack
+        let script_function = ScriptFunction::new(
+            ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+            Identifier::new("destroy_terminated_proposal").unwrap(),
+            vec![stc_type_tag(), action_type_tag],
+            vec![
+                bcs_ext::to_bytes(alice.address()).unwrap(),
+                bcs_ext::to_bytes(&proposal_id).unwrap(),
+            ],
+        );
+        account_execute_should_success(
+            net,
+            alice,
+            chain_state,
+            TransactionPayload::ScriptFunction(script_function),
+        )?;
     }
     Ok(())
 }

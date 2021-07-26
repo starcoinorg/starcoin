@@ -354,10 +354,10 @@ fn test_stdlib_upgrade() -> Result<()> {
     )?;
     let chain_state = prepare_customized_genesis(&net);
     let mut proposal_id: u64 = 0;
+    let alice = Account::new();
+
     for new_version in stdlib_versions.into_iter().skip(1) {
         verify_version_state(current_version, &chain_state)?;
-
-        let alice = Account::new();
 
         let dao_action_type_tag = new_version.upgrade_module_type_tag();
         let package = match load_upgrade_package(current_version, new_version)? {
