@@ -239,13 +239,8 @@ fn test_package_txn() -> Result<()> {
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
-        account_execute_should_success(
-            &net,
-            &alice,
-            &chain_state,
-            TransactionPayload::Package(package),
-        )
-        .unwrap();
+        account_execute_should_success(&alice, &chain_state, TransactionPayload::Package(package))
+            .unwrap();
     }
 
     // now, upgrade to test module_1
@@ -285,13 +280,8 @@ fn test_package_txn() -> Result<()> {
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
-        account_execute_should_success(
-            &net,
-            &alice,
-            &chain_state,
-            TransactionPayload::Package(package),
-        )
-        .unwrap();
+        account_execute_should_success(&alice, &chain_state, TransactionPayload::Package(package))
+            .unwrap();
     }
 
     Ok(())
@@ -341,7 +331,6 @@ fn test_wrong_package_address() -> Result<()> {
 
         // execute the package txn
         let output = account_execute(
-            &net,
             &bob, // sender is bob, not package address alice
             &chain_state,
             TransactionPayload::Package(package),
@@ -535,7 +524,7 @@ fn test_validate_sequence_number_too_old() -> Result<()> {
 
 #[stest::test]
 fn test_validate_txn_args() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
+    let (chain_state, _net) = prepare_genesis();
 
     let account1 = Account::new();
 

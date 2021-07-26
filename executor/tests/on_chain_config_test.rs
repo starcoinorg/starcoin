@@ -27,8 +27,8 @@ use test_helper::dao::{
     vote_txn_timeout_script, vote_vm_config_script,
 };
 use test_helper::executor::{
-    account_execute, account_execute_with_output, association_execute_should_success,
-    blockmeta_execute, build_raw_txn, current_block_number, execute_and_apply, prepare_genesis,
+    account_execute_with_output, association_execute_should_success, blockmeta_execute,
+    build_raw_txn, current_block_number, execute_and_apply, prepare_genesis,
 };
 use test_helper::Account;
 
@@ -224,7 +224,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     )?;
 
     //get gas_used
-    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
     let old_gas_used = output.gas_used();
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
@@ -251,7 +251,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         0,
     )?;
     // get gas used of modified gas schedule
-    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
     assert!(output.gas_used() > old_gas_used);
     Ok(())
 }

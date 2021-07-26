@@ -257,7 +257,6 @@ fn execute_cast_vote(
     );
     // vote first.
     account_execute_should_success(
-        net,
         &alice,
         chain_state,
         TransactionPayload::ScriptFunction(script_function),
@@ -455,7 +454,6 @@ pub fn dao_vote_test(
             ),
         )?;
         account_execute_should_success(
-            net,
             alice,
             chain_state,
             TransactionPayload::ScriptFunction(vote_script),
@@ -546,7 +544,6 @@ pub fn dao_vote_test(
             ],
         );
         account_execute_should_success(
-            net,
             alice,
             chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -587,7 +584,6 @@ pub fn dao_vote_test(
         );
         assert_eq!(state, EXECUTABLE);
         account_execute_should_success(
-            net,
             alice,
             chain_state,
             TransactionPayload::ScriptFunction(execute_script),
@@ -635,7 +631,6 @@ pub fn dao_vote_test(
             ],
         );
         account_execute_should_success(
-            net,
             alice,
             chain_state,
             TransactionPayload::ScriptFunction(script_function),
@@ -653,7 +648,6 @@ pub fn dao_vote_test(
             ],
         );
         account_execute_should_success(
-            net,
             alice,
             chain_state,
             TransactionPayload::ScriptFunction(script_function),
