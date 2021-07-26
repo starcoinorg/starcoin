@@ -27,7 +27,6 @@ The module for the account resource that governs every account
 -  [Function `create_account_with_address`](#0x1_Account_create_account_with_address)
 -  [Function `make_account`](#0x1_Account_make_account)
 -  [Function `create_signer`](#0x1_Account_create_signer)
--  [Function `destroy_signer`](#0x1_Account_destroy_signer)
 -  [Function `create_account_with_initial_amount`](#0x1_Account_create_account_with_initial_amount)
 -  [Function `create_account_with_initial_amount_v2`](#0x1_Account_create_account_with_initial_amount_v2)
 -  [Function `deposit_to_self`](#0x1_Account_deposit_to_self)
@@ -793,7 +792,7 @@ Genesis authentication_key is zero bytes.
 Release genesis account signer
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(_genesis_account: signer)
 </code></pre>
 
 
@@ -802,8 +801,7 @@ Release genesis account signer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer){
-    <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(genesis_account);
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(_genesis_account: signer){
 }
 </code></pre>
 
@@ -862,7 +860,6 @@ reserved address for the MoveVM.
         <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&new_account);
     };
     <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(&new_account);
-    <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
 }
 </code></pre>
 
@@ -930,28 +927,6 @@ reserved address for the MoveVM.
 
 
 <pre><code><b>native</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer">create_signer</a>(addr: address): signer;
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_destroy_signer"></a>
-
-## Function `destroy_signer`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(sig: signer)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(sig: signer);
 </code></pre>
 
 
@@ -1090,10 +1065,7 @@ It's a reverse operation of <code>withdraw_with_metadata</code>.
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     metadata: vector&lt;u8&gt;,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
-
     // Deposit the `to_deposit` token
     <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver), to_deposit);
 
@@ -2203,7 +2175,7 @@ It collects gas and bumps the sequence number
 ### Function `release_genesis_signer`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_release_genesis_signer">release_genesis_signer</a>(_genesis_account: signer)
 </code></pre>
 
 
