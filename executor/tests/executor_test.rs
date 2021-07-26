@@ -234,7 +234,7 @@ fn test_package_txn() -> Result<()> {
             *alice.address(),
             &chain_state,
             TransactionPayload::Package(package.clone()),
-            net.chain_id(),
+            None,
         ));
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
@@ -259,7 +259,7 @@ fn test_package_txn() -> Result<()> {
             *alice.address(),
             &chain_state,
             TransactionPayload::Package(package),
-            net.chain_id(),
+            None,
         ));
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_some());
@@ -280,7 +280,7 @@ fn test_package_txn() -> Result<()> {
             *alice.address(),
             &chain_state,
             TransactionPayload::Package(package.clone()),
-            net.chain_id(),
+            None,
         ));
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
@@ -553,7 +553,7 @@ fn test_validate_txn_args() -> Result<()> {
             *account1.address(),
             &chain_state,
             TransactionPayload::ScriptFunction(action),
-            net.chain_id(),
+            None,
         );
         account1.sign_txn(txn)
     };
@@ -573,7 +573,7 @@ fn test_validate_txn_args() -> Result<()> {
             *account1.address(),
             &chain_state,
             TransactionPayload::ScriptFunction(action),
-            net.chain_id(),
+            None,
         );
         account1.sign_txn(txn)
     };
@@ -593,7 +593,7 @@ fn test_validate_txn_args() -> Result<()> {
             *account1.address(),
             &chain_state,
             TransactionPayload::ScriptFunction(action),
-            net.chain_id(),
+            None,
         );
         account1.sign_txn(txn)
     };
