@@ -99,8 +99,6 @@ module Account {
     // SignerCapability can only be stored in other structs, not under address.
     // So that the capability is always controlled by contracts, not by some EOA.
     struct SignerCapability has store { addr: address }
-    /// Store borrower who can borrow signer of the address.
-    struct SignerBorrower<Borrower> has key {}
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -125,7 +123,7 @@ module Account {
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     // cannot be dummy key, or empty key
-    const AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
+    const CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
     /// A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
     /// In one txn, signer can remove multi times to create signer caps for usage in multi modules.
@@ -137,7 +135,7 @@ module Account {
         // set to account auth key to noop.
         if (!is_signer_delegated(signer_addr)) {
             let key_rotation_capability = extract_key_rotation_capability(signer);
-            rotate_authentication_key_with_capability(&key_rotation_capability, AUTH_KEY_PLACEHOLDER);
+            rotate_authentication_key_with_capability(&key_rotation_capability, CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER);
             destroy_key_rotation_capability(key_rotation_capability);
             move_to(signer, SignerDelegated {});
         };

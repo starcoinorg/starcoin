@@ -15,7 +15,6 @@ The module for the account resource that governs every account
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
 -  [Resource `SignerDelegated`](#0x1_Account_SignerDelegated)
 -  [Struct `SignerCapability`](#0x1_Account_SignerCapability)
--  [Resource `SignerBorrower`](#0x1_Account_SignerBorrower)
 -  [Constants](#@Constants_0)
 -  [Function `remove_signer_capability`](#0x1_Account_remove_signer_capability)
 -  [Function `create_signer_with_cap`](#0x1_Account_create_signer_with_cap)
@@ -455,34 +454,6 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_SignerBorrower"></a>
-
-## Resource `SignerBorrower`
-
-Store borrower who can borrow signer of the address.
-
-
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_SignerBorrower">SignerBorrower</a>&lt;Borrower&gt; has key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>dummy_field: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -515,11 +486,11 @@ Store borrower who can borrow signer of the address.
 
 
 
-<a name="0x1_Account_AUTH_KEY_PLACEHOLDER"></a>
+<a name="0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER"></a>
 
 
 
-<pre><code><b>const</b> <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 </code></pre>
 
 
@@ -675,7 +646,7 @@ In one txn, signer can remove multi times to create signer caps for usage in mul
     // set <b>to</b> account auth key <b>to</b> noop.
     <b>if</b> (!<a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(signer_addr)) {
         <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(signer);
-        <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>);
+        <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>);
         <a href="Account.md#0x1_Account_destroy_key_rotation_capability">destroy_key_rotation_capability</a>(key_rotation_capability);
         move_to(signer, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
     };
