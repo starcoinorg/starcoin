@@ -18,18 +18,15 @@ The module for the account resource that governs every account
 -  [Resource `SignerBorrower`](#0x1_Account_SignerBorrower)
 -  [Constants](#@Constants_0)
 -  [Function `remove_signer_capability`](#0x1_Account_remove_signer_capability)
--  [Function `allow_borrow_signer`](#0x1_Account_allow_borrow_signer)
--  [Function `disallow_borrow_signer`](#0x1_Account_disallow_borrow_signer)
--  [Function `borrow_signer`](#0x1_Account_borrow_signer)
--  [Function `borrow_signer_with_capability`](#0x1_Account_borrow_signer_with_capability)
--  [Function `signer_delagated`](#0x1_Account_signer_delagated)
+-  [Function `create_signer_with_cap`](#0x1_Account_create_signer_with_cap)
+-  [Function `destroy_signer_cap`](#0x1_Account_destroy_signer_cap)
 -  [Function `signer_address`](#0x1_Account_signer_address)
+-  [Function `is_signer_delegated`](#0x1_Account_is_signer_delegated)
 -  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
 -  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
 -  [Function `create_account`](#0x1_Account_create_account)
 -  [Function `create_account_with_address`](#0x1_Account_create_account_with_address)
 -  [Function `make_account`](#0x1_Account_make_account)
--  [Function `create_signer_friendly`](#0x1_Account_create_signer_friendly)
 -  [Function `create_signer`](#0x1_Account_create_signer)
 -  [Function `destroy_signer`](#0x1_Account_destroy_signer)
 -  [Function `create_account_with_initial_amount`](#0x1_Account_create_account_with_initial_amount)
@@ -522,7 +519,7 @@ Store borrower who can borrow signer of the address.
 
 
 
-<pre><code><b>const</b> <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [];
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 </code></pre>
 
 
@@ -658,9 +655,10 @@ Store borrower who can borrow signer of the address.
 ## Function `remove_signer_capability`
 
 A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
+In one txn, signer can remove multi times to create signer caps for usage in multi modules.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(s: &signer): <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(signer: &signer): <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>
 </code></pre>
 
 
@@ -669,20 +667,18 @@ A one-way action, once SignerCapability is removed from signer, the address cann
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(s: &signer): <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(signer: &signer): <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    <b>let</b> signer_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(s);
-    // check signer not delegated.
-    <b>let</b> already_delegated = <b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(signer_addr);
-    <b>assert</b>(!already_delegated, 401);
-
+    // for now, we limit the signer cap <b>to</b> be called only by genesis.
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(signer);
+    <b>let</b> signer_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
     // set <b>to</b> account auth key <b>to</b> noop.
-    {
-        <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(s);
+    <b>if</b> (!<a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(signer_addr)) {
+        <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(signer);
         <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_AUTH_KEY_PLACEHOLDER">AUTH_KEY_PLACEHOLDER</a>);
         <a href="Account.md#0x1_Account_destroy_key_rotation_capability">destroy_key_rotation_capability</a>(key_rotation_capability);
+        move_to(signer, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
     };
-    move_to(s, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
     <b>let</b> signer_cap = <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: signer_addr };
     signer_cap
 }
@@ -692,13 +688,13 @@ A one-way action, once SignerCapability is removed from signer, the address cann
 
 </details>
 
-<a name="0x1_Account_allow_borrow_signer"></a>
+<a name="0x1_Account_create_signer_with_cap"></a>
 
-## Function `allow_borrow_signer`
+## Function `create_signer_with_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_allow_borrow_signer">allow_borrow_signer</a>&lt;Borrower: drop, store&gt;(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer_with_cap">create_signer_with_cap</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>): signer
 </code></pre>
 
 
@@ -707,8 +703,8 @@ A one-way action, once SignerCapability is removed from signer, the address cann
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_allow_borrow_signer">allow_borrow_signer</a>&lt;Borrower: store + drop&gt;(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>) {
-    move_to(&<a href="Account.md#0x1_Account_borrow_signer_with_capability">borrow_signer_with_capability</a>(cap), <a href="Account.md#0x1_Account_SignerBorrower">SignerBorrower</a>&lt;Borrower&gt;{});
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer_with_cap">create_signer_with_cap</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>): signer {
+    <a href="Account.md#0x1_Account_create_signer">create_signer</a>(cap.addr)
 }
 </code></pre>
 
@@ -716,13 +712,13 @@ A one-way action, once SignerCapability is removed from signer, the address cann
 
 </details>
 
-<a name="0x1_Account_disallow_borrow_signer"></a>
+<a name="0x1_Account_destroy_signer_cap"></a>
 
-## Function `disallow_borrow_signer`
+## Function `destroy_signer_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_disallow_borrow_signer">disallow_borrow_signer</a>&lt;Borrower: drop, store&gt;(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_signer_cap">destroy_signer_cap</a>(cap: <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>)
 </code></pre>
 
 
@@ -731,87 +727,8 @@ A one-way action, once SignerCapability is removed from signer, the address cann
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_disallow_borrow_signer">disallow_borrow_signer</a>&lt;Borrower: store + drop&gt;(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>) <b>acquires</b> <a href="Account.md#0x1_Account_SignerBorrower">SignerBorrower</a> {
-    <b>let</b> <a href="Account.md#0x1_Account_SignerBorrower">SignerBorrower</a>&lt;Borrower&gt; {} = move_from&lt;<a href="Account.md#0x1_Account_SignerBorrower">SignerBorrower</a>&lt;Borrower&gt;&gt;(cap.addr);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_borrow_signer"></a>
-
-## Function `borrow_signer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_borrow_signer">borrow_signer</a>&lt;Borrower: drop, store&gt;(_borrower: Borrower, addr: address): signer
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_borrow_signer">borrow_signer</a>&lt;Borrower: store + drop&gt;(_borrower: Borrower, addr: address): signer {
-    // check this signer cap is delegated indeed.
-    <b>assert</b>(<b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(addr), 401);
-    // check borrower is allowed <b>to</b> borrow signer.
-    <b>assert</b>(<b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerBorrower">SignerBorrower</a>&lt;Borrower&gt;&gt;(addr), 402);
-    <a href="Account.md#0x1_Account_create_signer">create_signer</a>(addr)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_borrow_signer_with_capability"></a>
-
-## Function `borrow_signer_with_capability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_borrow_signer_with_capability">borrow_signer_with_capability</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>): signer
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_borrow_signer_with_capability">borrow_signer_with_capability</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>): signer {
-    <b>let</b> signer_addr = cap.addr;
-    // check this signer cap is delegated indeed.
-    <b>assert</b>(<b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(signer_addr), 401);
-    <a href="Account.md#0x1_Account_create_signer">create_signer</a>(signer_addr)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_signer_delagated"></a>
-
-## Function `signer_delagated`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_delagated">signer_delagated</a>(addr: address): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_delagated">signer_delagated</a>(addr: address): bool {
-    <b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(addr)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_signer_cap">destroy_signer_cap</a>(cap: <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>) {
+    <b>let</b> <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: _} = cap;
 }
 </code></pre>
 
@@ -836,6 +753,30 @@ A one-way action, once SignerCapability is removed from signer, the address cann
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_address">signer_address</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>): address {
     cap.addr
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_is_signer_delegated"></a>
+
+## Function `is_signer_delegated`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(addr: address): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(addr: address): bool {
+    <b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(addr)
 }
 </code></pre>
 
@@ -995,30 +936,6 @@ reserved address for the MoveVM.
           accept_token_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(new_account),
           sequence_number: 0,
     });
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_create_signer_friendly"></a>
-
-## Function `create_signer_friendly`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_signer_friendly">create_signer_friendly</a>(addr: address): signer
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_signer_friendly">create_signer_friendly</a>(addr: address): signer {
-    <a href="Account.md#0x1_Account_create_signer">create_signer</a>(addr)
 }
 </code></pre>
 

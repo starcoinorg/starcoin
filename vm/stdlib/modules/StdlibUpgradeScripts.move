@@ -42,5 +42,9 @@ module StdlibUpgradeScripts {
             let mint_key = Collection::take<LinearTimeMintKey<STC>>(&signer);
             Token::destroy_linear_time_key(mint_key);
         }
+        public(script) fun upgrade_from_v5_to_v6(account: signer) {
+            CoreAddresses::assert_genesis_address(&account);
+            // TODO: call Oracle::initialize() and NFT::initialize() here.
+        }
 }
 }

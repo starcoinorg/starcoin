@@ -124,56 +124,39 @@ module Account {
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
-    // cannot be dummy key
+    // cannot be dummy key, or empty key
     const AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
     /// A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
-    public fun remove_signer_capability(s: &signer): SignerCapability
+    /// In one txn, signer can remove multi times to create signer caps for usage in multi modules.
+    public fun remove_signer_capability(signer: &signer): SignerCapability
     acquires Account {
-        let signer_addr = Signer::address_of(s);
-        // check signer not delegated.
-        let already_delegated = exists<SignerDelegated>(signer_addr);
-        assert(!already_delegated, 401);
-
+        // for now, we limit the signer cap to be called only by genesis.
+        CoreAddresses::assert_genesis_address(signer);
+        let signer_addr = Signer::address_of(signer);
         // set to account auth key to noop.
-        {
-            let key_rotation_capability = extract_key_rotation_capability(s);
+        if (!is_signer_delegated(signer_addr)) {
+            let key_rotation_capability = extract_key_rotation_capability(signer);
             rotate_authentication_key_with_capability(&key_rotation_capability, AUTH_KEY_PLACEHOLDER);
             destroy_key_rotation_capability(key_rotation_capability);
+            move_to(signer, SignerDelegated {});
         };
-        move_to(s, SignerDelegated {});
         let signer_cap = SignerCapability {addr: signer_addr };
         signer_cap
     }
 
-    public fun allow_borrow_signer<Borrower: store + drop>(cap: &SignerCapability) {
-        move_to(&borrow_signer_with_capability(cap), SignerBorrower<Borrower>{});
+    public fun create_signer_with_cap(cap: &SignerCapability): signer {
+        create_signer(cap.addr)
+    }
+    public fun destroy_signer_cap(cap: SignerCapability) {
+        let SignerCapability {addr: _} = cap;
     }
 
-    public fun disallow_borrow_signer<Borrower: store + drop>(cap: &SignerCapability) acquires SignerBorrower {
-        let SignerBorrower<Borrower> {} = move_from<SignerBorrower<Borrower>>(cap.addr);
-    }
-
-    public fun borrow_signer<Borrower: store + drop>(_borrower: Borrower, addr: address): signer {
-        // check this signer cap is delegated indeed.
-        assert(exists<SignerDelegated>(addr), 401);
-        // check borrower is allowed to borrow signer.
-        assert(exists<SignerBorrower<Borrower>>(addr), 402);
-        create_signer(addr)
-    }
-
-    public fun borrow_signer_with_capability(cap: &SignerCapability): signer {
-        let signer_addr = cap.addr;
-        // check this signer cap is delegated indeed.
-        assert(exists<SignerDelegated>(signer_addr), 401);
-        create_signer(signer_addr)
-    }
-
-    public fun signer_delagated(addr: address): bool {
-        exists<SignerDelegated>(addr)
-    }
     public fun signer_address(cap: &SignerCapability): address {
         cap.addr
+    }
+    public fun is_signer_delegated(addr: address): bool {
+        exists<SignerDelegated>(addr)
     }
  
     /// Create an genesis account at `new_account_address` and return signer.
