@@ -175,8 +175,7 @@ module Account {
     }
 
     /// Release genesis account signer
-    public fun release_genesis_signer(genesis_account: signer){
-        destroy_signer(genesis_account);
+    public fun release_genesis_signer(_genesis_account: signer){
     }
 
     spec release_genesis_signer {
@@ -203,7 +202,6 @@ module Account {
             do_accept_token<STC>(&new_account);
         };
         do_accept_token<TokenType>(&new_account);
-        destroy_signer(new_account);
     }
 
     spec create_account_with_address {
@@ -248,7 +246,6 @@ module Account {
     }
 
     native fun create_signer(addr: address): signer;
-    native fun destroy_signer(sig: signer);
 
     public(script) fun create_account_with_initial_amount<TokenType: store>(account: signer, fresh_address: address, _auth_key: vector<u8>, initial_amount: u128) acquires Account, Balance {
          create_account_with_initial_amount_v2<TokenType>(account, fresh_address, initial_amount)
