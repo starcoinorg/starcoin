@@ -15,6 +15,7 @@ The module for the account resource that governs every account
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
 -  [Resource `SignerDelegated`](#0x1_Account_SignerDelegated)
 -  [Struct `SignerCapability`](#0x1_Account_SignerCapability)
+-  [Resource `AutoAcceptToken`](#0x1_Account_AutoAcceptToken)
 -  [Constants](#@Constants_0)
 -  [Function `remove_signer_capability`](#0x1_Account_remove_signer_capability)
 -  [Function `create_signer_with_cap`](#0x1_Account_create_signer_with_cap)
@@ -55,6 +56,9 @@ The module for the account resource that governs every account
 -  [Function `do_accept_token`](#0x1_Account_do_accept_token)
 -  [Function `accept_token`](#0x1_Account_accept_token)
 -  [Function `is_accepts_token`](#0x1_Account_is_accepts_token)
+-  [Function `can_auto_accept_token`](#0x1_Account_can_auto_accept_token)
+-  [Function `set_auto_accept_token`](#0x1_Account_set_auto_accept_token)
+-  [Function `try_accept_token`](#0x1_Account_try_accept_token)
 -  [Function `sequence_number_for_account`](#0x1_Account_sequence_number_for_account)
 -  [Function `sequence_number`](#0x1_Account_sequence_number)
 -  [Function `authentication_key`](#0x1_Account_authentication_key)
@@ -100,6 +104,8 @@ The module for the account resource that governs every account
     -  [Function `do_accept_token`](#@Specification_1_do_accept_token)
     -  [Function `accept_token`](#@Specification_1_accept_token)
     -  [Function `is_accepts_token`](#@Specification_1_is_accepts_token)
+    -  [Function `set_auto_accept_token`](#@Specification_1_set_auto_accept_token)
+    -  [Function `try_accept_token`](#@Specification_1_try_accept_token)
     -  [Function `sequence_number`](#@Specification_1_sequence_number)
     -  [Function `authentication_key`](#@Specification_1_authentication_key)
     -  [Function `delegated_key_rotation_capability`](#@Specification_1_delegated_key_rotation_capability)
@@ -444,6 +450,33 @@ Message for accept token events
 <dl>
 <dt>
 <code>addr: address</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Account_AutoAcceptToken"></a>
+
+## Resource `AutoAcceptToken`
+
+
+
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> has key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>enable: bool</code>
 </dt>
 <dd>
 
@@ -904,6 +937,7 @@ reserved address for the MoveVM.
           accept_token_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(new_account),
           sequence_number: 0,
     });
+    move_to(new_account, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>{enable: <b>true</b>});
 }
 </code></pre>
 
@@ -948,7 +982,8 @@ reserved address for the MoveVM.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, _auth_key: vector&lt;u8&gt;, initial_amount: u128) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount">create_account_with_initial_amount</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, _auth_key: vector&lt;u8&gt;, initial_amount: u128)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
      <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType&gt;(account, fresh_address, initial_amount)
 }
 </code></pre>
@@ -972,7 +1007,8 @@ reserved address for the MoveVM.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, initial_amount: u128) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Account.md#0x1_Account_create_account_with_initial_amount_v2">create_account_with_initial_amount_v2</a>&lt;TokenType: store&gt;(account: signer, fresh_address: address, initial_amount: u128)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <a href="Account.md#0x1_Account_create_account_with_address">create_account_with_address</a>&lt;TokenType&gt;(fresh_address);
     <b>if</b> (initial_amount &gt; 0) {
         <a href="Account.md#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(&account, fresh_address, initial_amount);
@@ -1001,7 +1037,7 @@ Deposits the <code>to_deposit</code> token into the self's account balance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType: store&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
-<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>if</b> (!<a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(account_address)){
         <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(account);
@@ -1034,7 +1070,7 @@ It's a reverse operation of <code>withdraw</code>.
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType: store&gt;(
     receiver: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(receiver, to_deposit, x"")
 }
 </code></pre>
@@ -1064,7 +1100,9 @@ It's a reverse operation of <code>withdraw_with_metadata</code>.
     receiver: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     metadata: vector&lt;u8&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
+    <a href="Account.md#0x1_Account_try_accept_token">try_accept_token</a>&lt;TokenType&gt;(receiver);
+
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
     // Deposit the `to_deposit` token
     <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver), to_deposit);
@@ -1387,7 +1425,7 @@ into the <code>payee</code>'s account balance. Creates the <code>payee</code> ac
     payee: address,
     amount: u128,
     metadata: vector&lt;u8&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <b>let</b> tokens = <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap, amount, *&metadata);
     <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
         payee,
@@ -1424,7 +1462,7 @@ attached <code>metadata</code> Creates the <code>payee</code> account if it does
     payee: address,
     amount: u128,
     metadata: vector&lt;u8&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <b>let</b> tokens = <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account, amount, *&metadata);
     <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
         payee,
@@ -1460,7 +1498,7 @@ Creates the <code>payee</code> account if it does not exist
     account: &signer,
     payee: address,
     amount: u128
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <a href="Account.md#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account, payee, amount, x"");
 }
 </code></pre>
@@ -1732,8 +1770,102 @@ Return whether the account at <code>addr</code> accepts <code><a href="Token.md#
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool {
-    <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool <b>acquires</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
+    <b>if</b> (<a href="Account.md#0x1_Account_can_auto_accept_token">can_auto_accept_token</a>(addr)) {
+        <b>true</b>
+    } <b>else</b> {
+        <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr)
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_can_auto_accept_token"></a>
+
+## Function `can_auto_accept_token`
+
+Check whether the address can auto accept token.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_can_auto_accept_token">can_auto_accept_token</a>(addr: address): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_can_auto_accept_token">can_auto_accept_token</a>(addr: address): bool <b>acquires</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
+    <b>if</b> (<b>exists</b>&lt;<a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>&gt;(addr)) {
+        borrow_global&lt;<a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>&gt;(addr).enable
+    } <b>else</b> {
+        <b>false</b>
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_set_auto_accept_token"></a>
+
+## Function `set_auto_accept_token`
+
+Configure whether auto-accept tokens.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_set_auto_accept_token">set_auto_accept_token</a>(account: &signer, enable: bool)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_set_auto_accept_token">set_auto_accept_token</a>(account: &signer, enable: bool) <b>acquires</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
+    <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
+    <b>if</b> (<b>exists</b>&lt;<a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>&gt;(addr)) {
+        <b>let</b> config = borrow_global_mut&lt;<a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>&gt;(addr);
+        config.enable = enable;
+    } <b>else</b> {
+        move_to(account, <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>{enable});
+    };
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_try_accept_token"></a>
+
+## Function `try_accept_token`
+
+try to accept token for <code>addr</code>.
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_try_accept_token">try_accept_token</a>&lt;TokenType: store&gt;(addr: address)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_try_accept_token">try_accept_token</a>&lt;TokenType: store&gt;(addr: address) <b>acquires</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>, <a href="Account.md#0x1_Account">Account</a> {
+    <b>if</b> (!<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr)) {
+        <b>if</b> (<a href="Account.md#0x1_Account_can_auto_accept_token">can_auto_accept_token</a>(addr)) {
+            <b>let</b> signer = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(addr);
+            <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(&signer);
+        }
+    };
 }
 </code></pre>
 
@@ -2235,6 +2367,7 @@ It collects gas and bumps the sequence number
 
 <pre><code><b>aborts_if</b> len(authentication_key) != 32;
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account));
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account));
 <b>ensures</b> <a href="Account.md#0x1_Account_exists_at">exists_at</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account));
 </code></pre>
 
@@ -2767,6 +2900,38 @@ It collects gas and bumps the sequence number
 
 
 <pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_set_auto_accept_token"></a>
+
+### Function `set_auto_accept_token`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_set_auto_accept_token">set_auto_accept_token</a>(account: &signer, enable: bool)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_try_accept_token"></a>
+
+### Function `try_accept_token`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_try_accept_token">try_accept_token</a>&lt;TokenType: store&gt;(addr: address)
 </code></pre>
 
 
