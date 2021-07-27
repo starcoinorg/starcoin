@@ -12,5 +12,5 @@ script {
     }
 }
 // check: gas_used
-// check: 930513
+// check: 923857
 // check: "Keep(EXECUTED)"

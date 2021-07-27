@@ -43,7 +43,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 1400132
+// check: 1402977
 
 //! new-transaction
 //! sender: alice
