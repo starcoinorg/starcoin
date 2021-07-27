@@ -10,6 +10,8 @@ module StdlibUpgradeScripts {
         use 0x1::Offer;
         use 0x1::Timestamp;
         use 0x1::Collection;
+        use 0x1::Oracle;
+        use 0x1::STCUSDOracle;
 
         spec module {
             pragma verify = false;
@@ -44,7 +46,10 @@ module StdlibUpgradeScripts {
         }
         public(script) fun upgrade_from_v5_to_v6(account: signer) {
             CoreAddresses::assert_genesis_address(&account);
-            // TODO: call Oracle::initialize() and NFT::initialize() here.
+            Oracle::initialize(&account);
+            //register oracle
+            STCUSDOracle::register(&account);
+            // TODO: call NFT::initialize() here.
         }
 }
 }

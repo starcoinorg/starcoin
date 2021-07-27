@@ -6,6 +6,7 @@ module Oracle {
     use 0x1::Vector;
     use 0x1::CoreAddresses;
     use 0x1::Errors;
+    use 0x1::Account;
 
     struct OracleInfo<OracleT: copy+store+drop, Info: copy+store+drop> has key {
         ///The datasource counter
@@ -44,16 +45,27 @@ module Oracle {
         account: address,
     }
 
+    struct GenesisSignerCapability has key{
+        cap: Account::SignerCapability,
+    }
+
     /// No capability to update the oracle value.
     const ERR_NO_UPDATE_CAPABILITY: u64 = 101;
     const ERR_NO_DATA_SOURCE: u64 = 102;
     const ERR_CAPABILITY_ACCOUNT_MISS_MATCH: u64 = 103;
 
-    /// Register `OracleT` as an oracle type.
-    public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(signer: &signer, info: Info){
-        //TODO implement a global register by contact account.
+    public fun initialize(signer: &signer) {
         CoreAddresses::assert_genesis_address(signer);
-        move_to(signer, OracleInfo<OracleT, Info> {
+        let cap = Account::remove_signer_capability(signer);
+        let cap_wrapper = GenesisSignerCapability{cap};
+        move_to(signer, cap_wrapper);
+    }
+
+    /// Register `OracleT` as an oracle type.
+    public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(_signer: &signer, info: Info) acquires GenesisSignerCapability{
+        let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
+        let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+        move_to(&genesis_account, OracleInfo<OracleT, Info> {
            counter: 0,
             info,
         });

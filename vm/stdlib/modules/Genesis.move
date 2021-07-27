@@ -28,6 +28,7 @@ module Genesis {
     use 0x1::Treasury;
     use 0x1::TreasuryWithdrawDaoProposal;
     use 0x1::STCUSDOracle;
+    use 0x1::Oracle;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -329,6 +330,7 @@ module Genesis {
         Account::rotate_authentication_key_with_capability(&assoc_rotate_key_cap, association_auth_key);
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
 
+        Oracle::initialize(&genesis_account);
         //register oracle
         STCUSDOracle::register(&genesis_account);
 
