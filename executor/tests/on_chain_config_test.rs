@@ -5,7 +5,7 @@ use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
@@ -17,6 +17,7 @@ use starcoin_vm_types::on_chain_config::{
     consensus_config_type_tag, vm_config_type_tag, ConsensusConfig, OnChainConfig, VMConfig,
     CONSENSUS_CONFIG_IDENTIFIER,
 };
+use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::values::VMValueCast;
 use test_helper::dao::{
@@ -26,8 +27,8 @@ use test_helper::dao::{
     vote_txn_timeout_script, vote_vm_config_script,
 };
 use test_helper::executor::{
-    account_execute, account_execute_with_output, association_execute_should_success,
-    blockmeta_execute, current_block_number, prepare_genesis,
+    account_execute_with_output, association_execute_should_success, blockmeta_execute,
+    build_raw_txn, current_block_number, execute_and_apply, prepare_genesis,
 };
 use test_helper::Account;
 
@@ -105,25 +106,29 @@ fn test_modify_on_chain_config_txn_timeout() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
 
     let action_type_tag = transasction_timeout_type_tag();
-    let duration_seconds: u64 = 3000;
+    let new_timeout_config_seconds: u64 = 40000;
 
     dao_vote_test(
         &alice,
         &chain_state,
         &net,
-        vote_txn_timeout_script(&net, duration_seconds),
+        vote_txn_timeout_script(&net, new_timeout_config_seconds),
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
         0,
     )?;
+    let now_seconds = chain_state.get_timestamp()?.milliseconds / 1000;
+    let txn = build_raw_txn(
+        *alice.address(),
+        &chain_state,
+        empty_txn_payload(),
+        Some(now_seconds + new_timeout_config_seconds + 1),
+    );
+    let signed_txn = alice.sign_txn(txn);
+
+    let output = execute_and_apply(&chain_state, Transaction::UserTransaction(signed_txn));
     //verify txn timeout
-    {
-        assert!(
-            account_execute(&net, &alice, &chain_state, empty_txn_payload())?
-                .status()
-                .is_discarded()
-        );
-    }
+    assert!(output.status().is_discarded());
     Ok(())
 }
 
@@ -219,7 +224,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     )?;
 
     //get gas_used
-    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
     let old_gas_used = output.gas_used();
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
@@ -246,7 +251,7 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         0,
     )?;
     // get gas used of modified gas schedule
-    let output = account_execute_with_output(&net, &bob, &chain_state, empty_txn_payload());
+    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
     assert!(output.gas_used() > old_gas_used);
     Ok(())
 }

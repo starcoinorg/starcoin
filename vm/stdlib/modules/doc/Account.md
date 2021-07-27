@@ -13,7 +13,14 @@ The module for the account resource that governs every account
 -  [Struct `WithdrawEvent`](#0x1_Account_WithdrawEvent)
 -  [Struct `DepositEvent`](#0x1_Account_DepositEvent)
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
+-  [Resource `SignerDelegated`](#0x1_Account_SignerDelegated)
+-  [Struct `SignerCapability`](#0x1_Account_SignerCapability)
 -  [Constants](#@Constants_0)
+-  [Function `remove_signer_capability`](#0x1_Account_remove_signer_capability)
+-  [Function `create_signer_with_cap`](#0x1_Account_create_signer_with_cap)
+-  [Function `destroy_signer_cap`](#0x1_Account_destroy_signer_cap)
+-  [Function `signer_address`](#0x1_Account_signer_address)
+-  [Function `is_signer_delegated`](#0x1_Account_is_signer_delegated)
 -  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
 -  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
 -  [Function `create_account`](#0x1_Account_create_account)
@@ -42,6 +49,7 @@ The module for the account resource that governs every account
 -  [Function `rotate_authentication_key_with_capability`](#0x1_Account_rotate_authentication_key_with_capability)
 -  [Function `extract_key_rotation_capability`](#0x1_Account_extract_key_rotation_capability)
 -  [Function `restore_key_rotation_capability`](#0x1_Account_restore_key_rotation_capability)
+-  [Function `destroy_key_rotation_capability`](#0x1_Account_destroy_key_rotation_capability)
 -  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
 -  [Function `balance_for`](#0x1_Account_balance_for)
 -  [Function `balance`](#0x1_Account_balance)
@@ -392,6 +400,60 @@ Message for accept token events
 
 </details>
 
+<a name="0x1_Account_SignerDelegated"></a>
+
+## Resource `SignerDelegated`
+
+
+
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> has key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dummy_field: bool</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Account_SignerCapability"></a>
+
+## Struct `SignerCapability`
+
+
+
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> has store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>addr: address</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -420,6 +482,15 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 </code></pre>
 
 
@@ -549,6 +620,140 @@ Message for accept token events
 </code></pre>
 
 
+
+<a name="0x1_Account_remove_signer_capability"></a>
+
+## Function `remove_signer_capability`
+
+A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
+In one txn, signer can remove multi times to create signer caps for usage in multi modules.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(signer: &signer): <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(signer: &signer): <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    // for now, we limit the signer cap <b>to</b> be called only by genesis.
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(signer);
+    <b>let</b> signer_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+    // set <b>to</b> account auth key <b>to</b> noop.
+    <b>if</b> (!<a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(signer_addr)) {
+        <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(signer);
+        <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>);
+        <a href="Account.md#0x1_Account_destroy_key_rotation_capability">destroy_key_rotation_capability</a>(key_rotation_capability);
+        move_to(signer, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
+    };
+    <b>let</b> signer_cap = <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: signer_addr };
+    signer_cap
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_signer_with_cap"></a>
+
+## Function `create_signer_with_cap`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer_with_cap">create_signer_with_cap</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>): signer
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_signer_with_cap">create_signer_with_cap</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>): signer {
+    <a href="Account.md#0x1_Account_create_signer">create_signer</a>(cap.addr)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_destroy_signer_cap"></a>
+
+## Function `destroy_signer_cap`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_signer_cap">destroy_signer_cap</a>(cap: <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_signer_cap">destroy_signer_cap</a>(cap: <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>) {
+    <b>let</b> <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: _} = cap;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_signer_address"></a>
+
+## Function `signer_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_address">signer_address</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>): address
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_signer_address">signer_address</a>(cap: &<a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>): address {
+    cap.addr
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_is_signer_delegated"></a>
+
+## Function `is_signer_delegated`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(addr: address): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(addr: address): bool {
+    <b>exists</b>&lt;<a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a>&gt;(addr)
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x1_Account_create_genesis_account"></a>
 
@@ -1373,6 +1578,30 @@ Return the key rotation capability to the account it originally came from
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(cap.account_address);
     <a href="Option.md#0x1_Option_fill">Option::fill</a>(&<b>mut</b> account.key_rotation_capability, cap)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_destroy_key_rotation_capability"></a>
+
+## Function `destroy_key_rotation_capability`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_key_rotation_capability">destroy_key_rotation_capability</a>(cap: <a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_destroy_key_rotation_capability">destroy_key_rotation_capability</a>(cap: <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a>) {
+    <b>let</b> <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a> {account_address: _} = cap;
 }
 </code></pre>
 
