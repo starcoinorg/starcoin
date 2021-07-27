@@ -71,3 +71,4 @@ jobs:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./target/release/move
           asset_name: move-${{ matrix.platform }}
+          asset_content_type: application/octet-stream
