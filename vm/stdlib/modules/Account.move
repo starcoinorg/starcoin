@@ -314,11 +314,15 @@ module Account {
         try_accept_token<TokenType>(receiver);
 
         let deposit_value = Token::value(&to_deposit);
-        // Deposit the `to_deposit` token
-        deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
+        if (deposit_value > 0u128) {
+            // Deposit the `to_deposit` token
+            deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
 
-        // emit deposit event
-        emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
+            // emit deposit event
+            emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
+        } else {
+            Token::destroy_zero(to_deposit);
+        };
     }
 
     spec deposit_with_metadata {
