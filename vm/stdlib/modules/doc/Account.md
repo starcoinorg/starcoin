@@ -1104,11 +1104,15 @@ It's a reverse operation of <code>withdraw_with_metadata</code>.
     <a href="Account.md#0x1_Account_try_accept_token">try_accept_token</a>&lt;TokenType&gt;(receiver);
 
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    // Deposit the `to_deposit` token
-    <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver), to_deposit);
+    <b>if</b> (deposit_value &gt; 0u128) {
+        // Deposit the `to_deposit` token
+        <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver), to_deposit);
 
-    // emit deposit event
-    <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(receiver, deposit_value, metadata);
+        // emit deposit event
+        <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(receiver, deposit_value, metadata);
+    } <b>else</b> {
+        <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>(to_deposit);
+    };
 }
 </code></pre>
 
