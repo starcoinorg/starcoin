@@ -138,3 +138,15 @@ fun main(account: signer) {
 }
 }
 // check: EXECUTE
+
+//! new-transaction
+//! sender: bob
+address alice = {{alice}};
+script {
+use 0x1::Account;
+use 0x1::STC::STC;
+fun main(account: signer) {
+    Account::pay_from<STC>(&account, @alice, 0u128);
+}
+}
+// check: EXECUTED

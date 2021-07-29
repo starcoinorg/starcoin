@@ -21,6 +21,7 @@ module DaoVoteScripts {
         Dao::cast_vote<Token, ActionT>(&signer, proposer_address, proposal_id, votes, agree);
     }
 
+    /// revoke all votes on a proposal
     public ( script ) fun revoke_vote<Token: copy + drop + store, Action: copy + drop + store>(
         signer: signer,
         proposer_address: address,
@@ -28,6 +29,18 @@ module DaoVoteScripts {
     ) {
         let sender = Signer::address_of(&signer);
         let (_, power) = Dao::vote_of<Token>(sender, proposer_address, proposal_id);
+        let my_token = Dao::revoke_vote<Token, Action>(&signer, proposer_address, proposal_id, power);
+        Account::deposit(sender, my_token);
+    }
+
+    /// revoke some votes on a proposal
+    public ( script ) fun revoke_vote_of_power<Token: copy + drop + store, Action: copy + drop + store>(
+        signer: signer,
+        proposer_address: address,
+        proposal_id: u64,
+        power: u128,
+    ) {
+        let sender = Signer::address_of(&signer);
         let my_token = Dao::revoke_vote<Token, Action>(&signer, proposer_address, proposal_id, power);
         Account::deposit(sender, my_token);
     }

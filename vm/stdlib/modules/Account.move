@@ -100,6 +100,9 @@ module Account {
     // So that the capability is always controlled by contracts, not by some EOA.
     struct SignerCapability has store { addr: address }
 
+    // Resource marking whether the account enable auto-accept-token feature.
+    struct AutoAcceptToken has key { enable: bool }
+
     const MAX_U64: u128 = 18446744073709551615;
 
     const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
@@ -175,8 +178,7 @@ module Account {
     }
 
     /// Release genesis account signer
-    public fun release_genesis_signer(genesis_account: signer){
-        destroy_signer(genesis_account);
+    public fun release_genesis_signer(_genesis_account: signer){
     }
 
     spec release_genesis_signer {
@@ -203,7 +205,6 @@ module Account {
             do_accept_token<STC>(&new_account);
         };
         do_accept_token<TokenType>(&new_account);
-        destroy_signer(new_account);
     }
 
     spec create_account_with_address {
@@ -239,22 +240,25 @@ module Account {
               accept_token_events: Event::new_event_handle<AcceptTokenEvent>(new_account),
               sequence_number: 0,
         });
+        move_to(new_account, AutoAcceptToken{enable: true});
     }
 
     spec make_account {
         aborts_if len(authentication_key) != 32;
         aborts_if exists<Account>(Signer::address_of(new_account));
+        aborts_if exists<AutoAcceptToken>(Signer::address_of(new_account));
         ensures exists_at(Signer::address_of(new_account));
     }
 
     native fun create_signer(addr: address): signer;
-    native fun destroy_signer(sig: signer);
 
-    public(script) fun create_account_with_initial_amount<TokenType: store>(account: signer, fresh_address: address, _auth_key: vector<u8>, initial_amount: u128) acquires Account, Balance {
+    public(script) fun create_account_with_initial_amount<TokenType: store>(account: signer, fresh_address: address, _auth_key: vector<u8>, initial_amount: u128)
+    acquires Account, Balance, AutoAcceptToken {
          create_account_with_initial_amount_v2<TokenType>(account, fresh_address, initial_amount)
     }
 
-    public(script) fun create_account_with_initial_amount_v2<TokenType: store>(account: signer, fresh_address: address, initial_amount: u128) acquires Account, Balance {
+    public(script) fun create_account_with_initial_amount_v2<TokenType: store>(account: signer, fresh_address: address, initial_amount: u128)
+    acquires Account, Balance, AutoAcceptToken {
         create_account_with_address<TokenType>(fresh_address);
         if (initial_amount > 0) {
             pay_from<TokenType>(&account, fresh_address, initial_amount);
@@ -271,7 +275,7 @@ module Account {
 
     /// Deposits the `to_deposit` token into the self's account balance
     public fun deposit_to_self<TokenType: store>(account: &signer, to_deposit: Token<TokenType>)
-    acquires Account, Balance {
+    acquires Account, Balance, AutoAcceptToken {
         let account_address = Signer::address_of(account);
         if (!is_accepts_token<TokenType>(account_address)){
             do_accept_token<TokenType>(account);
@@ -292,7 +296,7 @@ module Account {
     public fun deposit<TokenType: store>(
         receiver: address,
         to_deposit: Token<TokenType>,
-    ) acquires Account, Balance {
+    ) acquires Account, Balance, AutoAcceptToken {
         deposit_with_metadata<TokenType>(receiver, to_deposit, x"")
     }
 
@@ -306,16 +310,19 @@ module Account {
         receiver: address,
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
-    ) acquires Account, Balance {
-        // Check that the `to_deposit` token is non-zero
+    ) acquires Account, Balance, AutoAcceptToken {
+        try_accept_token<TokenType>(receiver);
+
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
+        if (deposit_value > 0u128) {
+            // Deposit the `to_deposit` token
+            deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
 
-        // Deposit the `to_deposit` token
-        deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
-
-        // emit deposit event
-        emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
+            // emit deposit event
+            emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
+        } else {
+            Token::destroy_zero(to_deposit);
+        };
     }
 
     spec deposit_with_metadata {
@@ -488,7 +495,7 @@ module Account {
         payee: address,
         amount: u128,
         metadata: vector<u8>,
-    ) acquires Account, Balance {
+    ) acquires Account, Balance, AutoAcceptToken {
         let tokens = withdraw_with_capability_and_metadata<TokenType>(cap, amount, *&metadata);
         deposit_with_metadata<TokenType>(
             payee,
@@ -517,7 +524,7 @@ module Account {
         payee: address,
         amount: u128,
         metadata: vector<u8>,
-    ) acquires Account, Balance {
+    ) acquires Account, Balance, AutoAcceptToken {
         let tokens = withdraw_with_metadata<TokenType>(account, amount, *&metadata);
         deposit_with_metadata<TokenType>(
             payee,
@@ -558,7 +565,7 @@ module Account {
         account: &signer,
         payee: address,
         amount: u128
-    ) acquires Account, Balance {
+    ) acquires Account, Balance, AutoAcceptToken {
         pay_from_with_metadata<TokenType>(account, payee, amount, x"");
     }
 
@@ -673,7 +680,6 @@ module Account {
     spec do_accept_token {
         aborts_if exists<Balance<TokenType>>(Signer::address_of(account));
         aborts_if !exists<Account>(Signer::address_of(account));
-
     }
 
     public(script) fun accept_token<TokenType: store>(account: signer) acquires Account {
@@ -685,11 +691,51 @@ module Account {
     }
 
     /// Return whether the account at `addr` accepts `Token` type tokens
-    public fun is_accepts_token<TokenType: store>(addr: address): bool {
-        exists<Balance<TokenType>>(addr)
+    public fun is_accepts_token<TokenType: store>(addr: address): bool acquires AutoAcceptToken {
+        if (can_auto_accept_token(addr)) {
+            true
+        } else {
+            exists<Balance<TokenType>>(addr)
+        }
     }
 
     spec is_accepts_token {
+        aborts_if false;
+    }
+
+    /// Check whether the address can auto accept token.
+    public fun can_auto_accept_token(addr: address): bool acquires AutoAcceptToken {
+        if (exists<AutoAcceptToken>(addr)) {
+            borrow_global<AutoAcceptToken>(addr).enable
+        } else {
+            false
+        }
+    }
+
+    /// Configure whether auto-accept tokens.
+    public fun set_auto_accept_token(account: &signer, enable: bool) acquires AutoAcceptToken {
+        let addr = Signer::address_of(account);
+        if (exists<AutoAcceptToken>(addr)) {
+            let config = borrow_global_mut<AutoAcceptToken>(addr);
+            config.enable = enable;
+        } else {
+            move_to(account, AutoAcceptToken{enable});
+        };
+    }
+    spec set_auto_accept_token {
+        aborts_if false;
+    }
+
+    /// try to accept token for `addr`.
+    fun try_accept_token<TokenType: store>(addr: address) acquires AutoAcceptToken, Account {
+        if (!exists<Balance<TokenType>>(addr)) {
+            if (can_auto_accept_token(addr)) {
+                let signer = create_signer(addr);
+                do_accept_token<TokenType>(&signer);
+            }
+        };
+    }
+    spec try_accept_token {
         aborts_if false;
     }
 

@@ -9,7 +9,7 @@ fun main() {
     let created_address = Authenticator::derived_address(dummy_auth_key);
     Account::create_account_with_address<STC>(created_address);
     assert(Account::is_accepts_token<STC>(created_address), 1);
-    assert(!Account::is_accepts_token<DummyToken>(created_address), 2);
+    assert(Account::is_accepts_token<DummyToken>(created_address), 2);
 }
 }
 
@@ -34,5 +34,3 @@ fun main() {
 }
 
 // check: EXECUTED
-
-

@@ -7,6 +7,7 @@
 
 -  [Function `cast_vote`](#0x1_DaoVoteScripts_cast_vote)
 -  [Function `revoke_vote`](#0x1_DaoVoteScripts_revoke_vote)
+-  [Function `revoke_vote_of_power`](#0x1_DaoVoteScripts_revoke_vote_of_power)
 -  [Function `unstake_vote`](#0x1_DaoVoteScripts_unstake_vote)
 -  [Specification](#@Specification_0)
 
@@ -54,6 +55,7 @@
 
 ## Function `revoke_vote`
 
+revoke all votes on a proposal
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="DaoVoteScripts.md#0x1_DaoVoteScripts_revoke_vote">revoke_vote</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b>, drop, store, Action: <b>copy</b>, drop, store&gt;(signer: signer, proposer_address: address, proposal_id: u64)
@@ -72,6 +74,38 @@
 ) {
     <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&signer);
     <b>let</b> (_, power) = <a href="Dao.md#0x1_Dao_vote_of">Dao::vote_of</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(sender, proposer_address, proposal_id);
+    <b>let</b> my_token = <a href="Dao.md#0x1_Dao_revoke_vote">Dao::revoke_vote</a>&lt;<a href="Token.md#0x1_Token">Token</a>, Action&gt;(&signer, proposer_address, proposal_id, power);
+    <a href="Account.md#0x1_Account_deposit">Account::deposit</a>(sender, my_token);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_DaoVoteScripts_revoke_vote_of_power"></a>
+
+## Function `revoke_vote_of_power`
+
+revoke some votes on a proposal
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="DaoVoteScripts.md#0x1_DaoVoteScripts_revoke_vote_of_power">revoke_vote_of_power</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b>, drop, store, Action: <b>copy</b>, drop, store&gt;(signer: signer, proposer_address: address, proposal_id: u64, power: u128)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> ( <b>script</b> ) <b>fun</b> <a href="DaoVoteScripts.md#0x1_DaoVoteScripts_revoke_vote_of_power">revoke_vote_of_power</a>&lt;<a href="Token.md#0x1_Token">Token</a>: <b>copy</b> + drop + store, Action: <b>copy</b> + drop + store&gt;(
+    signer: signer,
+    proposer_address: address,
+    proposal_id: u64,
+    power: u128,
+) {
+    <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&signer);
     <b>let</b> my_token = <a href="Dao.md#0x1_Dao_revoke_vote">Dao::revoke_vote</a>&lt;<a href="Token.md#0x1_Token">Token</a>, Action&gt;(&signer, proposer_address, proposal_id, power);
     <a href="Account.md#0x1_Account_deposit">Account::deposit</a>(sender, my_token);
 }
