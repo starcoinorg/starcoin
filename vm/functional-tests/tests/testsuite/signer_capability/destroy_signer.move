@@ -10,11 +10,11 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: genesis
-script {
-    fun main(_signer: signer) {
-    }
-}
-// check: Discard
-// check: INVALID_AUTH_KEY
+////! new-transaction
+////! sender: genesis
+//script {
+//    fun main(_signer: signer) {
+//    }
+//}
+//// check: Discard
+//// check: INVALID_AUTH_KEY

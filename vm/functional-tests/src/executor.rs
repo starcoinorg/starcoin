@@ -131,7 +131,7 @@ impl FakeExecutor {
 
     /// Reads the balance resource value for an account from this executor's data store.
     pub fn read_balance_resource(&self, account: &Account) -> Option<BalanceResource> {
-        Some(self.read_account_info(account)?.1)
+        self.read_balance_resource_from_token_code(account, STC_TOKEN_CODE_STR)
     }
 
     // Reads the balance resource value for an account from this executor's data store with the

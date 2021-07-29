@@ -7,10 +7,12 @@ use crate::{
     errors::*,
     executor::FakeExecutor,
 };
+use executor::account::AccountData;
 use mirai_annotations::checked_verify;
 use once_cell::sync::Lazy;
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::DEFAULT_GAS_CONSTANTS;
+use starcoin_types::account_config::BalanceResource;
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -22,6 +24,7 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE_STR};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
@@ -599,6 +602,29 @@ pub fn eval_with_executor<TComp: Compiler>(
 ) -> Result<EvaluationLog> {
     for data in config.accounts.values() {
         exec.add_account_data(&data);
+    }
+    for genesis in config.genesis_accounts.values() {
+        let genesis_account = exec.read_account_resource(genesis);
+        println!(
+            "addr: {}, account: {:?}",
+            genesis.address(),
+            genesis_account
+        );
+        if let Some(genesis_account) = genesis_account {
+            let balance = exec.read_balance_resource(genesis);
+            let genesis_account_data = AccountData::with_account_and_event_counts(
+                genesis.clone(),
+                balance.map(|b| b.token()).unwrap_or_default(),
+                STC_TOKEN_CODE_STR,
+                genesis_account.sequence_number(),
+                genesis_account.withdraw_events().count(),
+                genesis_account.deposit_events().count(),
+                genesis_account.accept_token_events().count(),
+                genesis_account.has_delegated_key_rotation_capability(),
+                genesis_account.has_delegated_withdrawal_capability(),
+            );
+            exec.add_account_data(&genesis_account_data);
+        }
     }
 
     let mut log = EvaluationLog { outputs: vec![] };
