@@ -53,7 +53,7 @@ starcoin-statedb = {path = "../state/statedb"}
 starcoin-move-compiler = { path = "../vm/compiler"}
 rand = "0.8.4"
 network-api = { path = "../network/api" }
-async-trait = "0.1.50"
+async-trait = "0.1.51"
 accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
