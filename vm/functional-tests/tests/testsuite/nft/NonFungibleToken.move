@@ -19,7 +19,7 @@ script {
 //! sender: creator
 address creator = {{creator}};
 module creator::TestNFT {
-    struct TestNFT has store, key{}
+    struct TestNFT has store, key, drop{}
 
     public fun new(): TestNFT{
         TestNFT{}
@@ -79,7 +79,7 @@ use 0x1::Option;
 use creator::TestNFT::TestNFT;
 use 0x1::NFTGallery;
 fun main(account: signer) {
-    let nft = NFTGallery::get_nft<TestNFT>(&account, 1);
+    let nft = NFTGallery::get_nft_info<TestNFT>(&account, 1);
     assert(Option::is_some(&nft), 1000);
 }
 }
