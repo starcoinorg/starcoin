@@ -1,6 +1,8 @@
 address 0x1 {
 /// The module provide some improved math calculations.
 module Math {
+    use 0x1::Vector;
+
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
@@ -129,5 +131,24 @@ module Math {
     }
 
     spec fun spec_mul_div(): u128;
+
+    /// calculate sum of nums
+    public fun sum(nums: &vector<u128>): u128 {
+        let len = Vector::length(nums);
+        let i = 0;
+        let sum = 0;
+        while (i < len){
+            sum = sum + *Vector::borrow(nums, i);
+            i = i + 1;
+        };
+        sum
+    }
+
+    /// calculate average of nums
+    public fun avg(nums: &vector<u128>): u128{
+        let len = Vector::length(nums);
+        let sum = sum(nums);
+        sum/(len as u128)
+    }
 }
 }

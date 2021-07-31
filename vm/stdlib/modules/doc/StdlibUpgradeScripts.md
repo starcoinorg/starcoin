@@ -15,7 +15,9 @@ The module for StdlibUpgrade init scripts
 <pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Offer.md#0x1_Offer">0x1::Offer</a>;
+<b>use</b> <a href="Oracle.md#0x1_Oracle">0x1::Oracle</a>;
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Oracle.md#0x1_STCUSDOracle">0x1::STCUSDOracle</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
 <b>use</b> <a href="Treasury.md#0x1_Treasury">0x1::Treasury</a>;
@@ -108,7 +110,10 @@ association account should call this script after upgrade from v2 to v3.
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6">upgrade_from_v5_to_v6</a>(account: signer) {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(&account);
-    // TODO: call Oracle::initialize() and NFT::initialize() here.
+    <a href="Oracle.md#0x1_Oracle_initialize">Oracle::initialize</a>(&account);
+    //register oracle
+    <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&account);
+    // TODO: call NFT::initialize() here.
 }
 </code></pre>
 

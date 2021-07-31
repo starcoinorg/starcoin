@@ -27,6 +27,8 @@ module Genesis {
     use 0x1::Option;
     use 0x1::Treasury;
     use 0x1::TreasuryWithdrawDaoProposal;
+    use 0x1::STCUSDOracle;
+    use 0x1::Oracle;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -327,6 +329,11 @@ module Genesis {
         let assoc_rotate_key_cap = Account::extract_key_rotation_capability(&association);
         Account::rotate_authentication_key_with_capability(&assoc_rotate_key_cap, association_auth_key);
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
+
+        Oracle::initialize(&genesis_account);
+        //register oracle
+        STCUSDOracle::register(&genesis_account);
+
         //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
         Timestamp::set_time_has_started(&genesis_account);
         Account::release_genesis_signer(genesis_account);

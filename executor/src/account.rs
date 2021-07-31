@@ -473,8 +473,14 @@ impl AccountData {
         let account = Value::struct_(Struct::pack(vec![
             // TODO: this needs to compute the auth key instead
             Value::vector_u8(self.account.auth_key().to_vec()),
-            self.withdrawal_capability.as_ref().unwrap().value(),
-            self.key_rotation_capability.as_ref().unwrap().value(),
+            self.withdrawal_capability
+                .as_ref()
+                .map(|v| v.value())
+                .unwrap_or_else(|| Value::vector_for_testing_only(vec![])),
+            self.key_rotation_capability
+                .as_ref()
+                .map(|v| v.value())
+                .unwrap_or_else(|| Value::vector_for_testing_only(vec![])),
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.withdraw_events.count()),
                 Value::vector_u8(self.withdraw_events.key().to_vec()),
