@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.41"
 thiserror = "1.0"
-serde = { version = "1.0.126", features = ["derive"] }
+serde = { version = "1.0.127", features = ["derive"] }
 rustyline = "8.2.0"
 structopt = "0.3.22"
 clap = "2.33.3"

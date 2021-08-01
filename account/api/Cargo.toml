@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.41"
 thiserror = "1.0"
 async-trait = "0.1"
-serde = { version = "1.0.126", default-features = false }
+serde = { version = "1.0.127", default-features = false }
 serde_bytes = "0.11.5"
 serde_json = "~1"
 bcs-ext ={package= "bcs-ext", path = "../../commons/bcs_ext" }
