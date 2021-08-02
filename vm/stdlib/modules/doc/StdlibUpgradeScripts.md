@@ -113,7 +113,7 @@ association account should call this script after upgrade from v2 to v3.
     <a href="Oracle.md#0x1_Oracle_initialize">Oracle::initialize</a>(&account);
     //register oracle
     <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&account);
-    // TODO: call NFT::initialize() here.
+    // TODO: call <a href="NonFungibleToken.md#0x1_NFT_initialize">NFT::initialize</a>() here.
 }
 </code></pre>
 
