@@ -12,6 +12,7 @@ module StdlibUpgradeScripts {
         use 0x1::Collection;
         use 0x1::Oracle;
         use 0x1::STCUSDOracle;
+        use 0x1::NFT;
 
         spec module {
             pragma verify = false;
@@ -44,12 +45,13 @@ module StdlibUpgradeScripts {
             let mint_key = Collection::take<LinearTimeMintKey<STC>>(&signer);
             Token::destroy_linear_time_key(mint_key);
         }
+
         public(script) fun upgrade_from_v5_to_v6(account: signer) {
             CoreAddresses::assert_genesis_address(&account);
             Oracle::initialize(&account);
             //register oracle
             STCUSDOracle::register(&account);
-            // TODO: call NFT::initialize() here.
+            NFT::initialize(&account);
         }
 }
 }

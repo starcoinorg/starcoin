@@ -14,6 +14,7 @@ The module for StdlibUpgrade init scripts
 
 <pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="NFT.md#0x1_NFT">0x1::NFT</a>;
 <b>use</b> <a href="Offer.md#0x1_Offer">0x1::Offer</a>;
 <b>use</b> <a href="Oracle.md#0x1_Oracle">0x1::Oracle</a>;
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
@@ -113,7 +114,7 @@ association account should call this script after upgrade from v2 to v3.
     <a href="Oracle.md#0x1_Oracle_initialize">Oracle::initialize</a>(&account);
     //register oracle
     <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&account);
-    // TODO: call <a href="NonFungibleToken.md#0x1_NFT_initialize">NFT::initialize</a>() here.
+    <a href="NFT.md#0x1_NFT_initialize">NFT::initialize</a>(&account);
 }
 </code></pre>
 

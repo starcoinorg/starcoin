@@ -6,19 +6,21 @@ module NFT {
     use 0x1::Account;
 
     const ERR_NO_MINT_CAPABILITY: u64 = 101;
+    const ERR_NO_BURN_CAPABILITY: u64 = 102;
     
     /// The info of NFT type
     struct NFTTypeInfo<NFTType: store + drop> has key, store {
         counter: u64,
-        total_supply: u64,
     }
 
     struct GenesisSignerCapability has key {
         cap: Account::SignerCapability,
     }
 
-    struct MintCapability<NFTType: store + drop> has key, store {
-        address: address,
+    struct MintCapability<NFTType: store> has key, store {
+    }
+
+    struct BurnCapability<NFTType: store> has key, store {
     }
 
     struct NFT<NFTType: store + drop> has key, store {
@@ -61,27 +63,39 @@ module NFT {
         let genesis_cap = GenesisSignerCapability { cap };
         move_to(signer, genesis_cap);
     }
+
     /// Register a NFT type to genesis
-    public fun register_nft<NFTType: store + drop>(signer: &signer, total_supply: u64) acquires GenesisSignerCapability {
+    public fun register_nft<NFTType: store + drop>(signer: &signer) acquires GenesisSignerCapability {
         let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
         let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
         let info = NFTTypeInfo {
             counter: 0,
-            total_supply: total_supply,
         };
         move_to<NFTTypeInfo<NFTType>>(&genesis_account, info);
-        move_to<MintCapability<NFTType>>(signer, MintCapability { address: Signer::address_of(signer) });
+        move_to<MintCapability<NFTType>>(signer, MintCapability {});
+        move_to<BurnCapability<NFTType>>(signer, BurnCapability {});
     }
 
-    public fun remove_mint_capability<NFTType: store + drop>(signer: &signer): MintCapability<NFTType> acquires MintCapability {
-        let account = Signer::address_of(signer);
-        assert(exists<MintCapability<NFTType>>(account), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
-        move_from<MintCapability<NFTType>>(account)
+    /// Add MintCapability to `sender`
+    public fun add_mint_capability<NFTType: store + drop>(sender: &signer, cap: MintCapability<NFTType>){
+        move_to(sender, cap);
     }
 
-    public fun mint<NFTType: store + drop>(account: &signer, hash: vector<u8>, token: NFTType): NFT<NFTType> acquires NFTTypeInfo {
-        let address = Signer::address_of(account);
-        assert(exists<MintCapability<NFTType>>(address), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
+    /// Remove the MintCapability<NFTType> from `sender`
+    public fun remove_mint_capability<NFTType: store + drop>(sender: &signer): MintCapability<NFTType> acquires MintCapability {
+        let addr = Signer::address_of(sender);
+        assert(exists<MintCapability<NFTType>>(addr), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
+        move_from<MintCapability<NFTType>>(addr)
+    }
+
+    ///Destroy the MintCapability<NFTType>
+    public fun destroy_mint_capability<NFTType: store + drop>(cap: MintCapability<NFTType>){
+        let MintCapability{} = cap;
+    }
+
+    /// Mint nft with MintCapability<NFTTYpe>, `sender` will been the NFT's creator.
+    public fun mint_with_cap<NFTType: store + drop>(sender: &signer, _cap: &mut MintCapability<NFTType>, hash: vector<u8>, token: NFTType): NFT<NFTType> acquires NFTTypeInfo {
+        let creator = Signer::address_of(sender);
         let nft_type_info = borrow_global_mut<NFTTypeInfo<NFTType>>(CoreAddresses::GENESIS_ADDRESS());
         nft_type_info.counter = nft_type_info.counter + 1;
         let uid = nft_type_info.counter;
@@ -89,9 +103,48 @@ module NFT {
             token: token,
             uid: uid,
             hash: copy hash,
-            creator: address,
+            creator,
         };
         return nft
+    }
+
+    /// Mint nft, the `sender` must have MintCapability<NFTType>
+    public fun mint<NFTType: store + drop>(sender: &signer, hash: vector<u8>, token: NFTType): NFT<NFTType> acquires NFTTypeInfo, MintCapability {
+        let addr = Signer::address_of(sender);
+        assert(exists<MintCapability<NFTType>>(addr), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
+        let cap = borrow_global_mut<MintCapability<NFTType>>(addr);
+        mint_with_cap(sender, cap, hash, token)
+    }
+
+    /// Add BurnCapability<NFTType> to `sender`
+    public fun add_burn_capability<NFTType: store + drop>(sender: &signer, cap: BurnCapability<NFTType>){
+        move_to(sender, cap);
+    }
+
+    /// Remove the BurnCapability<NFTType> from `sender`
+    public fun remove_burn_capability<NFTType: store + drop>(sender: &signer): BurnCapability<NFTType> acquires BurnCapability {
+        let addr = Signer::address_of(sender);
+        assert(exists<BurnCapability<NFTType>>(addr), Errors::requires_capability(ERR_NO_BURN_CAPABILITY));
+        move_from<BurnCapability<NFTType>>(addr)
+    }
+
+    ///Destroy the BurnCapability<NFTType>
+    public fun destroy_burn_capability<NFTType: store + drop>(cap: BurnCapability<NFTType>){
+        let BurnCapability{} = cap;
+    }
+
+    /// Burn nft with BurnCapability<NFTType>
+    public fun burn_with_cap<NFTType: store +drop>(_cap: &mut BurnCapability<NFTType>, nft: NFT<NFTType>): NFTType {
+        let NFT{ token,creator:_,uid:_,hash:_} = nft;
+        token
+    }
+
+    /// Burn nft, the `sender` must have BurnCapability<NFTType>
+    public fun burn<NFTType: store +drop>(sender: &signer, nft: NFT<NFTType>): NFTType acquires BurnCapability {
+        let addr = Signer::address_of(sender);
+        assert(exists<BurnCapability<NFTType>>(addr), Errors::requires_capability(ERR_NO_BURN_CAPABILITY));
+        let cap = borrow_global_mut<BurnCapability<NFTType>>(addr);
+        burn_with_cap(cap, nft)
     }
 }
 
@@ -187,5 +240,32 @@ module NFTGallery {
     public fun accept<NFTType: store + drop>(account: &signer) {
         Collection2::accept<NFT<NFTType>>(account);
     }
+
+    //TODO should another method name?
+    /// Deposit nft to `sender` NFTGallery
+    public fun deposit<NFTType: store + drop>(sender: &signer, nft:NFT<NFTType>){
+        Collection2::put(sender, Signer::address_of(sender), nft);
+    }
+
+    /// Deposit nft to `receiver` NFTGallery
+    public fun deposit_to<NFTType: store + drop>(sender: &signer, receiver: address, nft:NFT<NFTType>){
+        Collection2::put(sender, receiver, nft);
+    }
+
+    /// Withdraw one nft of NFTType from `sender`
+    public fun withdraw_one<NFTType: store + drop>(sender: &signer): NFT<NFTType>{
+        Collection2::take<NFT<NFTType>>(sender)
+    }
+
+    /// Withdraw nft of NFTType and uid from `sender`
+    public fun withdraw<NFTType: store + drop>(_sender: &signer, _uid: u64){
+        //TODO
+    }
+
+    /// Count all NFTs assigned to an owner
+    public fun count_of<NFTType: store + drop>(owner: address):u64 {
+        Collection2::length_of<NFT<NFTType>>(owner)
+    }
+
 }
 }

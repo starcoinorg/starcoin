@@ -29,6 +29,7 @@ module Genesis {
     use 0x1::TreasuryWithdrawDaoProposal;
     use 0x1::STCUSDOracle;
     use 0x1::Oracle;
+    use 0x1::NFT;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -333,6 +334,8 @@ module Genesis {
         Oracle::initialize(&genesis_account);
         //register oracle
         STCUSDOracle::register(&genesis_account);
+
+        NFT::initialize(&genesis_account);
 
         //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
         Timestamp::set_time_has_started(&genesis_account);
