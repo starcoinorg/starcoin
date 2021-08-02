@@ -26,6 +26,7 @@ and the owner of Collection can allow others to add item to Collection or get mu
 -  [Function `put_all`](#0x1_Collection2_put_all)
 -  [Function `take`](#0x1_Collection2_take)
 -  [Function `create_collection`](#0x1_Collection2_create_collection)
+-  [Function `length_of`](#0x1_Collection2_length_of)
 -  [Function `borrow_collection`](#0x1_Collection2_borrow_collection)
 -  [Function `return_collection`](#0x1_Collection2_return_collection)
 -  [Function `destroy_collection`](#0x1_Collection2_destroy_collection)
@@ -609,14 +610,14 @@ Take last item from signer's Collection of T.
 
 </details>
 
-<a name="0x1_Collection2_borrow_collection"></a>
+<a name="0x1_Collection2_length_of"></a>
 
-## Function `borrow_collection`
+## Function `length_of`
 
-Borrow collection of T from <code>owner</code>
+Return the length of Collection<T> from <code>owner</code>, if collection do not exist, return 0.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_borrow_collection">borrow_collection</a>&lt;T: store&gt;(signer: &signer, owner: address): <a href="Collection2.md#0x1_Collection2_Collection">Collection2::Collection</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_length_of">length_of</a>&lt;T: store&gt;(owner: address): u64
 </code></pre>
 
 
@@ -625,13 +626,46 @@ Borrow collection of T from <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_borrow_collection">borrow_collection</a>&lt;T: store&gt;(signer: &signer, owner: address): <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt; <b>acquires</b> <a href="Collection2.md#0x1_Collection2_CollectionStore">CollectionStore</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_length_of">length_of</a>&lt;T: store&gt;(owner: address) : u64 <b>acquires</b> <a href="Collection2.md#0x1_Collection2_CollectionStore">CollectionStore</a>{
+    <b>if</b> (<a href="Collection2.md#0x1_Collection2_exists_at">exists_at</a>&lt;T&gt;(owner)){
+        <b>let</b> cs = borrow_global_mut&lt;<a href="Collection2.md#0x1_Collection2_CollectionStore">CollectionStore</a>&lt;T&gt;&gt;(owner);
+        //<b>if</b> items is None, indicate it is borrowed
+        <b>assert</b>(!<a href="Option.md#0x1_Option_is_none">Option::is_none</a>(&cs.items), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Collection2.md#0x1_Collection2_ERR_COLLECTION_INVALID_BORROW_STATE">ERR_COLLECTION_INVALID_BORROW_STATE</a>));
+        <b>let</b> items = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&cs.items);
+        <a href="Vector.md#0x1_Vector_length">Vector::length</a>(items)
+    }<b>else</b>{
+        0
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Collection2_borrow_collection"></a>
+
+## Function `borrow_collection`
+
+Borrow collection of T from <code>owner</code>, auto detected the collection's can_put|can_mut|can_take by the <code>sender</code> and Collection config.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_borrow_collection">borrow_collection</a>&lt;T: store&gt;(sender: &signer, owner: address): <a href="Collection2.md#0x1_Collection2_Collection">Collection2::Collection</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_borrow_collection">borrow_collection</a>&lt;T: store&gt;(sender: &signer, owner: address): <a href="Collection.md#0x1_Collection">Collection</a>&lt;T&gt; <b>acquires</b> <a href="Collection2.md#0x1_Collection2_CollectionStore">CollectionStore</a>{
     <b>assert</b>(<a href="Collection2.md#0x1_Collection2_exists_at">exists_at</a>&lt;T&gt;(owner), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Collection2.md#0x1_Collection2_ERR_COLLECTION_NOT_EXIST">ERR_COLLECTION_NOT_EXIST</a>));
     <b>let</b> cs = borrow_global_mut&lt;<a href="Collection2.md#0x1_Collection2_CollectionStore">CollectionStore</a>&lt;T&gt;&gt;(owner);
     //<b>if</b> items is None, indicate it is borrowed
     <b>assert</b>(!<a href="Option.md#0x1_Option_is_none">Option::is_none</a>(&cs.items), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Collection2.md#0x1_Collection2_ERR_COLLECTION_INVALID_BORROW_STATE">ERR_COLLECTION_INVALID_BORROW_STATE</a>));
     <b>let</b> items = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> cs.items);
-    <b>let</b> is_owner = owner == <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+    <b>let</b> is_owner = owner == <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender);
     <b>let</b> can_put = cs.anyone_can_put || is_owner;
     <b>let</b> can_mut = cs.anyone_can_mut || is_owner;
     <b>let</b> can_take = is_owner;
@@ -831,7 +865,7 @@ Return the Collection of T
 ### Function `borrow_collection`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_borrow_collection">borrow_collection</a>&lt;T: store&gt;(signer: &signer, owner: address): <a href="Collection2.md#0x1_Collection2_Collection">Collection2::Collection</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Collection2.md#0x1_Collection2_borrow_collection">borrow_collection</a>&lt;T: store&gt;(sender: &signer, owner: address): <a href="Collection2.md#0x1_Collection2_Collection">Collection2::Collection</a>&lt;T&gt;
 </code></pre>
 
 
