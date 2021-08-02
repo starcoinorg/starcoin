@@ -116,5 +116,13 @@ module OnChainConfigScripts {
     spec execute_on_chain_config_proposal {
         pragma verify = false;
     }
+
+    public(script) fun execute_on_chain_config_proposal_v2<TokenType: copy + drop + store, ConfigT: copy + drop + store>(proposer_address: address, proposal_id: u64) {
+        OnChainConfigDao::execute<TokenType, ConfigT>(proposer_address, proposal_id);
+    }
+
+    spec execute_on_chain_config_proposal_v2 {
+        pragma verify = false;
+    }
 }
 }

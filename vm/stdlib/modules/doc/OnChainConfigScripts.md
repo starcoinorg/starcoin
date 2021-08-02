@@ -11,6 +11,7 @@
 -  [Function `propose_update_txn_timeout_config`](#0x1_OnChainConfigScripts_propose_update_txn_timeout_config)
 -  [Function `propose_update_vm_config`](#0x1_OnChainConfigScripts_propose_update_vm_config)
 -  [Function `execute_on_chain_config_proposal`](#0x1_OnChainConfigScripts_execute_on_chain_config_proposal)
+-  [Function `execute_on_chain_config_proposal_v2`](#0x1_OnChainConfigScripts_execute_on_chain_config_proposal_v2)
 -  [Specification](#@Specification_0)
     -  [Function `propose_update_consensus_config`](#@Specification_0_propose_update_consensus_config)
     -  [Function `propose_update_reward_config`](#@Specification_0_propose_update_reward_config)
@@ -18,6 +19,7 @@
     -  [Function `propose_update_txn_timeout_config`](#@Specification_0_propose_update_txn_timeout_config)
     -  [Function `propose_update_vm_config`](#@Specification_0_propose_update_vm_config)
     -  [Function `execute_on_chain_config_proposal`](#@Specification_0_execute_on_chain_config_proposal)
+    -  [Function `execute_on_chain_config_proposal_v2`](#@Specification_0_execute_on_chain_config_proposal_v2)
 
 
 <pre><code><b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
@@ -236,6 +238,30 @@
 
 </details>
 
+<a name="0x1_OnChainConfigScripts_execute_on_chain_config_proposal_v2"></a>
+
+## Function `execute_on_chain_config_proposal_v2`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal_v2">execute_on_chain_config_proposal_v2</a>&lt;TokenType: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(proposer_address: address, proposal_id: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal_v2">execute_on_chain_config_proposal_v2</a>&lt;TokenType: <b>copy</b> + drop + store, ConfigT: <b>copy</b> + drop + store&gt;(proposer_address: address, proposal_id: u64) {
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_execute">OnChainConfigDao::execute</a>&lt;TokenType, ConfigT&gt;(proposer_address, proposal_id);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="@Specification_0"></a>
 
 ## Specification
@@ -327,6 +353,22 @@
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal">execute_on_chain_config_proposal</a>&lt;ConfigT: <b>copy</b>, drop, store&gt;(account: signer, proposal_id: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_0_execute_on_chain_config_proposal_v2"></a>
+
+### Function `execute_on_chain_config_proposal_v2`
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="OnChainConfigScripts.md#0x1_OnChainConfigScripts_execute_on_chain_config_proposal_v2">execute_on_chain_config_proposal_v2</a>&lt;TokenType: <b>copy</b>, drop, store, ConfigT: <b>copy</b>, drop, store&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
