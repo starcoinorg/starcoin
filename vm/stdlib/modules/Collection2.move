@@ -157,14 +157,27 @@ module Collection2 {
         move_to(signer, CollectionStore<T>{items: Option::some(Vector::empty<T>()), anyone_can_put, anyone_can_mut})
     }
 
-    /// Borrow collection of T from `owner`
-    public fun borrow_collection<T: store>(signer: &signer, owner: address): Collection<T> acquires CollectionStore{
+    /// Return the length of Collection<T> from `owner`, if collection do not exist, return 0.
+    public fun length_of<T: store>(owner: address) : u64 acquires CollectionStore{
+        if (exists_at<T>(owner)){
+            let cs = borrow_global_mut<CollectionStore<T>>(owner);
+            //if items is None, indicate it is borrowed
+            assert(!Option::is_none(&cs.items), Errors::invalid_state(ERR_COLLECTION_INVALID_BORROW_STATE));
+            let items = Option::borrow(&cs.items);
+            Vector::length(items)
+        }else{
+            0
+        }
+    }
+
+    /// Borrow collection of T from `owner`, auto detected the collection's can_put|can_mut|can_take by the `sender` and Collection config.
+    public fun borrow_collection<T: store>(sender: &signer, owner: address): Collection<T> acquires CollectionStore{
         assert(exists_at<T>(owner), Errors::invalid_state(ERR_COLLECTION_NOT_EXIST));
         let cs = borrow_global_mut<CollectionStore<T>>(owner);
         //if items is None, indicate it is borrowed
         assert(!Option::is_none(&cs.items), Errors::invalid_state(ERR_COLLECTION_INVALID_BORROW_STATE));
         let items = Option::extract(&mut cs.items);
-        let is_owner = owner == Signer::address_of(signer);
+        let is_owner = owner == Signer::address_of(sender);
         let can_put = cs.anyone_can_put || is_owner;
         let can_mut = cs.anyone_can_mut || is_owner;
         let can_take = is_owner;
