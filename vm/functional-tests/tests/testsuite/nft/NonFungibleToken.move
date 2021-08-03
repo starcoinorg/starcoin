@@ -21,9 +21,11 @@ script {
     use creator::TestNFT::{Self, TestNFT};
     use 0x1::NFTGallery;
     fun main(account: signer) {
-        NFT::register_nft<TestNFT>(&account);
-        NFTGallery::init<TestNFT>(&account);
-        NFTGallery::create_nft<TestNFT>(&account, b"abc", TestNFT::new());
+        NFT::register<TestNFT>(&account);
+        NFTGallery::accept<TestNFT>(&account);
+        let metadata = NFT::new_metadata(b"test_nft_1", b"ipfs:://xxxxxx", b"This is a test nft.");
+        let nft = NFT::mint<TestNFT>(&account, metadata, TestNFT::new());
+        NFTGallery::deposit(&account, nft);
     }
 }
 
@@ -50,7 +52,7 @@ script {
     use creator::TestNFT::TestNFT;
     use 0x1::NFTGallery;
     fun main(account: signer, address: address) {
-        NFTGallery::transfer_nft<TestNFT>(&account, 1, address);
+        NFTGallery::transfer<TestNFT>(&account, 1, address);
     }
 }
 
