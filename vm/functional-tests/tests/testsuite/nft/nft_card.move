@@ -7,10 +7,10 @@ module creator::Card {
     use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
     use 0x1::Timestamp;
 
-    struct L1Card has store, drop{
+    struct L1Card has copy, store, drop{
         gene: u64,
     }
-    struct L2Card has store, drop{
+    struct L2Card has copy, store, drop{
         first: L1Card,
         second: L1Card,
     }
@@ -32,14 +32,14 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register_nft<L1Card>(sender);
+        NFT::register<L1Card>(sender);
         let cap = NFT::remove_mint_capability<L1Card>(sender);
         move_to(sender, L1CardMintCapability{ cap});
 
         let cap = NFT::remove_burn_capability<L1Card>(sender);
         move_to(sender, L1CardBurnCapability{ cap});
 
-        NFT::register_nft<L2Card>(sender);
+        NFT::register<L2Card>(sender);
         let cap = NFT::remove_mint_capability<L2Card>(sender);
         move_to(sender, L2CardMintCapability{ cap});
 
@@ -50,7 +50,8 @@ module creator::Card {
     public fun mint_l1(sender: &signer): NFT<L1Card> acquires L1CardMintCapability{
         let cap = borrow_global_mut<L1CardMintCapability>(@creator);
         //TODO set gene by a random oracle.
-        NFT::mint_with_cap(sender, &mut cap.cap, b"l1", L1Card{ gene: Timestamp::now_milliseconds()})
+        let metadata = NFT::new_meta_with_image(b"l1_card", b"ipfs:://xxxxxx", b"This is a L1Card nft.");
+        NFT::mint_with_cap(sender, &mut cap.cap, metadata, L1Card{ gene: Timestamp::now_milliseconds()})
     }
 
     public fun mint_l2(sender: &signer, first: NFT<L1Card>, second: NFT<L1Card>): NFT<L2Card> acquires L1CardBurnCapability, L2CardMintCapability {
@@ -58,7 +59,8 @@ module creator::Card {
         let f = NFT::burn_with_cap(&mut burn_cap.cap, first);
         let s = NFT::burn_with_cap(&mut burn_cap.cap, second);
         let mint_cap = borrow_global_mut<L2CardMintCapability>(@creator);
-        NFT::mint_with_cap(sender, &mut mint_cap.cap, b"l2", L2Card{
+        let metadata = NFT::new_meta_with_image(b"l2_card", b"ipfs:://xxxxxx", b"This is a L2Card nft.");
+        NFT::mint_with_cap(sender, &mut mint_cap.cap, metadata, L2Card{
             first:f,
             second:s,
         })
@@ -130,11 +132,12 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
+    use 0x1::Option;
     use creator::Card::{Self, L1Card};
     fun main(sender: signer) {
         let first_l1 = NFTGallery::withdraw_one<L1Card>(&sender);
         let second_l1 = NFTGallery::withdraw_one<L1Card>(&sender);
-        let l2_card = Card::mint_l2(&sender, first_l1, second_l1);
+        let l2_card = Card::mint_l2(&sender, Option::destroy_some(first_l1), Option::destroy_some(second_l1));
         NFTGallery::deposit(&sender, l2_card);
     }
 }
