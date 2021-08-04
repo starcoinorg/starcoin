@@ -4,7 +4,7 @@
 //! sender: creator
 address creator = {{creator}};
 module creator::TestNFT {
-    struct TestNFT has store, key, drop{}
+    struct TestNFT has copy, store, drop{}
 
     public fun new(): TestNFT{
         TestNFT{}
@@ -23,7 +23,7 @@ script {
     fun main(account: signer) {
         NFT::register<TestNFT>(&account);
         NFTGallery::accept<TestNFT>(&account);
-        let metadata = NFT::new_metadata(b"test_nft_1", b"ipfs:://xxxxxx", b"This is a test nft.");
+        let metadata = NFT::new_meta_with_image(b"test_nft_1", b"ipfs:://xxxxxx", b"This is a test nft.");
         let nft = NFT::mint<TestNFT>(&account, metadata, TestNFT::new());
         NFTGallery::deposit(&account, nft);
     }

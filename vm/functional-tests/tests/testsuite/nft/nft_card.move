@@ -7,10 +7,10 @@ module creator::Card {
     use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
     use 0x1::Timestamp;
 
-    struct L1Card has store, drop{
+    struct L1Card has copy, store, drop{
         gene: u64,
     }
-    struct L2Card has store, drop{
+    struct L2Card has copy, store, drop{
         first: L1Card,
         second: L1Card,
     }
@@ -50,7 +50,7 @@ module creator::Card {
     public fun mint_l1(sender: &signer): NFT<L1Card> acquires L1CardMintCapability{
         let cap = borrow_global_mut<L1CardMintCapability>(@creator);
         //TODO set gene by a random oracle.
-        let metadata = NFT::new_metadata(b"l1_card", b"ipfs:://xxxxxx", b"This is a L1Card nft.");
+        let metadata = NFT::new_meta_with_image(b"l1_card", b"ipfs:://xxxxxx", b"This is a L1Card nft.");
         NFT::mint_with_cap(sender, &mut cap.cap, metadata, L1Card{ gene: Timestamp::now_milliseconds()})
     }
 
@@ -59,7 +59,7 @@ module creator::Card {
         let f = NFT::burn_with_cap(&mut burn_cap.cap, first);
         let s = NFT::burn_with_cap(&mut burn_cap.cap, second);
         let mint_cap = borrow_global_mut<L2CardMintCapability>(@creator);
-        let metadata = NFT::new_metadata(b"l2_card", b"ipfs:://xxxxxx", b"This is a L2Card nft.");
+        let metadata = NFT::new_meta_with_image(b"l2_card", b"ipfs:://xxxxxx", b"This is a L2Card nft.");
         NFT::mint_with_cap(sender, &mut mint_cap.cap, metadata, L2Card{
             first:f,
             second:s,
