@@ -22,6 +22,8 @@ module creator::Card {
         cap: BurnCapability<Card>,
     }
 
+    struct NFTInfo has copy, drop, store{}
+
     struct CardUpdateCapability has key{
         cap: UpdateCapability<Card>,
     }
@@ -31,7 +33,7 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register<Card>(sender);
+        NFT::register<Card, NFTInfo>(sender, NFTInfo{});
         let cap = NFT::remove_mint_capability<Card>(sender);
         move_to(sender, CardMintCapability{ cap});
 
@@ -45,7 +47,7 @@ module creator::Card {
     public fun mint(sender: &signer): NFT<Card, CardBody> acquires CardMintCapability{
         let cap = borrow_global_mut<CardMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"card", b"ipfs:://xxxxxx", b"This is a Card nft.");
-        NFT::mint_with_cap(sender, &mut cap.cap, metadata, Card{ level: 1}, CardBody{ level: 1})
+        NFT::mint_with_cap<Card, CardBody, NFTInfo>(sender, &mut cap.cap, metadata, Card{ level: 1}, CardBody{ level: 1})
     }
 
     /// upgrade the first card by burn the second card.
