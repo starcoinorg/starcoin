@@ -7,6 +7,8 @@ module creator::BoxMiner {
     use 0x1::NFT::{Self, NFT, MintCapability};
     use 0x1::Account;
     use 0x1::NFTGallery;
+    use 0x1::STC::STC;
+
     struct BoxMiner has copy, store, drop{
         price: u128,
     }
@@ -30,15 +32,14 @@ module creator::BoxMiner {
         NFTGallery::accept<BoxMiner, BoxMinerBody>(sender);
     }
 
-
-    public fun mint<T: store>(sender: &signer): NFT<BoxMiner, BoxMinerBody> acquires BoxMinerMintCapability{
+    public fun mint(sender: &signer): NFT<BoxMiner, BoxMinerBody> acquires BoxMinerMintCapability{
         let ex_info = NFT::nft_type_info_ex_info<BoxMiner, NFTInfo>();
         let counter = NFT::nft_type_info_counter<BoxMiner, NFTInfo>();
         let total_supply = ex_info.total_supply;
         let price = ex_info.price;
         assert(total_supply >= counter, 1000);
-        let tokens = Account::withdraw<T>(sender, price);
-        Account::deposit<T>(@creator, tokens);
+        let tokens = Account::withdraw<STC>(sender, price);
+        Account::deposit<STC>(@creator, tokens);
         let cap = borrow_global_mut<BoxMinerMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"stc_box_miner", b"ips://xxx", b"This is the starcoin boxminer nft.");
         let nft = NFT::mint_with_cap<BoxMiner, BoxMinerBody, NFTInfo>(sender, &mut cap.cap, metadata, BoxMiner{price}, BoxMinerBody{});
@@ -58,7 +59,6 @@ script {
     }
 }
 
-
 // check: EXECUTED
 
 //! new-transaction
@@ -66,10 +66,9 @@ script {
 address creator = {{creator}};
 script {
     use creator::BoxMiner;
-    use 0x1::STC::STC;
     use 0x1::NFTGallery;
     fun main(sender: signer) {
-        let nft = BoxMiner::mint<STC>(&sender);
+        let nft = BoxMiner::mint(&sender);
         BoxMiner::do_accept(&sender);
         NFTGallery::deposit(&sender, nft);
 }

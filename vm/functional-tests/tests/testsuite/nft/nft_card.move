@@ -57,7 +57,7 @@ module creator::Card {
     public fun mint_l1(sender: &signer): NFT<L1CardMeta, L1Card> acquires L1CardMintCapability{
         let cap = borrow_global_mut<L1CardMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"l1_card", b"ipfs:://xxxxxx", b"This is a L1CardMeta nft.");
-        NFT::mint_with_cap(sender, &mut cap.cap, metadata, L1CardMeta{ gene: Timestamp::now_milliseconds()}, L1Card{})
+        NFT::mint_with_cap<L1CardMeta, L1Card, NFTInfo>(sender, &mut cap.cap, metadata, L1CardMeta{ gene: Timestamp::now_milliseconds()}, L1Card{})
     }
 
     public fun mint_l2(sender: &signer, first: NFT<L1CardMeta, L1Card>, second: NFT<L1CardMeta, L1Card>): NFT<L2CardMeta,L2Card> acquires L1CardBurnCapability, L2CardMintCapability {
@@ -71,7 +71,7 @@ module creator::Card {
         let s = NFT::burn_with_cap(&mut burn_cap.cap, second);
         let mint_cap = borrow_global_mut<L2CardMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"l2_card", b"ipfs:://xxxxxx", b"This is a L2CardMeta nft.");
-        NFT::mint_with_cap(sender, &mut mint_cap.cap, metadata, L2CardMeta{
+        NFT::mint_with_cap<L2CardMeta, L2Card, NFTInfo>(sender, &mut mint_cap.cap, metadata, L2CardMeta{
             gene: new_gene,
         }, L2Card{
             first:f,
