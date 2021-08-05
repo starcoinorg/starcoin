@@ -7,60 +7,71 @@ module creator::Card {
     use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
     use 0x1::Timestamp;
 
-    struct L1Card has copy, store, drop{
+    struct L1CardMeta has copy, store, drop{
         gene: u64,
     }
-    struct L2Card has copy, store, drop{
+    struct L2CardMeta has copy, store, drop{
+        gene: u64,
+    }
+
+    struct L1Card has store {}
+    struct L2Card has store {
         first: L1Card,
         second: L1Card,
     }
 
     struct L1CardMintCapability has key{
-        cap: MintCapability<L1Card>,
+        cap: MintCapability<L1CardMeta>,
     }
 
     struct L2CardMintCapability has key{
-        cap: MintCapability<L2Card>,
+        cap: MintCapability<L2CardMeta>,
     }
 
     struct L1CardBurnCapability has key{
-        cap: BurnCapability<L1Card>,
+        cap: BurnCapability<L1CardMeta>,
     }
 
     struct L2CardBurnCapability has key{
-        cap: BurnCapability<L2Card>,
+        cap: BurnCapability<L2CardMeta>,
     }
 
     public fun init(sender: &signer){
-        NFT::register<L1Card>(sender);
-        let cap = NFT::remove_mint_capability<L1Card>(sender);
+        NFT::register<L1CardMeta>(sender);
+        let cap = NFT::remove_mint_capability<L1CardMeta>(sender);
         move_to(sender, L1CardMintCapability{ cap});
 
-        let cap = NFT::remove_burn_capability<L1Card>(sender);
+        let cap = NFT::remove_burn_capability<L1CardMeta>(sender);
         move_to(sender, L1CardBurnCapability{ cap});
 
-        NFT::register<L2Card>(sender);
-        let cap = NFT::remove_mint_capability<L2Card>(sender);
+        NFT::register<L2CardMeta>(sender);
+        let cap = NFT::remove_mint_capability<L2CardMeta>(sender);
         move_to(sender, L2CardMintCapability{ cap});
 
-        let cap = NFT::remove_burn_capability<L2Card>(sender);
+        let cap = NFT::remove_burn_capability<L2CardMeta>(sender);
         move_to(sender, L2CardBurnCapability{ cap});
     }
 
-    public fun mint_l1(sender: &signer): NFT<L1Card> acquires L1CardMintCapability{
+    public fun mint_l1(sender: &signer): NFT<L1CardMeta, L1Card> acquires L1CardMintCapability{
         let cap = borrow_global_mut<L1CardMintCapability>(@creator);
-        //TODO set gene by a random oracle.
-        let metadata = NFT::new_meta_with_image(b"l1_card", b"ipfs:://xxxxxx", b"This is a L1Card nft.");
-        NFT::mint_with_cap(sender, &mut cap.cap, metadata, L1Card{ gene: Timestamp::now_milliseconds()})
+        let metadata = NFT::new_meta_with_image(b"l1_card", b"ipfs:://xxxxxx", b"This is a L1CardMeta nft.");
+        NFT::mint_with_cap(sender, &mut cap.cap, metadata, L1CardMeta{ gene: Timestamp::now_milliseconds()}, L1Card{})
     }
 
-    public fun mint_l2(sender: &signer, first: NFT<L1Card>, second: NFT<L1Card>): NFT<L2Card> acquires L1CardBurnCapability, L2CardMintCapability {
+    public fun mint_l2(sender: &signer, first: NFT<L1CardMeta, L1Card>, second: NFT<L1CardMeta, L1Card>): NFT<L2CardMeta,L2Card> acquires L1CardBurnCapability, L2CardMintCapability {
         let burn_cap = borrow_global_mut<L1CardBurnCapability>(@creator);
+        let new_gene = {
+            let first_meta = NFT::get_type_meta(&first);
+            let second_meta = NFT::get_type_meta(&second);
+            first_meta.gene + second_meta.gene
+        };
         let f = NFT::burn_with_cap(&mut burn_cap.cap, first);
         let s = NFT::burn_with_cap(&mut burn_cap.cap, second);
         let mint_cap = borrow_global_mut<L2CardMintCapability>(@creator);
-        let metadata = NFT::new_meta_with_image(b"l2_card", b"ipfs:://xxxxxx", b"This is a L2Card nft.");
-        NFT::mint_with_cap(sender, &mut mint_cap.cap, metadata, L2Card{
+        let metadata = NFT::new_meta_with_image(b"l2_card", b"ipfs:://xxxxxx", b"This is a L2CardMeta nft.");
+        NFT::mint_with_cap(sender, &mut mint_cap.cap, metadata, L2CardMeta{
+            gene: new_gene,
+        }, L2Card{
             first:f,
             second:s,
         })
@@ -86,10 +97,10 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
-    use creator::Card::{L1Card, L2Card};
+    use creator::Card::{L1CardMeta, L2CardMeta, L1Card, L2Card};
     fun main(sender: signer) {
-        NFTGallery::accept<L1Card>(&sender);
-        NFTGallery::accept<L2Card>(&sender);
+        NFTGallery::accept<L1CardMeta, L1Card>(&sender);
+        NFTGallery::accept<L2CardMeta, L2Card>(&sender);
     }
 }
 
@@ -114,13 +125,13 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
-    use creator::Card::{Self, L1Card};
+    use creator::Card::{Self, L1CardMeta, L1Card};
     use 0x1::Signer;
 
     fun main(sender: signer) {
         let second_l1 = Card::mint_l1(&sender);
         NFTGallery::deposit(&sender, second_l1);
-        assert(NFTGallery::count_of<L1Card>(Signer::address_of(&sender)) == 2, 1000);
+        assert(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 2, 1000);
     }
 }
 
@@ -133,10 +144,10 @@ address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
     use 0x1::Option;
-    use creator::Card::{Self, L1Card};
+    use creator::Card::{Self, L1CardMeta, L1Card};
     fun main(sender: signer) {
-        let first_l1 = NFTGallery::withdraw_one<L1Card>(&sender);
-        let second_l1 = NFTGallery::withdraw_one<L1Card>(&sender);
+        let first_l1 = NFTGallery::withdraw_one<L1CardMeta, L1Card>(&sender);
+        let second_l1 = NFTGallery::withdraw_one<L1CardMeta, L1Card>(&sender);
         let l2_card = Card::mint_l2(&sender, Option::destroy_some(first_l1), Option::destroy_some(second_l1));
         NFTGallery::deposit(&sender, l2_card);
     }
@@ -148,13 +159,13 @@ script {
 //! sender: bob
 address creator = {{creator}};
 script {
-    use creator::Card::{L1Card, L2Card};
+    use creator::Card::{L1CardMeta, L2CardMeta, L1Card, L2Card};
     use 0x1::NFTGallery;
     use 0x1::Signer;
 
     fun main(sender: signer) {
-        assert(NFTGallery::count_of<L1Card>(Signer::address_of(&sender)) == 0, 1001);
-        assert(NFTGallery::count_of<L2Card>(Signer::address_of(&sender)) == 1, 1002);
+        assert(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 0, 1001);
+        assert(NFTGallery::count_of<L2CardMeta, L2Card>(Signer::address_of(&sender)) == 1, 1002);
     }
 }
 

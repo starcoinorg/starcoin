@@ -9,6 +9,10 @@ module creator::Card {
     struct Card has copy, store, drop{
         level: u64
     }
+
+    struct CardBody has store{
+        level: u64
+    }
   
     struct CardMintCapability has key{
         cap: MintCapability<Card>,
@@ -38,23 +42,30 @@ module creator::Card {
         move_to(sender, CardUpdateCapability{ cap});
     }
 
-    public fun mint(sender: &signer): NFT<Card> acquires CardMintCapability{
+    public fun mint(sender: &signer): NFT<Card, CardBody> acquires CardMintCapability{
         let cap = borrow_global_mut<CardMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"card", b"ipfs:://xxxxxx", b"This is a Card nft.");
-        NFT::mint_with_cap(sender, &mut cap.cap, metadata, Card{ level: 1})
+        NFT::mint_with_cap(sender, &mut cap.cap, metadata, Card{ level: 1}, CardBody{ level: 1})
     }
 
     /// upgrade the first card by burn the second card.
-    public fun upgrade_card(first: &mut NFT<Card>, second: NFT<Card>) acquires CardBurnCapability, CardUpdateCapability {
+    public fun upgrade_card(first: &mut NFT<Card, CardBody>, second: NFT<Card, CardBody>) acquires CardBurnCapability, CardUpdateCapability {
         let burn_cap = borrow_global_mut<CardBurnCapability>(@creator);
-        let first_card_meta = NFT::get_type_meta(first);
-        let second_card_meta = NFT::burn_with_cap(&mut burn_cap.cap, second);
+        let first_card_meta = *NFT::get_type_meta(first);
+        let second_card_meta = *NFT::get_type_meta(&second);
+
+        let second_body = NFT::burn_with_cap(&mut burn_cap.cap, second);
+        let CardBody{ level:_ } = second_body;
 
         let update_cap = borrow_global_mut<CardUpdateCapability>(@creator);
         let metadata = *NFT::get_base_meta(first);
+        let level = first_card_meta.level + second_card_meta.level;
+
         NFT::update_meta_with_cap(&mut update_cap.cap, first, metadata, Card{
-            level: first_card_meta.level + second_card_meta.level
+            level,
         });
+        let body = NFT::borrow_body_mut_with_cap(&mut update_cap.cap, first);
+        body.level = level;
     }
 }
 
@@ -77,9 +88,9 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
-    use creator::Card::{Card};
+    use creator::Card::{Card, CardBody};
     fun main(sender: signer) {
-        NFTGallery::accept<Card>(&sender);
+        NFTGallery::accept<Card, CardBody>(&sender);
     }
 }
 
@@ -108,10 +119,10 @@ address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
     use 0x1::Option;
-    use creator::Card::{Self, Card};
+    use creator::Card::{Self, Card, CardBody};
     fun main(sender: signer) {
-        let first = Option::destroy_some(NFTGallery::withdraw_one<Card>(&sender));
-        let second = NFTGallery::withdraw_one<Card>(&sender);
+        let first = Option::destroy_some(NFTGallery::withdraw_one<Card, CardBody>(&sender));
+        let second = NFTGallery::withdraw_one<Card, CardBody>(&sender);
         Card::upgrade_card(&mut first, Option::destroy_some(second));
         NFTGallery::deposit(&sender, first);
     }
@@ -123,15 +134,15 @@ script {
 //! sender: bob
 address creator = {{creator}};
 script {
-    use creator::Card::{Self, Card};
+    use creator::Card::{Self, Card, CardBody};
     use 0x1::NFTGallery;
     use 0x1::Signer;
     use 0x1::Option;
     use 0x1::NFT;
 
     fun main(sender: signer) {
-        assert(NFTGallery::count_of<Card>(Signer::address_of(&sender)) == 1, 1001);
-        let card = Option::destroy_some(NFTGallery::withdraw_one<Card>(&sender));
+        assert(NFTGallery::count_of<Card, CardBody>(Signer::address_of(&sender)) == 1, 1001);
+        let card = Option::destroy_some(NFTGallery::withdraw_one<Card, CardBody>(&sender));
         let card_meta = NFT::get_type_meta(&card);
         let level = Card::get_level(card_meta);
         assert(level == 2, 1002);
