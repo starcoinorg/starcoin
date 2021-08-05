@@ -10,9 +10,9 @@ module creator::TestNFT {
     struct TestNFT has copy, store, drop{}
     struct TestNFTBody has store{
     }
-
+    struct NFTInfo has copy,store,drop{}
     public fun init(sender: &signer){
-        NFT::register<TestNFT>(sender);
+        NFT::register<TestNFT,NFTInfo>(sender,NFTInfo{});
         Self::do_accept(sender);
     }
 

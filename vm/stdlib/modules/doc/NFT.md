@@ -243,7 +243,7 @@ Deposit nft to <code>sender</code> NFTGallery
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_deposit">deposit</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, nft:<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;) <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_deposit">deposit</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, nft: <a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;) <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
     <a href="NFT.md#0x1_NFTGallery_deposit_to">deposit_to</a>(sender, <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender), nft)
 }
 </code></pre>
@@ -268,7 +268,7 @@ Deposit nft to <code>receiver</code> NFTGallery
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_deposit_to">deposit_to</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, receiver: address, nft:<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta,NFTBody&gt;) <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_deposit_to">deposit_to</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, receiver: address, nft: <a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;) <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
     <b>let</b> gallery = borrow_global_mut&lt;<a href="NFT.md#0x1_NFTGallery">NFTGallery</a>&lt;NFTMeta&gt;&gt;(receiver);
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(&<b>mut</b> gallery.deposit_events, <a href="NFT.md#0x1_NFTGallery_DepositEvent">DepositEvent</a>&lt;NFTMeta&gt; { uid: <a href="NFT.md#0x1_NFT_get_uid">NFT::get_uid</a>(&nft) });
     <a href="Collection2.md#0x1_Collection2_put">Collection2::put</a>(sender, receiver, nft);
@@ -295,8 +295,8 @@ Withdraw one nft of NFTMeta from <code>sender</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw_one">withdraw_one</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer): <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta,NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a>{
-    <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>&lt;NFTMeta,NFTBody&gt;(sender, <a href="Option.md#0x1_Option_none">Option::none</a>())
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw_one">withdraw_one</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer): <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
+    <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>&lt;NFTMeta, NFTBody&gt;(sender, <a href="Option.md#0x1_Option_none">Option::none</a>())
 }
 </code></pre>
 
@@ -320,8 +320,8 @@ Withdraw nft of NFTMeta and uid from <code>sender</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw">withdraw</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, uid: u64) : <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a>{
-   <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>(sender, <a href="Option.md#0x1_Option_some">Option::some</a>(uid))
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw">withdraw</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, uid: u64): <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
+    <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>(sender, <a href="Option.md#0x1_Option_some">Option::some</a>(uid))
 }
 </code></pre>
 
@@ -345,28 +345,28 @@ Withdraw nft of NFTMeta and uid from <code>sender</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, uid: <a href="Option.md#0x1_Option">Option</a>&lt;u64&gt;) : <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a>{
+<pre><code><b>fun</b> <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer, uid: <a href="Option.md#0x1_Option">Option</a>&lt;u64&gt;): <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender);
     <b>let</b> gallery = borrow_global_mut&lt;<a href="NFT.md#0x1_NFTGallery">NFTGallery</a>&lt;NFTMeta&gt;&gt;(sender_addr);
     <b>let</b> nfts = <a href="Collection2.md#0x1_Collection2_borrow_collection">Collection2::borrow_collection</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt;(sender, sender_addr);
     <b>let</b> len = <a href="Collection2.md#0x1_Collection2_length">Collection2::length</a>(&nfts);
-    <b>let</b> nft = <b>if</b>(len == 0){
+    <b>let</b> nft = <b>if</b> (len == 0) {
         <a href="Option.md#0x1_Option_none">Option::none</a>()
-    }<b>else</b>{
-        <b>let</b> idx = <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&uid)){
+    }<b>else</b> {
+        <b>let</b> idx = <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&uid)) {
             <b>let</b> uid = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> uid);
             <a href="NFT.md#0x1_NFTGallery_find_by_uid">find_by_uid</a>(&nfts, uid)
-        }<b>else</b>{
+        }<b>else</b> {
             //default withdraw the last nft.
-            <a href="Option.md#0x1_Option_some">Option::some</a>(len -1)
+            <a href="Option.md#0x1_Option_some">Option::some</a>(len - 1)
         };
 
-        <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&idx)){
+        <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&idx)) {
             <b>let</b> i = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> idx);
             <b>let</b> nft = <a href="Collection2.md#0x1_Collection2_remove">Collection2::remove</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt;(&<b>mut</b> nfts, i);
             <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(&<b>mut</b> gallery.withdraw_events, <a href="NFT.md#0x1_NFTGallery_WithdrawEvent">WithdrawEvent</a>&lt;NFTMeta&gt; { uid: <a href="NFT.md#0x1_NFT_get_uid">NFT::get_uid</a>(&nft) });
             <a href="Option.md#0x1_Option_some">Option::some</a>(nft)
-        }<b>else</b>{
+        }<b>else</b> {
             <a href="Option.md#0x1_Option_none">Option::none</a>()
         }
     };
@@ -394,18 +394,18 @@ Withdraw nft of NFTMeta and uid from <code>sender</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="NFT.md#0x1_NFTGallery_find_by_uid">find_by_uid</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(c: &<a href="Collection.md#0x1_Collection">Collection</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt;, uid: u64): <a href="Option.md#0x1_Option">Option</a>&lt;u64&gt;{
+<pre><code><b>fun</b> <a href="NFT.md#0x1_NFTGallery_find_by_uid">find_by_uid</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(c: &<a href="Collection.md#0x1_Collection">Collection</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt;, uid: u64): <a href="Option.md#0x1_Option">Option</a>&lt;u64&gt; {
     <b>let</b> len = <a href="Collection2.md#0x1_Collection2_length">Collection2::length</a>(c);
-    <b>if</b>(len == 0){
+    <b>if</b> (len == 0) {
         <b>return</b> <a href="Option.md#0x1_Option_none">Option::none</a>()
     };
     <b>let</b> idx = len - 1;
     <b>loop</b> {
         <b>let</b> nft = <a href="Collection2.md#0x1_Collection2_borrow">Collection2::borrow</a>(c, idx);
-        <b>if</b> (<a href="NFT.md#0x1_NFT_get_uid">NFT::get_uid</a>(nft) == uid){
+        <b>if</b> (<a href="NFT.md#0x1_NFT_get_uid">NFT::get_uid</a>(nft) == uid) {
             <b>return</b> <a href="Option.md#0x1_Option_some">Option::some</a>(idx)
         };
-        <b>if</b>(idx == 0){
+        <b>if</b> (idx == 0) {
             <b>return</b> <a href="Option.md#0x1_Option_none">Option::none</a>()
         };
         idx = idx - 1;
@@ -433,7 +433,7 @@ Count all NFTs assigned to an owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_count_of">count_of</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(owner: address):u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_count_of">count_of</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(owner: address): u64 {
     <a href="Collection2.md#0x1_Collection2_length_of">Collection2::length_of</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt;(owner)
 }
 </code></pre>

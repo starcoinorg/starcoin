@@ -20,6 +20,8 @@ module creator::Card {
         second: L1Card,
     }
 
+    struct NFTInfo has copy, store, drop{}
+
     struct L1CardMintCapability has key{
         cap: MintCapability<L1CardMeta>,
     }
@@ -37,14 +39,14 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register<L1CardMeta>(sender);
+        NFT::register<L1CardMeta, NFTInfo>(sender,NFTInfo{});
         let cap = NFT::remove_mint_capability<L1CardMeta>(sender);
         move_to(sender, L1CardMintCapability{ cap});
 
         let cap = NFT::remove_burn_capability<L1CardMeta>(sender);
         move_to(sender, L1CardBurnCapability{ cap});
 
-        NFT::register<L2CardMeta>(sender);
+        NFT::register<L2CardMeta,NFTInfo>(sender, NFTInfo{});
         let cap = NFT::remove_mint_capability<L2CardMeta>(sender);
         move_to(sender, L2CardMintCapability{ cap});
 

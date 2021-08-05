@@ -22,6 +22,8 @@ module creator::Card {
         cap: BurnCapability<Card>,
     }
 
+    struct NFTInfo has copy,drop,store{}
+
     struct CardUpdateCapability has key{
         cap: UpdateCapability<Card>,
     }
@@ -31,7 +33,7 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register<Card>(sender);
+        NFT::register<Card, NFTInfo>(sender, NFTInfo{});
         let cap = NFT::remove_mint_capability<Card>(sender);
         move_to(sender, CardMintCapability{ cap});
 
