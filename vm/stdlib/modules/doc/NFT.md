@@ -195,6 +195,7 @@ Transfer NFT from <code>sender</code> to <code>receiver</code>
 
 ## Function `get_nft_info`
 
+TODO remove the signer parameter.
 Get the NFT info
 
 
