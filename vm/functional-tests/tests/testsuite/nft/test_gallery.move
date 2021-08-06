@@ -172,6 +172,57 @@ fun main(sender: signer) {
 
 // check: EXECUTED
 
+
+//! new-transaction
+//! sender: bob
+//! max-gas: 40000000
+address creator = {{creator}};
+script {
+use creator::AnyNFT::{AnyNFT, AnyNFTBody};
+use 0x1::NFTGallery;
+use 0x1::Signer;
+use 0x1::Option;
+fun main(sender: signer) {
+    let sender_addr = Signer::address_of(&sender);
+    let id = 1;
+    loop {
+        //loop by id use more gas
+        let info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, id);
+        assert(Option::is_some(&info), 1008);
+        id = id + 1;
+        if(id > 20){
+            break
+        }
+    }
+}
+}
+
+// check: EXECUTED
+
+//! new-transaction
+//! sender: bob
+//! max-gas: 40000000
+address creator = {{creator}};
+script {
+use creator::AnyNFT::{AnyNFT, AnyNFTBody};
+use 0x1::NFTGallery;
+use 0x1::Signer;
+fun main(sender: signer) {
+    let sender_addr = Signer::address_of(&sender);
+    let idx = 0;
+    loop {
+        //loop by index
+        let _info = NFTGallery::get_nft_info_by_idx<AnyNFT, AnyNFTBody>(sender_addr, idx);
+        idx = idx + 1;
+        if(idx >= 201){
+            break
+        }
+    }
+}
+}
+
+// check: EXECUTED
+
 //! new-transaction
 //! sender: bob
 address creator = {{creator}};
