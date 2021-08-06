@@ -30,8 +30,8 @@ module creator::TestNFT {
         Self::do_accept(&sender);
     }
 
-    public(script) fun transfer(sender: signer, uid: u64, receiver: address) {
-        NFTGallery::transfer<TestNFT, TestNFTBody>(&sender, uid, receiver);
+    public(script) fun transfer(sender: signer, id: u64, receiver: address) {
+        NFTGallery::transfer<TestNFT, TestNFTBody>(&sender, id, receiver);
     }
 }
 
@@ -85,7 +85,7 @@ use 0x1::NFTGallery;
 use 0x1::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
-    let nft = NFTGallery::get_nft_info_by_uid<TestNFT, TestNFTBody>(sender_addr, 1);
+    let nft = NFTGallery::get_nft_info_by_id<TestNFT, TestNFTBody>(sender_addr, 1);
     assert(Option::is_some(&nft), 1000);
 }
 }

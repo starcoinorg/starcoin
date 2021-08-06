@@ -59,8 +59,8 @@ module creator::AnyNFT {
         Self::do_accept(&sender);
     }
 
-    public(script) fun transfer(sender: signer, uid: u64, receiver: address) {
-        NFTGallery::transfer<AnyNFT, AnyNFTBody>(&sender, uid, receiver);
+    public(script) fun transfer(sender: signer, id: u64, receiver: address) {
+        NFTGallery::transfer<AnyNFT, AnyNFTBody>(&sender, id, receiver);
     }
 }
 
@@ -102,7 +102,7 @@ use 0x1::Signer;
 use 0x1::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
-    let nft_info = NFTGallery::get_nft_info_by_uid<AnyNFT, AnyNFTBody>(sender_addr, 1);
+    let nft_info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, 1);
     assert(Option::is_none(&nft_info), 1000);
     let nft_infos = NFTGallery::get_nft_infos<AnyNFT, AnyNFTBody>(sender_addr);
     assert(Vector::is_empty(&nft_infos), 1001);
@@ -132,7 +132,7 @@ use 0x1::Signer;
 use 0x1::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
-    let nft_info = NFTGallery::get_nft_info_by_uid<AnyNFT, AnyNFTBody>(sender_addr, 1);
+    let nft_info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, 1);
     assert(Option::is_some(&nft_info), 1002);
     let nft_infos = NFTGallery::get_nft_infos<AnyNFT, AnyNFTBody>(sender_addr);
     assert(Vector::length(&nft_infos) == 1, 1003);
