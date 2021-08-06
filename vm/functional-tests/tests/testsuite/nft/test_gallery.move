@@ -196,11 +196,8 @@ address creator = {{creator}};
 script {
 use creator::AnyNFT::{Self, AnyNFT, AnyNFTBody};
 use 0x1::NFTGallery;
-use 0x1::Option;
 fun main(sender: signer) {
     let nft = NFTGallery::withdraw_one<AnyNFT, AnyNFTBody>(&sender);
-    assert(Option::is_some(&nft), 1006);
-    let nft = Option::destroy_some(nft);
     AnyNFT::burn(nft);
 }
 }

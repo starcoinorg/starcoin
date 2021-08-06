@@ -456,9 +456,10 @@ module NFTGallery {
         Vector::push_back(&mut gallery.items, nft);
     }
 
-    /// Withdraw one nft of NFTMeta from `sender`
-    public fun withdraw_one<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer): Option<NFT<NFTMeta, NFTBody>> acquires NFTGallery {
-        do_withdraw<NFTMeta, NFTBody>(sender, Option::none())
+    /// Withdraw one nft of NFTMeta from `sender`, caller should ensure at least one NFT in the Gallery.
+    public fun withdraw_one<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer): NFT<NFTMeta, NFTBody> acquires NFTGallery {
+        let nft = do_withdraw<NFTMeta, NFTBody>(sender, Option::none());
+        Option::destroy_some(nft)
     }
 
     /// Withdraw nft of NFTMeta and id from `sender`
