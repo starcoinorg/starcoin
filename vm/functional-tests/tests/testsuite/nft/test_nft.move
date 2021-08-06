@@ -82,8 +82,10 @@ script {
 use 0x1::Option;
 use creator::TestNFT::{TestNFT, TestNFTBody};
 use 0x1::NFTGallery;
-fun main(account: signer) {
-    let nft = NFTGallery::get_nft_info<TestNFT, TestNFTBody>(&account, 1);
+use 0x1::Signer;
+fun main(sender: signer) {
+    let sender_addr = Signer::address_of(&sender);
+    let nft = NFTGallery::get_nft_info_by_uid<TestNFT, TestNFTBody>(sender_addr, 1);
     assert(Option::is_some(&nft), 1000);
 }
 }

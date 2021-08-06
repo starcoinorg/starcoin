@@ -364,36 +364,39 @@ module IdentifierNFT{
 
 /// NFTGallery is user collection of NFT.
 module NFTGallery {
-    use 0x1::Collection2::{Self, Collection};
     use 0x1::Signer;
     use 0x1::NFT::{Self, NFT};
     use 0x1::Option::{Self, Option};
     use 0x1::Event;
     use 0x1::Errors;
+    use 0x1::Vector;
 
     const ERR_NFT_NOT_EXISTS: u64 = 101;
 
     struct WithdrawEvent<NFTMeta: copy + store + drop> has drop, store {
+        owner: address,
         uid: u64,
     }
 
     struct DepositEvent<NFTMeta: copy + store + drop> has drop, store {
+        owner: address,
         uid: u64,
     }
 
-    struct NFTGallery<NFTMeta: copy + store + drop> has key, store {
+    struct NFTGallery<NFTMeta: copy + store + drop, NFTBody: store> has key, store {
         withdraw_events: Event::EventHandle<WithdrawEvent<NFTMeta>>,
         deposit_events: Event::EventHandle<DepositEvent<NFTMeta>>,
+        items: vector<NFT<NFTMeta, NFTBody>>,
     }
 
-    /// Init a NFTGallery to accept NFTMeta
+    /// Init a NFTGallery to accept NFT<NFTMeta, NFTBody>
     public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) {
         let gallery = NFTGallery {
             withdraw_events: Event::new_event_handle<WithdrawEvent<NFTMeta>>(sender),
             deposit_events: Event::new_event_handle<DepositEvent<NFTMeta>>(sender),
+            items: Vector::empty<NFT<NFTMeta, NFTBody>>(),
         };
-        move_to<NFTGallery<NFTMeta>>(sender, gallery);
-        Collection2::accept<NFT<NFTMeta, NFTBody>>(sender);
+        move_to(sender, gallery);
     }
 
     /// Transfer NFT from `sender` to `receiver`
@@ -401,36 +404,56 @@ module NFTGallery {
         let nft = withdraw<NFTMeta, NFTBody>(sender, uid);
         assert(Option::is_some(&nft), Errors::not_published(ERR_NFT_NOT_EXISTS));
         let nft = Option::destroy_some(nft);
-        deposit_to(sender, receiver, nft)
+        deposit_to(receiver, nft)
     }
 
-    ///TODO remove the signer parameter.
-    /// Get the NFT info
-    public fun get_nft_info<NFTMeta: copy + store + drop, NFTBody: store>(account: &signer, uid: u64): Option<NFT::NFTInfo<NFTMeta>> {
-        let nfts = Collection2::borrow_collection<NFT<NFTMeta, NFTBody>>(account, Signer::address_of(account));
-        let idx = find_by_uid<NFTMeta, NFTBody>(&nfts, uid);
+    /// Get the NFT info by the NFT uid.
+    public fun get_nft_info_by_uid<NFTMeta: copy + store + drop, NFTBody: store>(owner: address, uid: u64): Option<NFT::NFTInfo<NFTMeta>> acquires NFTGallery{
+        let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
+        let idx = find_by_uid<NFTMeta, NFTBody>(&gallery.items, uid);
 
         let info = if (Option::is_some(&idx)) {
             let i = Option::extract(&mut idx);
-            let nft = Collection2::borrow<NFT<NFTMeta, NFTBody>>(&mut nfts, i);
+            let nft = Vector::borrow<NFT<NFTMeta, NFTBody>>(&gallery.items, i);
             Option::some(NFT::get_info(nft))
         } else {
             Option::none<NFT::NFTInfo<NFTMeta>>()
         };
-        Collection2::return_collection(nfts);
         return info
+    }
+
+    /// Get the NFT info by the NFT idx in NFTGallery
+    public fun get_nft_info_by_idx<NFTMeta: copy + store + drop, NFTBody: store>(owner: address, idx: u64): NFT::NFTInfo<NFTMeta> acquires NFTGallery{
+        let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
+        let nft = Vector::borrow<NFT<NFTMeta, NFTBody>>(&gallery.items, idx);
+        NFT::get_info(nft)
+    }
+
+    /// Get the all NFT info
+    public fun get_nft_infos<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): vector<NFT::NFTInfo<NFTMeta>> acquires NFTGallery{
+        let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
+        let infos = Vector::empty();
+        let len = Vector::length(&gallery.items);
+        let idx = 0;
+        while(len > idx) {
+            let nft = Vector::borrow<NFT<NFTMeta, NFTBody>>(&gallery.items, idx);
+            Vector::push_back(&mut infos, NFT::get_info(nft));
+            idx = idx + 1;
+        };
+        infos
     }
 
     /// Deposit nft to `sender` NFTGallery
     public fun deposit<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, nft: NFT<NFTMeta, NFTBody>) acquires NFTGallery {
-        deposit_to(sender, Signer::address_of(sender), nft)
+        let sender_addr = Signer::address_of(sender);
+        deposit_to(sender_addr, nft)
     }
 
     /// Deposit nft to `receiver` NFTGallery
-    public fun deposit_to<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, receiver: address, nft: NFT<NFTMeta, NFTBody>) acquires NFTGallery {
-        let gallery = borrow_global_mut<NFTGallery<NFTMeta>>(receiver);
-        Event::emit_event(&mut gallery.deposit_events, DepositEvent<NFTMeta> { uid: NFT::get_uid(&nft) });
-        Collection2::put(sender, receiver, nft);
+    public fun deposit_to<NFTMeta: copy + store + drop, NFTBody: store>(receiver: address, nft: NFT<NFTMeta, NFTBody>) acquires NFTGallery {
+        let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(receiver);
+        Event::emit_event(&mut gallery.deposit_events, DepositEvent<NFTMeta> { uid: NFT::get_uid(&nft), owner: receiver });
+        Vector::push_back(&mut gallery.items, nft);
     }
 
     /// Withdraw one nft of NFTMeta from `sender`
@@ -446,15 +469,14 @@ module NFTGallery {
     /// Withdraw nft of NFTMeta and uid from `sender`
     fun do_withdraw<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, uid: Option<u64>): Option<NFT<NFTMeta, NFTBody>> acquires NFTGallery {
         let sender_addr = Signer::address_of(sender);
-        let gallery = borrow_global_mut<NFTGallery<NFTMeta>>(sender_addr);
-        let nfts = Collection2::borrow_collection<NFT<NFTMeta, NFTBody>>(sender, sender_addr);
-        let len = Collection2::length(&nfts);
+        let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(sender_addr);
+        let len = Vector::length(&gallery.items);
         let nft = if (len == 0) {
             Option::none()
         }else {
             let idx = if (Option::is_some(&uid)) {
                 let uid = Option::extract(&mut uid);
-                find_by_uid(&nfts, uid)
+                find_by_uid(&gallery.items, uid)
             }else {
                 //default withdraw the last nft.
                 Option::some(len - 1)
@@ -462,25 +484,24 @@ module NFTGallery {
 
             if (Option::is_some(&idx)) {
                 let i = Option::extract(&mut idx);
-                let nft = Collection2::remove<NFT<NFTMeta, NFTBody>>(&mut nfts, i);
-                Event::emit_event(&mut gallery.withdraw_events, WithdrawEvent<NFTMeta> { uid: NFT::get_uid(&nft) });
+                let nft = Vector::remove<NFT<NFTMeta, NFTBody>>(&mut gallery.items, i);
+                Event::emit_event(&mut gallery.withdraw_events, WithdrawEvent<NFTMeta> { uid: NFT::get_uid(&nft), owner: sender_addr });
                 Option::some(nft)
             }else {
                 Option::none()
             }
         };
-        Collection2::return_collection(nfts);
         nft
     }
 
-    fun find_by_uid<NFTMeta: copy + store + drop, NFTBody: store>(c: &Collection<NFT<NFTMeta, NFTBody>>, uid: u64): Option<u64> {
-        let len = Collection2::length(c);
+    fun find_by_uid<NFTMeta: copy + store + drop, NFTBody: store>(c: &vector<NFT<NFTMeta, NFTBody>>, uid: u64): Option<u64> {
+        let len = Vector::length(c);
         if (len == 0) {
             return Option::none()
         };
         let idx = len - 1;
         loop {
-            let nft = Collection2::borrow(c, idx);
+            let nft = Vector::borrow(c, idx);
             if (NFT::get_uid(nft) == uid) {
                 return Option::some(idx)
             };
@@ -492,8 +513,9 @@ module NFTGallery {
     }
 
     /// Count all NFTs assigned to an owner
-    public fun count_of<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): u64 {
-        Collection2::length_of<NFT<NFTMeta, NFTBody>>(owner)
+    public fun count_of<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): u64 acquires NFTGallery {
+        let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
+        Vector::length(&gallery.items)
     }
 }
 }
