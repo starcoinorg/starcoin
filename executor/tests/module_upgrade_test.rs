@@ -6,13 +6,15 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::execute_readonly_function;
 use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
 use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
+use starcoin_types::access_path::DataPath;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::TwoPhaseUpgradeV2Resource;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::ScriptFunction;
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
-use starcoin_vm_types::account_config::{association_address, core_code_address};
+use starcoin_vm_types::account_config::{association_address, core_code_address, AccountResource};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{TransactionPublishOption, Version};
@@ -401,6 +403,7 @@ fn test_stdlib_upgrade() -> Result<()> {
             execute_script_function,
             proposal_id,
         )?;
+
         let output = association_execute_should_success(
             &net,
             &chain_state,
@@ -446,6 +449,30 @@ fn ext_execute_after_upgrade(
                 chain_state,
                 TransactionPayload::ScriptFunction(take_liner_time_capability),
             )?;
+        }
+        StdlibVersion::Version(6) => {
+            let resource = chain_state.get(&AccessPath::new(
+                genesis_address(),
+                DataPath::Resource(StructTag {
+                    address: genesis_address(),
+                    module: Identifier::new("Account").unwrap(),
+                    name: Identifier::new("SignerDelegated").unwrap(),
+                    type_params: vec![],
+                }),
+            ))?;
+            assert!(resource.is_some());
+            let genesis_account = chain_state
+                .get_account_resource(genesis_address())?
+                .unwrap();
+            assert!(
+                genesis_account.has_delegated_key_rotation_capability(),
+                "expect 0x1 has no key rotation capability"
+            );
+            println!("genesis: {:?}", &genesis_account);
+            assert_eq!(
+                genesis_account.authentication_key(),
+                &AccountResource::CONTRACT_AUTH_KEY
+            );
         }
         _ => {
             //do nothing.

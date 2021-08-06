@@ -25,6 +25,11 @@ pub struct AccountResource {
 
 impl AccountResource {
     pub const DUMMY_AUTH_KEY: [u8; 32] = [0; 32];
+    pub const CONTRACT_AUTH_KEY: [u8; 32] = {
+        let mut k = [0u8; 32];
+        k[31] = 1u8;
+        k
+    };
     /// Constructs an Account resource.
     pub fn new(
         sequence_number: u64,
