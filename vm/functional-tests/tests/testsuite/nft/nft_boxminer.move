@@ -42,7 +42,7 @@ module creator::BoxMiner {
         Account::deposit<STC>(@creator, tokens);
         let cap = borrow_global_mut<BoxMinerMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"stc_box_miner", b"ips://xxx", b"This is the starcoin boxminer nft.");
-        let nft = NFT::mint_with_cap<BoxMiner, BoxMinerBody, NFTInfo>(sender, &mut cap.cap, metadata, BoxMiner{price}, BoxMinerBody{});
+        let nft = NFT::mint_with_cap<BoxMiner, BoxMinerBody, NFTInfo>(@creator, &mut cap.cap, metadata, BoxMiner{price}, BoxMinerBody{});
         return nft
     }
 }

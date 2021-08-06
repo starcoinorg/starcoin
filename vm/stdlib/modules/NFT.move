@@ -121,6 +121,11 @@ module NFT {
         return NFTInfo<NFTMeta> { uid: nft.uid, creator: nft.creator, base_meta: *&nft.base_meta, type_meta: *&nft.type_meta }
     }
 
+    public fun unpack_info<NFTMeta: copy + store + drop>(nft_info: NFTInfo<NFTMeta>): (u64, address, Metadata, NFTMeta) {
+        let NFTInfo<NFTMeta> { uid, creator, base_meta, type_meta } = nft_info;
+        (uid, creator, base_meta, type_meta)
+    }
+
     public fun get_uid<NFTMeta: copy + store + drop, NFTBody: store>(nft: &NFT<NFTMeta, NFTBody>): u64 {
         return nft.uid
     }
@@ -176,9 +181,8 @@ module NFT {
         let MintCapability {} = cap;
     }
 
-    /// Mint nft with MintCapability<NFTTYpe>, `sender` will been the NFT's creator.
-    public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, Info: copy + store + drop>(sender: &signer, _cap: &mut MintCapability<NFTMeta>, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfo {
-        let creator = Signer::address_of(sender);
+    /// Mint nft with MintCapability<NFTTYpe>, `creator` will been the NFT's creator.
+    public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, Info: copy + store + drop>(creator: address, _cap: &mut MintCapability<NFTMeta>, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfo {
         let nft_type_info = borrow_global_mut<NFTTypeInfo<NFTMeta, Info>>(CoreAddresses::GENESIS_ADDRESS());
         nft_type_info.counter = nft_type_info.counter + 1;
         let uid = nft_type_info.counter;
@@ -203,7 +207,7 @@ module NFT {
         let addr = Signer::address_of(sender);
         assert(exists<MintCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
         let cap = borrow_global_mut<MintCapability<NFTMeta>>(addr);
-        mint_with_cap<NFTMeta, NFTBody, Info>(sender, cap, base_meta, type_meta, body)
+        mint_with_cap<NFTMeta, NFTBody, Info>(addr, cap, base_meta, type_meta, body)
     }
 
     /// Add BurnCapability<NFTMeta> to `sender`
@@ -273,6 +277,91 @@ module NFT {
         &mut nft.body
     }
 }
+
+/// IdentifierNFT using NFT as identifier for an on chain account
+/// The NFT can not been transfer by owner.
+module IdentifierNFT{
+    use 0x1::Option::{Self, Option};
+    use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
+    use 0x1::Signer;
+    use 0x1::Errors;
+
+    const ERR_NFT_EXISTS: u64 = 101;
+    const ERR_NFT_NOT_EXISTS: u64 = 102;
+    const ERR_NFT_NOT_ACCEPT: u64 = 103;
+
+    struct IdentifierNFT<NFTMeta: copy + store + drop, NFTBody: store> has key {
+        nft: Option<NFT<NFTMeta, NFTBody>>,
+    }
+
+    /// Accept NFT<NFTMet, NFTBody>, prepare an empty IdentifierNFT for `sender`
+    public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer){
+        let addr = Signer::address_of(sender);
+        if(!exists<IdentifierNFT<NFTMeta, NFTBody>>(addr)) {
+            move_to(sender, IdentifierNFT<NFTMeta, NFTBody>{
+                nft: Option::none(),
+            });
+        }
+    }
+
+    /// Destroy the empty IdentifierNFT
+    public fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) acquires IdentifierNFT{
+        let addr = Signer::address_of(sender);
+        if(exists<IdentifierNFT<NFTMeta, NFTBody>>(addr)) {
+            let id_nft = move_from<IdentifierNFT<NFTMeta, NFTBody>>(addr);
+            assert(Option::is_none(&id_nft.nft), Errors::already_published(ERR_NFT_EXISTS));
+            let IdentifierNFT{nft} = id_nft;
+            Option::destroy_none(nft);
+        }
+    }
+
+    /// Grant nft as IdentifierNFT to `sender` with MintCapability<NFTMeta>, sender will auto accept the NFT.
+    public fun grant<NFTMeta: copy + store + drop, NFTBody: store>(cap: &mut MintCapability<NFTMeta>, sender: &signer, nft: NFT<NFTMeta, NFTBody>) acquires IdentifierNFT{
+        Self::accept<NFTMeta, NFTBody>(sender);
+        Self::grant_to<NFTMeta, NFTBody>(cap, Signer::address_of(sender), nft);
+    }
+
+    /// Grant  nft as IdentifierNFT to `receiver` with MintCapability<NFTMeta>, the receiver should accept the NFT first.
+    public fun grant_to<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut MintCapability<NFTMeta>, receiver: address, nft: NFT<NFTMeta, NFTBody>) acquires IdentifierNFT{
+        assert(exists<IdentifierNFT<NFTMeta, NFTBody>>(receiver), Errors::not_published(ERR_NFT_NOT_ACCEPT));
+        let id_nft = borrow_global_mut<IdentifierNFT<NFTMeta, NFTBody>>(receiver);
+        assert(Option::is_none(&id_nft.nft), Errors::already_published(ERR_NFT_EXISTS));
+        Option::fill(&mut id_nft.nft, nft);
+    }
+
+    /// Revoke the NFT<NFTMeta, NFTBody> from owner.
+    public fun revoke<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut BurnCapability<NFTMeta>, owner: address):NFT<NFTMeta, NFTBody>  acquires IdentifierNFT{
+        assert(exists<IdentifierNFT<NFTMeta, NFTBody>>(owner), Errors::not_published(ERR_NFT_NOT_EXISTS));
+        let id_nft = move_from<IdentifierNFT<NFTMeta, NFTBody>>(owner);
+        assert(Option::is_some(&id_nft.nft), Errors::not_published(ERR_NFT_NOT_EXISTS));
+        let IdentifierNFT{nft} = id_nft;
+        Option::destroy_some(nft)
+    }
+
+    /// Check `owner` is owns the IdentifierNFT<NFTMeta, NFTBody>
+    public fun is_owns<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool acquires IdentifierNFT{
+        if(!exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)) {
+            return  false
+        };
+        let id_nft = borrow_global<IdentifierNFT<NFTMeta, NFTBody>>(owner);
+        Option::is_some(&id_nft.nft)
+    }
+
+    public fun get_nft_info<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): Option<NFT::NFTInfo<NFTMeta>> acquires IdentifierNFT {
+        if(!exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)) {
+            return Option::none<NFT::NFTInfo<NFTMeta>>()
+        };
+        let id_nft = borrow_global<IdentifierNFT<NFTMeta, NFTBody>>(owner);
+        let info = if (Option::is_some(&id_nft.nft)) {
+            let nft = Option::borrow(&id_nft.nft);
+            Option::some(NFT::get_info(nft))
+        } else {
+            Option::none<NFT::NFTInfo<NFTMeta>>()
+        };
+        info
+    }
+}
+
 /// NFTGallery is user collection of NFT.
 module NFTGallery {
     use 0x1::Collection2::{Self, Collection};
@@ -315,6 +404,7 @@ module NFTGallery {
         deposit_to(sender, receiver, nft)
     }
 
+    ///TODO remove the signer parameter.
     /// Get the NFT info
     public fun get_nft_info<NFTMeta: copy + store + drop, NFTBody: store>(account: &signer, uid: u64): Option<NFT::NFTInfo<NFTMeta>> {
         let nfts = Collection2::borrow_collection<NFT<NFTMeta, NFTBody>>(account, Signer::address_of(account));
