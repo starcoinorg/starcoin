@@ -364,10 +364,10 @@ Deposit nft to <code>receiver</code> NFTGallery
 
 ## Function `withdraw_one`
 
-Withdraw one nft of NFTMeta from <code>sender</code>
+Withdraw one nft of NFTMeta from <code>sender</code>, caller should ensure at least one NFT in the Gallery.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw_one">withdraw_one</a>&lt;NFTMeta: <b>copy</b>, drop, store, NFTBody: store&gt;(sender: &signer): <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="NFT.md#0x1_NFT_NFT">NFT::NFT</a>&lt;NFTMeta, NFTBody&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw_one">withdraw_one</a>&lt;NFTMeta: <b>copy</b>, drop, store, NFTBody: store&gt;(sender: &signer): <a href="NFT.md#0x1_NFT_NFT">NFT::NFT</a>&lt;NFTMeta, NFTBody&gt;
 </code></pre>
 
 
@@ -376,8 +376,9 @@ Withdraw one nft of NFTMeta from <code>sender</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw_one">withdraw_one</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer): <a href="Option.md#0x1_Option">Option</a>&lt;<a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
-    <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>&lt;NFTMeta, NFTBody&gt;(sender, <a href="Option.md#0x1_Option_none">Option::none</a>())
+<pre><code><b>public</b> <b>fun</b> <a href="NFT.md#0x1_NFTGallery_withdraw_one">withdraw_one</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: &signer): <a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt; <b>acquires</b> <a href="NFT.md#0x1_NFTGallery">NFTGallery</a> {
+    <b>let</b> nft = <a href="NFT.md#0x1_NFTGallery_do_withdraw">do_withdraw</a>&lt;NFTMeta, NFTBody&gt;(sender, <a href="Option.md#0x1_Option_none">Option::none</a>());
+    <a href="Option.md#0x1_Option_destroy_some">Option::destroy_some</a>(nft)
 }
 </code></pre>
 
