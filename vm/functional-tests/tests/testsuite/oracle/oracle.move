@@ -36,6 +36,24 @@ script {
 address default = {{default}};
 address ds1 = {{ds1}};
 address ds2 = {{ds2}};
+address alice = {{alice}};
+script {
+    use 0x1::PriceOracle;
+    use 0x1::STCUSDOracle::{STCUSD};
+    fun test_is_data_source_initiailzed(_signer: signer) {
+        assert(!PriceOracle::is_data_source_initialized<STCUSD>(@alice), 997);
+        assert(PriceOracle::is_data_source_initialized<STCUSD>(@ds1), 998);
+        assert(PriceOracle::is_data_source_initialized<STCUSD>(@ds2), 999);
+    }
+}
+
+// check: EXECUTED
+
+//! new-transaction
+//! sender: alice
+address default = {{default}};
+address ds1 = {{ds1}};
+address ds2 = {{ds2}};
 script {
     use 0x1::PriceOracle;
     use 0x1::STCUSDOracle::{Self,STCUSD};
@@ -149,7 +167,7 @@ module default::DelegateOracleDS{
     //any one can update the ds in ds_addr
     public fun update_price_any<OracleT: copy+store+drop>(ds_addr: address, price: u128) acquires DelegateUpdateOracleCapability{
         let cap = borrow_global_mut<DelegateUpdateOracleCapability<OracleT>>(ds_addr);
-        PriceOracle::update_by_cap(&mut cap.cap, price);
+        PriceOracle::update_with_cap(&mut cap.cap, price);
     }
 }
 
