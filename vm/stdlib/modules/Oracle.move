@@ -49,20 +49,22 @@ module Oracle {
         cap: Account::SignerCapability,
     }
 
+    /// The oracle type not register.
+    const ERR_ORACLE_TYPE_NOT_REGISTER:u64 = 101;
     /// No capability to update the oracle value.
-    const ERR_NO_UPDATE_CAPABILITY: u64 = 101;
-    const ERR_NO_DATA_SOURCE: u64 = 102;
-    const ERR_CAPABILITY_ACCOUNT_MISS_MATCH: u64 = 103;
+    const ERR_NO_UPDATE_CAPABILITY: u64 = 102;
+    const ERR_NO_DATA_SOURCE: u64 = 103;
+    const ERR_CAPABILITY_ACCOUNT_MISS_MATCH: u64 = 104;
 
-    public fun initialize(signer: &signer) {
-        CoreAddresses::assert_genesis_address(signer);
-        let cap = Account::remove_signer_capability(signer);
+    public fun initialize(sender: &signer) {
+        CoreAddresses::assert_genesis_address(sender);
+        let cap = Account::remove_signer_capability(sender);
         let cap_wrapper = GenesisSignerCapability{cap};
-        move_to(signer, cap_wrapper);
+        move_to(sender, cap_wrapper);
     }
 
     /// Register `OracleT` as an oracle type.
-    public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(_signer: &signer, info: Info) acquires GenesisSignerCapability{
+    public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(_sender: &signer, info: Info) acquires GenesisSignerCapability{
         let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
         let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
         move_to(&genesis_account, OracleInfo<OracleT, Info> {
@@ -83,34 +85,42 @@ module Oracle {
     }
 
     /// Init a data source for type `OracleT`
-    public fun init_data_source<OracleT:  copy+store+drop, Info: copy+store+drop, ValueT: copy+store+drop>(signer: &signer, init_value: ValueT) acquires OracleInfo{
+    public fun init_data_source<OracleT:  copy+store+drop, Info: copy+store+drop, ValueT: copy+store+drop>(sender: &signer, init_value: ValueT) acquires OracleInfo{
+        assert(exists<OracleInfo<OracleT, Info>>(CoreAddresses::GENESIS_ADDRESS()), Errors::not_published(ERR_ORACLE_TYPE_NOT_REGISTER));
         let oracle_info = borrow_global_mut<OracleInfo<OracleT, Info>>(CoreAddresses::GENESIS_ADDRESS());
         let now = Timestamp::now_milliseconds();
-        move_to(signer, OracleFeed<OracleT, ValueT> {
+        move_to(sender, OracleFeed<OracleT, ValueT> {
             record: DataRecord<ValueT> {
                 version: 0,
                 value: init_value,
                 updated_at: now,
             }
         });
-        let account = Signer::address_of(signer);
-        move_to(signer, DataSource<OracleT, ValueT> {
+        let sender_addr = Signer::address_of(sender);
+        move_to(sender, DataSource<OracleT, ValueT> {
             id: oracle_info.counter,
             counter: 1,
-            update_events: Event::new_event_handle<OracleUpdateEvent<OracleT, ValueT>>(signer),
+            update_events: Event::new_event_handle<OracleUpdateEvent<OracleT, ValueT>>(sender),
         });
-        move_to(signer, UpdateCapability<OracleT>{account: account});
+        move_to(sender, UpdateCapability<OracleT>{account: sender_addr});
         oracle_info.counter = oracle_info.counter + 1;
     }
 
-    public fun update<OracleT: copy+store+drop, ValueT: copy+store+drop>(signer: &signer, value: ValueT) acquires UpdateCapability, DataSource, OracleFeed{
-        let account = Signer::address_of(signer);
-        assert(exists<UpdateCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
-        let cap = borrow_global_mut<UpdateCapability<OracleT>>(account);
-        update_by_cap(cap,value);
+    /// Check the DataSource<OracleT,ValueT> is initiailzed at ds_addr
+    public fun is_data_source_initialized<OracleT:  copy+store+drop, ValueT: copy+store+drop>(ds_addr: address): bool {
+        exists<DataSource<OracleT, ValueT>>(ds_addr)
     }
 
-    public fun update_by_cap<OracleT: copy+store+drop, ValueT: copy+store+drop>(cap: &mut UpdateCapability<OracleT>, value: ValueT) acquires DataSource,OracleFeed  {
+    /// Update Oracle's record with new value, the `sender` must have UpdateCapability<OracleT>
+    public fun update<OracleT: copy+store+drop, ValueT: copy+store+drop>(sender: &signer, value: ValueT) acquires UpdateCapability, DataSource, OracleFeed{
+        let account = Signer::address_of(sender);
+        assert(exists<UpdateCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
+        let cap = borrow_global_mut<UpdateCapability<OracleT>>(account);
+        update_with_cap(cap,value);
+    }
+
+    /// Update Oracle's record with new value and UpdateCapability<OracleT>
+    public fun update_with_cap<OracleT: copy+store+drop, ValueT: copy+store+drop>(cap: &mut UpdateCapability<OracleT>, value: ValueT) acquires DataSource,OracleFeed  {
         let account = cap.account;
         assert(exists<DataSource<OracleT, ValueT>>(account), Errors::requires_capability(ERR_NO_DATA_SOURCE));
         let source = borrow_global_mut<DataSource<OracleT, ValueT>>(account);
@@ -126,22 +136,25 @@ module Oracle {
         });
     }
 
-    public fun read<OracleT:copy+store+drop, ValueT: copy+store+drop>(addr: address): ValueT acquires OracleFeed{
-        let oracle_feed = borrow_global<OracleFeed<OracleT, ValueT>>(addr);
+    /// Read the Oracle's value from `ds_addr`
+    public fun read<OracleT:copy+store+drop, ValueT: copy+store+drop>(ds_addr: address): ValueT acquires OracleFeed{
+        let oracle_feed = borrow_global<OracleFeed<OracleT, ValueT>>(ds_addr);
         *&oracle_feed.record.value
     }
 
-    public fun read_record<OracleT:copy+store+drop, ValueT: copy+store+drop>(addr: address): DataRecord<ValueT> acquires OracleFeed{
-        let oracle_feed = borrow_global<OracleFeed<OracleT, ValueT>>(addr);
+    /// Read the Oracle's DataRecord from `ds_addr`
+    public fun read_record<OracleT:copy+store+drop, ValueT: copy+store+drop>(ds_addr: address): DataRecord<ValueT> acquires OracleFeed{
+        let oracle_feed = borrow_global<OracleFeed<OracleT, ValueT>>(ds_addr);
         *&oracle_feed.record
     }
 
-    public fun read_records<OracleT:copy+store+drop,  ValueT: copy+store+drop>(addrs: &vector<address>): vector<DataRecord<ValueT>> acquires OracleFeed{
-        let len = Vector::length(addrs);
+    /// Batch read Oracle's DataRecord from `ds_addrs`
+    public fun read_records<OracleT:copy+store+drop,  ValueT: copy+store+drop>(ds_addrs: &vector<address>): vector<DataRecord<ValueT>> acquires OracleFeed{
+        let len = Vector::length(ds_addrs);
         let results = Vector::empty();
         let i = 0;
         while (i < len){
-            let addr = *Vector::borrow(addrs, i);
+            let addr = *Vector::borrow(ds_addrs, i);
             let record = Self::read_record<OracleT, ValueT>(addr);
             Vector::push_back(&mut results, record);
             i = i + 1;
@@ -149,17 +162,17 @@ module Oracle {
         results
     }
 
-    /// Remove UpdateCapability from current signer.
-    public fun remove_update_capability<OracleT:copy+store+drop>(signer: &signer):UpdateCapability<OracleT> acquires UpdateCapability{
-        let account = Signer::address_of(signer);
+    /// Remove UpdateCapability from current sender.
+    public fun remove_update_capability<OracleT:copy+store+drop>(sender: &signer):UpdateCapability<OracleT> acquires UpdateCapability{
+        let account = Signer::address_of(sender);
         assert(exists<UpdateCapability<OracleT>>(account), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
         move_from<UpdateCapability<OracleT>>(account)
     }
 
-    /// Add UpdateCapability to current signer
-    public fun add_update_capability<OracleT:copy+store+drop>(signer: &signer, update_cap: UpdateCapability<OracleT>){
-        assert(Signer::address_of(signer) == update_cap.account, Errors::invalid_argument(ERR_CAPABILITY_ACCOUNT_MISS_MATCH));
-        move_to(signer, update_cap);
+    /// Add UpdateCapability to current sender
+    public fun add_update_capability<OracleT:copy+store+drop>(sender: &signer, update_cap: UpdateCapability<OracleT>){
+        assert(Signer::address_of(sender) == update_cap.account, Errors::invalid_argument(ERR_CAPABILITY_ACCOUNT_MISS_MATCH));
+        move_to(sender, update_cap);
     }
 
     /// Unpack Record to fields: version, oracle, updated_at.
@@ -175,15 +188,19 @@ module PriceOracle{
         scaling_factor: u128,
     }
 
-    public fun register_oracle<OracleT: copy+store+drop>(signer: &signer, precision: u8){
+    public fun register_oracle<OracleT: copy+store+drop>(sender: &signer, precision: u8){
         let scaling_factor = Math::pow(10, (precision as u64));
-        Oracle::register_oracle<OracleT, PriceOracleInfo>(signer, PriceOracleInfo{
+        Oracle::register_oracle<OracleT, PriceOracleInfo>(sender, PriceOracleInfo{
             scaling_factor,
         });
     }
 
-    public fun init_data_source<OracleT: copy+store+drop>(signer: &signer, init_value: u128){
-        Oracle::init_data_source<OracleT, PriceOracleInfo, u128>(signer, init_value);
+    public fun init_data_source<OracleT: copy+store+drop>(sender: &signer, init_value: u128){
+        Oracle::init_data_source<OracleT, PriceOracleInfo, u128>(sender, init_value);
+    }
+
+    public fun is_data_source_initialized<OracleT:  copy+store+drop>(ds_addr: address): bool{
+        Oracle::is_data_source_initialized<OracleT, u128>(ds_addr)
     }
 
     public fun get_scaling_factor<OracleT: copy + store + drop>() : u128 {
@@ -191,12 +208,12 @@ module PriceOracle{
         info.scaling_factor
     }
 
-    public fun update<OracleT: copy+store+drop>(signer: &signer, value: u128){
-        Oracle::update<OracleT, u128>(signer, value);
+    public fun update<OracleT: copy+store+drop>(sender: &signer, value: u128){
+        Oracle::update<OracleT, u128>(sender, value);
     }
 
-    public fun update_by_cap<OracleT: copy+store+drop>(cap: &mut UpdateCapability<OracleT>, value: u128) {
-        Oracle::update_by_cap<OracleT, u128>(cap, value);
+    public fun update_with_cap<OracleT: copy+store+drop>(cap: &mut UpdateCapability<OracleT>, value: u128) {
+        Oracle::update_with_cap<OracleT, u128>(cap, value);
     }
 
     public fun read<OracleT: copy+store+drop>(addr: address) : u128{
@@ -214,33 +231,42 @@ module PriceOracle{
 }
 
 module STCUSDOracle{
-    use 0x1::PriceOracle;
+    use 0x1::Oracle::{DataRecord};
+    use 0x1::PriceOracle::{Self};
 
     /// The STC to USD price oracle
     struct STCUSD has copy,store,drop {}
 
-    public fun register(signer: &signer){
-        PriceOracle::register_oracle<STCUSD>(signer, 6);
+    public fun register(sender: &signer){
+        PriceOracle::register_oracle<STCUSD>(sender, 6);
     }
 
-    public fun read(addr: address) : u128{
-        PriceOracle::read<STCUSD>(addr)
+    public fun read(ds_addr: address) : u128{
+        PriceOracle::read<STCUSD>(ds_addr)
+    }
+
+    public fun read_record(ds_addr: address): DataRecord<u128>{
+        PriceOracle::read_record<STCUSD>(ds_addr)
+    }
+
+    public fun read_records(ds_addrs: &vector<address>): vector<DataRecord<u128>>{
+        PriceOracle::read_records<STCUSD>(ds_addrs)
     }
 }
 
 module PriceOracleScripts{
     use 0x1::PriceOracle;
 
-    public(script) fun register_oracle<OracleT: copy+store+drop>(signer: signer, precision: u8){
-        PriceOracle::register_oracle<OracleT>(&signer, precision)
+    public(script) fun register_oracle<OracleT: copy+store+drop>(sender: signer, precision: u8){
+        PriceOracle::register_oracle<OracleT>(&sender, precision)
     }
 
-    public(script) fun init_data_source<OracleT: copy+store+drop>(signer: signer, init_value: u128){
-        PriceOracle::init_data_source<OracleT>(&signer, init_value);
+    public(script) fun init_data_source<OracleT: copy+store+drop>(sender: signer, init_value: u128){
+        PriceOracle::init_data_source<OracleT>(&sender, init_value);
     }
 
-    public(script) fun update<OracleT: copy+store+drop>(signer: signer, value: u128){
-        PriceOracle::update<OracleT>(&signer, value);
+    public(script) fun update<OracleT: copy+store+drop>(sender: signer, value: u128){
+        PriceOracle::update<OracleT>(&sender, value);
     }
 }
 
@@ -256,7 +282,7 @@ module PriceOracleAggregator{
     const ERR_NO_PRICE_DATA_AVIABLE:u64 = 101;
 
     /// Get latest price from datasources and calculate avg.
-    /// `addrs` the datasource's addr, `updated_in` the datasource should updated in x millseoconds.
+    /// `addrs`: the datasource's addr, `updated_in`: the datasource should updated in x millseoconds.
     public fun latest_price_average_aggregator<OracleT: copy+store+drop>(addrs: &vector<address>, updated_in: u64): u128 {
         let len = Vector::length(addrs);
         let price_records = PriceOracle::read_records<OracleT>(addrs);
