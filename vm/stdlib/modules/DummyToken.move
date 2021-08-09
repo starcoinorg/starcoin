@@ -59,4 +59,19 @@ module DummyToken {
         Token::token_address<DummyToken>()
     }
 }
+
+module DummyTokenScripts{
+    use 0x1::DummyToken::{Self,DummyToken};
+    use 0x1::Account;
+    use 0x1::Signer;
+
+    public(script) fun mint(sender: signer, amount: u128){
+        let token = DummyToken::mint(&sender, amount);
+        let sender_addr = Signer::address_of(&sender);
+        if(Account::is_accept_token<DummyToken>(sender_addr)){
+            Account::do_accept_token<DummyToken>(&sender);
+        };
+        Account::deposit(sender_addr, token);
+    }
+}
 }
