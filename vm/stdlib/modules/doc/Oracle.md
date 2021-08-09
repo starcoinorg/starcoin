@@ -21,7 +21,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_register_oracle">register_oracle</a>&lt;OracleT: <b>copy</b>, drop, store&gt;(signer: signer, precision: u8)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_register_oracle">register_oracle</a>&lt;OracleT: <b>copy</b>, drop, store&gt;(sender: signer, precision: u8)
 </code></pre>
 
 
@@ -30,8 +30,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_register_oracle">register_oracle</a>&lt;OracleT: <b>copy</b>+store+drop&gt;(signer: signer, precision: u8){
-    <a href="Oracle.md#0x1_PriceOracle_register_oracle">PriceOracle::register_oracle</a>&lt;OracleT&gt;(&signer, precision)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_register_oracle">register_oracle</a>&lt;OracleT: <b>copy</b>+store+drop&gt;(sender: signer, precision: u8){
+    <a href="Oracle.md#0x1_PriceOracle_register_oracle">PriceOracle::register_oracle</a>&lt;OracleT&gt;(&sender, precision)
 }
 </code></pre>
 
@@ -45,7 +45,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_init_data_source">init_data_source</a>&lt;OracleT: <b>copy</b>, drop, store&gt;(signer: signer, init_value: u128)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_init_data_source">init_data_source</a>&lt;OracleT: <b>copy</b>, drop, store&gt;(sender: signer, init_value: u128)
 </code></pre>
 
 
@@ -54,8 +54,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_init_data_source">init_data_source</a>&lt;OracleT: <b>copy</b>+store+drop&gt;(signer: signer, init_value: u128){
-    <a href="Oracle.md#0x1_PriceOracle_init_data_source">PriceOracle::init_data_source</a>&lt;OracleT&gt;(&signer, init_value);
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="Oracle.md#0x1_PriceOracleScripts_init_data_source">init_data_source</a>&lt;OracleT: <b>copy</b>+store+drop&gt;(sender: signer, init_value: u128){
+    <a href="Oracle.md#0x1_PriceOracle_init_data_source">PriceOracle::init_data_source</a>&lt;OracleT&gt;(&sender, init_value);
 }
 </code></pre>
 
@@ -69,7 +69,7 @@
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <b>update</b>&lt;OracleT: <b>copy</b>, drop, store&gt;(signer: signer, value: u128)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <b>update</b>&lt;OracleT: <b>copy</b>, drop, store&gt;(sender: signer, value: u128)
 </code></pre>
 
 
@@ -78,8 +78,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <b>update</b>&lt;OracleT: <b>copy</b>+store+drop&gt;(signer: signer, value: u128){
-    <a href="Oracle.md#0x1_PriceOracle_update">PriceOracle::update</a>&lt;OracleT&gt;(&signer, value);
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <b>update</b>&lt;OracleT: <b>copy</b>+store+drop&gt;(sender: signer, value: u128){
+    <a href="Oracle.md#0x1_PriceOracle_update">PriceOracle::update</a>&lt;OracleT&gt;(&sender, value);
 }
 </code></pre>
 
