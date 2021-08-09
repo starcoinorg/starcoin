@@ -23,8 +23,18 @@ module NFT {
     /// The info of NFT type
     struct NFTTypeInfo<NFTMeta: copy + store + drop, Info: copy + store + drop> has key, store {
         counter: u64,
+        meta: Metadata,
         info: Info,
         mint_events: Event::EventHandle<MintEvent<NFTMeta>>,
+    }
+
+    public fun new_nft_type_info<NFTMeta: copy + store + drop, Info: copy + store + drop>(sender: &signer, info: Info, meta: Metadata): NFTTypeInfo<NFTMeta, Info> {
+        NFTTypeInfo<NFTMeta, Info> {
+            counter: 0,
+            info,
+            meta,
+            mint_events: Event::new_event_handle<MintEvent<NFTMeta>>(sender),
+        }
     }
 
     public fun nft_type_info_ex_info<NFTMeta: copy + store + drop, Info: copy + store + drop>(): Info acquires NFTTypeInfo {
@@ -56,6 +66,24 @@ module NFT {
         image_data: vector<u8>,
         /// NFT description utf8 bytes.
         description: vector<u8>,
+    }
+
+    public fun empty_meta(): Metadata {
+        Metadata {
+            name:Vector::empty(),
+            image: Vector::empty(),
+            image_data: Vector::empty(),
+            description:Vector::empty(),
+        }
+    }
+
+    public fun new_meta(name: vector<u8>, description: vector<u8>): Metadata {
+        Metadata {
+            name,
+            image: Vector::empty(),
+            image_data: Vector::empty(),
+            description,
+        }
     }
 
     public fun new_meta_with_image(name: vector<u8>, image: vector<u8>, description: vector<u8>): Metadata {
@@ -150,14 +178,9 @@ module NFT {
     }
 
     /// Register a NFT type to genesis
-    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(sender: &signer, info: Info) acquires GenesisSignerCapability {
+    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(sender: &signer, info: NFTTypeInfo<NFTMeta, Info>) acquires GenesisSignerCapability {
         let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
         let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
-        let info = NFTTypeInfo<NFTMeta, Info> {
-            counter: 0,
-            info,
-            mint_events: Event::new_event_handle<MintEvent<NFTMeta>>(sender),
-        };
         move_to<NFTTypeInfo<NFTMeta, Info>>(&genesis_account, info);
         move_to<MintCapability<NFTMeta>>(sender, MintCapability {});
         move_to<BurnCapability<NFTMeta>>(sender, BurnCapability {});

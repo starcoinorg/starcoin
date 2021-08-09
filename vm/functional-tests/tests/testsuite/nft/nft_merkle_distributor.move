@@ -42,7 +42,7 @@ module genesis::MerkleProof {
 address genesis= {{genesis}};
 module genesis::MerkleNFTDistributor {
     use 0x1::Vector;
-    use 0x1::NFT::{Self, NFT, Metadata, MintCapability};
+    use 0x1::NFT::{Self, NFT, Metadata, MintCapability,NFTTypeInfo};
     use 0x1::Hash;
     use 0x1::BCS;
     use 0x1::Signer;
@@ -61,7 +61,7 @@ module genesis::MerkleNFTDistributor {
         cap: MintCapability<NFTMeta>,
     }
 
-    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(signer: &signer, merkle_root: vector<u8>, leafs: u64, info: Info) {
+    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(signer: &signer, merkle_root: vector<u8>, leafs: u64, type_info: NFTTypeInfo<NFTMeta, Info>): MintCapability<NFTMeta> {
         let bitmap_count = leafs / 128;
         if (bitmap_count * 128 < leafs) {
             bitmap_count = bitmap_count + 1;
@@ -76,19 +76,10 @@ module genesis::MerkleNFTDistributor {
             merkle_root,
             claimed_bitmap
         };
-        NFT::register<NFTMeta, Info>(signer, info);
-        let cap = NFT::remove_mint_capability<NFTMeta>(signer);
-        move_to(signer, MerkleNFTDistributorMintCapability<NFTMeta>{cap});
+        NFT::register<NFTMeta, Info>(signer, type_info);
         move_to(signer, distribution);
+        NFT::remove_mint_capability<NFTMeta>(signer)
     }
-    public fun remove_merkle_nft_distributor_mint_capability<NFTMeta: store>(sender: &signer): MintCapability<NFTMeta>
-        acquires MerkleNFTDistributorMintCapability{
-            let addr = Signer::address_of(sender);
-            assert(exists<MerkleNFTDistributorMintCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
-            let mkn_cap = move_from<MerkleNFTDistributorMintCapability<NFTMeta>>(addr);
-            let MerkleNFTDistributorMintCapability{cap} = mkn_cap;
-            return cap
-        }
 
     public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, Info: copy + store + drop>(sender: &signer, cap:&mut MintCapability<NFTMeta>, creator:address, index: u64, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody, merkle_proof:vector<vector<u8>>): NFT<NFTMeta, NFTBody>
         acquires MerkleNFTDistribution {
@@ -151,14 +142,15 @@ module creator::GenesisNFT {
     }
     public fun init(sender: &signer, merkle_root: vector<u8>, leafs: u64){
         assert(Signer::address_of(sender) == @creator, 1000);
-        MerkleNFTDistributor::register<GenesisNFTMeta, GenesisNFTInfo>(sender, merkle_root, leafs, GenesisNFTInfo{});
-        let cap = MerkleNFTDistributor::remove_merkle_nft_distributor_mint_capability<GenesisNFTMeta>(sender);
+        let metadata = NFT::new_meta_with_image(b"StarcoinGenesisNFT", b"ipfs:://xxxxxx", b"The starcoin genesis NFT");
+        let nft_type_info=NFT::new_nft_type_info(sender, GenesisNFTInfo{}, metadata);
+        let cap = MerkleNFTDistributor::register<GenesisNFTMeta, GenesisNFTInfo>(sender, merkle_root, leafs, nft_type_info);
         move_to(sender, GenesisNFTMintCapability{cap});
     }
 
     public fun mint(sender: &signer, index: u64, merkle_proof:vector<vector<u8>>)
         acquires GenesisNFTMintCapability{
-            let metadata = NFT::new_meta_with_image(b"StarcoinGenesisNFT", b"ipfs:://xxxxxx", b"The starcoin genesis NFT");
+            let metadata = NFT::new_meta(b"StarcoinGenesisNFT", b"The starcoin genesis NFT");
             let cap = borrow_global_mut<GenesisNFTMintCapability>(@creator);
             let nft = MerkleNFTDistributor::mint_with_cap<GenesisNFTMeta, GenesisNFT, GenesisNFTInfo>(sender, &mut cap.cap, @creator, index, metadata, GenesisNFTMeta{}, GenesisNFT{}, merkle_proof);
             IdentifierNFT::grant(&mut cap.cap, sender, nft);

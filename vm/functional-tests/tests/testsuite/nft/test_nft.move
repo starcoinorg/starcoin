@@ -6,13 +6,13 @@ address creator = {{creator}};
 module creator::TestNFT {
     use 0x1::NFT;
     use 0x1::NFTGallery;
-
     struct TestNFT has copy, store, drop{}
     struct TestNFTBody has store{
     }
     struct NFTInfo has copy,store,drop{}
     public fun init(sender: &signer){
-        NFT::register<TestNFT,NFTInfo>(sender,NFTInfo{});
+        let nft_type_info=NFT::new_nft_type_info(sender, NFTInfo{}, NFT::empty_meta());
+        NFT::register<TestNFT,NFTInfo>(sender, nft_type_info);
         Self::do_accept(sender);
     }
 

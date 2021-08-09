@@ -47,7 +47,8 @@ module creator::XMembership {
 
     public fun init(sender: &signer){
         assert(Signer::address_of(sender) == @creator, 1000);
-        NFT::register<XMembership,XMembershipInfo>(sender, XMembershipInfo{ price_per_millis:2 });
+        let nft_type_info=NFT::new_nft_type_info(sender, XMembershipInfo{ price_per_millis:2 }, NFT::empty_meta());
+        NFT::register<XMembership,XMembershipInfo>(sender, nft_type_info);
         let cap = NFT::remove_mint_capability<XMembership>(sender);
         move_to(sender, XMembershipMintCapability{ cap});
 

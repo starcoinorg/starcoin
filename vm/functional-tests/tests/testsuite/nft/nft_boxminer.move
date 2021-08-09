@@ -12,6 +12,7 @@ module creator::BoxMiner {
     struct BoxMiner has copy, store, drop{
         price: u128,
     }
+
     struct NFTInfo has copy, store, drop{
         total_supply: u64,
         price: u128,
@@ -23,7 +24,9 @@ module creator::BoxMiner {
     }
 
     public fun init(sender: &signer, total_supply:u64, price: u128){
-        NFT::register<BoxMiner, NFTInfo>(sender, NFTInfo{total_supply, price});
+        let meta = NFT::new_meta_with_image(b"stc_box_miner_nft", b"ipfs:://xxx", b"This is the starcoin boxminer nft");
+        let nft_type_info = NFT::new_nft_type_info(sender, NFTInfo{total_supply, price}, meta);
+        NFT::register<BoxMiner, NFTInfo>(sender, nft_type_info);
         let cap = NFT::remove_mint_capability<BoxMiner>(sender);
         move_to(sender, BoxMinerMintCapability{cap});
     }
@@ -41,7 +44,7 @@ module creator::BoxMiner {
         let tokens = Account::withdraw<STC>(sender, price);
         Account::deposit<STC>(@creator, tokens);
         let cap = borrow_global_mut<BoxMinerMintCapability>(@creator);
-        let metadata = NFT::new_meta_with_image(b"stc_box_miner", b"ips://xxx", b"This is the starcoin boxminer nft.");
+        let metadata = NFT::new_meta(b"stc_box_miner", b"This is the starcoin boxminer.");
         let nft = NFT::mint_with_cap<BoxMiner, BoxMinerBody, NFTInfo>(@creator, &mut cap.cap, metadata, BoxMiner{price}, BoxMinerBody{});
         return nft
     }
