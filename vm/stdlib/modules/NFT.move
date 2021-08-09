@@ -374,6 +374,10 @@ module IdentifierNFTScripts{
     public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
         IdentifierNFT::accept<NFTMeta, NFTBody>(&sender);
     }
+    /// Destroy empty IdentifierNFT
+    public(script) fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+        IdentifierNFT::destroy_empty<NFTMeta, NFTBody>(&sender);
+    }
 }
 
 /// NFTGallery is user collection of NFT.
