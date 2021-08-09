@@ -120,12 +120,11 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
-    use 0x1::Option;
     use creator::Card::{Self, Card, CardBody};
     fun main(sender: signer) {
-        let first = Option::destroy_some(NFTGallery::withdraw_one<Card, CardBody>(&sender));
+        let first = NFTGallery::withdraw_one<Card, CardBody>(&sender);
         let second = NFTGallery::withdraw_one<Card, CardBody>(&sender);
-        Card::upgrade_card(&mut first, Option::destroy_some(second));
+        Card::upgrade_card(&mut first, second);
         NFTGallery::deposit(&sender, first);
     }
 }
@@ -139,12 +138,11 @@ script {
     use creator::Card::{Self, Card, CardBody};
     use 0x1::NFTGallery;
     use 0x1::Signer;
-    use 0x1::Option;
     use 0x1::NFT;
 
     fun main(sender: signer) {
         assert(NFTGallery::count_of<Card, CardBody>(Signer::address_of(&sender)) == 1, 1001);
-        let card = Option::destroy_some(NFTGallery::withdraw_one<Card, CardBody>(&sender));
+        let card = NFTGallery::withdraw_one<Card, CardBody>(&sender);
         let card_meta = NFT::get_type_meta(&card);
         let level = Card::get_level(card_meta);
         assert(level == 2, 1002);

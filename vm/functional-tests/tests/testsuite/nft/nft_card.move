@@ -145,12 +145,11 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
-    use 0x1::Option;
     use creator::Card::{Self, L1CardMeta, L1Card};
     fun main(sender: signer) {
         let first_l1 = NFTGallery::withdraw_one<L1CardMeta, L1Card>(&sender);
         let second_l1 = NFTGallery::withdraw_one<L1CardMeta, L1Card>(&sender);
-        let l2_card = Card::mint_l2(&sender, Option::destroy_some(first_l1), Option::destroy_some(second_l1));
+        let l2_card = Card::mint_l2(&sender, first_l1, second_l1);
         NFTGallery::deposit(&sender, l2_card);
     }
 }
