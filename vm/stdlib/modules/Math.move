@@ -92,7 +92,7 @@ module Math {
         let c = y / z;
         let d = y % z;
         //y = c * z + d;
-        a * b * z + a * d + b * c + b * d / z
+        a * c * z + a * d + b * c + b * d / z
     }
 
     spec mul_div {
