@@ -54,12 +54,15 @@ script {
 //! sender: bob
 address creator = {{creator}};
 script {
-    use creator::TestNFT;
-    fun main(account: signer) {
-        TestNFT::accept(account);
+    use creator::TestNFT::{TestNFT,TestNFTBody};
+    use 0x1::NFTGalleryScripts;
+    fun main(sender: signer) {
+        NFTGalleryScripts::accept<TestNFT,TestNFTBody>(sender);
     }
 }
 
+// check: gas_used
+// check: 492608
 // check: EXECUTED
 
 //! new-transaction
@@ -67,12 +70,15 @@ script {
 //! args: {{bob}}
 address creator = {{creator}};
 script {
-    use creator::TestNFT;
+    use creator::TestNFT::{TestNFT,TestNFTBody};
+    use 0x1::NFTGalleryScripts;
     fun main(sender: signer, receiver: address) {
-        TestNFT::transfer(sender, 1, receiver);
+        NFTGalleryScripts::transfer<TestNFT,TestNFTBody>(sender, 1, receiver);
     }
 }
 
+// check: gas_used
+// check: 218929
 // check: EXECUTED
 
 //! new-transaction
