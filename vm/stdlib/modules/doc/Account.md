@@ -56,6 +56,7 @@ The module for the account resource that governs every account
 -  [Function `do_accept_token`](#0x1_Account_do_accept_token)
 -  [Function `accept_token`](#0x1_Account_accept_token)
 -  [Function `is_accepts_token`](#0x1_Account_is_accepts_token)
+-  [Function `is_accept_token`](#0x1_Account_is_accept_token)
 -  [Function `can_auto_accept_token`](#0x1_Account_can_auto_accept_token)
 -  [Function `set_auto_accept_token`](#0x1_Account_set_auto_accept_token)
 -  [Function `try_accept_token`](#0x1_Account_try_accept_token)
@@ -104,6 +105,7 @@ The module for the account resource that governs every account
     -  [Function `do_accept_token`](#@Specification_1_do_accept_token)
     -  [Function `accept_token`](#@Specification_1_accept_token)
     -  [Function `is_accepts_token`](#@Specification_1_is_accepts_token)
+    -  [Function `is_accept_token`](#@Specification_1_is_accept_token)
     -  [Function `set_auto_accept_token`](#@Specification_1_set_auto_accept_token)
     -  [Function `try_accept_token`](#@Specification_1_try_accept_token)
     -  [Function `sequence_number`](#@Specification_1_sequence_number)
@@ -640,6 +642,15 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x1_Account_ERR_TOKEN_NOT_ACCEPT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_ERR_TOKEN_NOT_ACCEPT">ERR_TOKEN_NOT_ACCEPT</a>: u64 = 106;
 </code></pre>
 
 
@@ -1762,7 +1773,7 @@ Add a balance of <code><a href="Token.md#0x1_Token">Token</a></code> type to the
 
 ## Function `is_accepts_token`
 
-Return whether the account at <code>addr</code> accepts <code><a href="Token.md#0x1_Token">Token</a></code> type tokens
+This is a alias of is_accept_token
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool
@@ -1775,6 +1786,31 @@ Return whether the account at <code>addr</code> accepts <code><a href="Token.md#
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType: store&gt;(addr: address): bool <b>acquires</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
+    <a href="Account.md#0x1_Account_is_accept_token">Self::is_accept_token</a>&lt;TokenType&gt;(addr)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_is_accept_token"></a>
+
+## Function `is_accept_token`
+
+Return whether the account at <code>addr</code> accept <code><a href="Token.md#0x1_Token">Token</a></code> type tokens
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accept_token">is_accept_token</a>&lt;TokenType: store&gt;(addr: address): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accept_token">is_accept_token</a>&lt;TokenType: store&gt;(addr: address): bool <b>acquires</b> <a href="Account.md#0x1_Account_AutoAcceptToken">AutoAcceptToken</a> {
     <b>if</b> (<a href="Account.md#0x1_Account_can_auto_accept_token">can_auto_accept_token</a>(addr)) {
         <b>true</b>
     } <b>else</b> {
@@ -1868,6 +1904,8 @@ try to accept token for <code>addr</code>.
         <b>if</b> (<a href="Account.md#0x1_Account_can_auto_accept_token">can_auto_accept_token</a>(addr)) {
             <b>let</b> signer = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(addr);
             <a href="Account.md#0x1_Account_do_accept_token">do_accept_token</a>&lt;TokenType&gt;(&signer);
+        }<b>else</b>{
+            <b>abort</b> <a href="Errors.md#0x1_Errors_not_published">Errors::not_published</a>(<a href="Account.md#0x1_Account_ERR_TOKEN_NOT_ACCEPT">ERR_TOKEN_NOT_ACCEPT</a>)
         }
     };
 }
@@ -2904,6 +2942,22 @@ It collects gas and bumps the sequence number
 
 
 <pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_is_accept_token"></a>
+
+### Function `is_accept_token`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_is_accept_token">is_accept_token</a>&lt;TokenType: store&gt;(addr: address): bool
 </code></pre>
 
 
