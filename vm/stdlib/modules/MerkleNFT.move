@@ -1,9 +1,4 @@
-//! account: creator
-//! account: genesis
-//! account: alice
-//! sender: genesis
-address genesis= {{genesis}};
-module genesis::MerkleProof {
+module 0x1::MerkleProof {
     use 0x1::Hash;
     use 0x1::Vector;
     use 0x1::Compare;
@@ -35,19 +30,14 @@ module genesis::MerkleProof {
     }
 }
 
-// check: EXECUTED
-
-//! new-transaction
-//! sender: genesis
-address genesis= {{genesis}};
-module genesis::MerkleNFTDistributor {
+module 0x1::MerkleNFTDistributor {
     use 0x1::Vector;
-    use 0x1::NFT::{Self, NFT, Metadata, MintCapability,NFTTypeInfo};
+    use 0x1::NFT::{Self, NFT, Metadata, MintCapability};
     use 0x1::Hash;
     use 0x1::BCS;
     use 0x1::Signer;
     use 0x1::Errors;
-    use genesis::MerkleProof;
+    use 0x1::MerkleProof;
     const ALREADY_MINTED: u64 = 1000;
     const INVALID_PROOF: u64 = 1001;
     const ERR_NO_MINT_CAPABILITY: u64 = 1002;
@@ -61,7 +51,7 @@ module genesis::MerkleNFTDistributor {
         cap: MintCapability<NFTMeta>,
     }
 
-    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(signer: &signer, merkle_root: vector<u8>, leafs: u64, type_info: NFTTypeInfo<NFTMeta, Info>): MintCapability<NFTMeta> {
+    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(signer: &signer, merkle_root: vector<u8>, leafs: u64, info: Info, meta: Metadata): MintCapability<NFTMeta> {
         let bitmap_count = leafs / 128;
         if (bitmap_count * 128 < leafs) {
             bitmap_count = bitmap_count + 1;
@@ -76,7 +66,7 @@ module genesis::MerkleNFTDistributor {
             merkle_root,
             claimed_bitmap
         };
-        NFT::register<NFTMeta, Info>(signer, type_info);
+        NFT::register<NFTMeta, Info>(signer, info, meta);
         move_to(signer, distribution);
         NFT::remove_mint_capability<NFTMeta>(signer)
     }
@@ -120,81 +110,3 @@ module genesis::MerkleNFTDistributor {
     }
 
 }
-
-// check: EXECUTED
-
-
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
-module creator::GenesisNFT {
-    use 0x1::IdentifierNFT;
-    use 0x1::Signer;
-    use 0x1::Option::Option;
-    use 0x1::NFT::{Self, MintCapability};
-    use genesis::MerkleNFTDistributor;
-    struct GenesisNFT has store{}
-    //TODO: write block height, hash, timestamp or something to it.
-    struct GenesisNFTMeta has copy, store, drop{}
-    struct GenesisNFTInfo has copy, store, drop{}
-    struct GenesisNFTMintCapability has key{
-        cap: MintCapability<GenesisNFTMeta>
-    }
-    public fun init(sender: &signer, merkle_root: vector<u8>, leafs: u64){
-        assert(Signer::address_of(sender) == @creator, 1000);
-        let metadata = NFT::new_meta_with_image(b"StarcoinGenesisNFT", b"ipfs:://xxxxxx", b"The starcoin genesis NFT");
-        let nft_type_info=NFT::new_nft_type_info(sender, GenesisNFTInfo{}, metadata);
-        let cap = MerkleNFTDistributor::register<GenesisNFTMeta, GenesisNFTInfo>(sender, merkle_root, leafs, nft_type_info);
-        move_to(sender, GenesisNFTMintCapability{cap});
-    }
-
-    public fun mint(sender: &signer, index: u64, merkle_proof:vector<vector<u8>>)
-        acquires GenesisNFTMintCapability{
-            let metadata = NFT::new_meta(b"StarcoinGenesisNFT", b"The starcoin genesis NFT");
-            let cap = borrow_global_mut<GenesisNFTMintCapability>(@creator);
-            let nft = MerkleNFTDistributor::mint_with_cap<GenesisNFTMeta, GenesisNFT, GenesisNFTInfo>(sender, &mut cap.cap, @creator, index, metadata, GenesisNFTMeta{}, GenesisNFT{}, merkle_proof);
-            IdentifierNFT::grant(&mut cap.cap, sender, nft);
-        }
-    public fun get_info(owner: address): Option<NFT::NFTInfo<GenesisNFTMeta>>{
-        IdentifierNFT::get_nft_info<GenesisNFTMeta, GenesisNFT>(owner)
-
-    }
-}
-
-
-// check: EXECUTED
-
-
-//! new-transaction
-//! sender: creator
-address creator={{creator}};
-script {
-    use creator::GenesisNFT;
-    fun main(sender: signer) {
-        let root = b"";
-        GenesisNFT::init(&sender, root, 2);
-    }
-}
-
-
-// check: EXECUTED
-
-//! new-transaction
-//! sender: alice
-address creator={{creator}};
-script {
-    use 0x1::Vector;
-    use 0x1::Signer;
-    use 0x1::Option;
-    use 0x1::NFT;
-    use creator::GenesisNFT::{Self, GenesisNFTMeta};
-    //TODO: generate the real root and proof
-    fun main(sender: signer) {
-        let proof = Vector::empty<vector<u8>>();
-        GenesisNFT::mint(&sender, 1, proof);
-        let info = GenesisNFT::get_info(Signer::address_of(&sender));
-        assert(Option::is_some<NFT::NFTInfo<GenesisNFTMeta>>(&info), 1000);
-    }
-}
-
-// check:  VMExecutionFailure(ABORTED { code: 256511

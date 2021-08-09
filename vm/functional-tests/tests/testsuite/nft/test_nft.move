@@ -11,8 +11,7 @@ module creator::TestNFT {
     }
     struct NFTInfo has copy,store,drop{}
     public fun init(sender: &signer){
-        let nft_type_info=NFT::new_nft_type_info(sender, NFTInfo{}, NFT::empty_meta());
-        NFT::register<TestNFT,NFTInfo>(sender, nft_type_info);
+        NFT::register<TestNFT,NFTInfo>(sender, NFTInfo{},NFT::empty_meta());
         Self::do_accept(sender);
     }
 

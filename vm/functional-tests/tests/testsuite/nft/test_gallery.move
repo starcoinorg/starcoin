@@ -21,8 +21,7 @@ module creator::AnyNFT {
     }
 
     public fun init(sender: &signer){
-        let nft_type_info=NFT::new_nft_type_info(sender, AnyNFTInfo{}, NFT::empty_meta());
-        NFT::register<AnyNFT,AnyNFTInfo>(sender,nft_type_info);
+        NFT::register<AnyNFT,AnyNFTInfo>(sender, AnyNFTInfo{}, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<AnyNFT>(sender);
         move_to(sender, AnyNFTMintCapability{cap});
         let cap = NFT::remove_burn_capability<AnyNFT>(sender);

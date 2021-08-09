@@ -25,8 +25,7 @@ module creator::BoxMiner {
 
     public fun init(sender: &signer, total_supply:u64, price: u128){
         let meta = NFT::new_meta_with_image(b"stc_box_miner_nft", b"ipfs:://xxx", b"This is the starcoin boxminer nft");
-        let nft_type_info = NFT::new_nft_type_info(sender, NFTInfo{total_supply, price}, meta);
-        NFT::register<BoxMiner, NFTInfo>(sender, nft_type_info);
+        NFT::register<BoxMiner, NFTInfo>(sender, NFTInfo{total_supply, price}, meta);
         let cap = NFT::remove_mint_capability<BoxMiner>(sender);
         move_to(sender, BoxMinerMintCapability{cap});
     }
