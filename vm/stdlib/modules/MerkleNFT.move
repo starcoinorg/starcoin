@@ -47,10 +47,6 @@ module 0x1::MerkleNFTDistributor {
         claimed_bitmap: vector<u128>,
     }
 
-    struct MerkleNFTDistributorMintCapability<NFTMeta: store> has key {
-        cap: MintCapability<NFTMeta>,
-    }
-
     public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(signer: &signer, merkle_root: vector<u8>, leafs: u64, info: Info, meta: Metadata): MintCapability<NFTMeta> {
         let bitmap_count = leafs / 128;
         if (bitmap_count * 128 < leafs) {
@@ -71,7 +67,7 @@ module 0x1::MerkleNFTDistributor {
         NFT::remove_mint_capability<NFTMeta>(signer)
     }
 
-    public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, Info: copy + store + drop>(sender: &signer, cap:&mut MintCapability<NFTMeta>, creator:address, index: u64, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody, merkle_proof:vector<vector<u8>>): NFT<NFTMeta, NFTBody>
+    public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, Info: copy + store + drop>(sender: &signer, cap:&mut MintCapability<NFTMeta>, creator: address, index: u64, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody, merkle_proof:vector<vector<u8>>): NFT<NFTMeta, NFTBody>
         acquires MerkleNFTDistribution {
             let addr = Signer::address_of(sender);
             let distribution = borrow_global_mut<MerkleNFTDistribution<NFTMeta>>(creator);
@@ -100,6 +96,12 @@ module 0x1::MerkleNFTDistributor {
         let mask = 1u128 << claimed_bit_index;
         *word = (*word | mask);
     }
+
+    public fun is_minted<NFTMeta: copy + store + drop>(creator: address, index: u64): bool
+        acquires MerkleNFTDistribution {
+            let distribution = borrow_global_mut<MerkleNFTDistribution<NFTMeta>>(creator);
+            is_minted_<NFTMeta>(distribution, index)
+        }
 
     fun is_minted_<NFTMeta: copy + store + drop>(distribution: &MerkleNFTDistribution<NFTMeta>, index: u64): bool {
         let claimed_word_index = index / 128;

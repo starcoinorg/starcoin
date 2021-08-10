@@ -5,7 +5,6 @@ module 0x1::GenesisNFT {
     use 0x1::MerkleNFTDistributor;
     use 0x1::CoreAddresses;
     struct GenesisNFT has store{}
-    //TODO: write block height, hash, timestamp or something to it.
     struct GenesisNFTMeta has copy, store, drop{}
     struct GenesisNFTInfo has copy, store, drop{}
     struct GenesisNFTMintCapability has key{
@@ -18,7 +17,7 @@ module 0x1::GenesisNFT {
         move_to(sender, GenesisNFTMintCapability{cap});
     }
 
-    public(script) fun mint(sender: &signer, index: u64, merkle_proof:vector<vector<u8>>)
+    public fun mint(sender: &signer, index: u64, merkle_proof:vector<vector<u8>>)
         acquires GenesisNFTMintCapability{
             let metadata = NFT::empty_meta();
             let cap = borrow_global_mut<GenesisNFTMintCapability>(CoreAddresses::GENESIS_ADDRESS());
@@ -26,7 +25,11 @@ module 0x1::GenesisNFT {
             IdentifierNFT::grant(&mut cap.cap, sender, nft);
         }
 
-    public(script) fun get_info(owner: address): Option<NFT::NFTInfo<GenesisNFTMeta>>{
+    public fun get_info(owner: address): Option<NFT::NFTInfo<GenesisNFTMeta>>{
         IdentifierNFT::get_nft_info<GenesisNFTMeta, GenesisNFT>(owner)
+    }
+
+    public fun is_minted(creator: address, index: u64): bool {
+            MerkleNFTDistributor::is_minted<GenesisNFTMeta>(creator, index)
     }
 }
