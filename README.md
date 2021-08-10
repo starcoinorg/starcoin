@@ -39,10 +39,21 @@ starcoin -n barnard console
 starcoin -n main console
 ```
 
+## Connect to remote node
+
+Connect main network seed nodes:
+
+```shell
+starcoin --connect ws://main.seed.starcoin.org:9870 console
+```
+
+>note: Account-related commands cannot be used when connecting remotely
+
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
 
 ## Contribution
-Thank you for considering to help out with the source code! Feel free to submit a issue or pull request.
+Thank you for considering to help out with the source code! Feel free to submit an issue or pull request.
+Starcoin Move stdlib contribution document at [Starcoin Move standard library and framework](vm/stdlib/README.md).
 
 ## License
 
