@@ -202,7 +202,7 @@ calculate x * y /z with as little loss of precision as possible and avoid overfl
     <b>let</b> c = y / z;
     <b>let</b> d = y % z;
     //y = c * z + d;
-    a * b * z + a * d + b * c + b * d / z
+    a * c * z + a * d + b * c + b * d / z
 }
 </code></pre>
 

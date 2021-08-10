@@ -17,6 +17,7 @@ script {
         assert(mul_div(100, 50, 101) == 49, 1011);
         assert(mul_div(100, 1000, 101) == 990, 1012);
         assert(mul_div(100, 1000, 1) == 100000, 1013);
+        assert(mul_div(1, 100, 1) == 100, 1014);
 
     }
 }
