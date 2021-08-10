@@ -1,19 +1,6 @@
 //! account: alice
 
 //! new-transaction
-//! sender: genesis
-script {
-    use 0x1::GenesisNFT;
-    fun main(sender: signer) {
-        let root = b"";
-        GenesisNFT::initialize(&sender, root, 2, b"ipfs://xxx");
-    }
-}
-
-
-// check: EXECUTED
-
-//! new-transaction
 //! sender: alice
 script {
     use 0x1::Vector;

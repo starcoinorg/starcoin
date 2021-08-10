@@ -30,6 +30,7 @@ module Genesis {
     use 0x1::STCUSDOracle;
     use 0x1::Oracle;
     use 0x1::NFT;
+    use 0x1::GenesisNFT;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -336,7 +337,11 @@ module Genesis {
         STCUSDOracle::register(&genesis_account);
 
         NFT::initialize(&genesis_account);
-
+        
+        let merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";
+        let image = b"ipfs://QmSPcvcXgdtHHiVTAAarzTeubk5X3iWymPAoKBfiRFjPMY";
+        GenesisNFT::initialize(&genesis_account, merkle_root, 1639u64, image);
+        
         //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
         Timestamp::set_time_has_started(&genesis_account);
         Account::release_genesis_signer(genesis_account);
