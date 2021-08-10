@@ -6,12 +6,12 @@
 
 
 -  [Resource `MerkleNFTDistribution`](#0x1_MerkleNFTDistributor_MerkleNFTDistribution)
--  [Resource `MerkleNFTDistributorMintCapability`](#0x1_MerkleNFTDistributor_MerkleNFTDistributorMintCapability)
 -  [Constants](#@Constants_0)
 -  [Function `register`](#0x1_MerkleNFTDistributor_register)
 -  [Function `mint_with_cap`](#0x1_MerkleNFTDistributor_mint_with_cap)
 -  [Function `encode_leaf`](#0x1_MerkleNFTDistributor_encode_leaf)
 -  [Function `set_minted_`](#0x1_MerkleNFTDistributor_set_minted_)
+-  [Function `is_minted`](#0x1_MerkleNFTDistributor_is_minted)
 -  [Function `is_minted_`](#0x1_MerkleNFTDistributor_is_minted_)
 
 
@@ -59,33 +59,6 @@
 
 </details>
 
-<a name="0x1_MerkleNFTDistributor_MerkleNFTDistributorMintCapability"></a>
-
-## Resource `MerkleNFTDistributorMintCapability`
-
-
-
-<pre><code><b>struct</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistributorMintCapability">MerkleNFTDistributorMintCapability</a>&lt;NFTMeta: store&gt; has key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>cap: <a href="NFT.md#0x1_NFT_MintCapability">NFT::MintCapability</a>&lt;NFTMeta&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -124,7 +97,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_register">register</a>&lt;NFTMeta: <b>copy</b>, drop, store, Info: <b>copy</b>, drop, store&gt;(signer: &signer, merkle_root: vector&lt;u8&gt;, leafs: u64, type_info: <a href="NFT.md#0x1_NFT_NFTTypeInfo">NFT::NFTTypeInfo</a>&lt;NFTMeta, Info&gt;): <a href="NFT.md#0x1_NFT_MintCapability">NFT::MintCapability</a>&lt;NFTMeta&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_register">register</a>&lt;NFTMeta: <b>copy</b>, drop, store, Info: <b>copy</b>, drop, store&gt;(signer: &signer, merkle_root: vector&lt;u8&gt;, leafs: u64, info: Info, meta: <a href="NFT.md#0x1_NFT_Metadata">NFT::Metadata</a>): <a href="NFT.md#0x1_NFT_MintCapability">NFT::MintCapability</a>&lt;NFTMeta&gt;
 </code></pre>
 
 
@@ -133,7 +106,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_register">register</a>&lt;NFTMeta: <b>copy</b> + store + drop, Info: <b>copy</b> + store + drop&gt;(signer: &signer, merkle_root: vector&lt;u8&gt;, leafs: u64, type_info: NFTTypeInfo&lt;NFTMeta, Info&gt;): MintCapability&lt;NFTMeta&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_register">register</a>&lt;NFTMeta: <b>copy</b> + store + drop, Info: <b>copy</b> + store + drop&gt;(signer: &signer, merkle_root: vector&lt;u8&gt;, leafs: u64, info: Info, meta: Metadata): MintCapability&lt;NFTMeta&gt; {
     <b>let</b> bitmap_count = leafs / 128;
     <b>if</b> (bitmap_count * 128 &lt; leafs) {
         bitmap_count = bitmap_count + 1;
@@ -148,7 +121,7 @@
         merkle_root,
         claimed_bitmap
     };
-    <a href="NFT.md#0x1_NFT_register">NFT::register</a>&lt;NFTMeta, Info&gt;(signer, type_info);
+    <a href="NFT.md#0x1_NFT_register">NFT::register</a>&lt;NFTMeta, Info&gt;(signer, info, meta);
     move_to(signer, distribution);
     <a href="NFT.md#0x1_NFT_remove_mint_capability">NFT::remove_mint_capability</a>&lt;NFTMeta&gt;(signer)
 }
@@ -173,7 +146,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_mint_with_cap">mint_with_cap</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store, Info: <b>copy</b> + store + drop&gt;(sender: &signer, cap:&<b>mut</b> MintCapability&lt;NFTMeta&gt;, creator:address, index: u64, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody, merkle_proof:vector&lt;vector&lt;u8&gt;&gt;): <a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_mint_with_cap">mint_with_cap</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store, Info: <b>copy</b> + store + drop&gt;(sender: &signer, cap:&<b>mut</b> MintCapability&lt;NFTMeta&gt;, creator: address, index: u64, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody, merkle_proof:vector&lt;vector&lt;u8&gt;&gt;): <a href="NFT.md#0x1_NFT">NFT</a>&lt;NFTMeta, NFTBody&gt;
     <b>acquires</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistribution">MerkleNFTDistribution</a> {
         <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender);
         <b>let</b> distribution = borrow_global_mut&lt;<a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistribution">MerkleNFTDistribution</a>&lt;NFTMeta&gt;&gt;(creator);
@@ -242,6 +215,32 @@
     <b>let</b> mask = 1u128 &lt;&lt; claimed_bit_index;
     *word = (*word | mask);
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_MerkleNFTDistributor_is_minted"></a>
+
+## Function `is_minted`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_is_minted">is_minted</a>&lt;NFTMeta: <b>copy</b>, drop, store&gt;(creator: address, index: u64): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_is_minted">is_minted</a>&lt;NFTMeta: <b>copy</b> + store + drop&gt;(creator: address, index: u64): bool
+    <b>acquires</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistribution">MerkleNFTDistribution</a> {
+        <b>let</b> distribution = borrow_global_mut&lt;<a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistribution">MerkleNFTDistribution</a>&lt;NFTMeta&gt;&gt;(creator);
+        <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_is_minted_">is_minted_</a>&lt;NFTMeta&gt;(distribution, index)
+    }
 </code></pre>
 
 

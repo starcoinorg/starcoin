@@ -30,7 +30,7 @@ Init a  NFTGallery for accept NFT<NFTMeta, NFTBody>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="NFT.md#0x1_NFTGalleryScripts_accept">accept</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: signer){
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="NFT.md#0x1_NFTGalleryScripts_accept">accept</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: signer) {
     <a href="NFT.md#0x1_NFTGallery_accept">NFTGallery::accept</a>&lt;NFTMeta, NFTBody&gt;(&sender);
 }
 </code></pre>
@@ -55,7 +55,7 @@ Transfer NFT<NFTMeta, NFTBody> with <code>id</code> from <code>sender</code> to 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="NFT.md#0x1_NFTGalleryScripts_transfer">transfer</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: signer, id: u64, receiver: address){
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="NFT.md#0x1_NFTGalleryScripts_transfer">transfer</a>&lt;NFTMeta: <b>copy</b> + store + drop, NFTBody: store&gt;(sender: signer, id: u64, receiver: address) {
     <a href="NFT.md#0x1_NFTGallery_transfer">NFTGallery::transfer</a>&lt;NFTMeta, NFTBody&gt;(&sender, id, receiver);
 }
 </code></pre>
