@@ -13,7 +13,6 @@ module StdlibUpgradeScripts {
         use 0x1::Oracle;
         use 0x1::STCUSDOracle;
         use 0x1::NFT;
-
         spec module {
             pragma verify = false;
             pragma aborts_if_is_strict = true;
@@ -52,6 +51,8 @@ module StdlibUpgradeScripts {
             //register oracle
             STCUSDOracle::register(&account);
             NFT::initialize(&account);
+            //TODO: init genesisNFT;
+            //GenesisNFT::initialize(&account, merkle_root, leafs, image);
         }
 }
 }

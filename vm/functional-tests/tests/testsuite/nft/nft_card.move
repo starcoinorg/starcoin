@@ -39,14 +39,13 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register<L1CardMeta, NFTInfo>(sender,NFTInfo{});
+        NFT::register<L1CardMeta, NFTInfo>(sender,NFTInfo{}, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<L1CardMeta>(sender);
         move_to(sender, L1CardMintCapability{ cap});
 
         let cap = NFT::remove_burn_capability<L1CardMeta>(sender);
         move_to(sender, L1CardBurnCapability{ cap});
-
-        NFT::register<L2CardMeta,NFTInfo>(sender, NFTInfo{});
+        NFT::register<L2CardMeta, NFTInfo>(sender,NFTInfo{}, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<L2CardMeta>(sender);
         move_to(sender, L2CardMintCapability{ cap});
 

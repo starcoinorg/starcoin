@@ -115,6 +115,8 @@ association account should call this script after upgrade from v2 to v3.
     //register oracle
     <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&account);
     <a href="NFT.md#0x1_NFT_initialize">NFT::initialize</a>(&account);
+    //TODO: init genesisNFT;
+    //<a href="GenesisNFT.md#0x1_GenesisNFT_initialize">GenesisNFT::initialize</a>(&account, merkle_root, leafs, image);
 }
 </code></pre>
 

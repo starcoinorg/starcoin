@@ -23,8 +23,18 @@ module NFT {
     /// The info of NFT type
     struct NFTTypeInfo<NFTMeta: copy + store + drop, Info: copy + store + drop> has key, store {
         counter: u64,
+        meta: Metadata,
         info: Info,
         mint_events: Event::EventHandle<MintEvent<NFTMeta>>,
+    }
+
+    fun new_nft_type_info<NFTMeta: copy + store + drop, Info: copy + store + drop>(sender: &signer, info: Info, meta: Metadata): NFTTypeInfo<NFTMeta, Info> {
+        NFTTypeInfo<NFTMeta, Info> {
+            counter: 0,
+            info,
+            meta,
+            mint_events: Event::new_event_handle<MintEvent<NFTMeta>>(sender),
+        }
     }
 
     public fun nft_type_info_ex_info<NFTMeta: copy + store + drop, Info: copy + store + drop>(): Info acquires NFTTypeInfo {
@@ -56,6 +66,24 @@ module NFT {
         image_data: vector<u8>,
         /// NFT description utf8 bytes.
         description: vector<u8>,
+    }
+
+    public fun empty_meta(): Metadata {
+        Metadata {
+            name: Vector::empty(),
+            image: Vector::empty(),
+            image_data: Vector::empty(),
+            description: Vector::empty(),
+        }
+    }
+
+    public fun new_meta(name: vector<u8>, description: vector<u8>): Metadata {
+        Metadata {
+            name,
+            image: Vector::empty(),
+            image_data: Vector::empty(),
+            description,
+        }
     }
 
     public fun new_meta_with_image(name: vector<u8>, image: vector<u8>, description: vector<u8>): Metadata {
@@ -150,15 +178,11 @@ module NFT {
     }
 
     /// Register a NFT type to genesis
-    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(sender: &signer, info: Info) acquires GenesisSignerCapability {
+    public fun register<NFTMeta: copy + store + drop, Info: copy + store + drop>(sender: &signer, info: Info, meta: Metadata) acquires GenesisSignerCapability {
         let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
         let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
-        let info = NFTTypeInfo<NFTMeta, Info> {
-            counter: 0,
-            info,
-            mint_events: Event::new_event_handle<MintEvent<NFTMeta>>(sender),
-        };
-        move_to<NFTTypeInfo<NFTMeta, Info>>(&genesis_account, info);
+        let type_info = new_nft_type_info(sender, info, meta);
+        move_to<NFTTypeInfo<NFTMeta, Info>>(&genesis_account, type_info);
         move_to<MintCapability<NFTMeta>>(sender, MintCapability {});
         move_to<BurnCapability<NFTMeta>>(sender, BurnCapability {});
         move_to<UpdateCapability<NFTMeta>>(sender, UpdateCapability {});
@@ -280,7 +304,7 @@ module NFT {
 
 /// IdentifierNFT using NFT as identifier for an on chain account
 /// The NFT can not been transfer by owner.
-module IdentifierNFT{
+module IdentifierNFT {
     use 0x1::Option::{Self, Option};
     use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
     use 0x1::Signer;
@@ -295,39 +319,39 @@ module IdentifierNFT{
     }
 
     /// Check the `owner` is prepared with IdentifierNFT for accept the NFT<NFTMeta, NFTBody>
-    public fun is_accept<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool{
+    public fun is_accept<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool {
         exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)
     }
 
     /// Accept NFT<NFTMet, NFTBody>, prepare an empty IdentifierNFT for `sender`
-    public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer){
+    public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) {
         let addr = Signer::address_of(sender);
-        if(!is_accept<NFTMeta,NFTBody>(addr)) {
-            move_to(sender, IdentifierNFT<NFTMeta, NFTBody>{
+        if (!is_accept<NFTMeta, NFTBody>(addr)) {
+            move_to(sender, IdentifierNFT<NFTMeta, NFTBody> {
                 nft: Option::none(),
             });
         }
     }
 
     /// Destroy the empty IdentifierNFT
-    public fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) acquires IdentifierNFT{
+    public fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) acquires IdentifierNFT {
         let addr = Signer::address_of(sender);
-        if(exists<IdentifierNFT<NFTMeta, NFTBody>>(addr)) {
+        if (exists<IdentifierNFT<NFTMeta, NFTBody>>(addr)) {
             let id_nft = move_from<IdentifierNFT<NFTMeta, NFTBody>>(addr);
             assert(Option::is_none(&id_nft.nft), Errors::already_published(ERR_NFT_EXISTS));
-            let IdentifierNFT{nft} = id_nft;
+            let IdentifierNFT { nft } = id_nft;
             Option::destroy_none(nft);
         }
     }
 
     /// Grant nft as IdentifierNFT to `sender` with MintCapability<NFTMeta>, sender will auto accept the NFT.
-    public fun grant<NFTMeta: copy + store + drop, NFTBody: store>(cap: &mut MintCapability<NFTMeta>, sender: &signer, nft: NFT<NFTMeta, NFTBody>) acquires IdentifierNFT{
+    public fun grant<NFTMeta: copy + store + drop, NFTBody: store>(cap: &mut MintCapability<NFTMeta>, sender: &signer, nft: NFT<NFTMeta, NFTBody>) acquires IdentifierNFT {
         Self::accept<NFTMeta, NFTBody>(sender);
         Self::grant_to<NFTMeta, NFTBody>(cap, Signer::address_of(sender), nft);
     }
 
     /// Grant  nft as IdentifierNFT to `receiver` with MintCapability<NFTMeta>, the receiver should accept the NFT first.
-    public fun grant_to<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut MintCapability<NFTMeta>, receiver: address, nft: NFT<NFTMeta, NFTBody>) acquires IdentifierNFT{
+    public fun grant_to<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut MintCapability<NFTMeta>, receiver: address, nft: NFT<NFTMeta, NFTBody>) acquires IdentifierNFT {
         assert(exists<IdentifierNFT<NFTMeta, NFTBody>>(receiver), Errors::not_published(ERR_NFT_NOT_ACCEPT));
         let id_nft = borrow_global_mut<IdentifierNFT<NFTMeta, NFTBody>>(receiver);
         assert(Option::is_none(&id_nft.nft), Errors::already_published(ERR_NFT_EXISTS));
@@ -335,25 +359,25 @@ module IdentifierNFT{
     }
 
     /// Revoke the NFT<NFTMeta, NFTBody> from owner.
-    public fun revoke<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut BurnCapability<NFTMeta>, owner: address):NFT<NFTMeta, NFTBody>  acquires IdentifierNFT{
+    public fun revoke<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut BurnCapability<NFTMeta>, owner: address): NFT<NFTMeta, NFTBody>  acquires IdentifierNFT {
         assert(exists<IdentifierNFT<NFTMeta, NFTBody>>(owner), Errors::not_published(ERR_NFT_NOT_EXISTS));
         let id_nft = move_from<IdentifierNFT<NFTMeta, NFTBody>>(owner);
         assert(Option::is_some(&id_nft.nft), Errors::not_published(ERR_NFT_NOT_EXISTS));
-        let IdentifierNFT{nft} = id_nft;
+        let IdentifierNFT { nft } = id_nft;
         Option::destroy_some(nft)
     }
 
     /// Check `owner` is owns the IdentifierNFT<NFTMeta, NFTBody>
-    public fun is_owns<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool acquires IdentifierNFT{
-        if(!exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)) {
-            return  false
+    public fun is_owns<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool acquires IdentifierNFT {
+        if (!exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)) {
+            return false
         };
         let id_nft = borrow_global<IdentifierNFT<NFTMeta, NFTBody>>(owner);
         Option::is_some(&id_nft.nft)
     }
 
     public fun get_nft_info<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): Option<NFT::NFTInfo<NFTMeta>> acquires IdentifierNFT {
-        if(!exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)) {
+        if (!exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)) {
             return Option::none<NFT::NFTInfo<NFTMeta>>()
         };
         let id_nft = borrow_global<IdentifierNFT<NFTMeta, NFTBody>>(owner);
@@ -367,15 +391,15 @@ module IdentifierNFT{
     }
 }
 
-module IdentifierNFTScripts{
+module IdentifierNFTScripts {
     use 0x1::IdentifierNFT;
 
     /// Init IdentifierNFT for accept NFT<NFTMeta, NFTBody> as Identifier.
-    public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+    public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer) {
         IdentifierNFT::accept<NFTMeta, NFTBody>(&sender);
     }
     /// Destroy empty IdentifierNFT
-    public(script) fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+    public(script) fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer) {
         IdentifierNFT::destroy_empty<NFTMeta, NFTBody>(&sender);
     }
 }
@@ -408,14 +432,14 @@ module NFTGallery {
     }
 
     /// Check the `owner` is prepared with NFTGallery for accept the NFT<NFTMeta, NFTBody>
-    public fun is_accept<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool{
+    public fun is_accept<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool {
         exists<NFTGallery<NFTMeta, NFTBody>>(owner)
     }
 
     /// Init a NFTGallery to accept NFT<NFTMeta, NFTBody> for `sender`
     public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) {
         let sender_addr = Signer::address_of(sender);
-        if(!is_accept<NFTMeta, NFTBody>(sender_addr)) {
+        if (!is_accept<NFTMeta, NFTBody>(sender_addr)) {
             let gallery = NFTGallery {
                 withdraw_events: Event::new_event_handle<WithdrawEvent<NFTMeta>>(sender),
                 deposit_events: Event::new_event_handle<DepositEvent<NFTMeta>>(sender),
@@ -434,7 +458,7 @@ module NFTGallery {
     }
 
     /// Get the NFT info by the NFT id.
-    public fun get_nft_info_by_id<NFTMeta: copy + store + drop, NFTBody: store>(owner: address, id: u64): Option<NFT::NFTInfo<NFTMeta>> acquires NFTGallery{
+    public fun get_nft_info_by_id<NFTMeta: copy + store + drop, NFTBody: store>(owner: address, id: u64): Option<NFT::NFTInfo<NFTMeta>> acquires NFTGallery {
         let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
         let idx = find_by_id<NFTMeta, NFTBody>(&gallery.items, id);
 
@@ -449,19 +473,19 @@ module NFTGallery {
     }
 
     /// Get the NFT info by the NFT idx in NFTGallery
-    public fun get_nft_info_by_idx<NFTMeta: copy + store + drop, NFTBody: store>(owner: address, idx: u64): NFT::NFTInfo<NFTMeta> acquires NFTGallery{
+    public fun get_nft_info_by_idx<NFTMeta: copy + store + drop, NFTBody: store>(owner: address, idx: u64): NFT::NFTInfo<NFTMeta> acquires NFTGallery {
         let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
         let nft = Vector::borrow<NFT<NFTMeta, NFTBody>>(&gallery.items, idx);
         NFT::get_info(nft)
     }
 
     /// Get the all NFT info
-    public fun get_nft_infos<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): vector<NFT::NFTInfo<NFTMeta>> acquires NFTGallery{
+    public fun get_nft_infos<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): vector<NFT::NFTInfo<NFTMeta>> acquires NFTGallery {
         let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
         let infos = Vector::empty();
         let len = Vector::length(&gallery.items);
         let idx = 0;
-        while(len > idx) {
+        while (len > idx) {
             let nft = Vector::borrow<NFT<NFTMeta, NFTBody>>(&gallery.items, idx);
             Vector::push_back(&mut infos, NFT::get_info(nft));
             idx = idx + 1;
@@ -550,12 +574,12 @@ module NFTGalleryScripts {
     use 0x1::NFTGallery;
 
     /// Init a  NFTGallery for accept NFT<NFTMeta, NFTBody>
-    public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+    public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer) {
         NFTGallery::accept<NFTMeta, NFTBody>(&sender);
     }
 
     /// Transfer NFT<NFTMeta, NFTBody> with `id` from `sender` to `receiver`
-    public(script) fun transfer<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer, id: u64, receiver: address){
+    public(script) fun transfer<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer, id: u64, receiver: address) {
         NFTGallery::transfer<NFTMeta, NFTBody>(&sender, id, receiver);
     }
 }

@@ -33,7 +33,7 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register<Card, NFTInfo>(sender, NFTInfo{});
+        NFT::register<Card, NFTInfo>(sender, NFTInfo{}, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<Card>(sender);
         move_to(sender, CardMintCapability{ cap});
 

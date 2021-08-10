@@ -7,7 +7,6 @@ module creator::AnyNFT {
     use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
     use 0x1::NFTGallery;
     use 0x1::Signer;
-
     struct AnyNFT has copy, store, drop{}
     struct AnyNFTBody has store{
     }
@@ -22,7 +21,7 @@ module creator::AnyNFT {
     }
 
     public fun init(sender: &signer){
-        NFT::register<AnyNFT,AnyNFTInfo>(sender,AnyNFTInfo{});
+        NFT::register<AnyNFT,AnyNFTInfo>(sender, AnyNFTInfo{}, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<AnyNFT>(sender);
         move_to(sender, AnyNFTMintCapability{cap});
         let cap = NFT::remove_burn_capability<AnyNFT>(sender);
