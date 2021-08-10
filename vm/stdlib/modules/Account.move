@@ -123,6 +123,7 @@ module Account {
     const EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED: u64 = 103;
     const EADDRESS_PUBLIC_KEY_INCONSISTENT: u64 = 104;
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
+    const ERR_TOKEN_NOT_ACCEPT: u64 = 106;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     // cannot be dummy key, or empty key
@@ -690,8 +691,17 @@ module Account {
         pragma verify = false;
     }
 
-    /// Return whether the account at `addr` accepts `Token` type tokens
+    /// This is a alias of is_accept_token
     public fun is_accepts_token<TokenType: store>(addr: address): bool acquires AutoAcceptToken {
+        Self::is_accept_token<TokenType>(addr)
+    }
+
+    spec is_accepts_token {
+        aborts_if false;
+    }
+
+    /// Return whether the account at `addr` accept `Token` type tokens
+    public fun is_accept_token<TokenType: store>(addr: address): bool acquires AutoAcceptToken {
         if (can_auto_accept_token(addr)) {
             true
         } else {
@@ -699,7 +709,7 @@ module Account {
         }
     }
 
-    spec is_accepts_token {
+    spec is_accept_token {
         aborts_if false;
     }
 
@@ -732,6 +742,8 @@ module Account {
             if (can_auto_accept_token(addr)) {
                 let signer = create_signer(addr);
                 do_accept_token<TokenType>(&signer);
+            }else{
+                abort Errors::not_published(ERR_TOKEN_NOT_ACCEPT)
             }
         };
     }

@@ -294,10 +294,15 @@ module IdentifierNFT{
         nft: Option<NFT<NFTMeta, NFTBody>>,
     }
 
+    /// Check the `owner` is prepared with IdentifierNFT for accept the NFT<NFTMeta, NFTBody>
+    public fun is_accept<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool{
+        exists<IdentifierNFT<NFTMeta, NFTBody>>(owner)
+    }
+
     /// Accept NFT<NFTMet, NFTBody>, prepare an empty IdentifierNFT for `sender`
     public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer){
         let addr = Signer::address_of(sender);
-        if(!exists<IdentifierNFT<NFTMeta, NFTBody>>(addr)) {
+        if(!is_accept<NFTMeta,NFTBody>(addr)) {
             move_to(sender, IdentifierNFT<NFTMeta, NFTBody>{
                 nft: Option::none(),
             });
@@ -362,6 +367,19 @@ module IdentifierNFT{
     }
 }
 
+module IdentifierNFTScripts{
+    use 0x1::IdentifierNFT;
+
+    /// Init IdentifierNFT for accept NFT<NFTMeta, NFTBody> as Identifier.
+    public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+        IdentifierNFT::accept<NFTMeta, NFTBody>(&sender);
+    }
+    /// Destroy empty IdentifierNFT
+    public(script) fun destroy_empty<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+        IdentifierNFT::destroy_empty<NFTMeta, NFTBody>(&sender);
+    }
+}
+
 /// NFTGallery is user collection of NFT.
 module NFTGallery {
     use 0x1::Signer;
@@ -389,14 +407,22 @@ module NFTGallery {
         items: vector<NFT<NFTMeta, NFTBody>>,
     }
 
-    /// Init a NFTGallery to accept NFT<NFTMeta, NFTBody>
+    /// Check the `owner` is prepared with NFTGallery for accept the NFT<NFTMeta, NFTBody>
+    public fun is_accept<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): bool{
+        exists<NFTGallery<NFTMeta, NFTBody>>(owner)
+    }
+
+    /// Init a NFTGallery to accept NFT<NFTMeta, NFTBody> for `sender`
     public fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer) {
-        let gallery = NFTGallery {
-            withdraw_events: Event::new_event_handle<WithdrawEvent<NFTMeta>>(sender),
-            deposit_events: Event::new_event_handle<DepositEvent<NFTMeta>>(sender),
-            items: Vector::empty<NFT<NFTMeta, NFTBody>>(),
-        };
-        move_to(sender, gallery);
+        let sender_addr = Signer::address_of(sender);
+        if(!is_accept<NFTMeta, NFTBody>(sender_addr)) {
+            let gallery = NFTGallery {
+                withdraw_events: Event::new_event_handle<WithdrawEvent<NFTMeta>>(sender),
+                deposit_events: Event::new_event_handle<DepositEvent<NFTMeta>>(sender),
+                items: Vector::empty<NFT<NFTMeta, NFTBody>>(),
+            };
+            move_to(sender, gallery);
+        }
     }
 
     /// Transfer NFT from `sender` to `receiver`
@@ -517,6 +543,20 @@ module NFTGallery {
     public fun count_of<NFTMeta: copy + store + drop, NFTBody: store>(owner: address): u64 acquires NFTGallery {
         let gallery = borrow_global_mut<NFTGallery<NFTMeta, NFTBody>>(owner);
         Vector::length(&gallery.items)
+    }
+}
+
+module NFTGalleryScripts {
+    use 0x1::NFTGallery;
+
+    /// Init a  NFTGallery for accept NFT<NFTMeta, NFTBody>
+    public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer){
+        NFTGallery::accept<NFTMeta, NFTBody>(&sender);
+    }
+
+    /// Transfer NFT<NFTMeta, NFTBody> with `id` from `sender` to `receiver`
+    public(script) fun transfer<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer, id: u64, receiver: address){
+        NFTGallery::transfer<NFTMeta, NFTBody>(&sender, id, receiver);
     }
 }
 }
