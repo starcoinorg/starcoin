@@ -228,4 +228,3 @@ starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
-
