@@ -97,6 +97,13 @@ module 0x1::MerkleNFTDistributor {
         *word = (*word | mask);
     }
 
+    public fun verify_proof<NFTMeta: copy + store + drop>(account: address, creator: address, index: u64, merkle_proof:vector<vector<u8>>): bool
+        acquires MerkleNFTDistribution {
+            let distribution = borrow_global_mut<MerkleNFTDistribution<NFTMeta>>(creator);
+            let leaf_data = encode_leaf(&index, &account);
+            MerkleProof::verify(&merkle_proof, &distribution.merkle_root, Hash::sha3_256(leaf_data))
+        }
+
     public fun is_minted<NFTMeta: copy + store + drop>(creator: address, index: u64): bool
         acquires MerkleNFTDistribution {
             let distribution = borrow_global_mut<MerkleNFTDistribution<NFTMeta>>(creator);
