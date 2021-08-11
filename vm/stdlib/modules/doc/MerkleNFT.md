@@ -11,6 +11,7 @@
 -  [Function `mint_with_cap`](#0x1_MerkleNFTDistributor_mint_with_cap)
 -  [Function `encode_leaf`](#0x1_MerkleNFTDistributor_encode_leaf)
 -  [Function `set_minted_`](#0x1_MerkleNFTDistributor_set_minted_)
+-  [Function `verify_proof`](#0x1_MerkleNFTDistributor_verify_proof)
 -  [Function `is_minted`](#0x1_MerkleNFTDistributor_is_minted)
 -  [Function `is_minted_`](#0x1_MerkleNFTDistributor_is_minted_)
 
@@ -215,6 +216,33 @@
     <b>let</b> mask = 1u128 &lt;&lt; claimed_bit_index;
     *word = (*word | mask);
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_MerkleNFTDistributor_verify_proof"></a>
+
+## Function `verify_proof`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_verify_proof">verify_proof</a>&lt;NFTMeta: <b>copy</b>, drop, store&gt;(account: address, creator: address, index: u64, merkle_proof: vector&lt;vector&lt;u8&gt;&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_verify_proof">verify_proof</a>&lt;NFTMeta: <b>copy</b> + store + drop&gt;(account: address, creator: address, index: u64, merkle_proof:vector&lt;vector&lt;u8&gt;&gt;): bool
+    <b>acquires</b> <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistribution">MerkleNFTDistribution</a> {
+        <b>let</b> distribution = borrow_global_mut&lt;<a href="MerkleNFT.md#0x1_MerkleNFTDistributor_MerkleNFTDistribution">MerkleNFTDistribution</a>&lt;NFTMeta&gt;&gt;(creator);
+        <b>let</b> leaf_data = <a href="MerkleNFT.md#0x1_MerkleNFTDistributor_encode_leaf">encode_leaf</a>(&index, &account);
+        <a href="MerkleNFT.md#0x1_MerkleProof_verify">MerkleProof::verify</a>(&merkle_proof, &distribution.merkle_root, <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(leaf_data))
+    }
 </code></pre>
 
 
