@@ -24,3 +24,7 @@ Version 5
     
     - Add max amount limit to treasury withdraw propose.
     - New authentication_key check strategy, create account do not need authentication_key. Provider Account::create_account_with_address, and TransactionManager::epilogue_v2
+
+Version 6
+
+    - init_script: "cargo run -- -v 6 -m StdlibUpgradeScripts -f upgrade_from_v5_to_v6"
