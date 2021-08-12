@@ -3025,6 +3025,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "genesis-nft-miner"
+version = "1.4.0"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "clap 3.0.0-beta.2",
+ "hex",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rpassword",
+ "serde",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-rpc-api",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "tokio 0.2.25",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
