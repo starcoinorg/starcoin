@@ -46,15 +46,19 @@ module StdlibUpgradeScripts {
             Token::destroy_linear_time_key(mint_key);
         }
 
-        public(script) fun upgrade_from_v5_to_v6(account: signer) {
-            CoreAddresses::assert_genesis_address(&account);
-            Oracle::initialize(&account);
+        public fun do_upgrade_from_v5_to_v6(sender: &signer) {
+            CoreAddresses::assert_genesis_address(sender);
+            Oracle::initialize(sender);
             //register oracle
-            STCUSDOracle::register(&account);
-            NFT::initialize(&account);
+            STCUSDOracle::register(sender);
+            NFT::initialize(sender);
             let merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";
             let image = b"ipfs://QmSPcvcXgdtHHiVTAAarzTeubk5X3iWymPAoKBfiRFjPMY";
-            GenesisNFT::initialize(&account, merkle_root, 1639u64, image);
+            GenesisNFT::initialize(sender, merkle_root, 1639u64, image);
+        }
+
+        public(script) fun upgrade_from_v5_to_v6(sender: signer) {
+           Self::do_upgrade_from_v5_to_v6(&sender)
         }
 }
 }
