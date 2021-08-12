@@ -8,6 +8,7 @@ The module for StdlibUpgrade init scripts
 
 -  [Function `upgrade_from_v2_to_v3`](#0x1_StdlibUpgradeScripts_upgrade_from_v2_to_v3)
 -  [Function `take_linear_withdraw_capability`](#0x1_StdlibUpgradeScripts_take_linear_withdraw_capability)
+-  [Function `do_upgrade_from_v5_to_v6`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6)
 -  [Function `upgrade_from_v5_to_v6`](#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6)
 -  [Specification](#@Specification_0)
 
@@ -95,13 +96,13 @@ association account should call this script after upgrade from v2 to v3.
 
 </details>
 
-<a name="0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6"></a>
+<a name="0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6"></a>
 
-## Function `upgrade_from_v5_to_v6`
+## Function `do_upgrade_from_v5_to_v6`
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6">upgrade_from_v5_to_v6</a>(account: signer)
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6">do_upgrade_from_v5_to_v6</a>(sender: &signer)
 </code></pre>
 
 
@@ -110,15 +111,39 @@ association account should call this script after upgrade from v2 to v3.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6">upgrade_from_v5_to_v6</a>(account: signer) {
-    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(&account);
-    <a href="Oracle.md#0x1_Oracle_initialize">Oracle::initialize</a>(&account);
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6">do_upgrade_from_v5_to_v6</a>(sender: &signer) {
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(sender);
+    <a href="Oracle.md#0x1_Oracle_initialize">Oracle::initialize</a>(sender);
     //register oracle
-    <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&account);
-    <a href="NFT.md#0x1_NFT_initialize">NFT::initialize</a>(&account);
+    <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(sender);
+    <a href="NFT.md#0x1_NFT_initialize">NFT::initialize</a>(sender);
     <b>let</b> merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";
     <b>let</b> image = b"ipfs://QmSPcvcXgdtHHiVTAAarzTeubk5X3iWymPAoKBfiRFjPMY";
-    <a href="GenesisNFT.md#0x1_GenesisNFT_initialize">GenesisNFT::initialize</a>(&account, merkle_root, 1639u64, image);
+    <a href="GenesisNFT.md#0x1_GenesisNFT_initialize">GenesisNFT::initialize</a>(sender, merkle_root, 1639u64, image);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6"></a>
+
+## Function `upgrade_from_v5_to_v6`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6">upgrade_from_v5_to_v6</a>(sender: signer)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6">upgrade_from_v5_to_v6</a>(sender: signer) {
+   <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6">Self::do_upgrade_from_v5_to_v6</a>(&sender)
 }
 </code></pre>
 
