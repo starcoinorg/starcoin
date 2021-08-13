@@ -12,6 +12,7 @@ use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI, TypeABI};
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::{call_contract, PlaygroudService};
+use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
@@ -25,8 +26,9 @@ use starcoin_storage::Storage;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
-use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction};
+use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::TransactionArgument;
@@ -290,10 +292,25 @@ pub fn dry_run(
     state_view: &dyn StateView,
     txn: DryRunTransaction,
 ) -> anyhow::Result<DryRunOutputView> {
-    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn)?;
+    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn.clone())?;
     let vm_status_explain = vm_status_translator::explain_vm_status(state_view, vm_status)?;
     let mut txn_output: TransactionOutputView = output.into();
-    let resolver = ABIResolver::new(state_view);
+
+    let resolver = {
+        let module_cache = ModuleCache::new();
+        // If the txn is package txn, we need to use modules in the package to resolve transaction output.
+        if let TransactionPayload::Package(p) = txn.raw_txn.into_payload() {
+            let modules = p
+                .modules()
+                .iter()
+                .map(|m| CompiledModule::deserialize(m.code()))
+                .collect::<Result<Vec<_>, _>>()?;
+            for m in modules {
+                module_cache.insert(m.self_id(), m);
+            }
+        }
+        ABIResolver::new_with_module_cache(state_view, module_cache)
+    };
     for action in txn_output.write_set.iter_mut() {
         let access_path = action.access_path.clone();
         if let Some(value) = &mut action.value {
