@@ -100,6 +100,7 @@ members = [
     "stratum",
     "cmd/miner_client/api",
     "cmd/db-exporter",
+    "cmd/genesis-nft-miner"
 ]
 
 default-members = [
@@ -198,6 +199,7 @@ default-members = [
     "cmd/merkle-generator",
     "cmd/peer-watcher",
     "cmd/airdrop",
+    "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
 ]
