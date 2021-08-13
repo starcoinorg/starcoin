@@ -31,7 +31,7 @@ script {
 }
 
 // check: gas_used
-// check: 214796
+// check: 215494
 // check: "Keep(EXECUTED)"
 
 //! block-prologue
@@ -71,5 +71,5 @@ script {
     }
 }
 // check: gas_used
-// check: 172651
+// check: 173349
 // check: "Keep(EXECUTED)"

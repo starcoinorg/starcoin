@@ -190,11 +190,11 @@ calculate x * y /z with as little loss of precision as possible and avoid overfl
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_mul_div">mul_div</a>(x: u128, y: u128, z: u128): u128 {
-    <b>if</b> ( y  == z ) {
+    <b>if</b> (y == z) {
         <b>return</b> x
     };
-    <b>if</b> ( x &gt; z) {
-        <b>return</b> x/z*y
+    <b>if</b> (x == z) {
+        <b>return</b> y
     };
     <b>let</b> a = x / z;
     <b>let</b> b = x % z;
