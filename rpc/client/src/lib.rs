@@ -391,8 +391,12 @@ impl RpcClient {
         private_key: Vec<u8>,
         password: String,
     ) -> anyhow::Result<AccountInfo> {
-        self.call_rpc_blocking(|inner| inner.account_client.import(address, private_key, password))
-            .map_err(map_err)
+        self.call_rpc_blocking(|inner| {
+            inner
+                .account_client
+                .import(address, StrView(private_key), password)
+        })
+        .map_err(map_err)
     }
 
     pub fn account_import_readonly(
@@ -400,8 +404,12 @@ impl RpcClient {
         address: AccountAddress,
         public_key: Vec<u8>,
     ) -> anyhow::Result<AccountInfo> {
-        self.call_rpc_blocking(|inner| inner.account_client.import_readonly(address, public_key))
-            .map_err(map_err)
+        self.call_rpc_blocking(|inner| {
+            inner
+                .account_client
+                .import_readonly(address, StrView(public_key))
+        })
+        .map_err(map_err)
     }
 
     pub fn account_accepted_tokens(

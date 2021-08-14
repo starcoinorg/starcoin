@@ -4,7 +4,7 @@
 use jsonrpc_derive::rpc;
 
 pub use self::gen_client::Client as AccountClient;
-use crate::types::{SignedMessageView, TransactionRequest};
+use crate::types::{SignedMessageView, StrView, TransactionRequest};
 use crate::FutureResult;
 use starcoin_account_api::AccountInfo;
 use starcoin_types::account_address::AccountAddress;
@@ -62,7 +62,7 @@ pub trait AccountApi {
     fn import(
         &self,
         address: AccountAddress,
-        private_key: Vec<u8>,
+        private_key: StrView<Vec<u8>>,
         password: String,
     ) -> FutureResult<AccountInfo>;
 
@@ -71,7 +71,7 @@ pub trait AccountApi {
     fn import_readonly(
         &self,
         address: AccountAddress,
-        public_key: Vec<u8>,
+        public_key: StrView<Vec<u8>>,
     ) -> FutureResult<AccountInfo>;
 
     /// Return the private key as bytes for `address`
