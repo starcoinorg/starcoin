@@ -4,6 +4,7 @@
 pub use self::gen_client::Client as NodeManagerClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
+use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 
 #[rpc]
@@ -22,4 +23,6 @@ pub trait NodeManagerApi {
 
     #[rpc(name = "node_manager.shutdown_system")]
     fn shutdown_system(&self) -> FutureResult<()>;
+    #[rpc(name = "node_manager.reset_to_block")]
+    fn reset_to_block(&self, block_number: HashValue) -> FutureResult<()>;
 }

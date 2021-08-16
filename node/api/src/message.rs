@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ServiceInfo, ServiceRequest, ServiceStatus};
 
 #[derive(Debug, Clone)]
@@ -13,6 +14,7 @@ pub enum NodeRequest {
     StopPacemaker,
     StartPacemaker,
     ShutdownSystem,
+    ResetNode(HashValue),
 }
 
 #[derive(Debug)]

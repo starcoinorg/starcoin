@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use starcoin_crypto::HashValue;
 use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_api::node_manager::NodeManagerApi;
 use starcoin_rpc_api::FutureResult;
@@ -69,6 +70,15 @@ where
         let service = self.service.clone();
         let fut = async move {
             service.shutdown_system().await?;
+            Ok(())
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+    fn reset_to_block(&self, block_hash: HashValue) -> FutureResult<()> {
+        let service = self.service.clone();
+        let fut = async move {
+            service.reset_node(block_hash).await?;
             Ok(())
         }
         .map_err(map_err);
