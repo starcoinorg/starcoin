@@ -152,7 +152,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
 
                             if let Err(e1) = ctx
                                 .get_shared::<NetworkServiceRef>()
-                                .map(|network| network.report_peer(peer_id, (&e).into()))
+                                .map(|network| network.report_peer(peer_id, e.reputation()))
                             {
                                 warn!("Get NetworkServiceRef err: {:?}.", e1);
                             }

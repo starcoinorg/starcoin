@@ -222,15 +222,34 @@ where
             .sync_apply_block_time
             .with_label_values(&["time"])
             .start_timer();
-        if let Err(err) = if self.skip_pow_verify {
+        if let Some((_failed_block, pre_peer_id, err)) = self
+            .chain
+            .get_storage()
+            .get_failed_block_by_id(block.id())?
+        {
+            warn!(
+                "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, err: {}",
+                block.id(),
+                pre_peer_id,
+                err
+            );
+            if let Some(peer) = peer_id {
+                self.peer_provider
+                    .report_peer(peer, ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
+            }
+            return Err(format_err!("collect previous failed block:{}", block.id()));
+        }
+        let apply_result = if self.skip_pow_verify {
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
             self.chain.apply(block.clone())
-        } {
+        };
+        if let Err(err) = apply_result {
+            let error_msg = err.to_string();
             error!(
                 "[sync] collect block error: {:?}, peer_id:{:?} ",
-                err, peer_id
+                error_msg, peer_id
             );
             match err.downcast::<ConnectBlockError>() {
                 Ok(connect_error) => match connect_error {
@@ -242,10 +261,10 @@ where
                             block.id(),
                             block,
                             peer_id.clone(),
-                            format!("{:?}", e),
+                            error_msg,
                         )?;
                         if let Some(peer) = peer_id {
-                            self.peer_provider.report_peer(peer, (&e).into());
+                            self.peer_provider.report_peer(peer, e.reputation());
                         }
 
                         Err(e.into())
