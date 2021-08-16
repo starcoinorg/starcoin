@@ -40,7 +40,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
@@ -48,6 +48,7 @@ use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
+use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -116,6 +117,14 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 self.registry
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
+            NodeRequest::ResetNode(block_hash) => {
+                let storage = self
+                    .registry
+                    .get_shared_sync::<Arc<Storage>>()
+                    .expect("Storage must exist.");
+                info!("Prepare to reset node startup info to {}", block_hash);
+                NodeResponse::Result(storage.save_startup_info(StartupInfo { main: block_hash }))
+            }
         })
     }
 }

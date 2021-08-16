@@ -248,7 +248,10 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.node_manager_client.shutdown_system())
             .map_err(map_err)
     }
-
+    pub fn reset_node(&self, block_hash: HashValue) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| inner.node_manager_client.reset_to_block(block_hash))
+            .map_err(map_err)
+    }
     pub fn next_sequence_number_in_txpool(
         &self,
         address: AccountAddress,

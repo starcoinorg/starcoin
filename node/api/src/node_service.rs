@@ -3,6 +3,7 @@
 
 use crate::message::{NodeRequest, NodeResponse};
 use anyhow::Result;
+use starcoin_crypto::HashValue;
 use starcoin_service_registry::{
     ActorService, ServiceHandler, ServiceInfo, ServiceRef, ServiceStatus,
 };
@@ -24,6 +25,7 @@ pub trait NodeAsyncService:
     async fn stop_pacemaker(&self) -> Result<()>;
 
     async fn shutdown_system(&self) -> Result<()>;
+    async fn reset_node(&self, block_hash: HashValue) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -89,6 +91,10 @@ where
 
     async fn shutdown_system(&self) -> Result<()> {
         self.try_send(NodeRequest::ShutdownSystem)?;
+        Ok(())
+    }
+    async fn reset_node(&self, block_hash: HashValue) -> Result<()> {
+        self.try_send(NodeRequest::ResetNode(block_hash))?;
         Ok(())
     }
 }
