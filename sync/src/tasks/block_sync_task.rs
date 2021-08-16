@@ -264,7 +264,7 @@ where
                             error_msg,
                         )?;
                         if let Some(peer) = peer_id {
-                            self.peer_provider.report_peer(peer, (&e).into());
+                            self.peer_provider.report_peer(peer, e.reputation());
                         }
 
                         Err(e.into())

@@ -70,15 +70,14 @@ impl ConnectBlockError {
         ReputationChange::new(i32::MIN / 2, "ParentNotExist");
     pub const REP_VERIFY_BLOCK_FAILED: ReputationChange =
         ReputationChange::new(i32::MIN / 2, "VerifyBlockFailed");
-}
 
-#[allow(clippy::from_over_into)]
-impl Into<ReputationChange> for &ConnectBlockError {
-    fn into(self) -> ReputationChange {
+    pub fn reputation(&self) -> ReputationChange {
         match self {
-            ConnectBlockError::FutureBlock(_) => Self::REP_FUTURE_BLOCK,
-            ConnectBlockError::ParentNotExist(_) => Self::REP_PARENT_NOT_EXIST,
-            ConnectBlockError::VerifyBlockFailed(_, _) => Self::REP_VERIFY_BLOCK_FAILED,
+            ConnectBlockError::FutureBlock(_) => ConnectBlockError::REP_FUTURE_BLOCK,
+            ConnectBlockError::ParentNotExist(_) => ConnectBlockError::REP_PARENT_NOT_EXIST,
+            ConnectBlockError::VerifyBlockFailed(_, _) => {
+                ConnectBlockError::REP_VERIFY_BLOCK_FAILED
+            }
         }
     }
 }
