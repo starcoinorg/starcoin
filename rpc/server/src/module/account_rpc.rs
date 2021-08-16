@@ -8,7 +8,7 @@ use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
-use starcoin_rpc_api::types::{SignedMessageView, TransactionRequest};
+use starcoin_rpc_api::types::{SignedMessageView, StrView, TransactionRequest};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -197,13 +197,13 @@ where
     fn import(
         &self,
         address: AccountAddress,
-        private_key: Vec<u8>,
+        private_key: StrView<Vec<u8>>,
         password: String,
     ) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move {
             let result = service
-                .import_account(address, private_key, password)
+                .import_account(address, private_key.0, password)
                 .await?;
             Ok(result)
         }
@@ -214,11 +214,13 @@ where
     fn import_readonly(
         &self,
         address: AccountAddress,
-        public_key: Vec<u8>,
+        public_key: StrView<Vec<u8>>,
     ) -> FutureResult<AccountInfo> {
         let service = self.account.clone();
         let fut = async move {
-            let result = service.import_readonly_account(address, public_key).await?;
+            let result = service
+                .import_readonly_account(address, public_key.0)
+                .await?;
             Ok(result)
         }
         .map_err(map_err);
