@@ -76,9 +76,9 @@ impl ConnectBlockError {
 impl Into<ReputationChange> for &ConnectBlockError {
     fn into(self) -> ReputationChange {
         match self {
-            ConnectBlockError::FutureBlock(_) => REP_FUTURE_BLOCK,
-            ConnectBlockError::ParentNotExist(_) => REP_PARENT_NOT_EXIST,
-            ConnectBlockError::VerifyBlockFailed(_, _) => REP_VERIFY_BLOCK_FAILED,
+            ConnectBlockError::FutureBlock(_) => Self::REP_FUTURE_BLOCK,
+            ConnectBlockError::ParentNotExist(_) => Self::REP_PARENT_NOT_EXIST,
+            ConnectBlockError::VerifyBlockFailed(_, _) => Self::REP_VERIFY_BLOCK_FAILED,
         }
     }
 }
