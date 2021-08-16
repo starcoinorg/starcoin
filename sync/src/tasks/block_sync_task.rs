@@ -233,6 +233,10 @@ where
                 pre_peer_id,
                 err
             );
+            if let Some(peer) = peer_id {
+                self.peer_provider
+                    .report_peer(peer, ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
+            }
             return Err(format_err!("collect previous failed block:{}", block.id()));
         }
         let apply_result = if self.skip_pow_verify {

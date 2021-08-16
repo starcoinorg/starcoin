@@ -63,20 +63,22 @@ pub enum ConnectBlockError {
     VerifyBlockFailed(VerifyBlockField, Error),
 }
 
+impl ConnectBlockError {
+    // future block do not change the reputation
+    pub const REP_FUTURE_BLOCK: ReputationChange = ReputationChange::new(0, "FutureBlock");
+    pub const REP_PARENT_NOT_EXIST: ReputationChange =
+        ReputationChange::new(i32::MIN / 2, "ParentNotExist");
+    pub const REP_VERIFY_BLOCK_FAILED: ReputationChange =
+        ReputationChange::new(i32::MIN / 2, "VerifyBlockFailed");
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<ReputationChange> for &ConnectBlockError {
     fn into(self) -> ReputationChange {
         match self {
-            ConnectBlockError::FutureBlock(_) => {
-                // future block do not change the reputation
-                ReputationChange::new(0, "FutureBlock")
-            }
-            ConnectBlockError::ParentNotExist(_) => {
-                ReputationChange::new(i32::min_value() / 2, "ParentNotExist")
-            }
-            ConnectBlockError::VerifyBlockFailed(_, _) => {
-                ReputationChange::new(i32::min_value() / 2, "VerifyBlockFailed")
-            }
+            ConnectBlockError::FutureBlock(_) => REP_FUTURE_BLOCK,
+            ConnectBlockError::ParentNotExist(_) => REP_PARENT_NOT_EXIST,
+            ConnectBlockError::VerifyBlockFailed(_, _) => REP_VERIFY_BLOCK_FAILED,
         }
     }
 }
