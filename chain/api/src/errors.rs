@@ -67,9 +67,9 @@ impl ConnectBlockError {
     // future block do not change the reputation
     pub const REP_FUTURE_BLOCK: ReputationChange = ReputationChange::new(0, "FutureBlock");
     pub const REP_PARENT_NOT_EXIST: ReputationChange =
-        ReputationChange::new(i32::MIN / 2, "ParentNotExist");
+        ReputationChange::new_fatal("ParentNotExist");
     pub const REP_VERIFY_BLOCK_FAILED: ReputationChange =
-        ReputationChange::new(i32::MIN / 2, "VerifyBlockFailed");
+        ReputationChange::new_fatal("VerifyBlockFailed");
 
     pub fn reputation(&self) -> ReputationChange {
         match self {
