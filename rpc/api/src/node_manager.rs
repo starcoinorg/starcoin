@@ -25,4 +25,16 @@ pub trait NodeManagerApi {
     fn shutdown_system(&self) -> FutureResult<()>;
     #[rpc(name = "node_manager.reset_to_block")]
     fn reset_to_block(&self, block_number: HashValue) -> FutureResult<()>;
+
+    // /// Delete block data in [start_number, end_number)
+    // #[rpc(name = "node_manager.delete_block_range")]
+    // fn delete_block_range(
+    //     &self,
+    //     start_block_number: u64,
+    //     end_block_number: u64,
+    // ) -> FutureResult<()>;
+
+    /// Delete block of block_id
+    #[rpc(name = "node_manager.delete_block")]
+    fn delete_block(&self, block_id: HashValue) -> FutureResult<()>;
 }

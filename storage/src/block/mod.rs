@@ -189,6 +189,13 @@ impl BlockStorage {
         //save block cache
         self.save(block)
     }
+    pub fn delete_block(&self, block_id: HashValue) -> Result<()> {
+        self.header_store.remove(block_id)?;
+        self.body_store.remove(block_id)?;
+        self.block_store.remove(block_id)?;
+        self.block_txns_store.remove(block_id)?;
+        self.block_txn_infos_store.remove(block_id)
+    }
 
     pub fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
         self.header_store.get(block_id)

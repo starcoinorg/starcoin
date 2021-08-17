@@ -472,7 +472,7 @@ impl BlockChain {
         for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
             storage.save_contract_events(*info_id, events)?;
         }
-        storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
+
         storage.save_transaction_infos(
             txn_infos
                 .into_iter()
@@ -484,11 +484,14 @@ impl BlockChain {
             .iter()
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
-        // save block's transactions
-        storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         // save transactions
         storage.save_transaction_batch(transactions)?;
+
+        // save block's transactions
+        storage.save_block_transaction_ids(block_id, txn_id_vec)?;
+        storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
         storage.commit_block(block)?;
+
         storage.save_block_info(block_info)?;
         Ok(())
     }

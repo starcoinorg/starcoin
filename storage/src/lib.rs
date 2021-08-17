@@ -106,6 +106,9 @@ pub trait BlockStore {
 
     fn commit_block(&self, block: Block) -> Result<()>;
 
+    /// delete_block will delete block data, txns and txn infos.
+    fn delete_block(&self, block_id: HashValue) -> Result<()>;
+
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
 
     fn get_block_by_hash(&self, block_id: HashValue) -> Result<Option<Block>>;
@@ -298,6 +301,10 @@ impl BlockStore for Storage {
         self.block_storage.commit_block(block)
     }
 
+    fn delete_block(&self, block_id: HashValue) -> Result<()> {
+        self.block_storage.delete_block(block_id)
+    }
+
     fn get_block_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
         self.block_storage.get_block_header_by_hash(block_id)
     }
@@ -358,6 +365,9 @@ impl BlockInfoStore for Storage {
 
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>, Error> {
         self.block_info_storage.get(hash_value)
+    }
+    fn delete_block_info(&self, block_hash: HashValue) -> Result<(), Error> {
+        self.block_info_storage.remove(block_hash)
     }
 }
 
