@@ -1,0 +1,7 @@
+disable-publish=true
+disable-push=true
+disable-tag=true
+consolidate-commits=true
+consolidate-pushes=true
+pre-release-commit-message="release {{version}}"
+no-dev-version=true
