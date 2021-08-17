@@ -25,7 +25,8 @@ pub trait NodeAsyncService:
     async fn stop_pacemaker(&self) -> Result<()>;
 
     async fn shutdown_system(&self) -> Result<()>;
-    async fn reset_node(&self, block_hash: HashValue) -> Result<()>;
+    async fn reset_node(&self, block_id: HashValue) -> Result<()>;
+    async fn delete_block(&self, block_id: HashValue) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -93,8 +94,12 @@ where
         self.try_send(NodeRequest::ShutdownSystem)?;
         Ok(())
     }
-    async fn reset_node(&self, block_hash: HashValue) -> Result<()> {
-        self.try_send(NodeRequest::ResetNode(block_hash))?;
+    async fn reset_node(&self, block_id: HashValue) -> Result<()> {
+        self.try_send(NodeRequest::ResetNode(block_id))?;
+        Ok(())
+    }
+    async fn delete_block(&self, block_id: HashValue) -> Result<()> {
+        self.try_send(NodeRequest::DeleteBlock(block_id))?;
         Ok(())
     }
 }

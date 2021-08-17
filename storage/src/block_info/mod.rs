@@ -12,6 +12,7 @@ use starcoin_types::block::BlockInfo;
 pub trait BlockInfoStore {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>>;
+    fn delete_block_info(&self, block_hash: HashValue) -> Result<()>;
 }
 
 define_storage!(

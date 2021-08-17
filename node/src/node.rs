@@ -36,6 +36,7 @@ use starcoin_service_registry::{
     ServiceHandler, ServiceRef,
 };
 use starcoin_state_service::ChainStateService;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
@@ -124,6 +125,18 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .expect("Storage must exist.");
                 info!("Prepare to reset node startup info to {}", block_hash);
                 NodeResponse::Result(storage.save_startup_info(StartupInfo { main: block_hash }))
+            }
+            NodeRequest::DeleteBlock(block_hash) => {
+                let storage = self
+                    .registry
+                    .get_shared_sync::<Arc<Storage>>()
+                    .expect("Storage must exist.");
+                info!("Prepare to delete block {}", block_hash);
+                NodeResponse::Result(
+                    storage
+                        .delete_block_info(block_hash)
+                        .and_then(|_| storage.delete_block(block_hash)),
+                )
             }
         })
     }
