@@ -73,7 +73,7 @@ pub fn build_batch_script_function(
     receivers: Vec<AccountAddress>,
     amounts: Vec<u128>,
 ) -> ScriptFunction {
-    let addresses = MoveValue::Vector(receivers.into_iter().map(MoveValue::Address).collect());
+    let addresses = MoveValue::vector_address(receivers);
     let amounts = MoveValue::Vector(amounts.into_iter().map(MoveValue::U128).collect());
     ScriptFunction::new(
         ModuleId::new(
