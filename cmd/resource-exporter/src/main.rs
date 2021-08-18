@@ -6,7 +6,7 @@ use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, VEC_PREFIX_NAME};
 use starcoin_types::access_path::DataType;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::language_storage::{StructTag, TypeTag};
@@ -32,10 +32,9 @@ pub fn export(
     resource_struct_tag: StructTag,
     fields: &[String],
 ) -> anyhow::Result<()> {
-    let storage = Storage::new(StorageInstance::new_db_instance(DBStorage::new(
-        db,
-        Default::default(),
-    )?))?;
+    let db_storage =
+        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default())?;
+    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
     let storage = Arc::new(storage);
     let block = storage
         .get_block(block_id)?
@@ -153,7 +152,7 @@ pub struct ExporterOptions {
     /// output file, like accounts.csv
     pub output: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
-    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db
+    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
     #[structopt(long)]
