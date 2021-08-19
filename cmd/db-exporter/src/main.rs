@@ -156,7 +156,7 @@ pub struct ExporterOptions {
     /// output file, like accounts.csv, default is stdout.
     pub output: Option<PathBuf>,
     #[structopt(long, short = "i", parse(from_os_str))]
-    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db
+    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
     #[structopt(long, short = "s")]
