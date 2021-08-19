@@ -113,7 +113,7 @@ async fn main() -> Result<()> {
         .as_secs();
     let txn = RawUserTransaction::new_script_function(
         sender,
-        account_sequence_number + 1_u64,
+        account_sequence_number,
         script_function,
         40000000,
         1,
