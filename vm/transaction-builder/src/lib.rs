@@ -22,6 +22,7 @@ use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
     TransactionPayload,
 };
+use starcoin_vm_types::value::MoveValue;
 use std::convert::TryInto;
 use stdlib::stdlib_package;
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
@@ -68,6 +69,34 @@ pub fn build_transfer_txn(
     )
 }
 
+pub fn build_batch_script_function(
+    receivers: Vec<AccountAddress>,
+    amounts: Vec<u128>,
+) -> ScriptFunction {
+    let addresses = MoveValue::vector_address(receivers);
+    let amounts = MoveValue::Vector(amounts.into_iter().map(MoveValue::U128).collect());
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("TransferScripts").unwrap(),
+        ),
+        Identifier::new("batch_peer_to_peer_v2").unwrap(),
+        vec![stc_type_tag()],
+        vec![
+            bcs_ext::to_bytes(&addresses).unwrap(),
+            bcs_ext::to_bytes(&amounts).unwrap(),
+        ],
+    )
+}
+
+pub fn build_batch_script_function_same_amount(
+    receivers: Vec<AccountAddress>,
+    amount: u128,
+) -> ScriptFunction {
+    let len = receivers.len();
+    build_batch_script_function(receivers, (0..len).map(|_| amount).collect())
+}
+
 pub fn build_batch_transfer_txn(
     sender: AccountAddress,
     receivers: Vec<AccountAddress>,
@@ -78,21 +107,8 @@ pub fn build_batch_transfer_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    let mut address_vec = vec![];
-    for receiver in receivers {
-        address_vec.extend_from_slice(receiver.to_vec().as_slice());
-    }
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("TransferScripts").unwrap(),
-        ),
-        Identifier::new("batch_peer_to_peer_v2").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&address_vec).unwrap(),
-            bcs_ext::to_bytes(&amount).unwrap(),
-        ],
+    let payload = TransactionPayload::ScriptFunction(build_batch_script_function_same_amount(
+        receivers, amount,
     ));
 
     RawUserTransaction::new_with_default_gas_token(
