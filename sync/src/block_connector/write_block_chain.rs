@@ -12,6 +12,7 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::block::BlockInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -66,14 +67,17 @@ where
         })
     }
 
-    pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
+    pub fn find_or_fork(
+        &self,
+        header: &BlockHeader,
+    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
         WRITE_BLOCK_CHAIN_METRICS
             .block_connect_count
             .with_label_values(&["try_connect"])
             .inc();
         let block_id = header.id();
-        let block_exist = self.block_exist(block_id)?;
-        let block_chain = if block_exist {
+        let block_info = self.storage.get_block_info(block_id)?;
+        let block_chain = if block_info.is_some() {
             if self.is_main_head(&header.parent_hash()) {
                 None
             } else {
@@ -94,7 +98,7 @@ where
         } else {
             None
         };
-        Ok((block_exist, block_chain))
+        Ok((block_info, block_chain))
     }
 
     fn block_exist(&self, block_id: HashValue) -> Result<bool> {
@@ -107,10 +111,9 @@ where
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
         let executed_block = new_branch.head_block();
-        let block_header = block.header().clone();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
-        let parent_is_main_head = self.is_main_head(&block_header.parent_hash());
+        let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
 
         if branch_total_difficulty > main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
@@ -284,10 +287,10 @@ where
             self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
             return Ok(());
         }
-        let (block_exist, fork) = self.find_or_fork(block.header())?;
-        match (block_exist, fork) {
-            //block has bean processed, so just trigger a head select.
-            (true, Some(branch)) => {
+        let (block_info, fork) = self.find_or_fork(block.header())?;
+        match (block_info, fork) {
+            //block has bean processed in some branch, so just trigger a head select.
+            (Some(_block_info), Some(branch)) => {
                 debug!(
                     "Block {} has bean processed, trigger head select, total_difficulty: {}",
                     block_id,
@@ -300,12 +303,16 @@ where
                 self.select_head(branch)?;
                 Ok(())
             }
-            (true, None) => {
-                let executed_block = self.main.update_chain_head(block.clone())?;
+            //block has bean processed, and it parent is main chain ,so just connect it to main chain.
+            (Some(block_info), None) => {
+                let executed_block = self.main.connect(ExecutedBlock {
+                    block: block.clone(),
+                    block_info,
+                })?;
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(())
             }
-            (false, Some(mut branch)) => {
+            (None, Some(mut branch)) => {
                 let timer = WRITE_BLOCK_CHAIN_METRICS
                     .exe_block_time
                     .with_label_values(&["time"])
@@ -321,7 +328,7 @@ where
                 self.select_head(branch)?;
                 Ok(())
             }
-            (false, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
+            (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }
     }
 }
