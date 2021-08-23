@@ -67,7 +67,7 @@ where
         })
     }
 
-    pub fn find_or_fork(
+    fn find_or_fork(
         &self,
         header: &BlockHeader,
     ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
@@ -138,7 +138,7 @@ where
         Ok(())
     }
 
-    pub fn do_new_head(
+    fn do_new_head(
         &mut self,
         executed_block: ExecutedBlock,
         enacted_count: u64,
@@ -148,7 +148,7 @@ where
     ) -> Result<()> {
         debug_assert!(!enacted_blocks.is_empty());
         debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
-        self.update_startup_info(executed_block.header())?;
+        self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             WRITE_BLOCK_CHAIN_METRICS
                 .rollback_block_size
@@ -168,12 +168,52 @@ where
         Ok(())
     }
 
+    /// Reset the node to `block_id`, and replay blocks after the block
+    pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
+        let new_branch = BlockChain::new(
+            self.config.net().time_service(),
+            block_id,
+            self.storage.clone(),
+        )?;
+        let ancestor = self.main.find_ancestor(&new_branch)?.ok_or_else(|| {
+            format_err!(
+                "Can not find ancestors between main chain: {:?} and branch: {:?}",
+                self.main.status(),
+                new_branch.status()
+            )
+        })?;
+        let latest = self.main.status().head.number();
+        for block_number in ancestor.number..latest {
+            if let Some(block) = self.main.get_block_by_number(block_number)? {
+                info!("Delete block({:?})", block.header);
+                self.storage.delete_block(block.id())?;
+                self.storage.delete_block_info(block.id())?;
+            } else {
+                warn!("Can not find block by number:{}", block_number);
+            }
+        }
+        let executed_block = new_branch.head_block();
+
+        self.main = new_branch;
+
+        let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
+            (1, vec![executed_block.block.clone()], 0, vec![]);
+        self.do_new_head(
+            executed_block,
+            enacted_count,
+            enacted_blocks,
+            retracted_count,
+            retracted_blocks,
+        )?;
+        Ok(())
+    }
+
     fn is_main_head(&self, parent_id: &HashValue) -> bool {
         parent_id == &self.startup_info.main
     }
 
     fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
-        self.startup_info.update_main(main_head);
+        self.startup_info.update_main(main_head.id());
         WRITE_BLOCK_CHAIN_METRICS
             .current_head_number
             .set(main_head.number() as i64);

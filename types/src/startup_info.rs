@@ -161,8 +161,8 @@ impl StartupInfo {
         Self { main }
     }
 
-    pub fn update_main(&mut self, new_block_header: &BlockHeader) {
-        self.main = new_block_header.id();
+    pub fn update_main(&mut self, new_head: HashValue) {
+        self.main = new_head;
     }
 
     pub fn get_main(&self) -> &HashValue {
