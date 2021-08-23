@@ -35,7 +35,7 @@ bcs-ext = { package = "bcs-ext", path = "../commons/bcs_ext" }
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-open-block = { path = "../chain/open-block" }
 starcoin-service-registry = { path = "../commons/service-registry" }
-serde = "1.0.127"
+serde = "1.0.128"
 
 [dev-dependencies]
 sync = { path = "../sync", package = "starcoin-sync" }
