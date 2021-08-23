@@ -106,22 +106,18 @@ where
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
-        let block = new_branch.head_block();
+        let executed_block = new_branch.head_block();
         let block_header = block.header().clone();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let parent_is_main_head = self.is_main_head(&block_header.parent_hash());
-        //TODO refactor this.
-        let block_info = new_branch
-            .get_block_info(Some(block.id()))?
-            .expect("head block's block info should exist.");
-        let executed_block = ExecutedBlock::new(block.clone(), block_info);
+
         if branch_total_difficulty > main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![block], 0, vec![])
+                    (1, vec![executed_block.block.clone()], 0, vec![])
                 };
             self.main = new_branch;
 

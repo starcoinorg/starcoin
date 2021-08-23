@@ -23,7 +23,8 @@ pub type MintedUncleNumber = u64;
 pub trait ChainReader {
     fn info(&self) -> ChainInfo;
     fn status(&self) -> ChainStatus;
-    fn head_block(&self) -> Block;
+    /// Get latest block with block_info
+    fn head_block(&self) -> ExecutedBlock;
     fn current_header(&self) -> BlockHeader;
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
