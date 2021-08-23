@@ -72,7 +72,7 @@ where
             .with_label_values(&["try_connect"])
             .inc();
         let block_id = header.id();
-        let block_exist = self.block_exist(block_id);
+        let block_exist = self.block_exist(block_id)?;
         let block_chain = if block_exist {
             if self.is_main_head(&header.parent_hash()) {
                 None
@@ -84,7 +84,7 @@ where
                     self.storage.clone(),
                 )?)
             }
-        } else if self.block_exist(header.parent_hash()) {
+        } else if self.block_exist(header.parent_hash())? {
             let net = self.config.net();
             Some(BlockChain::new(
                 net.time_service(),
@@ -97,9 +97,8 @@ where
         Ok((block_exist, block_chain))
     }
 
-    fn block_exist(&self, block_id: HashValue) -> bool {
-        //FIXME storage error should return
-        matches!(self.storage.get_block_info(block_id), Ok(Some(_)))
+    fn block_exist(&self, block_id: HashValue) -> Result<bool> {
+        Ok(matches!(self.storage.get_block_info(block_id)?, Some(_)))
     }
 
     pub fn get_main(&self) -> &BlockChain {
@@ -276,7 +275,7 @@ where
             return Ok(());
         }
         if self.main.current_header().id() == block.header().parent_hash()
-            && !self.block_exist(block_id)
+            && !self.block_exist(block_id)?
         {
             let executed_block = self.main.apply(block).map_err(|e| {
                 WRITE_BLOCK_CHAIN_METRICS
