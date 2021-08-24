@@ -1,9 +1,64 @@
 use anyhow::Result;
 use itertools::Itertools;
+use move_core_types::language_storage::ModuleId;
 use move_lang::parser::ast::{
     Definition, LeadingNameAccess_, ModuleDefinition, ModuleIdent, ModuleMember, Use,
 };
 use move_lang::shared::{AddressBytes as Address, CompilationEnv, Flags, Identifier};
+use move_vm_runtime::data_cache::MoveStorage;
+use std::collections::{btree_map, BTreeMap};
+use vm::access::ModuleAccess;
+use vm::CompiledModule;
+
+pub trait ModuleDependencyResolver: MoveStorage + Sized {
+    fn get_module_dependencies_recursively(
+        &self,
+        module: &CompiledModule,
+    ) -> Result<BTreeMap<ModuleId, CompiledModule>> {
+        let mut all_deps = BTreeMap::new();
+        for dep in module.immediate_dependencies() {
+            get_all_module_dependencies_recursive(&mut all_deps, dep, self)?;
+        }
+        Ok(all_deps)
+    }
+    fn get_module_dependencies_recursively_for_all(
+        &self,
+        modules: &[CompiledModule],
+    ) -> Result<BTreeMap<ModuleId, CompiledModule>> {
+        let mut all_deps = BTreeMap::new();
+        for dep in modules
+            .into_iter()
+            .flat_map(|m| m.immediate_dependencies())
+            .unique()
+        {
+            get_all_module_dependencies_recursive(&mut all_deps, dep, self)?;
+        }
+        Ok(all_deps)
+    }
+}
+
+fn get_all_module_dependencies_recursive<R: MoveStorage + Sized>(
+    all_deps: &mut BTreeMap<ModuleId, CompiledModule>,
+    module_id: ModuleId,
+    loader: &R,
+) -> Result<()> {
+    if let btree_map::Entry::Vacant(entry) = all_deps.entry(module_id) {
+        let module = loader
+            .get_module(entry.key())
+            .map_err(|e| e.into_vm_status())?
+            .ok_or_else(|| anyhow::anyhow!("missing dependency {:?}", entry.key()))?;
+        let module = CompiledModule::deserialize(&module)?;
+        let next_deps = module.immediate_dependencies();
+        entry.insert(module);
+        for next in next_deps {
+            get_all_module_dependencies_recursive(all_deps, next, loader)?;
+        }
+    }
+    Ok(())
+}
+
+impl<R> ModuleDependencyResolver for R where R: MoveStorage + Sized {}
+
 pub fn get_uses(move_files: &[String]) -> Result<Vec<(Address, String)>> {
     fn get_module_uses(m: &ModuleDefinition) -> Vec<ModuleIdent> {
         m.members

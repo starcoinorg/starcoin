@@ -28,7 +28,7 @@ use vm::{
     file_format::{CompiledModule, CompiledScript, FunctionDefinitionIndex},
 };
 
-pub(crate) mod dependencies;
+pub mod dependencies;
 pub mod function_resolver;
 pub mod functional_test;
 pub mod package;
