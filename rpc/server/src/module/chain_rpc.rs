@@ -482,7 +482,7 @@ fn try_decode_txn_payload(
     match decode_txn_payload(state, &txn_payload) {
         // ignore decode failure, as txns may has invalid payload here.
         Err(e) => {
-            warn!(
+            debug!(
                 "decode payload of txn {} failure, {:?}",
                 txn.transaction_hash, e
             );
