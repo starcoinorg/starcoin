@@ -24,7 +24,7 @@ sha2 = "0.9.1"
 log = "0.4.14"
 fs_extra = "1.2.0"
 clap = "2.33.3"
-serde = { version = "1.0.128", default-features = false }
+serde = { version = "1.0.129", default-features = false }
 rayon = "1.5.1"
 itertools = "0.10.1"
 
