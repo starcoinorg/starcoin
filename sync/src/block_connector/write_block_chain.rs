@@ -170,20 +170,20 @@ where
 
     /// Reset the node to `block_id`, and replay blocks after the block
     pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
+        let new_head_block = self
+            .main
+            .get_block(block_id)?
+            .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
         let new_branch = BlockChain::new(
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
         )?;
-        let ancestor = self.main.find_ancestor(&new_branch)?.ok_or_else(|| {
-            format_err!(
-                "Can not find ancestors between main chain: {:?} and branch: {:?}",
-                self.main.status(),
-                new_branch.status()
-            )
-        })?;
+
+        // delete block since from block.number + 1 to latest.
+        let start = new_head_block.header().number().saturating_add(1);
         let latest = self.main.status().head.number();
-        for block_number in ancestor.number..latest {
+        for block_number in start..latest {
             if let Some(block) = self.main.get_block_by_number(block_number)? {
                 info!("Delete block({:?})", block.header);
                 self.storage.delete_block(block.id())?;

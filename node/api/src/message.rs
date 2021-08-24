@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use futures::channel::oneshot::Receiver;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ServiceInfo, ServiceRequest, ServiceStatus};
 
@@ -22,6 +23,7 @@ pub enum NodeRequest {
 pub enum NodeResponse {
     Services(Vec<ServiceInfo>),
     Result(Result<()>),
+    AsyncResult(Receiver<Result<()>>),
     ServiceStatus(ServiceStatus),
 }
 

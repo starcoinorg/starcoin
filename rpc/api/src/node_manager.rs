@@ -24,7 +24,7 @@ pub trait NodeManagerApi {
     #[rpc(name = "node_manager.shutdown_system")]
     fn shutdown_system(&self) -> FutureResult<()>;
     #[rpc(name = "node_manager.reset_to_block")]
-    fn reset_to_block(&self, block_number: HashValue) -> FutureResult<()>;
+    fn reset_to_block(&self, block_hash: HashValue) -> FutureResult<()>;
 
     // /// Delete block data in [start_number, end_number)
     // #[rpc(name = "node_manager.delete_block_range")]
