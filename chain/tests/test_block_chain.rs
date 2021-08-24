@@ -297,7 +297,6 @@ fn test_switch_epoch() {
         .head()
         .head_block()
         .block
-        .block
         .uncles()
         .unwrap()
         .contains(&uncle_block_header));
