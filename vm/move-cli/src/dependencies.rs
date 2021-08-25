@@ -27,7 +27,7 @@ pub trait ModuleDependencyResolver: MoveStorage + Sized {
     ) -> Result<BTreeMap<ModuleId, CompiledModule>> {
         let mut all_deps = BTreeMap::new();
         for dep in modules
-            .into_iter()
+            .iter()
             .flat_map(|m| m.immediate_dependencies())
             .unique()
         {
