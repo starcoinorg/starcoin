@@ -95,7 +95,10 @@ where
         Ok(())
     }
     async fn reset_node(&self, block_id: HashValue) -> Result<()> {
-        self.try_send(NodeRequest::ResetNode(block_id))?;
+        let response = self.send(NodeRequest::ResetNode(block_id)).await??;
+        if let NodeResponse::AsyncResult(receiver) = response {
+            return receiver.await?;
+        }
         Ok(())
     }
     async fn delete_block(&self, block_id: HashValue) -> Result<()> {

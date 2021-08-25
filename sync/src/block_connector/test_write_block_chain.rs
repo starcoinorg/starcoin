@@ -203,3 +203,40 @@ async fn test_block_chain_switch_main() {
         2 * times
     );
 }
+
+#[stest::test]
+async fn test_block_chain_reset() -> anyhow::Result<()> {
+    let times = 10;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let net = node_config.net();
+    gen_blocks(
+        times,
+        &mut writeable_block_chain_service,
+        net.time_service().as_ref(),
+    );
+    assert_eq!(
+        writeable_block_chain_service
+            .get_main()
+            .current_header()
+            .number(),
+        times
+    );
+    let block = writeable_block_chain_service
+        .get_main()
+        .get_block_by_number(3)?
+        .unwrap();
+    writeable_block_chain_service.reset(block.id())?;
+    assert_eq!(
+        writeable_block_chain_service
+            .get_main()
+            .current_header()
+            .number(),
+        3
+    );
+
+    assert!(writeable_block_chain_service
+        .get_main()
+        .get_block_by_number(2)?
+        .is_some());
+    Ok(())
+}

@@ -169,7 +169,7 @@ impl BlockChain {
     fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
         let epoch = &self.epoch;
         let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        let head_block = self.head_block();
+        let head_block = self.head_block().block;
         let head_number = head_block.header().number();
         debug_assert!(
             head_number >= epoch.start_block_number() && head_number < epoch.end_block_number(),
@@ -518,8 +518,8 @@ impl ChainReader for BlockChain {
         self.status.status.clone()
     }
 
-    fn head_block(&self) -> Block {
-        self.status.head.clone()
+    fn head_block(&self) -> ExecutedBlock {
+        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone())
     }
 
     fn current_header(&self) -> BlockHeader {

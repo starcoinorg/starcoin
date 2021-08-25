@@ -45,11 +45,10 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
-use starcoin_sync::block_connector::BlockConnectorService;
+use starcoin_sync::block_connector::{BlockConnectorService, ResetRequest};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -72,7 +71,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
     fn handle(
         &mut self,
         msg: NodeRequest,
-        _ctx: &mut ServiceContext<NodeService>,
+        ctx: &mut ServiceContext<NodeService>,
     ) -> Result<NodeResponse> {
         Ok(match msg {
             NodeRequest::ListService => NodeResponse::Services(self.registry.list_service_sync()?),
@@ -119,12 +118,14 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let storage = self
-                    .registry
-                    .get_shared_sync::<Arc<Storage>>()
-                    .expect("Storage must exist.");
-                info!("Prepare to reset node startup info to {}", block_hash);
-                NodeResponse::Result(storage.save_startup_info(StartupInfo { main: block_hash }))
+                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let fut = async move {
+                    info!("Prepare to reset node startup info to {}", block_hash);
+                    let result = connect_service.send(ResetRequest { block_hash }).await?;
+                    result
+                };
+                let receiver = ctx.exec(fut);
+                NodeResponse::AsyncResult(receiver)
             }
             NodeRequest::DeleteBlock(block_hash) => {
                 let storage = self

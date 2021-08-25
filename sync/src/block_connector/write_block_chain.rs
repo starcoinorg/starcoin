@@ -12,6 +12,7 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::block::BlockInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -66,14 +67,17 @@ where
         })
     }
 
-    pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
+    fn find_or_fork(
+        &self,
+        header: &BlockHeader,
+    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
         WRITE_BLOCK_CHAIN_METRICS
             .block_connect_count
             .with_label_values(&["try_connect"])
             .inc();
         let block_id = header.id();
-        let block_exist = self.block_exist(block_id);
-        let block_chain = if block_exist {
+        let block_info = self.storage.get_block_info(block_id)?;
+        let block_chain = if block_info.is_some() {
             if self.is_main_head(&header.parent_hash()) {
                 None
             } else {
@@ -84,7 +88,7 @@ where
                     self.storage.clone(),
                 )?)
             }
-        } else if self.block_exist(header.parent_hash()) {
+        } else if self.block_exist(header.parent_hash())? {
             let net = self.config.net();
             Some(BlockChain::new(
                 net.time_service(),
@@ -94,12 +98,11 @@ where
         } else {
             None
         };
-        Ok((block_exist, block_chain))
+        Ok((block_info, block_chain))
     }
 
-    fn block_exist(&self, block_id: HashValue) -> bool {
-        //FIXME storage error should return
-        matches!(self.storage.get_block_info(block_id), Ok(Some(_)))
+    fn block_exist(&self, block_id: HashValue) -> Result<bool> {
+        Ok(matches!(self.storage.get_block_info(block_id)?, Some(_)))
     }
 
     pub fn get_main(&self) -> &BlockChain {
@@ -107,22 +110,17 @@ where
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
-        let block = new_branch.head_block();
-        let block_header = block.header().clone();
+        let executed_block = new_branch.head_block();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
-        let parent_is_main_head = self.is_main_head(&block_header.parent_hash());
-        //TODO refactor this.
-        let block_info = new_branch
-            .get_block_info(Some(block.id()))?
-            .expect("head block's block info should exist.");
-        let executed_block = ExecutedBlock::new(block.clone(), block_info);
+        let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
+
         if branch_total_difficulty > main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![block], 0, vec![])
+                    (1, vec![executed_block.block.clone()], 0, vec![])
                 };
             self.main = new_branch;
 
@@ -140,7 +138,7 @@ where
         Ok(())
     }
 
-    pub fn do_new_head(
+    fn do_new_head(
         &mut self,
         executed_block: ExecutedBlock,
         enacted_count: u64,
@@ -150,7 +148,7 @@ where
     ) -> Result<()> {
         debug_assert!(!enacted_blocks.is_empty());
         debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
-        self.update_startup_info(executed_block.header())?;
+        self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             WRITE_BLOCK_CHAIN_METRICS
                 .rollback_block_size
@@ -170,12 +168,52 @@ where
         Ok(())
     }
 
+    /// Reset the node to `block_id`, and replay blocks after the block
+    pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
+        let new_head_block = self
+            .main
+            .get_block(block_id)?
+            .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
+        let new_branch = BlockChain::new(
+            self.config.net().time_service(),
+            block_id,
+            self.storage.clone(),
+        )?;
+
+        // delete block since from block.number + 1 to latest.
+        let start = new_head_block.header().number().saturating_add(1);
+        let latest = self.main.status().head.number();
+        for block_number in start..latest {
+            if let Some(block) = self.main.get_block_by_number(block_number)? {
+                info!("Delete block({:?})", block.header);
+                self.storage.delete_block(block.id())?;
+                self.storage.delete_block_info(block.id())?;
+            } else {
+                warn!("Can not find block by number:{}", block_number);
+            }
+        }
+        let executed_block = new_branch.head_block();
+
+        self.main = new_branch;
+
+        let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
+            (1, vec![executed_block.block.clone()], 0, vec![]);
+        self.do_new_head(
+            executed_block,
+            enacted_count,
+            enacted_blocks,
+            retracted_count,
+            retracted_blocks,
+        )?;
+        Ok(())
+    }
+
     fn is_main_head(&self, parent_id: &HashValue) -> bool {
         parent_id == &self.startup_info.main
     }
 
     fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
-        self.startup_info.update_main(main_head);
+        self.startup_info.update_main(main_head.id());
         WRITE_BLOCK_CHAIN_METRICS
             .current_head_number
             .set(main_head.number() as i64);
@@ -276,7 +314,7 @@ where
             return Ok(());
         }
         if self.main.current_header().id() == block.header().parent_hash()
-            && !self.block_exist(block_id)
+            && !self.block_exist(block_id)?
         {
             let executed_block = self.main.apply(block).map_err(|e| {
                 WRITE_BLOCK_CHAIN_METRICS
@@ -289,10 +327,10 @@ where
             self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
             return Ok(());
         }
-        let (block_exist, fork) = self.find_or_fork(block.header())?;
-        match (block_exist, fork) {
-            //block has bean processed, so just trigger a head select.
-            (true, Some(branch)) => {
+        let (block_info, fork) = self.find_or_fork(block.header())?;
+        match (block_info, fork) {
+            //block has bean processed in some branch, so just trigger a head select.
+            (Some(_block_info), Some(branch)) => {
                 debug!(
                     "Block {} has bean processed, trigger head select, total_difficulty: {}",
                     block_id,
@@ -305,12 +343,16 @@ where
                 self.select_head(branch)?;
                 Ok(())
             }
-            (true, None) => {
-                let executed_block = self.main.update_chain_head(block.clone())?;
+            //block has bean processed, and it parent is main chain ,so just connect it to main chain.
+            (Some(block_info), None) => {
+                let executed_block = self.main.connect(ExecutedBlock {
+                    block: block.clone(),
+                    block_info,
+                })?;
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(())
             }
-            (false, Some(mut branch)) => {
+            (None, Some(mut branch)) => {
                 let timer = WRITE_BLOCK_CHAIN_METRICS
                     .exe_block_time
                     .with_label_values(&["time"])
@@ -326,7 +368,7 @@ where
                 self.select_head(branch)?;
                 Ok(())
             }
-            (false, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
+            (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }
     }
 }

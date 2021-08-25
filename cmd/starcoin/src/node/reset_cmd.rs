@@ -8,6 +8,8 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use structopt::StructOpt;
 
+/// Reset the node chain to block of `block-hash`, and clean all blocks after the block.
+/// Note: this command may broken the block database in node.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "reset")]
 pub struct ResetOpt {
