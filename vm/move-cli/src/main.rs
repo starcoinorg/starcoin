@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, bail, Result};
+use move_cli::dependencies::ModuleDependencyResolver;
 use move_cli::function_resolver::FunctionResolver;
 use move_cli::package::DepMode;
-use move_cli::remote_state::{MergedRemoteCache, RemoteStateView};
+use move_cli::remote_state::{resolve_deps, MergedRemoteCache, RemoteStateView};
 use move_cli::{
     package::{parse_mode_from_string, Mode},
     *,
@@ -1237,10 +1238,24 @@ fn main() -> Result<()> {
             // get deps first.
             let view =
                 RemoteStateView::from_url(move_args.starcoin_rpc.as_str(), move_args.block_number)?;
-            let found_modules = view.resolve_deps(&source_files)?;
-            state.save_modules(found_modules.iter())?;
+            let view = MergedRemoteCache { a: state, b: view };
+            let mut found_modules = resolve_deps(&view, &source_files)?;
+            let module_deps = view.get_module_dependencies_recursively_for_all(&found_modules)?;
+            found_modules.extend(module_deps.values().cloned());
 
-            check(state, !*no_republish, &source_files, move_args.verbose)
+            view.a.save_modules(
+                found_modules
+                    .into_iter()
+                    .map(|v| {
+                        let mut blob = vec![];
+                        v.serialize(&mut blob).unwrap();
+                        (v.self_id(), blob)
+                    })
+                    .collect::<Vec<_>>()
+                    .iter(),
+            )?;
+
+            check(view.a, !*no_republish, &source_files, move_args.verbose)
         }
         Command::Check {
             source_files,

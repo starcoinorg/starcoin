@@ -14,6 +14,7 @@ use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use std::sync::Arc;
 use tokio::runtime::Runtime;
+use vm::CompiledModule;
 
 pub struct MergedRemoteCache<A: MoveStorage, B: MoveStorage> {
     pub a: A,
@@ -156,24 +157,6 @@ impl RemoteStateView {
             rt: Arc::new(rt),
         })
     }
-
-    pub fn resolve_deps(&self, source_files: &[String]) -> Result<Vec<(ModuleId, Vec<u8>)>> {
-        let uses = get_uses(&source_files)?;
-        let mut found_modules = vec![];
-        for (addr, name) in uses {
-            let module_id = ModuleId::new(
-                AccountAddress::new(addr.into_bytes()),
-                Identifier::new(name).unwrap(),
-            );
-            let compiled_module = self
-                .get_module(&module_id)
-                .map_err(|e| e.into_vm_status())?;
-            if let Some(bytes) = compiled_module {
-                found_modules.push((module_id, bytes));
-            }
-        }
-        Ok(found_modules)
-    }
 }
 
 impl MoveStorage for RemoteStateView {
@@ -190,4 +173,25 @@ impl MoveStorage for RemoteStateView {
         let handle = self.rt.handle().clone();
         handle.block_on(self.svc.get_resource_async(address, tag))
     }
+}
+
+pub fn resolve_deps(
+    state: &dyn MoveStorage,
+    source_files: &[String],
+) -> Result<Vec<CompiledModule>> {
+    let uses = get_uses(&source_files)?;
+    let mut found_modules = vec![];
+    for (addr, name) in uses {
+        let module_id = ModuleId::new(
+            AccountAddress::new(addr.into_bytes()),
+            Identifier::new(name).unwrap(),
+        );
+        let compiled_module = state
+            .get_module(&module_id)
+            .map_err(|e| e.into_vm_status())?;
+        if let Some(bytes) = compiled_module {
+            found_modules.push(CompiledModule::deserialize(&bytes)?);
+        }
+    }
+    Ok(found_modules)
 }
