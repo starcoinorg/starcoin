@@ -7,12 +7,14 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockSummaryView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    EpochUncleSummaryView, TransactionEventResponse, TransactionInfoView, TransactionView,
+    EpochUncleSummaryView, SignedUserTransactionView, TransactionEventResponse,
+    TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
@@ -25,7 +27,6 @@ use starcoin_types::transaction::TransactionInfo;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
 use std::sync::Arc;
-
 pub struct ChainRpcImpl<S>
 where
     S: ChainAsyncService + 'static,
@@ -202,10 +203,7 @@ where
                             Some(service.main_head_header().await?.state_root()),
                         );
                         if let Some(txn) = txn.user_transaction.as_mut() {
-                            let txn_payload =
-                                bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
-                            txn.raw_txn.decoded_payload =
-                                Some(decode_txn_payload(&state, &txn_payload)?.into());
+                            try_decode_txn_payload(&state, txn)?;
                         }
                     }
                     Ok(Some(txn))
@@ -470,8 +468,27 @@ where
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
     if let BlockTransactionsView::Full(txns) = &mut block.body {
         for txn in txns.iter_mut() {
-            let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
-            txn.raw_txn.decoded_payload = Some(decode_txn_payload(state, &txn_payload)?.into());
+            try_decode_txn_payload(state, txn)?;
+        }
+    }
+    Ok(())
+}
+
+fn try_decode_txn_payload(
+    state: &dyn StateView,
+    txn: &mut SignedUserTransactionView,
+) -> anyhow::Result<()> {
+    let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+    match decode_txn_payload(state, &txn_payload) {
+        // ignore decode failure, as txns may has invalid payload here.
+        Err(e) => {
+            debug!(
+                "decode payload of txn {} failure, {:?}",
+                txn.transaction_hash, e
+            );
+        }
+        Ok(d) => {
+            txn.raw_txn.decoded_payload = Some(d.into());
         }
     }
     Ok(())
