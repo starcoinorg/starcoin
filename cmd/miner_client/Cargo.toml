@@ -8,7 +8,7 @@ edition = "2018"
 anyhow = "1.0.41"
 actix = "0.10.0"
 actix-rt = "1.1"
-async-std = "1.9"
+async-std = "1.10"
 futures = "0.3.12"
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
