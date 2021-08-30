@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_connector::{ResetRequest, WriteBlockChainService};
+use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
@@ -15,6 +15,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent};
 use std::sync::Arc;
@@ -174,5 +175,15 @@ impl ServiceHandler<Self, ResetRequest> for BlockConnectorService {
         _ctx: &mut ServiceContext<BlockConnectorService>,
     ) -> Result<()> {
         self.chain_service.reset(msg.block_hash)
+    }
+}
+
+impl ServiceHandler<Self, ExecuteRequest> for BlockConnectorService {
+    fn handle(
+        &mut self,
+        msg: ExecuteRequest,
+        _ctx: &mut ServiceContext<BlockConnectorService>,
+    ) -> Result<ExecutedBlock> {
+        self.chain_service.execute(msg.block)
     }
 }

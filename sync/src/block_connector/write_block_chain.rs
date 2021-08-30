@@ -208,6 +208,17 @@ where
         Ok(())
     }
 
+    ///Directly execute the block and save result, do not try to connect.
+    pub fn execute(&mut self, block: Block) -> Result<ExecutedBlock> {
+        let chain = BlockChain::new(
+            self.config.net().time_service(),
+            block.header().parent_hash(),
+            self.storage.clone(),
+        )?;
+        let verify_block = chain.verify(block)?;
+        chain.execute(verify_block)
+    }
+
     fn is_main_head(&self, parent_id: &HashValue) -> bool {
         parent_id == &self.startup_info.main
     }

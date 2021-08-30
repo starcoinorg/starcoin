@@ -60,8 +60,7 @@ pub fn add_command(
                 .subcommand(node::InfoCommand)
                 .subcommand(node::PeersCommand)
                 .subcommand(node::MetricsCommand)
-                .subcommand(node::ResetCommand)
-                .subcommand(node::DeleteBlockCommand)
+                .subcommand(node::manager::NodeManagerCommand)
                 .subcommand(
                     Command::with_name("service")
                         .subcommand(node::service::ListCommand)

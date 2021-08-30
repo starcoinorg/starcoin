@@ -26,6 +26,10 @@ pub trait NodeManagerApi {
     #[rpc(name = "node_manager.reset_to_block")]
     fn reset_to_block(&self, block_hash: HashValue) -> FutureResult<()>;
 
+    /// Re execute the block of `block_id` for fix database
+    #[rpc(name = "node_manager.re_execute_block")]
+    fn re_execute_block(&self, block_hash: HashValue) -> FutureResult<()>;
+
     // /// Delete block data in [start_number, end_number)
     // #[rpc(name = "node_manager.delete_block_range")]
     // fn delete_block_range(
@@ -36,5 +40,5 @@ pub trait NodeManagerApi {
 
     /// Delete block of block_id
     #[rpc(name = "node_manager.delete_block")]
-    fn delete_block(&self, block_id: HashValue) -> FutureResult<()>;
+    fn delete_block(&self, block_hash: HashValue) -> FutureResult<()>;
 }
