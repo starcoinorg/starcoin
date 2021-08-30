@@ -6,17 +6,16 @@ module Governance {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Option;
-    use 0x1::Account;
     use 0x1::Timestamp;
     use 0x1::GovernanceTreasury;
 
-    const ERR_GOVER_INIT_REPEATE: u64 = 1000;
-    const ERR_GOVER_OBJECT_NONE_EXISTS: u64 = 1001;
-    const ERR_GOVER_WITHDRAW_OVERFLOW: u64 = 1002;
-    const ERR_GOVER_WEIGHT_DECREASE_OVERLIMIT: u64 = 1003;
-    const ERR_GOVER_NOT_STILL_FREEZE: u64 = 1004;
-    const ERR_GOVER_STAKE_EXISTS: u64 = 1005;
-    const ERR_GOVER_STAKE_NOT_EXISTS: u64 = 1006;
+    const ERR_GOVER_INIT_REPEATE: u64 = 101;
+    const ERR_GOVER_OBJECT_NONE_EXISTS: u64 = 102;
+    const ERR_GOVER_WITHDRAW_OVERFLOW: u64 = 103;
+    const ERR_GOVER_WEIGHT_DECREASE_OVERLIMIT: u64 = 104;
+    const ERR_GOVER_NOT_STILL_FREEZE: u64 = 105;
+    const ERR_GOVER_STAKE_EXISTS: u64 = 106;
+    const ERR_GOVER_STAKE_NOT_EXISTS: u64 = 107;
 
     /// The object of governance
     /// GovTokenT meaning token of governance
@@ -105,8 +104,7 @@ module Governance {
     }
 
     /// Borrow from `Stake` object, calling `stake` function to pay back which is `AssetWrapper`
-    public fun borrow_asset<PoolType: store,
-                            AssetT: store>(
+    public fun borrow_asset<PoolType: store, AssetT: store>(
         account: address): AssetWrapper<PoolType, AssetT> acquires Stake {
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(account);
         let asset = Option::extract(&mut stake.asset);
@@ -122,13 +120,6 @@ module Governance {
 
     public fun modify<PoolType, AssetT>(a: &mut AssetWrapper<PoolType, AssetT>, amount: u128) {
         a.asset_weight = amount;
-    }
-
-    /// Build a new asset from outside
-    public fun build_new_asset<PoolType: store,
-                               AssetT: store>(asset: AssetT, asset_weight: u128)
-    : AssetWrapper<PoolType, AssetT> {
-        AssetWrapper<PoolType, AssetT> { asset, asset_weight }
     }
 
     /// Claim from user
@@ -179,9 +170,18 @@ module Governance {
 
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(account);
         // perform settlement before add weight
-        settle<PoolType, GovTokenT, AssetT>(gov_asset, stake);
+        settle_with_param<PoolType, GovTokenT, AssetT>(gov_asset, stake);
         stake.asset_weight = asset_weight;
         Option::fill(&mut stake.asset, asset);
+    }
+
+    /// Harvest all token from stake asset
+    public fun harvest_all<PoolType: store,
+                           GovTokenT: store,
+                           AssetT: store>(
+        account: &signer) : Token::Token<GovTokenT> acquires Governance, GovernanceAsset, Stake {
+        let zero: u128 = 0;
+        harvest<PoolType, GovTokenT, AssetT>(account, zero)
     }
 
     /// Harvest governance token from stake
@@ -189,20 +189,25 @@ module Governance {
                        GovTokenT: store,
                        AssetT: store>(
         account: &signer,
-        amount: u128) acquires Governance, GovernanceAsset, Stake {
+        amount: u128) : Token::Token<GovTokenT> acquires Governance, GovernanceAsset, Stake {
         let token_issuer = Token::token_address<GovTokenT>();
         let gov = borrow_global_mut<Governance<PoolType, GovTokenT>>(token_issuer);
         let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(token_issuer);
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
 
         // Perform settlement
-        settle<PoolType, GovTokenT, AssetT>(gov_asset, stake);
+        settle_with_param<PoolType, GovTokenT, AssetT>(gov_asset, stake);
 
         assert(stake.gain - amount > 0, ERR_GOVER_WITHDRAW_OVERFLOW);
 
         // Withdraw goverment token
-        let token = GovernanceTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, amount);
-        Account::deposit<GovTokenT>(Signer::address_of(account), token);
+        if (amount > 0) {
+            stake.gain = stake.gain - amount;
+            GovernanceTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, amount)
+        } else {
+            stake.gain = 0;
+            GovernanceTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, stake.gain)
+        }
     }
 
     /// The user can quering all governance amount in any time and scene
@@ -214,16 +219,16 @@ module Governance {
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
 
         // Perform settlement
-        settle<PoolType, GovTokenT, AssetT>(gov_asset, stake);
+        settle_with_param<PoolType, GovTokenT, AssetT>(gov_asset, stake);
 
         stake.gain
     }
 
     /// Performing a settlement based given governance object and stake object.
-    fun settle<PoolType: store,
-               GovTokenT: store,
-               AssetT: store>(gov: &mut GovernanceAsset<PoolType, AssetT>,
-                              stake: &mut Stake<PoolType, AssetT>) {
+    fun settle_with_param<PoolType: store,
+                          GovTokenT: store,
+                          AssetT: store>(gov: &mut GovernanceAsset<PoolType, AssetT>,
+                                         stake: &mut Stake<PoolType, AssetT>) {
         let period_gain = calculate_withdraw_amount(gov.harvest_index, stake.last_harvest_index, stake.asset_weight);
         stake.last_harvest_index = gov.harvest_index;
         stake.gain = stake.gain + period_gain;
