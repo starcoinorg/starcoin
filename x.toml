@@ -1,5 +1,5 @@
 [grcov.installer]
-version = "0.5.15"
+version = "0.8.0"
 
 
 [system-tests]
@@ -45,7 +45,6 @@ allowed = [
 warn = [
     "clippy::wildcard_dependencies",
 ]
-
 
 [hakari]
 version = "v2"
@@ -103,6 +102,10 @@ lazy_static = "use once_cell::sync::Lazy instead"
 [workspace.banned-deps.default-build]
 criterion = "criterion is only for benchmarks"
 proptest = "proptest is only for testing and fuzzing"
+
+[workspace.direct-dep-dups]
+allow = [
+]
 
 [workspace.overlay]
 features = ["fuzzing"]

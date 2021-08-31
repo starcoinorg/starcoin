@@ -24,7 +24,6 @@ use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
-use starcoin_vm_types::values::VMValueCast;
 
 //TODO transfer to enum
 pub const PENDING: u8 = 1;
@@ -60,7 +59,7 @@ pub fn proposal_state(
         )
     });
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
 pub fn proposal_exist(
@@ -82,7 +81,7 @@ pub fn proposal_exist(
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
 pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
@@ -174,7 +173,7 @@ pub fn quorum_vote(state_view: &dyn StateView, token: TypeTag) -> u128 {
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
 pub fn voting_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
@@ -187,7 +186,7 @@ pub fn voting_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 pub fn voting_period(state_view: &dyn StateView, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
@@ -199,7 +198,7 @@ pub fn voting_period(state_view: &dyn StateView, token: TypeTag) -> u64 {
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
 pub fn min_action_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
@@ -212,7 +211,7 @@ pub fn min_action_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
 fn execute_cast_vote(
@@ -388,6 +387,21 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> Script
             bcs_ext::to_bytes(&gas_constants.max_transaction_size_in_bytes).unwrap(),
             bcs_ext::to_bytes(&gas_constants.gas_unit_scaling_factor).unwrap(),
             bcs_ext::to_bytes(&gas_constants.default_account_size.get()).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
+        ],
+    )
+}
+
+pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("OnChainConfigScripts").unwrap(),
+        ),
+        Identifier::new("propose_update_move_language_version").unwrap(),
+        vec![],
+        vec![
+            bcs_ext::to_bytes(&lang_version).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )

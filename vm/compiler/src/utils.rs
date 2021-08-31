@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{MOVE_COMPILED_EXTENSION, MOVE_EXTENSION};
+use crate::move_command_line_common::files::{MOVE_COMPILED_EXTENSION, MOVE_EXTENSION};
 use std::path::{Path, PathBuf};
 
 /// Helper function to iterate through all the files in the given directory, skipping hidden files,

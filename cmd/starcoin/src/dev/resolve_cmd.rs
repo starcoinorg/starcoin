@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
-use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
+use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_rpc_api::types::{FunctionIdView, ModuleIdView, StructTagView};
 use structopt::StructOpt;
 
@@ -37,8 +37,8 @@ pub enum ResolveOpt {
 pub struct ResolveCommand;
 
 pub enum ResolveResult {
-    Function(ScriptFunctionABI),
-    Struct(StructABI),
+    Function(FunctionABI),
+    Struct(StructInstantiation),
     Module(ModuleABI),
 }
 

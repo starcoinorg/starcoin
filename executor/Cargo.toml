@@ -26,6 +26,7 @@ logger = {path = "../commons/logger", package="starcoin-logger"}
 stest = {path = "../commons/stest"}
 stdlib = { package="stdlib", path = "../vm/stdlib"}
 starcoin-move-compiler = { path = "../vm/compiler"}
+starcoin-dev = {path = "../vm/dev"}
 log = "0.4.14"
 
 [dev-dependencies]
@@ -36,6 +37,8 @@ starcoin-resource-viewer = {path = "../vm/resource-viewer"}
 tempfile = "3.1.0"
 starcoin-consensus = { path = "../consensus" }
 test-helper= {path = "../test-helper"}
+starcoin-abi-resolver = {path = "../abi/resolver"}
+starcoin-abi-types = {path = "../abi/types"}
 
 [features]
 default = []

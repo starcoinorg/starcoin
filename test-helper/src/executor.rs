@@ -23,7 +23,6 @@ use starcoin_types::{
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use stdlib::restore_stdlib_in_dir;
 
@@ -87,7 +86,7 @@ pub fn current_block_number(state_view: &dyn StateView) -> u64 {
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
 pub fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {

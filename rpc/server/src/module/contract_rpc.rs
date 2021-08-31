@@ -8,11 +8,12 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_abi_decoder::{decode_move_value, DecodedMoveValue};
 use starcoin_abi_resolver::ABIResolver;
-use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI, TypeABI};
+use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation, TypeInstantiation};
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::{call_contract, PlaygroudService};
 use starcoin_resource_viewer::module_cache::ModuleCache;
+use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
@@ -31,7 +32,6 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::transaction::TransactionArgument;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -153,45 +153,6 @@ where
         let f = async move {
             let state_root = service.state_root().await?;
             let state = ChainStateDB::new(storage, Some(state_root));
-
-            // check arg types.
-            {
-                let func_abi = ABIResolver::new(&state).resolve_function(
-                    &function_id.0.module,
-                    function_id.0.function.as_ident_str(),
-                )?;
-                anyhow::ensure!(
-                    func_abi.ty_args().len() == type_args.len(),
-                    "type args length mismatch, expect {}, actual {}",
-                    func_abi.ty_args().len(),
-                    type_args.len()
-                );
-
-                let arg_abi = func_abi.args();
-                anyhow::ensure!(
-                    arg_abi.len() == args.len(),
-                    "args length mismatch, expect {}, actual {}",
-                    arg_abi.len(),
-                    args.len()
-                );
-                for (i, (abi, v)) in arg_abi.iter().zip(&args).enumerate() {
-                    match (abi.type_abi(), &v.0) {
-                        (TypeABI::U8, TransactionArgument::U8(_))
-                        | (TypeABI::U64, TransactionArgument::U64(_))
-                        | (TypeABI::U128, TransactionArgument::U128(_))
-                        | (TypeABI::Address, TransactionArgument::Address(_))
-                        | (TypeABI::Bool, TransactionArgument::Bool(_)) => {}
-                        (TypeABI::Vector(sub_ty), TransactionArgument::U8Vector(_))
-                            if sub_ty.as_ref() == &TypeABI::U8 => {}
-                        (abi, value) => anyhow::bail!(
-                            "arg type at position {} mismatch, expect {:?}, actual {}",
-                            i,
-                            abi,
-                            value
-                        ),
-                    }
-                }
-            }
             let output = call_contract(
                 &state,
                 function_id.0.module,
@@ -199,7 +160,11 @@ where
                 type_args.into_iter().map(|v| v.0).collect(),
                 args.into_iter().map(|v| v.0).collect(),
             )?;
-            Ok(output.into_iter().map(Into::into).collect())
+            let annotator = MoveValueAnnotator::new(&state);
+            output
+                .into_iter()
+                .map(|(ty, v)| annotator.view_value(&ty, &v).map(Into::into))
+                .collect::<anyhow::Result<Vec<_>>>()
         }
         .map_err(map_err);
         Box::pin(f.boxed())
@@ -253,7 +218,7 @@ where
         Box::pin(f.boxed())
     }
 
-    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<ScriptFunctionABI> {
+    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<FunctionABI> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
@@ -265,7 +230,7 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructABI> {
+    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructInstantiation> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
@@ -324,7 +289,7 @@ pub fn dry_run(
                     })?;
                     let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
                     view.json = Some(decode_move_value(
-                        &TypeABI::Struct(Box::new(struct_abi)),
+                        &TypeInstantiation::Struct(Box::new(struct_abi)),
                         view.raw.0.as_slice(),
                     )?)
                 }

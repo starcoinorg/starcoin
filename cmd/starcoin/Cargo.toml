@@ -48,10 +48,10 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 vm-status-translator = {path = "../../vm/vm-status-translator"}
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="69ab01213a2e4128a1a8c8216bbf666c9ef90abd" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="2e69b605319e46a24ade58133c61833c167830f9"  }
 network-api = {path = "../../network/api", package="network-api"}
 starcoin-network-rpc-api = {path = "../../network-rpc/api"}
-short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="69ab01213a2e4128a1a8c8216bbf666c9ef90abd" }
+short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="2e69b605319e46a24ade58133c61833c167830f9"  }
 starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-abi-types = {path = "../../abi/types"}
 

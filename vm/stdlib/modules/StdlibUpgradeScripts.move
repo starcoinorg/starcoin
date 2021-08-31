@@ -66,11 +66,15 @@ module StdlibUpgradeScripts {
         }
 
         public(script) fun upgrade_from_v6_to_v7(sender: signer) {
-            Self::do_upgrade_from_v6_to_v7(&sender);
+            Self::do_upgrade_from_v6_to_v7_with_language_version(&sender, 2);
         }
 
+        /// deprecated, use `do_upgrade_from_v6_to_v7_with_language_version`.
         public fun do_upgrade_from_v6_to_v7(sender: &signer) {
-            let language_version = 2;
+           do_upgrade_from_v6_to_v7_with_language_version(sender, 2);
+        }
+
+        public fun do_upgrade_from_v6_to_v7_with_language_version(sender: &signer, language_version: u64) {
             // initialize the language version config.
             Config::publish_new_config(sender, LanguageVersion::new(language_version));
             // use STC Dao to upgrade onchain's move-language-version configuration.

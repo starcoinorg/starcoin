@@ -16,7 +16,7 @@ use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
 use parking_lot::Mutex;
 use serde_json::Value;
-use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
+use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
@@ -602,12 +602,15 @@ impl RpcClient {
     pub fn contract_resolve_function(
         &self,
         function_id: FunctionIdView,
-    ) -> anyhow::Result<ScriptFunctionABI> {
+    ) -> anyhow::Result<FunctionABI> {
         self.call_rpc_blocking(|inner| inner.contract_client.resolve_function(function_id))
             .map_err(map_err)
     }
 
-    pub fn contract_resolve_struct(&self, struct_tag: StructTagView) -> anyhow::Result<StructABI> {
+    pub fn contract_resolve_struct(
+        &self,
+        struct_tag: StructTagView,
+    ) -> anyhow::Result<StructInstantiation> {
         self.call_rpc_blocking(|inner| inner.contract_client.resolve_struct(struct_tag))
             .map_err(map_err)
     }

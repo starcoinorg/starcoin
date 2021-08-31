@@ -8,7 +8,6 @@ use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
-use starcoin_vm_types::values::VMValueCast;
 use test_helper::executor::{
     association_execute, association_execute_should_success, compile_modules_with_address,
     move_abort_code, prepare_genesis,
@@ -93,7 +92,7 @@ fn test_merkle_distributor() -> Result<()> {
                 index.simple_serialize().unwrap(),
             ],
         )?;
-        let is_claimed: bool = ret[0].1.copy_value().unwrap().cast().unwrap();
+        let is_claimed: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
         assert!(!is_claimed, "should not claimed");
     }
 
@@ -207,7 +206,7 @@ fn test_merkle_distributor() -> Result<()> {
                 index.simple_serialize().unwrap(),
             ],
         )?;
-        let is_claimed: bool = ret[0].1.copy_value().unwrap().cast().unwrap();
+        let is_claimed: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
         assert!(is_claimed, "should already claimed");
     }
     Ok(())

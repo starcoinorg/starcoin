@@ -6,7 +6,7 @@ use crate::types::{
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_abi_decoder::DecodedMoveValue;
-use starcoin_abi_types::{ModuleABI, ScriptFunctionABI, StructABI};
+use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
@@ -45,9 +45,9 @@ pub trait ContractApi {
     ) -> FutureResult<DryRunOutputView>;
 
     #[rpc(name = "contract.resolve_function")]
-    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<ScriptFunctionABI>;
+    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<FunctionABI>;
     #[rpc(name = "contract.resolve_struct")]
-    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructABI>;
+    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructInstantiation>;
     #[rpc(name = "contract.resolve_module")]
     fn resolve_module(&self, module_id: ModuleIdView) -> FutureResult<ModuleABI>;
 }

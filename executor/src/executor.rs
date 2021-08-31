@@ -5,7 +5,6 @@ use anyhow::Result;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
-use starcoin_vm_types::values::Value;
 use starcoin_vm_types::{state_view::StateView, vm_status::VMStatus};
 use vm_runtime::{metrics::TXN_EXECUTION_HISTOGRAM, starcoin_vm::StarcoinVM};
 
@@ -66,7 +65,7 @@ pub fn execute_readonly_function(
     function_name: &Identifier,
     type_params: Vec<TypeTag>,
     args: Vec<Vec<u8>>,
-) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
+) -> Result<Vec<Vec<u8>>, VMStatus> {
     let timer = TXN_EXECUTION_HISTOGRAM
         .with_label_values(&["execute_readonly_function"])
         .start_timer();

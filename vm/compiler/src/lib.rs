@@ -1,9 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub use move_command_line_common;
+pub use move_lang::compiled_unit::{verify_units, CompiledUnit};
+pub use move_lang::diagnostics;
+pub use move_lang::Compiler;
+
 use crate::shared::AddressBytes;
 /// A wrap to move-lang compiler
 use anyhow::{bail, ensure, Result};
+use move_lang::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
 use move_lang::shared::Flags;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
@@ -17,17 +23,7 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-pub use move_lang::{
-    compiled_unit::{verify_units, CompiledUnit},
-    errors::*,
-    move_compile, move_compile_and_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
-};
 pub mod utils;
-
-pub mod errors {
-    pub use move_lang::errors::*;
-}
-
 pub mod command_line {
     use crate::shared::AddressBytes;
 
@@ -52,6 +48,8 @@ pub mod shared {
 pub mod test_utils {
     pub use move_lang_test_utils::*;
 }
+
+pub mod dependency_order;
 
 /// Substitutes the placeholders variables.
 fn substitute_variable<S: ::std::hash::BuildHasher>(
@@ -102,7 +100,7 @@ where
                 .file_name()
                 .expect("source_file must contains file_name."),
         )
-        .with_extension(MOVE_EXTENSION);
+        .with_extension(move_command_line_common::files::MOVE_EXTENSION);
     std::fs::write(temp_file.as_path(), processed_source)?;
     Ok(temp_file)
 }
@@ -114,10 +112,9 @@ pub fn compile_source_string(
     sender: AccountAddress,
 ) -> anyhow::Result<(FilesSourceText, Vec<CompiledUnit>)> {
     let (source_text, compiled_result) = compile_source_string_no_report(source, deps, sender)?;
-    match compiled_result {
-        Ok(c) => Ok((source_text, c)),
-        Err(e) => errors::report_errors(source_text, e),
-    }
+
+    let compiled_units = unwrap_or_report_diagnostics(&source_text, compiled_result);
+    Ok((source_text, compiled_units))
 }
 
 /// Compile source, and return compile error.
@@ -125,7 +122,7 @@ pub fn compile_source_string_no_report(
     source: &str,
     deps: &[String],
     sender: AccountAddress,
-) -> Result<(FilesSourceText, Result<Vec<CompiledUnit>, Errors>)> {
+) -> Result<(FilesSourceText, Result<Vec<CompiledUnit>, Diagnostics>)> {
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
     let sender = AddressBytes::new(sender.into());
@@ -135,12 +132,9 @@ pub fn compile_source_string_no_report(
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    move_compile(
-        &targets,
-        deps,
-        None,
-        Flags::empty().set_sources_shadow_deps(true),
-    )
+    let compiler = move_lang::Compiler::new(&targets, deps)
+        .set_flags(Flags::empty().set_sources_shadow_deps(true));
+    compiler.build()
 }
 
 /// check module compatibility

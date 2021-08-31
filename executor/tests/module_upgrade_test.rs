@@ -17,17 +17,19 @@ use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{association_address, core_code_address, AccountResource};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
-use starcoin_vm_types::values::VMValueCast;
 use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use stdlib::{load_upgrade_package, StdlibCompat, STDLIB_VERSIONS};
-use test_helper::dao::dao_vote_test;
+use test_helper::dao::{
+    dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_language_version,
+};
 use test_helper::executor::*;
 use test_helper::Account;
 
@@ -359,6 +361,19 @@ fn test_stdlib_upgrade() -> Result<()> {
     let alice = Account::new();
 
     for new_version in stdlib_versions.into_iter().skip(1) {
+        // if upgrade from 7 to later, we need to update language version to 3.
+        if let StdlibVersion::Version(7) = current_version {
+            dao_vote_test(
+                &alice,
+                &chain_state,
+                &net,
+                vote_language_version(&net, 3),
+                on_chain_config_type_tag(MoveLanguageVersion::type_tag()),
+                execute_script_on_chain_config(&net, MoveLanguageVersion::type_tag(), proposal_id),
+                proposal_id,
+            )?;
+            proposal_id += 1;
+        }
         verify_version_state(current_version, &chain_state)?;
 
         let dao_action_type_tag = new_version.upgrade_module_type_tag();
@@ -629,5 +644,5 @@ fn read_foo(state_view: &dyn StateView) -> u8 {
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
+    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }

@@ -53,7 +53,7 @@ pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
     GenesisConfig, DEFAULT_GAS_CONSTANTS, DEV_CONFIG, HALLEY_CONFIG, INITIAL_GAS_SCHEDULE,
-    MAIN_CONFIG, PROXIMA_CONFIG, TEST_CONFIG, TEST_GAS_SCHEDULE,
+    MAIN_CONFIG, PROXIMA_CONFIG, TEST_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;

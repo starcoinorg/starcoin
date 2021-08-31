@@ -4,8 +4,8 @@
 #![forbid(unsafe_code)]
 
 use bytecode_source_map::utils::{remap_owned_loc_to_loc, source_map_from_file, OwnedLoc};
+use move_binary_format::file_format::CompiledModule;
 use move_coverage::{coverage_map::CoverageMap, source_coverage::SourceCoverageBuilder};
-use starcoin_vm_types::file_format::CompiledModule;
 use std::{
     fs,
     fs::File,

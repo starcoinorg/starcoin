@@ -6,10 +6,12 @@ use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::temp_path;
-use starcoin_move_compiler::shared::Flags;
-use starcoin_move_compiler::{
-    compile_source_string_no_report, errors, move_compile, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+use starcoin_move_compiler::diagnostics::Diagnostics;
+use starcoin_move_compiler::move_command_line_common::files::{
+    MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
+use starcoin_move_compiler::shared::Flags;
+use starcoin_move_compiler::{compile_source_string_no_report, Compiler};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
@@ -97,12 +99,9 @@ impl CommandAction for CompileCommand {
             )?
         } else {
             let targets = vec![source_file_or_dir.to_string_lossy().to_string()];
-            move_compile(
-                &targets,
-                &deps,
-                None,
-                Flags::empty().set_sources_shadow_deps(true),
-            )?
+            Compiler::new(&targets, &deps)
+                .set_flags(Flags::empty().set_sources_shadow_deps(true))
+                .build()?
         };
 
         let compile_result = if ctx.opt().no_verify {
@@ -110,7 +109,7 @@ impl CommandAction for CompileCommand {
         } else {
             compile_result.and_then(|units| {
                 let (units, errors) = units.into_iter().map(|unit| unit.verify()).fold(
-                    (vec![], vec![]),
+                    (vec![], Diagnostics::new()),
                     |(mut units, mut errors), (unit, error)| {
                         units.push(unit);
                         errors.extend(error);
@@ -131,7 +130,10 @@ impl CommandAction for CompileCommand {
                 eprintln!(
                     "{}",
                     String::from_utf8_lossy(
-                        errors::report_errors_to_color_buffer(sources, e).as_slice()
+                        starcoin_move_compiler::diagnostics::report_diagnostics_to_color_buffer(
+                            &sources, e
+                        )
+                        .as_slice()
                     )
                 );
                 bail!("compile error")

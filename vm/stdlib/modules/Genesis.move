@@ -433,8 +433,7 @@ module Genesis {
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
 
         StdlibUpgradeScripts::do_upgrade_from_v5_to_v6(&genesis_account);
-        StdlibUpgradeScripts::do_upgrade_from_v6_to_v7(&genesis_account);
-
+        StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 3);
         //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
         Timestamp::set_time_has_started(&genesis_account);
         Account::release_genesis_signer(genesis_account);
