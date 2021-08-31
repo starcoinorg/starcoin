@@ -14,6 +14,10 @@ module StdlibUpgradeScripts {
         use 0x1::STCUSDOracle;
         use 0x1::NFT;
         use 0x1::GenesisNFT;
+        use 0x1::LanguageVersion;
+        use 0x1::OnChainConfigDao;
+        use 0x1::Config;
+
         spec module {
             pragma verify = false;
             pragma aborts_if_is_strict = true;
@@ -59,6 +63,17 @@ module StdlibUpgradeScripts {
 
         public(script) fun upgrade_from_v5_to_v6(sender: signer) {
            Self::do_upgrade_from_v5_to_v6(&sender)
+        }
+
+        public(script) fun upgrade_from_v6_to_v7(sender: signer, language_version: u64) {
+            Self::do_upgrade_from_v6_to_v7(&sender, language_version);
+        }
+
+        public fun do_upgrade_from_v6_to_v7(sender: &signer, language_version: u64) {
+            // initialize the language version config.
+            Config::publish_new_config(sender, LanguageVersion::new(language_version));
+            // use STC Dao to upgrade onchain's move-language-version configuration.
+            OnChainConfigDao::plugin<STC, LanguageVersion::LanguageVersion>(sender);
         }
 }
 }

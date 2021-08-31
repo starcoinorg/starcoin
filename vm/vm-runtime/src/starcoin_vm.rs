@@ -27,7 +27,7 @@ use starcoin_types::{
     },
     write_set::WriteSet,
 };
-use starcoin_vm_types::access::ModuleAccess;
+use starcoin_vm_types::access::{ModuleAccess, ScriptAccess};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{
@@ -35,11 +35,12 @@ use starcoin_vm_types::account_config::{
     EPILOGUE_V2_NAME, PROLOGUE_NAME,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, GasStatus};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::on_chain_config::MoveLanguageVersion;
 use starcoin_vm_types::transaction::{DryRunTransaction, Module, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -67,6 +68,7 @@ pub struct StarcoinVM {
     move_vm: Arc<MoveVMAdapter>,
     vm_config: Option<VMConfig>,
     version: Option<Version>,
+    move_version: Option<MoveLanguageVersion>,
 }
 
 impl Default for StarcoinVM {
@@ -82,6 +84,7 @@ impl StarcoinVM {
             move_vm: Arc::new(inner),
             vm_config: None,
             version: None,
+            move_version: None,
         }
     }
 
@@ -108,7 +111,8 @@ impl StarcoinVM {
             Version::fetch_config(&remote_storage)?
                 .ok_or_else(|| format_err!("Load Version fail, Version resource not exist."))?,
         );
-
+        // move version can be none.
+        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage)?;
         Ok(())
     }
 
@@ -123,6 +127,21 @@ impl StarcoinVM {
         self.version
             .clone()
             .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+    }
+    pub fn get_move_version(&self) -> Option<MoveLanguageVersion> {
+        self.move_version
+    }
+
+    fn check_move_version(&self, package_or_script_bytecode_version: u64) -> Result<(), VMStatus> {
+        // if move_version config is not exists on chain, this check will do no harm.
+        if let Some(supported_move_version) = &self.move_version {
+            if package_or_script_bytecode_version > supported_move_version.major {
+                // TODO: currently, if the bytecode version of a package or script is higher than onchain config,
+                // return `FEATURE_UNDER_GATING` error, and the txn will not be included in blocks.
+                return Err(VMStatus::Error(StatusCode::FEATURE_UNDER_GATING));
+            }
+        }
+        Ok(())
     }
 
     fn check_gas(&self, txn_data: &TransactionMetadata) -> Result<(), VMStatus> {
@@ -227,6 +246,12 @@ impl StarcoinVM {
                     }
                     Ok(only_new_module) => {
                         for module in package.modules() {
+                            if let Ok(compiled_module) = CompiledModule::deserialize(module.code())
+                            {
+                                // check module's bytecode version.
+                                self.check_move_version(compiled_module.version() as u64)?;
+                            };
+
                             self.check_compatibility_if_exist(
                                 &session,
                                 module,
@@ -238,6 +263,9 @@ impl StarcoinVM {
                 }
             }
             TransactionPayload::Script(s) => {
+                if let Ok(s) = CompiledScript::deserialize(s.code()) {
+                    self.check_move_version(s.version() as u64)?;
+                };
                 session
                     .verify_script_args(
                         s.code().to_vec(),
@@ -401,6 +429,9 @@ impl StarcoinVM {
                             }
                         };
 
+                        // check module's bytecode version.
+                        self.check_move_version(compiled_module.version() as u64)?;
+
                         let module_id = compiled_module.self_id();
                         if module_id.address() != &package_address {
                             return Err(errors::verification_error(
@@ -494,13 +525,20 @@ impl StarcoinVM {
                 .charge_intrinsic_gas(txn_data.transaction_size())
                 .map_err(|e| e.into_vm_status())?;
             match payload {
-                TransactionPayload::Script(script) => session.execute_script(
-                    script.code().to_vec(),
-                    script.ty_args().to_vec(),
-                    script.args().to_vec(),
-                    vec![txn_data.sender()],
-                    cost_strategy,
-                ),
+                TransactionPayload::Script(script) => {
+                    // we only use the ok path, let move vm handle the wrong path.
+                    if let Ok(s) = CompiledScript::deserialize(script.code()) {
+                        self.check_move_version(s.version() as u64)?;
+                    };
+
+                    session.execute_script(
+                        script.code().to_vec(),
+                        script.ty_args().to_vec(),
+                        script.args().to_vec(),
+                        vec![txn_data.sender()],
+                        cost_strategy,
+                    )
+                }
                 TransactionPayload::ScriptFunction(script_function) => session
                     .execute_script_function(
                         script_function.module(),

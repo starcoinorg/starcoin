@@ -8,6 +8,7 @@ module OnChainConfigScripts {
     use 0x1::TransactionTimeoutConfig;
     use 0x1::VMConfig;
     use 0x1::Signer;
+    use 0x1::LanguageVersion;
 
     public ( script ) fun propose_update_consensus_config(account: signer,
                                                           uncle_rate_target: u64,
@@ -106,6 +107,15 @@ module OnChainConfigScripts {
     }
 
     spec propose_update_vm_config {
+        pragma verify = false;
+    }
+
+    public(script) fun propose_update_move_language_version(account: signer, new_version: u64, exec_delay: u64) {
+        let lang_version = LanguageVersion::new(new_version);
+        OnChainConfigDao::propose_update<STC::STC, LanguageVersion::LanguageVersion>(&account, lang_version, exec_delay);
+    }
+
+    spec propose_update_move_language_version {
         pragma verify = false;
     }
 
