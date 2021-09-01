@@ -36,7 +36,7 @@ starcoin-rpc-api = { path = "../../rpc/api" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 libloading = "0.7.0"
 dyn-clone = "1.0.4"
-parking_lot = "0.11.1"
+parking_lot = "0.11.2"
 starcoin-stratum = { path = "../../stratum" }
 starcoin-miner = { path = "../../miner" }
 starcoin-miner-client-api = { path = "./api" }
