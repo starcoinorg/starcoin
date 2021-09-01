@@ -2,32 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 address 0x1 {
-module Governance {
+module YieldFarming {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Option;
     use 0x1::Timestamp;
     // use 0x1::Debug;
-    use 0x1::GovernanceTreasury;
+    use 0x1::YieldFarmingTreasury;
 
-    const ERR_GOVER_INIT_REPEATE: u64 = 101;
-    const ERR_GOVER_OBJECT_NONE_EXISTS: u64 = 102;
-    const ERR_GOVER_WITHDRAW_OVERFLOW: u64 = 103;
-    const ERR_GOVER_WEIGHT_DECREASE_OVERLIMIT: u64 = 104;
-    const ERR_GOVER_NOT_STILL_FREEZE: u64 = 105;
-    const ERR_GOVER_STAKE_EXISTS: u64 = 106;
-    const ERR_GOVER_STAKE_NOT_EXISTS: u64 = 107;
-    const ERR_GOVER_HAVERST_NO_GAIN: u64 = 108;
-    const ERR_GOVER_TOTAL_WEIGHT_IS_ZERO: u64 = 109;
+    const ERR_FARMING_INIT_REPEATE: u64 = 101;
+    const ERR_FARMING_OBJECT_NONE_EXISTS: u64 = 102;
+    const ERR_FARMING_WITHDRAW_OVERFLOW: u64 = 103;
+    const ERR_FARMING_WEIGHT_DECREASE_OVERLIMIT: u64 = 104;
+    const ERR_FARMING_NOT_STILL_FREEZE: u64 = 105;
+    const ERR_FARMING_STAKE_EXISTS: u64 = 106;
+    const ERR_FARMING_STAKE_NOT_EXISTS: u64 = 107;
+    const ERR_FARMING_HAVERST_NO_GAIN: u64 = 108;
+    const ERR_FARMING_TOTAL_WEIGHT_IS_ZERO: u64 = 109;
 
-    /// The object of governance
-    /// GovTokenT meaning token of governance
-    /// AssetT meaning asset which has been staked in governance
-    struct Governance<PoolType, GovTokenT> has key, store {
-        withdraw_cap: GovernanceTreasury::WithdrawCapability<PoolType, GovTokenT>,
+    /// The object of yield farming
+    /// GovTokenT meaning token of yield farming
+    /// AssetT meaning asset which has been staked in yield farming
+    struct Farming<PoolType, GovTokenT> has key, store {
+        withdraw_cap: YieldFarmingTreasury::WithdrawCapability<PoolType, GovTokenT>,
     }
 
-    struct GovernanceAsset<PoolType, AssetT> has key, store {
+    struct FarmingAsset<PoolType, AssetT> has key, store {
         asset_total_weight: u128,
         harvest_index: u128,
         last_update_timestamp: u64,
@@ -56,15 +56,15 @@ module Governance {
     }
 
     /// Called by token issuer
-    /// this will declare a governance pool
+    /// this will declare a yield farming pool
     public fun initialize<
         PoolType: store,
         GovTokenT: store>(account: &signer,
                           treasury: Token::Token<GovTokenT>) {
-        assert(!exists_at<PoolType, GovTokenT>(Signer::address_of(account)), ERR_GOVER_INIT_REPEATE);
+        assert(!exists_at<PoolType, GovTokenT>(Signer::address_of(account)), ERR_FARMING_INIT_REPEATE);
 
-        let withdraw_cap = GovernanceTreasury::initialize<PoolType, GovTokenT>(account, treasury);
-        move_to(account, Governance<PoolType, GovTokenT> {
+        let withdraw_cap = YieldFarmingTreasury::initialize<PoolType, GovTokenT>(account, treasury);
+        move_to(account, Farming<PoolType, GovTokenT> {
             withdraw_cap,
         });
     }
@@ -75,10 +75,10 @@ module Governance {
         release_per_second: u128,
         delay: u64): ParameterModifyCapability<PoolType, AssetT> {
 
-        assert(!exists_asset_at<PoolType, AssetT>(Signer::address_of(account)), ERR_GOVER_INIT_REPEATE);
+        assert(!exists_asset_at<PoolType, AssetT>(Signer::address_of(account)), ERR_FARMING_INIT_REPEATE);
 
         let now_seconds = Timestamp::now_seconds();
-        move_to(account, GovernanceAsset<PoolType, AssetT> {
+        move_to(account, FarmingAsset<PoolType, AssetT> {
             asset_total_weight: 0,
             harvest_index: 0,
             last_update_timestamp: now_seconds,
@@ -93,8 +93,8 @@ module Governance {
                                 AssetT: store>(
         _cap: &ParameterModifyCapability<PoolType, AssetT>,
         broker: address,
-        release_per_second: u128) acquires GovernanceAsset {
-        let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(broker);
+        release_per_second: u128) acquires FarmingAsset {
+        let gov_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
 
         let now_seconds = Timestamp::now_seconds();
 
@@ -139,10 +139,10 @@ module Governance {
                      AssetT: store>(
         account: &signer,
         broker: address,
-        asset: AssetT) acquires GovernanceAsset {
-        assert(!exists_stake_at_address<PoolType, AssetT>(Signer::address_of(account)), ERR_GOVER_STAKE_EXISTS);
+        asset: AssetT) acquires FarmingAsset {
+        assert(!exists_stake_at_address<PoolType, AssetT>(Signer::address_of(account)), ERR_FARMING_STAKE_EXISTS);
 
-        let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(broker);
+        let gov_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
 
         move_to(account, Stake<PoolType, AssetT> {
             asset: Option::some(asset),
@@ -152,14 +152,14 @@ module Governance {
         });
     }
 
-    /// Call by stake user, staking amount of asset in order to get governance token
+    /// Call by stake user, staking amount of asset in order to get yield farming token
     public fun stake<PoolType: store,
                      GovTokenT: store,
                      AssetT: store>(
         account: &signer,
         broker: address,
-        asset_wrapper: AssetWrapper<PoolType, AssetT>) acquires GovernanceAsset, Stake {
-        assert(exists_stake_at_address<PoolType, AssetT>(Signer::address_of(account)), ERR_GOVER_STAKE_NOT_EXISTS);
+        asset_wrapper: AssetWrapper<PoolType, AssetT>) acquires FarmingAsset, Stake {
+        assert(exists_stake_at_address<PoolType, AssetT>(Signer::address_of(account)), ERR_FARMING_STAKE_NOT_EXISTS);
         inner_stake<PoolType, GovTokenT, AssetT>(Signer::address_of(account), broker, asset_wrapper);
     }
 
@@ -170,24 +170,24 @@ module Governance {
         broker: address,
         asset_wrapper: AssetWrapper<PoolType, AssetT>,
         _cap: &ParameterModifyCapability<PoolType, AssetT>
-    ) acquires GovernanceAsset, Stake {
+    ) acquires FarmingAsset, Stake {
         inner_stake<PoolType, GovTokenT, AssetT>(account, broker, asset_wrapper);
     }
 
-    /// This function called by user for staking users governance authority in this pool
+    /// This function called by user for staking users yield farming authority in this pool
     fun inner_stake<PoolType: store, GovTokenT: store, AssetT: store>(
         account: address,
         broker: address,
-        asset_wrapper: AssetWrapper<PoolType, AssetT>) acquires Stake, GovernanceAsset {
+        asset_wrapper: AssetWrapper<PoolType, AssetT>) acquires Stake, FarmingAsset {
         let AssetWrapper<PoolType, AssetT> { 
             asset, 
             asset_weight, 
             asset_origin_weight,
         } = asset_wrapper;
-        let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(broker);
+        let gov_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
 
         // Check locking time
-        assert(gov_asset.start_time <= Timestamp::now_seconds(), ERR_GOVER_NOT_STILL_FREEZE);
+        assert(gov_asset.start_time <= Timestamp::now_seconds(), ERR_FARMING_NOT_STILL_FREEZE);
 
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(account);
 
@@ -211,43 +211,43 @@ module Governance {
                            GovTokenT: store,
                            AssetT: store>(
         account: &signer,
-        broker: address) : Token::Token<GovTokenT> acquires Governance, GovernanceAsset, Stake {
+        broker: address) : Token::Token<GovTokenT> acquires Farming, FarmingAsset, Stake {
         let zero: u128 = 0;
         harvest<PoolType, GovTokenT, AssetT>(account, broker,zero)
     }
 
-    /// Harvest governance token from stake
+    /// Harvest yield farming token from stake
     public fun harvest<PoolType: store,
                        GovTokenT: store,
                        AssetT: store>(
         account: &signer,
         broker: address,
-        amount: u128) : Token::Token<GovTokenT> acquires Governance, GovernanceAsset, Stake {
-        let gov = borrow_global_mut<Governance<PoolType, GovTokenT>>(broker);
-        let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(broker);
+        amount: u128) : Token::Token<GovTokenT> acquires Farming, FarmingAsset, Stake {
+        let gov = borrow_global_mut<Farming<PoolType, GovTokenT>>(broker);
+        let gov_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
 
         // Perform settlement
         settle_with_param<PoolType, GovTokenT, AssetT>(gov_asset, stake);
 
-        assert(stake.gain > 0, ERR_GOVER_HAVERST_NO_GAIN);
-        assert(stake.gain - amount > 0, ERR_GOVER_WITHDRAW_OVERFLOW);
+        assert(stake.gain > 0, ERR_FARMING_HAVERST_NO_GAIN);
+        assert(stake.gain - amount > 0, ERR_FARMING_WITHDRAW_OVERFLOW);
 
         // Withdraw goverment token
         if (amount > 0) {
             stake.gain = stake.gain - amount;
-            GovernanceTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, amount)
+            YieldFarmingTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, amount)
         } else {
             stake.gain = 0;
-            GovernanceTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, stake.gain)
+            YieldFarmingTreasury::withdraw_with_capability<PoolType, GovTokenT>(&mut gov.withdraw_cap, stake.gain)
         }
     }
 
-    /// The user can quering all governance amount in any time and scene
+    /// The user can quering all yield farming amount in any time and scene
     public fun query_gov_token_amount<PoolType: store,
                                       GovTokenT: store,
-                                      AssetT : store>(account: &signer, broker: address): u128 acquires GovernanceAsset, Stake {
-        let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(broker);
+                                      AssetT : store>(account: &signer, broker: address): u128 acquires FarmingAsset, Stake {
+        let gov_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
 
         // Perform settlement
@@ -256,17 +256,17 @@ module Governance {
         stake.gain
     }
     
-    /// Query total stake count from governance resource
+    /// Query total stake count from yield farming resource
     public fun query_total_stake<PoolType: store,
-                                 AssetT: store>(broker: address): u128 acquires GovernanceAsset {
-        let gov_asset = borrow_global_mut<GovernanceAsset<PoolType, AssetT>>(broker);
+                                 AssetT: store>(broker: address): u128 acquires FarmingAsset {
+        let gov_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         gov_asset.asset_total_weight
     }
 
-    /// Performing a settlement based given governance object and stake object.
+    /// Performing a settlement based given yield farming object and stake object.
     fun settle_with_param<PoolType: store,
                           GovTokenT: store,
-                          AssetT: store>(gov_asset: &mut GovernanceAsset<PoolType, AssetT>,
+                          AssetT: store>(gov_asset: &mut FarmingAsset<PoolType, AssetT>,
                                          stake: &mut Stake<PoolType, AssetT>) {
         let now_seconds = Timestamp::now_seconds();
         if (gov_asset.asset_total_weight <= 0) {
@@ -294,7 +294,7 @@ module Governance {
                                        asset_total_weight: u128,
                                        last_update_timestamp: u64,
                                        release_per_second: u128): u128 {
-        assert(asset_total_weight > 0, ERR_GOVER_TOTAL_WEIGHT_IS_ZERO);
+        assert(asset_total_weight > 0, ERR_FARMING_TOTAL_WEIGHT_IS_ZERO);
         let time_period = Timestamp::now_seconds() - last_update_timestamp;
         harvest_index + (release_per_second * (time_period as u128)) / asset_total_weight
     }
@@ -306,14 +306,14 @@ module Governance {
         asset_weight * (harvest_index - last_harvest_index)
     }
 
-    /// Check the Governance of TokenT is exists.
+    /// Check the Farming of TokenT is exists.
     public fun exists_at<PoolType: store, GovTokenT: store>(broker: address): bool {
-        exists<Governance<PoolType, GovTokenT>>(broker)
+        exists<Farming<PoolType, GovTokenT>>(broker)
     }
 
-    /// Check the Governance of AsssetT is exists.
+    /// Check the Farming of AsssetT is exists.
     public fun exists_asset_at<PoolType: store, AssetT: store>(broker: address): bool {
-        exists<GovernanceAsset<PoolType, AssetT>>(broker)
+        exists<FarmingAsset<PoolType, AssetT>>(broker)
     }
 
     /// Check stake at address exists.
