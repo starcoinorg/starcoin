@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 address 0x1 {
-module GovernanceTreasury {
+module YieldFarmingTreasury {
     use 0x1::Token::{Token, Self};
     use 0x1::Signer;
     use 0x1::Errors;
