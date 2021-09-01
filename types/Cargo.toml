@@ -17,7 +17,7 @@ proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 rand = "0.8.4"
 rand_core = { version = "0.6.3", default-features = false }
-serde = { version = "1.0.129", default-features = false }
+serde = { version = "1.0.130", default-features = false }
 serde_json = "1.0"
 thiserror = "1.0.26"
 num_enum = "0.5.4"
