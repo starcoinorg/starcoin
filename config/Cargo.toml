@@ -14,7 +14,7 @@ thiserror = "1.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 toml = { version = "0.5.8", default-features = false }
-structopt = "0.3.22"
+structopt = "0.3.23"
 git-version = "0.3.5"
 names = "0.11.0"
 starcoin-crypto = { path = "../commons/crypto"}

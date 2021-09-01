@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.41"
-structopt = "0.3.22"
+structopt = "0.3.23"
 async-std = "1.10"
 futures = "0.3.12"
 starcoin-crypto = { path = "../../commons/crypto"}
