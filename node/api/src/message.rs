@@ -16,6 +16,7 @@ pub enum NodeRequest {
     StartPacemaker,
     ShutdownSystem,
     ResetNode(HashValue),
+    ReExecuteBlock(HashValue),
     DeleteBlock(HashValue),
 }
 

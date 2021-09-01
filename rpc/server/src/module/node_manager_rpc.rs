@@ -75,10 +75,21 @@ where
         .map_err(map_err);
         Box::pin(fut.boxed())
     }
+
     fn reset_to_block(&self, block_hash: HashValue) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move {
             service.reset_node(block_hash).await?;
+            Ok(())
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn re_execute_block(&self, block_hash: HashValue) -> FutureResult<()> {
+        let service = self.service.clone();
+        let fut = async move {
+            service.re_execute_block(block_hash).await?;
             Ok(())
         }
         .map_err(map_err);

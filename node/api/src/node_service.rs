@@ -25,8 +25,9 @@ pub trait NodeAsyncService:
     async fn stop_pacemaker(&self) -> Result<()>;
 
     async fn shutdown_system(&self) -> Result<()>;
-    async fn reset_node(&self, block_id: HashValue) -> Result<()>;
-    async fn delete_block(&self, block_id: HashValue) -> Result<()>;
+    async fn reset_node(&self, block_hash: HashValue) -> Result<()>;
+    async fn re_execute_block(&self, block_hash: HashValue) -> Result<()>;
+    async fn delete_block(&self, block_hash: HashValue) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -94,15 +95,25 @@ where
         self.try_send(NodeRequest::ShutdownSystem)?;
         Ok(())
     }
-    async fn reset_node(&self, block_id: HashValue) -> Result<()> {
-        let response = self.send(NodeRequest::ResetNode(block_id)).await??;
+
+    async fn reset_node(&self, block_hash: HashValue) -> Result<()> {
+        let response = self.send(NodeRequest::ResetNode(block_hash)).await??;
         if let NodeResponse::AsyncResult(receiver) = response {
             return receiver.await?;
         }
         Ok(())
     }
-    async fn delete_block(&self, block_id: HashValue) -> Result<()> {
-        self.try_send(NodeRequest::DeleteBlock(block_id))?;
+
+    async fn re_execute_block(&self, block_hash: HashValue) -> Result<()> {
+        let response = self.send(NodeRequest::ReExecuteBlock(block_hash)).await??;
+        if let NodeResponse::AsyncResult(receiver) = response {
+            return receiver.await?;
+        }
+        Ok(())
+    }
+
+    async fn delete_block(&self, block_hash: HashValue) -> Result<()> {
+        self.try_send(NodeRequest::DeleteBlock(block_hash))?;
         Ok(())
     }
 }

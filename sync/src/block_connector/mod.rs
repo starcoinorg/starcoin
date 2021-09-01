@@ -3,6 +3,7 @@
 
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::block::{Block, ExecutedBlock};
 
 mod block_connector_service;
 mod metrics;
@@ -29,4 +30,13 @@ pub struct ResetRequest {
 
 impl ServiceRequest for ResetRequest {
     type Response = anyhow::Result<()>;
+}
+
+#[derive(Debug, Clone)]
+pub struct ExecuteRequest {
+    pub block: Block,
+}
+
+impl ServiceRequest for ExecuteRequest {
+    type Response = anyhow::Result<ExecutedBlock>;
 }

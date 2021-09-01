@@ -248,8 +248,12 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.node_manager_client.shutdown_system())
             .map_err(map_err)
     }
-    pub fn reset_node(&self, block_hash: HashValue) -> anyhow::Result<()> {
+    pub fn node_reset(&self, block_hash: HashValue) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| inner.node_manager_client.reset_to_block(block_hash))
+            .map_err(map_err)
+    }
+    pub fn node_re_execute_block(&self, block_id: HashValue) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| inner.node_manager_client.re_execute_block(block_id))
             .map_err(map_err)
     }
     pub fn node_delete_block(&self, block_id: HashValue) -> anyhow::Result<()> {
