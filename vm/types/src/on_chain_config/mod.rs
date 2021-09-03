@@ -19,15 +19,16 @@ use std::{collections::HashMap, sync::Arc};
 mod consensus_config;
 mod dao_config;
 mod genesis_gas_schedule;
+mod move_lang_version;
 mod version;
 mod vm_config;
-
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
     genesis_gas_schedule::{
         init_cost_table, initial_instruction_table, initial_native_table, v1_native_table,
     },
+    move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
     vm_config::{vm_config_type_tag, TransactionPublishOption, VMConfig, SCRIPT_HASH_LENGTH},
 };

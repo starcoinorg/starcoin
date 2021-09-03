@@ -10,14 +10,19 @@ The module for StdlibUpgrade init scripts
 -  [Function `take_linear_withdraw_capability`](#0x1_StdlibUpgradeScripts_take_linear_withdraw_capability)
 -  [Function `do_upgrade_from_v5_to_v6`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6)
 -  [Function `upgrade_from_v5_to_v6`](#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6)
+-  [Function `upgrade_from_v6_to_v7`](#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7)
+-  [Function `do_upgrade_from_v6_to_v7`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7)
 -  [Specification](#@Specification_0)
 
 
 <pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
+<b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="GenesisNFT.md#0x1_GenesisNFT">0x1::GenesisNFT</a>;
+<b>use</b> <a href="LanguageVersion.md#0x1_LanguageVersion">0x1::LanguageVersion</a>;
 <b>use</b> <a href="NFT.md#0x1_NFT">0x1::NFT</a>;
 <b>use</b> <a href="Offer.md#0x1_Offer">0x1::Offer</a>;
+<b>use</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
 <b>use</b> <a href="Oracle.md#0x1_Oracle">0x1::Oracle</a>;
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
 <b>use</b> <a href="Oracle.md#0x1_STCUSDOracle">0x1::STCUSDOracle</a>;
@@ -144,6 +149,57 @@ association account should call this script after upgrade from v2 to v3.
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6">upgrade_from_v5_to_v6</a>(sender: signer) {
    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6">Self::do_upgrade_from_v5_to_v6</a>(&sender)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7"></a>
+
+## Function `upgrade_from_v6_to_v7`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer, language_version: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer, language_version: u64) {
+    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">Self::do_upgrade_from_v6_to_v7</a>(&sender, language_version);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7"></a>
+
+## Function `do_upgrade_from_v6_to_v7`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer, language_version: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer, language_version: u64) {
+    // initialize the language version config.
+    <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(sender, <a href="LanguageVersion.md#0x1_LanguageVersion_new">LanguageVersion::new</a>(language_version));
+    // <b>use</b> <a href="STC.md#0x1_STC">STC</a> <a href="Dao.md#0x1_Dao">Dao</a> <b>to</b> upgrade onchain's <b>move</b>-language-version configuration.
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>, <a href="LanguageVersion.md#0x1_LanguageVersion_LanguageVersion">LanguageVersion::LanguageVersion</a>&gt;(sender);
 }
 </code></pre>
 
