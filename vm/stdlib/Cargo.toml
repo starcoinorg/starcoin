@@ -19,7 +19,7 @@ starcoin-move-compiler = { path = "../../vm/compiler"}
 move-prover = { package="move-prover", git = "https://github.com/starcoinorg/diem", rev="69ab01213a2e4128a1a8c8216bbf666c9ef90abd" }
 # move-prover = { path = "../move-prover" }
 once_cell = "1.8.0"
-include_dir = "0.6.1"
+include_dir = "0.6.2"
 sha2 = "0.9.1"
 log = "0.4.14"
 fs_extra = "1.2.0"
