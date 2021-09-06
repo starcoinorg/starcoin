@@ -13,6 +13,8 @@ config = {path = "../config", package="starcoin-config"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 async-trait = "0.1"
+starcoin-chain-api = {path="../chain/api"}
+starcoin-chain = {path="../chain"}
 starcoin-txpool-api = { path = "../txpool/api" }
 starcoin-txpool = { path = "../txpool" }
 network-api = { package = "network-api", path = "../network/api" }
