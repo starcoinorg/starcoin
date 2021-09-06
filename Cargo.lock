@@ -8114,6 +8114,8 @@ dependencies = [
  "hex",
  "network-api",
  "once_cell",
+ "starcoin-chain",
+ "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",

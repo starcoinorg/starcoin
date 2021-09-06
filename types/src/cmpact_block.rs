@@ -39,6 +39,12 @@ impl CompactBlock {
             uncles: block.body.uncles,
         }
     }
+
+    pub fn txn_len(&self) -> usize {
+        self.short_ids
+            .len()
+            .saturating_add(self.prefilled_txn.len())
+    }
 }
 
 impl From<Block> for CompactBlock {

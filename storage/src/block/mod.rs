@@ -245,6 +245,10 @@ impl BlockStorage {
             .put(block_id, (block, peer_id, failed).into())
     }
 
+    pub fn delete_failed_block(&self, block_id: HashValue) -> Result<()> {
+        self.failed_block_storage.remove(block_id)
+    }
+
     pub fn get_failed_block_by_id(
         &self,
         block_id: HashValue,

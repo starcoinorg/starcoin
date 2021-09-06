@@ -105,4 +105,14 @@ where
         .map_err(map_err);
         Box::pin(fut.boxed())
     }
+
+    fn delete_failed_block(&self, block_id: HashValue) -> FutureResult<()> {
+        let service = self.service.clone();
+        let fut = async move {
+            service.delete_failed_block(block_id).await?;
+            Ok(())
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
 }

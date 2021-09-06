@@ -18,6 +18,7 @@ pub enum NodeRequest {
     ResetNode(HashValue),
     ReExecuteBlock(HashValue),
     DeleteBlock(HashValue),
+    DeleteFailedBlock(HashValue),
 }
 
 #[derive(Debug)]

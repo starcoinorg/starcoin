@@ -31,6 +31,11 @@ pub enum NodeManagerOpt {
         #[structopt(name = "block-hash")]
         block_hash: HashValue,
     },
+    /// Delete the failed block record from database.
+    DeleteFailedBlock {
+        #[structopt(name = "block-hash")]
+        block_hash: HashValue,
+    },
 }
 
 pub struct NodeManagerCommand;
@@ -56,6 +61,9 @@ impl CommandAction for NodeManagerCommand {
             }
             NodeManagerOpt::Reset { block_hash } => {
                 client.node_reset(*block_hash)?;
+            }
+            NodeManagerOpt::DeleteFailedBlock { block_hash } => {
+                client.node_delete_failed_block(*block_hash)?;
             }
         }
 

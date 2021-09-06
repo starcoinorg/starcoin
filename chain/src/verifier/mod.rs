@@ -20,11 +20,29 @@ arg_enum! {
         None
     }
 }
+
+pub struct StaticVerifier;
+impl StaticVerifier {
+    pub fn verify_body_hash(block: &Block) -> Result<()> {
+        //verify body
+        let body_hash = block.body.hash();
+        verify_block!(
+            VerifyBlockField::Body,
+            body_hash == block.header().body_hash(),
+            "verify block body hash mismatch, expect: {}, got: {}",
+            block.header().body_hash(),
+            body_hash,
+        );
+        Ok(())
+    }
+}
+
 //TODO this trait should move to consensus?
 pub trait BlockVerifier {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader;
+
     fn verify_block<R>(current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
     where
         R: ChainReader,
@@ -34,15 +52,7 @@ pub trait BlockVerifier {
         let new_block_header = new_block.header();
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
-        //verify body
-        let body_hash = new_block.body.hash();
-        verify_block!(
-            VerifyBlockField::Body,
-            body_hash == new_block_header.body_hash(),
-            "verify block body hash mismatch, expect: {}, got: {}",
-            new_block_header.body_hash(),
-            body_hash,
-        );
+        StaticVerifier::verify_body_hash(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
         //verify uncles
         Self::verify_uncles(

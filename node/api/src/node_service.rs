@@ -28,6 +28,7 @@ pub trait NodeAsyncService:
     async fn reset_node(&self, block_hash: HashValue) -> Result<()>;
     async fn re_execute_block(&self, block_hash: HashValue) -> Result<()>;
     async fn delete_block(&self, block_hash: HashValue) -> Result<()>;
+    async fn delete_failed_block(&self, block_hash: HashValue) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -114,6 +115,11 @@ where
 
     async fn delete_block(&self, block_hash: HashValue) -> Result<()> {
         self.try_send(NodeRequest::DeleteBlock(block_hash))?;
+        Ok(())
+    }
+
+    async fn delete_failed_block(&self, block_hash: HashValue) -> Result<()> {
+        self.try_send(NodeRequest::DeleteFailedBlock(block_hash))?;
         Ok(())
     }
 }

@@ -182,6 +182,14 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                         .and_then(|_| storage.delete_block(block_hash)),
                 )
             }
+            NodeRequest::DeleteFailedBlock(block_hash) => {
+                let storage = self
+                    .registry
+                    .get_shared_sync::<Arc<Storage>>()
+                    .expect("Storage must exist.");
+                info!("Prepare to delete failed block {:?}", block_hash);
+                NodeResponse::Result(storage.delete_failed_block(block_hash))
+            }
         })
     }
 }

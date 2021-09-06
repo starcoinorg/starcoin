@@ -41,4 +41,8 @@ pub trait NodeManagerApi {
     /// Delete block of block_id
     #[rpc(name = "node_manager.delete_block")]
     fn delete_block(&self, block_hash: HashValue) -> FutureResult<()>;
+
+    /// Delete failed block of block_id from failed block database
+    #[rpc(name = "node_manager.delete_failed_block")]
+    fn delete_failed_block(&self, block_hash: HashValue) -> FutureResult<()>;
 }
