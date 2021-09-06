@@ -32,6 +32,7 @@ pub mod import_multisig_cmd;
 pub mod import_readonly_cmd;
 mod list_cmd;
 mod lock_cmd;
+pub mod nft_cmd;
 pub mod receipt_identifier_cmd;
 pub mod remove_cmd;
 mod show_cmd;
