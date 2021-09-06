@@ -7,7 +7,7 @@ module YieldFarming {
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Errors;
-//    use 0x1::Debug;
+    //use 0x1::Debug;
 
     const ERR_FARMING_INIT_REPEATE: u64 = 101;
     const ERR_FARMING_NOT_STILL_FREEZE: u64 = 102;
@@ -128,7 +128,7 @@ module YieldFarming {
         release_per_second: u128) acquires FarmingAsset {
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         let now_seconds = Timestamp::now_seconds();
-        
+
         let new_index = calculate_harvest_index_with_asset<PoolType, AssetT>(farming_asset, now_seconds);
 
         farming_asset.release_per_second = release_per_second;
@@ -143,8 +143,9 @@ module YieldFarming {
         asset: AssetT,
         asset_weight: u128) acquires FarmingAsset {
 
+        // Debug::print(account);
         let account_address = Signer::address_of(account);
-        assert(!exists_stake_at_address<PoolType, AssetT>(account_address), 
+        assert(!exists_stake_at_address<PoolType, AssetT>(account_address),
             Errors::invalid_state(ERR_FARMING_STAKE_EXISTS));
 
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
@@ -180,12 +181,12 @@ module YieldFarming {
     }
 
     /// Unstake asset from farming pool
-    public fun unstake<PoolType: store, RewardTokenT: store, AssetT: store>(account: &signer, broker: address) 
-        : (AssetT, Token::Token<RewardTokenT>) acquires Farming, FarmingAsset, Stake {
+    public fun unstake<PoolType: store, RewardTokenT: store, AssetT: store>(account: &signer, broker: address)
+    : (AssetT, Token::Token<RewardTokenT>) acquires Farming, FarmingAsset, Stake {
         let farming = borrow_global_mut<Farming<PoolType, RewardTokenT>>(broker);
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
-        
-        let Stake<PoolType, AssetT> {last_harvest_index, asset_weight, asset, gain} = 
+
+        let Stake<PoolType, AssetT> {last_harvest_index, asset_weight, asset, gain} =
             move_from<Stake<PoolType, AssetT>>(Signer::address_of(account));
 
         let now_seconds = Timestamp::now_seconds();
@@ -224,7 +225,7 @@ module YieldFarming {
 
         let period_gain = calculate_withdraw_amount(
             new_harvest_index,
-            stake.last_harvest_index, 
+            stake.last_harvest_index,
             stake.asset_weight
         );
 
@@ -237,7 +238,7 @@ module YieldFarming {
         } else {
             amount
         };
-        
+
         let withdraw_token = Token::withdraw<RewardTokenT>(&mut farming.treasury_token, withdraw_amount);
         stake.gain = total_gain - withdraw_amount;
         stake.last_harvest_index = new_harvest_index;
@@ -254,11 +255,7 @@ module YieldFarming {
                                       AssetT: store>(account: &signer, broker: address): u128 acquires FarmingAsset, Stake {
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
-        let now_seconds = Timestamp::now_seconds();
-
-//        Debug::print(&30303030303030);
-//        Debug::print(farming_asset);
-//        Debug::print(stake);
+        let now_seconds = Timestamp::now_seconds()
 
         let new_harvest_index = calculate_harvest_index_with_asset<PoolType, AssetT>(
             farming_asset,
@@ -277,17 +274,24 @@ module YieldFarming {
         farming_asset.harvest_index = new_harvest_index;
         farming_asset.last_update_timestamp = now_seconds;
 
-//        Debug::print(farming_asset);
-//        Debug::print(stake);
+        //        Debug::print(farming_asset);
+        //        Debug::print(stake);
 
         stake.gain
     }
-    
+
     /// Query total stake count from yield farming resource
     public fun query_total_stake<PoolType: store,
                                  AssetT: store>(broker: address): u128 acquires FarmingAsset {
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         farming_asset.asset_total_weight
+    }
+
+    /// Query stake weight from user staking objects.
+    public fun query_stake<PoolType: store,
+                           AssetT: store>(account: &signer): u128 acquires Stake {
+        let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
+        stake.asset_weight
     }
 
     /// Update farming asset
