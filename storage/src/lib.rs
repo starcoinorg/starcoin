@@ -137,6 +137,8 @@ pub trait BlockStore {
         failed: String,
     ) -> Result<()>;
 
+    fn delete_failed_block(&self, block_id: HashValue) -> Result<()>;
+
     fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
@@ -348,6 +350,10 @@ impl BlockStore for Storage {
     ) -> Result<()> {
         self.block_storage
             .save_failed_block(block_id, block, peer_id, failed)
+    }
+
+    fn delete_failed_block(&self, block_id: HashValue) -> Result<()> {
+        self.block_storage.delete_failed_block(block_id)
     }
 
     fn get_failed_block_by_id(

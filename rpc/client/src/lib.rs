@@ -248,18 +248,27 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.node_manager_client.shutdown_system())
             .map_err(map_err)
     }
+
     pub fn node_reset(&self, block_hash: HashValue) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| inner.node_manager_client.reset_to_block(block_hash))
             .map_err(map_err)
     }
+
     pub fn node_re_execute_block(&self, block_id: HashValue) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| inner.node_manager_client.re_execute_block(block_id))
             .map_err(map_err)
     }
+
     pub fn node_delete_block(&self, block_id: HashValue) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| inner.node_manager_client.delete_block(block_id))
             .map_err(map_err)
     }
+
+    pub fn node_delete_failed_block(&self, block_id: HashValue) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| inner.node_manager_client.delete_failed_block(block_id))
+            .map_err(map_err)
+    }
+
     pub fn next_sequence_number_in_txpool(
         &self,
         address: AccountAddress,
