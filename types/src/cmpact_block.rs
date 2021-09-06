@@ -23,13 +23,14 @@ pub struct PrefilledTxn {
 pub struct ShortId(pub HashValue);
 
 impl CompactBlock {
-    pub fn new(block: Block, prefilled_txn: Vec<PrefilledTxn>) -> Self {
+    pub fn new(block: Block) -> Self {
+        let prefilled_txn: Vec<PrefilledTxn> = vec![];
         let header = block.header;
         let short_ids: Vec<ShortId> = block
             .body
             .transactions
             .into_iter()
-            .map(|tx| Transaction::UserTransaction(tx).id())
+            .map(|tx| tx.id())
             .map(ShortId)
             .collect();
         CompactBlock {
@@ -41,15 +42,13 @@ impl CompactBlock {
     }
 
     pub fn txn_len(&self) -> usize {
-        self.short_ids
-            .len()
-            .saturating_add(self.prefilled_txn.len())
+        self.short_ids.len()
     }
 }
 
 impl From<Block> for CompactBlock {
     fn from(block: Block) -> Self {
-        CompactBlock::new(block, vec![])
+        CompactBlock::new(block)
     }
 }
 

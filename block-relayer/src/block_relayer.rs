@@ -86,15 +86,14 @@ impl BlockRelayer {
         compact_block: CompactBlock,
         peer_id: PeerId,
     ) -> Result<Block> {
-        let txns = {
-            let mut txns: Vec<Option<SignedUserTransaction>> =
-                vec![None; compact_block.short_ids.len()];
+        let expect_txn_len = compact_block.txn_len();
+        let txns = if expect_txn_len == 0 {
+            vec![]
+        } else {
+            let mut txns: Vec<Option<SignedUserTransaction>> = vec![None; expect_txn_len];
             BLOCK_RELAYER_METRICS
                 .block_txns_count
-                .set(compact_block.short_ids.len() as u64);
-
-            let expect_txn_len = compact_block.txn_len();
-
+                .set(expect_txn_len as u64);
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
