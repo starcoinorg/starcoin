@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metrics::BLOCK_RELAYER_METRICS;
-use anyhow::{format_err, Result};
+use anyhow::{ensure, format_err, Result};
 use config::NodeConfig;
 use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::{NetworkService, PeerProvider, PeerSelector, PeerStrategy};
+use starcoin_chain::verifier::StaticVerifier;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -91,6 +92,9 @@ impl BlockRelayer {
             BLOCK_RELAYER_METRICS
                 .block_txns_count
                 .set(compact_block.short_ids.len() as u64);
+
+            let expect_txn_len = compact_block.txn_len();
+
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
@@ -148,10 +152,19 @@ impl BlockRelayer {
                     }
                 }
             }
-            txns.into_iter().filter_map(|txn| txn).collect()
+            let collect_txns = txns.into_iter().filter_map(|txn| txn).collect::<Vec<_>>();
+            ensure!(
+                collect_txns.len() != expect_txn_len,
+                "Fill compact block error, expect txn len: {}, but collect txn len: {}",
+                collect_txns.len(),
+                expect_txn_len
+            );
+            collect_txns
         };
         let body = BlockBody::new(txns, compact_block.uncles);
         let block = Block::new(compact_block.header, body);
+        //ensure the block is filled correct.
+        StaticVerifier::verify_body_hash(&block)?;
         Ok(block)
     }
 
