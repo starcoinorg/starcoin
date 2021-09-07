@@ -7,7 +7,6 @@ module YieldFarming {
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Errors;
-//    use 0x1::Debug;
 
     const ERR_FARMING_INIT_REPEATE: u64 = 101;
     const ERR_FARMING_NOT_STILL_FREEZE: u64 = 102;
@@ -143,6 +142,7 @@ module YieldFarming {
         asset: AssetT,
         asset_weight: u128) acquires FarmingAsset {
 
+        // Debug::print(account);
         let account_address = Signer::address_of(account);
         assert(!exists_stake_at_address<PoolType, AssetT>(account_address), 
             Errors::invalid_state(ERR_FARMING_STAKE_EXISTS));
@@ -256,10 +256,6 @@ module YieldFarming {
         let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
         let now_seconds = Timestamp::now_seconds();
 
-//        Debug::print(&30303030303030);
-//        Debug::print(farming_asset);
-//        Debug::print(stake);
-
         let new_harvest_index = calculate_harvest_index_with_asset<PoolType, AssetT>(
             farming_asset,
             now_seconds
@@ -277,9 +273,6 @@ module YieldFarming {
         farming_asset.harvest_index = new_harvest_index;
         farming_asset.last_update_timestamp = now_seconds;
 
-//        Debug::print(farming_asset);
-//        Debug::print(stake);
-
         stake.gain
     }
     
@@ -288,6 +281,13 @@ module YieldFarming {
                                  AssetT: store>(broker: address): u128 acquires FarmingAsset {
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         farming_asset.asset_total_weight
+    }
+
+    /// Query stake weight from user staking objects.
+    public fun query_stake<PoolType: store,
+                           AssetT: store>(account: &signer): u128 acquires Stake {
+        let stake = borrow_global_mut<Stake<PoolType, AssetT>>(Signer::address_of(account));
+        stake.asset_weight
     }
 
     /// Update farming asset

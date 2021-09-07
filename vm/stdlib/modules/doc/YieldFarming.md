@@ -23,6 +23,7 @@
 -  [Function `harvest`](#0x1_YieldFarming_harvest)
 -  [Function `query_gov_token_amount`](#0x1_YieldFarming_query_gov_token_amount)
 -  [Function `query_total_stake`](#0x1_YieldFarming_query_total_stake)
+-  [Function `query_stake`](#0x1_YieldFarming_query_stake)
 -  [Function `calculate_harvest_index_with_asset`](#0x1_YieldFarming_calculate_harvest_index_with_asset)
 -  [Function `calculate_harvest_index_weight_zero`](#0x1_YieldFarming_calculate_harvest_index_weight_zero)
 -  [Function `calculate_harvest_index`](#0x1_YieldFarming_calculate_harvest_index)
@@ -566,6 +567,7 @@ Call by stake user, staking amount of asset in order to get yield farming token
     asset: AssetT,
     asset_weight: u128) <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a> {
 
+    // <a href="Debug.md#0x1_Debug_print">Debug::print</a>(account);
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>assert</b>(!<a href="YieldFarming.md#0x1_YieldFarming_exists_stake_at_address">exists_stake_at_address</a>&lt;PoolType, AssetT&gt;(account_address),
         <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_STAKE_EXISTS">ERR_FARMING_STAKE_EXISTS</a>));
@@ -739,10 +741,6 @@ The user can quering all yield farming amount in any time and scene
     <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
     <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
 
-//        <a href="Debug.md#0x1_Debug_print">Debug::print</a>(&30303030303030);
-//        <a href="Debug.md#0x1_Debug_print">Debug::print</a>(farming_asset);
-//        <a href="Debug.md#0x1_Debug_print">Debug::print</a>(stake);
-
     <b>let</b> new_harvest_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(
         farming_asset,
         now_seconds
@@ -759,9 +757,6 @@ The user can quering all yield farming amount in any time and scene
 
     farming_asset.harvest_index = new_harvest_index;
     farming_asset.last_update_timestamp = now_seconds;
-
-//        <a href="Debug.md#0x1_Debug_print">Debug::print</a>(farming_asset);
-//        <a href="Debug.md#0x1_Debug_print">Debug::print</a>(stake);
 
     stake.gain
 }
@@ -791,6 +786,33 @@ Query total stake count from yield farming resource
                              AssetT: store&gt;(broker: address): u128 <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a> {
     <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
     farming_asset.asset_total_weight
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_YieldFarming_query_stake"></a>
+
+## Function `query_stake`
+
+Query stake weight from user staking objects.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_stake">query_stake</a>&lt;PoolType: store, AssetT: store&gt;(account: &signer): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_stake">query_stake</a>&lt;PoolType: store,
+                       AssetT: store&gt;(account: &signer): u128 <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a> {
+    <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+    stake.asset_weight
 }
 </code></pre>
 
