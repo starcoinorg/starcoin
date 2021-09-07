@@ -4,11 +4,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::move_resource::MoveResource;
-
+use schemars::JsonSchema;
 const TIMESTAMP_MODULE_NAME: &str = "Timestamp";
 
 /// The CurrentTimeMilliseconds on chain.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, JsonSchema)]
 pub struct GlobalTimeOnChain {
     pub milliseconds: u64,
 }

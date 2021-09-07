@@ -5,6 +5,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
+use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
@@ -38,7 +39,6 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
-
 #[derive(
     Clone,
     Copy,
@@ -52,6 +52,7 @@ use std::sync::Arc;
     TryFromPrimitive,
     Deserialize,
     Serialize,
+    JsonSchema,
 )]
 #[repr(u8)]
 #[allow(clippy::upper_case_acronyms)]
@@ -203,7 +204,7 @@ impl From<BuiltinNetworkID> for ChainNetwork {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CustomNetworkID {
     chain_name: String,
@@ -247,7 +248,7 @@ impl FromStr for CustomNetworkID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum ChainNetworkID {
     Builtin(BuiltinNetworkID),

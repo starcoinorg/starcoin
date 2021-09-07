@@ -11,7 +11,7 @@ use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
 
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
     fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
@@ -43,4 +43,10 @@ pub trait TxPoolApi {
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.state")]
     fn state(&self) -> FutureResult<TxPoolStatus>;
+}
+#[test]
+fn test() {
+    let schema = rpc_impl_TxPoolApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

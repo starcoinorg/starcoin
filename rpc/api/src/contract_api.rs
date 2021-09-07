@@ -11,7 +11,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait ContractApi {
     /// get code of module
     #[rpc(name = "contract.get_code")]
@@ -50,4 +50,10 @@ pub trait ContractApi {
     fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructABI>;
     #[rpc(name = "contract.resolve_module")]
     fn resolve_module(&self, module_id: ModuleIdView) -> FutureResult<ModuleABI>;
+}
+#[test]
+fn test() {
+    let schema = rpc_impl_ContractApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

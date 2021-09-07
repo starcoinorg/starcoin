@@ -9,7 +9,7 @@ use network_p2p_types::network_state::NetworkState;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use std::borrow::Cow;
 
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait NetworkManagerApi {
     #[rpc(name = "network_manager.state")]
     fn state(&self) -> FutureResult<NetworkState>;
@@ -31,4 +31,10 @@ pub trait NetworkManagerApi {
         rpc_method: Cow<'static, str>,
         message: StrView<Vec<u8>>,
     ) -> FutureResult<StrView<Vec<u8>>>;
+}
+#[test]
+fn test() {
+    let schema = rpc_impl_NetworkManagerApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

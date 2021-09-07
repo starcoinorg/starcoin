@@ -7,7 +7,7 @@ use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait NodeManagerApi {
     #[rpc(name = "node_manager.list_service")]
     fn list_service(&self) -> FutureResult<Vec<ServiceInfo>>;
@@ -45,4 +45,10 @@ pub trait NodeManagerApi {
     /// Delete failed block of block_id from failed block database
     #[rpc(name = "node_manager.delete_failed_block")]
     fn delete_failed_block(&self, block_hash: HashValue) -> FutureResult<()>;
+}
+#[test]
+fn test() {
+    let schema = rpc_impl_NodeManagerApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

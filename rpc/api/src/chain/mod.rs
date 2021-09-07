@@ -10,12 +10,13 @@ use crate::types::{
 use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait ChainApi {
     #[rpc(name = "chain.id")]
     fn id(&self) -> Result<ChainId>;
@@ -30,6 +31,7 @@ pub trait ChainApi {
         block_hash: HashValue,
         option: Option<GetBlockOption>,
     ) -> FutureResult<Option<BlockView>>;
+
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_number")]
     fn get_block_by_number(
@@ -63,7 +65,6 @@ pub trait ChainApi {
     /// Get chain transactions infos by block id
     #[rpc(name = "chain.get_block_txn_infos")]
     fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>>;
-
     /// Get txn info of a txn at `idx` of block `block_id`
     #[rpc(name = "chain.get_txn_info_by_block_and_index")]
     fn get_txn_info_by_block_and_index(
@@ -78,7 +79,6 @@ pub trait ChainApi {
         txn_hash: HashValue,
         option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse>>;
-
     #[rpc(name = "chain.get_events")]
     fn get_events(
         &self,
@@ -117,20 +117,27 @@ pub trait ChainApi {
     ) -> FutureResult<EpochUncleSummaryView>;
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct GetTransactionOption {
     #[serde(default)]
     pub decode: bool,
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct GetBlockOption {
     #[serde(default)]
     pub decode: bool,
 }
 
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct GetEventOption {
     #[serde(default)]
     pub decode: bool,
+}
+
+#[test]
+fn test() {
+    let schema = rpc_impl_ChainApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

@@ -4,6 +4,7 @@
 use crate::errors;
 use crate::types::{BlockView, TransactionEventResponse, TypeTagView};
 use jsonrpc_core::error::Error as JsonRpcError;
+use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
@@ -15,7 +16,6 @@ use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
-
 /// Subscription kind.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
@@ -98,7 +98,7 @@ pub struct EventParams {
 }
 
 /// Filter
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventFilter {
     /// From Block

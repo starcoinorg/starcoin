@@ -7,6 +7,7 @@ use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{
     Ed25519PrivateKey, ED25519_PRIVATE_KEY_LENGTH, ED25519_PUBLIC_KEY_LENGTH,
@@ -54,16 +55,21 @@ impl fmt::Display for Scheme {
     }
 }
 //TODO should rename TransactionAuthenticator to Authenticator
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionAuthenticator {
     /// Single signature
     Ed25519 {
+        #[schemars(with = "String")]
         public_key: Ed25519PublicKey,
+        #[schemars(with = "String")]
         signature: Ed25519Signature,
     },
     /// K-of-N multisignature
     MultiEd25519 {
+        //todo::FIXME,it's not string
+        #[schemars(with = "String")]
         public_key: MultiEd25519PublicKey,
+        #[schemars(with = "String")]
         signature: MultiEd25519Signature,
     },
     // ... add more schemes here
@@ -171,7 +177,8 @@ impl FromStr for TransactionAuthenticator {
     SerializeKey,
 )]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub struct AuthenticationKey([u8; AuthenticationKey::LENGTH]);
+#[derive(JsonSchema)]
+pub struct AuthenticationKey(#[schemars(with = "String")] [u8; AuthenticationKey::LENGTH]);
 
 impl AuthenticationKey {
     /// Create an authentication key from `bytes`
@@ -329,9 +336,11 @@ impl fmt::Display for AuthenticationKey {
     }
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, DeserializeKey, SerializeKey)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, DeserializeKey, SerializeKey, JsonSchema)]
 pub enum AccountPublicKey {
+    #[schemars(with = "String")]
     Single(Ed25519PublicKey),
+    #[schemars(with = "String")]
     Multi(MultiEd25519PublicKey),
 }
 

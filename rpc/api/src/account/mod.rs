@@ -11,23 +11,19 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::token::token_code::TokenCode;
-
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait AccountApi {
     /// Get default account
     #[rpc(name = "account.default")]
     fn default(&self) -> FutureResult<Option<AccountInfo>>;
-
     #[rpc(name = "account.set_default_account")]
     fn set_default_account(&self, addr: AccountAddress) -> FutureResult<AccountInfo>;
-
     #[rpc(name = "account.create")]
     fn create(&self, password: String) -> FutureResult<AccountInfo>;
     #[rpc(name = "account.list")]
     fn list(&self) -> FutureResult<Vec<AccountInfo>>;
     #[rpc(name = "account.get")]
     fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountInfo>>;
-
     #[rpc(name = "account.sign")]
     fn sign(
         &self,
@@ -54,6 +50,7 @@ pub trait AccountApi {
         password: String,
         duration: Option<u32>,
     ) -> FutureResult<AccountInfo>;
+
     #[rpc(name = "account.lock")]
     fn lock(&self, address: AccountAddress) -> FutureResult<AccountInfo>;
 
@@ -97,4 +94,11 @@ pub trait AccountApi {
         address: AccountAddress,
         password: Option<String>,
     ) -> FutureResult<AccountInfo>;
+}
+
+#[test]
+fn test() {
+    let schema = rpc_impl_AccountApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

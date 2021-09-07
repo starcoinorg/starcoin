@@ -21,18 +21,18 @@
 //! **Warning**: These APIs are not stable.
 
 use libp2p::{core::ConnectedPoint, Multiaddr};
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     time::Duration,
 };
-
 /// Returns general information about the networking.
 ///
 /// Meant for general diagnostic purposes.
 ///
 /// **Warning**: This API is not stable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkState {
     /// PeerId of the local node.
@@ -50,7 +50,7 @@ pub struct NetworkState {
 }
 
 /// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Peer {
     /// How we are connected to the node.
@@ -64,7 +64,7 @@ pub struct Peer {
 }
 
 /// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NotConnectedPeer {
     /// List of addresses known for this node.
@@ -76,7 +76,7 @@ pub struct NotConnectedPeer {
 }
 
 /// Part of the `NetworkState` struct. Unstable.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum PeerEndpoint {
     /// We are dialing the given address.

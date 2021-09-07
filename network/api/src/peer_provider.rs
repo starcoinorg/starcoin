@@ -13,6 +13,7 @@ use parking_lot::Mutex;
 use rand::prelude::IteratorRandom;
 use rand::prelude::SliceRandom;
 use rand::Rng;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
@@ -21,7 +22,6 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-
 pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     /// Get all peers, the peer's order is unsorted.
     fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>>;
@@ -84,7 +84,7 @@ impl From<(PeerInfo, u64)> for PeerDetail {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, JsonSchema)]
 pub enum PeerStrategy {
     Random,
     WeightedRandom,

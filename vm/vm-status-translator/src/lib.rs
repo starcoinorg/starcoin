@@ -1,4 +1,5 @@
 use anyhow::Result;
+use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_vm_types::access::ModuleAccess;
@@ -9,7 +10,6 @@ use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::TransactionStatus;
 use starcoin_vm_types::vm_status::{AbortLocation, KeptVMStatus, VMStatus};
-
 pub fn locate_execution_failure(
     state: &dyn StateView,
     location: AbortLocation,
@@ -39,7 +39,7 @@ pub fn locate_execution_failure(
     })
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq, JsonSchema)]
 pub struct MoveAbortExplain {
     pub category_code: u64,
     pub category_name: Option<String>,
@@ -73,7 +73,7 @@ pub fn explain_move_abort(abort_location: AbortLocation, abort_code: u64) -> Mov
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, JsonSchema)]
 pub enum VmStatusExplainView {
     /// The VM status corresponding to an EXECUTED status code
     Executed,
@@ -84,6 +84,8 @@ pub enum VmStatusExplainView {
 
     /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
     MoveAbort {
+        //TODO:remote define it
+        #[schemars(with = "String")]
         location: AbortLocation,
         abort_code: u64,
         explain: MoveAbortExplain,
@@ -93,6 +95,7 @@ pub enum VmStatusExplainView {
     /// dividing by zero or a missing resource
     ExecutionFailure {
         status_code: String,
+        #[schemars(with = "String")]
         location: AbortLocation,
         function: u16,
         function_name: Option<String>,

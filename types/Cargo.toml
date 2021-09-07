@@ -29,6 +29,8 @@ starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3.12"
 starcoin-accumulator = {path = "../commons/accumulator"}
 forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="f31aab7c9f32513b4d40d0218942c906171fabd6"}
+
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]

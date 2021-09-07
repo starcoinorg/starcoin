@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use network_api::PeerStrategy;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 pub use service::{SyncAsyncService, SyncServiceHandler};
 use starcoin_crypto::HashValue;
@@ -62,11 +63,12 @@ impl ServiceRequest for SyncStatusRequest {
 #[derive(Debug, Clone)]
 pub struct SyncProgressRequest;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SyncProgressReport {
     pub target_id: HashValue,
     pub begin_number: Option<BlockNumber>,
     pub target_number: BlockNumber,
+    #[schemars(with = "String")]
     pub target_difficulty: U256,
     pub target_peers: Vec<PeerId>,
     pub current: TaskProgressReport,
@@ -98,7 +100,7 @@ impl ServiceRequest for SyncStartRequest {
 #[derive(Debug, Clone)]
 pub struct PeerScoreRequest;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PeerScoreResponse {
     peers: Option<Vec<(PeerId, u64)>>,
 }

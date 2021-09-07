@@ -8,15 +8,16 @@ use crate::token::TOKEN_MODULE_NAME;
 use anyhow::{bail, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
+use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::str::FromStr;
-
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone, JsonSchema)]
 pub struct TokenCode {
     ///Token module's address
+    #[schemars(with = "String")]
     pub address: AccountAddress,
     ///Token module's name
     pub module: String,

@@ -10,18 +10,18 @@ use anyhow::{ensure, Error, Result};
 use proptest_derive::Arbitrary;
 #[cfg(any(test, feature = "fuzzing"))]
 use rand::{rngs::OsRng, RngCore};
+use schemars::{self, JsonSchema};
 use serde::{de, ser, Deserialize, Serialize};
 use std::str::FromStr;
 use std::{
     convert::{TryFrom, TryInto},
     fmt,
 };
-
 /// A struct that represents a globally unique id for an Event stream that a user can listen to.
 /// By design, the lower part of EventKey is the same as account address.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, JsonSchema)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub struct EventKey([u8; EventKey::LENGTH]);
+pub struct EventKey(#[schemars(with = "String")] [u8; EventKey::LENGTH]);
 
 impl EventKey {
     /// Construct a new EventKey from a byte array slice.
@@ -148,7 +148,7 @@ impl FromStr for EventKey {
 }
 
 /// A Rust representation of an Event Handle Resource.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct EventHandle {
     /// Number of events in the event stream.
     count: u64,

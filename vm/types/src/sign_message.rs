@@ -6,6 +6,7 @@ use crate::account_config::AccountResource;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use anyhow::{ensure, Result};
+use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
@@ -13,8 +14,8 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 
 /// SigningMessage is a message to be signed and encapsulates the salt
-#[derive(Clone, Debug, Hash, Eq, PartialEq, CryptoHasher, CryptoHash)]
-pub struct SigningMessage(pub Vec<u8>);
+#[derive(Clone, Debug, Hash, Eq, PartialEq, CryptoHasher, CryptoHash, JsonSchema)]
+pub struct SigningMessage(#[schemars(with = "String")] pub Vec<u8>);
 
 impl std::fmt::Display for SigningMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

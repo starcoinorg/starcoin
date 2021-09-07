@@ -17,12 +17,12 @@ use log4rs::{
 };
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
-
 pub mod structured_log;
 
 /// Logger prelude which includes all logging macros.
@@ -42,7 +42,9 @@ pub fn stacktrace(err: anyhow::Error) {
 const LOG_PATTERN_WITH_LINE: &str = "{d} {l} {M}::{f}::{L} - {m}{n}";
 const LOG_PATTERN_DEFAULT: &str = "{d} {l} - {m}{n}";
 
-#[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, Hash, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, JsonSchema,
+)]
 pub enum LogPattern {
     Default,
     WithLine,

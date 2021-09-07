@@ -1,16 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_types::account_address::AccountAddress;
+pub use starcoin_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use starcoin_types::{
-    account_address::{self, AccountAddress},
+    account_address::{self},
     transaction::authenticator::AuthenticationKey,
 };
 
-pub use starcoin_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct AccountInfo {
     pub address: AccountAddress,
     /// This account is default at current wallet.
