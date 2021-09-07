@@ -41,10 +41,10 @@ module creator::TestNFT {
 address creator = {{creator}};
 script {
     use 0x1::NFT;
-    use creator::TestNFT::{Self, TestNFT, NFTInfo};
+    use creator::TestNFT::{Self, TestNFT};
     fun main(sender: signer) {
         TestNFT::init(&sender);
-        assert(NFT::is_register<TestNFT,NFTInfo>(), 1001);
+        assert(NFT::is_register<TestNFT>(), 1001);
         TestNFT::mint(&sender);
     }
 }
