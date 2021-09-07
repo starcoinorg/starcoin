@@ -98,20 +98,6 @@ script {
 address creator = {{creator}};
 script {
     use 0x1::NFTGallery;
-    use creator::Card::{L1CardMeta, L2CardMeta, L1Card, L2Card};
-    fun main(sender: signer) {
-        NFTGallery::accept<L1CardMeta, L1Card>(&sender);
-        NFTGallery::accept<L2CardMeta, L2Card>(&sender);
-    }
-}
-
-// check: EXECUTED
-
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
-script {
-    use 0x1::NFTGallery;
     use creator::Card;
     fun main(sender: signer) {
         let first_l1 = Card::mint_l1(&sender);

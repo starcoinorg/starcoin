@@ -188,6 +188,11 @@ module NFT {
         move_to<UpdateCapability<NFTMeta>>(sender, UpdateCapability {});
     }
 
+    /// Check the NFTMeta is register
+    public fun is_register<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): bool {
+        exists<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS())
+    }
+
     /// Add MintCapability to `sender`
     public fun add_mint_capability<NFTMeta: copy + store + drop>(sender: &signer, cap: MintCapability<NFTMeta>) {
         move_to(sender, cap);
@@ -294,6 +299,11 @@ module NFT {
         assert(exists<UpdateCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
         let cap = borrow_global_mut<UpdateCapability<NFTMeta>>(addr);
         update_meta_with_cap(cap, nft, base_meta, type_meta)
+    }
+
+    /// Borrow NFTBody ref
+    public fun borrow_body<NFTMeta: copy + store + drop, NFTBody: store>(nft: &NFT<NFTMeta, NFTBody>): &NFTBody {
+        &nft.body
     }
 
     /// Borrow NFTBody mut ref for update body with UpdateCapability<NFTMeta>
@@ -495,6 +505,7 @@ module NFTGallery {
 
     /// Deposit nft to `sender` NFTGallery
     public fun deposit<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, nft: NFT<NFTMeta, NFTBody>) acquires NFTGallery {
+        Self::accept<NFTMeta, NFTBody>(sender);
         let sender_addr = Signer::address_of(sender);
         deposit_to(sender_addr, nft)
     }

@@ -71,7 +71,6 @@ script {
     use 0x1::NFTGallery;
     fun main(sender: signer) {
         let nft = BoxMiner::mint(&sender);
-        BoxMiner::do_accept(&sender);
         NFTGallery::deposit(&sender, nft);
 }
 }
