@@ -36,3 +36,12 @@
 - Implement NFT protocol which has builtin IdentifierNFT, GenesisNFT. (#2688, #2763, #2760, #2767, #2769, #2771, #2772)
 - Add many script functions. (#2745, #2781)
 - Fix `Math.mul_div`. (#2775 by xiangfeihan<xiangfeihan@bixin.com)
+
+## Version 7
+
+- init_script: "cargo run -- -v 7 -m StdlibUpgradeScripts -f upgrade_from_v6_to_v7"
+- package_hash: 0x9f153064ee8800f831cca006da269d4387fd6b243f8ca9c7009f6160680b76c3
+- Do not trigger Withdraw event when the amount is zero. (#2857)
+- NFT improvements, resolve #2842 . (#2856)
+- Implement yield farming module (#2832) (#2852)
+- Support language version OnChainConfig (#2845)

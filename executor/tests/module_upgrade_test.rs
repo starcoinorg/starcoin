@@ -17,7 +17,7 @@ use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{association_address, core_code_address, AccountResource};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
-use starcoin_vm_types::on_chain_config::{TransactionPublishOption, Version};
+use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
@@ -472,6 +472,25 @@ fn ext_execute_after_upgrade(
             assert_eq!(
                 genesis_account.authentication_key(),
                 &AccountResource::CONTRACT_AUTH_KEY
+            );
+        }
+        StdlibVersion::Version(7) => {
+            let version_resource = chain_state.get_on_chain_config::<MoveLanguageVersion>()?;
+            assert!(version_resource.is_some());
+            let version = version_resource.unwrap();
+            assert_eq!(version.major, 2, "expect language version is 2");
+            let genesis_nft_info = chain_state.get(&AccessPath::new(
+                genesis_address(),
+                DataPath::Resource(StructTag {
+                    address: genesis_address(),
+                    module: Identifier::new("GenesisNFT").unwrap(),
+                    name: Identifier::new("GenesisNFTInfo").unwrap(),
+                    type_params: vec![],
+                }),
+            ))?;
+            assert!(
+                genesis_nft_info.is_some(),
+                "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."
             );
         }
         _ => {
