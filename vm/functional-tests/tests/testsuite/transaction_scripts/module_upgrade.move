@@ -134,7 +134,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 156792
+// check: 156894
 
 //! block-prologue
 //! author: genesis
