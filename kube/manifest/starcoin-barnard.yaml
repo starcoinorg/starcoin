@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v1.5.0
+        image: starcoin/starcoin:v1.5.1
         imagePullPolicy: Always
         command:
           - bash
@@ -53,20 +53,6 @@ spec:
               secretKeyRef:
                 name: node-keys
                 key: node-keys
-      - name: starcoin-faucet
-        image: starcoin/starcoin:v1.5.0
-        imagePullPolicy: Always
-        command:
-          - bash
-          - -c
-        args:
-          - /starcoin/starcoin_faucet --ipc-path /sc-data/barnard/starcoin.ipc
-        ports:
-          - containerPort: 8000
-            hostPort: 8000
-        volumeMounts:
-          - name: starcoin-volume
-            mountPath: /sc-data
       - name: filebeat
         image: docker.elastic.co/beats/filebeat:7.10.2
         args: [
