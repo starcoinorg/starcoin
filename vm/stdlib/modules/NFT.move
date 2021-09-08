@@ -92,21 +92,29 @@ module NFT {
     }
 
     public fun upgrade_nft_type_info_from_v1_to_v2<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, _cap: &mut MintCapability<NFTMeta>) acquires GenesisSignerCapability, NFTTypeInfo{
-        let nft_type_info = move_from<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
-        let NFTTypeInfo{  counter, meta, info, mint_events} = nft_type_info;
+        if(exists<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS())) {
+            let nft_type_info = move_from<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+            let NFTTypeInfo { counter, meta, info, mint_events } = nft_type_info;
 
-        let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
-        let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+            let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
+            let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
 
-        let nft_type_info_v2 = NFTTypeInfoV2<NFTMeta> {
-            register: Signer::address_of(sender),
-            counter,
-            meta,
-            mint_events,
-            burn_events: Event::new_event_handle<BurnEvent<NFTMeta>>(sender),
-        };
-        move_to(&genesis_account, nft_type_info_v2);
-        move_to(&genesis_account, NFTTypeInfoCompat<NFTMeta,NFTTypeInfoExt > { info });
+            let nft_type_info_v2 = NFTTypeInfoV2<NFTMeta> {
+                register: Signer::address_of(sender),
+                counter,
+                meta,
+                mint_events,
+                burn_events: Event::new_event_handle<BurnEvent<NFTMeta>>(sender),
+            };
+            move_to(&genesis_account, nft_type_info_v2);
+            move_to(&genesis_account, NFTTypeInfoCompat<NFTMeta, NFTTypeInfoExt> { info });
+        }
+    }
+
+    public fun remove_compat_info<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(_cap: &mut MintCapability<NFTMeta>): NFTTypeInfoExt acquires NFTTypeInfoCompat{
+        let compat_info = move_from<NFTTypeInfoCompat<NFTMeta,NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+        let NFTTypeInfoCompat{info} = compat_info;
+        info
     }
 
     struct GenesisSignerCapability has key {

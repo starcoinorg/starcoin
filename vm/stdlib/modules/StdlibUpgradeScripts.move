@@ -65,15 +65,18 @@ module StdlibUpgradeScripts {
            Self::do_upgrade_from_v5_to_v6(&sender)
         }
 
-        public(script) fun upgrade_from_v6_to_v7(sender: signer, language_version: u64) {
-            Self::do_upgrade_from_v6_to_v7(&sender, language_version);
+        public(script) fun upgrade_from_v6_to_v7(sender: signer) {
+            Self::do_upgrade_from_v6_to_v7(&sender);
         }
 
-        public fun do_upgrade_from_v6_to_v7(sender: &signer, language_version: u64) {
+        public fun do_upgrade_from_v6_to_v7(sender: &signer) {
+            let language_version = 2;
             // initialize the language version config.
             Config::publish_new_config(sender, LanguageVersion::new(language_version));
             // use STC Dao to upgrade onchain's move-language-version configuration.
             OnChainConfigDao::plugin<STC, LanguageVersion::LanguageVersion>(sender);
+            // upgrade genesis NFT
+            GenesisNFT::upgrade_to_nft_type_info_v2(sender);
         }
 }
 }
