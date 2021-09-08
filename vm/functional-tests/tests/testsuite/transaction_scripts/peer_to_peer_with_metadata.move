@@ -12,7 +12,7 @@ script {
     }
 }
 // check: gas_used
-// check: 125198
+// check: 125300
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -27,6 +27,6 @@ script {
     }
 }
 // check: gas_used
-// check: 120374
+// check: 120476
 // check: "Keep(EXECUTED)"
 

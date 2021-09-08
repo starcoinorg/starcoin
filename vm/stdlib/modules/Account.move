@@ -384,7 +384,9 @@ module Account {
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
         // The sender_addr has delegated the privilege to withdraw from her account elsewhere--abort.
         assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED));
-
+        if (amount == 0){
+            return Token::zero()
+        };
         emit_account_withdraw_event<TokenType>(sender_addr, amount, metadata);
         // The sender_addr has retained her withdrawal privileges--proceed.
         withdraw_from_balance<TokenType>(sender_balance, amount)
