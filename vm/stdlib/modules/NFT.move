@@ -12,6 +12,8 @@ module NFT {
     const ERR_NO_BURN_CAPABILITY: u64 = 102;
     const ERR_NO_UPDATE_CAPABILITY: u64 = 103;
     const ERR_CANOT_EMPTY: u64 = 104;
+    const ERR_NFT_TYPE_ALREADY_REGISTERED: u64 = 105;
+    const ERR_NFT_TYPE_NO_REGISTERED: u64 = 106;
 
     struct MintEvent<NFTMeta: copy + store + drop> has drop, store {
         id: u64,
@@ -20,12 +22,29 @@ module NFT {
         type_meta: NFTMeta,
     }
 
-    /// The info of NFT type
+    struct BurnEvent<NFTMeta: copy + store + drop> has drop, store {
+        id: u64,
+    }
+
+    /// The info of NFT type, this type is deprecated, please use NFTTypeInfoV2
     struct NFTTypeInfo<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop> has key, store {
         counter: u64,
         meta: Metadata,
         info: NFTTypeInfoExt,
         mint_events: Event::EventHandle<MintEvent<NFTMeta>>,
+    }
+
+    /// The info of NFT type
+    struct NFTTypeInfoV2<NFTMeta: copy + store + drop> has key, store {
+        register: address,
+        counter: u64,
+        meta: Metadata,
+        mint_events: Event::EventHandle<MintEvent<NFTMeta>>,
+        burn_events: Event::EventHandle<BurnEvent<NFTMeta>>,
+    }
+
+    struct NFTTypeInfoCompat<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop> has key{
+        info: NFTTypeInfoExt,
     }
 
     fun new_nft_type_info<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, info: NFTTypeInfoExt, meta: Metadata): NFTTypeInfo<NFTMeta, NFTTypeInfoExt> {
@@ -37,14 +56,65 @@ module NFT {
         }
     }
 
-    public fun nft_type_info_ex_info<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): NFTTypeInfoExt acquires NFTTypeInfo {
-        let info = borrow_global_mut<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
-        *&info.info
+    fun new_nft_type_info_v2<NFTMeta: copy + store + drop>(sender: &signer, meta: Metadata): NFTTypeInfoV2<NFTMeta> {
+        NFTTypeInfoV2<NFTMeta> {
+            register: Signer::address_of(sender),
+            counter: 0,
+            meta,
+            mint_events: Event::new_event_handle<MintEvent<NFTMeta>>(sender),
+            burn_events: Event::new_event_handle<BurnEvent<NFTMeta>>(sender),
+        }
     }
 
-    public fun nft_type_info_counter<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): u64 acquires NFTTypeInfo {
-        let info = borrow_global_mut<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+    /// Note: this function is deprecated
+    public fun nft_type_info_ex_info<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): NFTTypeInfoExt acquires NFTTypeInfo, NFTTypeInfoCompat {
+        if(exists<NFTTypeInfoCompat<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS())) {
+            let info = borrow_global_mut<NFTTypeInfoCompat<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+            *&info.info
+        }else {
+            let info = borrow_global_mut<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+            *&info.info
+        }
+    }
+
+    public fun nft_type_info_counter<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): u64 acquires NFTTypeInfo, NFTTypeInfoV2 {
+        if(exists<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS())){
+            Self::nft_type_info_counter_v2<NFTMeta>()
+        }else {
+            let info = borrow_global_mut<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+            *&info.counter
+        }
+    }
+
+    public fun nft_type_info_counter_v2<NFTMeta: copy + store + drop>(): u64 acquires NFTTypeInfoV2 {
+        let info = borrow_global_mut<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS());
         *&info.counter
+    }
+
+    public fun upgrade_nft_type_info_from_v1_to_v2<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, _cap: &mut MintCapability<NFTMeta>) acquires GenesisSignerCapability, NFTTypeInfo{
+        if(exists<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS())) {
+            let nft_type_info = move_from<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+            let NFTTypeInfo { counter, meta, info, mint_events } = nft_type_info;
+
+            let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
+            let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+
+            let nft_type_info_v2 = NFTTypeInfoV2<NFTMeta> {
+                register: Signer::address_of(sender),
+                counter,
+                meta,
+                mint_events,
+                burn_events: Event::new_event_handle<BurnEvent<NFTMeta>>(sender),
+            };
+            move_to(&genesis_account, nft_type_info_v2);
+            move_to(&genesis_account, NFTTypeInfoCompat<NFTMeta, NFTTypeInfoExt> { info });
+        }
+    }
+
+    public fun remove_compat_info<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(_cap: &mut MintCapability<NFTMeta>): NFTTypeInfoExt acquires NFTTypeInfoCompat{
+        let compat_info = move_from<NFTTypeInfoCompat<NFTMeta,NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+        let NFTTypeInfoCompat{info} = compat_info;
+        info
     }
 
     struct GenesisSignerCapability has key {
@@ -178,19 +248,36 @@ module NFT {
     }
 
     /// Register a NFT type to genesis
-    public fun register<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, info: NFTTypeInfoExt, meta: Metadata) acquires GenesisSignerCapability {
+    /// Note: this function is deprecated, please use `register_v2`
+    public fun register<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, info: NFTTypeInfoExt, meta: Metadata) acquires GenesisSignerCapability, NFTTypeInfo {
         let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
         let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
         let type_info = new_nft_type_info(sender, info, meta);
         move_to<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(&genesis_account, type_info);
+        let mint_cap = MintCapability<NFTMeta> {};
+
+        Self::upgrade_nft_type_info_from_v1_to_v2<NFTMeta, NFTTypeInfoExt>(sender, &mut mint_cap);
+
+        move_to<MintCapability<NFTMeta>>(sender, mint_cap);
+        move_to<BurnCapability<NFTMeta>>(sender, BurnCapability {});
+        move_to<UpdateCapability<NFTMeta>>(sender, UpdateCapability {});
+    }
+
+    /// Register a NFT type to genesis
+    public fun register_v2<NFTMeta: copy + store + drop>(sender: &signer, meta: Metadata) acquires GenesisSignerCapability {
+        assert(!is_register<NFTMeta>(), Errors::invalid_argument(ERR_NFT_TYPE_ALREADY_REGISTERED));
+        let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
+        let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+        let type_info = new_nft_type_info_v2(sender, meta);
+        move_to<NFTTypeInfoV2<NFTMeta>>(&genesis_account, type_info);
         move_to<MintCapability<NFTMeta>>(sender, MintCapability {});
         move_to<BurnCapability<NFTMeta>>(sender, BurnCapability {});
         move_to<UpdateCapability<NFTMeta>>(sender, UpdateCapability {});
     }
 
     /// Check the NFTMeta is register
-    public fun is_register<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): bool {
-        exists<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS())
+    public fun is_register<NFTMeta: copy + store + drop>(): bool {
+        exists<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS())
     }
 
     /// Add MintCapability to `sender`
@@ -211,8 +298,34 @@ module NFT {
     }
 
     /// Mint nft with MintCapability<NFTTYpe>, `creator` will been the NFT's creator.
-    public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, NFTTypeInfoExt: copy + store + drop>(creator: address, _cap: &mut MintCapability<NFTMeta>, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfo {
-        let nft_type_info = borrow_global_mut<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+    /// Note: this function is deprecated, please use `mint_with_cap_v2`
+    public fun mint_with_cap<NFTMeta: copy + store + drop, NFTBody: store, NFTTypeInfoExt: copy + store + drop>(creator: address, cap: &mut MintCapability<NFTMeta>, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfo, NFTTypeInfoV2 {
+        if (exists<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS())){
+            mint_with_cap_v2<NFTMeta,NFTBody>(creator, cap, base_meta, type_meta, body)
+        }else {
+            let nft_type_info = borrow_global_mut<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
+            nft_type_info.counter = nft_type_info.counter + 1;
+            let id = nft_type_info.counter;
+            let nft = NFT<NFTMeta, NFTBody> {
+                id: id,
+                creator,
+                base_meta: copy base_meta,
+                type_meta: copy type_meta,
+                body,
+            };
+            Event::emit_event(&mut nft_type_info.mint_events, MintEvent<NFTMeta> {
+                id,
+                creator,
+                base_meta,
+                type_meta,
+            });
+            return nft
+        }
+    }
+
+    /// Mint nft with MintCapability<NFTTYpe>, `creator` will been the NFT's creator.
+    public fun mint_with_cap_v2<NFTMeta: copy + store + drop, NFTBody: store>(creator: address, _cap: &mut MintCapability<NFTMeta>, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfoV2 {
+        let nft_type_info = borrow_global_mut<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS());
         nft_type_info.counter = nft_type_info.counter + 1;
         let id = nft_type_info.counter;
         let nft = NFT<NFTMeta, NFTBody> {
@@ -232,11 +345,20 @@ module NFT {
     }
 
     /// Mint nft, the `sender` must have MintCapability<NFTMeta>
-    public fun mint<NFTMeta: copy + store + drop, NFTBody: store, NFTTypeInfoExt: copy + store + drop>(sender: &signer, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfo, MintCapability {
+    /// Note: this function is deprecated, please use `mint_v2`
+    public fun mint<NFTMeta: copy + store + drop, NFTBody: store, NFTTypeInfoExt: copy + store + drop>(sender: &signer, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfo, NFTTypeInfoV2, MintCapability {
         let addr = Signer::address_of(sender);
         assert(exists<MintCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
         let cap = borrow_global_mut<MintCapability<NFTMeta>>(addr);
         mint_with_cap<NFTMeta, NFTBody, NFTTypeInfoExt>(addr, cap, base_meta, type_meta, body)
+    }
+
+    /// Mint nft, the `sender` must have MintCapability<NFTMeta>
+    public fun mint_v2<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, base_meta: Metadata, type_meta: NFTMeta, body: NFTBody): NFT<NFTMeta, NFTBody> acquires NFTTypeInfoV2, MintCapability {
+        let addr = Signer::address_of(sender);
+        assert(exists<MintCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_MINT_CAPABILITY));
+        let cap = borrow_global_mut<MintCapability<NFTMeta>>(addr);
+        mint_with_cap_v2<NFTMeta, NFTBody>(addr, cap, base_meta, type_meta, body)
     }
 
     /// Add BurnCapability<NFTMeta> to `sender`
@@ -257,13 +379,20 @@ module NFT {
     }
 
     /// Burn nft with BurnCapability<NFTMeta>
-    public fun burn_with_cap<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut BurnCapability<NFTMeta>, nft: NFT<NFTMeta, NFTBody>): NFTBody {
-        let NFT { creator: _, id: _, base_meta: _, type_meta: _, body } = nft;
+    public fun burn_with_cap<NFTMeta: copy + store + drop, NFTBody: store>(_cap: &mut BurnCapability<NFTMeta>, nft: NFT<NFTMeta, NFTBody>): NFTBody acquires NFTTypeInfoV2 {
+        let NFT { creator: _, id: id, base_meta: _, type_meta: _, body } = nft;
+        //only NFTTypeInfoV2 has burn_events EventHandle
+        if (exists<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS())) {
+            let nft_type_info = borrow_global_mut<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS());
+            Event::emit_event(&mut nft_type_info.burn_events, BurnEvent<NFTMeta> {
+                id,
+            });
+        };
         body
     }
 
     /// Burn nft, the `sender` must have BurnCapability<NFTMeta>
-    public fun burn<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, nft: NFT<NFTMeta, NFTBody>): NFTBody acquires BurnCapability {
+    public fun burn<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, nft: NFT<NFTMeta, NFTBody>): NFTBody acquires NFTTypeInfoV2, BurnCapability {
         let addr = Signer::address_of(sender);
         assert(exists<BurnCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_BURN_CAPABILITY));
         let cap = borrow_global_mut<BurnCapability<NFTMeta>>(addr);

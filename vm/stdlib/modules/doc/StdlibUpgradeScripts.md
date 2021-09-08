@@ -162,7 +162,7 @@ association account should call this script after upgrade from v2 to v3.
 
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer, language_version: u64)
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer)
 </code></pre>
 
 
@@ -171,8 +171,8 @@ association account should call this script after upgrade from v2 to v3.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer, language_version: u64) {
-    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">Self::do_upgrade_from_v6_to_v7</a>(&sender, language_version);
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer) {
+    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">Self::do_upgrade_from_v6_to_v7</a>(&sender);
 }
 </code></pre>
 
@@ -186,7 +186,7 @@ association account should call this script after upgrade from v2 to v3.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer, language_version: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer)
 </code></pre>
 
 
@@ -195,11 +195,14 @@ association account should call this script after upgrade from v2 to v3.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer, language_version: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer) {
+    <b>let</b> language_version = 2;
     // initialize the language version config.
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(sender, <a href="LanguageVersion.md#0x1_LanguageVersion_new">LanguageVersion::new</a>(language_version));
     // <b>use</b> <a href="STC.md#0x1_STC">STC</a> <a href="Dao.md#0x1_Dao">Dao</a> <b>to</b> upgrade onchain's <b>move</b>-language-version configuration.
     <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>, <a href="LanguageVersion.md#0x1_LanguageVersion_LanguageVersion">LanguageVersion::LanguageVersion</a>&gt;(sender);
+    // upgrade genesis <a href="NFT.md#0x1_NFT">NFT</a>
+    <a href="GenesisNFT.md#0x1_GenesisNFT_upgrade_to_nft_type_info_v2">GenesisNFT::upgrade_to_nft_type_info_v2</a>(sender);
 }
 </code></pre>
 
