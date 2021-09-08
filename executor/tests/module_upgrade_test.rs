@@ -343,7 +343,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 300)]
 fn test_stdlib_upgrade() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     let stdlib_versions = STDLIB_VERSIONS.clone();
