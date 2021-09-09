@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use move_binary_format::CompiledModule;
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::TypeABI;
@@ -13,7 +14,6 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::{Module, Package, Script, ScriptFunction, TransactionPayload};
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DecodedTransactionPayload {
     /// A transaction that executes code.
@@ -60,7 +60,7 @@ pub struct DecodedPackage {
     pub modules: Vec<Module>,
     pub init_script: Option<DecodedScriptFunction>,
 }
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
 pub struct DecodedMoveValue(serde_json::Value);
 impl From<DecodedMoveValue> for serde_json::Value {

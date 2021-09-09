@@ -4,10 +4,10 @@
 use actix::Message;
 use anyhow::{Error, Result};
 use futures::Stream;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum ServiceStatus {
     /// Actor thread and Service is started and running.
     Started,
@@ -29,7 +29,7 @@ impl ServiceStatus {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ServiceInfo {
     pub name: String,
     pub status: ServiceStatus,

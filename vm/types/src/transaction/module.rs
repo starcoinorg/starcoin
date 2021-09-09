@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use bcs_ext::Sample;
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::fmt;
-
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Module {
     #[serde(with = "serde_bytes")]
+    #[schemars(with = "String")]
     code: Vec<u8>,
 }
 impl From<Module> for Vec<u8> {

@@ -52,14 +52,15 @@ use proptest_derive::Arbitrary;
 use rand::prelude::{Distribution, SliceRandom};
 use rand::rngs::OsRng;
 use rand::Rng;
+use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::HashValue;
 use std::fmt;
 use std::str::FromStr;
-
-#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd, JsonSchema)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[schemars(with = "String")]
 pub struct AccessPath {
     pub address: AccountAddress,
     pub path: DataPath,
@@ -249,10 +250,12 @@ impl Arbitrary for DataType {
 
 pub type ModuleName = Identifier;
 
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug)]
+#[derive(
+    Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug, JsonSchema,
+)]
 pub enum DataPath {
-    Code(ModuleName),
-    Resource(StructTag),
+    Code(#[schemars(with = "String")] ModuleName),
+    Resource(#[schemars(with = "String")] StructTag),
 }
 
 #[cfg(any(test, feature = "fuzzing"))]

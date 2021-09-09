@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetworkID;
 use std::str::FromStr;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ChainId {
     pub name: String,
     pub id: u8,
@@ -26,7 +26,7 @@ impl From<&ChainNetworkID> for ChainId {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub enum FactoryAction {
     Status,
     Stop,

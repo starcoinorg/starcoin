@@ -8,6 +8,7 @@ use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
 pub use node_api_types::*;
+use schemars::{self, JsonSchema};
 use serde::de::{DeserializeOwned, Error};
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
@@ -20,7 +21,6 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
     Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, BlockSummary,
     EpochUncleSummary, UncleSummary,
@@ -56,12 +56,12 @@ use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct MintedBlockView {
     pub block_hash: HashValue,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ResourceView {
     pub raw: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -83,7 +83,7 @@ impl ResourceView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CodeView {
     pub code: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -99,22 +99,25 @@ impl From<Vec<u8>> for CodeView {
     }
 }
 
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListResourceView {
     pub resources: BTreeMap<StructTagView, ResourceView>,
 }
 
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListCodeView {
+    #[schemars(with = "String")]
     pub codes: BTreeMap<Identifier, CodeView>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     pub type_: StructTagView,
+    #[schemars(with = "Vec<(String, AnnotatedMoveValueView)>")]
     pub value: Vec<(Identifier, AnnotatedMoveValueView)>,
 }
+
 impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     fn from(origin: AnnotatedMoveStruct) -> Self {
         Self {
@@ -129,7 +132,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
     U64(StrView<u64>),
@@ -158,15 +161,17 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     }
 }
 
-#[derive(Default, Clone, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AccountStateSetView {
+    #[schemars(with = "String")] //TODO impl in schemars
     pub codes: BTreeMap<Identifier, StrView<ByteCode>>,
     pub resources: BTreeMap<StructTagView, AnnotatedMoveStructView>,
 }
 
-#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct TransactionRequest {
     /// Sender's address.
+    #[schemars(with = "Option<String>")]
     pub sender: Option<AccountAddress>,
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: Option<u64>,
@@ -223,7 +228,7 @@ impl From<RawUserTransaction> for TransactionRequest {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct DryRunTransactionRequest {
     #[serde(flatten)]
     pub transaction: TransactionRequest,
@@ -231,7 +236,7 @@ pub struct DryRunTransactionRequest {
     pub sender_public_key: StrView<AccountPublicKey>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum ArgumentsView {
     HumanReadable(Vec<TransactionArgumentView>),
@@ -279,7 +284,7 @@ impl Serialize for ArgumentsView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct ScriptData {
     pub code: StrView<ByteCodeOrScriptFunction>,
     #[serde(default)]
@@ -316,6 +321,7 @@ impl ScriptData {
         }
     }
 }
+
 #[allow(clippy::from_over_into)]
 impl Into<TransactionPayload> for ScriptData {
     fn into(self) -> TransactionPayload {
@@ -336,6 +342,7 @@ impl From<Script> for ScriptData {
         }
     }
 }
+
 impl From<ScriptFunction> for ScriptData {
     fn from(s: ScriptFunction) -> Self {
         let (module, function, ty_args, args) = s.into_inner();
@@ -386,7 +393,7 @@ impl FromStr for ByteCodeOrScriptFunction {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct BlockHeaderView {
     pub block_hash: HashValue,
     /// Parent hash.
@@ -408,6 +415,7 @@ pub struct BlockHeaderView {
     /// Gas used for contracts execution.
     pub gas_used: StrView<u64>,
     /// Block difficulty
+    #[schemars(with = "String")]
     pub difficulty: U256,
     /// hash for block body
     pub body_hash: HashValue,
@@ -418,6 +426,7 @@ pub struct BlockHeaderView {
     /// block header extra
     pub extra: BlockHeaderExtra,
 }
+
 impl From<BlockHeader> for BlockHeaderView {
     fn from(origin: BlockHeader) -> Self {
         BlockHeaderView {
@@ -440,7 +449,7 @@ impl From<BlockHeader> for BlockHeaderView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RawUserTransactionView {
     /// Sender's address.
     pub sender: AccountAddress,
@@ -486,7 +495,8 @@ impl TryFrom<RawUserTransaction> for RawUserTransactionView {
         })
     }
 }
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayloadView {
     /// A transaction that executes code.
     Script(DecodedScriptView),
@@ -495,6 +505,7 @@ pub enum TransactionPayloadView {
     /// A transaction that executes an existing script function published on-chain.
     ScriptFunction(DecodedScriptFunctionView),
 }
+
 impl From<DecodedTransactionPayload> for TransactionPayloadView {
     fn from(orig: DecodedTransactionPayload) -> Self {
         match orig {
@@ -506,12 +517,14 @@ impl From<DecodedTransactionPayload> for TransactionPayloadView {
         }
     }
 }
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct DecodedScriptView {
     pub code: StrView<Vec<u8>>,
     pub ty_args: Vec<TypeTagView>,
     pub args: Vec<DecodedMoveValue>,
 }
+
 impl From<DecodedScript> for DecodedScriptView {
     fn from(orig: DecodedScript) -> Self {
         Self {
@@ -522,12 +535,13 @@ impl From<DecodedScript> for DecodedScriptView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct DecodedPackageView {
     pub package_address: AccountAddress,
     pub modules: Vec<StrView<Vec<u8>>>,
     pub init_script: Option<DecodedScriptFunctionView>,
 }
+
 impl From<DecodedPackage> for DecodedPackageView {
     fn from(orig: DecodedPackage) -> Self {
         Self {
@@ -542,13 +556,15 @@ impl From<DecodedPackage> for DecodedPackageView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct DecodedScriptFunctionView {
     pub module: ModuleIdView,
+    #[schemars(with = "String")]
     pub function: Identifier,
     pub ty_args: Vec<TypeTagView>,
     pub args: Vec<DecodedMoveValue>,
 }
+
 impl From<DecodedScriptFunction> for DecodedScriptFunctionView {
     fn from(orig: DecodedScriptFunction) -> Self {
         Self {
@@ -560,7 +576,7 @@ impl From<DecodedScriptFunction> for DecodedScriptFunctionView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct SignedUserTransactionView {
     pub transaction_hash: HashValue,
     /// The raw transaction
@@ -584,7 +600,7 @@ impl TryFrom<SignedUserTransaction> for SignedUserTransactionView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct BlockMetadataView {
     /// Parent block hash.
     pub parent_hash: HashValue,
@@ -621,6 +637,7 @@ impl From<BlockMetadata> for BlockMetadataView {
         }
     }
 }
+
 #[allow(clippy::from_over_into)]
 impl Into<BlockMetadata> for BlockMetadataView {
     fn into(self) -> BlockMetadata {
@@ -647,7 +664,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionView {
     pub block_hash: HashValue,
     pub block_number: StrView<BlockNumber>,
@@ -694,7 +711,7 @@ impl TransactionView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum BlockTransactionsView {
     Hashes(Vec<HashValue>),
     Full(Vec<SignedUserTransactionView>),
@@ -727,7 +744,7 @@ impl From<Vec<HashValue>> for BlockTransactionsView {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct BlockView {
     pub header: BlockHeaderView,
     pub body: BlockTransactionsView,
@@ -766,11 +783,12 @@ impl TryFrom<Block> for BlockView {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct BlockSummaryView {
     pub header: BlockHeaderView,
     pub uncles: Vec<BlockHeaderView>,
 }
+
 impl From<BlockSummary> for BlockSummaryView {
     fn from(summary: BlockSummary) -> Self {
         BlockSummaryView {
@@ -784,7 +802,7 @@ impl From<BlockSummary> for BlockSummaryView {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {
     pub block_hash: HashValue,
     pub block_number: StrView<u64>,
@@ -831,16 +849,20 @@ impl TransactionInfoView {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum TransactionStatusView {
     Executed,
     OutOfGas,
+
     MoveAbort {
+        //Todo: remote define it
+        #[schemars(with = "String")]
         location: AbortLocation,
         abort_code: StrView<u64>,
     },
     ExecutionFailure {
+        #[schemars(with = "String")]
         location: AbortLocation,
         function: u16,
         code_offset: u16,
@@ -851,6 +873,7 @@ pub enum TransactionStatusView {
         status_code_name: String,
     },
 }
+
 impl From<TransactionStatus> for TransactionStatusView {
     fn from(s: TransactionStatus) -> Self {
         match s {
@@ -882,6 +905,7 @@ impl From<KeptVMStatus> for TransactionStatusView {
         }
     }
 }
+
 impl From<DiscardedVMStatus> for TransactionStatusView {
     fn from(s: DiscardedVMStatus) -> Self {
         Self::Discard {
@@ -891,7 +915,7 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub struct TransactionEventResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decode_event_data: Option<DecodedMoveValue>,
@@ -899,7 +923,7 @@ pub struct TransactionEventResponse {
     pub event: TransactionEventView,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, JsonSchema)]
 pub struct TransactionEventView {
     pub block_hash: Option<HashValue>,
     pub block_number: Option<StrView<BlockNumber>>,
@@ -926,6 +950,7 @@ impl From<ContractEventInfo> for TransactionEventView {
         }
     }
 }
+
 impl From<ContractEvent> for TransactionEventView {
     fn from(event: ContractEvent) -> Self {
         TransactionEventView {
@@ -962,17 +987,20 @@ impl TransactionEventView {
     }
 }
 
+use schemars::gen::SchemaGenerator;
+use schemars::schema::{InstanceType, Schema, SchemaObject};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 pub use vm_status_translator::VmStatusExplainView;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct DryRunOutputView {
     pub explained_status: VmStatusExplainView,
     #[serde(flatten)]
     pub txn_output: TransactionOutputView,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputView {
     pub events: Vec<TransactionEventView>,
     pub gas_used: StrView<u64>,
@@ -1012,7 +1040,7 @@ impl From<TransactionOutput> for TransactionOutputView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
     pub access_path: AccessPath,
     pub action: WriteOpView,
@@ -1020,19 +1048,19 @@ pub struct TransactionOutputAction {
     pub value: Option<WriteOpValueView>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub enum WriteOpValueView {
     Code(CodeView),
     Resource(ResourceView),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub enum WriteOpView {
     Deletion,
     Value,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct UncleSummaryView {
     /// total uncle
     pub uncles: StrView<u64>,
@@ -1055,7 +1083,7 @@ impl From<UncleSummary> for UncleSummaryView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EpochUncleSummaryView {
     /// epoch number
     pub epoch: StrView<u64>,
@@ -1073,7 +1101,7 @@ impl From<EpochUncleSummary> for EpochUncleSummaryView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ChainInfoView {
     pub chain_id: u8,
     pub genesis_hash: HashValue,
@@ -1095,7 +1123,7 @@ impl From<ChainInfo> for ChainInfoView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PeerInfoView {
     pub peer_id: PeerId,
     pub chain_info: ChainInfoView,
@@ -1114,13 +1142,14 @@ impl From<PeerInfo> for PeerInfoView {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StateWithProofView {
     pub state: Option<StrView<Vec<u8>>>,
     pub account_state: Option<StrView<Vec<u8>>>,
     pub account_proof: SparseMerkleProof,
     pub account_state_proof: SparseMerkleProof,
 }
+
 impl StateWithProofView {
     pub fn state_proof(&self) -> StateProof {
         StateProof::new(
@@ -1157,6 +1186,20 @@ impl From<StateWithProofView> for StateWithProof {
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct StrView<T>(pub T);
+
+impl<T> JsonSchema for StrView<T> {
+    fn schema_name() -> String {
+        std::any::type_name::<T>().to_owned()
+    }
+
+    fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+        SchemaObject {
+            instance_type: Some(InstanceType::String.into()),
+            ..Default::default()
+        }
+        .into()
+    }
+}
 
 impl<T> From<T> for StrView<T> {
     fn from(t: T) -> Self {
@@ -1220,6 +1263,7 @@ impl std::fmt::Display for FunctionIdView {
         write!(f, "{}", &self.0)
     }
 }
+
 impl FromStr for FunctionIdView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -1255,6 +1299,7 @@ impl FromStr for StrView<ModuleId> {
         Ok(Self(ModuleId::new(module_addr, module_name)))
     }
 }
+
 impl std::fmt::Display for TypeTagView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
@@ -1269,6 +1314,7 @@ impl FromStr for TypeTagView {
         Ok(Self(type_tag))
     }
 }
+
 impl std::fmt::Display for StrView<StructTag> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
@@ -1286,6 +1332,7 @@ impl FromStr for StructTagView {
         }
     }
 }
+
 impl std::fmt::Display for StrView<TransactionArgument> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
@@ -1423,7 +1470,7 @@ impl Serialize for BytesView {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct ContractCall {
     pub function_id: FunctionIdView,
     pub type_args: Vec<TypeTagView>,

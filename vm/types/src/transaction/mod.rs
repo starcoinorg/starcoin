@@ -34,6 +34,7 @@ pub use error::Error as TransactionError;
 pub use module::Module;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
+use schemars::{self, JsonSchema};
 pub use script::{
     ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
     TypeArgumentABI,
@@ -58,9 +59,12 @@ mod transaction_argument;
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
 /// RawUserTransaction is the portion of a transaction that a client signs
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
 pub struct RawUserTransaction {
     /// Sender's address.
+    #[schemars(with = "String")]
     sender: AccountAddress,
     // Sequence number of this transaction corresponding to sender's account.
     sequence_number: u64,
@@ -362,7 +366,7 @@ impl Sample for RawUserTransaction {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
     Script(Script),
@@ -416,9 +420,10 @@ impl From<TransactionPayloadType> for u8 {
 /// **IMPORTANT:** The signature of a `SignedUserTransaction` is not guaranteed to be verified. For a
 /// transaction whose signature is statically guaranteed to be verified, see
 /// [`SignatureCheckedTransaction`].
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 pub struct SignedUserTransaction {
     #[serde(skip)]
+    #[schemars(skip)]
     id: Option<HashValue>,
 
     /// The raw transaction

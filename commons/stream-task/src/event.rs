@@ -4,12 +4,12 @@
 use anyhow::format_err;
 use log::info;
 use parking_lot::Mutex;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::SystemTime;
-
 fn now_seconds() -> u64 {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -97,7 +97,7 @@ impl TaskEventCounter {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TaskProgressReport {
     pub task_name: String,
     pub sub_task: u64,

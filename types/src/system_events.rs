@@ -4,11 +4,11 @@
 use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
-
 #[derive(Clone, Debug)]
 pub struct NewHeadBlock(pub Arc<ExecutedBlock>);
 
@@ -39,19 +39,21 @@ impl GenerateBlockEvent {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct MintBlockEvent {
     pub parent_hash: HashValue,
     pub strategy: ConsensusStrategy,
     #[serde(with = "hex")]
+    #[schemars(with = "String")]
     pub minting_blob: Vec<u8>,
+    #[schemars(with = "String")]
     pub difficulty: U256,
     pub block_number: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra: Option<MintEventExtra>,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct MintEventExtra {
     pub worker_id: String,
     pub job_id: String,

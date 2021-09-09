@@ -7,16 +7,20 @@ use crate::serde_helper::vec_bytes;
 use bcs_ext::Sample;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, TypeTag};
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Call a Move script.
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Script {
     #[serde(with = "serde_bytes")]
+    #[schemars(with = "String")]
     code: Vec<u8>,
+    #[schemars(with = "Vec<String>")]
     ty_args: Vec<TypeTag>,
     #[serde(with = "vec_bytes")]
+    #[schemars(with = "Vec<String>")]
     args: Vec<Vec<u8>>,
 }
 
@@ -91,7 +95,7 @@ pub struct ScriptFunctionABI {
     args: Vec<ArgumentABI>,
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct TransactionScriptABI {
     /// The public name of the script.
@@ -100,6 +104,7 @@ pub struct TransactionScriptABI {
     doc: String,
     /// The `code` value to set in the `Script` object.
     #[serde(with = "serde_bytes")]
+    #[schemars(with = "String")]
     code: Vec<u8>,
     /// The names of the type arguments.
     ty_args: Vec<TypeArgumentABI>,
@@ -108,18 +113,19 @@ pub struct TransactionScriptABI {
 }
 
 /// The description of a (regular) argument in a script.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ArgumentABI {
     /// The name of the argument.
     name: String,
     /// The expected type.
     /// In Move scripts, this does contain generics type parameters.
+    #[schemars(with = "String")]
     type_tag: TypeTag,
 }
 
 /// The description of a type argument in a script.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct TypeArgumentABI {
     /// The name of the argument.
@@ -265,12 +271,16 @@ impl TypeArgumentABI {
 }
 
 /// Call a Move script function.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ScriptFunction {
+    #[schemars(with = "String")]
     module: ModuleId,
+    #[schemars(with = "String")]
     function: Identifier,
+    #[schemars(with = "Vec<String>")]
     ty_args: Vec<TypeTag>,
     #[serde(with = "vec_bytes")]
+    #[schemars(with = "Vec<String>")]
     args: Vec<Vec<u8>>,
 }
 

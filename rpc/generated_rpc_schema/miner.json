@@ -1,0 +1,179 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "mining.submit",
+      "params": [
+        {
+          "name": "minting_blob",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        },
+        {
+          "name": "nonce",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint32",
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "extra",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "MintedBlockView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "MintedBlockView",
+          "type": "object",
+          "required": [
+            "block_hash"
+          ],
+          "properties": {
+            "block_hash": {
+              "type": "string",
+              "format": "HashValue"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "mining.get_job",
+      "params": [],
+      "result": {
+        "name": "Option < MintBlockEvent >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_MintBlockEvent",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_number",
+            "difficulty",
+            "minting_blob",
+            "parent_hash",
+            "strategy"
+          ],
+          "properties": {
+            "block_number": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "difficulty": {
+              "type": "string"
+            },
+            "extra": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "extra",
+                "job_id",
+                "worker_id"
+              ],
+              "properties": {
+                "extra": {
+                  "description": "Type for block header extra",
+                  "type": "string"
+                },
+                "job_id": {
+                  "type": "string"
+                },
+                "worker_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "minting_blob": {
+              "type": "string"
+            },
+            "parent_hash": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "strategy": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "Dummy"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "Argon"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "Keccak"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "CryptoNight"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

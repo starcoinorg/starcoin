@@ -9,7 +9,7 @@ use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
-#[rpc]
+#[rpc(client, server, schema)]
 pub trait SyncManagerApi {
     #[rpc(name = "sync.status")]
     fn status(&self) -> FutureResult<SyncStatus>;
@@ -33,4 +33,10 @@ pub trait SyncManagerApi {
 
     #[rpc(name = "sync.score")]
     fn peer_score(&self) -> FutureResult<PeerScoreResponse>;
+}
+#[test]
+fn test() {
+    let schema = rpc_impl_SyncManagerApi::gen_client::Client::gen_schema();
+    let j = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{}", j);
 }

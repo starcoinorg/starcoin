@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use schemars::JsonSchema;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -9,7 +10,6 @@ use starcoin_vm_types::file_format::AbilitySet;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use std::fmt;
-
 /// How to call a particular Move script (aka. an "ABI").
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
@@ -55,12 +55,13 @@ impl ScriptABI {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ScriptFunctionABI {
     /// The public name of the script.
     name: String,
     /// The module name where the script lives.
+    #[schemars(with = "String")]
     module_name: ModuleId,
     /// Some text comment.
     doc: String,
@@ -161,7 +162,7 @@ impl TransactionScriptABI {
 }
 
 /// The description of a (regular) argument in a script.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ArgumentABI {
     /// The name of the argument.
@@ -194,7 +195,7 @@ impl ArgumentABI {
 }
 
 /// The description of a type argument in a script.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct TypeArgumentABI {
     /// The name of the argument.
@@ -217,7 +218,7 @@ impl TypeArgumentABI {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum TypeABI {
     Bool,
@@ -276,12 +277,13 @@ impl TypeABI {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct StructABI {
     /// name of the struct
     name: String,
     /// module contains the struct
+    #[schemars(with = "String")]
     module_name: ModuleId,
     ty_args: Vec<TypeArgumentABI>,
     /// fields of the structs.
@@ -353,7 +355,7 @@ impl StructABI {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct FieldABI {
     /// field name
@@ -382,9 +384,10 @@ impl FieldABI {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ModuleABI {
+    #[schemars(with = "String")]
     module_name: ModuleId,
     structs: Vec<StructABI>,
     script_functions: Vec<ScriptFunctionABI>,
@@ -513,8 +516,8 @@ impl<'d> serde::de::DeserializeSeed<'d> for &StructABI {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
-pub struct WrappedAbilitySet(pub AbilitySet);
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, JsonSchema)]
+pub struct WrappedAbilitySet(#[schemars(with = "String")] pub AbilitySet);
 
 impl Serialize for WrappedAbilitySet {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

@@ -34,7 +34,7 @@ starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional 
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-accumulator = { path = "../../commons/accumulator"}
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
-
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="f31aab7c9f32513b4d40d0218942c906171fabd6"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"

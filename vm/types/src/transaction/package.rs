@@ -9,13 +9,16 @@ use crate::{
 };
 use anyhow::{ensure, Result};
 use bcs_ext::Sample;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use vm::errors::Location;
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
 pub struct Package {
     ///Package's all Module must at same address.
+    #[schemars(with = "String")]
     package_address: AccountAddress,
     modules: Vec<Module>,
     init_script: Option<ScriptFunction>,

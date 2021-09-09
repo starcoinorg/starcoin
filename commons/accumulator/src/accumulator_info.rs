@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use bcs_ext::Sample;
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
     HashValue,
 };
-
 /// `AccumulatorInfo` is the object we store in the storage. It consists of the
 /// info that we can create MerkleAccumulator.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
 pub struct AccumulatorInfo {
     /// Accumulator root hash
     pub accumulator_root: HashValue,

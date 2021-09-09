@@ -7,7 +7,10 @@ use crate::startup_info::{ChainInfo, ChainStatus};
 use crate::U256;
 use anyhow::{format_err, Result};
 use network_p2p_types::identity::PublicKey;
+pub use network_p2p_types::multiaddr::Multiaddr;
 use network_p2p_types::multihash::Error;
+pub use network_p2p_types::multihash::Multihash;
+use schemars::{self, JsonSchema};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
@@ -16,11 +19,8 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
-pub use network_p2p_types::multiaddr::Multiaddr;
-pub use network_p2p_types::multihash::Multihash;
-
-#[derive(Eq, PartialEq, Hash, Clone, Debug)]
-pub struct PeerId(network_p2p_types::PeerId);
+#[derive(Eq, PartialEq, Hash, Clone, Debug, JsonSchema)]
+pub struct PeerId(#[schemars(with = "String")] network_p2p_types::PeerId);
 
 impl PeerId {
     pub fn new(peer_id: network_p2p_types::PeerId) -> Self {

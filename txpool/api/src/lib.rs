@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use futures_channel::mpsc;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::HashValue;
 use starcoin_types::{
@@ -10,10 +11,9 @@ use starcoin_types::{
 };
 use std::fmt::Debug;
 use std::sync::Arc;
-
 pub type TxnStatusFullEvent = Arc<[(HashValue, transaction::TxStatus)]>;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TxPoolStatus {
     pub txn_count: usize,
     pub txn_max_count: usize,

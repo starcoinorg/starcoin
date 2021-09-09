@@ -1,0 +1,143 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "debug.set_log_level",
+      "params": [
+        {
+          "name": "logger_name",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_String",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        {
+          "name": "level",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "debug.set_log_pattern",
+      "params": [
+        {
+          "name": "pattern",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "LogPattern",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Default",
+                  "WithLine"
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "Custom"
+                ],
+                "properties": {
+                  "Custom": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "debug.panic",
+      "params": [],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "debug.sleep",
+      "params": [
+        {
+          "name": "time",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "txfactory.status",
+      "params": [
+        {
+          "name": "action",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "FactoryAction",
+            "type": "string",
+            "enum": [
+              "Status",
+              "Stop",
+              "Start"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "bool",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Boolean",
+          "type": "boolean"
+        }
+      }
+    }
+  ]
+}

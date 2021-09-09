@@ -4,12 +4,12 @@
 use crate::move_resource::MoveResource;
 use anyhow::{format_err, Result};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::{self, Formatter};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
-
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum StdlibVersion {
     Latest,
@@ -110,6 +110,7 @@ impl Display for StdlibVersion {
     Serialize,
     IntoPrimitive,
     TryFromPrimitive,
+    JsonSchema,
 )]
 #[repr(u8)]
 #[serde(tag = "type")]
@@ -157,7 +158,9 @@ impl FromStr for ConsensusStrategy {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(
+    Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,
+)]
 pub struct ChainId {
     id: u8,
 }
