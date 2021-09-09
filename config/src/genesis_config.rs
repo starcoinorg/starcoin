@@ -947,12 +947,12 @@ pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(5);
+    let stdlib_version = StdlibVersion::Version(6);
     let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-            timestamp: 1628761376000,
+            timestamp: 1631099469000,
             difficulty: 100.into(),
         }),
         version: Version { major: 1 },
@@ -963,7 +963,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: V1_GAS_SCHEDULE.clone(),
         },
-        publishing_option: TransactionPublishOption::locked(),
+        publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: UNCLE_RATE_TARGET,
             base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
@@ -987,7 +987,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         stdlib_version,
         dao_config: DaoConfig {
             voting_delay: 60 * 1000,       // 1 minute
-            voting_period: 30 * 60 * 1000, // 30 minute
+            voting_period: 10 * 60 * 1000, // 30 minute
             voting_quorum_rate: 2,
             min_action_delay: 60 * 1000, // 1 minute
         },
