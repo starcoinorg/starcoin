@@ -1,0 +1,503 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "sync.status",
+      "params": [],
+      "result": {
+        "name": "SyncStatus",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "SyncStatus",
+          "type": "object",
+          "required": [
+            "chain_status",
+            "state"
+          ],
+          "properties": {
+            "chain_status": {
+              "description": "The latest status of a chain.",
+              "type": "object",
+              "required": [
+                "head",
+                "info"
+              ],
+              "properties": {
+                "head": {
+                  "description": "Chain head block's header.",
+                  "type": "object",
+                  "required": [
+                    "author",
+                    "block_accumulator_root",
+                    "body_hash",
+                    "chain_id",
+                    "difficulty",
+                    "extra",
+                    "gas_used",
+                    "nonce",
+                    "number",
+                    "parent_hash",
+                    "state_root",
+                    "timestamp",
+                    "txn_accumulator_root"
+                  ],
+                  "properties": {
+                    "author": {
+                      "description": "Block author.",
+                      "type": "string",
+                      "format": "AccountAddress"
+                    },
+                    "author_auth_key": {
+                      "description": "Block author auth key. this field is deprecated",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "block_accumulator_root": {
+                      "description": "The parent block info's block accumulator root hash.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "body_hash": {
+                      "description": "hash for block body",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "chain_id": {
+                      "description": "The chain id",
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "format": "uint8",
+                          "minimum": 0.0
+                        }
+                      }
+                    },
+                    "difficulty": {
+                      "description": "Block difficulty",
+                      "type": "string"
+                    },
+                    "extra": {
+                      "description": "block header extra",
+                      "type": "string"
+                    },
+                    "gas_used": {
+                      "description": "Gas used for contracts execution.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "nonce": {
+                      "description": "Consensus nonce field.",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "number": {
+                      "description": "Block number.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "parent_hash": {
+                      "description": "Parent hash.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "state_root": {
+                      "description": "The last transaction state_root of this block after execute.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "timestamp": {
+                      "description": "Block timestamp.",
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    },
+                    "txn_accumulator_root": {
+                      "description": "The transaction accumulator root hash after executing this block.",
+                      "type": "string",
+                      "format": "HashValue"
+                    }
+                  }
+                },
+                "info": {
+                  "description": "Chain block info",
+                  "type": "object",
+                  "required": [
+                    "block_accumulator_info",
+                    "block_id",
+                    "total_difficulty",
+                    "txn_accumulator_info"
+                  ],
+                  "properties": {
+                    "block_accumulator_info": {
+                      "description": "The block accumulator info.",
+                      "type": "object",
+                      "required": [
+                        "accumulator_root",
+                        "frozen_subtree_roots",
+                        "num_leaves",
+                        "num_nodes"
+                      ],
+                      "properties": {
+                        "accumulator_root": {
+                          "description": "Accumulator root hash",
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        "frozen_subtree_roots": {
+                          "description": "Frozen subtree roots of this accumulator.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        },
+                        "num_leaves": {
+                          "description": "The total number of leaves in this accumulator.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "num_nodes": {
+                          "description": "The total number of nodes in this accumulator.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
+                    },
+                    "block_id": {
+                      "description": "Block id",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "total_difficulty": {
+                      "description": "The total difficulty.",
+                      "type": "string"
+                    },
+                    "txn_accumulator_info": {
+                      "description": "The transaction accumulator info",
+                      "type": "object",
+                      "required": [
+                        "accumulator_root",
+                        "frozen_subtree_roots",
+                        "num_leaves",
+                        "num_nodes"
+                      ],
+                      "properties": {
+                        "accumulator_root": {
+                          "description": "Accumulator root hash",
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        "frozen_subtree_roots": {
+                          "description": "Frozen subtree roots of this accumulator.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        },
+                        "num_leaves": {
+                          "description": "The total number of leaves in this accumulator.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "num_nodes": {
+                          "description": "The total number of nodes in this accumulator.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "state": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Prepare",
+                    "Synchronized"
+                  ]
+                },
+                {
+                  "description": "Node is synchronizing, BlockIdAndNumber is target.",
+                  "type": "object",
+                  "required": [
+                    "Synchronizing"
+                  ],
+                  "properties": {
+                    "Synchronizing": {
+                      "type": "object",
+                      "required": [
+                        "target",
+                        "total_difficulty"
+                      ],
+                      "properties": {
+                        "target": {
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "number"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "HashValue"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "format": "uint64",
+                              "minimum": 0.0
+                            }
+                          }
+                        },
+                        "total_difficulty": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "sync.cancel",
+      "params": [],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "sync.start",
+      "params": [
+        {
+          "name": "force",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Boolean",
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "peers",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Array_of_PeerId",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "name": "skip_pow_verify",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Boolean",
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "strategy",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_PeerStrategy",
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "Random",
+              "WeightedRandom",
+              "Best",
+              "Avg"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "sync.progress",
+      "params": [],
+      "result": {
+        "name": "Option < SyncProgressReport >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_SyncProgressReport",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "current",
+            "target_difficulty",
+            "target_id",
+            "target_number",
+            "target_peers"
+          ],
+          "properties": {
+            "begin_number": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "current": {
+              "type": "object",
+              "required": [
+                "error",
+                "ok",
+                "processed_items",
+                "retry",
+                "sub_task",
+                "task_name",
+                "use_seconds"
+              ],
+              "properties": {
+                "error": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "ok": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "format": "double"
+                },
+                "processed_items": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "retry": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "sub_task": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "task_name": {
+                  "type": "string"
+                },
+                "total_items": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "use_seconds": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "target_difficulty": {
+              "type": "string"
+            },
+            "target_id": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "target_number": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "target_peers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "sync.score",
+      "params": [],
+      "result": {
+        "name": "PeerScoreResponse",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "PeerScoreResponse",
+          "type": "object",
+          "properties": {
+            "peers": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

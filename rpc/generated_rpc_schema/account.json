@@ -1,0 +1,1617 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "",
+    "version": ""
+  },
+  "methods": [
+    {
+      "name": "account.default",
+      "params": [],
+      "result": {
+        "name": "Option < AccountInfo >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_AccountInfo",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.set_default_account",
+      "params": [
+        {
+          "name": "addr",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.create",
+      "params": [
+        {
+          "name": "password",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.list",
+      "params": [],
+      "result": {
+        "name": "Vec < AccountInfo >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_AccountInfo",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "address",
+              "is_default",
+              "is_readonly",
+              "public_key",
+              "receipt_identifier"
+            ],
+            "properties": {
+              "address": {
+                "type": "string",
+                "format": "AccountAddress"
+              },
+              "is_default": {
+                "description": "This account is default at current wallet. Every wallet must has one default account.",
+                "type": "boolean"
+              },
+              "is_readonly": {
+                "type": "boolean"
+              },
+              "public_key": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "Single"
+                    ],
+                    "properties": {
+                      "Single": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Multi"
+                    ],
+                    "properties": {
+                      "Multi": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "receipt_identifier": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.get",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < AccountInfo >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_AccountInfo",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.sign",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "data",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "SigningMessage",
+            "description": "SigningMessage is a message to be signed and encapsulates the salt",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "SignedMessageView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "starcoin_vm_types::sign_message::SignedMessage",
+          "type": "string"
+        }
+      }
+    },
+    {
+      "name": "account.sign_txn_request",
+      "params": [
+        {
+          "name": "txn_request",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "TransactionRequest",
+            "type": "object",
+            "properties": {
+              "chain_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint8",
+                "minimum": 0.0
+              },
+              "expiration_timestamp_secs": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "gas_token_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "gas_unit_price": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "max_gas_amount": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "modules": {
+                "description": "module codes.",
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "script": {
+                "description": "The transaction script to execute.",
+                "default": null,
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "args",
+                  "code"
+                ],
+                "properties": {
+                  "args": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "HumanReadable"
+                        ],
+                        "properties": {
+                          "HumanReadable": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "BCS"
+                        ],
+                        "properties": {
+                          "BCS": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "type_args": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "sender": {
+                "description": "Sender's address.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sequence_number": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "String",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "String",
+          "type": "string"
+        }
+      }
+    },
+    {
+      "name": "account.sign_txn",
+      "params": [
+        {
+          "name": "raw_txn",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "RawUserTransaction",
+            "description": "RawUserTransaction is the portion of a transaction that a client signs",
+            "type": "object",
+            "required": [
+              "chain_id",
+              "expiration_timestamp_secs",
+              "gas_token_code",
+              "gas_unit_price",
+              "max_gas_amount",
+              "payload",
+              "sender",
+              "sequence_number"
+            ],
+            "properties": {
+              "chain_id": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                }
+              },
+              "expiration_timestamp_secs": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "gas_token_code": {
+                "type": "string"
+              },
+              "gas_unit_price": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "max_gas_amount": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "payload": {
+                "anyOf": [
+                  {
+                    "description": "A transaction that executes code.",
+                    "type": "object",
+                    "required": [
+                      "Script"
+                    ],
+                    "properties": {
+                      "Script": {
+                        "description": "Call a Move script.",
+                        "type": "object",
+                        "required": [
+                          "args",
+                          "code",
+                          "ty_args"
+                        ],
+                        "properties": {
+                          "args": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "ty_args": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "description": "A transaction that publish or update module code by a package.",
+                    "type": "object",
+                    "required": [
+                      "Package"
+                    ],
+                    "properties": {
+                      "Package": {
+                        "type": "object",
+                        "required": [
+                          "modules",
+                          "package_address"
+                        ],
+                        "properties": {
+                          "init_script": {
+                            "description": "Call a Move script function.",
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "required": [
+                              "args",
+                              "function",
+                              "module",
+                              "ty_args"
+                            ],
+                            "properties": {
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "function": {
+                                "type": "string"
+                              },
+                              "module": {
+                                "type": "string"
+                              },
+                              "ty_args": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "modules": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "code"
+                              ],
+                              "properties": {
+                                "code": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "package_address": {
+                            "description": "Package's all Module must at same address.",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "description": "A transaction that executes an existing script function published on-chain.",
+                    "type": "object",
+                    "required": [
+                      "ScriptFunction"
+                    ],
+                    "properties": {
+                      "ScriptFunction": {
+                        "description": "Call a Move script function.",
+                        "type": "object",
+                        "required": [
+                          "args",
+                          "function",
+                          "module",
+                          "ty_args"
+                        ],
+                        "properties": {
+                          "args": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "function": {
+                            "type": "string"
+                          },
+                          "module": {
+                            "type": "string"
+                          },
+                          "ty_args": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "sender": {
+                "description": "Sender's address.",
+                "type": "string"
+              },
+              "sequence_number": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          }
+        },
+        {
+          "name": "signer",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        }
+      ],
+      "result": {
+        "name": "SignedUserTransaction",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "SignedUserTransaction",
+          "description": "A transaction that has been signed.\n\nA `SignedUserTransaction` is a single transaction that can be atomically executed. Clients submit these to validator nodes, and the validator and executor submits these to the VM.\n\n**IMPORTANT:** The signature of a `SignedUserTransaction` is not guaranteed to be verified. For a transaction whose signature is statically guaranteed to be verified, see [`SignatureCheckedTransaction`].",
+          "type": "object",
+          "required": [
+            "authenticator",
+            "raw_txn"
+          ],
+          "properties": {
+            "authenticator": {
+              "description": "Public key and signature to authenticate",
+              "anyOf": [
+                {
+                  "description": "Single signature",
+                  "type": "object",
+                  "required": [
+                    "Ed25519"
+                  ],
+                  "properties": {
+                    "Ed25519": {
+                      "type": "object",
+                      "required": [
+                        "public_key",
+                        "signature"
+                      ],
+                      "properties": {
+                        "public_key": {
+                          "type": "string"
+                        },
+                        "signature": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "description": "K-of-N multisignature",
+                  "type": "object",
+                  "required": [
+                    "MultiEd25519"
+                  ],
+                  "properties": {
+                    "MultiEd25519": {
+                      "type": "object",
+                      "required": [
+                        "public_key",
+                        "signature"
+                      ],
+                      "properties": {
+                        "public_key": {
+                          "type": "string"
+                        },
+                        "signature": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "raw_txn": {
+              "description": "The raw transaction",
+              "type": "object",
+              "required": [
+                "chain_id",
+                "expiration_timestamp_secs",
+                "gas_token_code",
+                "gas_unit_price",
+                "max_gas_amount",
+                "payload",
+                "sender",
+                "sequence_number"
+              ],
+              "properties": {
+                "chain_id": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
+                    }
+                  }
+                },
+                "expiration_timestamp_secs": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "gas_token_code": {
+                  "type": "string"
+                },
+                "gas_unit_price": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "max_gas_amount": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "payload": {
+                  "anyOf": [
+                    {
+                      "description": "A transaction that executes code.",
+                      "type": "object",
+                      "required": [
+                        "Script"
+                      ],
+                      "properties": {
+                        "Script": {
+                          "description": "Call a Move script.",
+                          "type": "object",
+                          "required": [
+                            "args",
+                            "code",
+                            "ty_args"
+                          ],
+                          "properties": {
+                            "args": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "ty_args": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "A transaction that publish or update module code by a package.",
+                      "type": "object",
+                      "required": [
+                        "Package"
+                      ],
+                      "properties": {
+                        "Package": {
+                          "type": "object",
+                          "required": [
+                            "modules",
+                            "package_address"
+                          ],
+                          "properties": {
+                            "init_script": {
+                              "description": "Call a Move script function.",
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "required": [
+                                "args",
+                                "function",
+                                "module",
+                                "ty_args"
+                              ],
+                              "properties": {
+                                "args": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "function": {
+                                  "type": "string"
+                                },
+                                "module": {
+                                  "type": "string"
+                                },
+                                "ty_args": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "modules": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "code"
+                                ],
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "package_address": {
+                              "description": "Package's all Module must at same address.",
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "A transaction that executes an existing script function published on-chain.",
+                      "type": "object",
+                      "required": [
+                        "ScriptFunction"
+                      ],
+                      "properties": {
+                        "ScriptFunction": {
+                          "description": "Call a Move script function.",
+                          "type": "object",
+                          "required": [
+                            "args",
+                            "function",
+                            "module",
+                            "ty_args"
+                          ],
+                          "properties": {
+                            "args": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "function": {
+                              "type": "string"
+                            },
+                            "module": {
+                              "type": "string"
+                            },
+                            "ty_args": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "sender": {
+                  "description": "Sender's address.",
+                  "type": "string"
+                },
+                "sequence_number": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.unlock",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "password",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        },
+        {
+          "name": "duration",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_uint32",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.lock",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.import",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "private_key",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "alloc::vec::Vec<u8>",
+            "type": "string"
+          }
+        },
+        {
+          "name": "password",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.import_readonly",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "public_key",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "alloc::vec::Vec<u8>",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.export",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "password",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < u8 >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_uint8",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    {
+      "name": "account.change_password",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "new_password",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.accepted_tokens",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TokenCode >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TokenCode",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "address",
+              "module",
+              "name"
+            ],
+            "properties": {
+              "address": {
+                "description": "Token module's address",
+                "type": "string"
+              },
+              "module": {
+                "description": "Token module's name",
+                "type": "string"
+              },
+              "name": {
+                "description": "Token's struct name",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "account.remove",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        },
+        {
+          "name": "password",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_String",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "AccountInfo",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "AccountInfo",
+          "type": "object",
+          "required": [
+            "address",
+            "is_default",
+            "is_readonly",
+            "public_key",
+            "receipt_identifier"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "AccountAddress"
+            },
+            "is_default": {
+              "description": "This account is default at current wallet. Every wallet must has one default account.",
+              "type": "boolean"
+            },
+            "is_readonly": {
+              "type": "boolean"
+            },
+            "public_key": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "Single"
+                  ],
+                  "properties": {
+                    "Single": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Multi"
+                  ],
+                  "properties": {
+                    "Multi": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "receipt_identifier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -9187,6 +9187,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
+ "structopt 0.3.23",
  "thiserror",
  "vm-status-translator",
 ]

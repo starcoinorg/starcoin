@@ -39,3 +39,7 @@ network-api = {path = "../../network/api", package="network-api"}
 jsonrpc-derive = {git = "https://github.com/fikgol/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="f31aab7c9f32513b4d40d0218942c906171fabd6"}
 openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="3d77f665e865a54ec1656464276deb9380eb6313"}
+structopt = "0.3.23"
+[[bin]]
+name = "starcoin-rpc-schema-generate"
+path = "src/generate_schema.rs"
