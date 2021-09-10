@@ -18,7 +18,7 @@ pub enum BlockExecutorError {
     BlockAccumulatorGetProofErr,
     #[error("block accumulator proof verify error")]
     BlockAccumulatorVerifyErr(HashValue, u64),
-    #[error("block chain state read or write error")]
+    #[error("block chain state read or write error：{0:?}")]
     BlockChainStateErr(anyhow::Error),
     #[error("block accumulator flush error")]
     BlockAccumulatorFlushErr,
