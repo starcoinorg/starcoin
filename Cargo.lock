@@ -5389,11 +5389,12 @@ dependencies = [
 
 [[package]]
 name = "names"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef320dab323286b50fb5cdda23f61c796a72a89998ab565ca32525c5c556f2da"
+checksum = "10a8690bf09abf659851e58cd666c3d37ac6af07c2bd7a9e332cfba471715775"
 dependencies = [
- "rand 0.3.23",
+ "clap 3.0.0-beta.2",
+ "rand 0.8.4",
 ]
 
 [[package]]
