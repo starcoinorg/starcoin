@@ -19,7 +19,7 @@ use fnv::FnvHashMap;
 use futures::prelude::*;
 use libp2p::core::connection::{ConnectionId, ListenerId};
 use libp2p::core::{either::EitherOutput, ConnectedPoint, PeerId, PublicKey};
-use libp2p::identify::{Identify, IdentifyEvent, IdentifyInfo};
+use libp2p::identify::{Identify, IdentifyConfig, IdentifyEvent, IdentifyInfo};
 use libp2p::ping::{Ping, PingConfig, PingEvent, PingSuccess};
 use libp2p::swarm::{IntoProtocolsHandler, IntoProtocolsHandlerSelect, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
@@ -82,7 +82,9 @@ impl PeerInfoBehaviour {
     pub fn new(user_agent: String, local_public_key: PublicKey) -> Self {
         let identify = {
             let proto_version = "/starcoin/1.0".to_string();
-            Identify::new(proto_version, user_agent, local_public_key)
+            let identify_config =
+                IdentifyConfig::new(proto_version, local_public_key).with_agent_version(user_agent);
+            Identify::new(identify_config)
         };
 
         PeerInfoBehaviour {
@@ -271,14 +273,14 @@ impl NetworkBehaviour for PeerInfoBehaviour {
         self.identify.inject_dial_failure(peer_id);
     }
 
-    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
-        self.ping.inject_new_listen_addr(addr);
-        self.identify.inject_new_listen_addr(addr);
+    fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
+        self.ping.inject_new_listen_addr(id, addr);
+        self.identify.inject_new_listen_addr(id, addr);
     }
 
-    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
-        self.ping.inject_expired_listen_addr(addr);
-        self.identify.inject_expired_listen_addr(addr);
+    fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
+        self.ping.inject_expired_listen_addr(id, addr);
+        self.identify.inject_expired_listen_addr(id, addr);
     }
 
     fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
@@ -341,6 +343,15 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                         score,
                     });
                 }
+                Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                    peer_id,
+                    connection,
+                }) => {
+                    return Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                        peer_id,
+                        connection,
+                    });
+                }
             }
         }
 
@@ -357,6 +368,9 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                         debug!(target: "sub-libp2p", "Identification with peer {:?} failed => {}", peer_id, error)
                     }
                     IdentifyEvent::Sent { .. } => {}
+                    IdentifyEvent::Pushed { .. } => {
+                        //Todo::process it
+                    }
                 },
                 Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
                     return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
@@ -380,6 +394,15 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                     return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
                         address,
                         score,
+                    });
+                }
+                Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                    peer_id,
+                    connection,
+                }) => {
+                    return Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                        peer_id,
+                        connection,
                     });
                 }
             }

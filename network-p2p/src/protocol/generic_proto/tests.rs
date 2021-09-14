@@ -28,7 +28,7 @@ use libp2p::core::{
 };
 use libp2p::swarm::{
     IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
-    ProtocolsHandler, Swarm,
+    ProtocolsHandler, Swarm, SwarmEvent,
 };
 use libp2p::{identity, noise, yamux};
 use libp2p::{Multiaddr, PeerId, Transport};
@@ -194,15 +194,15 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         self.inner.inject_event(peer_id, connection, event)
     }
 
-	fn poll(
-		&mut self,
-		cx: &mut Context,
-		params: &mut impl PollParameters
-	) -> Poll<
-		NetworkBehaviourAction<
-			<<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
-			Self::OutEvent
-		>
+    fn poll(
+        &mut self,
+        cx: &mut Context,
+        params: &mut impl PollParameters,
+    ) -> Poll<
+        NetworkBehaviourAction<
+            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
+            Self::OutEvent
+        >
     >{
         self.inner.poll(cx, params)
     }
@@ -220,12 +220,12 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         self.inner.inject_dial_failure(peer_id)
     }
 
-    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
-        self.inner.inject_new_listen_addr(addr)
+    fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
+        self.inner.inject_new_listen_addr(id, addr)
     }
 
-    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
-        self.inner.inject_expired_listen_addr(addr)
+    fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
+        self.inner.inject_expired_listen_addr(id, addr)
     }
 
     fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
@@ -263,8 +263,8 @@ fn reconnect_after_disconnect() {
         loop {
             // Grab next event from services.
             let event = {
-                let s1 = service1.next();
-                let s2 = service2.next();
+                let s1 = service1.select_next_some();
+                let s2 = service2.select_next_some();
                 futures::pin_mut!(s1, s2);
                 match future::select(s1, s2).await {
                     future::Either::Left((ev, _)) => future::Either::Left(ev),
@@ -273,52 +273,52 @@ fn reconnect_after_disconnect() {
             };
 
             match event {
-                future::Either::Left(GenericProtoOut::CustomProtocolOpen { .. }) => {
-                    match service1_state {
-                        ServiceState::NotConnected => {
-                            service1_state = ServiceState::FirstConnec;
-                            if service2_state == ServiceState::FirstConnec {
-                                service1.disconnect_peer(
-                                    Swarm::local_peer_id(&service2),
-                                    sc_peerset::SetId::from(0),
-                                );
-                            }
+                future::Either::Left(SwarmEvent::Behaviour(
+                    GenericProtoOut::CustomProtocolOpen { .. },
+                )) => match service1_state {
+                    ServiceState::NotConnected => {
+                        service1_state = ServiceState::FirstConnec;
+                        if service2_state == ServiceState::FirstConnec {
+                            service1.behaviour_mut().disconnect_peer(
+                                Swarm::local_peer_id(&service2),
+                                sc_peerset::SetId::from(0),
+                            );
                         }
-                        ServiceState::Disconnected => service1_state = ServiceState::ConnectedAgain,
-                        ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
                     }
-                }
-                future::Either::Left(GenericProtoOut::CustomProtocolClosed { .. }) => {
-                    match service1_state {
-                        ServiceState::FirstConnec => service1_state = ServiceState::Disconnected,
-                        ServiceState::ConnectedAgain
-                        | ServiceState::NotConnected
-                        | ServiceState::Disconnected => panic!(),
-                    }
-                }
-                future::Either::Right(GenericProtoOut::CustomProtocolOpen { .. }) => {
-                    match service2_state {
-                        ServiceState::NotConnected => {
-                            service2_state = ServiceState::FirstConnec;
-                            if service1_state == ServiceState::FirstConnec {
-                                service1.disconnect_peer(
-                                    Swarm::local_peer_id(&service2),
-                                    sc_peerset::SetId::from(0),
-                                );
-                            }
+                    ServiceState::Disconnected => service1_state = ServiceState::ConnectedAgain,
+                    ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
+                },
+                future::Either::Left(SwarmEvent::Behaviour(
+                    GenericProtoOut::CustomProtocolClosed { .. },
+                )) => match service1_state {
+                    ServiceState::FirstConnec => service1_state = ServiceState::Disconnected,
+                    ServiceState::ConnectedAgain
+                    | ServiceState::NotConnected
+                    | ServiceState::Disconnected => panic!(),
+                },
+                future::Either::Right(SwarmEvent::Behaviour(
+                    GenericProtoOut::CustomProtocolOpen { .. },
+                )) => match service2_state {
+                    ServiceState::NotConnected => {
+                        service2_state = ServiceState::FirstConnec;
+                        if service1_state == ServiceState::FirstConnec {
+                            service1.behaviour_mut().disconnect_peer(
+                                Swarm::local_peer_id(&service2),
+                                sc_peerset::SetId::from(0),
+                            );
                         }
-                        ServiceState::Disconnected => service2_state = ServiceState::ConnectedAgain,
-                        ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
                     }
-                }
-                future::Either::Right(GenericProtoOut::CustomProtocolClosed { .. }) => {
-                    match service2_state {
-                        ServiceState::FirstConnec => service2_state = ServiceState::Disconnected,
-                        ServiceState::ConnectedAgain
-                        | ServiceState::NotConnected
-                        | ServiceState::Disconnected => panic!(),
-                    }
-                }
+                    ServiceState::Disconnected => service2_state = ServiceState::ConnectedAgain,
+                    ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
+                },
+                future::Either::Right(SwarmEvent::Behaviour(
+                    GenericProtoOut::CustomProtocolClosed { .. },
+                )) => match service2_state {
+                    ServiceState::FirstConnec => service2_state = ServiceState::Disconnected,
+                    ServiceState::ConnectedAgain
+                    | ServiceState::NotConnected
+                    | ServiceState::Disconnected => panic!(),
+                },
                 _ => {}
             }
 
@@ -336,8 +336,8 @@ fn reconnect_after_disconnect() {
         loop {
             // Grab next event from services.
             let event = {
-                let s1 = service1.next();
-                let s2 = service2.next();
+                let s1 = service1.select_next_some();
+                let s2 = service2.select_next_some();
                 futures::pin_mut!(s1, s2);
                 match future::select(future::select(s1, s2), &mut delay).await {
                     future::Either::Right(_) => break, // success
@@ -347,8 +347,8 @@ fn reconnect_after_disconnect() {
             };
 
             match event {
-                GenericProtoOut::CustomProtocolOpen { .. }
-                | GenericProtoOut::CustomProtocolClosed { .. } => panic!(),
+                SwarmEvent::Behaviour(GenericProtoOut::CustomProtocolOpen { .. })
+                | SwarmEvent::Behaviour(GenericProtoOut::CustomProtocolClosed { .. }) => panic!(),
                 _ => {}
             }
         }

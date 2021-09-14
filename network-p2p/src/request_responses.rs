@@ -390,9 +390,9 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
         }
     }
 
-    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
+    fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
         for (p, _) in self.protocols.values_mut() {
-            NetworkBehaviour::inject_expired_listen_addr(p, addr)
+            NetworkBehaviour::inject_expired_listen_addr(p, id, addr)
         }
     }
 
@@ -402,9 +402,9 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
         }
     }
 
-    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
+    fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
         for (p, _) in self.protocols.values_mut() {
-            NetworkBehaviour::inject_new_listen_addr(p, addr)
+            NetworkBehaviour::inject_new_listen_addr(p, id, addr)
         }
     }
 
@@ -512,6 +512,15 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                             return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
                                 address,
                                 score,
+                            });
+                        }
+                        NetworkBehaviourAction::CloseConnection {
+                            peer_id,
+                            connection,
+                        } => {
+                            return Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                                peer_id,
+                                connection,
                             });
                         }
                     };
@@ -953,7 +962,7 @@ mod tests {
                 let (mut swarm, _) = swarms.remove(0);
                 async move {
                     loop {
-                        match swarm.next_event().await {
+                        match swarm.select_next_some().await {
                             SwarmEvent::Behaviour(Event::InboundRequest { result, .. }) => {
                                 result.unwrap();
                             }
@@ -972,10 +981,10 @@ mod tests {
             let mut response_receiver = None;
 
             loop {
-                match swarm.next_event().await {
+                match swarm.select_next_some().await {
                     SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                         let (sender, receiver) = oneshot::channel();
-                        swarm.send_request(
+                        swarm.behaviour_mut().send_request(
                             &peer_id,
                             protocol_name,
                             b"this is a request".to_vec(),
@@ -1052,7 +1061,7 @@ mod tests {
                 let (mut swarm, _) = swarms.remove(0);
                 async move {
                     loop {
-                        match swarm.next_event().await {
+                        match swarm.select_next_some().await {
                             SwarmEvent::Behaviour(Event::InboundRequest { result, .. }) => {
                                 assert!(result.is_ok());
                                 break;
@@ -1072,10 +1081,10 @@ mod tests {
             let mut response_receiver = None;
 
             loop {
-                match swarm.next_event().await {
+                match swarm.select_next_some().await {
                     SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                         let (sender, receiver) = oneshot::channel();
-                        swarm.send_request(
+                        swarm.behaviour_mut().send_request(
                             &peer_id,
                             protocol_name,
                             b"this is a request".to_vec(),
@@ -1172,7 +1181,7 @@ mod tests {
             .spawn_obj(
                 async move {
                     loop {
-                        match swarm_2.next_event().await {
+                        match swarm_2.select_next_some().await {
                             SwarmEvent::Behaviour(Event::InboundRequest { result, .. }) => {
                                 result.unwrap();
                             }
@@ -1223,18 +1232,18 @@ mod tests {
             let mut num_responses = 0;
 
             loop {
-                match swarm_1.next_event().await {
+                match swarm_1.select_next_some().await {
                     SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                         let (sender_1, receiver_1) = oneshot::channel();
                         let (sender_2, receiver_2) = oneshot::channel();
-                        swarm_1.send_request(
+                        swarm_1.behaviour_mut().send_request(
                             &peer_id,
                             protocol_name_1,
                             b"this is a request".to_vec(),
                             sender_1,
                             IfDisconnected::ImmediateError,
                         );
-                        swarm_1.send_request(
+                        swarm_1.behaviour_mut().send_request(
                             &peer_id,
                             protocol_name_2,
                             b"this is a request".to_vec(),

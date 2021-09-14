@@ -356,7 +356,10 @@ impl NetworkWorker {
 
     /// Returns the number of peers we're connected to.
     pub fn num_connected_peers(&self) -> usize {
-        self.network_service.user_protocol().num_connected_peers()
+        self.network_service
+            .behaviour()
+            .user_protocol()
+            .num_connected_peers()
     }
 
     // /// Returns the number of peers we're connected to and that are being queried.
@@ -366,7 +369,9 @@ impl NetworkWorker {
 
     /// Adds an address for a node.
     pub fn add_known_address(&mut self, peer_id: PeerId, addr: Multiaddr) {
-        self.network_service.add_known_address(peer_id, addr);
+        self.network_service
+            .behaviour_mut()
+            .add_known_address(peer_id, addr);
     }
 
     /// Return a `NetworkService` that can be shared through the code base and can be used to
@@ -382,6 +387,7 @@ impl NetworkWorker {
     pub fn network_state(&mut self) -> NetworkState {
         let swarm = &mut self.network_service;
         let open = swarm
+            .behaviour_mut()
             .user_protocol()
             .open_peers()
             .cloned()
@@ -390,10 +396,10 @@ impl NetworkWorker {
         let connected_peers = {
             let swarm = &mut *swarm;
             open.iter().filter_map(move |peer_id| {
-                let known_addresses = NetworkBehaviour::addresses_of_peer(&mut **swarm, peer_id)
+                let known_addresses = NetworkBehaviour::addresses_of_peer(swarm.behaviour_mut(), peer_id)
                     .into_iter().collect();
 
-                let endpoint = if let Some(e) = swarm.node(peer_id).map(|i| i.endpoint()) {
+                let endpoint = if let Some(e) = swarm.behaviour_mut().node(peer_id).map(|i| i.endpoint()) {
                     e.clone().into()
                 } else {
                     error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
@@ -403,9 +409,9 @@ impl NetworkWorker {
 
                 Some((peer_id.to_base58(), NetworkStatePeer {
                     endpoint,
-                    version_string: swarm.node(peer_id)
+                    version_string: swarm.behaviour_mut().node(peer_id)
                         .and_then(|i| i.client_version().map(|s| s.to_owned())),
-                    latest_ping_time: swarm.node(peer_id).and_then(|i| i.latest_ping()),
+                    latest_ping_time: swarm.behaviour_mut().node(peer_id).and_then(|i| i.latest_ping()),
                     known_addresses,
                 }))
             }).collect()
@@ -414,6 +420,7 @@ impl NetworkWorker {
         let not_connected_peers = {
             let swarm = &mut *swarm;
             swarm
+                .behaviour_mut()
                 .known_peers()
                 .into_iter()
                 .filter(|p| open.iter().all(|n| n != p))
@@ -422,11 +429,15 @@ impl NetworkWorker {
                         peer_id.to_base58(),
                         NetworkStateNotConnectedPeer {
                             version_string: swarm
+                                .behaviour_mut()
                                 .node(&peer_id)
                                 .and_then(|i| i.client_version().map(|s| s.to_owned())),
-                            latest_ping_time: swarm.node(&peer_id).and_then(|i| i.latest_ping()),
+                            latest_ping_time: swarm
+                                .behaviour_mut()
+                                .node(&peer_id)
+                                .and_then(|i| i.latest_ping()),
                             known_addresses: NetworkBehaviour::addresses_of_peer(
-                                &mut **swarm,
+                                swarm.behaviour_mut(),
                                 &peer_id,
                             )
                             .into_iter()
@@ -446,7 +457,10 @@ impl NetworkWorker {
                 .collect(),
             connected_peers,
             not_connected_peers,
-            peerset: swarm.user_protocol_mut().peerset_debug_info(),
+            peerset: swarm
+                .behaviour_mut()
+                .user_protocol_mut()
+                .peerset_debug_info(),
         }
     }
 
@@ -463,11 +477,11 @@ impl NetworkWorker {
 
     /// Returns the list of all the peers we known.
     pub fn known_peers(&mut self) -> HashSet<PeerId> {
-        self.network_service.known_peers()
+        self.network_service.behaviour_mut().known_peers()
     }
 
     pub fn is_open(&self, peer_id: &PeerId) -> bool {
-        self.network_service.is_open(peer_id)
+        self.network_service.behaviour().is_open(peer_id)
     }
 }
 
@@ -994,13 +1008,16 @@ impl Future for NetworkWorker {
             };
 
             match msg {
-                ServiceToWorkerMsg::GetValue(key) => this.network_service.get_value(&key),
+                ServiceToWorkerMsg::GetValue(key) => {
+                    this.network_service.behaviour_mut().get_value(&key)
+                }
                 ServiceToWorkerMsg::PutValue(key, value) => {
-                    this.network_service.put_value(key, value)
+                    this.network_service.behaviour_mut().put_value(key, value)
                 }
-                ServiceToWorkerMsg::AddKnownAddress(peer_id, addr) => {
-                    this.network_service.add_known_address(peer_id, addr)
-                }
+                ServiceToWorkerMsg::AddKnownAddress(peer_id, addr) => this
+                    .network_service
+                    .behaviour_mut()
+                    .add_known_address(peer_id, addr),
                 ServiceToWorkerMsg::EventStream(sender) => this.event_streams.push(sender),
                 ServiceToWorkerMsg::Request {
                     target,
@@ -1011,7 +1028,7 @@ impl Future for NetworkWorker {
                 } => {
                     // Calling `send_request` can fail immediately in some circumstances.
                     // This is handled by sending back an error on the channel.
-                    this.network_service.send_request(
+                    this.network_service.behaviour_mut().send_request(
                         &target,
                         &protocol,
                         request,
@@ -1021,6 +1038,7 @@ impl Future for NetworkWorker {
                 }
                 ServiceToWorkerMsg::DisconnectPeer(who, protocol) => this
                     .network_service
+                    .behaviour_mut()
                     .user_protocol_mut()
                     .disconnect_peer(&who, &protocol),
                 ServiceToWorkerMsg::IsConnected(who, tx) => {
@@ -1039,11 +1057,12 @@ impl Future for NetworkWorker {
                 }
                 ServiceToWorkerMsg::UpdateChainStatus(status) => {
                     this.network_service
+                        .behaviour_mut()
                         .user_protocol_mut()
                         .update_chain_status(*status);
                 }
                 ServiceToWorkerMsg::AddressByPeerId(peer_id, tx) => {
-                    let _ = tx.send(this.network_service.get_address(&peer_id));
+                    let _ = tx.send(this.network_service.behaviour_mut().get_address(&peer_id));
                 }
             }
         }
@@ -1059,7 +1078,7 @@ impl Future for NetworkWorker {
             }
 
             // Process the next action coming from the network.
-            let next_event = this.network_service.next_event();
+            let next_event = this.network_service.select_next_some();
             futures::pin_mut!(next_event);
             let poll_value = next_event.poll_unpin(cx);
 
@@ -1325,11 +1344,11 @@ impl Future for NetworkWorker {
                         }
                     }
                 }
-                Poll::Ready(SwarmEvent::NewListenAddr(addr)) => {
-                    trace!(target: "sub-libp2p", "Libp2p => NewListenAddr({})", addr)
+                Poll::Ready(SwarmEvent::NewListenAddr { address, .. }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => NewListenAddr({})", address)
                 }
-                Poll::Ready(SwarmEvent::ExpiredListenAddr(addr)) => {
-                    trace!(target: "sub-libp2p", "Libp2p => ExpiredListenAddr({})", addr)
+                Poll::Ready(SwarmEvent::ExpiredListenAddr { address, .. }) => {
+                    trace!(target: "sub-libp2p", "Libp2p => ExpiredListenAddr({})", address)
                 }
                 Poll::Ready(SwarmEvent::UnreachableAddr {
                     peer_id,
@@ -1398,20 +1417,21 @@ impl Future for NetworkWorker {
                     trace!(target: "sub-libp2p", "Libp2p => UnknownPeerUnreachableAddr({}): {}",
                            address, error)
                 }
-                Poll::Ready(SwarmEvent::ListenerClosed {
-                    reason,
-                    addresses: _,
-                }) => {
+                Poll::Ready(SwarmEvent::ListenerClosed { reason, .. }) => {
                     warn!(target: "sub-libp2p", "Libp2p => ListenerClosed: {:?}", reason);
                 }
-                Poll::Ready(SwarmEvent::ListenerError { error }) => {
+                Poll::Ready(SwarmEvent::ListenerError { error, .. }) => {
                     trace!(target: "sub-libp2p", "Libp2p => ListenerError: {}", error);
                 }
             };
         }
 
         if let Some(metrics) = this.metrics.as_ref() {
-            for (proto, buckets) in this.network_service.num_entries_per_kbucket() {
+            for (proto, buckets) in this
+                .network_service
+                .behaviour_mut()
+                .num_entries_per_kbucket()
+            {
                 for (lower_ilog2_bucket_bound, num_entries) in buckets {
                     metrics
                         .kbuckets_num_nodes
@@ -1422,23 +1442,32 @@ impl Future for NetworkWorker {
                         .set(num_entries as u64);
                 }
             }
-            for (proto, num_entries) in this.network_service.num_kademlia_records() {
+            for (proto, num_entries) in this.network_service.behaviour_mut().num_kademlia_records()
+            {
                 metrics
                     .kademlia_records_count
                     .with_label_values(&[&proto.as_ref()])
                     .set(num_entries as u64);
             }
-            for (proto, num_entries) in this.network_service.kademlia_records_total_size() {
+            for (proto, num_entries) in this
+                .network_service
+                .behaviour_mut()
+                .kademlia_records_total_size()
+            {
                 metrics
                     .kademlia_records_sizes_total
                     .with_label_values(&[&proto.as_ref()])
                     .set(num_entries as u64);
             }
-            metrics
-                .peerset_num_discovered
-                .set(this.network_service.user_protocol().num_discovered_peers() as u64);
+            metrics.peerset_num_discovered.set(
+                this.network_service
+                    .behaviour()
+                    .user_protocol()
+                    .num_discovered_peers() as u64,
+            );
             metrics.peerset_num_requested.set(
                 this.network_service
+                    .behaviour_mut()
                     .user_protocol()
                     .requested_peers()
                     .count() as u64,
