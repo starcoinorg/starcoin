@@ -110,6 +110,10 @@ impl CommandAction for PackageCmd {
         let package_hash = package.crypto_hash();
         let output_file = {
             let mut output_dir = opt.out_dir.clone().unwrap_or(current_dir()?);
+            if !output_dir.exists() {
+                std::fs::create_dir_all(output_dir.as_path())
+                    .map_err(|e| format_err!("make output_dir({:?}) error: {:?}", output_dir, e))?;
+            }
             output_dir.push(
                 opt.package_name
                     .clone()

@@ -143,23 +143,46 @@ Feature: cmd integration test
 
 #mytoken
   Scenario Outline: [cmd] my_token test
-    Then cmd: "account show"
-    Then cmd: "account unlock @$.account.address@"
-    Then cmd: "dev get-coin"
-    Then cmd: "account show"
-    Then cmd: "dev compile ../examples/my_token/MyToken.move -o ../examples -s @$.account.address@"
+    Then cmd: "account unlock 0x0000000000000000000000000a550c18"
+    Then cmd: "dev compile ../examples/my_token/MyToken.move -o ../examples -s 0x0000000000000000000000000a550c18"
     Then cmd: "dev deploy --blocking @$[0]@"
-    Then cmd: "account show"
-    Then cmd: "account execute-function --function @$.account.address@::MyToken::init --blocking"
+    Then cmd: "account execute-function -s 0x0000000000000000000000000a550c18 --function 0x0000000000000000000000000a550c18::MyToken::init --blocking"
     Then cmd: "chain get-txn @$.execute_output.txn_hash@"
     Then cmd: "account show"
-    Then cmd: "account execute-function --function @$.account.address@::MyToken::mint --blocking --arg 1000000u128"
-#    Then assert: "$.status Executed"
+    Then cmd: "account execute-function -s 0x0000000000000000000000000a550c18 --function 0x0000000000000000000000000a550c18::MyToken::mint --blocking --arg 1000000u128"
+    Then assert: "$.execute_output.txn_info.status Executed"
     Then cmd: "chain get-txn @$.execute_output.txn_hash@"
-# TODO check MyToken balance.
-#    Then cmd: "account show"
-#    Then assert: "$.account.balances.MyToken 1000000"
+    Then cmd: "account show 0x0000000000000000000000000a550c18"
+    # TODO match token balance
+    #Then assert: "$.account.balances.'0x0000000000000000000000000a550c18::MyToken::MyToken' 1000000"
     Then stop
 
     Examples:
       |  |
+
+
+#simplenft
+  Scenario Outline: [cmd] simple_nft test
+    Then cmd: "account unlock 0x0000000000000000000000000a550c18"
+    Then cmd: "dev compile ../examples/simple_nft/module/SimpleNFT.move -o ../examples/simple_nft/build -s 0x0000000000000000000000000a550c18"
+    Then cmd: "dev package ../examples/simple_nft/build -o ../examples/simple_nft/package/ -n simple_nft --function 0x0000000000000000000000000a550c18::SimpleNFTScripts::initialize"
+    Then cmd: "dev deploy --blocking ../examples/simple_nft/package/simple_nft.blob"
+    # use default account to mint nft
+    Then cmd: "dev get-coin"
+    Then cmd: "account unlock"
+    Then cmd: "account execute-function --function 0x0000000000000000000000000a550c18::SimpleNFTScripts::test_mint_with_image -b"
+    Then assert: "$.execute_output.txn_info.status Executed"
+    Then cmd: "account execute-function --function 0x0000000000000000000000000a550c18::SimpleNFTScripts::test_mint_with_image_data -b"
+    Then assert: "$.execute_output.txn_info.status Executed"
+    # transfer to a550c18
+    Then cmd: "account execute-function -s 0x0000000000000000000000000a550c18 --function 0x0000000000000000000000000a550c18::SimpleNFTScripts::accept -b"
+    Then assert: "$.execute_output.txn_info.status Executed"
+    Then cmd: "account nft list"
+    Then cmd: "account nft transfer --uuid @$.list[0].uuid@ -r 0x0000000000000000000000000a550c18 -b"
+    Then cmd: "account nft list 0x0000000000000000000000000a550c18"
+    Then assert: "$.list[0].nft_type 0x0000000000000000000000000a550c18::SimpleNFT::SimpleNFT/0x0000000000000000000000000a550c18::SimpleNFT::SimpleNFTBody"
+    Then stop
+
+    Examples:
+      |  |
+
