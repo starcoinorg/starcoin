@@ -4,8 +4,8 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
-    BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
-    TransactionEventResponse, TransactionInfoView, TransactionView,
+    BlockHeaderView, BlockView, ChainId, ChainInfoView, TransactionEventResponse,
+    TransactionInfoView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -14,7 +14,6 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockInfo, BlockNumber};
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[rpc(client, server, schema)]
 pub trait ChainApi {
@@ -86,35 +85,9 @@ pub trait ChainApi {
         option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse>>;
 
-    /// Get current epoch info.
-    #[rpc(name = "chain.epoch")]
-    fn current_epoch(&self) -> FutureResult<EpochInfo>;
-
-    /// Get epoch info by number.
-    #[rpc(name = "chain.get_epoch_info_by_number")]
-    fn get_epoch_info_by_number(&self, number: BlockNumber) -> FutureResult<EpochInfo>;
-
-    /// Get global time by number.
-    #[rpc(name = "chain.get_global_time_by_number")]
-    fn get_global_time_by_number(&self, number: BlockNumber) -> FutureResult<GlobalTimeOnChain>;
-
-    /// Get uncles by number.
-    #[rpc(name = "chain.get_epoch_uncles_by_number")]
-    fn get_epoch_uncles_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> FutureResult<Vec<BlockSummaryView>>;
-
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]
     fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
-
-    /// Epoch uncle summary by number.
-    #[rpc(name = "chain.epoch_uncle_summary_by_number")]
-    fn epoch_uncle_summary_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> FutureResult<EpochUncleSummaryView>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

@@ -8,7 +8,7 @@ use starcoin_config::{
 };
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::{Params, RemoteStateReader, RpcClient};
+use starcoin_rpc_client::{Params, RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::U256;
@@ -122,7 +122,7 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
         let ws_rpc_url = format!("ws://{}:{}", parameter.network.boot_nodes_domain(), 9870);
         info!("Connect to {} for get genesis block parameter.", ws_rpc_url);
         let rpc_client: RpcClient = RpcClient::connect_websocket(ws_rpc_url.as_str())?;
-        let state_reader = RemoteStateReader::new(&rpc_client)?;
+        let state_reader = rpc_client.state_reader(StateRootOption::Latest)?;
         loop {
             match Self::get_latest_block_number(&rpc_client) {
                 Ok(block_number) => {

@@ -4,8 +4,6 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::block::BlockSummary;
-use starcoin_types::block::EpochUncleSummary;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::BlockTransactionInfo;
 use starcoin_types::{
@@ -15,7 +13,6 @@ use starcoin_types::{
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
 };
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
@@ -30,9 +27,6 @@ pub enum ChainRequest {
     GetBlockInfoByNumber(u64),
     GetStartupInfo(),
     GetHeadChainStatus(),
-    GetEpochInfo(),
-    GetEpochInfoByNumber(u64),
-    GetGlobalTimeByNumber(u64),
     GetTransactionBlock(HashValue),
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
@@ -53,9 +47,6 @@ pub enum ChainRequest {
     },
     GetBlocks(Vec<HashValue>),
     GetHeaders(Vec<HashValue>),
-    GetEpochUnclesByNumber(Option<BlockNumber>),
-    UnclePath(HashValue, HashValue),
-    EpochUncleSummaryByNumber(Option<BlockNumber>),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -82,11 +73,6 @@ pub enum ChainResponse {
     Events(Vec<ContractEventInfo>),
     MainEvents(Vec<ContractEventInfo>),
     None,
-    Conn(Result<()>),
-    EpochInfo(EpochInfo),
-    GlobalTime(GlobalTimeOnChain),
     HashVec(Vec<HashValue>),
     TPS(TPS),
-    BlockSummaries(Vec<BlockSummary>),
-    UncleSummary(EpochUncleSummary),
 }

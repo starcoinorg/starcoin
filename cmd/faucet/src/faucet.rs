@@ -6,8 +6,8 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::{RemoteStateReader, RpcClient};
-use starcoin_state_api::AccountStateReader;
+use starcoin_rpc_client::{RpcClient, StateRootOption};
+use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_value::TokenValue;
 use starcoin_types::account_config::STCUnit;
@@ -59,10 +59,9 @@ impl Faucet {
         {
             Some(sequence_number) => sequence_number,
             None => {
-                let chain_state_reader = RemoteStateReader::new(&self.client)?;
-                let account_state_reader = AccountStateReader::new(&chain_state_reader);
-                account_state_reader
-                    .get_account_resource(self.faucet_account.address())?
+                let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
+                chain_state_reader
+                    .get_account_resource(*self.faucet_account.address())?
                     .ok_or_else(|| {
                         format_err!(
                             "Can not find account on chain by address:{}",

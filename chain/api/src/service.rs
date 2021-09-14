@@ -5,7 +5,6 @@ use crate::message::{ChainRequest, ChainResponse};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::{BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
@@ -14,7 +13,6 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 /// Readable block chain service trait
 pub trait ReadableChainService {
@@ -43,9 +41,6 @@ pub trait ReadableChainService {
     fn main_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
     fn main_startup_info(&self) -> StartupInfo;
     fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>>;
-    fn epoch_info(&self) -> Result<EpochInfo>;
-    fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
-    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
     fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
     fn get_block_ids(
         &self,
@@ -53,12 +48,6 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
-    fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>>;
-    fn uncle_path(&self, block_id: HashValue, uncle_id: HashValue) -> Result<Vec<BlockHeader>>;
-    fn epoch_uncle_summary_by_number(
-        &self,
-        number: Option<BlockNumber>,
-    ) -> Result<EpochUncleSummary>;
 }
 
 /// Writeable block chain service trait
@@ -74,11 +63,6 @@ pub trait ChainAsyncService:
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
     async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
-    async fn uncle_path(
-        &self,
-        block_id: HashValue,
-        uncle_id: HashValue,
-    ) -> Result<Vec<BlockHeader>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
@@ -108,9 +92,6 @@ pub trait ChainAsyncService:
         -> Result<Option<BlockHeader>>;
     async fn main_startup_info(&self) -> Result<StartupInfo>;
     async fn main_status(&self) -> Result<ChainStatus>;
-    async fn epoch_info(&self) -> Result<EpochInfo>;
-    async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
-    async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
     async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
     async fn get_block_ids(
         &self,
@@ -118,14 +99,6 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
-    async fn get_epoch_uncles_by_number(
-        &self,
-        number: Option<BlockNumber>,
-    ) -> Result<Vec<BlockSummary>>;
-    async fn epoch_uncle_summary_by_number(
-        &self,
-        number: Option<BlockNumber>,
-    ) -> Result<EpochUncleSummary>;
 }
 
 #[async_trait::async_trait]
@@ -346,36 +319,6 @@ where
         }
     }
 
-    async fn epoch_info(&self) -> Result<EpochInfo> {
-        let response = self.send(ChainRequest::GetEpochInfo()).await??;
-        if let ChainResponse::EpochInfo(epoch_info) = response {
-            Ok(epoch_info)
-        } else {
-            bail!("get epoch chain info error.")
-        }
-    }
-
-    async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
-        let response = self
-            .send(ChainRequest::GetEpochInfoByNumber(number))
-            .await??;
-        if let ChainResponse::EpochInfo(epoch_info) = response {
-            Ok(epoch_info)
-        } else {
-            bail!("get epoch chain info error.")
-        }
-    }
-
-    async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        let response = self
-            .send(ChainRequest::GetGlobalTimeByNumber(number))
-            .await??;
-        if let ChainResponse::GlobalTime(global_time) = response {
-            Ok(global_time)
-        } else {
-            bail!("get global time error.")
-        }
-    }
     async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
         let response = self.send(ChainRequest::MainEvents(filter)).await??;
         if let ChainResponse::MainEvents(evts) = response {
@@ -402,49 +345,6 @@ where
             Ok(ids)
         } else {
             bail!("get_block_ids invalid response")
-        }
-    }
-
-    async fn get_epoch_uncles_by_number(
-        &self,
-        number: Option<BlockNumber>,
-    ) -> Result<Vec<BlockSummary>> {
-        let response = self
-            .send(ChainRequest::GetEpochUnclesByNumber(number))
-            .await??;
-        if let ChainResponse::BlockSummaries(summaries) = response {
-            Ok(summaries)
-        } else {
-            bail!("get epoch uncles error.")
-        }
-    }
-
-    async fn epoch_uncle_summary_by_number(
-        &self,
-        number: Option<BlockNumber>,
-    ) -> Result<EpochUncleSummary> {
-        let response = self
-            .send(ChainRequest::EpochUncleSummaryByNumber(number))
-            .await??;
-        if let ChainResponse::UncleSummary(summary) = response {
-            Ok(summary)
-        } else {
-            bail!("epoch uncle summary error.")
-        }
-    }
-
-    async fn uncle_path(
-        &self,
-        block_id: HashValue,
-        uncle_id: HashValue,
-    ) -> Result<Vec<BlockHeader>> {
-        let response = self
-            .send(ChainRequest::UnclePath(block_id, uncle_id))
-            .await??;
-        if let ChainResponse::BlockHeaderVec(headers) = response {
-            Ok(headers)
-        } else {
-            bail!("get uncle path error.")
         }
     }
 }

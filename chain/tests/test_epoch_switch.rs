@@ -417,11 +417,11 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
     )?;
 
     //get first miner reward
-    let begin_reward = chain.epoch_info()?.total_reward();
+    let begin_reward = chain.chain_state_reader().get_epoch_info()?.total_reward();
     chain.apply(create_new_block(&chain, &bob, vec![])?)?;
     let account_state_reader = chain.chain_state_reader();
     let balance = account_state_reader.get_balance(*bob.address())?.unwrap();
-    let end_reward = chain.epoch_info()?.total_reward();
+    let end_reward = account_state_reader.get_epoch_info()?.total_reward();
     // get reward after modify delay
     let mut count = 0;
     while count < reward_delay {
@@ -455,7 +455,7 @@ fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     )?;
 
     // add block to switch epoch
-    let epoch = modified_chain.epoch_info()?;
+    let epoch = modified_chain.epoch();
     let mut number = epoch.end_block_number()
         - epoch.start_block_number()
         - modified_chain.current_header().number();

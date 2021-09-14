@@ -6,9 +6,9 @@ use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
-use starcoin_rpc_client::RemoteStateReader;
-use starcoin_state_api::AccountStateReader;
+use starcoin_crypto::ValidCryptoMaterialStringExt;
+use starcoin_rpc_client::StateRootOption;
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::BalanceResource;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -23,8 +23,10 @@ pub struct ShowOpt {
     /// The account's address to show, if absent, show the default account.
     address_or_receipt: Option<AccountAddress>,
 
-    #[structopt(name = "block_id", short = "b")]
-    block_id: Option<HashValue>,
+    //`b` and `block_id` for compat with previous cli option.
+    #[structopt(name = "state-root", long, short = "b", alias = "block_id")]
+    /// The block number or block hash for get state, if absent, use latest block state_root.
+    state_root: StateRootOption,
 }
 
 pub struct ShowCommand;
@@ -53,20 +55,16 @@ impl CommandAction for ShowCommand {
             .account_get(account_address)?
             .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
 
-        let chain_state_reader = if let Some(block_id) = opt.block_id {
-            let block = client
-                .chain_get_block_by_hash(block_id, None)?
-                .ok_or_else(|| format_err!("block {} not found", block_id))?;
-            RemoteStateReader::new_with_root(client, block.header.state_root)
-        } else {
-            RemoteStateReader::new(client)?
-        };
-        let account_state_reader = AccountStateReader::new(&chain_state_reader);
-        let sequence_number = account_state_reader
-            .get_account_resource(account.address())?
+        let chain_state_reader = client.state_reader(opt.state_root)?;
+        let sequence_number = chain_state_reader
+            .get_account_resource(*account.address())?
             .map(|res| res.sequence_number());
 
-        let resources = client.state_list_resource(*account.address(), false, None)?;
+        let resources = client.state_list_resource(
+            *account.address(),
+            false,
+            Some(chain_state_reader.state_root()),
+        )?;
         let balances: HashMap<TokenCode, u128> = resources
             .resources
             .into_iter()

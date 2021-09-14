@@ -7,8 +7,8 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
-use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;
+use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
@@ -95,7 +95,7 @@ fn get_account_or_default(
             }
 
             let addr = default_account.clone().unwrap().address;
-            let state_reader = RemoteStateReader::new(&client)?;
+            let state_reader = client.state_reader(StateRootOption::Latest)?;
             let mut balance = state_reader.get_balance(addr)?;
             // balance resource has not been created
             while balance.is_none() {
@@ -170,7 +170,7 @@ fn main() {
     .unwrap();
     let handle = std::thread::spawn(move || {
         let accounts = tx_mocker
-            .get_accounts(account_num, batch_size)
+            .get_or_create_accounts(account_num, batch_size)
             .expect("create accounts should success");
         while !stopping_signal.load(Ordering::SeqCst) {
             if tx_mocker.get_factory_status() {
@@ -226,7 +226,7 @@ impl TxnMocker {
         unlock_duration: Duration,
         watch_timeout: u32,
     ) -> Result<Self> {
-        let state_reader = RemoteStateReader::new(&client)?;
+        let state_reader = client.state_reader(StateRootOption::Latest)?;
 
         let account_resource = state_reader.get_account_resource(account_address)?;
         if account_resource.is_none() {
@@ -275,7 +275,7 @@ impl TxnMocker {
         self.next_sequence_number = match seq_number_in_pool {
             Some(n) => n,
             None => {
-                let state_reader = RemoteStateReader::new(&self.client)?;
+                let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
                 let account_resource = state_reader.get_account_resource(self.account_address)?;
                 if account_resource.is_none() {
@@ -405,12 +405,16 @@ impl TxnMocker {
         self.submit_txn(raw_txn, sender, blocking)
     }
 
-    fn get_accounts(&mut self, account_num: u32, batch_size: u32) -> Result<Vec<AccountInfo>> {
+    fn get_or_create_accounts(
+        &mut self,
+        account_num: u32,
+        batch_size: u32,
+    ) -> Result<Vec<AccountInfo>> {
         // first get account from local
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
         let mut index = 0;
-        let state_reader = RemoteStateReader::new(&self.client)?;
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
         while index < account_num {
             if let Some(account) = account_local.pop() {
                 if self
@@ -439,7 +443,6 @@ impl TxnMocker {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
             // account has enough STC
-            let state_reader = RemoteStateReader::new(&self.client)?;
             let start_balance = INITIAL_BALANCE * lack_len as u128;
             let mut balance = state_reader.get_balance(self.account_address)?;
             while balance.unwrap() < start_balance {
@@ -451,7 +454,8 @@ impl TxnMocker {
                 );
             }
             let lack = self.create_accounts(lack_len, batch_size)?;
-            let state_reader = RemoteStateReader::new(&self.client)?;
+            //TODO fix me for reuse state_reader.
+            let state_reader = self.client.state_reader(StateRootOption::Latest)?;
             for account in lack {
                 let account_resource = state_reader
                     .get_account_resource(*account.address())
@@ -538,7 +542,7 @@ impl TxnMocker {
             info!("node syncing, pause stress");
             return Ok(());
         }
-        let state_reader = RemoteStateReader::new(&self.client)?;
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
         //unlock all account and get sequence
         let mut sequences = vec![];
