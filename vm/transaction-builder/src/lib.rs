@@ -15,6 +15,7 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::on_chain_config::VMConfig;
+use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
 use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -257,6 +258,21 @@ pub fn encode_transfer_script_by_token_code(
         vec![
             bcs_ext::to_bytes(&recipient).unwrap(),
             bcs_ext::to_bytes(&amount).unwrap(),
+        ],
+    )
+}
+
+pub fn encode_nft_transfer_script(uuid: NFTUUID, recipient: AccountAddress) -> ScriptFunction {
+    ScriptFunction::new(
+        ModuleId::new(
+            core_code_address(),
+            Identifier::new("NFTGalleryScripts").unwrap(),
+        ),
+        Identifier::new("transfer").unwrap(),
+        vec![uuid.nft_type.meta_type, uuid.nft_type.body_type],
+        vec![
+            bcs_ext::to_bytes(&uuid.id).unwrap(),
+            bcs_ext::to_bytes(&recipient).unwrap(),
         ],
     )
 }

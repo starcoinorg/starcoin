@@ -1,9 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod node_api_types;
-pub mod pubsub;
-
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
@@ -55,6 +52,8 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
+mod node_api_types;
+pub mod pubsub;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct MintedBlockView {

@@ -5,6 +5,7 @@ mod block_metadata;
 pub mod dao;
 mod epoch;
 mod global_time;
+pub mod nft;
 mod treasury;
 
 pub use block_metadata::BlockMetadata;
