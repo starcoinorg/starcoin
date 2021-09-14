@@ -25,8 +25,8 @@ impl MoveResource for ProposalCreatedEvent {
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct VoteChangedEvent {
     pub proposal_id: u64,
-    pub proposer: AccountAddress,
     pub voter: AccountAddress,
+    pub proposer: AccountAddress,
     pub agree: bool,
     /// latest vote of the voter.
     pub vote: u128,

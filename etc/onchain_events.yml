@@ -53,9 +53,9 @@ TokenCode:
 VoteChangedEvent:
   STRUCT:
     - proposal_id: U64
-    - proposer:
-        TYPENAME: AccountAddress
     - voter:
+        TYPENAME: AccountAddress
+    - proposer:
         TYPENAME: AccountAddress
     - agree: BOOL
     - vote: U128
