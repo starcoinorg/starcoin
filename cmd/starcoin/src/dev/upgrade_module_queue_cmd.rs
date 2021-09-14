@@ -6,7 +6,7 @@ use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_client::RemoteStateReader;
+use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::build_module_upgrade_queue;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -65,7 +65,7 @@ impl CommandAction for UpgradeModuleQueueCommand {
             ctx.state().default_account()?.address
         };
 
-        let chain_state_reader = RemoteStateReader::new(ctx.state().client())?;
+        let chain_state_reader = ctx.state().client().state_reader(StateRootOption::Latest)?;
         let stdlib_version = chain_state_reader
             .get_on_chain_config::<Version>()?
             .map(|version| version.major)

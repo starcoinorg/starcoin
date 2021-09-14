@@ -6,8 +6,6 @@ use crate::view::TransactionOptions;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use serde::{Deserialize, Serialize};
-use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::TransactionInfoView;
 use starcoin_transaction_builder::encode_transfer_script_by_token_code;
 use starcoin_types::account_address::AccountAddress;
@@ -76,47 +74,13 @@ impl CommandAction for GetCoinCommand {
                     )),
                 )?
                 .get_transaction_info()
-        } else if let Some(faucet) = net.faucet_api() {
-            let client = reqwest::blocking::Client::new();
-            let fund_request = FundRequest {
-                address: to.address,
-                amount: Some(opt.amount.to_string()),
-            };
-            let request = client
-                .post(faucet)
-                .timeout(Duration::from_secs(10))
-                .body(serde_json::to_string(&fund_request)?)
-                .build()?;
-            eprintln!("Send faucet request :{}", request.url());
-            let response = client
-                .execute(request)
-                .map_err(anyhow::Error::from)
-                .and_then(|resp| {
-                    let text = resp.text()?;
-                    eprintln!("faucet response: {}", text);
-                    Ok(serde_json::from_str::<FaucetResponse>(text.as_str())?)
-                })?;
-            if !opt.no_blocking {
-                eprintln!("waiting txn {} executed on chain", response.transaction_id);
-                ctx.state().watch_txn(response.transaction_id)?.txn_info
-            } else {
-                None
-            }
         } else {
-            bail!("The network {} is not support faucet api", net);
+            bail!(
+                "The network {} is not support get-coin command, please go to https://faucet.starcoin.org/",
+                net
+            );
         };
 
         Ok(transaction_info)
     }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct FundRequest {
-    pub address: AccountAddress,
-    pub amount: Option<String>,
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-struct FaucetResponse {
-    pub transaction_id: HashValue,
 }

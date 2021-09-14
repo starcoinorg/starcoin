@@ -32,7 +32,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::TimeService;
 use std::cmp::min;
 use std::iter::Extend;
@@ -623,50 +623,8 @@ impl ChainReader for BlockChain {
         Ok(false)
     }
 
-    fn epoch_info(&self) -> Result<EpochInfo> {
-        self.get_epoch_info_by_number(None)
-    }
-
     fn epoch(&self) -> &Epoch {
         &self.epoch
-    }
-
-    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
-        let (epoch, epoch_data) = match number {
-            None => (
-                self.epoch.clone(),
-                get_epoch_data_from_statedb(&self.statedb)?,
-            ),
-            Some(block_number) => {
-                let header = self.get_header_by_number(block_number)?.ok_or_else(|| {
-                    format_err!("Can not find header by block number:{}", block_number)
-                })?;
-                let statedb = ChainStateDB::new(
-                    self.storage.clone().into_super_arc(),
-                    Some(header.state_root()),
-                );
-                (
-                    get_epoch_from_statedb(&statedb)?,
-                    get_epoch_data_from_statedb(&statedb)?,
-                )
-            }
-        };
-        Ok(EpochInfo::new(epoch, epoch_data))
-    }
-
-    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        if let Some(block) = self.get_block_by_number(number)? {
-            let chain_state = ChainStateDB::new(
-                self.storage.clone().into_super_arc(),
-                Some(block.header().state_root()),
-            );
-            let account_reader = AccountStateReader::new(&chain_state);
-            Ok(account_reader
-                .get_resource::<GlobalTimeOnChain>(genesis_address())?
-                .ok_or_else(|| format_err!("GlobalTime is none."))?)
-        } else {
-            Err(format_err!("Block is none when query global time."))
-        }
     }
 
     fn get_block_ids(
@@ -933,12 +891,5 @@ fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
     let account_reader = AccountStateReader::new(statedb);
     account_reader
         .get_resource::<Epoch>(genesis_address())?
-        .ok_or_else(|| format_err!("Epoch is none."))
-}
-
-fn get_epoch_data_from_statedb(statedb: &ChainStateDB) -> Result<EpochData> {
-    let account_reader = AccountStateReader::new(statedb);
-    account_reader
-        .get_resource::<EpochData>(genesis_address())?
         .ok_or_else(|| format_err!("Epoch is none."))
 }

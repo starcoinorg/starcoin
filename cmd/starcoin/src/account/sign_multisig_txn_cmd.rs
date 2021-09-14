@@ -10,8 +10,8 @@ use starcoin_account_api::AccountPublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_rpc_api::types::{FunctionIdView, RawUserTransactionView, TransactionStatusView};
-use starcoin_rpc_client::RemoteStateReader;
-use starcoin_state_api::AccountStateReader;
+use starcoin_rpc_client::StateRootOption;
+use starcoin_state_api::StateReaderExt;
 use starcoin_types::transaction::authenticator::TransactionAuthenticator;
 use starcoin_types::transaction::{
     parse_transaction_argument, DryRunTransaction, RawUserTransaction, SignedUserTransaction,
@@ -121,9 +121,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 let payload = TransactionPayload::ScriptFunction(script_function);
 
                 let node_info = client.node_info()?;
-                let chain_state_reader = RemoteStateReader::new(client)?;
-                let account_state_reader = AccountStateReader::new(&chain_state_reader);
-                let account_resource = account_state_reader.get_account_resource(&sender)?;
+                let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
+                let account_resource = chain_state_reader.get_account_resource(sender)?;
 
                 if account_resource.is_none() {
                     bail!("address {} not exists on chain", &sender);

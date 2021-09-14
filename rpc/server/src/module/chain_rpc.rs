@@ -12,9 +12,8 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    BlockHeaderView, BlockSummaryView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    EpochUncleSummaryView, SignedUserTransactionView, TransactionEventResponse,
-    TransactionInfoView, TransactionView,
+    BlockHeaderView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+    SignedUserTransactionView, TransactionEventResponse, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
@@ -24,7 +23,6 @@ use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
 use std::sync::Arc;
 pub struct ChainRpcImpl<S>
@@ -131,18 +129,6 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfo>> {
-        let service = self.service.clone();
-
-        let fut = async move {
-            let result = service.get_block_info_by_number(number).await?;
-            Ok(result)
-        }
-        .map_err(map_err);
-
-        Box::pin(fut.boxed())
-    }
-
     fn get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -167,6 +153,18 @@ where
                 .into_iter()
                 .map(|blk| BlockView::try_from_block(blk, true))
                 .collect::<Result<Vec<_>, _>>()
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfo>> {
+        let service = self.service.clone();
+
+        let fut = async move {
+            let result = service.get_block_info_by_number(number).await?;
+            Ok(result)
         }
         .map_err(map_err);
 
@@ -404,60 +402,11 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn current_epoch(&self) -> FutureResult<EpochInfo> {
-        let service = self.service.clone();
-        let fut = async move { service.epoch_info().await };
-
-        Box::pin(fut.boxed().map_err(map_err))
-    }
-
-    fn get_epoch_info_by_number(&self, number: BlockNumber) -> FutureResult<EpochInfo> {
-        let service = self.service.clone();
-        let fut = async move { service.get_epoch_info_by_number(number).await };
-
-        Box::pin(fut.boxed().map_err(map_err))
-    }
-
-    fn get_global_time_by_number(&self, number: BlockNumber) -> FutureResult<GlobalTimeOnChain> {
-        let service = self.service.clone();
-        let fut = async move { service.get_global_time_by_number(number).await };
-
-        Box::pin(fut.boxed().map_err(map_err))
-    }
-
-    fn get_epoch_uncles_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> FutureResult<Vec<BlockSummaryView>> {
-        let service = self.service.clone();
-        let fut = async move {
-            let blocks = service.get_epoch_uncles_by_number(Some(number)).await?;
-            Ok(blocks.into_iter().map(Into::into).collect())
-        }
-        .map_err(map_err);
-
-        Box::pin(fut.boxed())
-    }
-
     fn get_headers(&self, block_hashes: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>> {
         let service = self.service.clone();
         let fut = async move {
             let headers = service.get_headers(block_hashes).await?;
             Ok(headers.into_iter().map(Into::into).collect())
-        }
-        .map_err(map_err);
-
-        Box::pin(fut.boxed())
-    }
-
-    fn epoch_uncle_summary_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> FutureResult<EpochUncleSummaryView> {
-        let service = self.service.clone();
-        let fut = async move {
-            let summary = service.epoch_uncle_summary_by_number(Some(number)).await?;
-            Ok(summary.into())
         }
         .map_err(map_err);
 

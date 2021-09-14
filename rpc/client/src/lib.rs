@@ -3,7 +3,7 @@
 
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
-pub use crate::remote_state_reader::RemoteStateReader;
+pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
 use actix::{Addr, System};
 use anyhow::anyhow;
 use bcs_ext::BCSCodec;
@@ -28,10 +28,10 @@ use starcoin_rpc_api::state::{
 };
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockSummaryView, BlockView,
-    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
-    DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction, FunctionIdView, ListCodeView,
-    ListResourceView, MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
+    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockView, ChainId,
+    ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
+    DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
+    MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
     SignedUserTransactionView, StateWithProofView, StrView, StructTagView,
     TransactionEventResponse, TransactionInfoView, TransactionRequest, TransactionView,
 };
@@ -54,7 +54,6 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::DryRunTransaction;
 use std::collections::HashMap;
@@ -469,6 +468,13 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn state_reader(
+        &self,
+        state_root_opt: StateRootOption,
+    ) -> anyhow::Result<RemoteStateReader> {
+        RemoteStateReader::new(self, state_root_opt)
+    }
+
     pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
         self.call_rpc_blocking(|inner| inner.state_client.get(access_path))
             .map_err(map_err)
@@ -654,45 +660,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn epoch_info(&self) -> anyhow::Result<EpochInfo> {
-        self.call_rpc_blocking(|inner| inner.chain_client.current_epoch())
-            .map_err(map_err)
-    }
-
-    pub fn get_epoch_info_by_number(&self, number: BlockNumber) -> anyhow::Result<EpochInfo> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_epoch_info_by_number(number))
-            .map_err(map_err)
-    }
-
-    pub fn get_epoch_uncles_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> anyhow::Result<Vec<BlockSummaryView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_epoch_uncles_by_number(number))
-            .map_err(map_err)
-    }
-
-    pub fn epoch_uncle_summary_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> anyhow::Result<EpochUncleSummaryView> {
-        self.call_rpc_blocking(|inner| inner.chain_client.epoch_uncle_summary_by_number(number))
-            .map_err(map_err)
-    }
-
     pub fn get_headers(
         &self,
         block_hashes: Vec<HashValue>,
     ) -> anyhow::Result<Vec<BlockHeaderView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_headers(block_hashes))
-            .map_err(map_err)
-    }
-
-    pub fn get_global_time_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> anyhow::Result<GlobalTimeOnChain> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_global_time_by_number(number))
             .map_err(map_err)
     }
 

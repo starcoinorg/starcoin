@@ -11,7 +11,7 @@ use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_api::types::{RawUserTransactionView, TransactionStatusView};
-use starcoin_rpc_client::{RemoteStateReader, RpcClient};
+use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_config::AccountResource;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -129,7 +129,7 @@ impl CliState {
     where
         R: MoveResource + DeserializeOwned,
     {
-        let chain_state_reader = RemoteStateReader::new(&self.client)?;
+        let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
         chain_state_reader.get_resource::<R>(address)
     }
 
@@ -278,7 +278,7 @@ impl CliState {
         &self,
         payload: &TransactionPayload,
     ) -> Result<DecodedTransactionPayload> {
-        let chain_state_reader = RemoteStateReader::new(&self.client)?;
+        let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
         decode_txn_payload(&chain_state_reader, payload)
     }
 

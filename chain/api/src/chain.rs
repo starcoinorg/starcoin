@@ -12,7 +12,7 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
-use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::TimeService;
 use std::collections::HashMap;
 
@@ -47,10 +47,7 @@ pub trait ChainReader {
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> Result<bool>;
-    fn epoch_info(&self) -> Result<EpochInfo>;
     fn epoch(&self) -> &Epoch;
-    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo>;
-    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
     /// Get block id vec by BlockNumber, `start_number`'s block id is include.
     fn get_block_ids(
         &self,

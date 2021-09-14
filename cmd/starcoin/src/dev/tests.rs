@@ -4,8 +4,8 @@ use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionStatusView};
-use starcoin_rpc_client::{RemoteStateReader, RpcClient};
-use starcoin_state_api::AccountStateReader;
+use starcoin_rpc_client::{RpcClient, StateRootOption};
+use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::{
     build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
 };
@@ -62,10 +62,9 @@ pub fn sign_txn_by_rpc_client(
     let account = cli_state.get_account_or_default(account_address)?;
     let client = cli_state.client();
     let node_info = client.node_info()?;
-    let chain_state_reader = RemoteStateReader::new(client)?;
-    let account_state_reader = AccountStateReader::new(&chain_state_reader);
-    let account_resource = account_state_reader
-        .get_account_resource(account.address())?
+    let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
+    let account_resource = chain_state_reader
+        .get_account_resource(*account.address())?
         .ok_or_else(|| format_err!("account {:?} must exist on chain.", account.address()))?;
     let expiration_time = expiration_time + node_info.now_seconds;
     let raw_txn = RawUserTransaction::new_with_default_gas_token(
@@ -119,14 +118,13 @@ fn get_account_resource(
     cli_state: &CliState,
     addr: AccountAddress,
 ) -> Result<(AccountResource, u128)> {
-    let chain_state_reader = RemoteStateReader::new(cli_state.client())?;
-    let account_state_reader = AccountStateReader::new(&chain_state_reader);
-    let account_resource = account_state_reader
-        .get_account_resource(&addr)?
+    let chain_state_reader = cli_state.client().state_reader(StateRootOption::Latest)?;
+    let account_resource = chain_state_reader
+        .get_account_resource(addr)?
         .ok_or_else(|| format_err!("address address {} must exist", addr))?;
 
-    let balance = account_state_reader
-        .get_balance(&addr)?
+    let balance = chain_state_reader
+        .get_balance(addr)?
         .ok_or_else(|| format_err!("address address {} balance must exist", addr))?;
 
     Ok((account_resource, balance))
