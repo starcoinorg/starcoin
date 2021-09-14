@@ -26,7 +26,7 @@ pub struct ShowOpt {
     //`b` and `block_id` for compat with previous cli option.
     #[structopt(name = "state-root", long, short = "b", alias = "block_id")]
     /// The block number or block hash for get state, if absent, use latest block state_root.
-    state_root: StateRootOption,
+    state_root: Option<StateRootOption>,
 }
 
 pub struct ShowCommand;
@@ -55,7 +55,7 @@ impl CommandAction for ShowCommand {
             .account_get(account_address)?
             .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
 
-        let chain_state_reader = client.state_reader(opt.state_root)?;
+        let chain_state_reader = client.state_reader(opt.state_root.unwrap_or_default())?;
         let sequence_number = chain_state_reader
             .get_account_resource(*account.address())?
             .map(|res| res.sequence_number());

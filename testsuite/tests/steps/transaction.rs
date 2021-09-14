@@ -8,8 +8,8 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::{RemoteStateReader, RpcClient};
-use starcoin_state_api::AccountStateReader;
+use starcoin_rpc_client::{RpcClient, StateRootOption};
+use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -25,9 +25,8 @@ pub fn steps() -> Steps<MyWorld> {
             let result = transfer_txn(client, to, pre_mine_address, None);
             assert!(result.is_ok());
             std::thread::sleep(Duration::from_millis(3000));
-            let chain_state_reader = RemoteStateReader::new(client).unwrap();
-            let account_state_reader = AccountStateReader::new(&chain_state_reader);
-            let balances = account_state_reader.get_balance(to.address());
+            let chain_state_reader = client.state_reader(StateRootOption::Latest).unwrap();
+            let balances = chain_state_reader.get_balance(*to.address());
             assert!(balances.is_ok());
             info!("charge into default account ok:{:?}", balances.unwrap());
         })
@@ -51,14 +50,13 @@ fn transfer_txn(
     from: AccountAddress,
     amount: Option<u128>,
 ) -> Result<HashValue, Error> {
-    let chain_state_reader = RemoteStateReader::new(client)?;
-    let account_state_reader = AccountStateReader::new(&chain_state_reader);
-    let account_resource = account_state_reader
-        .get_account_resource(&from)
+    let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
+    let account_resource = chain_state_reader
+        .get_account_resource(from)
         .unwrap()
         .unwrap();
     let node_info = client.node_info()?;
-    let balance = account_state_reader.get_balance(&from).unwrap().unwrap();
+    let balance = chain_state_reader.get_balance(from).unwrap().unwrap();
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = starcoin_executor::build_transfer_txn(
         from,

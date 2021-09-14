@@ -16,7 +16,7 @@ use structopt::StructOpt;
 pub struct EpochInfoOpt {
     #[structopt(name = "state-root", long, short = "n", alias = "block-number")]
     /// The block number or block hash for get state, if absent, use latest block state_root.
-    state_root: StateRootOption,
+    state_root: Option<StateRootOption>,
 }
 
 pub struct EpochInfoCommand;
@@ -34,7 +34,7 @@ impl CommandAction for EpochInfoCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
 
-        let chain_state_reader = client.state_reader(opt.state_root)?;
+        let chain_state_reader = client.state_reader(opt.state_root.unwrap_or_default())?;
         chain_state_reader.get_epoch_info()
     }
 }
