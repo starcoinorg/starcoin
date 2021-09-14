@@ -72,3 +72,13 @@ jobs:
           asset_path: ./target/release/move
           asset_name: move-${{ matrix.platform }}
           asset_content_type: application/octet-stream
+      - name: upload genesis-nft release asset
+          if: ${{ github.event_name == 'release'}}
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ github.event.release.upload_url }}
+            asset_path: ./target/release/genesis-nft-miner
+            asset_name: genesis-nft-miner-${{ matrix.platform }}
+            asset_content_type: application/octet-stream
