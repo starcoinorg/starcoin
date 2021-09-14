@@ -12,6 +12,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 use vm::CompiledModule;
@@ -105,6 +106,29 @@ impl RemoteStateAsyncView {
         Ok(found_modules)
     }
 
+    pub async fn get_modules_async(
+        &self,
+        addr: AccountAddress,
+    ) -> VMResult<Option<BTreeMap<Identifier, Vec<u8>>>> {
+        let state = self
+            .state_client
+            .get_account_state_set(addr, Some(self.state_root))
+            .await
+            .map_err(|_| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
+            })?;
+        Ok(match state {
+            None => None,
+            Some(account_state_set) => Some(
+                account_state_set
+                    .codes
+                    .into_iter()
+                    .map(|(k, c)| (k, c.0.to_vec()))
+                    .collect(),
+            ),
+        })
+    }
+
     pub async fn get_module_async(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         let ap = AccessPath::new(
             *module_id.address(),
@@ -156,6 +180,14 @@ impl RemoteStateView {
             svc: v,
             rt: Arc::new(rt),
         })
+    }
+
+    pub fn get_modules(
+        &self,
+        addr: AccountAddress,
+    ) -> VMResult<Option<BTreeMap<Identifier, Vec<u8>>>> {
+        let handle = self.rt.handle().clone();
+        handle.block_on(self.svc.get_modules_async(addr))
     }
 }
 
