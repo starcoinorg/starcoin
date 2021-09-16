@@ -49,9 +49,7 @@ async-std = "1.10.0"
 
 
 [dependencies.libp2p]
-version = "0.35.1"
-default-features = false
-features = ["dns", "identify", "kad", "mdns", "mplex", "noise", "ping", "tcp-async-io", "request-response", "websocket", "yamux", "wasm-ext"]
+version = "0.39.1"
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}

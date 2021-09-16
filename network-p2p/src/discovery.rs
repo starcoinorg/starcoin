@@ -62,6 +62,7 @@ use libp2p::kad::QueryId;
 use libp2p::kad::{
     Kademlia, KademliaBucketInserts, KademliaConfig, KademliaEvent, QueryResult, Quorum, Record,
 };
+use libp2p::mdns::MdnsConfig;
 #[cfg(not(target_os = "unknown"))]
 use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::multiaddr::Protocol;
@@ -230,7 +231,7 @@ impl DiscoveryConfig {
             discovery_only_if_under_num,
             #[cfg(not(target_os = "unknown"))]
             mdns: if enable_mdns {
-                MdnsWrapper::Instantiating(Mdns::new().boxed())
+                MdnsWrapper::Instantiating(Mdns::new(MdnsConfig::default()).boxed())
             } else {
                 MdnsWrapper::Disabled
             },
@@ -640,9 +641,9 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         }
     }
 
-    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
+    fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
         for k in self.kademlias.values_mut() {
-            NetworkBehaviour::inject_expired_listen_addr(k, addr)
+            NetworkBehaviour::inject_expired_listen_addr(k, id, addr)
         }
     }
 
@@ -652,9 +653,9 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         }
     }
 
-    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
+    fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
         for k in self.kademlias.values_mut() {
-            NetworkBehaviour::inject_new_listen_addr(k, addr)
+            NetworkBehaviour::inject_new_listen_addr(k, id, addr)
         }
     }
 
@@ -738,7 +739,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                         KademliaEvent::PendingRoutablePeer { .. } => {
                             // We are not interested in this event at the moment.
                         }
-                        KademliaEvent::QueryResult {
+                        KademliaEvent::OutboundQueryCompleted {
                             result: QueryResult::GetClosestPeers(res),
                             ..
                         } => match res {
@@ -758,7 +759,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                 }
                             }
                         },
-                        KademliaEvent::QueryResult {
+                        KademliaEvent::OutboundQueryCompleted {
                             result: QueryResult::GetRecord(res),
                             stats,
                             ..
@@ -795,7 +796,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             };
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::QueryResult {
+                        KademliaEvent::OutboundQueryCompleted {
                             result: QueryResult::PutRecord(res),
                             stats,
                             ..
@@ -816,7 +817,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             };
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::QueryResult {
+                        KademliaEvent::OutboundQueryCompleted {
                             result: QueryResult::RepublishRecord(res),
                             ..
                         } => match res {
@@ -858,6 +859,15 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             score,
                         });
                     }
+                    NetworkBehaviourAction::CloseConnection {
+                        peer_id,
+                        connection,
+                    } => {
+                        return Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                            peer_id,
+                            connection,
+                        });
+                    }
                 }
             }
         }
@@ -891,6 +901,15 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                     return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
                         address,
                         score,
+                    });
+                }
+                NetworkBehaviourAction::CloseConnection {
+                    peer_id,
+                    connection,
+                } => {
+                    return Poll::Ready(NetworkBehaviourAction::CloseConnection {
+                        peer_id,
+                        connection,
                     });
                 }
             }
@@ -952,22 +971,34 @@ impl MdnsWrapper {
     }
 }
 
+fn multiaddr_to_ip_address(multiaddr: &Multiaddr) -> Option<IpAddr> {
+    match multiaddr.iter().collect::<Vec<_>>()[0] {
+        Protocol::Ip4(ip4) => Some(ip4.into()),
+        Protocol::Ip6(ip6) => Some(ip6.into()),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{protocol_name_from_protocol_id, DiscoveryConfig, DiscoveryOut};
     use crate::config::ProtocolId;
     use futures::prelude::*;
-    use libp2p::core::transport::{MemoryTransport, Transport};
-    use libp2p::core::upgrade;
-    use libp2p::identity::Keypair;
-    use libp2p::noise;
-    use libp2p::swarm::Swarm;
-    use libp2p::yamux;
-    use libp2p::{Multiaddr, PeerId};
+    use libp2p::{
+        core::{
+            transport::{MemoryTransport, Transport},
+            upgrade,
+        },
+        identity::Keypair,
+        noise,
+        swarm::{Swarm, SwarmEvent},
+        yamux, Multiaddr, PeerId,
+    };
     use std::{collections::HashSet, task::Poll};
 
     #[test]
     #[allow(clippy::needless_collect)]
+    #[allow(clippy::single_match)]
     fn discovery_working() {
         let mut first_swarm_peer_id_and_addr = None;
         let protocol_id = ProtocolId::from("dot");
@@ -1010,7 +1041,7 @@ mod tests {
                         Some((keypair.public().into_peer_id(), listen_addr.clone()))
                 }
 
-                Swarm::listen_on(&mut swarm, listen_addr.clone()).unwrap();
+                swarm.listen_on(listen_addr.clone()).unwrap();
                 (swarm, listen_addr)
             })
             .collect::<Vec<_>>();
@@ -1030,35 +1061,49 @@ mod tests {
         let fut = futures::future::poll_fn(move |cx| {
             'polling: loop {
                 for swarm_n in 0..swarms.len() {
-                    if let Poll::Ready(Some(e)) = swarms[swarm_n].0.poll_next_unpin(cx) {
-                        match e {
-                            DiscoveryOut::UnroutablePeer(other)
-                            | DiscoveryOut::Discovered(other) => {
-                                // Call `add_self_reported_address` to simulate identify happening.
-                                let addr = swarms
-                                    .iter()
-                                    .find_map(|(s, a)| {
-                                        if s.local_peer_id == other {
-                                            Some(a.clone())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .unwrap();
-                                swarms[swarm_n].0.add_self_reported_address(
-                                    &other,
-                                    [protocol_name_from_protocol_id(&protocol_id)].iter(),
-                                    addr,
-                                );
+                    match swarms[swarm_n].0.poll_next_unpin(cx) {
+                        Poll::Ready(Some(e)) => {
+                            match e {
+                                SwarmEvent::Behaviour(behavior) => {
+                                    match behavior {
+                                        DiscoveryOut::UnroutablePeer(other)
+                                        | DiscoveryOut::Discovered(other) => {
+                                            // Call `add_self_reported_address` to simulate identify
+                                            // happening.
+                                            let addr = swarms
+                                                .iter()
+                                                .find_map(|(s, a)| {
+                                                    if s.behaviour().local_peer_id == other {
+                                                        Some(a.clone())
+                                                    } else {
+                                                        None
+                                                    }
+                                                })
+                                                .unwrap();
+                                            swarms[swarm_n]
+                                                .0
+                                                .behaviour_mut()
+                                                .add_self_reported_address(
+                                                    &other,
+                                                    [protocol_name_from_protocol_id(&protocol_id)]
+                                                        .iter(),
+                                                    addr,
+                                                );
 
-                                to_discover[swarm_n].remove(&other);
+                                            to_discover[swarm_n].remove(&other);
+                                        }
+                                        DiscoveryOut::RandomKademliaStarted(_) => {}
+                                        e => {
+                                            panic!("Unexpected event: {:?}", e)
+                                        }
+                                    }
+                                }
+                                // ignore non Behaviour events
+                                _ => {}
                             }
-                            DiscoveryOut::RandomKademliaStarted(_) => {}
-                            e => {
-                                panic!("Unexpected event: {:?}", e)
-                            }
+                            continue 'polling;
                         }
-                        continue 'polling;
+                        _ => {}
                     }
                 }
                 break;
@@ -1182,23 +1227,5 @@ mod tests {
                 .is_empty(),
             "Expected remote peer not to be added to `protocol_b` Kademlia instance.",
         );
-    }
-
-    #[test]
-    fn test_multiaddr_to_ip_address() {
-        use super::multiaddr_to_ip_address;
-
-        assert!(
-            multiaddr_to_ip_address(&"/ip4/127.0.0.1/udt/sctp/5678".parse().unwrap()).is_some()
-        );
-        assert!(multiaddr_to_ip_address(&"/memory/111".parse().unwrap()).is_none());
-    }
-}
-
-fn multiaddr_to_ip_address(multiaddr: &Multiaddr) -> Option<IpAddr> {
-    match multiaddr.iter().collect::<Vec<_>>()[0] {
-        Protocol::Ip4(ip4) => Some(ip4.into()),
-        Protocol::Ip6(ip6) => Some(ip6.into()),
-        _ => None,
     }
 }
