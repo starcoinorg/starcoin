@@ -108,11 +108,10 @@ pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<
     let temp_dir = temp_path();
     let stdlib_files =
         restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
-    let compiled_result =
-        starcoin_move_compiler::compile_source_string_no_report(code, &stdlib_files, address)
-            .expect("compile fail")
-            .1
+    let (_, compiled_result) =
+        starcoin_move_compiler::compile_source_string(code, &stdlib_files, address)
             .expect("compile fail");
+
     compiled_result
         .into_iter()
         .map(|m| Module::new(m.serialize()))

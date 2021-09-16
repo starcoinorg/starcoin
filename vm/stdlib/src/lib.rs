@@ -279,7 +279,7 @@ pub fn load_latest_stable_compiled_modules() -> Option<(StdlibVersion, Vec<Compi
     stdlib_latest_stable_version().map(|version| (version, load_compiled_modules(version)))
 }
 
-fn load_latest_compiled_modules() -> Vec<CompiledModule> {
+pub fn load_latest_compiled_modules() -> Vec<CompiledModule> {
     load_compiled_modules(StdlibVersion::Latest)
 }
 
@@ -316,7 +316,7 @@ pub fn verify_compiled_modules(modules: &[Vec<u8>]) -> Vec<CompiledModule> {
     verified_modules
 }
 
-fn load_compiled_modules(stdlib_version: StdlibVersion) -> Vec<CompiledModule> {
+pub fn load_compiled_modules(stdlib_version: StdlibVersion) -> Vec<CompiledModule> {
     let modules = read_compiled_modules(stdlib_version);
     verify_compiled_modules(modules.as_slice())
 }
