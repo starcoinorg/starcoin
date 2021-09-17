@@ -22,7 +22,9 @@ use move_core_types::{
     vm_status::{AbortLocation, StatusCode, VMStatus},
 };
 use move_lang::shared::Flags;
-use move_lang::{self, compiled_unit::CompiledUnit, MOVE_COMPILED_EXTENSION};
+use move_lang::{
+    self, compiled_unit::CompiledUnit, MOVE_COMPILED_EXTENSION, MOVE_COMPILED_INTERFACES_DIR,
+};
 use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::data_cache::MoveStorage;
 use move_vm_runtime::{logging::NoContextLog, move_vm::MoveVM};
@@ -1372,7 +1374,11 @@ fn main() -> Result<()> {
                     let mut deps = vec![];
                     {
                         let build_dir = DEFAULT_BUILD_DIR.to_string();
-                        deps.push(build_dir);
+                        let mv_interface_dir = PathBuf::from(build_dir)
+                            .join(MOVE_COMPILED_INTERFACES_DIR)
+                            .display()
+                            .to_string();
+                        deps.push(mv_interface_dir);
                     }
 
                     let compiler = crate::functional_test::MoveSourceCompiler::new(deps);
