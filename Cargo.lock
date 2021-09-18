@@ -2080,7 +2080,7 @@ dependencies = [
  "rand 0.8.4",
  "rand_core 0.6.3",
  "serde",
- "serde-name",
+ "serde-name 0.1.2",
  "serde_bytes",
  "sha2 0.9.3",
  "static_assertions",
@@ -7491,6 +7491,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-name"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "016d6b17527eac0f2b0227fa36b1547fa98e5f856eecc5b3703c5024db4d7277"
+dependencies = [
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "serde-reflection"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8355,7 +8365,7 @@ dependencies = [
  "rand 0.8.4",
  "rand_core 0.6.3",
  "serde",
- "serde-name",
+ "serde-name 0.2.0",
  "serde_bytes",
  "starcoin-crypto-macro",
 ]
