@@ -8396,7 +8396,7 @@ dependencies = [
 name = "starcoin-decrypt"
 version = "1.6.0"
 dependencies = [
- "aes-gcm 0.8.0",
+ "aes-gcm 0.9.4",
  "anyhow",
  "byteorder 1.4.3",
  "hmac 0.7.1",
