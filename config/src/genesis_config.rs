@@ -23,8 +23,8 @@ use starcoin_vm_types::gas_schedule::{
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
-    init_cost_table, initial_instruction_table, v1_native_table, ConsensusConfig, DaoConfig,
-    TransactionPublishOption, VMConfig, Version,
+    init_cost_table, initial_instruction_table, initial_native_table, v1_native_table,
+    ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::{TimeService, TimeServiceType};
@@ -700,6 +700,7 @@ pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_numbe
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
+pub static MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 4096 * 32; // 128k
 
 /// For V1 all accounts will be ~800 bytes
 static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
@@ -751,7 +752,7 @@ pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V3, // to pass stdlib_upgrade
         gas_unit_scaling_factor: 1,
         default_account_size: *DEFAULT_ACCOUNT_SIZE,
     }
@@ -759,15 +760,6 @@ pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
 
 pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> =
     Lazy::new(|| init_cost_table(DEFAULT_GAS_CONSTANTS_V2.clone()));
-
-pub static V1_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| CostTable {
-    instruction_table: initial_instruction_table(),
-    native_table: v1_native_table(),
-    gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
-});
-
-pub static TEST_GAS_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| init_cost_table(TEST_GAS_CONSTANTS.clone()));
 
 static EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
@@ -789,7 +781,11 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: TEST_GAS_SCHEDULE.clone(),
+            gas_schedule: CostTable {
+                instruction_table: initial_instruction_table(),
+                native_table: initial_native_table(),
+                gas_constants: TEST_GAS_CONSTANTS.clone(),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -838,7 +834,11 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
-            gas_schedule: TEST_GAS_SCHEDULE.clone(),
+            gas_schedule: CostTable {
+                instruction_table: initial_instruction_table(),
+                native_table: initial_native_table(),
+                gas_constants: TEST_GAS_CONSTANTS.clone(),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -948,7 +948,11 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD / 12,
         vm_config: VMConfig {
-            gas_schedule: V1_GAS_SCHEDULE.clone(),
+            gas_schedule: CostTable {
+                instruction_table: initial_instruction_table(),
+                native_table: v1_native_table(),
+                gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -1007,7 +1011,11 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: STCUnit::STC.value_of(47777040).scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: V1_GAS_SCHEDULE.clone(),
+            gas_schedule: CostTable {
+                instruction_table: initial_instruction_table(),
+                native_table: v1_native_table(),
+                gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+            },
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {

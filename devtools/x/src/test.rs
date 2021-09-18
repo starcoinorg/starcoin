@@ -64,7 +64,7 @@ pub fn run(mut args: Args, xctx: XContext) -> Result<()> {
     let generate_coverage = args.html_cov_dir.is_some() || args.html_lcov_dir.is_some();
 
     let env_vars: &[(&str, Option<&str>)] = if generate_coverage {
-        if !xctx.installer().install_if_needed("grcov") {
+        if !xctx.installer().install_via_cargo_if_needed("grcov") {
             return Err(anyhow!("Could not install grcov"));
         }
         info!("Running \"cargo clean\" before collecting coverage");
@@ -106,6 +106,7 @@ pub fn run(mut args: Args, xctx: XContext) -> Result<()> {
         direct_args: direct_args.as_slice(),
         args: &args.args,
         env: &env_vars,
+        skip_sccache: generate_coverage,
     };
 
     let cmd_result = cmd.run_on_packages(&packages, &xctx);

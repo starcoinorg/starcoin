@@ -12,6 +12,7 @@ The module for StdlibUpgrade init scripts
 -  [Function `upgrade_from_v5_to_v6`](#0x1_StdlibUpgradeScripts_upgrade_from_v5_to_v6)
 -  [Function `upgrade_from_v6_to_v7`](#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7)
 -  [Function `do_upgrade_from_v6_to_v7`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7)
+-  [Function `do_upgrade_from_v6_to_v7_with_language_version`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version)
 -  [Specification](#@Specification_0)
 
 
@@ -172,7 +173,7 @@ association account should call this script after upgrade from v2 to v3.
 
 
 <pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7">upgrade_from_v6_to_v7</a>(sender: signer) {
-    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">Self::do_upgrade_from_v6_to_v7</a>(&sender);
+    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version">Self::do_upgrade_from_v6_to_v7_with_language_version</a>(&sender, 2);
 }
 </code></pre>
 
@@ -184,6 +185,7 @@ association account should call this script after upgrade from v2 to v3.
 
 ## Function `do_upgrade_from_v6_to_v7`
 
+deprecated, use <code>do_upgrade_from_v6_to_v7_with_language_version</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer)
@@ -196,7 +198,30 @@ association account should call this script after upgrade from v2 to v3.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7">do_upgrade_from_v6_to_v7</a>(sender: &signer) {
-    <b>let</b> language_version = 2;
+   <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version">do_upgrade_from_v6_to_v7_with_language_version</a>(sender, 2);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version"></a>
+
+## Function `do_upgrade_from_v6_to_v7_with_language_version`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version">do_upgrade_from_v6_to_v7_with_language_version</a>(sender: &signer, language_version: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version">do_upgrade_from_v6_to_v7_with_language_version</a>(sender: &signer, language_version: u64) {
     // initialize the language version config.
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(sender, <a href="LanguageVersion.md#0x1_LanguageVersion_new">LanguageVersion::new</a>(language_version));
     // <b>use</b> <a href="STC.md#0x1_STC">STC</a> <a href="Dao.md#0x1_Dao">Dao</a> <b>to</b> upgrade onchain's <b>move</b>-language-version configuration.

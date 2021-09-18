@@ -10,7 +10,6 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::transaction::Package;
 use starcoin_vm_types::value::MoveValue;
-use starcoin_vm_types::values::VMValueCast;
 use test_helper::executor::{
     association_execute_should_success, compile_modules_with_address, prepare_genesis,
 };
@@ -125,9 +124,9 @@ fn test_eth_state_proof_verify() -> Result<()> {
             ],
         )?
         .pop()
-        .unwrap()
-        .1;
-        let is_ok: bool = result.cast().unwrap();
+        .unwrap();
+
+        let is_ok: bool = bcs_ext::from_bytes(result.as_slice()).unwrap();
         assert!(is_ok, "verify account fail");
     }
 
@@ -171,9 +170,9 @@ fn test_eth_state_proof_verify() -> Result<()> {
                 ],
             )?
             .pop()
-            .unwrap()
-            .1;
-            let is_ok: bool = result.cast().unwrap();
+            .unwrap();
+
+            let is_ok: bool = bcs_ext::from_bytes(result.as_slice()).unwrap();
             assert!(is_ok, "verify storage proof fail");
         }
     }

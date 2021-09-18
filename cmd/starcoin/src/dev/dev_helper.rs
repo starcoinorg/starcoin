@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
-use starcoin_move_compiler::MOVE_COMPILED_EXTENSION;
+use starcoin_move_compiler::move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use starcoin_vm_types::transaction::{Module, Package};
 use std::fs::File;
 use std::io::Read;

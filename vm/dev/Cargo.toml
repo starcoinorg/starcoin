@@ -11,9 +11,12 @@ anyhow = "1.0.41"
 thiserror = "1.0"
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types" }
-starcoin-vm-runtime = { path = "../vm-runtime", features = ["debug_module"]}
+starcoin-vm-runtime = { path = "../vm-runtime", features = ["testing"]}
 starcoin-logger = {path = "../../commons/logger"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-statedb = { path = "../../state/statedb"}
 starcoin-resource-viewer = {path = "../resource-viewer"}
+starcoin-abi-resolver = {path = "../../abi/resolver"}
+starcoin-abi-decoder = {path = "../../abi/decoder"}
+starcoin-abi-types = {path = "../../abi/types"}
 bcs-ext = {path  = "../../commons/bcs_ext" }

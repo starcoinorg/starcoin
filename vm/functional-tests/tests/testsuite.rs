@@ -1,11 +1,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
-use move_lang::command_line::read_bool_env_var;
+use move_command_line_common::env::read_bool_env_var;
 use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
+use starcoin_move_compiler::compiled_unit::CompiledUnit;
 use starcoin_move_compiler::shared::Flags;
-use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::{fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
@@ -53,18 +53,16 @@ impl Compiler for MoveSourceCompiler {
 
         let targets = &vec![cur_path.clone()];
         // let sender = Some(sender_addr);
-        let (files, units_or_errors) = move_compile(
-            targets,
-            &self.deps,
-            None,
-            Flags::empty().set_sources_shadow_deps(true),
-        )?;
+
+        let (files, units_or_errors) = move_lang::Compiler::new(targets, &self.deps)
+            .set_flags(Flags::empty().set_sources_shadow_deps(true))
+            .build()?;
         let unit = match units_or_errors {
             Err(errors) => {
                 let error_buffer = if read_bool_env_var(testsuite::PRETTY) {
-                    starcoin_move_compiler::errors::report_errors_to_color_buffer(files, errors)
+                    move_lang::diagnostics::report_diagnostics_to_color_buffer(&files, errors)
                 } else {
-                    starcoin_move_compiler::errors::report_errors_to_buffer(files, errors)
+                    move_lang::diagnostics::report_diagnostics_to_buffer(&files, errors)
                 };
                 return Err(
                     MoveSourceCompilerError(String::from_utf8(error_buffer).unwrap()).into(),

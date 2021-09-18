@@ -6,7 +6,6 @@ use starcoin_types::account_config::genesis_address;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::value::MoveValue;
-use starcoin_vm_types::values::VMValueCast;
 use test_helper::executor::prepare_genesis;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -55,6 +54,6 @@ fn verify_genesis_nft_address(mint_address: AccountAddress) -> Result<bool> {
             proofs.simple_serialize().unwrap(),
         ],
     )?;
-    let verified: bool = ret[0].1.copy_value().unwrap().cast().unwrap();
+    let verified: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
     Ok(verified)
 }

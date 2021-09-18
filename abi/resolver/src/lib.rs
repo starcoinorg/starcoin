@@ -3,9 +3,10 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
+use move_model::script_into_module;
 use starcoin_abi_types::{
-    ArgumentABI, FieldABI, ModuleABI, ScriptFunctionABI, StructABI, TransactionScriptABI, TypeABI,
-    TypeArgumentABI,
+    FieldABI, FunctionABI, FunctionParameterABI, ModuleABI, StructABI, StructInstantiation,
+    TransactionScriptABI, TypeInstantiation, TypeParameterABI,
 };
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::resolver::Resolver;
@@ -70,7 +71,8 @@ impl<'a> ABIResolver<'a> {
 
     pub fn resolve_script(&self, script_code: Vec<u8>) -> Result<TransactionScriptABI> {
         let script = CompiledScript::deserialize(&script_code)?;
-        let script_mod = script.into_module().1;
+        let script_mod = script_into_module(script);
+
         let m = Module::new(&script_mod);
         anyhow::ensure!(
             m.exposed_functions.len() == 1,
@@ -91,7 +93,7 @@ impl<'a> ABIResolver<'a> {
         ))
     }
 
-    pub fn resolve_struct_tag(&self, struct_tag: &StructTag) -> Result<StructABI> {
+    pub fn resolve_struct_tag(&self, struct_tag: &StructTag) -> Result<StructInstantiation> {
         let struct_abi =
             self.resolve_struct(&struct_tag.module_id(), struct_tag.name.as_ident_str())?;
         let ty_args = struct_tag
@@ -99,21 +101,23 @@ impl<'a> ABIResolver<'a> {
             .iter()
             .map(|ty| self.resolve_type_tag(ty))
             .collect::<Result<Vec<_>>>()?;
-        struct_abi.subst(&ty_args)
+        struct_abi.instantiations(&ty_args)
     }
 
-    pub fn resolve_type_tag(&self, type_tag: &TypeTag) -> Result<TypeABI> {
+    pub fn resolve_type_tag(&self, type_tag: &TypeTag) -> Result<TypeInstantiation> {
         Ok(match type_tag {
-            TypeTag::Bool => TypeABI::Bool,
-            TypeTag::U8 => TypeABI::U8,
-            TypeTag::U64 => TypeABI::U64,
-            TypeTag::U128 => TypeABI::U128,
-            TypeTag::Address => TypeABI::Address,
+            TypeTag::Bool => TypeInstantiation::Bool,
+            TypeTag::U8 => TypeInstantiation::U8,
+            TypeTag::U64 => TypeInstantiation::U64,
+            TypeTag::U128 => TypeInstantiation::U128,
+            TypeTag::Address => TypeInstantiation::Address,
 
-            TypeTag::Signer => TypeABI::Signer,
-            TypeTag::Vector(sub_type) => TypeABI::new_vector(self.resolve_type_tag(&sub_type)?),
+            TypeTag::Signer => TypeInstantiation::Signer,
+            TypeTag::Vector(sub_type) => {
+                TypeInstantiation::new_vector(self.resolve_type_tag(&sub_type)?)
+            }
             TypeTag::Struct(struct_type) => {
-                TypeABI::new_struct(self.resolve_struct_tag(&struct_type)?)
+                TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(&struct_type)?)
             }
         })
     }
@@ -126,14 +130,14 @@ impl<'a> ABIResolver<'a> {
         let (name, s) = Struct::new(&module, module.struct_def_at(struct_def));
         self.struct_to_abi(module_id, &name, &s)
     }
-    pub fn resolve_type(&self, ty: &Type) -> Result<TypeABI> {
+    pub fn resolve_type(&self, ty: &Type) -> Result<TypeInstantiation> {
         Ok(match ty {
-            Type::Bool => TypeABI::Bool,
-            Type::U8 => TypeABI::U8,
-            Type::U64 => TypeABI::U64,
-            Type::U128 => TypeABI::U128,
-            Type::Address => TypeABI::Address,
-            Type::Signer => TypeABI::Signer,
+            Type::Bool => TypeInstantiation::Bool,
+            Type::U8 => TypeInstantiation::U8,
+            Type::U64 => TypeInstantiation::U64,
+            Type::U128 => TypeInstantiation::U128,
+            Type::Address => TypeInstantiation::Address,
+            Type::Signer => TypeInstantiation::Signer,
             Type::Struct {
                 address,
                 module,
@@ -148,13 +152,16 @@ impl<'a> ABIResolver<'a> {
                     .iter()
                     .map(|t| self.resolve_type(t))
                     .collect::<Result<Vec<_>>>()?;
-                let inst_struct_abi = struct_abi.subst(&type_args)?;
-                TypeABI::new_struct(inst_struct_abi)
+                let inst_struct_abi = struct_abi.instantiations(&type_args)?;
+                TypeInstantiation::new_struct_instantiation(inst_struct_abi)
             }
-            Type::Vector(sub_ty) => TypeABI::new_vector(self.resolve_type(&sub_ty)?),
-            Type::TypeParameter(i) => TypeABI::TypeParameter(*i as usize),
-            Type::Reference(_) | Type::MutableReference(_) => {
-                anyhow::bail!("cannot resolve type api for {:?}", &ty)
+            Type::Vector(sub_ty) => TypeInstantiation::new_vector(self.resolve_type(&sub_ty)?),
+            Type::TypeParameter(i) => TypeInstantiation::TypeParameter(*i as usize),
+            Type::Reference(ty) => {
+                TypeInstantiation::Reference(false, Box::new(self.resolve_type(&ty)?))
+            }
+            Type::MutableReference(ty) => {
+                TypeInstantiation::Reference(true, Box::new(self.resolve_type(&ty)?))
             }
         })
     }
@@ -162,7 +169,7 @@ impl<'a> ABIResolver<'a> {
         &self,
         module_id: &ModuleId,
         function_name: &IdentStr,
-    ) -> Result<ScriptFunctionABI> {
+    ) -> Result<FunctionABI> {
         let module = self
             .resolver
             .get_module(module_id.address(), module_id.name())?;
@@ -178,13 +185,13 @@ impl<'a> ABIResolver<'a> {
         module_id: &ModuleId,
         function_name: &IdentStr,
         type_args: &[TypeTag],
-    ) -> Result<ScriptFunctionABI> {
+    ) -> Result<FunctionABI> {
         let script_function_abi = self.resolve_function(module_id, function_name)?;
         let type_args = type_args
             .iter()
             .map(|t| self.resolve_type_tag(t))
             .collect::<Result<Vec<_>>>()?;
-        Ok(ScriptFunctionABI::new(
+        Ok(FunctionABI::new(
             script_function_abi.name().to_string(),
             script_function_abi.module_name().clone(),
             script_function_abi.doc().to_string(),
@@ -193,12 +200,17 @@ impl<'a> ABIResolver<'a> {
                 .args()
                 .iter()
                 .map(|arg| {
-                    Ok(ArgumentABI::new(
+                    Ok(FunctionParameterABI::new(
                         arg.name().to_string(),
                         arg.type_abi().subst(&type_args)?,
                         arg.doc().to_string(),
                     ))
                 })
+                .collect::<Result<Vec<_>>>()?,
+            script_function_abi
+                .returns()
+                .iter()
+                .map(|r| r.subst(&type_args))
                 .collect::<Result<Vec<_>>>()?,
         ))
     }
@@ -224,7 +236,7 @@ impl<'a> ABIResolver<'a> {
             .type_parameters
             .iter()
             .enumerate()
-            .map(|(i, ab)| TypeArgumentABI::new(format!("T{}", i), *ab))
+            .map(|(i, ab)| TypeParameterABI::new(format!("T{}", i), ab.constraints, ab.is_phantom))
             .collect();
         let abi = StructABI::new(
             name.to_string(),
@@ -242,12 +254,12 @@ impl<'a> ABIResolver<'a> {
         module_id: &ModuleId,
         name: &IdentStr,
         func: &Function,
-    ) -> Result<ScriptFunctionABI> {
+    ) -> Result<FunctionABI> {
         let type_parameters = func
             .type_parameters
             .iter()
             .enumerate()
-            .map(|(i, ab)| TypeArgumentABI::new(format!("T{}", i), *ab))
+            .map(|(i, ab)| TypeParameterABI::new(format!("T{}", i), *ab, false))
             .collect();
         let parameters = func
             .parameters
@@ -255,15 +267,28 @@ impl<'a> ABIResolver<'a> {
             .enumerate()
             .map(|(i, t)| {
                 let ty = self.resolve_type(t)?;
-                Ok(ArgumentABI::new(format!("p{}", i), ty, String::new()))
+                Ok(FunctionParameterABI::new(
+                    format!("p{}", i),
+                    ty,
+                    String::new(),
+                ))
             })
             .collect::<Result<Vec<_>>>()?;
-        Ok(ScriptFunctionABI::new(
+        let ret_types = func
+            .return_
+            .iter()
+            .map(|t| {
+                let ty = self.resolve_type(t)?;
+                Ok(ty)
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok(FunctionABI::new(
             name.to_string(),
             module_id.clone(),
             String::new(),
             type_parameters,
             parameters,
+            ret_types,
         ))
     }
 }

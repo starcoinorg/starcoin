@@ -98,7 +98,7 @@ fn derive_key(derivation_param: &KeyDerivationParams, secret: &[u8]) -> [u8; 32]
 fn aes_encrypt(encryption_param: &EncryptionParams, key: [u8; 32], plain: &[u8]) -> Vec<u8> {
     let key = GenericArray::from(key);
     let nonce = GenericArray::clone_from_slice(&encryption_param.nonce);
-    let cipher = aes_gcm::Aes256Gcm::new(key);
+    let cipher = aes_gcm::Aes256Gcm::new(&key);
     cipher
         .encrypt(&nonce, plain)
         .expect("encryption should never failure!")
@@ -110,7 +110,7 @@ fn aes_decrypt(
 ) -> Result<Vec<u8>> {
     let key = GenericArray::from(key);
     let nonce = GenericArray::clone_from_slice(&encryption_param.nonce);
-    let cipher = aes_gcm::Aes256Gcm::new(key);
+    let cipher = aes_gcm::Aes256Gcm::new(&key);
     match cipher.decrypt(&nonce, encrypted) {
         Ok(s) => Ok(s),
         Err(e) => Err(format_err!("decrypt error:{:?}", e)),

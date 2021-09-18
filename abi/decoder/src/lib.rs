@@ -6,7 +6,7 @@ use move_binary_format::CompiledModule;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_abi_resolver::ABIResolver;
-use starcoin_abi_types::TypeABI;
+use starcoin_abi_types::TypeInstantiation;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -104,7 +104,10 @@ impl From<AnnotatedMoveValue> for DecodedMoveValue {
 }
 
 /// Decode bcs data to json value through type abi.
-pub fn decode_move_value(abi: &TypeABI, data: &[u8]) -> Result<DecodedMoveValue, bcs::Error> {
+pub fn decode_move_value(
+    abi: &TypeInstantiation,
+    data: &[u8],
+) -> Result<DecodedMoveValue, bcs::Error> {
     let json_value = bcs::from_bytes_seed(abi, data)?;
     Ok(DecodedMoveValue(json_value))
 }
@@ -128,7 +131,7 @@ pub fn decode_script(state: &dyn StateView, s: &Script) -> Result<DecodedScript>
         let arg_abis = script_abi.args();
         let first_arg_is_signer = arg_abis
             .first()
-            .filter(|abi| abi.type_abi() == &TypeABI::Signer)
+            .filter(|abi| abi.type_abi() == &TypeInstantiation::Signer)
             .is_some();
         if first_arg_is_signer {
             &arg_abis[1..]
@@ -190,7 +193,7 @@ fn decode_script_function_inner(
         let arg_abis = func_abi.args();
         let first_arg_is_signer = arg_abis
             .first()
-            .filter(|abi| abi.type_abi() == &TypeABI::Signer)
+            .filter(|abi| abi.type_abi() == &TypeInstantiation::Signer)
             .is_some();
         if first_arg_is_signer {
             &arg_abis[1..]

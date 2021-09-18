@@ -8,8 +8,10 @@ use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_move_compiler::dependency_order::sort_by_dependency_order;
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
+use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::transaction::{Module, Package};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
@@ -91,6 +93,20 @@ impl CommandAction for PackageCmd {
                 .collect::<Result<Vec<Module>>>()?
         };
 
+        let sorted_modules = {
+            let ms = modules
+                .iter()
+                .map(|m| CompiledModule::deserialize(m.code()))
+                .collect::<Result<Vec<_>, _>>()?;
+            sort_by_dependency_order(ms.iter())?
+                .into_iter()
+                .map(|m| {
+                    let mut data = vec![];
+                    m.serialize(&mut data).map(move |_| Module::new(data))
+                })
+                .collect::<Result<Vec<_>>>()?
+        };
+
         let init_script = match &opt.init_script {
             Some(script) => {
                 let type_tags = opt.type_tags.clone().unwrap_or_default();
@@ -106,7 +122,7 @@ impl CommandAction for PackageCmd {
             None => None,
         };
 
-        let package = Package::new(modules, init_script)?;
+        let package = Package::new(sorted_modules, init_script)?;
         let package_hash = package.crypto_hash();
         let output_file = {
             let mut output_dir = opt.out_dir.clone().unwrap_or(current_dir()?);

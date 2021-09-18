@@ -27,3 +27,4 @@ hex="0.4"
 rlp = "0.4"
 rlp-derive = "0.1"
 ethereum-types  ="0.9"
+bcs-ext = {path = "../commons/bcs_ext"}

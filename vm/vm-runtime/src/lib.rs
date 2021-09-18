@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #[macro_use]
 extern crate prometheus;
-
 pub mod data_cache;
 pub mod metrics;
+pub mod natives;
 pub mod starcoin_vm;
 pub use move_vm_runtime::move_vm;
 mod access_path_cache;

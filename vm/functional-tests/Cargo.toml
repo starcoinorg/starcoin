@@ -19,7 +19,7 @@ termcolor = "1.1.2"
 mirai-annotations = "1.10.1"
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types" ,default-features = false, features = ["fuzzing"]}
-starcoin-vm-runtime = { path = "../vm-runtime", features = ["debug_module"] }
+starcoin-vm-runtime = { path = "../vm-runtime", features = ["testing"] }
 starcoin-config = { path = "../../config" }
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"]}
 starcoin-logger = { path = "../../commons/logger"}
@@ -30,8 +30,8 @@ executor = { package="starcoin-executor", path = "../../executor"}
 starcoin-genesis = { path = "../../genesis" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-account-api = { path = "../../account/api" }
-move-lang = { git = "https://github.com/starcoinorg/diem", rev="69ab01213a2e4128a1a8c8216bbf666c9ef90abd" }
-
+move-lang = { git = "https://github.com/starcoinorg/diem", rev="347ebb76c60f360084d8b8043ca0e53d93015bc1"  }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="347ebb76c60f360084d8b8043ca0e53d93015bc1"  }
 [dev-dependencies]
 starcoin-vm-types = { path = "../types"}
 

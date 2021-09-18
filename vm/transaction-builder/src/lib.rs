@@ -9,6 +9,7 @@ use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
 use starcoin_vm_types::account_config::{core_code_address, genesis_address};
+use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
@@ -679,10 +680,9 @@ pub fn build_package_with_stdlib_module(
     let mut package = Package::new_with_modules(
         modules
             .iter()
-            .filter_map(|m| {
-                let mut blob = vec![];
-                m.serialize(&mut blob)
-                    .expect("serializing stdlib must work");
+            .cloned()
+            .filter_map(|blob| {
+                let m = CompiledModule::deserialize(&blob).expect("serializing stdlib must work");
                 let handle = &m.module_handles()[0];
                 let name = m.identifier_at(handle.name).as_str();
                 let mut found = false;

@@ -4,13 +4,12 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{encode_create_account_script_function, execute_readonly_function};
-use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_types::account_config::stc_type_tag;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::TransactionPayload;
+use starcoin_types::transaction::{TransactionArgument, TransactionPayload};
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::gas_schedule::{GasAlgebra, InternalGasUnits};
 use starcoin_vm_types::on_chain_config::{
@@ -19,7 +18,6 @@ use starcoin_vm_types::on_chain_config::{
 };
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
-use starcoin_vm_types::values::VMValueCast;
 use test_helper::dao::{
     dao_vote_test, empty_txn_payload, execute_script_on_chain_config, on_chain_config_type_tag,
     reward_config_type_tag, transasction_timeout_type_tag, txn_publish_config_type_tag,
@@ -49,21 +47,20 @@ fn test_modify_on_chain_consensus_config() -> Result<()> {
         0,
     )?;
     //get consensus config
-    let module_id = ModuleId::new(genesis_address(), CONSENSUS_CONFIG_IDENTIFIER.clone());
-    let mut read_config = execute_readonly_function(
-        &chain_state,
-        &module_id,
-        &Identifier::new("get_config")?,
-        vec![],
-        vec![],
-    )?;
-    let annotator = MoveValueAnnotator::new(&chain_state);
-    let (t, v) = read_config.pop().unwrap();
-    let layout = annotator.type_tag_to_type_layout(&t)?;
-    let r = v
-        .simple_serialize(&layout)
-        .ok_or_else(|| anyhow::format_err!("fail to serialize contract result"))?;
-    let config = ConsensusConfig::deserialize_into_config(r.as_slice())?;
+
+    let config = {
+        let module_id = ModuleId::new(genesis_address(), CONSENSUS_CONFIG_IDENTIFIER.clone());
+        let mut rets = starcoin_dev::playground::call_contract(
+            &chain_state,
+            module_id,
+            "get_config",
+            vec![],
+            vec![],
+        )?;
+
+        let r = rets.pop().unwrap().1;
+        ConsensusConfig::deserialize_into_config(r.as_slice())?
+    };
     assert_eq!(config.strategy, strategy);
     Ok(())
 }
@@ -87,15 +84,18 @@ fn test_modify_on_chain_reward_config() -> Result<()> {
     )?;
     //get RewardConfig
     let module_id = ModuleId::new(genesis_address(), Identifier::new("RewardConfig")?);
-    let mut read_config = execute_readonly_function(
-        &chain_state,
-        &module_id,
-        &Identifier::new("reward_delay")?,
-        vec![],
-        vec![],
-    )?;
-    let reward_delay_on_chain: u64 = read_config.pop().unwrap().1.cast().unwrap();
+    let reward_delay_on_chain: u64 = {
+        let mut rets = starcoin_dev::playground::call_contract(
+            &chain_state,
+            module_id,
+            "reward_delay",
+            vec![],
+            vec![],
+        )?;
 
+        let r = rets.pop().unwrap().1;
+        bcs_ext::from_bytes(r.as_slice())?
+    };
     assert_eq!(reward_delay_on_chain, reward_delay);
     Ok(())
 }
@@ -164,17 +164,22 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
         vec![],
         serialize_values(&vec![MoveValue::Address(genesis_address())]),
     )?;
-    let is_module_allowed_on_chain: bool = read_config.pop().unwrap().1.cast().unwrap();
+    let is_module_allowed_on_chain: bool =
+        bcs_ext::from_bytes(&read_config.pop().unwrap()).unwrap();
     assert_eq!(is_module_allowed_on_chain, module_publishing_allowed);
 
-    let mut read_config = execute_readonly_function(
-        &chain_state,
-        &module_id,
-        &Identifier::new("is_script_allowed")?,
-        vec![],
-        serialize_values(&vec![MoveValue::Address(genesis_address())]),
-    )?;
-    let is_script_allowed_on_chain: bool = read_config.pop().unwrap().1.cast().unwrap();
+    let is_script_allowed_on_chain: bool = {
+        let mut rets = starcoin_dev::playground::call_contract(
+            &chain_state,
+            module_id,
+            "is_script_allowed",
+            vec![],
+            vec![TransactionArgument::Address(genesis_address())],
+        )?;
+
+        let r = rets.pop().unwrap().1;
+        bcs_ext::from_bytes(r.as_slice())?
+    };
     assert_eq!(is_script_allowed_on_chain, script_allowed);
     Ok(())
 }

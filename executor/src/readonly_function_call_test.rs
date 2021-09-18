@@ -3,15 +3,15 @@
 
 use crate::account::{create_account_txn_sent_as_association, Account};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use starcoin_dev::playground::call_contract;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::Transaction;
+use starcoin_types::transaction::{Transaction, TransactionArgument};
 use starcoin_vm_types::errors::Location;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
-use starcoin_vm_types::value::{serialize_values, MoveValue};
-use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
 use test_helper::executor::{compile_modules_with_address, execute_and_apply, prepare_genesis};
@@ -79,15 +79,14 @@ fn test_readonly_function_call() -> Result<()> {
     let compiled_module = CompiledModule::deserialize(module.code())
         .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
 
-    let result = crate::execute_readonly_function(
+    let result = starcoin_dev::playground::call_contract(
         &chain_state,
-        &compiled_module.self_id(),
-        &Identifier::new("get_s").unwrap(),
+        compiled_module.self_id(),
+        "get_s",
         vec![],
         vec![],
     )?;
 
-    let value = Value::struct_(Struct::pack(vec![Value::u64(20)]));
     let ty = TypeTag::Struct(StructTag {
         address: *account1.address(),
         module: Identifier::new("A").unwrap(),
@@ -95,17 +94,19 @@ fn test_readonly_function_call() -> Result<()> {
         type_params: vec![],
     });
     assert_eq!(result[0].0, ty);
-    assert!(result[0]
-        .1
-        .equals(&value)
-        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
+    #[derive(Serialize, Deserialize)]
+    struct S {
+        f1: u64,
+    }
+    let s: S = bcs_ext::from_bytes(result[0].1.as_slice())?;
+    assert_eq!(s.f1, 20);
 
     // test on return multi values.
     {
-        let result = crate::execute_readonly_function(
+        let result = call_contract(
             &chain_state,
-            &compiled_module.self_id(),
-            &Identifier::new("get_tuple").unwrap(),
+            compiled_module.self_id(),
+            "get_tuple",
             vec![],
             vec![],
         )?;
@@ -113,27 +114,24 @@ fn test_readonly_function_call() -> Result<()> {
 
         assert_eq!(result[0].0, TypeTag::U64);
         assert_eq!(result[1].0, TypeTag::Address);
-        assert!(result[0]
-            .1
-            .equals(&Value::u64(0))
-            .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
-        assert!(result[1]
-            .1
-            .equals(&Value::address(
-                AccountAddress::from_hex_literal("0x1").unwrap()
-            ))
-            .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
+        assert_eq!(bcs_ext::from_bytes::<u64>(result[0].1.as_slice())?, 0u64);
+        assert_eq!(
+            bcs_ext::from_bytes::<AccountAddress>(result[1].1.as_slice())?,
+            AccountAddress::from_hex_literal("0x1").unwrap()
+        );
     }
-    let value = MoveValue::Signer(*account1.address());
-    let _result = crate::execute_readonly_function(
+    let _result = call_contract(
         &chain_state,
-        &compiled_module.self_id(),
-        &Identifier::new("set_s").unwrap(),
+        compiled_module.self_id(),
+        "set_s",
         vec![],
-        serialize_values(&vec![value]),
+        vec![TransactionArgument::Address(*account1.address())],
     )
     .map_err(|err| {
-        assert_eq!(err, VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
+        assert_eq!(
+            err.downcast::<VMStatus>().unwrap(),
+            VMStatus::Error(StatusCode::REJECTED_WRITE_SET)
+        );
     });
 
     Ok(())
