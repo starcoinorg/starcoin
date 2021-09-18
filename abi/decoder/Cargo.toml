@@ -14,11 +14,11 @@ serde_bytes = "0.11"
 anyhow = "1.0.41"
 once_cell = "1.8.0"
 hex = "0.4.3"
-move-binary-format = {git = "https://github.com/starcoinorg/diem", rev="2e69b605319e46a24ade58133c61833c167830f9"  }
+move-binary-format = {git = "https://github.com/starcoinorg/diem", rev="347ebb76c60f360084d8b8043ca0e53d93015bc1"  }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-abi-types = {path = "../types"}
 starcoin-abi-resolver = {path = "../resolver"}
 bcs-ext = {path = "../../commons/bcs_ext"}
 bcs = "0.1"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="6378a2e7c59a265d29841f4c1a9fbeac5295f4a7"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="df0a14869dbb509c5d770a0dc305daae8a46bbd7"}

@@ -37,8 +37,8 @@ serde-helpers = {path = "../../commons/serde-helpers"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}
 jsonrpc-derive = {git = "https://github.com/fikgol/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="6378a2e7c59a265d29841f4c1a9fbeac5295f4a7"}
-openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="6af2a8c5482a522291c7905dc7c2f823f752b18d"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="df0a14869dbb509c5d770a0dc305daae8a46bbd7"}
+openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="72f3243ab940a6b4964a41475097ee7ab20959fd"}
 structopt = "0.3.23"
 [[bin]]
 name = "starcoin-rpc-schema-generate"

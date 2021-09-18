@@ -14,4 +14,4 @@ serde="~1"
 serde_bytes = "0.11"
 serde_json = "~1"
 hex = "0.4"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="6378a2e7c59a265d29841f4c1a9fbeac5295f4a7"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="df0a14869dbb509c5d770a0dc305daae8a46bbd7"}

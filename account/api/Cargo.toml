@@ -21,7 +21,7 @@ rand = "0.8.4"
 rand_core = { version = "0.6.3", default-features = false }
 futures = "0.3.12"
 starcoin-service-registry = { path = "../../commons/service-registry" }
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="6378a2e7c59a265d29841f4c1a9fbeac5295f4a7"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="df0a14869dbb509c5d770a0dc305daae8a46bbd7"}
 
 [dev-dependencies]
 
