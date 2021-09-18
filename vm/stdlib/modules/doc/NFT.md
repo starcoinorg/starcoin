@@ -7,6 +7,7 @@
 
 -  [Function `accept`](#0x1_NFTGalleryScripts_accept)
 -  [Function `transfer`](#0x1_NFTGalleryScripts_transfer)
+-  [Specification](#@Specification_0)
 
 
 <pre><code><b>use</b> <a href="NFT.md#0x1_NFTGallery">0x1::NFTGallery</a>;
@@ -63,3 +64,12 @@ Transfer NFT<NFTMeta, NFTBody> with <code>id</code> from <code>sender</code> to 
 
 
 </details>
+
+<a name="@Specification_0"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>

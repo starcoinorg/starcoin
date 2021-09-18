@@ -19,6 +19,10 @@ module YieldFarming {
     const ERR_FARMING_NOT_ENOUGH_ASSET: u64 = 109;
     const ERR_FARMING_TIMESTAMP_INVALID: u64 = 110;
 
+    spec module {
+        pragma verify = false;
+    }
+
     /// The object of yield farming
     /// RewardTokenT meaning token of yield farming
     struct Farming<PoolType, RewardTokenT> has key, store {

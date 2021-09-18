@@ -5,6 +5,10 @@ module 0x1::GenesisNFT {
     use 0x1::MerkleNFTDistributor;
     use 0x1::CoreAddresses;
 
+    spec module {
+        pragma verify = false;
+    }
+
     struct GenesisNFT has store{}
     struct GenesisNFTMeta has copy, store, drop{
         index: u64
@@ -61,6 +65,10 @@ module 0x1::GenesisNFT {
 
 module 0x1::GenesisNFTScripts {
     use 0x1::GenesisNFT;
+
+    spec module {
+        pragma verify = false;
+    }
 
     /// Mint a GenesisNFT
     public(script) fun mint(sender: signer, index: u64, merkle_proof:vector<vector<u8>>) {
