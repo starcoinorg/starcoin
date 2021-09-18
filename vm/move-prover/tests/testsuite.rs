@@ -4,10 +4,9 @@
 use anyhow::anyhow;
 use codespan_reporting::term::termcolor::Buffer;
 use itertools::Itertools;
+use move_command_line_common::env::read_env_var;
 use move_prover::{cli::Options, run_move_prover};
-use move_prover_test_utils::{
-    baseline_test::verify_or_update_baseline, extract_test_directives, read_env_var,
-};
+use move_prover_test_utils::{baseline_test::verify_or_update_baseline, extract_test_directives};
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
@@ -88,17 +87,6 @@ fn get_features() -> &'static [Feature] {
                 separate_baseline: false,
                 runner: |p| test_runner_for_feature(p, get_feature_by_name("cvc4")),
                 enabling_condition: |group, path| group == "unit" && !cvc4_deny_listed(path),
-            },
-            // Tests for new invariants
-            Feature {
-                name: "inv-v1",
-                flags: &["--inv-v1"],
-                inclusion_mode: InclusionMode::Implicit,
-                enable_in_ci: false, // Do not enable in CI until we have more data about stability
-                only_if_requested: false,
-                separate_baseline: false,
-                runner: |p| test_runner_for_feature(p, get_feature_by_name("inv-v1")),
-                enabling_condition: |_, _| true,
             },
         ]
     })
