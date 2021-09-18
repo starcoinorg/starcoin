@@ -1977,6 +1977,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "datatest-stable"
+version = "0.1.1"
+source = "git+https://github.com/starcoinorg/diem-devtools?branch=feature/pub-test-opts#8d13c496a7e2460c2c694639e8dd3a5a5f10f1c4"
+dependencies = [
+ "regex",
+ "structopt 0.3.23",
+ "termcolor",
+ "walkdir",
+]
+
+[[package]]
 name = "db-exporter"
 version = "1.6.0"
 dependencies = [
@@ -5012,6 +5023,61 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-bytecode-utils"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
+dependencies = [
+ "anyhow",
+ "diem-workspace-hack",
+ "move-binary-format",
+ "move-core-types",
+ "petgraph",
+]
+
+[[package]]
+name = "move-cli"
+version = "1.6.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "bytecode-verifier",
+ "datatest-stable 0.1.1 (git+https://github.com/starcoinorg/diem-devtools?branch=feature/pub-test-opts)",
+ "diem-workspace-hack",
+ "difference",
+ "disassembler",
+ "errmapgen",
+ "futures 0.3.13",
+ "include_dir",
+ "itertools 0.10.1",
+ "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "move-binary-format",
+ "move-command-line-common",
+ "move-core-types",
+ "move-coverage 0.1.0",
+ "move-lang",
+ "move-unit-test",
+ "move-vm-runtime",
+ "once_cell",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-functional-tests",
+ "starcoin-logger",
+ "starcoin-move-compiler",
+ "starcoin-resource-viewer",
+ "starcoin-rpc-api",
+ "starcoin-rpc-client",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "stdlib",
+ "structopt 0.3.23",
+ "tempfile",
+ "tokio 0.2.25",
+ "walkdir",
+]
+
+[[package]]
 name = "move-command-line-common"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
@@ -5127,7 +5193,7 @@ name = "move-lang-test-utils"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
 dependencies = [
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diem-workspace-hack",
  "move-command-line-common",
  "walkdir",
@@ -5206,7 +5272,7 @@ dependencies = [
  "atty",
  "clap 2.33.3",
  "codespan-reporting",
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diem-temppath",
  "hex",
  "itertools 0.10.1",
@@ -5272,6 +5338,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-unit-test"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
+dependencies = [
+ "anyhow",
+ "bytecode-interpreter",
+ "colored",
+ "diem-workspace-hack",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-command-line-common",
+ "move-core-types",
+ "move-lang",
+ "move-model",
+ "move-stdlib",
+ "move-vm-runtime",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "rayon",
+ "regex",
+ "resource-viewer",
+ "structopt 0.3.23",
+]
+
+[[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
@@ -5287,6 +5378,18 @@ dependencies = [
  "parking_lot 0.11.2",
  "sha3",
  "tracing",
+]
+
+[[package]]
+name = "move-vm-test-utils"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
+dependencies = [
+ "anyhow",
+ "diem-workspace-hack",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-runtime",
 ]
 
 [[package]]
@@ -7113,6 +7216,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "resource-viewer"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/diem?rev=347ebb76c60f360084d8b8043ca0e53d93015bc1#347ebb76c60f360084d8b8043ca0e53d93015bc1"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "diem-workspace-hack",
+ "hex",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-runtime",
+ "move-vm-types",
+ "once_cell",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ring"
 version = "0.16.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8625,7 +8746,7 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "bcs-ext",
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mirai-annotations",
  "move-command-line-common",
  "move-lang",
@@ -9813,7 +9934,7 @@ dependencies = [
  "bcs-ext",
  "bytecode-verifier",
  "clap 2.33.3",
- "datatest-stable",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra",
  "include_dir",
  "itertools 0.10.1",

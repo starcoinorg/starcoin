@@ -10,6 +10,7 @@ use move_cli::{
     package::{parse_mode_from_string, Mode},
     *,
 };
+use move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use move_core_types::errmap::ErrorMapping;
 use move_core_types::{
     account_address::AccountAddress,
@@ -22,15 +23,16 @@ use move_core_types::{
     vm_status::{AbortLocation, StatusCode, VMStatus},
 };
 use move_lang::shared::Flags;
-use move_lang::{
-    self, compiled_unit::CompiledUnit, MOVE_COMPILED_EXTENSION, MOVE_COMPILED_INTERFACES_DIR,
-};
+use move_lang::{self, compiled_unit::CompiledUnit, Compiler, MOVE_COMPILED_INTERFACES_DIR};
 use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::data_cache::MoveStorage;
-use move_vm_runtime::{logging::NoContextLog, move_vm::MoveVM};
+use move_vm_runtime::move_vm::MoveVM;
+use move_vm_runtime::move_vm_adapter::SessionAdapter;
+use move_vm_runtime::session::Session;
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_functional_tests::executor::FakeExecutor;
 use starcoin_functional_tests::testsuite::PRETTY;
+use starcoin_vm_runtime::natives::starcoin_natives;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasStatus;
 use std::num::NonZeroUsize;
@@ -340,12 +342,9 @@ fn check(state: OnDiskStateView, republish: bool, files: &[String], verbose: boo
     if verbose {
         println!("Checking Move files...");
     }
-    move_lang::move_check_and_report(
-        files,
-        &[state.interface_files_dir()?],
-        None,
-        Flags::empty().set_sources_shadow_deps(republish),
-    )?;
+    Compiler::new(files, &[state.interface_files_dir()?])
+        .set_flags(Flags::empty().set_sources_shadow_deps(republish))
+        .check_and_report()?;
     Ok(())
 }
 
@@ -360,12 +359,9 @@ fn publish(
         println!("Compiling Move modules...")
     }
 
-    let (_, compiled_units) = move_lang::move_compile_and_report(
-        files,
-        &[state.interface_files_dir()?],
-        None,
-        Flags::empty().set_sources_shadow_deps(republish),
-    )?;
+    let (_, compiled_units) = Compiler::new(files, &[state.interface_files_dir()?])
+        .set_flags(Flags::empty().set_sources_shadow_deps(republish))
+        .build_and_report()?;
 
     let num_modules = compiled_units
         .iter()
@@ -393,10 +389,9 @@ fn publish(
 
     // use the the publish_module API frm the VM if we do not allow breaking changes
     if !ignore_breaking_changes {
-        let vm = MoveVM::new();
+        let vm = MoveVM::new(starcoin_natives()).map_err(|m| m.into_vm_status())?;
         let mut cost_strategy = get_cost_strategy(None)?;
-        let log_context = NoContextLog::new();
-        let mut session = vm.new_session(&state);
+        let mut session: SessionAdapter<_> = vm.new_session(&state).into();
 
         let mut has_error = false;
         for module in &modules {
@@ -420,8 +415,9 @@ fn publish(
                 }
             }
 
-            let res =
-                session.publish_module(module_bytes, sender, &mut cost_strategy, &log_context);
+            let res = session
+                .as_mut()
+                .publish_module(module_bytes, sender, &mut cost_strategy);
             if let Err(err) = res {
                 explain_publish_error(err, &state, module)?;
                 has_error = true;
@@ -430,7 +426,9 @@ fn publish(
         }
 
         if !has_error {
-            let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
+            let (changeset, events) = Into::<Session<_>>::into(session)
+                .finish()
+                .map_err(|e| e.into_vm_status())?;
             assert!(events.is_empty());
             if verbose {
                 explain_publish_changeset(&changeset, &state);
@@ -501,10 +499,9 @@ move run` must be applied to a module inside `storage/`",
     // TODO: parse Value's directly instead of going through the indirection of TransactionArgument?
     let vm_args: Vec<Vec<u8>> = convert_txn_args(&txn_args);
 
-    let vm = MoveVM::new();
+    let vm = MoveVM::new(starcoin_natives()).map_err(|m| m.into_vm_status())?;
     let mut cost_strategy = get_cost_strategy(gas_budget)?;
-    let log_context = NoContextLog::new();
-    let mut session = vm.new_session(&state);
+    let mut session: SessionAdapter<_> = vm.new_session(&state).into();
 
     let script_type_parameters = vec![];
     let script_parameters = vec![];
@@ -514,6 +511,7 @@ move run` must be applied to a module inside `storage/`",
             let module = CompiledModule::deserialize(&bytecode)
                 .map_err(|e| anyhow!("Error deserializing module: {:?}", e))?;
             session
+                .as_mut()
                 .execute_script_function(
                     &module.self_id(),
                     &IdentStr::new(script_name)?,
@@ -521,17 +519,15 @@ move run` must be applied to a module inside `storage/`",
                     vm_args,
                     signer_addresses.clone(),
                     &mut cost_strategy,
-                    &log_context,
                 )
                 .map(|_| ())
         }
-        None => session.execute_script(
+        None => session.as_mut().execute_script(
             bytecode.to_vec(),
             vm_type_args.clone(),
             vm_args,
             signer_addresses.clone(),
             &mut cost_strategy,
-            &log_context,
         ),
     };
 
@@ -546,7 +542,9 @@ move run` must be applied to a module inside `storage/`",
             txn_args,
         )
     } else {
-        let (changeset, events) = session.finish().map_err(|e| e.into_vm_status())?;
+        let (changeset, events) = Into::<Session<_>>::into(session)
+            .finish()
+            .map_err(|e| e.into_vm_status())?;
         if verbose {
             explain_execution_effects(&changeset, &events, &state)?
         }
@@ -643,12 +641,10 @@ fn compile_script(
     if verbose {
         println!("Compiling transaction script...")
     }
-    let (_files, compiled_units) = move_lang::move_compile_and_report(
-        &[script_file.to_string()],
-        &[state.interface_files_dir()?],
-        None,
-        Flags::empty().set_sources_shadow_deps(false),
-    )?;
+    let (_, compiled_units) =
+        Compiler::new(&[script_file.to_string()], &[state.interface_files_dir()?])
+            .set_flags(Flags::empty().set_sources_shadow_deps(true))
+            .build_and_report()?;
 
     let mut script_opt = None;
     for c in compiled_units {
@@ -684,9 +680,8 @@ fn execute<R: MoveStorage>(
     vm_type_args: Vec<TypeTag>,
     mut cost_strategy: GasStatus,
 ) -> Result<(ChangeSet, Vec<Event>), VMError> {
-    let vm = MoveVM::new();
-    let log_context = NoContextLog::new();
-    let mut session = vm.new_session(state);
+    let vm = MoveVM::new(starcoin_natives())?;
+    let mut session: SessionAdapter<_> = vm.new_session(state).into();
     let res = match script_name_opt {
         Some(script_name) => {
             // script fun. parse module, extract script ID to pass to VM
@@ -694,6 +689,7 @@ fn execute<R: MoveStorage>(
                 .map_err(|e| e.finish(Location::Undefined))?;
 
             session
+                .as_mut()
                 .execute_script_function(
                     &module.self_id(),
                     &IdentStr::new(script_name).map_err(|_| {
@@ -704,21 +700,19 @@ fn execute<R: MoveStorage>(
                     vm_args,
                     signer_addresses,
                     &mut cost_strategy,
-                    &log_context,
                 )
                 .map(|_| ())
         }
-        None => session.execute_script(
+        None => session.as_mut().execute_script(
             bytecode.to_vec(),
             vm_type_args,
             vm_args,
             signer_addresses,
             &mut cost_strategy,
-            &log_context,
         ),
     };
 
-    res.and_then(|_| session.finish())
+    res.and_then(|_| Into::<Session<_>>::into(session).finish())
 }
 
 fn get_cost_strategy(gas_budget: Option<u64>) -> Result<GasStatus<'static>> {
@@ -1434,6 +1428,7 @@ fn main() -> Result<()> {
                 filter: filter.clone(),
                 list: *list,
                 num_threads: *num_threads,
+                dep_files: vec![],
                 report_statistics: *report_statistics,
                 report_storage_on_error: *report_storage_on_error,
                 source_files: sources,
@@ -1442,7 +1437,11 @@ fn main() -> Result<()> {
             };
             let test_plan = testing_config.build_test_plan();
             if let Some(test_plan) = test_plan {
-                testing_config.run_and_report_unit_tests(test_plan, std::io::stdout())?;
+                testing_config.run_and_report_unit_tests(
+                    test_plan,
+                    Some(starcoin_natives()),
+                    std::io::stdout(),
+                )?;
             }
             Ok(())
         }

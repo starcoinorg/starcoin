@@ -4,6 +4,7 @@
 use disassembler::disassembler::Disassembler;
 // TODO: do we want to make these Move core types or allow this to be customizable?
 use anyhow::{anyhow, bail, Result};
+use move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -11,7 +12,7 @@ use move_core_types::{
     parser,
     vm_status::StatusCode,
 };
-use move_lang::{MOVE_COMPILED_EXTENSION, MOVE_COMPILED_INTERFACES_DIR};
+use move_lang::MOVE_COMPILED_INTERFACES_DIR;
 use move_vm_runtime::data_cache::MoveStorage;
 use resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_types::access_path::{AccessPath, DataPath};
@@ -53,6 +54,7 @@ pub const DEFAULT_DEP_MODE: &str = "stdlib";
 /// Default directory for build output
 pub use move_lang::command_line::DEFAULT_OUTPUT_DIR as DEFAULT_BUILD_DIR;
 use starcoin_vm_types::state_view::StateView;
+use vm::binary_views::BinaryIndexedView;
 
 /// Extension for resource and event files, which are in BCS format
 const BCS_EXTENSION: &str = "bcs";
@@ -255,20 +257,19 @@ impl OnDiskStateView {
 
         Ok(match Self::get_bytes(path)? {
             Some(bytes) => {
-                // TODO: find or create source map and pass it to disassembler
-                let d: Disassembler<Loc> = if is_module {
-                    Disassembler::from_module(
-                        CompiledModule::deserialize(&bytes)
-                            .map_err(|e| anyhow!("Failure deserializing module: {:?}", e))?,
-                        0,
-                    )?
+                let module: CompiledModule;
+                let script: CompiledScript;
+                let view = if is_module {
+                    module = CompiledModule::deserialize(&bytes)
+                        .map_err(|e| anyhow!("Failure deserializing module: {:?}", e))?;
+                    BinaryIndexedView::Module(&module)
                 } else {
-                    Disassembler::from_script(
-                        CompiledScript::deserialize(&bytes)
-                            .map_err(|e| anyhow!("Failure deserializing script: {:?}", e))?,
-                        0,
-                    )?
+                    script = CompiledScript::deserialize(&bytes)
+                        .map_err(|e| anyhow!("Failure deserializing script: {:?}", e))?;
+                    BinaryIndexedView::Script(&script)
                 };
+                // TODO: find or create source map and pass it to disassembler
+                let d: Disassembler<Loc> = Disassembler::from_view(view, 0)?;
                 Some(d.disassemble()?)
             }
             None => None,
@@ -363,6 +364,7 @@ impl OnDiskStateView {
                     .into_string()
                     .unwrap(),
             ),
+            &BTreeMap::default(),
             false,
         )?;
         Ok(())

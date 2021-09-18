@@ -1,10 +1,13 @@
 use anyhow::Result;
 use itertools::Itertools;
 use move_core_types::language_storage::ModuleId;
+use move_lang::command_line::compiler::PASS_PARSER;
+use move_lang::diagnostics::unwrap_or_report_diagnostics;
 use move_lang::parser::ast::{
     Definition, LeadingNameAccess_, ModuleDefinition, ModuleIdent, ModuleMember, Use,
 };
 use move_lang::shared::{AddressBytes as Address, CompilationEnv, Flags, Identifier};
+use move_lang::Compiler;
 use move_vm_runtime::data_cache::MoveStorage;
 use std::collections::{btree_map, BTreeMap};
 use vm::access::ModuleAccess;
@@ -77,14 +80,19 @@ pub fn get_uses(move_files: &[String]) -> Result<Vec<(Address, String)>> {
     }
 
     let mut compilation_env = CompilationEnv::new(Flags::empty());
-    let (files, parsed) = move_lang::move_parse(&compilation_env, move_files, &[], None)?;
+    let (files, parsed) = Compiler::new(move_files, &[])
+        .set_flags(Flags::empty())
+        .run::<PASS_PARSER>()?;
 
-    let (_, program) = move_lang::unwrap_or_report_errors!(files, parsed);
-
-    let address_mapping =
-        move_lang::expansion::address_map::build_address_map(&mut compilation_env, None, &program);
-    let expansion_errors = compilation_env.check_errors();
-    move_lang::unwrap_or_report_errors!(files, expansion_errors);
+    let (_, program) = unwrap_or_report_diagnostics(&files, parsed);
+    let (mut compiler, program) = program.into_ast();
+    let address_mapping = move_lang::expansion::address_map::build_address_map(
+        compiler.compilation_env(),
+        None,
+        &program,
+    );
+    let expansion_errors = compilation_env.check_diags();
+    unwrap_or_report_diagnostics(&files, expansion_errors);
 
     let used_deps: Vec<_> = program
         .source_definitions
