@@ -8639,7 +8639,7 @@ version = "1.6.0"
 dependencies = [
  "anyhow",
  "futures 0.3.13",
- "hyper 0.13.10",
+ "hyper 0.14.12",
  "once_cell",
  "prometheus",
  "psutil",
