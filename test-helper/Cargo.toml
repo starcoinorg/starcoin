@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.41"
 thiserror = "1.0"
 backtrace = "0.3"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.11", features = ["full"] }
 futures = "0.3.12"
 futures-timer = "3.0"
 hex= "0.4.3"

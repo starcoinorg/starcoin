@@ -49,7 +49,7 @@ starcoin-chain-api = { path = "../chain/api" }
 network-rpc-core = { path = "../network-rpc/core" }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.11", features = ["full"] }
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.3"
 starcoin-account-api = { path = "../account/api"}

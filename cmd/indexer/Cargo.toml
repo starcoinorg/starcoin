@@ -20,7 +20,7 @@ starcoin-types = {path= "../../types" }
 starcoin-rpc-api = {path = "../../rpc/api" }
 starcoin-logger = {path = "../../commons/logger"}
 jsonrpc-core-client="~17"
-tokio={version="0.2", features=["full"]}
+tokio={version="1.11", features=["full"]}
 futures-util = "~0.3"
 futures-retry="~0.5"
 

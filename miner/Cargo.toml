@@ -24,7 +24,7 @@ starcoin-storage = { path = "../storage" }
 executor = { path = "../executor", package = "starcoin-executor" }
 starcoin-txpool = { path = "../txpool" }
 starcoin-txpool-api = { path = "../txpool/api" }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.11", features = ["full"] }
 logger = { path = "../commons/logger", package = "starcoin-logger" }
 crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 starcoin-accumulator = { path = "../commons/accumulator", package = "starcoin-accumulator" }

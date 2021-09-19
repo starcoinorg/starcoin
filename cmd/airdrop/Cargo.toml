@@ -23,7 +23,7 @@ csv = "~1"
 hex = "0.4"
 jsonrpc-core-client="~17"
 rpassword = "~5"
-tokio={version="0.2", features=["full"]}
+tokio={version="1.11", features=["full"]}
 futures-util = "~0.3"
 futures-retry="~0.5"
 
