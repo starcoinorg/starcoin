@@ -48,7 +48,7 @@ starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
-jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
+jsonrpc-client-transports = { version = "18.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
 starcoin-move-compiler = {path = "../compiler"}
 futures = "0.3"
 tokio = {version = "0.2", features = ["full"]}

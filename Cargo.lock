@@ -3826,12 +3826,11 @@ dependencies = [
  "derive_more",
  "futures 0.3.13",
  "hyper 0.13.10",
- "hyper-tls 0.4.3",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.14",
- "parity-tokio-ipc",
+ "parity-tokio-ipc 0.8.0",
  "serde",
  "serde_json",
  "tokio 0.2.25",
@@ -3855,6 +3854,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-client-transports"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2b99d4207e2a04fb4581746903c2bb7eb376f88de9c699d0f3e10feeac0cd3a"
+dependencies = [
+ "derive_more",
+ "futures 0.3.13",
+ "hyper 0.14.12",
+ "hyper-tls 0.5.0",
+ "jsonrpc-core 18.0.0",
+ "jsonrpc-pubsub 18.0.0",
+ "jsonrpc-server-utils 18.0.0",
+ "log 0.4.14",
+ "parity-tokio-ipc 0.9.0",
+ "serde",
+ "serde_json",
+ "tokio 1.11.0",
+ "url 1.7.2",
+ "websocket",
+]
+
+[[package]]
 name = "jsonrpc-core"
 version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3873,6 +3894,21 @@ dependencies = [
 name = "jsonrpc-core"
 version = "17.1.0"
 source = "git+https://github.com/starcoinorg/jsonrpc?rev=aa123579ca617026ee8f52f1590bc9d39fdaac95#aa123579ca617026ee8f52f1590bc9d39fdaac95"
+dependencies = [
+ "futures 0.3.13",
+ "futures-executor",
+ "futures-util",
+ "log 0.4.14",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
+name = "jsonrpc-core"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
 dependencies = [
  "futures 0.3.13",
  "futures-executor",
@@ -3963,7 +3999,7 @@ dependencies = [
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.14",
- "parity-tokio-ipc",
+ "parity-tokio-ipc 0.8.0",
  "parking_lot 0.11.2",
  "tower-service",
 ]
@@ -3999,6 +4035,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-pubsub"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "240f87695e6c6f62fb37f05c02c04953cf68d6408b8c1c89de85c7a0125b1011"
+dependencies = [
+ "futures 0.3.13",
+ "jsonrpc-core 18.0.0",
+ "lazy_static",
+ "log 0.4.14",
+ "parking_lot 0.11.2",
+ "rand 0.7.3",
+ "serde",
+]
+
+[[package]]
 name = "jsonrpc-server-utils"
 version = "17.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4028,6 +4079,24 @@ dependencies = [
  "log 0.4.14",
  "tokio 0.2.25",
  "tokio-util 0.3.1",
+ "unicase 2.6.0",
+]
+
+[[package]]
+name = "jsonrpc-server-utils"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa4fdea130485b572c39a460d50888beb00afb3e35de23ccd7fad8ff19f0e0d4"
+dependencies = [
+ "bytes 1.1.0",
+ "futures 0.3.13",
+ "globset",
+ "jsonrpc-core 18.0.0",
+ "lazy_static",
+ "log 0.4.14",
+ "tokio 1.11.0",
+ "tokio-stream",
+ "tokio-util 0.6.8",
  "unicase 2.6.0",
 ]
 
@@ -5049,7 +5118,7 @@ dependencies = [
  "futures 0.3.13",
  "include_dir",
  "itertools 0.10.1",
- "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-client-transports 18.0.0",
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "move-binary-format",
  "move-command-line-common",
@@ -6047,6 +6116,20 @@ dependencies = [
  "miow 0.3.7",
  "rand 0.7.3",
  "tokio 0.2.25",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "parity-tokio-ipc"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9981e32fb75e004cc148f5fb70342f393830e0a4aa62e3cc93b50976218d42b6"
+dependencies = [
+ "futures 0.3.13",
+ "libc",
+ "log 0.4.14",
+ "rand 0.7.3",
+ "tokio 1.11.0",
  "winapi 0.3.9",
 ]
 
@@ -9339,7 +9422,7 @@ dependencies = [
  "futures 0.3.13",
  "futures-timer",
  "hex",
- "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-client-transports 18.0.0",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -9348,7 +9431,7 @@ dependencies = [
  "log 0.4.14",
  "network-api",
  "network-p2p-types",
- "parity-tokio-ipc",
+ "parity-tokio-ipc 0.8.0",
  "parking_lot 0.11.2",
  "serde",
  "serde_json",
