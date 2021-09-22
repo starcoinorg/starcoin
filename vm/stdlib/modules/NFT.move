@@ -15,6 +15,10 @@ module NFT {
     const ERR_NFT_TYPE_ALREADY_REGISTERED: u64 = 105;
     const ERR_NFT_TYPE_NO_REGISTERED: u64 = 106;
 
+    spec module {
+        pragma verify = false;
+    }
+
     struct MintEvent<NFTMeta: copy + store + drop> has drop, store {
         id: u64,
         creator: address,
@@ -453,6 +457,10 @@ module IdentifierNFT {
     const ERR_NFT_NOT_EXISTS: u64 = 102;
     const ERR_NFT_NOT_ACCEPT: u64 = 103;
 
+    spec module {
+        pragma verify = false;
+    }
+
     struct IdentifierNFT<NFTMeta: copy + store + drop, NFTBody: store> has key {
         nft: Option<NFT<NFTMeta, NFTBody>>,
     }
@@ -553,6 +561,10 @@ module NFTGallery {
     use 0x1::Vector;
 
     const ERR_NFT_NOT_EXISTS: u64 = 101;
+
+    spec module {
+        pragma verify = false;
+    }
 
     struct WithdrawEvent<NFTMeta: copy + store + drop> has drop, store {
         owner: address,
@@ -712,6 +724,10 @@ module NFTGallery {
 
 module NFTGalleryScripts {
     use 0x1::NFTGallery;
+
+    spec module {
+        pragma verify = false;
+    }
 
     /// Init a  NFTGallery for accept NFT<NFTMeta, NFTBody>
     public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer) {

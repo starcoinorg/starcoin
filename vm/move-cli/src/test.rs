@@ -6,11 +6,12 @@ use crate::{
     DEFAULT_TEST_DIR,
 };
 use anyhow::anyhow;
-use move_coverage::coverage_map::{CoverageMap, ExecCoverageMapWithModules};
-use move_lang::{
-    command_line::{read_bool_env_var, COLOR_MODE_ENV_VAR},
-    extension_equals, path_to_string, MOVE_COMPILED_EXTENSION,
+use move_command_line_common::env::read_bool_env_var;
+use move_command_line_common::files::{
+    extension_equals, find_filenames, path_to_string, MOVE_COMPILED_EXTENSION,
 };
+use move_coverage::coverage_map::{CoverageMap, ExecCoverageMapWithModules};
+use move_lang::command_line::COLOR_MODE_ENV_VAR;
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     env,
@@ -91,7 +92,7 @@ fn collect_coverage(
 ) -> anyhow::Result<ExecCoverageMapWithModules> {
     fn find_compiled_move_filenames(path: &Path) -> anyhow::Result<Vec<String>> {
         if path.exists() {
-            move_lang::find_filenames(&[path_to_string(path)?], |fpath| {
+            find_filenames(&[path_to_string(path)?], |fpath| {
                 extension_equals(fpath, MOVE_COMPILED_EXTENSION)
             })
         } else {
@@ -107,7 +108,7 @@ fn collect_coverage(
             .collect();
 
     // collect modules published minus modules compiled for packages
-    let src_module_files = move_lang::find_filenames(&[path_to_string(storage_dir)?], |fpath| {
+    let src_module_files = find_filenames(&[path_to_string(storage_dir)?], |fpath| {
         extension_equals(fpath, MOVE_COMPILED_EXTENSION)
             && !pkg_modules.contains(fpath.file_name().unwrap())
     })?;
@@ -267,7 +268,7 @@ pub fn run_all(args_path: &str, cli_binary: &str, track_cov: bool) -> anyhow::Re
     let mut cov_info = ExecCoverageMapWithModules::empty();
 
     // find `args.txt` and iterate over them
-    for entry in move_lang::find_filenames(&[args_path.to_owned()], |fpath| {
+    for entry in find_filenames(&[args_path.to_owned()], |fpath| {
         fpath.file_name().expect("unexpected file entry path") == TEST_ARGS_FILENAME
     })? {
         match run_one(Path::new(&entry), cli_binary, track_cov) {

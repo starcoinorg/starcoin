@@ -3,12 +3,10 @@
 
 use anyhow::{anyhow, bail, Result};
 use include_dir::{include_dir, Dir};
-use move_lang::shared::Flags;
-use move_lang::{
-    compiled_unit::CompiledUnit, extension_equals, find_filenames, move_compile_and_report,
-    path_to_string,
+use move_command_line_common::files::{
+    extension_equals, find_filenames, path_to_string, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
-use move_lang::{MOVE_COMPILED_EXTENSION, MOVE_EXTENSION};
+use move_lang::{compiled_unit::CompiledUnit, Compiler};
 use once_cell::sync::Lazy;
 use std::path::PathBuf;
 use std::{
@@ -154,12 +152,8 @@ impl MovePackage {
             fs::create_dir_all(&pkg_bin_path)?;
 
             // compile the source files
-            let (_files, compiled_units) = move_compile_and_report(
-                &[path_to_string(&pkg_src_path)?],
-                &src_dirs,
-                None,
-                Flags::empty(),
-            )?;
+            let (_files, compiled_units) =
+                Compiler::new(&[path_to_string(&pkg_src_path)?], &src_dirs).build_and_report()?;
 
             // save modules and ignore scripts
             for unit in compiled_units {

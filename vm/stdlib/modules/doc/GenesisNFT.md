@@ -6,6 +6,7 @@
 
 
 -  [Function `mint`](#0x1_GenesisNFTScripts_mint)
+-  [Specification](#@Specification_0)
 
 
 <pre><code><b>use</b> <a href="GenesisNFT.md#0x1_GenesisNFT">0x1::GenesisNFT</a>;
@@ -37,3 +38,12 @@ Mint a GenesisNFT
 
 
 </details>
+
+<a name="@Specification_0"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
