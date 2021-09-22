@@ -112,7 +112,7 @@ impl DBStorage {
     ) -> Result<DB> {
         let error_if_log_file_exists = false;
         let inner = rocksdb::DB::open_cf_for_read_only(
-            &db_opts,
+            db_opts,
             path,
             &column_families,
             error_if_log_file_exists,

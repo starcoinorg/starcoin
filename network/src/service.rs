@@ -131,24 +131,23 @@ impl EventHandler<Self, Event> for NetworkActorService {
                     "Connected peer {:?}, protocol: {}, notif_protocols: {:?}, rpc_protocols: {:?}",
                     remote, protocol, notif_protocols, rpc_protocols
                 );
-                let peer_event = PeerEvent::Open(remote.clone().into(), info.clone());
+                let peer_event = PeerEvent::Open(remote.into(), info.clone());
                 self.inner
                     .on_peer_connected(remote.into(), *info, notif_protocols, rpc_protocols);
                 ctx.broadcast(peer_event);
             }
             Event::NotificationStreamClosed { remote, .. } => {
                 debug!("Close peer {:?}", remote);
-                let peer_event = PeerEvent::Close(remote.clone().into());
+                let peer_event = PeerEvent::Close(remote.into());
                 self.inner.on_peer_disconnected(remote.into());
                 ctx.broadcast(peer_event);
             }
             Event::NotificationsReceived { remote, messages } => {
                 for (protocol, message) in messages {
-                    if let Err(e) = self.inner.handle_network_message(
-                        remote.clone().into(),
-                        protocol.clone(),
-                        message,
-                    ) {
+                    if let Err(e) =
+                        self.inner
+                            .handle_network_message(remote.into(), protocol.clone(), message)
+                    {
                         error!(
                             "Handle network message fail, remote:{}, protocol:{}, error: {:?}",
                             remote, protocol, e

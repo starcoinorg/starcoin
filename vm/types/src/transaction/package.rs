@@ -29,7 +29,7 @@ impl Package {
         ensure!(!modules.is_empty(), "must at latest one module");
         let package_address = Self::parse_module_address(&modules[0])?;
         for m in &modules[1..] {
-            let module_address = Self::parse_module_address(&m)?;
+            let module_address = Self::parse_module_address(m)?;
             Self::check_module_address(&package_address, &module_address)?;
         }
         Ok(Self {

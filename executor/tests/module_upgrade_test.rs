@@ -273,7 +273,7 @@ fn test_init_script() -> Result<()> {
     )?;
     association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
-    assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
+    assert!(!read_two_phase_upgrade_v2_resource(&chain_state)?);
     Ok(())
 }
 
@@ -341,7 +341,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     )?;
     association_execute_should_success(&net, &chain_state, TransactionPayload::Package(package))?;
 
-    assert_eq!(read_two_phase_upgrade_v2_resource(&chain_state)?, false);
+    assert!(!read_two_phase_upgrade_v2_resource(&chain_state)?);
     Ok(())
 }
 
@@ -528,7 +528,7 @@ where
                 chain_state.get_stc_treasury()?.is_none(),
                 "expect treasury is none."
             );
-            assert_eq!(read_two_phase_upgrade_v2_resource(chain_state)?, false);
+            assert!(!read_two_phase_upgrade_v2_resource(chain_state)?);
         }
         StdlibVersion::Version(3) => {
             assert!(

@@ -64,6 +64,7 @@ fn test_nibble_iterator() {
 }
 
 #[test]
+#[allow(clippy::bool_assert_comparison)]
 fn test_get_bit() {
     let bytes = vec![0x01, 0x02];
     let nibble_path = NibblePath::new(bytes);

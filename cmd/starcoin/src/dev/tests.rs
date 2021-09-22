@@ -146,7 +146,7 @@ fn create_default_account(
         )
         .unwrap();
     let (association_account_resource, association_balance) =
-        get_account_resource(&cli_state, association_address()).unwrap();
+        get_account_resource(cli_state, association_address()).unwrap();
     let transfer_amount = association_balance * 90 / 100;
     info!(
         "association_balance : {}, {}",

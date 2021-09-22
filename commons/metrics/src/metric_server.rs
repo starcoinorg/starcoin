@@ -84,13 +84,11 @@ pub fn start_server(addr: SocketAddr) {
 }
 pub fn push_metrics(push_server_url: String, auth_username: Option<String>, auth_password: String) {
     let metric_families = prometheus::gather();
-    let basic_auth = match auth_username {
-        Some(username) => Some(BasicAuthentication {
-            username,
-            password: auth_password,
-        }),
-        None => None,
-    };
+    let basic_auth = auth_username.map(|username| BasicAuthentication {
+        username,
+        password: auth_password,
+    });
+
     match prometheus::push_metrics(
         "starcoin_push",
         hostname_grouping_key(),

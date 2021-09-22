@@ -49,7 +49,7 @@ where
         if old.sender() == new.sender() {
             // prefer earliest transaction
             match new.seq_number().cmp(&old.seq_number()) {
-                cmp::Ordering::Equal => self.scoring.choose(&old, &new),
+                cmp::Ordering::Equal => self.scoring.choose(old, new),
                 _ if both_local => Choice::InsertNew,
                 cmp::Ordering::Less => Choice::ReplaceOld,
                 cmp::Ordering::Greater => Choice::RejectNew,
@@ -68,8 +68,8 @@ where
                 // we don't need to remove `old` (worst transaction in the pool) since `new` will replace
                 // some other transaction in the pool so we will never go above limit anyway.
                 if let Some(txs) = new.pooled_by_sender {
-                    if let Ok(index) = txs.binary_search_by(|old| self.scoring.compare(old, &new)) {
-                        return match self.scoring.choose(&txs[index], &new) {
+                    if let Ok(index) = txs.binary_search_by(|old| self.scoring.compare(old, new)) {
+                        return match self.scoring.choose(&txs[index], new) {
                             Choice::ReplaceOld => Choice::InsertNew,
                             choice => choice,
                         };

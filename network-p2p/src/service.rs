@@ -318,7 +318,7 @@ impl NetworkWorker {
         let metrics = params
             .metrics_registry
             .as_ref()
-            .and_then(|registry| Metrics::register(&registry).ok());
+            .and_then(|registry| Metrics::register(registry).ok());
         let service = Arc::new(NetworkService {
             bandwidth,
             external_addresses,
@@ -449,9 +449,10 @@ impl NetworkWorker {
         };
 
         NetworkState {
-            peer_id: Swarm::local_peer_id(&swarm).to_base58(),
-            listened_addresses: Swarm::listeners(&swarm).cloned().collect(),
-            external_addresses: Swarm::external_addresses(&swarm)
+            peer_id: swarm.local_peer_id().to_base58(),
+            listened_addresses: swarm.listeners().cloned().collect(),
+            external_addresses: swarm
+                .external_addresses()
                 .map(|r| &r.addr)
                 .cloned()
                 .collect(),
@@ -1250,7 +1251,7 @@ impl Future for NetworkWorker {
                             );
                             metrics
                                 .notifications_sizes
-                                .with_label_values(&["in", &protocol])
+                                .with_label_values(&["in", protocol])
                                 .observe(message.len() as f64);
                         }
                     }
@@ -1435,10 +1436,7 @@ impl Future for NetworkWorker {
                 for (lower_ilog2_bucket_bound, num_entries) in buckets {
                     metrics
                         .kbuckets_num_nodes
-                        .with_label_values(&[
-                            &proto.as_ref(),
-                            &lower_ilog2_bucket_bound.to_string(),
-                        ])
+                        .with_label_values(&[proto.as_ref(), &lower_ilog2_bucket_bound.to_string()])
                         .set(num_entries as u64);
                 }
             }
@@ -1446,7 +1444,7 @@ impl Future for NetworkWorker {
             {
                 metrics
                     .kademlia_records_count
-                    .with_label_values(&[&proto.as_ref()])
+                    .with_label_values(&[proto.as_ref()])
                     .set(num_entries as u64);
             }
             for (proto, num_entries) in this
@@ -1456,7 +1454,7 @@ impl Future for NetworkWorker {
             {
                 metrics
                     .kademlia_records_sizes_total
-                    .with_label_values(&[&proto.as_ref()])
+                    .with_label_values(&[proto.as_ref()])
                     .set(num_entries as u64);
             }
             metrics.peerset_num_discovered.set(

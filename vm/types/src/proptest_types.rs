@@ -86,8 +86,8 @@ impl KeyPairHolder {
 
     pub fn auth_key(&self) -> AuthenticationKey {
         match self {
-            Self::Ed25519(_, public_key) => AuthenticationKey::ed25519(&public_key),
-            Self::MultiEd25519(_, public_key) => AuthenticationKey::multi_ed25519(&public_key),
+            Self::Ed25519(_, public_key) => AuthenticationKey::ed25519(public_key),
+            Self::MultiEd25519(_, public_key) => AuthenticationKey::multi_ed25519(public_key),
         }
     }
 }

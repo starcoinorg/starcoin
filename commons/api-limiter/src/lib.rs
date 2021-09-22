@@ -101,12 +101,12 @@ where
     fn new_limiter(&self, api: &ApiName) -> ApiLimiter<User> {
         let global_quota = self
             .custom_global_api_quotas
-            .get(&api)
+            .get(api)
             .cloned()
             .unwrap_or(self.default_global_api_quota);
         let user_quota = self
             .custom_user_api_quotas
-            .get(&api)
+            .get(api)
             .cloned()
             .unwrap_or(self.default_user_api_quota);
         ApiLimiter::new(global_quota, user_quota)

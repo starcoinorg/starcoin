@@ -411,7 +411,7 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
         alice.clone(),
         chain,
         net,
-        vote_reward_scripts(&net, reward_delay),
+        vote_reward_scripts(net, reward_delay),
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(net, action_type_tag, 0u64),
     )?;
@@ -439,7 +439,7 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
 fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let net = config.net();
-    let chain = test_helper::gen_blockchain_for_test(&net)?;
+    let chain = test_helper::gen_blockchain_for_test(net)?;
 
     let alice = Account::new();
     let bob = Account::new();
@@ -448,10 +448,10 @@ fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let mut modified_chain = modify_on_chain_config_by_dao_block(
         alice,
         chain,
-        &net,
-        vote_script_consensus(&net, strategy),
+        net,
+        vote_script_consensus(net, strategy),
         on_chain_config_type_tag(action_type_tag.clone()),
-        execute_script_on_chain_config(&net, action_type_tag, 0u64),
+        execute_script_on_chain_config(net, action_type_tag, 0u64),
     )?;
 
     // add block to switch epoch

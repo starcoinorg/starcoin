@@ -53,7 +53,7 @@ impl<'a> ABIResolver<'a> {
     }
 
     fn resolve_compiled_module(&self, module: &CompiledModule) -> Result<ModuleABI> {
-        let m = Module::new(&module);
+        let m = Module::new(module);
         let module_id = m.module_id();
         let structs = m
             .structs
@@ -114,10 +114,10 @@ impl<'a> ABIResolver<'a> {
 
             TypeTag::Signer => TypeInstantiation::Signer,
             TypeTag::Vector(sub_type) => {
-                TypeInstantiation::new_vector(self.resolve_type_tag(&sub_type)?)
+                TypeInstantiation::new_vector(self.resolve_type_tag(sub_type)?)
             }
             TypeTag::Struct(struct_type) => {
-                TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(&struct_type)?)
+                TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(struct_type)?)
             }
         })
     }
@@ -155,13 +155,13 @@ impl<'a> ABIResolver<'a> {
                 let inst_struct_abi = struct_abi.instantiations(&type_args)?;
                 TypeInstantiation::new_struct_instantiation(inst_struct_abi)
             }
-            Type::Vector(sub_ty) => TypeInstantiation::new_vector(self.resolve_type(&sub_ty)?),
+            Type::Vector(sub_ty) => TypeInstantiation::new_vector(self.resolve_type(sub_ty)?),
             Type::TypeParameter(i) => TypeInstantiation::TypeParameter(*i as usize),
             Type::Reference(ty) => {
-                TypeInstantiation::Reference(false, Box::new(self.resolve_type(&ty)?))
+                TypeInstantiation::Reference(false, Box::new(self.resolve_type(ty)?))
             }
             Type::MutableReference(ty) => {
-                TypeInstantiation::Reference(true, Box::new(self.resolve_type(&ty)?))
+                TypeInstantiation::Reference(true, Box::new(self.resolve_type(ty)?))
             }
         })
     }

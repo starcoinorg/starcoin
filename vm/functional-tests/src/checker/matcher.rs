@@ -116,12 +116,11 @@ where
     let mut buffer = vec![];
 
     for (id, d) in directives.into_iter().enumerate() {
-        if d.as_ref().is_positive() {
-            buffer.push((id, d));
+        let is_positive = d.as_ref().is_positive();
+        buffer.push((id, d));
+        if is_positive {
             groups.push(buffer);
             buffer = vec![];
-        } else {
-            buffer.push((id, d));
         }
     }
     if !buffer.is_empty() {
@@ -286,7 +285,7 @@ where
     // Compute the matches.
     let mut matches = vec![];
     let mut it = MatchIterator::new(&groups, &text);
-    while let Some((is_positive, m)) = it.next() {
+    for (is_positive, m) in &mut it {
         if !is_positive {
             return MatchResult {
                 status: MatchStatus::Failure(vec![MatchError::NegativeMatch(m)]),

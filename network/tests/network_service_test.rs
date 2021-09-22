@@ -127,8 +127,8 @@ fn test_connected_nodes() {
     let (service1, service2) = build_test_network_pair();
     thread::sleep(Duration::from_secs(2));
     let fut = async move {
-        assert_eq!(service1.0.is_connected(*service2.0.peer_id()).await, true);
-        assert_eq!(service2.0.is_connected(*service1.0.peer_id()).await, true);
+        assert!(service1.0.is_connected(*service2.0.peer_id()).await);
+        assert!(service2.0.is_connected(*service1.0.peer_id()).await);
     };
     task::block_on(fut);
 }

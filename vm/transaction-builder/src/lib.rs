@@ -335,7 +335,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
     let genesis_auth_key = genesis_config
         .genesis_key_pair
         .as_ref()
-        .map(|(_, public_key)| AuthenticationKey::ed25519(&public_key).to_vec())
+        .map(|(_, public_key)| AuthenticationKey::ed25519(public_key).to_vec())
         .unwrap_or_else(Vec::new);
 
     let association_auth_key =
@@ -507,7 +507,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
     let genesis_auth_key = genesis_config
         .genesis_key_pair
         .as_ref()
-        .map(|(_, public_key)| AuthenticationKey::ed25519(&public_key).to_vec())
+        .map(|(_, public_key)| AuthenticationKey::ed25519(public_key).to_vec())
         .unwrap_or_else(Vec::new);
 
     let association_auth_key =

@@ -370,19 +370,17 @@ impl Protocol {
                 chain_info.clone(),
             );
 
-            let notif_protocol_wth_handshake: Vec<(Cow<'static, str>, Vec<u8>, u64)> =
-                notif_protocols
-                    .clone()
-                    .into_iter()
-                    .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()))
-                    .collect();
+            let notif_protocol_wth_handshake = notif_protocols
+                .clone()
+                .into_iter()
+                .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()));
 
             debug!(
                 "Handshake message: {}",
                 hex::encode(handshake_message.as_slice())
             );
 
-            GenericProto::new(peerset, notif_protocol_wth_handshake.into_iter())
+            GenericProto::new(peerset, notif_protocol_wth_handshake)
         };
 
         let protocol = Protocol {

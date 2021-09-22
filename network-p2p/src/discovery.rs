@@ -623,9 +623,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
     }
 
     fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
-        let new_addr = addr
-            .clone()
-            .with(Protocol::P2p(self.local_peer_id.clone().into()));
+        let new_addr = addr.clone().with(Protocol::P2p(self.local_peer_id.into()));
 
         // NOTE: we might re-discover the same address multiple times
         // in which case we just want to refrain from logging.

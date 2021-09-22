@@ -46,12 +46,11 @@ mod test {
         let address: AccountAddress = "ca843279e3427144cead5e4d5999a3d0".parse().unwrap();
 
         let hash_vec =
-            &Vec::from_hex("7d39654178dd4758d0bc33b26e3e06051f04a215fd7ad270d4fb5e4988c8e5d2")
+            Vec::from_hex("7d39654178dd4758d0bc33b26e3e06051f04a215fd7ad270d4fb5e4988c8e5d2")
                 .expect("You must provide a valid Hex format");
 
         let mut hash = [0u8; 32];
-        let bytes = &hash_vec[..32];
-        hash.copy_from_slice(&bytes);
+        hash.copy_from_slice(&hash_vec[..32]);
 
         assert_eq!(address.hash(), HashValue::new(hash));
     }

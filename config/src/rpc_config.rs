@@ -426,7 +426,7 @@ impl std::fmt::Debug for ListenAddress {
 
 impl RpcConfig {
     pub fn rpc_address(&self) -> IpAddr {
-        self.rpc_address.clone().unwrap_or(DEFAULT_RPC_ADDRESS)
+        self.rpc_address.unwrap_or(DEFAULT_RPC_ADDRESS)
     }
 
     pub fn get_ipc_file(&self) -> PathBuf {

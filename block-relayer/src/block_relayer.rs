@@ -151,7 +151,7 @@ impl BlockRelayer {
                     }
                 }
             }
-            let collect_txns = txns.into_iter().filter_map(|txn| txn).collect::<Vec<_>>();
+            let collect_txns = txns.into_iter().flatten().collect::<Vec<_>>();
             ensure!(
                 collect_txns.len() == expect_txn_len,
                 "Fill compact block error, expect txn len: {}, but collect txn len: {}",

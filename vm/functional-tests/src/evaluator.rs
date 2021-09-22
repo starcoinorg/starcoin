@@ -295,7 +295,7 @@ fn get_transaction_parameters<'a>(
 
     TransactionParameters {
         sender_addr: *config.sender.address(),
-        privkey: &config.sender.private_key(),
+        privkey: config.sender.private_key(),
         sequence_number: config
             .sequence_number
             .unwrap_or_else(|| account_resource.sequence_number()),
@@ -496,7 +496,7 @@ fn eval_transaction<TComp: Compiler>(
             }
             log.append(EvaluationOutput::Stage(Stage::Runtime));
             let script_transaction =
-                make_script_transaction(&exec, &transaction.config, compiled_script)?;
+                make_script_transaction(exec, &transaction.config, compiled_script)?;
             let txn_output = unwrap_or_abort!(run_transaction(exec, script_transaction));
             log.append(EvaluationOutput::Output(OutputType::TransactionOutput(
                 Box::new(txn_output),
@@ -534,7 +534,7 @@ fn eval_transaction<TComp: Compiler>(
             }
             log.append(EvaluationOutput::Stage(Stage::Runtime));
             let module_transaction =
-                make_module_transaction(&exec, &transaction.config, compiled_module)?;
+                make_module_transaction(exec, &transaction.config, compiled_module)?;
             let txn_output = unwrap_or_abort!(run_transaction(exec, module_transaction));
             log.append(EvaluationOutput::Output(OutputType::TransactionOutput(
                 Box::new(txn_output),
@@ -599,7 +599,7 @@ pub fn eval_with_executor<TComp: Compiler>(
     commands: &[Command],
 ) -> Result<EvaluationLog> {
     for data in config.accounts.values() {
-        exec.add_account_data(&data);
+        exec.add_account_data(data);
     }
     for genesis in config.genesis_accounts.values() {
         let genesis_account = exec.read_account_resource(genesis);
