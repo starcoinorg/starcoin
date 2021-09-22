@@ -3831,7 +3831,7 @@ dependencies = [
  "jsonrpc-pubsub 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.14",
- "parity-tokio-ipc 0.8.0",
+ "parity-tokio-ipc",
  "serde",
  "serde_json",
  "tokio 0.2.25",
@@ -3963,7 +3963,7 @@ dependencies = [
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.14",
- "parity-tokio-ipc 0.8.0",
+ "parity-tokio-ipc",
  "parking_lot 0.11.2",
  "tower-service",
 ]
@@ -6047,20 +6047,6 @@ dependencies = [
  "miow 0.3.7",
  "rand 0.7.3",
  "tokio 0.2.25",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "parity-tokio-ipc"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9981e32fb75e004cc148f5fb70342f393830e0a4aa62e3cc93b50976218d42b6"
-dependencies = [
- "futures 0.3.13",
- "libc",
- "log 0.4.14",
- "rand 0.7.3",
- "tokio 1.11.0",
  "winapi 0.3.9",
 ]
 
@@ -9362,7 +9348,7 @@ dependencies = [
  "log 0.4.14",
  "network-api",
  "network-p2p-types",
- "parity-tokio-ipc 0.9.0",
+ "parity-tokio-ipc",
  "parking_lot 0.11.2",
  "serde",
  "serde_json",
