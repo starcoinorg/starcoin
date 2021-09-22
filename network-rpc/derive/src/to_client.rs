@@ -13,7 +13,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         .filter_map(|trait_item| {
             if let syn::TraitItem::Method(method) = trait_item {
                 let name = &method.sig.ident;
-                let args = compute_args(&method);
+                let args = compute_args(method);
                 let arg_names = compute_arg_identifiers(&args).unwrap();
                 let returns = match compute_returns(method) {
                     Ok(r) => r,

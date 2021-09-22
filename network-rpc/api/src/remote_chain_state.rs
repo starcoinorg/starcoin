@@ -43,7 +43,6 @@ impl ChainStateReader for RemoteChainStateReader {
             .ok_or_else(|| anyhow!("peer id not set"))?;
         let state_root = self
             .state_root
-            .clone()
             .ok_or_else(|| anyhow!("state root not set"))?;
         let req = GetStateWithProof {
             state_root,
@@ -68,7 +67,6 @@ impl ChainStateReader for RemoteChainStateReader {
             .ok_or_else(|| anyhow!("peer id not set"))?;
         let state_root = self
             .state_root
-            .clone()
             .ok_or_else(|| anyhow!("state root not set"))?;
         let req = GetAccountState {
             state_root,
@@ -78,14 +76,14 @@ impl ChainStateReader for RemoteChainStateReader {
         futures::executor::block_on(async { client.get_account_state(peer_id, req).await })
     }
 
+    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
+        unimplemented!()
+    }
     fn state_root(&self) -> HashValue {
         match self.state_root {
             Some(state_root) => state_root,
             None => unreachable!(),
         }
-    }
-    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
-        unimplemented!()
     }
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()

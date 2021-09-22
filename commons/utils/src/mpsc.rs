@@ -106,7 +106,7 @@ mod inner {
         pub fn unbounded_send(&self, msg: T) -> Result<(), TrySendError<T>> {
             self.1.unbounded_send(msg).map(|s| {
                 UNBOUNDED_CHANNELS_COUNTER
-                    .with_label_values(&[self.0, &"send"])
+                    .with_label_values(&[self.0, "send"])
                     .inc();
                 s
             })
@@ -135,7 +135,7 @@ mod inner {
             // and discount the messages
             if count > 0 {
                 UNBOUNDED_CHANNELS_COUNTER
-                    .with_label_values(&[self.0, &"dropped"])
+                    .with_label_values(&[self.0, "dropped"])
                     .inc_by(count);
             }
         }
@@ -153,7 +153,7 @@ mod inner {
             self.1.try_next().map(|s| {
                 if s.is_some() {
                     UNBOUNDED_CHANNELS_COUNTER
-                        .with_label_values(&[self.0, &"received"])
+                        .with_label_values(&[self.0, "received"])
                         .inc();
                 }
                 s

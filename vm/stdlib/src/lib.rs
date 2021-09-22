@@ -307,7 +307,7 @@ pub fn read_compiled_modules(stdlib_version: StdlibVersion) -> Vec<Vec<u8>> {
 pub fn verify_compiled_modules(modules: &[Vec<u8>]) -> Vec<CompiledModule> {
     let mut verified_modules = vec![];
     for module in modules {
-        let module = CompiledModule::deserialize(&module).expect("module deserialize should be ok");
+        let module = CompiledModule::deserialize(module).expect("module deserialize should be ok");
         verify_module(&module).expect("stdlib module failed to verify");
         dependencies::verify_module(&module, &verified_modules)
             .expect("stdlib module dependency failed to verify");
@@ -362,7 +362,7 @@ pub fn load_upgrade_package(
             let package = COMPILED_MOVE_CODE_DIR
                 .get_file(package_file)
                 .map(|file| {
-                    bcs_ext::from_bytes::<Package>(&file.contents())
+                    bcs_ext::from_bytes::<Package>(file.contents())
                         .expect("Decode package should success")
                 })
                 .ok_or_else(|| {

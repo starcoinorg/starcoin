@@ -171,7 +171,7 @@ pub fn build_transactions<'a>(
                 input: substitute_addresses(config, &txn_input.text.join("\n")),
             })),
             RawCommand::BlockMetadata(entries) => Ok(Command::BlockMetadata(build_block_metadata(
-                config, &entries,
+                config, entries,
             )?)),
         })
         .collect()

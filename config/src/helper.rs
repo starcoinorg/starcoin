@@ -10,7 +10,7 @@ where
     P: AsRef<Path>,
 {
     let mut file = File::create(output_file)?;
-    file.write_all(&to_toml(c)?.as_bytes())?;
+    file.write_all(to_toml(c)?.as_bytes())?;
     Ok(())
 }
 
@@ -38,7 +38,7 @@ fn parse<T>(serialized: &str) -> Result<T>
 where
     T: Serialize + DeserializeOwned,
 {
-    Ok(toml::from_str(&serialized)?)
+    Ok(toml::from_str(serialized)?)
 }
 
 pub(crate) fn save_key<P>(key: &[u8], output_file: P) -> Result<()>

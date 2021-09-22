@@ -111,7 +111,7 @@ impl FromStr for NFTUUID {
         })?;
         let (nft_type_str, id_str) = s.split_at(idx);
         let nft_type = NFTType::from_str(nft_type_str)?;
-        let id = id_str.strip_prefix("/").unwrap_or(id_str).parse()?;
+        let id = id_str.strip_prefix('/').unwrap_or(id_str).parse()?;
         Ok(NFTUUID { nft_type, id })
     }
 }

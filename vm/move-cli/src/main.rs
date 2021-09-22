@@ -494,10 +494,10 @@ move run` must be applied to a module inside `storage/`",
 
     let signer_addresses = signers
         .iter()
-        .map(|s| AccountAddress::from_hex_literal(&s))
+        .map(|s| AccountAddress::from_hex_literal(s))
         .collect::<Result<Vec<AccountAddress>, _>>()?;
     // TODO: parse Value's directly instead of going through the indirection of TransactionArgument?
-    let vm_args: Vec<Vec<u8>> = convert_txn_args(&txn_args);
+    let vm_args: Vec<Vec<u8>> = convert_txn_args(txn_args);
 
     let vm = MoveVM::new(starcoin_natives()).map_err(|m| m.into_vm_status())?;
     let mut cost_strategy = get_cost_strategy(gas_budget)?;
@@ -514,7 +514,7 @@ move run` must be applied to a module inside `storage/`",
                 .as_mut()
                 .execute_script_function(
                     &module.self_id(),
-                    &IdentStr::new(script_name)?,
+                    IdentStr::new(script_name)?,
                     vm_type_args.clone(),
                     vm_args,
                     signer_addresses.clone(),
@@ -592,10 +592,10 @@ move run` must be applied to a module inside `storage/`",
 
     let signer_addresses = signers
         .iter()
-        .map(|s| AccountAddress::from_hex_literal(&s))
+        .map(|s| AccountAddress::from_hex_literal(s))
         .collect::<Result<Vec<AccountAddress>, _>>()?;
     // TODO: parse Value's directly instead of going through the indirection of TransactionArgument?
-    let vm_args: Vec<Vec<u8>> = convert_txn_args(&txn_args);
+    let vm_args: Vec<Vec<u8>> = convert_txn_args(txn_args);
 
     let cost_strategy = get_cost_strategy(gas_budget)?;
     let script_type_parameters = vec![];
@@ -692,7 +692,7 @@ fn execute<R: MoveStorage>(
                 .as_mut()
                 .execute_script_function(
                     &module.self_id(),
-                    &IdentStr::new(script_name).map_err(|_| {
+                    IdentStr::new(script_name).map_err(|_| {
                         PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR)
                             .finish(Location::Undefined)
                     })?,
@@ -1020,7 +1020,7 @@ fn explain_execution_error<R: MoveStorage>(
             // try to use move-explain to explain the abort
             // TODO: this will only work for errors in the stdlib or Diem Framework. We should
             // add code to build an ErrorMapping for modules in move_lib as well
-            let error_descriptions: ErrorMapping = bcs::from_bytes(&stdlib::ERROR_DESCRIPTIONS)?;
+            let error_descriptions: ErrorMapping = bcs::from_bytes(stdlib::ERROR_DESCRIPTIONS)?;
             print!(
                 "Execution aborted with code {} in module {}.",
                 abort_code, id
@@ -1243,7 +1243,7 @@ fn main() -> Result<()> {
                 .collect::<BTreeMap<_, _>>();
 
             let view = MergedRemoteCache { a: state, b: view };
-            let mut found_modules = resolve_deps(&view, &source_files)?;
+            let mut found_modules = resolve_deps(&view, source_files)?;
             let module_deps = view.get_module_dependencies_recursively_for_all(&found_modules)?;
             found_modules.extend(module_deps.values().cloned());
 
@@ -1258,14 +1258,14 @@ fn main() -> Result<()> {
             view.a
                 .save_modules(all_module_deps.into_iter().collect::<Vec<_>>().iter())?;
 
-            check(view.a, !*no_republish, &source_files, move_args.verbose)
+            check(view.a, !*no_republish, source_files, move_args.verbose)
         }
         Command::Check {
             source_files,
             no_republish,
         } => {
             let state = move_args.prepare_state(true)?;
-            check(state, !*no_republish, &source_files, move_args.verbose)
+            check(state, !*no_republish, source_files, move_args.verbose)
         }
         Command::Publish {
             source_files,

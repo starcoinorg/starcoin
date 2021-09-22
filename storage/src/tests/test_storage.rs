@@ -215,6 +215,6 @@ fn test_missing_key_handle() -> Result<()> {
     let value4 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value4.is_none());
     let contains = instance.contains_key(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
-    assert_eq!(contains, false);
+    assert!(!contains);
     Ok(())
 }

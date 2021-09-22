@@ -88,7 +88,7 @@ impl RemoteStateAsyncView {
         &self,
         source_files: &[String],
     ) -> Result<Vec<(ModuleId, Vec<u8>)>> {
-        let uses = get_uses(&source_files)?;
+        let uses = get_uses(source_files)?;
         let mut found_modules = vec![];
         for (addr, name) in uses {
             let module_id = ModuleId::new(
@@ -211,7 +211,7 @@ pub fn resolve_deps(
     state: &dyn MoveStorage,
     source_files: &[String],
 ) -> Result<Vec<CompiledModule>> {
-    let uses = get_uses(&source_files)?;
+    let uses = get_uses(source_files)?;
     let mut found_modules = vec![];
     for (addr, name) in uses {
         let module_id = ModuleId::new(

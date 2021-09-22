@@ -38,12 +38,10 @@ fn test_get_leaves() {
 #[test]
 fn test_accumulator_append() {
     // expected_root_hashes[i] is the root hash of an accumulator that has the first i leaves.
-    let expected_root_hashes: Vec<HashValue> = (2000..2100)
-        .map(|x| {
-            let leaves = create_leaves(2000..x);
-            compute_root_hash_naive(&leaves)
-        })
-        .collect();
+    let expected_root_hashes = (2000..2100).map(|x| {
+        let leaves = create_leaves(2000..x);
+        compute_root_hash_naive(&leaves)
+    });
 
     let leaves = create_leaves(2000..2100);
     let mock_store = MockAccumulatorStore::new();
@@ -60,7 +58,7 @@ fn test_accumulator_append() {
 
     // Append the leaves one at a time and check the root hashes match.
     for (i, (leaf, expected_root_hash)) in
-        itertools::zip_eq(leaves.into_iter(), expected_root_hashes.into_iter()).enumerate()
+        itertools::zip_eq(leaves.into_iter(), expected_root_hashes).enumerate()
     {
         assert_eq!(accumulator.root_hash(), expected_root_hash);
         assert_eq!(accumulator.num_leaves(), i as LeafCount);
@@ -106,9 +104,9 @@ fn test_multiple_chain() {
             .unwrap();
         if let AccumulatorNode::Internal(internal) = acc {
             let left = mock_store.get_node(internal.left()).unwrap().unwrap();
-            assert_eq!(left.is_frozen(), true);
+            assert!(left.is_frozen());
             let right = mock_store.get_node(internal.right()).unwrap().unwrap();
-            assert_eq!(right.is_frozen(), true);
+            assert!(right.is_frozen());
         }
     }
     let accumulator2 = MerkleAccumulator::new(root_hash, frozen_node, 2, 3, mock_store);

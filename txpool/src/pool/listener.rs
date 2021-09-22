@@ -163,8 +163,7 @@ impl TransactionsPoolNotifier {
         self.pending_listeners
             .retain(|listener| listener.unbounded_send(to_pending_send.clone()).is_ok());
 
-        let to_full_send: Arc<[(H256, TxStatus)]> =
-            std::mem::replace(&mut self.tx_statuses, Vec::new()).into();
+        let to_full_send: Arc<[(H256, TxStatus)]> = std::mem::take(&mut self.tx_statuses).into();
         self.full_listeners
             .retain(|listener| listener.unbounded_send(to_full_send.clone()).is_ok());
     }

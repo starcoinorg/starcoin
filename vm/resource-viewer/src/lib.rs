@@ -118,7 +118,7 @@ impl<'a> MoveValueAnnotator<'a> {
     }
 
     pub fn view_value(&self, type_tag: &TypeTag, blob: &[u8]) -> Result<AnnotatedMoveValue> {
-        let ty = self.cache.resolve_type(&type_tag)?;
+        let ty = self.cache.resolve_type(type_tag)?;
         let move_ty = (&ty)
             .try_into()
             .map_err(|e: PartialVMError| e.finish(Location::Undefined).into_vm_status())?;

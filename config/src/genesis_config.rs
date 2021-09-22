@@ -492,8 +492,7 @@ impl ChainNetwork {
 
     /// Please ensure network is_ready() before genesis_block_parameter
     pub fn genesis_block_parameter(&self) -> &GenesisBlockParameter {
-        &self
-            .genesis_config
+        self.genesis_config
             .genesis_block_parameter()
             .expect("Genesis block parameter is not ready")
     }

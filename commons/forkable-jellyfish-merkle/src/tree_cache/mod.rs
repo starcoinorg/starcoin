@@ -222,7 +222,7 @@ where
     pub fn delete_node(&mut self, old_node_key: &NodeKey, is_leaf: bool) {
         // If node cache doesn't have this node, it means the node is in the previous version of
         // the tree on the disk.
-        if self.node_cache.remove(&old_node_key).is_none() {
+        if self.node_cache.remove(old_node_key).is_none() {
             let is_new_entry = self.stale_node_index_cache.insert(*old_node_key);
             assert!(is_new_entry, "Node gets stale twice unexpectedly.");
             if is_leaf {

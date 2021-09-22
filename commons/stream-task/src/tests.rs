@@ -237,12 +237,12 @@ async fn test_task_cancel() {
     let (fut, task_handle) = fut.with_handle();
     let join_handle = async_std::task::spawn(fut);
     Delay::new(Duration::from_millis(delay_time * 5)).await;
-    assert_eq!(task_handle.is_done(), false);
+    assert!(!task_handle.is_done());
     task_handle.cancel();
     let result = join_handle.await;
     assert!(result.is_err());
 
-    assert_eq!(task_handle.is_done(), true);
+    assert!(task_handle.is_done());
 
     let task_err = result.err().unwrap();
     assert!(task_err.is_canceled());

@@ -365,7 +365,7 @@ impl StarcoinVM {
             if !remote_cache.is_genesis() {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
                 self.check_gas(txn_data)?;
-                self.run_prologue(&mut session, cost_strategy, &txn_data)?;
+                self.run_prologue(&mut session, cost_strategy, txn_data)?;
             }
         }
         {
@@ -473,7 +473,7 @@ impl StarcoinVM {
             cost_strategy.set_metering(false);
             //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
             self.check_gas(txn_data)?;
-            self.run_prologue(&mut session, cost_strategy, &txn_data)?;
+            self.run_prologue(&mut session, cost_strategy, txn_data)?;
         }
 
         // Run the execution logic

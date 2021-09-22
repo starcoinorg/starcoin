@@ -104,7 +104,7 @@ criterion_main!(benches);
 fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValueKey, Blob> {
     assert!(seed.len() < 32);
     let mut actual_seed = [0u8; 32];
-    actual_seed[..seed.len()].copy_from_slice(&seed);
+    actual_seed[..seed.len()].copy_from_slice(seed);
     let mut rng: StdRng = StdRng::from_seed(actual_seed);
     let mut kvs = HashMap::new();
     for _i in 0..num_keys {

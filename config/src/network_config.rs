@@ -307,19 +307,19 @@ impl NetworkConfig {
     }
 
     pub fn max_peers_to_propagate(&self) -> u32 {
-        self.max_peers_to_propagate.clone().unwrap_or(128)
+        self.max_peers_to_propagate.unwrap_or(128)
     }
 
     pub fn min_peers_to_propagate(&self) -> u32 {
-        self.min_peers_to_propagate.clone().unwrap_or(8)
+        self.min_peers_to_propagate.unwrap_or(8)
     }
 
     pub fn max_incoming_peers(&self) -> u32 {
-        self.max_incoming_peers.clone().unwrap_or(25)
+        self.max_incoming_peers.unwrap_or(25)
     }
 
     pub fn max_outgoing_peers(&self) -> u32 {
-        self.max_outgoing_peers.clone().unwrap_or(75)
+        self.max_outgoing_peers.unwrap_or(75)
     }
 
     pub fn node_name(&self) -> String {

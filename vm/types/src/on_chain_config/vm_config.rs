@@ -65,8 +65,8 @@ impl OnChainConfig for TransactionPublishOption {
     const CONF_IDENTIFIER: &'static str = "TransactionPublishOption";
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
-        let vm_publishing_option = bcs_ext::from_bytes::<TransactionPublishOption>(&bytes)
-            .map_err(|e| {
+        let vm_publishing_option =
+            bcs_ext::from_bytes::<TransactionPublishOption>(bytes).map_err(|e| {
                 format_err!(
                     "Failed first round of deserialization for TransactionPublishOption: {}",
                     e
@@ -113,7 +113,7 @@ impl OnChainConfig for VMConfig {
     const CONF_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
-        let raw_vm_config = bcs_ext::from_bytes::<VMConfigInner>(&bytes).map_err(|e| {
+        let raw_vm_config = bcs_ext::from_bytes::<VMConfigInner>(bytes).map_err(|e| {
             format_err!(
                 "Failed first round of deserialization for VMConfigInner: {}",
                 e

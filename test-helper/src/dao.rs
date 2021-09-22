@@ -127,7 +127,7 @@ fn execute_create_account(
 ) -> Result<()> {
     {
         blockmeta_execute(
-            &chain_state,
+            chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
                 block_timestamp,
@@ -155,7 +155,7 @@ fn execute_create_account(
             );
             association_execute_should_success(
                 net,
-                &chain_state,
+                chain_state,
                 TransactionPayload::ScriptFunction(script_function),
             )?;
         }
@@ -224,7 +224,7 @@ fn execute_cast_vote(
     proposal_id: u64,
 ) -> Result<()> {
     blockmeta_execute(
-        &chain_state,
+        chain_state,
         BlockMetadata::new(
             HashValue::zero(),
             block_timestamp,
@@ -256,7 +256,7 @@ fn execute_cast_vote(
     );
     // vote first.
     account_execute_should_success(
-        &alice,
+        alice,
         chain_state,
         TransactionPayload::ScriptFunction(script_function),
     )?;
@@ -444,7 +444,7 @@ pub fn dao_vote_test(
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     execute_create_account(
         chain_state,
-        &net,
+        net,
         alice,
         pre_mint_amount,
         block_number,
@@ -486,7 +486,7 @@ pub fn dao_vote_test(
     let block_number = current_block_number(chain_state) + 1;
     let block_timestamp = block_timestamp + voting_delay(chain_state, stc_type_tag()) + 10000;
     execute_cast_vote(
-        &net,
+        net,
         chain_state,
         alice,
         &action_type_tag,

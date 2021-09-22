@@ -536,7 +536,7 @@ fn test_put_blob_sets() {
 fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
     assert!(seed.len() < 32);
     let mut actual_seed = [0u8; 32];
-    actual_seed[..seed.len()].copy_from_slice(&seed);
+    actual_seed[..seed.len()].copy_from_slice(seed);
     let mut rng: StdRng = StdRng::from_seed(actual_seed);
 
     let db = MockTreeStore::default();
@@ -568,7 +568,7 @@ fn test_1000_keys() {
 fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize) {
     assert!(seed.len() < 32);
     let mut actual_seed = [0u8; 32];
-    actual_seed[..seed.len()].copy_from_slice(&seed);
+    actual_seed[..seed.len()].copy_from_slice(seed);
     let mut rng: StdRng = StdRng::from_seed(actual_seed);
 
     let db = MockTreeStore::default();

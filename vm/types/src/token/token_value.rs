@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, Result};
-use std::iter::repeat;
 
 pub trait TokenUnit: Clone + Copy {
     fn symbol(&self) -> &'static str;
@@ -59,9 +58,7 @@ pub trait TokenUnit: Clone + Copy {
 
 fn padding_zero(origin: &str, scale: u32, left: bool) -> String {
     let mut result = origin.to_string();
-    let pad = repeat('0')
-        .take((scale as usize) - origin.len())
-        .collect::<String>();
+    let pad = "0".repeat((scale as usize) - origin.len());
     if left {
         result.insert_str(0, pad.as_str());
     } else {

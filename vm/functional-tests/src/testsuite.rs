@@ -137,11 +137,7 @@ pub fn functional_tests_with_executor<TComp: Compiler>(
     }
 
     writeln!(output)?;
-    writeln!(
-        output,
-        "{}",
-        iter::repeat('=').take(100).collect::<String>()
-    )?;
+    writeln!(output, "{}", "=".repeat(100))?;
     writeln!(output, "{}", path.display())?;
     writeln!(output)?;
 

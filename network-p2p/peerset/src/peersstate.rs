@@ -261,8 +261,7 @@ impl PeersState {
         // makes it explicit what is wrong.
         assert!(set < self.sets.len());
 
-        let outcome = self
-            .nodes
+        self.nodes
             .iter_mut()
             .filter(|(_, Node { sets, .. })| match sets[set] {
                 MembershipState::NotMember => false,
@@ -278,17 +277,12 @@ impl PeersState {
                 }
                 Some(to_try)
             })
-            .map(|(peer_id, _)| *peer_id);
-
-        if let Some(peer_id) = outcome {
-            Some(NotConnectedPeer {
+            .map(|(peer_id, _)| *peer_id)
+            .map(move |peer_id| NotConnectedPeer {
                 state: self,
                 set,
                 peer_id: Cow::Owned(peer_id),
             })
-        } else {
-            None
-        }
     }
 
     /// Add a node to the list of nodes that don't occupy slots.

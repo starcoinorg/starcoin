@@ -254,7 +254,7 @@ impl ChainStateDB {
         account_address: &AccountAddress,
         create: bool,
     ) -> Result<Arc<AccountStateObject>> {
-        let account_state_object = self.get_account_state_object_option(&account_address)?;
+        let account_state_object = self.get_account_state_object_option(account_address)?;
         match account_state_object {
             Some(account_state_object) => Ok(account_state_object),
             None => {
@@ -315,9 +315,9 @@ impl StateView for ChainStateDB {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         let account_address = &access_path.address;
         let data_path = &access_path.path;
-        self.get_account_state_object_option(&account_address)
+        self.get_account_state_object_option(account_address)
             .and_then(|account_state| match account_state {
-                Some(account_state) => account_state.get(&data_path),
+                Some(account_state) => account_state.get(data_path),
                 None => Ok(None),
             })
     }

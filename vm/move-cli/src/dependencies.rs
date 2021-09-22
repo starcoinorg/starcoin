@@ -94,7 +94,7 @@ pub fn get_uses(move_files: &[String]) -> Result<Vec<(Address, String)>> {
     let expansion_errors = compilation_env.check_diags();
     unwrap_or_report_diagnostics(&files, expansion_errors);
 
-    let used_deps: Vec<_> = program
+    let used_deps = program
         .source_definitions
         .into_iter()
         .flat_map(|d| match d {
@@ -109,11 +109,9 @@ pub fn get_uses(move_files: &[String]) -> Result<Vec<(Address, String)>> {
                 })
                 .collect(),
         })
-        .unique()
-        .collect();
+        .unique();
 
     let mapped_used_deps = used_deps
-        .into_iter()
         .filter_map(|elem| {
             let elem = elem.value;
             let module_name = elem.module.value().to_string();
@@ -121,7 +119,7 @@ pub fn get_uses(move_files: &[String]) -> Result<Vec<(Address, String)>> {
                 LeadingNameAccess_::AnonymousAddress(addr) => Some(addr),
                 LeadingNameAccess_::Name(addr_name) => address_mapping
                     .get(&addr_name)
-                    .and_then(|a| a.clone().map(|b| b.value)),
+                    .and_then(|a| (*a).map(|b| b.value)),
             };
             addr.map(|a| (a, module_name))
         })

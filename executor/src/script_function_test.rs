@@ -15,9 +15,9 @@ use test_helper::executor::{compile_modules_with_address, execute_and_apply, pre
 fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 0, 50_000_000, 1, &net,
+        &account1, 0, 50_000_000, 1, net,
     ));
-    let output1 = execute_and_apply(&chain_state, txn1);
+    let output1 = execute_and_apply(chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
     let module_source = r#"
         module {{sender}}::Test {
@@ -54,7 +54,7 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
     ));
 
     //publish the module
-    let output = execute_and_apply(&chain_state, txn);
+    let output = execute_and_apply(chain_state, txn);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
 
     //return the module id

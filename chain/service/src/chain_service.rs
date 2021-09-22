@@ -110,11 +110,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 ))))
             }
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::BlockOption(
-                if let Some(block) = self.inner.get_block_by_hash(hash)? {
-                    Some(Box::new(block))
-                } else {
-                    None
-                },
+                self.inner.get_block_by_hash(hash)?.map(Box::new),
             )),
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,

@@ -169,7 +169,7 @@ fn print_value_table(value: Value) -> Result<()> {
         for (k, v) in obj {
             let row = Row::new(vec![
                 Cell::new(k, bold),
-                Cell::new(value_to_string(&v).as_str(), Default::default()),
+                Cell::new(value_to_string(v).as_str(), Default::default()),
             ]);
             rows.push(row);
         }

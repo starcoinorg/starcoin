@@ -68,7 +68,7 @@ impl<'block> StateView for StateViewCache<'block> {
     fn get(&self, access_path: &AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
         match self.data_map.get(access_path) {
             Some(opt_data) => Ok(opt_data.clone()),
-            None => match self.data_view.get(&access_path) {
+            None => match self.data_view.get(access_path) {
                 Ok(remote_data) => Ok(remote_data),
                 // TODO: should we forward some error info?
                 Err(e) => {

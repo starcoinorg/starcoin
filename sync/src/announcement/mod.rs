@@ -53,7 +53,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
         ctx.spawn(async move {
             if announcement_msg.message.is_txn() {
                 let fresh_ids = announcement_msg.message.ids().into_iter().filter(|txn_id| {
-                    if txpool.find_txn(&txn_id).is_none() {
+                    if txpool.find_txn(txn_id).is_none() {
                         if let Ok(None) = storage.get_transaction_info(*txn_id) {
                             return true
                         }
