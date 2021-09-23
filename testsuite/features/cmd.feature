@@ -33,7 +33,16 @@ Feature: cmd integration test
   Scenario Outline: [cmd] node service test
     Then cmd: "node service list"
     Then cmd: "node service stop starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
+    Then cmd: "node service check starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
+    Then assert: "$ Stopped"
     Then cmd: "node service start starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
+    Then cmd: "node service check starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
+    Then assert: "$ Started"
+    #ensure some service start successful.
+    Then cmd: "node service check starcoin_rpc_server::service::RpcService"
+    Then assert: "$ Started"
+    Then cmd: "node service check starcoin_node::metrics::MetricsServerActorService"
+    Then assert: "$ Started"
     Then stop
 
     Examples:
