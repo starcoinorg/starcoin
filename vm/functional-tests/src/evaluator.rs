@@ -369,6 +369,8 @@ fn run_transaction(
                 if status == &KeptVMStatus::Executed {
                     Ok(output)
                 } else {
+                    let vm_status =
+                        vm_status_translator::explain_vm_status(exec.get_state_view(), vm_status)?;
                     Err(ErrorKind::VMExecutionFailure(vm_status, output).into())
                 }
             }
@@ -478,7 +480,12 @@ fn eval_transaction<TComp: Compiler>(
             let compiled_script = match verify_script(compiled_script, &deps) {
                 Ok(script) => script,
                 Err(err) => {
-                    let err: Error = ErrorKind::VerificationError(err.into_vm_status()).into();
+                    let err: Error =
+                        ErrorKind::VerificationError(vm_status_translator::explain_vm_status(
+                            exec.get_state_view(),
+                            err.into_vm_status(),
+                        )?)
+                        .into();
                     log.append(EvaluationOutput::Error(Box::new(err)));
                     return Ok(Status::Failure);
                 }
@@ -516,7 +523,12 @@ fn eval_transaction<TComp: Compiler>(
             let compiled_module = match verify_module(compiled_module, &deps) {
                 Ok(module) => module,
                 Err(err) => {
-                    let err: Error = ErrorKind::VerificationError(err.into_vm_status()).into();
+                    let err: Error =
+                        ErrorKind::VerificationError(vm_status_translator::explain_vm_status(
+                            exec.get_state_view(),
+                            err.into_vm_status(),
+                        )?)
+                        .into();
                     log.append(EvaluationOutput::Error(Box::new(err)));
                     return Ok(Status::Failure);
                 }
@@ -566,7 +578,12 @@ pub fn eval_block_metadata(
                     Ok(Status::Success)
                 }
                 TransactionStatus::Discard(status) => {
-                    let err: Error = ErrorKind::VerificationError(VMStatus::Error(*status)).into();
+                    let err: Error =
+                        ErrorKind::VerificationError(vm_status_translator::explain_vm_status(
+                            executor.get_state_view(),
+                            VMStatus::Error(*status),
+                        )?)
+                        .into();
                     log.append(EvaluationOutput::Error(Box::new(err)));
                     Ok(Status::Failure)
                 }
