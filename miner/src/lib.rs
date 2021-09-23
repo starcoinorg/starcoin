@@ -241,8 +241,8 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             return;
         }
         if let Err(err) = self.dispatch_task(ctx) {
-            error!(
-                "Failed to process generate block event:{:?}, delay to trigger a new event.",
+            warn!(
+                "Failed to process generate block event:{}, delay to trigger a new event.",
                 err
             );
             ctx.run_later(Duration::from_secs(2), |ctx| {

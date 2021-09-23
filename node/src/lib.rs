@@ -237,6 +237,7 @@ pub fn run_node_by_opt(
 
 /// Run node in a new Thread, and return a NodeHandle.
 pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle, NodeStartError> {
+    crash_handler::setup_panic_handler();
     let logger_handle = starcoin_logger::init();
     NodeService::launch(config, logger_handle)
 }

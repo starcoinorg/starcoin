@@ -115,7 +115,6 @@ fn run() -> Result<()> {
 }
 
 fn main() {
-    crash_handler::setup_panic_handler();
     match run() {
         Ok(()) => {}
         Err(e) => {

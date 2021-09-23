@@ -1,15 +1,47 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use starcoin_config::NodeConfig;
+use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+pub struct MetricsServerActorService {
+    listen_addr: SocketAddr,
+}
+
+impl ServiceFactory<Self> for MetricsServerActorService {
+    fn create(
+        ctx: &mut ServiceContext<MetricsServerActorService>,
+    ) -> Result<MetricsServerActorService> {
+        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        if let Some(listen_addr) = config.metrics.metrics_address() {
+            Ok(MetricsServerActorService { listen_addr })
+        } else {
+            bail!("Metric server not config.");
+        }
+    }
+}
+
+impl ActorService for MetricsServerActorService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        let addr = self.listen_addr;
+        ctx.spawn(async move {
+            info!("Metric server start at: {}", addr);
+            if let Err(e) = starcoin_metrics::metric_server::start_server(addr).await {
+                error!("Start metrics server error: {}", e);
+            }
+        });
+        Ok(())
+    }
+}
+
 #[derive(Clone)]
-pub struct MetricsActorService {
+pub struct MetricsPushActorService {
     push_url: String,
     auth_username: Option<String>,
     auth_password: String,
@@ -17,7 +49,7 @@ pub struct MetricsActorService {
     push_status: Arc<AtomicBool>,
 }
 
-impl MetricsActorService {
+impl MetricsPushActorService {
     pub fn new(
         push_url: String,
         interval: u64,
@@ -34,8 +66,10 @@ impl MetricsActorService {
         }
     }
 }
-impl ServiceFactory<Self> for MetricsActorService {
-    fn create(ctx: &mut ServiceContext<MetricsActorService>) -> Result<MetricsActorService> {
+impl ServiceFactory<Self> for MetricsPushActorService {
+    fn create(
+        ctx: &mut ServiceContext<MetricsPushActorService>,
+    ) -> Result<MetricsPushActorService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         Ok(Self::new(
             config.metrics.push_config.push_server_url(),
@@ -63,7 +97,7 @@ impl PushMetricsEvent {
     }
 }
 
-impl ActorService for MetricsActorService {
+impl ActorService for MetricsPushActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         if self.push_status.load(Ordering::Relaxed) {
             ctx.subscribe::<PushMetricsEvent>();
@@ -89,7 +123,7 @@ impl ActorService for MetricsActorService {
     }
 }
 
-impl EventHandler<Self, PushMetricsEvent> for MetricsActorService {
+impl EventHandler<Self, PushMetricsEvent> for MetricsPushActorService {
     fn handle_event(&mut self, msg: PushMetricsEvent, _ctx: &mut ServiceContext<Self>) {
         starcoin_metrics::metric_server::push_metrics(
             msg.push_url,
