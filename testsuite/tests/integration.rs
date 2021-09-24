@@ -92,14 +92,11 @@ pub fn steps() -> Steps<MyWorld> {
         .given("an account", |world: &mut MyWorld, _step| {
             let client = world.default_rpc_client.as_ref().take().unwrap();
             let password = "integration";
-            let account = client
-                .clone()
-                .account_create(password.clone().parse().unwrap())
-                .unwrap();
+            let account = client.clone().account_create(password.to_string()).unwrap();
             client
                 .account_unlock(
                     account.address,
-                    password.clone().parse().unwrap(),
+                    password.to_string(),
                     Duration::from_secs(300 as u64),
                 )
                 .unwrap();

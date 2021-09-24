@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metrics::MetricsActorService;
+use crate::metrics::{MetricsPushActorService, MetricsServerActorService};
 use crate::network_service_factory::NetworkServiceFactory;
 use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
@@ -210,16 +210,12 @@ impl NodeService {
             );
             //config slog
             info!("Write slog to file: {:?}", slog_path);
-            if set_global_logger(
+            if let Err(e) = set_global_logger(
                 config.logger.get_slog_is_sync(),
                 Some(config.logger.get_slog_chan_size()),
                 slog_path,
-            )
-            .is_ok()
-            {
-                info!("slog config success.");
-            } else {
-                warn!("slog config error.");
+            ) {
+                warn!("slog config error: {}", e);
             }
         }
 
@@ -227,11 +223,6 @@ impl NodeService {
             logger_handle.disable_stderr();
         } else {
             logger_handle.enable_stderr();
-        }
-
-        // start metric server
-        if let Some(metrics_address) = config.metrics.metrics_address() {
-            starcoin_metrics::metric_server::start_server(metrics_address);
         }
 
         let (start_sender, start_receiver) = oneshot::channel();
@@ -355,10 +346,6 @@ impl NodeService {
 
         registry.register::<GenerateBlockEventPacemaker>().await?;
 
-        // start metrics push service
-        if config.metrics.push_config.is_config() {
-            registry.register::<MetricsActorService>().await?;
-        }
         // wait for service init.
         Delay::new(Duration::from_millis(1000)).await;
 
@@ -373,6 +360,15 @@ impl NodeService {
         registry
             .register_by_factory::<StratumService, StratumServiceFactory>()
             .await?;
+
+        // start metrics server
+        if !config.metrics.disable_metrics() {
+            registry.register::<MetricsServerActorService>().await?;
+        }
+        // start metrics push service
+        if config.metrics.push_config.is_config() {
+            registry.register::<MetricsPushActorService>().await?;
+        }
 
         Ok((registry, node_service))
     }
