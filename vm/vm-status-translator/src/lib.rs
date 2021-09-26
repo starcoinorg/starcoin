@@ -8,8 +8,10 @@ use starcoin_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::transaction::TransactionStatus;
-use starcoin_vm_types::vm_status::{AbortLocation, KeptVMStatus, VMStatus};
+use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
+use std::convert::TryFrom;
+use std::fmt;
+
 pub fn locate_execution_failure(
     state: &dyn StateView,
     location: AbortLocation,
@@ -73,7 +75,7 @@ pub fn explain_move_abort(abort_location: AbortLocation, abort_code: u64) -> Mov
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Hash, Eq, PartialEq, JsonSchema)]
 pub enum VmStatusExplainView {
     /// The VM status corresponding to an EXECUTED status code
     Executed,
@@ -94,13 +96,46 @@ pub enum VmStatusExplainView {
     /// Indicates an failure from inside Move code, where the VM could not continue exection, e.g.
     /// dividing by zero or a missing resource
     ExecutionFailure {
+        /// status_code in str.
         status_code: String,
+        /// status_code in u64.
+        status: u64,
         #[schemars(with = "String")]
         location: AbortLocation,
         function: u16,
         function_name: Option<String>,
         code_offset: u16,
     },
+}
+
+/// custom debug for VmStatusExplainView for usage in functional test
+impl fmt::Debug for VmStatusExplainView {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Executed => fmt::Debug::fmt(&VMStatus::Executed, f),
+            Self::Error(code) => f.debug_struct("ERROR").field("status_code", code).finish(),
+            Self::MoveAbort {
+                location,
+                abort_code,
+                ..
+            } => fmt::Debug::fmt(&VMStatus::MoveAbort(location.clone(), *abort_code), f),
+            Self::ExecutionFailure {
+                status,
+                location,
+                function,
+                code_offset,
+                ..
+            } => fmt::Debug::fmt(
+                &VMStatus::ExecutionFailure {
+                    status_code: StatusCode::try_from(*status).unwrap(),
+                    location: location.clone(),
+                    function: *function,
+                    code_offset: *code_offset,
+                },
+                f,
+            ),
+        }
+    }
 }
 
 pub fn explain_vm_status(
@@ -122,6 +157,7 @@ pub fn explain_vm_status(
             code_offset,
         } => VmStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
+            status: (*status_code).into(),
             location: location.clone(),
             function: *function,
             function_name: locate_execution_failure(state_view, location.clone(), *function)?
@@ -131,34 +167,35 @@ pub fn explain_vm_status(
     };
     Ok(vm_status_explain)
 }
-//should define a TransactionStatusExplainView?
-pub fn explain_transaction_status(
-    state_view: &dyn StateView,
-    txn_status: TransactionStatus,
-) -> Result<VmStatusExplainView> {
-    let vm_status_explain = match &txn_status {
-        TransactionStatus::Keep(keep_status) => match keep_status {
-            KeptVMStatus::Executed => VmStatusExplainView::Executed,
-            KeptVMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
-                location: location.clone(),
-                abort_code: *abort_code,
-                explain: explain_move_abort(location.clone(), *abort_code),
-            },
-            KeptVMStatus::ExecutionFailure {
-                location,
-                function,
-                code_offset,
-            } => VmStatusExplainView::ExecutionFailure {
-                status_code: "".to_string(),
-                location: location.clone(),
-                function: *function,
-                function_name: locate_execution_failure(state_view, location.clone(), *function)?
-                    .map(|l| l.1.to_string()),
-                code_offset: *code_offset,
-            },
-            c => VmStatusExplainView::Error(format!("{:?}", c)),
-        },
-        TransactionStatus::Discard(c) => VmStatusExplainView::Error(format!("{:?}", c)),
-    };
-    Ok(vm_status_explain)
-}
+
+// //should define a TransactionStatusExplainView?
+// pub fn explain_transaction_status(
+//     state_view: &dyn StateView,
+//     txn_status: TransactionStatus,
+// ) -> Result<VmStatusExplainView> {
+//     let vm_status_explain = match &txn_status {
+//         TransactionStatus::Keep(keep_status) => match keep_status {
+//             KeptVMStatus::Executed => VmStatusExplainView::Executed,
+//             KeptVMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
+//                 location: location.clone(),
+//                 abort_code: *abort_code,
+//                 explain: explain_move_abort(location.clone(), *abort_code),
+//             },
+//             KeptVMStatus::ExecutionFailure {
+//                 location,
+//                 function,
+//                 code_offset,
+//             } => VmStatusExplainView::ExecutionFailure {
+//                 status_code: "".to_string(),
+//                 location: location.clone(),
+//                 function: *function,
+//                 function_name: locate_execution_failure(state_view, location.clone(), *function)?
+//                     .map(|l| l.1.to_string()),
+//                 code_offset: *code_offset,
+//             },
+//             c => VmStatusExplainView::Error(format!("{:?}", c)),
+//         },
+//         TransactionStatus::Discard(c) => VmStatusExplainView::Error(format!("{:?}", c)),
+//     };
+//     Ok(vm_status_explain)
+// }

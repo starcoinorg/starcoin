@@ -3,8 +3,8 @@
 
 pub use anyhow::{anyhow, bail, format_err, Error, Result};
 use starcoin_vm_types::transaction::TransactionOutput;
-use starcoin_vm_types::vm_status::VMStatus;
 use thiserror::Error;
+use vm_status_translator::VmStatusExplainView;
 
 /// Defines all errors in this crate.
 #[derive(Clone, Debug, Error)]
@@ -15,13 +15,13 @@ pub enum ErrorKind {
     .0,
     .1.status(),
     )]
-    VMExecutionFailure(VMStatus, TransactionOutput),
+    VMExecutionFailure(VmStatusExplainView, TransactionOutput),
     #[error("the transaction was discarded: {0:?}")]
     DiscardedTransaction(TransactionOutput),
     #[error("the checker has failed to match the directives against the output")]
     CheckerFailure,
     #[error("VerificationError({0:?})")]
-    VerificationError(VMStatus),
+    VerificationError(VmStatusExplainView),
     #[error("other error: {0}")]
     #[allow(dead_code)]
     Other(String),

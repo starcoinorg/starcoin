@@ -1003,6 +1003,7 @@
                         "code_offset",
                         "function",
                         "location",
+                        "status",
                         "status_code"
                       ],
                       "properties": {
@@ -1025,7 +1026,14 @@
                         "location": {
                           "type": "string"
                         },
+                        "status": {
+                          "description": "status_code in u64.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
                         "status_code": {
+                          "description": "status_code in str.",
                           "type": "string"
                         }
                       }
@@ -2217,6 +2225,7 @@
                         "code_offset",
                         "function",
                         "location",
+                        "status",
                         "status_code"
                       ],
                       "properties": {
@@ -2239,7 +2248,14 @@
                         "location": {
                           "type": "string"
                         },
+                        "status": {
+                          "description": "status_code in u64.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
                         "status_code": {
+                          "description": "status_code in str.",
                           "type": "string"
                         }
                       }

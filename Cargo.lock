@@ -8770,6 +8770,7 @@ dependencies = [
  "tempfile",
  "termcolor",
  "thiserror",
+ "vm-status-translator",
 ]
 
 [[package]]

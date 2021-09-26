@@ -32,4 +32,4 @@ module alice::N {
     }
 }
 
-// check: "ERROR { status_code: CYCLIC_MODULE_DEPENDENCY }"
+// check: "ERROR { status_code: \"CYCLIC_MODULE_DEPENDENCY\" }"
