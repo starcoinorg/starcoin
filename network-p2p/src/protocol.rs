@@ -32,9 +32,9 @@ use std::time;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 /// Current protocol version.
-pub(crate) const CURRENT_VERSION: u32 = 4;
+pub(crate) const CURRENT_VERSION: u32 = 5;
 /// Lowest version we support
-pub(crate) const MIN_VERSION: u32 = 2;
+pub(crate) const MIN_VERSION: u32 = 3;
 
 pub(crate) const HARD_CORE_PROTOCOL_ID: sc_peerset::SetId = sc_peerset::SetId::from(0);
 
