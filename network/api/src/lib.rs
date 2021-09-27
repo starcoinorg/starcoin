@@ -21,7 +21,7 @@ mod tests;
 
 pub use network_p2p_types::Multiaddr;
 pub use network_p2p_types::MultiaddrWithPeerId;
-pub use network_p2p_types::ReputationChange;
+pub use network_p2p_types::{ReputationChange, BANNED_THRESHOLD};
 pub use peer_message_handler::PeerMessageHandler;
 pub use peer_provider::PeerDetail;
 pub use peer_provider::{PeerProvider, PeerSelector, PeerStrategy};

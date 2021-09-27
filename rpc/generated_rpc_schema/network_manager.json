@@ -303,6 +303,36 @@
           "type": "string"
         }
       }
+    },
+    {
+      "name": "set_peer_reput",
+      "params": [
+        {
+          "name": "peer_id",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        },
+        {
+          "name": "reputation",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "int32",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
     }
   ]
 }

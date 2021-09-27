@@ -86,6 +86,8 @@ pub fn add_command(
                     .subcommand(node::network::GetAddressCommand)
                     .subcommand(node::network::AddPeerCommand)
                     .subcommand(node::network::CallPeerCommand)
+                    .subcommand(node::network::SetPeerReputation)
+
             ),
         )
         .command(
