@@ -31,7 +31,12 @@ pub trait NetworkManagerApi {
         rpc_method: Cow<'static, str>,
         message: StrView<Vec<u8>>,
     ) -> FutureResult<StrView<Vec<u8>>>;
+
+    /// Report peer with whether banned
+    #[rpc(name = "set_peer_reput")]
+    fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> FutureResult<()>;
 }
+
 #[test]
 fn test() {
     let schema = rpc_impl_NetworkManagerApi::gen_client::Client::gen_schema();

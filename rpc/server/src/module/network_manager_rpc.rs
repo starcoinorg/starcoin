@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
 use network_p2p_types::network_state::NetworkState;
 use network_rpc_core::RawRpcClient;
 use starcoin_network::NetworkServiceRef;
@@ -71,6 +72,32 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
                 .send_raw_request(peer_id, rpc_method, message.0)
                 .await?;
             Ok(StrView(response))
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> FutureResult<()> {
+        let service = self.service.clone();
+        let fut = async move {
+            let peer_id = PeerId::from_str(peer_id.as_str())?;
+            let old_reput = service
+                .reputations(BANNED_THRESHOLD)
+                .await?
+                .await?
+                .iter()
+                .find(|(p, _)| p == &peer_id)
+                .ok_or_else(|| anyhow::anyhow!("Invalid peer id"))?
+                .1;
+            let reputation_change = reputation.saturating_sub(old_reput);
+            service.report_peer(
+                peer_id,
+                ReputationChange {
+                    value: reputation_change,
+                    reason: "Report peer manual",
+                },
+            );
+            Ok(())
         }
         .map_err(map_err);
         Box::pin(fut.boxed())

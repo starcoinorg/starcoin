@@ -966,6 +966,10 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.raw_client.call_method(api, params))
             .map_err(map_err)
     }
+    pub fn set_peer_reputation(&self, peer_id: String, reput: i32) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| inner.network_client.set_peer_reputation(peer_id, reput))
+            .map_err(map_err)
+    }
 
     pub fn close(self) {
         if let Err(e) = self.chain_watcher.try_send(chain_watcher::StopWatcher) {
