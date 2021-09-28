@@ -333,6 +333,35 @@
           "type": "null"
         }
       }
+    },
+    {
+      "name": "ban_peer",
+      "params": [
+        {
+          "name": "peer_id",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "String",
+            "type": "string"
+          }
+        },
+        {
+          "name": "ban",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Boolean",
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
     }
   ]
 }

@@ -61,6 +61,10 @@ impl PeerProvider for NetworkServiceRef {
     ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
         self.service_ref.reputations(reputation_threshold)
     }
+
+    fn ban_peer(&self, peer_id: PeerId, ban: bool) {
+        self.service_ref.ban_peer(peer_id, ban)
+    }
 }
 
 impl SupportedRpcProtocol for NetworkServiceRef {

@@ -11,8 +11,8 @@ use futures::FutureExt;
 use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
-    AnnouncementType, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent,
-    PeerMessage, PeerReputations, ReportReputation, TransactionsMessage,
+    AnnouncementType, BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage,
+    PeerEvent, PeerMessage, PeerReputations, ReportReputation, TransactionsMessage,
 };
 use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{BroadcastProtocolFilter, NetworkActor, PeerMessageHandler};
@@ -168,6 +168,14 @@ impl EventHandler<Self, ReportReputation> for NetworkActorService {
         self.inner
             .network_service
             .report_peer(msg.peer_id.into(), msg.change);
+    }
+}
+
+impl EventHandler<Self, BanPeer> for NetworkActorService {
+    fn handle_event(&mut self, msg: BanPeer, _ctx: &mut ServiceContext<NetworkActorService>) {
+        self.inner
+            .network_service
+            .ban_peer(msg.peer_id.into(), msg.ban);
     }
 }
 

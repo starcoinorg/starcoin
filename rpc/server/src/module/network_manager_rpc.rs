@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use jsonrpc_core::Result;
 use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
 use network_p2p_types::network_state::NetworkState;
 use network_rpc_core::RawRpcClient;
@@ -101,5 +102,12 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
         }
         .map_err(map_err);
         Box::pin(fut.boxed())
+    }
+
+    fn ban_peer(&self, peer_id: String, ban: bool) -> Result<()> {
+        let service = self.service.clone();
+        let peer_id = PeerId::from_str(peer_id.as_str()).map_err(map_err)?;
+        service.ban_peer(peer_id, ban);
+        Ok(())
     }
 }

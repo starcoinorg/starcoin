@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerMessage, PeerReputations,
-    ReportReputation,
+    BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerMessage,
+    PeerReputations, ReportReputation,
 };
 use anyhow::*;
 use futures::future::BoxFuture;
@@ -42,6 +42,7 @@ pub trait NetworkActor:
     + EventHandler<Self, PeerMessage>
     + EventHandler<Self, NotificationMessage>
     + EventHandler<Self, ReportReputation>
+    + EventHandler<Self, BanPeer>
     + ServiceHandler<Self, GetPeerSet>
     + ServiceHandler<Self, PeerReputations>
     + ServiceHandler<Self, GetSelfPeer>
@@ -82,6 +83,11 @@ where
             threshold: reputation_threshold,
         })
         .boxed()
+    }
+    fn ban_peer(&self, peer_id: PeerId, ban: bool) {
+        if let Err(e) = self.notify(BanPeer { peer_id, ban }) {
+            debug!("ban peer error:{}", e)
+        }
     }
 }
 

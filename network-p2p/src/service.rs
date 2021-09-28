@@ -484,6 +484,14 @@ impl NetworkWorker {
     pub fn is_open(&self, peer_id: &PeerId) -> bool {
         self.network_service.behaviour().is_open(peer_id)
     }
+
+    pub fn ban_peer(&mut self, peer_id: &PeerId) {
+        self.network_service.ban_peer_id(*peer_id)
+    }
+
+    pub fn unban_peer(&mut self, peer_id: &PeerId) {
+        self.network_service.unban_peer_id(*peer_id)
+    }
 }
 
 impl NetworkService {
@@ -845,6 +853,12 @@ impl NetworkService {
     pub fn peer_id(&self) -> &PeerId {
         &self.local_peer_id
     }
+
+    pub fn ban_peer(&self, peer_id: PeerId, ban: bool) {
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::BanPeer(ban, peer_id));
+    }
 }
 
 /// Trait for providing information about the local network state
@@ -970,6 +984,7 @@ enum ServiceToWorkerMsg {
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
     UpdateChainStatus(Box<ChainStatus>),
     AddressByPeerId(PeerId, oneshot::Sender<Vec<Multiaddr>>),
+    BanPeer(bool, PeerId),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -1064,6 +1079,13 @@ impl Future for NetworkWorker {
                 }
                 ServiceToWorkerMsg::AddressByPeerId(peer_id, tx) => {
                     let _ = tx.send(this.network_service.behaviour_mut().get_address(&peer_id));
+                }
+                ServiceToWorkerMsg::BanPeer(ban, peer_id) => {
+                    if ban {
+                        this.network_service.ban_peer_id(peer_id)
+                    } else {
+                        this.network_service.unban_peer_id(peer_id)
+                    }
                 }
             }
         }

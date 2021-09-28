@@ -4,6 +4,7 @@
 pub use self::gen_client::Client as NetworkManagerClient;
 use crate::types::StrView;
 use crate::FutureResult;
+use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use network_p2p_types::network_state::NetworkState;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
@@ -32,9 +33,13 @@ pub trait NetworkManagerApi {
         message: StrView<Vec<u8>>,
     ) -> FutureResult<StrView<Vec<u8>>>;
 
-    /// Report peer with whether banned
+    /// Set peer reputation
     #[rpc(name = "set_peer_reput")]
     fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> FutureResult<()>;
+
+    /// ban peer
+    #[rpc(name = "ban_peer")]
+    fn ban_peer(&self, peer_id: String, ban: bool) -> Result<()>;
 }
 
 #[test]

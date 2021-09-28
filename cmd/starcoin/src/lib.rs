@@ -87,6 +87,7 @@ pub fn add_command(
                     .subcommand(node::network::AddPeerCommand)
                     .subcommand(node::network::CallPeerCommand)
                     .subcommand(node::network::SetPeerReputation)
+                    .subcommand(node::network::BanPeerCommand)
 
             ),
         )
