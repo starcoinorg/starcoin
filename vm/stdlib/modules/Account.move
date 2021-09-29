@@ -110,6 +110,7 @@ module Account {
     const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
     const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
     const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
+
     const EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 9;
 
     const EINSUFFICIENT_BALANCE: u64 = 10;
@@ -124,25 +125,29 @@ module Account {
     const EADDRESS_PUBLIC_KEY_INCONSISTENT: u64 = 104;
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
     const ERR_TOKEN_NOT_ACCEPT: u64 = 106;
+    const ERR_SIGNER_ALREADY_DELEGATED: u64 = 107;
+
+    const EPROLOGUE_SIGNER_ALREADY_DELEGATED: u64 = 200;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     // cannot be dummy key, or empty key
     const CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
     /// A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
-    /// In one txn, signer can remove multi times to create signer caps for usage in multi modules.
+    /// This function can only called once by signer.
     public fun remove_signer_capability(signer: &signer): SignerCapability
     acquires Account {
-        // for now, we limit the signer cap to be called only by genesis.
-        CoreAddresses::assert_genesis_address(signer);
         let signer_addr = Signer::address_of(signer);
+        assert(!is_signer_delegated(signer_addr), Errors::invalid_state(ERR_SIGNER_ALREADY_DELEGATED));
+
         // set to account auth key to noop.
-        if (!is_signer_delegated(signer_addr)) {
+        {
             let key_rotation_capability = extract_key_rotation_capability(signer);
             rotate_authentication_key_with_capability(&key_rotation_capability, CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER);
             destroy_key_rotation_capability(key_rotation_capability);
             move_to(signer, SignerDelegated {});
         };
+
         let signer_cap = SignerCapability {addr: signer_addr };
         signer_cap
     }
@@ -160,7 +165,7 @@ module Account {
     public fun is_signer_delegated(addr: address): bool {
         exists<SignerDelegated>(addr)
     }
- 
+
     /// Create an genesis account at `new_account_address` and return signer.
     /// Genesis authentication_key is zero bytes.
     public fun create_genesis_account(
@@ -848,6 +853,8 @@ module Account {
 
         // Verify that the transaction sender's account exists
         assert(exists_at(txn_sender), Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST));
+        // Verify the account has not delegate its signer cap.
+        assert(!is_signer_delegated(txn_sender), Errors::invalid_state(EPROLOGUE_SIGNER_ALREADY_DELEGATED));
 
         // Load the transaction sender's account
         let sender_account = borrow_global_mut<Account>(txn_sender);

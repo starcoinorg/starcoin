@@ -646,6 +646,24 @@ Message for accept token events
 
 
 
+<a name="0x1_Account_EPROLOGUE_SIGNER_ALREADY_DELEGATED"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_SIGNER_ALREADY_DELEGATED">EPROLOGUE_SIGNER_ALREADY_DELEGATED</a>: u64 = 200;
+</code></pre>
+
+
+
+<a name="0x1_Account_ERR_SIGNER_ALREADY_DELEGATED"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_ERR_SIGNER_ALREADY_DELEGATED">ERR_SIGNER_ALREADY_DELEGATED</a>: u64 = 107;
+</code></pre>
+
+
+
 <a name="0x1_Account_ERR_TOKEN_NOT_ACCEPT"></a>
 
 
@@ -669,7 +687,7 @@ Message for accept token events
 ## Function `remove_signer_capability`
 
 A one-way action, once SignerCapability is removed from signer, the address cannot send txns anymore.
-In one txn, signer can remove multi times to create signer caps for usage in multi modules.
+This function can only called once by signer.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(signer: &signer): <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>
@@ -683,16 +701,17 @@ In one txn, signer can remove multi times to create signer caps for usage in mul
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_remove_signer_capability">remove_signer_capability</a>(signer: &signer): <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a>
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    // for now, we limit the signer cap <b>to</b> be called only by genesis.
-    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(signer);
     <b>let</b> signer_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+    <b>assert</b>(!<a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(signer_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_ERR_SIGNER_ALREADY_DELEGATED">ERR_SIGNER_ALREADY_DELEGATED</a>));
+
     // set <b>to</b> account auth key <b>to</b> noop.
-    <b>if</b> (!<a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(signer_addr)) {
+    {
         <b>let</b> key_rotation_capability = <a href="Account.md#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(signer);
         <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">rotate_authentication_key_with_capability</a>(&key_rotation_capability, <a href="Account.md#0x1_Account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>);
         <a href="Account.md#0x1_Account_destroy_key_rotation_capability">destroy_key_rotation_capability</a>(key_rotation_capability);
         move_to(signer, <a href="Account.md#0x1_Account_SignerDelegated">SignerDelegated</a> {});
     };
+
     <b>let</b> signer_cap = <a href="Account.md#0x1_Account_SignerCapability">SignerCapability</a> {addr: signer_addr };
     signer_cap
 }
@@ -2175,6 +2194,8 @@ It verifies:
 
     // Verify that the transaction sender's account <b>exists</b>
     <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>));
+    // Verify the account has not delegate its signer cap.
+    <b>assert</b>(!<a href="Account.md#0x1_Account_is_signer_delegated">is_signer_delegated</a>(txn_sender), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EPROLOGUE_SIGNER_ALREADY_DELEGATED">EPROLOGUE_SIGNER_ALREADY_DELEGATED</a>));
 
     // Load the transaction sender's account
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);

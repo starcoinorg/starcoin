@@ -17,6 +17,8 @@ module StdlibUpgradeScripts {
         use 0x1::LanguageVersion;
         use 0x1::OnChainConfigDao;
         use 0x1::Config;
+        use 0x1::GenesisSignerCapability;
+        use 0x1::Account;
 
         spec module {
             pragma verify = false;
@@ -81,6 +83,21 @@ module StdlibUpgradeScripts {
             OnChainConfigDao::plugin<STC, LanguageVersion::LanguageVersion>(sender);
             // upgrade genesis NFT
             GenesisNFT::upgrade_to_nft_type_info_v2(sender);
+        }
+
+        public(script) fun upgrade_from_v7_to_v8(sender: signer) {
+            do_upgrade_from_v7_to_v8(&sender);
+        }
+        public fun do_upgrade_from_v7_to_v8(sender: &signer) {
+            {
+                let cap = Oracle::extract_signer_cap(sender);
+                GenesisSignerCapability::initialize(sender, cap);
+            };
+
+            {
+                let cap = NFT::extract_signer_cap(sender);
+                Account::destroy_signer_cap(cap);
+            };
         }
 }
 }
