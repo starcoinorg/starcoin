@@ -27,7 +27,9 @@ impl ScoreCounter {
     }
 
     pub fn avg(&self) -> u64 {
-        self.score() / self.count.load(Ordering::SeqCst)
+        self.score()
+            .checked_div(self.count.load(Ordering::SeqCst))
+            .unwrap_or_default()
     }
 }
 
@@ -48,14 +50,16 @@ pub struct InverseScore {
 
 impl InverseScore {
     pub fn new(x: u32, y: u32) -> Self {
-        assert!(y < 100);
-        Self { k: (x * y) as i64 }
+        Self {
+            k: x.saturating_mul(y) as i64,
+        }
     }
 }
 
 impl Score<u32> for InverseScore {
     fn execute(&self, time: u32) -> i64 {
-        self.k / (time as i64)
+        //if time is 0, treat as 1
+        self.k.checked_div(time as i64).unwrap_or(self.k)
     }
 }
 
@@ -78,22 +82,23 @@ impl BlockBroadcastEntry {
 
 #[derive(Clone)]
 pub struct LinearScore {
-    base: i64,
+    base: u64,
 }
 
 impl LinearScore {
-    pub fn new(base: i64) -> Self {
-        assert!(base > 0);
+    pub fn new(base: u64) -> Self {
         Self { base }
     }
 
     pub fn linear(&self) -> i64 {
-        self.base
+        self.base as i64
     }
 
     pub fn percentage(&self, percent: usize) -> i64 {
-        assert!(percent <= 100);
-        self.base * (percent as i64) / 100
+        self.base
+            .saturating_mul(percent as u64)
+            .checked_div(100)
+            .unwrap_or_default() as i64
     }
 }
 
@@ -114,7 +119,7 @@ impl Score<BlockBroadcastEntry> for LinearScore {
                     self.percentage(10)
                 }
             }
-            HandleState::Fail => -self.base,
+            HandleState::Fail => 0i64.saturating_sub(self.base as i64),
         }
     }
 }
