@@ -321,6 +321,12 @@ pub struct ReportReputation {
 }
 
 #[derive(Clone, Debug)]
+pub struct BanPeer {
+    pub peer_id: PeerId,
+    pub ban: bool,
+}
+
+#[derive(Clone, Debug)]
 pub struct PeerReputations {
     pub threshold: i32,
 }

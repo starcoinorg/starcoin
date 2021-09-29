@@ -54,4 +54,8 @@ impl PeerProvider for DummyNetworkService {
     ) -> BoxFuture<'_, anyhow::Result<Receiver<Vec<(PeerId, i32)>>>> {
         unimplemented!()
     }
+
+    fn ban_peer(&self, _peer_id: PeerId, _ban: bool) {
+        unimplemented!()
+    }
 }

@@ -22,6 +22,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+
 pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     /// Get all peers, the peer's order is unsorted.
     fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>>;
@@ -36,6 +37,8 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
         &self,
         reputation_threshold: i32,
     ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>>;
+
+    fn ban_peer(&self, peer_id: PeerId, ban: bool);
 }
 
 #[derive(Clone)]
