@@ -305,7 +305,7 @@
       }
     },
     {
-      "name": "set_peer_reput",
+      "name": "network_manager.set_peer_reput",
       "params": [
         {
           "name": "peer_id",
@@ -335,7 +335,7 @@
       }
     },
     {
-      "name": "ban_peer",
+      "name": "network_manager.ban_peer",
       "params": [
         {
           "name": "peer_id",

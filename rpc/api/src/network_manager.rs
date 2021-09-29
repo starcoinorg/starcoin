@@ -34,11 +34,11 @@ pub trait NetworkManagerApi {
     ) -> FutureResult<StrView<Vec<u8>>>;
 
     /// Set peer reputation
-    #[rpc(name = "set_peer_reput")]
+    #[rpc(name = "network_manager.set_peer_reput")]
     fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> FutureResult<()>;
 
     /// ban peer
-    #[rpc(name = "ban_peer")]
+    #[rpc(name = "network_manager.ban_peer")]
     fn ban_peer(&self, peer_id: String, ban: bool) -> Result<()>;
 }
 
