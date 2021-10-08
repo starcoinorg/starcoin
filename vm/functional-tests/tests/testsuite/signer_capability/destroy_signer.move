@@ -1,5 +1,4 @@
 //! new-transaction
-//! sender: genesis
 script {
     use 0x1::Account;
     fun main(signer: signer) {
@@ -11,7 +10,6 @@ script {
 // check: EXECUTED
 
 ////! new-transaction
-////! sender: genesis
 //script {
 //    fun main(_signer: signer) {
 //    }
