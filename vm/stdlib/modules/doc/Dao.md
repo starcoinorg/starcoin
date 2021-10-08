@@ -913,13 +913,13 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 
     // get vote
-    <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
+    <b>let</b> my_vote = move_from&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
     {
         <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
         <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
     };
     // revoke vote on proposal
-    <b>let</b> reverted_stake =<a href="Dao.md#0x1_Dao_do_revoke_vote">do_revoke_vote</a>(proposal, my_vote, voting_power);
+    <b>let</b> reverted_stake =<a href="Dao.md#0x1_Dao_do_revoke_vote">do_revoke_vote</a>(proposal, &<b>mut</b> my_vote, voting_power);
     // emit vote changed event
     <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
@@ -932,6 +932,15 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
             vote: <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake),
         },
     );
+
+    // <b>if</b> user has no stake, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
+    <b>if</b> (<a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake) == 0u128) {
+        <b>let</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a> {stake, proposer: _, id: _, agree: _} = my_vote;
+        <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>(stake);
+    } <b>else</b> {
+        move_to(signer, my_vote);
+    };
+
     reverted_stake
 }
 </code></pre>

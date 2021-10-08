@@ -488,13 +488,13 @@ module Dao {
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
 
         // get vote
-        let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
+        let my_vote = move_from<Vote<TokenT>>(Signer::address_of(signer));
         {
             assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
             assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
         };
         // revoke vote on proposal
-        let reverted_stake =do_revoke_vote(proposal, my_vote, voting_power);
+        let reverted_stake =do_revoke_vote(proposal, &mut my_vote, voting_power);
         // emit vote changed event
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         Event::emit_event(
@@ -507,6 +507,15 @@ module Dao {
                 vote: Token::value(&my_vote.stake),
             },
         );
+
+        // if user has no stake, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
+        if (Token::value(&my_vote.stake) == 0u128) {
+            let Vote {stake, proposer: _, id: _, agree: _} = my_vote;
+            Token::destroy_zero(stake);
+        } else {
+            move_to(signer, my_vote);
+        };
+
         reverted_stake
     }
 
