@@ -220,6 +220,8 @@ pub enum Message {
 
     /// Equivalent to `Drop` for the peer corresponding to this incoming index.
     Reject(IncomingIndex),
+
+    Banned(PeerId),
 }
 
 /// Opaque identifier for an incoming connection. Allocated by the network.
@@ -514,12 +516,13 @@ impl Peerset {
                 }
 
                 let mut peer_reputation = self.data.peer_reputation(peer_id);
-
                 let before = peer_reputation.reputation();
                 let after = reput_tick(before);
                 trace!(target: "peerset", "Fleeting {}: {} -> {}", peer_id, before, after);
+                if after < BANNED_THRESHOLD {
+                    self.message_queue.push_back(Message::Banned(peer_id))
+                }
                 peer_reputation.set_reputation(after);
-
                 if after != 0 {
                     continue;
                 }

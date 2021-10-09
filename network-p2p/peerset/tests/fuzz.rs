@@ -108,6 +108,7 @@ fn test_once() {
                     }
                     Poll::Ready(None) => panic!(),
                     Poll::Pending => {}
+                    Poll::Ready(Some(Message::Banned(_))) => {}
                 },
 
                 // If we generate 1, discover a new node.

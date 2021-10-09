@@ -1107,6 +1107,9 @@ impl Future for NetworkWorker {
 
             match poll_value {
                 Poll::Pending => break,
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(peer_id))) => {
+                    this.network_service.ban_peer_id(peer_id);
+                }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::InboundRequest {
                     protocol,
                     result,
@@ -1433,6 +1436,7 @@ impl Future for NetworkWorker {
                            local_addr, send_back_addr, error);
                 }
                 Poll::Ready(SwarmEvent::BannedPeer { peer_id, endpoint }) => {
+                    println!("banned:{:?}", peer_id);
                     trace!(target: "sub-libp2p", "Libp2p => BannedPeer({}). Connected via {:?}.",
                            peer_id, endpoint);
                 }

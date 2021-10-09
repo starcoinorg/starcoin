@@ -84,6 +84,7 @@ pub enum CustomMessageOutcome {
         messages: Vec<(Cow<'static, str>, Bytes)>,
     },
     None,
+    Banned(PeerId),
 }
 
 /// Peer information
@@ -323,6 +324,7 @@ impl NetworkBehaviour for Protocol {
                 let protocol_name = self.notif_protocols[usize::from(set_id)].clone();
                 self.on_notify(peer_id, vec![(protocol_name, message.freeze())])
             }
+            GenericProtoOut::Banned(peer_id) => CustomMessageOutcome::Banned(peer_id),
         };
 
         if !matches!(outcome, CustomMessageOutcome::None) {
