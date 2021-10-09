@@ -13,7 +13,7 @@ prometheus = "0.13.0"
 starcoin-types = { path = "../../types"}
 move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="347ebb76c60f360084d8b8043ca0e53d93015bc1" }
 move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="347ebb76c60f360084d8b8043ca0e53d93015bc1" }
-tracing = "0.1.26"
+tracing = "0.1.29"
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}
 num_enum = "0.5.4"
