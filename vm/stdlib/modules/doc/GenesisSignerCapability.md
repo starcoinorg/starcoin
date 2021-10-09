@@ -65,7 +65,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">initialize</a>(signer: &signer, cap: <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">initialize</a>(signer: &signer, cap: <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>)
 </code></pre>
 
 
@@ -74,7 +74,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">initialize</a>(signer:&signer, cap: <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">initialize</a>(signer:&signer, cap: <a href="Account.md#0x1_Account_SignerCapability">Account::SignerCapability</a>) {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(signer);
     <b>assert</b>(<a href="Account.md#0x1_Account_signer_address">Account::signer_address</a>(&cap) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_ENOT_GENESIS_ACCOUNT">ENOT_GENESIS_ACCOUNT</a>));
     move_to(signer, <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability">GenesisSignerCapability</a>{cap});

@@ -244,11 +244,8 @@ module NFT {
         return nft.creator
     }
 
-    public fun initialize(signer: &signer) {
-        CoreAddresses::assert_genesis_address(signer);
-        let cap = Account::remove_signer_capability(signer);
-        let genesis_cap = GenesisSignerCapability { cap };
-        move_to(signer, genesis_cap);
+    /// deprecated.
+    public fun initialize(_signer: &signer) {
     }
 
     /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `0x1::GenesisSignerCapability`.

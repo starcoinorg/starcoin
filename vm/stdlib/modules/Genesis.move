@@ -439,10 +439,6 @@ module Genesis {
         {
             let cap = Account::remove_signer_capability(&genesis_account);
             GenesisSignerCapability::initialize(&genesis_account, cap);
-            // no need anymore.
-            // Oracle::initialize(sender);
-            // NFT::initialize(sender);
-
             //register oracle
             STCUSDOracle::register(&genesis_account);
             let merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";

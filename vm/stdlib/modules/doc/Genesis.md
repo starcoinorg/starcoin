@@ -501,10 +501,6 @@ The module for init Genesis
     {
         <b>let</b> cap = <a href="Account.md#0x1_Account_remove_signer_capability">Account::remove_signer_capability</a>(&genesis_account);
         <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">GenesisSignerCapability::initialize</a>(&genesis_account, cap);
-        // no need anymore.
-        // <a href="Oracle.md#0x1_Oracle_initialize">Oracle::initialize</a>(sender);
-        // <a href="NFT.md#0x1_NFT_initialize">NFT::initialize</a>(sender);
-
         //register oracle
         <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&genesis_account);
         <b>let</b> merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";

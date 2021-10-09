@@ -57,11 +57,8 @@ module Oracle {
     const ERR_NO_DATA_SOURCE: u64 = 103;
     const ERR_CAPABILITY_ACCOUNT_MISS_MATCH: u64 = 104;
 
-    public fun initialize(sender: &signer) {
-        CoreAddresses::assert_genesis_address(sender);
-        let cap = Account::remove_signer_capability(sender);
-        let cap_wrapper = GenesisSignerCapability{cap};
-        move_to(sender, cap_wrapper);
+    /// deprecated.
+    public fun initialize(_sender: &signer) {
     }
 
     /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `0x1::GenesisSignerCapability`.
