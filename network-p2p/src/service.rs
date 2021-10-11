@@ -1436,7 +1436,6 @@ impl Future for NetworkWorker {
                            local_addr, send_back_addr, error);
                 }
                 Poll::Ready(SwarmEvent::BannedPeer { peer_id, endpoint }) => {
-                    println!("banned:{:?}", peer_id);
                     trace!(target: "sub-libp2p", "Libp2p => BannedPeer({}). Connected via {:?}.",
                            peer_id, endpoint);
                 }
