@@ -37,7 +37,7 @@ cd "$SCRIPT_PATH/.." || exit
 
 function usage {
   echo "Usage:"
-  echo "Installs or updates necessary dev tools for diem/diem."
+  echo "Installs or updates necessary dev tools for starcoinorg/starcoin."
   echo "-b batch mode, no user interactions and miminal output"
   echo "-p update ${HOME}/.profile"
   echo "-t install build tools"
@@ -798,13 +798,13 @@ if [[ "$OPERATIONS" == "true" ]]; then
     install_pkg coreutils "$PACKAGE_MANAGER"
   fi
   install_shellcheck
-  install_hadolint
-  install_vault
+#  install_hadolint
+#  install_vault
   install_helm
-  install_terraform
+#  install_terraform
   install_kubectl
   install_awscli "$PACKAGE_MANAGER"
-  install_allure
+#  install_allure
 fi
 
 if [[ "$INSTALL_INDIVIDUAL" == "true" ]]; then
