@@ -1107,6 +1107,9 @@ impl Future for NetworkWorker {
 
             match poll_value {
                 Poll::Pending => break,
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(peer_id))) => {
+                    this.network_service.ban_peer_id(peer_id);
+                }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::InboundRequest {
                     protocol,
                     result,
