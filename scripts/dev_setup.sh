@@ -26,7 +26,7 @@ HELM_VERSION=3.2.4
 VAULT_VERSION=1.5.0
 Z3_VERSION=4.8.9
 CVC4_VERSION=aac53f51
-DOTNET_VERSION=3.1
+DOTNET_VERSION=5.0
 BOOGIE_VERSION=2.9.0
 PYRE_CHECK_VERSION=0.0.59
 NUMPY_VERSION=1.20.1
@@ -47,7 +47,7 @@ function usage {
   echo "-v verbose mode"
   echo "-i installs an individual tool by name"
   echo "If no toolchain component is selected with -t, -o, -y, or -p, the behavior is as if -t had been provided."
-  echo "This command must be called from the root folder of the Diem project."
+  echo "This command must be called from the root folder of the Starcoin project."
 }
 
 function add_to_profile {
@@ -201,7 +201,7 @@ function install_kubectl {
       chmod +x "${HOME}"/bin/kubectl
     fi
   fi
-  kubectl version client --short=true | head -1 || true
+  kubectl version --client=true --short=true | head -1 || true
 }
 
 function install_awscli {
@@ -389,12 +389,8 @@ function install_grcov {
 
 function install_dotnet {
   echo "Installing .Net"
-  dotnet_exe=$(which dotnet);
-   if [[ "$dotnet_exe" == '' ]]; then
-     dotnet_exe="$HOME/.dotnet/dotnet";
-   fi
-
-  if [[ $("$dotnet_exe" --list-sdks | grep -c "^${DOTNET_VERSION}" || true) == "0" ]]; then
+  mkdir -p "${DOTNET_INSTALL_DIR}" || true
+  if [[ $("${DOTNET_INSTALL_DIR}/dotnet" --list-sdks | grep -c "^${DOTNET_VERSION}" || true) == "0" ]]; then
     if [[ "$(uname)" == "Linux" ]]; then
         # Install various prerequisites for .dotnet. There are known bugs
         # in the dotnet installer to warn even if they are present. We try
@@ -418,7 +414,7 @@ function install_dotnet {
     # Below we need to (a) set TERM variable because the .net installer expects it and it is not set
     # in some environments (b) use bash not sh because the installer uses bash features.
     curl -sSL https://dot.net/v1/dotnet-install.sh \
-        | TERM=linux /bin/bash -s -- --channel $DOTNET_VERSION --version latest
+        | TERM=linux /bin/bash -s -- --channel $DOTNET_VERSION --install-dir "${DOTNET_INSTALL_DIR}" --version latest
   else
     echo Dotnet already installed.
   fi
@@ -426,15 +422,11 @@ function install_dotnet {
 
 function install_boogie {
   echo "Installing boogie"
-  dotnet_exe=$(which dotnet);
-  if [[ "$dotnet_exe" == '' ]]; then
-    dotnet_exe="$HOME/.dotnet/dotnet";
-  fi
-
-  if [[ "$("$dotnet_exe" tool list -g)" =~ .*boogie.*${BOOGIE_VERSION}.* ]]; then
+  mkdir -p "${DOTNET_INSTALL_DIR}tools/" || true
+  if [[ "$("${DOTNET_INSTALL_DIR}dotnet" tool list --tool-path "${DOTNET_INSTALL_DIR}tools/")" =~ .*boogie.*${BOOGIE_VERSION}.* ]]; then
     echo "Boogie $BOOGIE_VERSION already installed"
   else
-    "$dotnet_exe" tool update --global Boogie --version $BOOGIE_VERSION
+    "${DOTNET_INSTALL_DIR}dotnet" tool update --tool-path "${DOTNET_INSTALL_DIR}tools/" Boogie --version $BOOGIE_VERSION
   fi
 }
 
@@ -565,10 +557,10 @@ function install_xsltproc {
 
 function welcome_message {
 cat <<EOF
-Welcome to Diem!
+Welcome to Starcoin!
 
 This script will download and install the necessary dependencies needed to
-build, test and inspect Diem Core.
+build, test and inspect Starcoin.
 
 Based on your selection, these tools will be included:
 EOF
@@ -696,7 +688,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "false" ]] && \
 fi
 
 if [ ! -f rust-toolchain ]; then
-	echo "Unknown location. Please run this from the diem repository. Abort."
+	echo "Unknown location. Please run this from the starcoin repository. Abort."
 	exit 1
 fi
 
@@ -820,6 +812,7 @@ if [[ "$INSTALL_INDIVIDUAL" == "true" ]]; then
 fi
 
 if [[ "$INSTALL_PROVER" == "true" ]]; then
+  export DOTNET_INSTALL_DIR="${HOME}/.dotnet/"
   install_z3
   install_cvc4
   install_dotnet

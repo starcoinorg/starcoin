@@ -1,9 +1,0 @@
-FROM summerwind/actions-runner:v2.283.3-ubuntu-20.04-b01e193
-
-ADD scripts /starcoin/scripts
-
-WORKDIR /starcoin
-#Do not install rust in docker, install rust in action because project dependency rust version will change.
-RUN set -eux;  sudo apt-get update -y \
-  &&  bash ./scripts/dev_setup.sh -b -t -y -o \
-  && sudo rm -rf /var/lib/apt/lists/*

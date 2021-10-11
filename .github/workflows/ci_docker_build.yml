@@ -1,15 +1,10 @@
-name: Build Docker and deploy
+name: Build CI runner Docker
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
-  release:
-    types: [ published ]
 
 jobs:
   build-starcoin-docker:
-    name: build starcoin docker
+    name: build runner docker
     runs-on: self-hosted
     steps:
       - name: Checkout
@@ -20,7 +15,7 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: starcoin/starcoin,ghcr.io/starcoinorg/starcoin
+          images: starcoin/starcoin-builder
           tag-sha: true # add git short SHA as Docker tag
 #      -
 #        name: Set up QEMU
@@ -44,18 +39,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: docker/Dockerfile
+          file: docker/ci/Dockerfile
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
-      - name: deploy cluster
-        # Only deploy on master.
-        if: github.ref == 'refs/heads/master'
-        shell: bash
-        env:
-          IMAGE_VERSION: ${{steps.docker_meta.outputs.version}}
-        run: |
-          # use sha tag for force update
-          SHA=$(git rev-parse --short=7 HEAD);
-          echo "sha: ${SHA}";
-          kubectl patch --namespace starcoin-halley statefulset starcoin --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"starcoin/starcoin:sha-'${SHA}'"}]'
