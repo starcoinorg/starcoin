@@ -7,6 +7,7 @@ module Oracle {
     use 0x1::CoreAddresses;
     use 0x1::Errors;
     use 0x1::Account;
+    use 0x1::GenesisSignerCapability;
 
     struct OracleInfo<OracleT: copy+store+drop, Info: copy+store+drop> has key {
         ///The datasource counter
@@ -56,17 +57,21 @@ module Oracle {
     const ERR_NO_DATA_SOURCE: u64 = 103;
     const ERR_CAPABILITY_ACCOUNT_MISS_MATCH: u64 = 104;
 
-    public fun initialize(sender: &signer) {
-        CoreAddresses::assert_genesis_address(sender);
-        let cap = Account::remove_signer_capability(sender);
-        let cap_wrapper = GenesisSignerCapability{cap};
-        move_to(sender, cap_wrapper);
+    /// deprecated.
+    public fun initialize(_sender: &signer) {
+    }
+
+    /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `0x1::GenesisSignerCapability`.
+    public fun extract_signer_cap(signer: &signer): Account::SignerCapability acquires GenesisSignerCapability{
+        CoreAddresses::assert_genesis_address(signer);
+        let cap = move_from<GenesisSignerCapability>(Signer::address_of(signer));
+        let GenesisSignerCapability {cap} = cap;
+        cap
     }
 
     /// Register `OracleT` as an oracle type.
-    public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(_sender: &signer, info: Info) acquires GenesisSignerCapability{
-        let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
-        let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+    public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(_sender: &signer, info: Info) {
+        let genesis_account = GenesisSignerCapability::get_genesis_signer();
         move_to(&genesis_account, OracleInfo<OracleT, Info> {
            counter: 0,
             info,

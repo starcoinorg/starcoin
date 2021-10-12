@@ -24,9 +24,12 @@ The module for init Genesis
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="DummyToken.md#0x1_DummyToken">0x1::DummyToken</a>;
 <b>use</b> <a href="Epoch.md#0x1_Epoch">0x1::Epoch</a>;
+<b>use</b> <a href="GenesisNFT.md#0x1_GenesisNFT">0x1::GenesisNFT</a>;
+<b>use</b> <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability">0x1::GenesisSignerCapability</a>;
 <b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
 <b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Oracle.md#0x1_STCUSDOracle">0x1::STCUSDOracle</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts">0x1::StdlibUpgradeScripts</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
@@ -494,7 +497,16 @@ The module for init Genesis
     <a href="Account.md#0x1_Account_rotate_authentication_key_with_capability">Account::rotate_authentication_key_with_capability</a>(&assoc_rotate_key_cap, association_auth_key);
     <a href="Account.md#0x1_Account_restore_key_rotation_capability">Account::restore_key_rotation_capability</a>(assoc_rotate_key_cap);
 
-    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v5_to_v6">StdlibUpgradeScripts::do_upgrade_from_v5_to_v6</a>(&genesis_account);
+    // v5 -&gt; v6
+    {
+        <b>let</b> cap = <a href="Account.md#0x1_Account_remove_signer_capability">Account::remove_signer_capability</a>(&genesis_account);
+        <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">GenesisSignerCapability::initialize</a>(&genesis_account, cap);
+        //register oracle
+        <a href="Oracle.md#0x1_STCUSDOracle_register">STCUSDOracle::register</a>(&genesis_account);
+        <b>let</b> merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";
+        <b>let</b> image = b"ipfs://QmSPcvcXgdtHHiVTAAarzTeubk5X3iWymPAoKBfiRFjPMY";
+        <a href="GenesisNFT.md#0x1_GenesisNFT_initialize">GenesisNFT::initialize</a>(&genesis_account, merkle_root, 1639u64, image);
+    };
     <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version">StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version</a>(&genesis_account, 3);
     //Start time, <a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>() will <b>return</b> <b>false</b>. this call should at the end of genesis init.
     <a href="Timestamp.md#0x1_Timestamp_set_time_has_started">Timestamp::set_time_has_started</a>(&genesis_account);

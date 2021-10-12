@@ -13,13 +13,17 @@ The module for StdlibUpgrade init scripts
 -  [Function `upgrade_from_v6_to_v7`](#0x1_StdlibUpgradeScripts_upgrade_from_v6_to_v7)
 -  [Function `do_upgrade_from_v6_to_v7`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7)
 -  [Function `do_upgrade_from_v6_to_v7_with_language_version`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v6_to_v7_with_language_version)
+-  [Function `upgrade_from_v7_to_v8`](#0x1_StdlibUpgradeScripts_upgrade_from_v7_to_v8)
+-  [Function `do_upgrade_from_v7_to_v8`](#0x1_StdlibUpgradeScripts_do_upgrade_from_v7_to_v8)
 -  [Specification](#@Specification_0)
 
 
-<pre><code><b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
+<pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="Collection.md#0x1_Collection">0x1::Collection</a>;
 <b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="GenesisNFT.md#0x1_GenesisNFT">0x1::GenesisNFT</a>;
+<b>use</b> <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability">0x1::GenesisSignerCapability</a>;
 <b>use</b> <a href="LanguageVersion.md#0x1_LanguageVersion">0x1::LanguageVersion</a>;
 <b>use</b> <a href="NFT.md#0x1_NFT">0x1::NFT</a>;
 <b>use</b> <a href="Offer.md#0x1_Offer">0x1::Offer</a>;
@@ -228,6 +232,62 @@ deprecated, use <code>do_upgrade_from_v6_to_v7_with_language_version</code>.
     <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>, <a href="LanguageVersion.md#0x1_LanguageVersion_LanguageVersion">LanguageVersion::LanguageVersion</a>&gt;(sender);
     // upgrade genesis <a href="NFT.md#0x1_NFT">NFT</a>
     <a href="GenesisNFT.md#0x1_GenesisNFT_upgrade_to_nft_type_info_v2">GenesisNFT::upgrade_to_nft_type_info_v2</a>(sender);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_StdlibUpgradeScripts_upgrade_from_v7_to_v8"></a>
+
+## Function `upgrade_from_v7_to_v8`
+
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v7_to_v8">upgrade_from_v7_to_v8</a>(sender: signer)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>script</b>) <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_upgrade_from_v7_to_v8">upgrade_from_v7_to_v8</a>(sender: signer) {
+    <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v7_to_v8">do_upgrade_from_v7_to_v8</a>(&sender);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_StdlibUpgradeScripts_do_upgrade_from_v7_to_v8"></a>
+
+## Function `do_upgrade_from_v7_to_v8`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v7_to_v8">do_upgrade_from_v7_to_v8</a>(sender: &signer)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="StdlibUpgradeScripts.md#0x1_StdlibUpgradeScripts_do_upgrade_from_v7_to_v8">do_upgrade_from_v7_to_v8</a>(sender: &signer) {
+    {
+        <b>let</b> cap = <a href="Oracle.md#0x1_Oracle_extract_signer_cap">Oracle::extract_signer_cap</a>(sender);
+        <a href="GenesisSignerCapability.md#0x1_GenesisSignerCapability_initialize">GenesisSignerCapability::initialize</a>(sender, cap);
+    };
+
+    {
+        <b>let</b> cap = <a href="NFT.md#0x1_NFT_extract_signer_cap">NFT::extract_signer_cap</a>(sender);
+        <a href="Account.md#0x1_Account_destroy_signer_cap">Account::destroy_signer_cap</a>(cap);
+    };
 }
 </code></pre>
 

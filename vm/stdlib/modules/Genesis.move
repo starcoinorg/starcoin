@@ -28,6 +28,9 @@ module Genesis {
     use 0x1::Treasury;
     use 0x1::TreasuryWithdrawDaoProposal;
     use 0x1::StdlibUpgradeScripts;
+    use 0x1::GenesisSignerCapability;
+    use 0x1::STCUSDOracle;
+    use 0x1::GenesisNFT;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -432,7 +435,16 @@ module Genesis {
         Account::rotate_authentication_key_with_capability(&assoc_rotate_key_cap, association_auth_key);
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
 
-        StdlibUpgradeScripts::do_upgrade_from_v5_to_v6(&genesis_account);
+        // v5 -> v6
+        {
+            let cap = Account::remove_signer_capability(&genesis_account);
+            GenesisSignerCapability::initialize(&genesis_account, cap);
+            //register oracle
+            STCUSDOracle::register(&genesis_account);
+            let merkle_root = x"5969f0e8e19f8769276fb638e6060d5c02e40088f5fde70a6778dd69d659ee6d";
+            let image = b"ipfs://QmSPcvcXgdtHHiVTAAarzTeubk5X3iWymPAoKBfiRFjPMY";
+            GenesisNFT::initialize(&genesis_account, merkle_root, 1639u64, image);
+        };
         StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 3);
         //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
         Timestamp::set_time_has_started(&genesis_account);

@@ -17,6 +17,7 @@ const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
 const PROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
 const PROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
 const PROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 9;
+const EPROLOGUE_SIGNER_ALREADY_DELEGATED: u64 = 200;
 
 const EINSUFFICIENT_BALANCE: u64 = 10;
 const ENOT_GENESIS_ACCOUNT: u64 = 11;
@@ -74,6 +75,9 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_STATE, ENOT_GENESIS) => StatusCode::NOT_GENESIS,
                 (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
                     StatusCode::CONFIG_VALUE_DOES_NOT_EXIST
+                }
+                (INVALID_STATE, EPROLOGUE_SIGNER_ALREADY_DELEGATED) => {
+                    StatusCode::SIGNER_ALREADY_DELEGATED
                 }
                 (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => StatusCode::INVALID_TIMESTAMP,
                 (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => StatusCode::COIN_DEPOSIT_IS_ZERO,

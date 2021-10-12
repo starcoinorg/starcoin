@@ -13,4 +13,4 @@ futures-channel = "0.3"
 starcoin-types = {path = "../../types", package="starcoin-types"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 serde = { version = "1.0.130", default-features = false }
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="df0a14869dbb509c5d770a0dc305daae8a46bbd7"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="44133de95bd7fe9dbd9ea16a8c012cbfcdae0445"}

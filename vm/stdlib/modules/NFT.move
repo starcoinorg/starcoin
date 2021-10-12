@@ -7,6 +7,7 @@ module NFT {
     use 0x1::Account;
     use 0x1::Vector;
     use 0x1::Event;
+    use 0x1::GenesisSignerCapability;
 
     const ERR_NO_MINT_CAPABILITY: u64 = 101;
     const ERR_NO_BURN_CAPABILITY: u64 = 102;
@@ -95,13 +96,12 @@ module NFT {
         *&info.counter
     }
 
-    public fun upgrade_nft_type_info_from_v1_to_v2<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, _cap: &mut MintCapability<NFTMeta>) acquires GenesisSignerCapability, NFTTypeInfo{
+    public fun upgrade_nft_type_info_from_v1_to_v2<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, _cap: &mut MintCapability<NFTMeta>) acquires NFTTypeInfo{
         if(exists<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS())) {
             let nft_type_info = move_from<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(CoreAddresses::GENESIS_ADDRESS());
             let NFTTypeInfo { counter, meta, info, mint_events } = nft_type_info;
 
-            let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
-            let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+            let genesis_account = GenesisSignerCapability::get_genesis_signer();
 
             let nft_type_info_v2 = NFTTypeInfoV2<NFTMeta> {
                 register: Signer::address_of(sender),
@@ -244,18 +244,22 @@ module NFT {
         return nft.creator
     }
 
-    public fun initialize(signer: &signer) {
+    /// deprecated.
+    public fun initialize(_signer: &signer) {
+    }
+
+    /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `0x1::GenesisSignerCapability`.
+    public fun extract_signer_cap(signer: &signer): Account::SignerCapability acquires GenesisSignerCapability{
         CoreAddresses::assert_genesis_address(signer);
-        let cap = Account::remove_signer_capability(signer);
-        let genesis_cap = GenesisSignerCapability { cap };
-        move_to(signer, genesis_cap);
+        let cap = move_from<GenesisSignerCapability>(Signer::address_of(signer));
+        let GenesisSignerCapability {cap} = cap;
+        cap
     }
 
     /// Register a NFT type to genesis
     /// Note: this function is deprecated, please use `register_v2`
-    public fun register<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, info: NFTTypeInfoExt, meta: Metadata) acquires GenesisSignerCapability, NFTTypeInfo {
-        let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
-        let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+    public fun register<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, info: NFTTypeInfoExt, meta: Metadata) acquires NFTTypeInfo {
+        let genesis_account = GenesisSignerCapability::get_genesis_signer();
         let type_info = new_nft_type_info(sender, info, meta);
         move_to<NFTTypeInfo<NFTMeta, NFTTypeInfoExt>>(&genesis_account, type_info);
         let mint_cap = MintCapability<NFTMeta> {};
@@ -268,10 +272,10 @@ module NFT {
     }
 
     /// Register a NFT type to genesis
-    public fun register_v2<NFTMeta: copy + store + drop>(sender: &signer, meta: Metadata) acquires GenesisSignerCapability {
+    public fun register_v2<NFTMeta: copy + store + drop>(sender: &signer, meta: Metadata) {
         assert(!is_register<NFTMeta>(), Errors::invalid_argument(ERR_NFT_TYPE_ALREADY_REGISTERED));
-        let genesis_cap = borrow_global<GenesisSignerCapability>(CoreAddresses::GENESIS_ADDRESS());
-        let genesis_account = Account::create_signer_with_cap(&genesis_cap.cap);
+        let genesis_account = GenesisSignerCapability::get_genesis_signer();
+
         let type_info = new_nft_type_info_v2(sender, meta);
         move_to<NFTTypeInfoV2<NFTMeta>>(&genesis_account, type_info);
         move_to<MintCapability<NFTMeta>>(sender, MintCapability {});
@@ -540,6 +544,9 @@ module IdentifierNFT {
 
 module IdentifierNFTScripts {
     use 0x1::IdentifierNFT;
+    spec module {
+        pragma verify = false;
+    }
 
     /// Init IdentifierNFT for accept NFT<NFTMeta, NFTBody> as Identifier.
     public(script) fun accept<NFTMeta: copy + store + drop, NFTBody: store>(sender: signer) {

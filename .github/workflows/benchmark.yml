@@ -19,7 +19,7 @@ jobs:
           toolchain: stable
           components: rustfmt,clippy
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh
+        run: bash ./scripts/dev_setup.sh  -b -t -y
       - name: run cargo bench
         run: bash ./scripts/benchmark.sh
         env:

@@ -12,6 +12,10 @@ use mirai_annotations::checked_verify;
 use once_cell::sync::Lazy;
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::DEFAULT_GAS_CONSTANTS;
+use starcoin_types::account_config::genesis_address;
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::StructTag;
+use starcoin_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -639,6 +643,22 @@ pub fn eval_with_executor<TComp: Compiler>(
                 genesis_account.has_delegated_withdrawal_capability(),
             );
             exec.add_account_data(&genesis_account_data);
+            {
+                let mut writes = WriteSetMut::default();
+                writes.push((
+                    AccessPath::resource_access_path(
+                        *genesis.address(),
+                        StructTag {
+                            address: genesis_address(),
+                            module: Identifier::new("Account")?,
+                            name: Identifier::new("SignerDelegated")?,
+                            type_params: vec![],
+                        },
+                    ),
+                    WriteOp::Deletion,
+                ));
+                exec.apply_write_set(&writes.freeze()?);
+            }
         }
     }
 
