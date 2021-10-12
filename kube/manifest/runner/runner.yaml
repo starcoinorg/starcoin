@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         starcoin/node-pool: ci-pool
-      image: starcoin/starcoin-builder:v2.283.3-ubuntu-20.04-b01e193
+      image: starcoin/starcoin-builder:sha-4a4d5e9
       repository: starcoinorg/starcoin
       serviceAccountName: github-runner
       resources:
