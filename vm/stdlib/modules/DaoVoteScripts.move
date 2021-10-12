@@ -17,11 +17,14 @@ module DaoVoteScripts {
         agree: bool,
         votes: u128,
     ) {
-        // if already voted, and vote is not same as the current cast, change the existing vote.
-        // resolve https://github.com/starcoinorg/starcoin/issues/2925.
-        let (agree_voted, _) = Dao::vote_of<Token>(Signer::address_of(&signer), proposer_address, proposal_id);
-        if (agree_voted != agree) {
-            Dao::change_vote<Token, ActionT>(&signer, proposer_address, proposal_id, agree);
+        let sender = Signer::address_of(&signer);
+        if (Dao::has_vote<Token>(sender, proposer_address, proposal_id)) {
+            // if already voted, and vote is not same as the current cast, change the existing vote.
+            // resolve https://github.com/starcoinorg/starcoin/issues/2925.
+            let (agree_voted, _) = Dao::vote_of<Token>(sender, proposer_address, proposal_id);
+            if (agree_voted != agree) {
+                Dao::change_vote<Token, ActionT>(&signer, proposer_address, proposal_id, agree);
+            }
         };
 
         let votes = Account::withdraw<Token>(&signer, votes);

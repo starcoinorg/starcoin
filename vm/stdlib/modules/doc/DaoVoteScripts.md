@@ -43,11 +43,14 @@
     agree: bool,
     votes: u128,
 ) {
-    // <b>if</b> already voted, and vote is not same <b>as</b> the current cast, change the existing vote.
-    // resolve https://github.com/starcoinorg/starcoin/issues/2925.
-    <b>let</b> (agree_voted, _) = <a href="Dao.md#0x1_Dao_vote_of">Dao::vote_of</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&signer), proposer_address, proposal_id);
-    <b>if</b> (agree_voted != agree) {
-        <a href="Dao.md#0x1_Dao_change_vote">Dao::change_vote</a>&lt;<a href="Token.md#0x1_Token">Token</a>, ActionT&gt;(&signer, proposer_address, proposal_id, agree);
+    <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&signer);
+    <b>if</b> (<a href="Dao.md#0x1_Dao_has_vote">Dao::has_vote</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(sender, proposer_address, proposal_id)) {
+        // <b>if</b> already voted, and vote is not same <b>as</b> the current cast, change the existing vote.
+        // resolve https://github.com/starcoinorg/starcoin/issues/2925.
+        <b>let</b> (agree_voted, _) = <a href="Dao.md#0x1_Dao_vote_of">Dao::vote_of</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(sender, proposer_address, proposal_id);
+        <b>if</b> (agree_voted != agree) {
+            <a href="Dao.md#0x1_Dao_change_vote">Dao::change_vote</a>&lt;<a href="Token.md#0x1_Token">Token</a>, ActionT&gt;(&signer, proposer_address, proposal_id, agree);
+        }
     };
 
     <b>let</b> votes = <a href="Account.md#0x1_Account_withdraw">Account::withdraw</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;(&signer, votes);

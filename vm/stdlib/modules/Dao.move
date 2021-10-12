@@ -832,6 +832,20 @@ module Dao {
         include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
     }
 
+    /// Check whether voter has voted on proposal with `proposal_id` of `proposer_address`.
+    public fun has_vote<TokenT: copy + drop + store>(
+        voter: address,
+        proposer_address: address,
+        proposal_id: u64,
+    ): bool acquires Vote {
+        if (!exists<Vote<TokenT>>(voter)) {
+            return false
+        };
+
+        let vote = borrow_global<Vote<TokenT>>(voter);
+        vote.proposer == proposer_address && vote.id == proposal_id
+    }
+
     fun generate_next_proposal_id<TokenT: store>(): u64 acquires DaoGlobalInfo {
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         let proposal_id = gov_info.next_proposal_id;
