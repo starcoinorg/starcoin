@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         starcoin/node-pool: ci-pool
-      image: starcoin/starcoin-builder:sha-4a4d5e9
+      image: starcoin/starcoin-builder:sha-5141619
       repository: starcoinorg/starcoin
       serviceAccountName: github-runner
       resources:
