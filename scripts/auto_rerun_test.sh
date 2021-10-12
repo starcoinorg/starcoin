@@ -5,10 +5,6 @@ STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 TEST_RESULT_FILE="$STARCOIN_DIR/target/debug/test_result.txt"
 TEST_RESULT_FAILED_FILE="$STARCOIN_DIR/target/debug/test_result_failed.txt"
 
-BOOGIE_PATH="$HOME/.dotnet/tools/boogie"
-export BOOGIE_EXE=$BOOGIE_PATH;
-export Z3_EXE=/usr/local/bin/z3;
-
 export RUSTFLAGS='-Ccodegen-units=1 -Copt-level=0'
 export RUSTC_BOOTSTRAP=1
 export RUST_MIN_STACK=8388608 # 8 * 1024 * 1024
