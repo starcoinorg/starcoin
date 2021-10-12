@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 
 TEST_RESULT_FILE="$STARCOIN_DIR/target/debug/test_result.txt"
@@ -13,7 +15,7 @@ echo check ulimits
 ulimit -a
 
 #pleanse ensure tow test command's argument is same.
-RUST_LOG=OFF RUST_BACKTRACE=0 cargo xtest --no-fail-fast -j 15 -- --test-threads=2 --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
+RUST_LOG=OFF RUST_BACKTRACE=0 cargo xtest --exclude starcoin-move-prover --no-fail-fast -j 15 -- --test-threads=2 --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
 grep -e '^test[[:space:]][^[:space:]]*[[:space:]]\.\.\.[[:space:]]FAILED' "$TEST_RESULT_FILE" >"$TEST_RESULT_FAILED_FILE" ||true
 
 status=0
