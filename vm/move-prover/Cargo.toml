@@ -1,5 +1,5 @@
 [package]
-name = "move-prover"
+name = "starcoin-move-prover"
 version = "1.7.0"
 authors = ["Diem Association <opensource@diem.com>"]
 publish = false

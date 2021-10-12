@@ -5276,36 +5276,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "move-prover"
-version = "1.7.0"
-dependencies = [
- "anyhow",
- "atty",
- "clap 2.33.3",
- "codespan-reporting",
- "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "diem-temppath",
- "hex",
- "itertools 0.10.1",
- "log 0.4.14",
- "move-command-line-common",
- "move-prover 0.1.0",
- "move-prover-test-utils",
- "num",
- "once_cell",
- "pretty",
- "rand 0.8.4",
- "regex",
- "serde",
- "serde_json",
- "shell-words",
- "simplelog",
- "tempfile",
- "toml",
- "walkdir",
-]
-
-[[package]]
 name = "move-prover-test-utils"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=6c2c02bb99728136dd144175b647ba3b1695d224#6c2c02bb99728136dd144175b647ba3b1695d224"
@@ -5329,7 +5299,7 @@ dependencies = [
  "move-binary-format",
  "move-command-line-common",
  "move-core-types",
- "move-prover 0.1.0",
+ "move-prover",
  "move-vm-runtime",
  "move-vm-types",
  "sha2 0.9.3",
@@ -9044,6 +9014,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-move-prover"
+version = "1.7.0"
+dependencies = [
+ "anyhow",
+ "atty",
+ "clap 2.33.3",
+ "codespan-reporting",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "diem-temppath",
+ "hex",
+ "itertools 0.10.1",
+ "log 0.4.14",
+ "move-command-line-common",
+ "move-prover",
+ "move-prover-test-utils",
+ "num",
+ "once_cell",
+ "pretty",
+ "rand 0.8.4",
+ "regex",
+ "serde",
+ "serde_json",
+ "shell-words",
+ "simplelog",
+ "tempfile",
+ "toml",
+ "walkdir",
+]
+
+[[package]]
 name = "starcoin-natives"
 version = "0.1.0"
 dependencies = [
@@ -9053,7 +9053,7 @@ dependencies = [
  "move-binary-format",
  "move-command-line-common",
  "move-core-types",
- "move-prover 0.1.0",
+ "move-prover",
  "move-vm-runtime",
  "move-vm-types",
  "smallvec 1.7.0",
@@ -9978,7 +9978,7 @@ dependencies = [
  "include_dir",
  "itertools 0.10.1",
  "log 0.4.14",
- "move-prover 0.1.0",
+ "move-prover",
  "once_cell",
  "rayon",
  "serde",
