@@ -18,7 +18,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use walkdir::WalkDir;
 
 const ENV_FLAGS: &str = "MVP_TEST_FLAGS";
-const ENV_TEST_EXTENDED: &str = "MVP_TEST_X";
 const ENV_TEST_INCONSISTENCY: &str = "MVP_TEST_INCONSISTENCY";
 const ENV_TEST_FEATURE: &str = "MVP_TEST_FEATURE";
 const ENV_TEST_ON_CI: &str = "MVP_TEST_ON_CI";
@@ -305,13 +304,7 @@ fn main() {
         if feature_narrow.is_empty() && feature.only_if_requested {
             continue;
         }
-        // Check whether we are running extended tests
-        if read_env_var(ENV_TEST_EXTENDED) == "1" {
-            collect_enabled_tests(&mut reqs, "extended", feature, "tests/xsources");
-        } else {
-            collect_enabled_tests(&mut reqs, "unit", feature, "tests/sources");
-            collect_enabled_tests(&mut reqs, "stdlib", feature, "../stdlib/modules");
-        }
+        collect_enabled_tests(&mut reqs, "stdlib", feature, "../stdlib/modules");
     }
     datatest_stable::runner(&reqs);
 }
