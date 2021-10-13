@@ -1,6 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    prometheus.io/scheme: 'http'
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '9101'
+    prometheus.io/path: '/metrics'
   name: starcoin-svc
   namespace: starcoin-proxima
 spec:
@@ -19,10 +24,10 @@ spec:
       port: 9870
       targetPort: 9870
       name: ws-rpc
-    - protocol: TCP
-      port: 8000
-      targetPort: 8000
-      name: http-faucet
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
   type: LoadBalancer
 ---
 apiVersion: v1
