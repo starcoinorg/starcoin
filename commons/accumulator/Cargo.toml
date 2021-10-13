@@ -19,7 +19,7 @@ bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0.130" }
 lru = "0.7.0"
 parking_lot = "0.11.2"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="44133de95bd7fe9dbd9ea16a8c012cbfcdae0445"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="67e185dd17fa24ad349bf2ad0828068cdae77505"}
 
 [dev-dependencies]
 rand = "0.8.4"

@@ -15,4 +15,4 @@ starcoin-accumulator = {path = "../../commons/accumulator"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 stream-task ={ path = "../../commons/stream-task"}
 network-api = {path = "../../network/api", package="network-api"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="44133de95bd7fe9dbd9ea16a8c012cbfcdae0445"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="67e185dd17fa24ad349bf2ad0828068cdae77505"}

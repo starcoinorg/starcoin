@@ -19,4 +19,4 @@ log4rs = { version="1.0.0", features = ["background_rotation", "gzip"]}
 once_cell = "1.8.0"
 serde = { version = "1.0.130", features = ["derive"] }
 parking_lot = "0.11.2"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="44133de95bd7fe9dbd9ea16a8c012cbfcdae0445"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="67e185dd17fa24ad349bf2ad0828068cdae77505"}
