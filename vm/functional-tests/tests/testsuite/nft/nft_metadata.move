@@ -5,7 +5,8 @@
 address creator = {{creator}};
 module creator::Card {
     use 0x1::Timestamp;
-    use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability, UpdateCapability};
+    use 0x1::NFT::{Self, NFT, Metadata, MintCapability, BurnCapability, UpdateCapability};
+    use 0x1::Signer;
 
     struct Card has copy, store, drop{
         upgrade_time: u64,
@@ -23,8 +24,6 @@ module creator::Card {
         cap: BurnCapability<Card>,
     }
 
-    struct NFTInfo has copy, drop, store{}
-
     struct CardUpdateCapability has key{
         cap: UpdateCapability<Card>,
     }
@@ -38,7 +37,8 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        NFT::register<Card, NFTInfo>(sender, NFTInfo{}, NFT::empty_meta());
+        assert(Signer::address_of(sender) == @creator, 1000);
+        NFT::register_v2<Card>(sender, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<Card>(sender);
         move_to(sender, CardMintCapability{ cap});
 
@@ -52,7 +52,7 @@ module creator::Card {
     public fun mint(_sender: &signer): NFT<Card, CardBody> acquires CardMintCapability{
         let cap = borrow_global_mut<CardMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"card", b"ipfs:://xxxxxx", b"This is a Card nft.");
-        NFT::mint_with_cap<Card, CardBody, NFTInfo>(@creator, &mut cap.cap, metadata, Card{ upgrade_time: Timestamp::now_milliseconds()}, CardBody{ level: 1})
+        NFT::mint_with_cap_v2<Card, CardBody>(@creator, &mut cap.cap, metadata, Card{ upgrade_time: Timestamp::now_milliseconds()}, CardBody{ level: 1})
     }
 
     /// upgrade the first card by burn the second card.
@@ -75,6 +75,12 @@ module creator::Card {
         });
         let body = NFT::borrow_body_mut_with_cap(&mut update_cap.cap, first);
         body.level = level;
+    }
+
+    public fun update_type_info_meta(sender: &signer, meta: Metadata) acquires CardUpdateCapability{
+        assert(Signer::address_of(sender) == @creator, 1000);
+        let update_cap = borrow_global_mut<CardUpdateCapability>(@creator);
+        NFT::update_nft_type_info_meta_with_cap(&mut update_cap.cap, meta);
     }
 }
 
@@ -149,6 +155,36 @@ script {
         let level = Card::get_level(body);
         assert(level == 2, 1003);
         NFTGallery::deposit(&sender, card);
+    }
+}
+
+// check: EXECUTED
+
+
+//! new-transaction
+//! sender: creator
+address creator = {{creator}};
+script {
+    use creator::Card::{Self, Card};
+    use 0x1::NFT;
+
+    fun main(sender: signer) {
+        let type_meta = NFT::nft_type_info_meta<Card>();
+        assert(NFT::meta_name(&type_meta) == b"", 1004);
+        assert(NFT::meta_image(&type_meta) == b"", 1005);
+        assert(NFT::meta_description(&type_meta) == b"", 1006);
+
+        let name = b"card";
+        let image = b"ipfs://image_hash";
+        let description = b"a card game nft";
+        let new_meta = NFT::new_meta_with_image(*&name, *&image, *&description);
+
+        Card::update_type_info_meta(&sender, new_meta);
+
+        let type_meta = NFT::nft_type_info_meta<Card>();
+        assert(NFT::meta_name(&type_meta) == name, 1007);
+        assert(NFT::meta_image(&type_meta) == image, 1008);
+        assert(NFT::meta_description(&type_meta) == description, 1009);
     }
 }
 
