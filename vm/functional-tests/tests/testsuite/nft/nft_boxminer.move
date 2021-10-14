@@ -8,12 +8,13 @@ module creator::BoxMiner {
     use 0x1::Account;
     use 0x1::NFTGallery;
     use 0x1::STC::STC;
+    use 0x1::Signer;
 
     struct BoxMiner has copy, store, drop{
         price: u128,
     }
 
-    struct NFTInfo has copy, store, drop{
+    struct NFTInfo has copy, store, drop, key{
         total_supply: u64,
         price: u128,
     }
@@ -24,8 +25,10 @@ module creator::BoxMiner {
     }
 
     public fun init(sender: &signer, total_supply:u64, price: u128){
+        assert(Signer::address_of(sender) == @creator, 1000);
         let meta = NFT::new_meta_with_image(b"stc_box_miner_nft", b"ipfs:://xxx", b"This is the starcoin boxminer nft");
-        NFT::register<BoxMiner, NFTInfo>(sender, NFTInfo{total_supply, price}, meta);
+        NFT::register_v2<BoxMiner>(sender, meta);
+        move_to(sender, NFTInfo{total_supply, price});
         let cap = NFT::remove_mint_capability<BoxMiner>(sender);
         move_to(sender, BoxMinerMintCapability{cap});
     }
@@ -34,9 +37,9 @@ module creator::BoxMiner {
         NFTGallery::accept<BoxMiner, BoxMinerBody>(sender);
     }
 
-    public fun mint(sender: &signer): NFT<BoxMiner, BoxMinerBody> acquires BoxMinerMintCapability{
-        let ex_info = NFT::nft_type_info_ex_info<BoxMiner, NFTInfo>();
-        let counter = NFT::nft_type_info_counter<BoxMiner, NFTInfo>();
+    public fun mint(sender: &signer): NFT<BoxMiner, BoxMinerBody> acquires BoxMinerMintCapability, NFTInfo{
+        let ex_info = borrow_global<NFTInfo>(@creator);
+        let counter = NFT::nft_type_info_counter_v2<BoxMiner>();
         let total_supply = ex_info.total_supply;
         let price = ex_info.price;
         assert(total_supply >= counter, 1000);
@@ -44,7 +47,7 @@ module creator::BoxMiner {
         Account::deposit<STC>(@creator, tokens);
         let cap = borrow_global_mut<BoxMinerMintCapability>(@creator);
         let metadata = NFT::new_meta(b"stc_box_miner", b"This is the starcoin boxminer.");
-        let nft = NFT::mint_with_cap<BoxMiner, BoxMinerBody, NFTInfo>(@creator, &mut cap.cap, metadata, BoxMiner{price}, BoxMinerBody{});
+        let nft = NFT::mint_with_cap_v2<BoxMiner, BoxMinerBody>(@creator, &mut cap.cap, metadata, BoxMiner{price}, BoxMinerBody{});
         return nft
     }
 }

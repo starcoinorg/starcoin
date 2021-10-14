@@ -10,7 +10,6 @@ module creator::AnyNFT {
     struct AnyNFT has copy, store, drop{}
     struct AnyNFTBody has store{
     }
-    struct AnyNFTInfo has copy,store,drop{}
 
     struct AnyNFTMintCapability has key{
         cap: MintCapability<AnyNFT>,
@@ -21,7 +20,7 @@ module creator::AnyNFT {
     }
 
     public fun init(sender: &signer){
-        NFT::register<AnyNFT,AnyNFTInfo>(sender, AnyNFTInfo{}, NFT::empty_meta());
+        NFT::register_v2<AnyNFT>(sender,NFT::empty_meta());
         let cap = NFT::remove_mint_capability<AnyNFT>(sender);
         move_to(sender, AnyNFTMintCapability{cap});
         let cap = NFT::remove_burn_capability<AnyNFT>(sender);
@@ -33,7 +32,7 @@ module creator::AnyNFT {
         let sender_addr = Signer::address_of(sender);
         let cap = borrow_global_mut<AnyNFTMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"test_nft_1", b"ipfs:://xxxxxx", b"This is a test nft.");
-        let nft = NFT::mint_with_cap<AnyNFT,AnyNFTBody,AnyNFTInfo>(sender_addr, &mut cap.cap, metadata, AnyNFT{}, AnyNFTBody{});
+        let nft = NFT::mint_with_cap_v2<AnyNFT,AnyNFTBody>(sender_addr, &mut cap.cap, metadata, AnyNFT{}, AnyNFTBody{});
         NFTGallery::deposit(sender, nft);
     }
 
