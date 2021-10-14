@@ -9,15 +9,14 @@ module creator::TestNFT {
     struct TestNFT has copy, store, drop{}
     struct TestNFTBody has store{
     }
-    struct NFTInfo has copy,store,drop{}
     public fun init(sender: &signer){
-        NFT::register<TestNFT,NFTInfo>(sender, NFTInfo{},NFT::empty_meta());
+        NFT::register_v2<TestNFT>(sender, NFT::empty_meta());
         Self::do_accept(sender);
     }
 
     public fun mint(sender: &signer){
         let metadata = NFT::new_meta_with_image(b"test_nft_1", b"ipfs:://xxxxxx", b"This is a test nft.");
-        let nft = NFT::mint<TestNFT,TestNFTBody,NFTInfo>(sender, metadata, TestNFT{}, TestNFTBody{});
+        let nft = NFT::mint_v2<TestNFT,TestNFTBody>(sender, metadata, TestNFT{}, TestNFTBody{});
         NFTGallery::deposit(sender, nft);
     }
 

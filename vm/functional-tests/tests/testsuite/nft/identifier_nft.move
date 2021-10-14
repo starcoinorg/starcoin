@@ -20,7 +20,7 @@ module creator::XMembership {
     use 0x1::Signer;
     use 0x1::Option;
 
-    struct XMembershipInfo has copy, store, drop{
+    struct XMembershipInfo has copy, store, drop, key{
         price_per_millis: u128,
     }
 
@@ -47,7 +47,9 @@ module creator::XMembership {
 
     public fun init(sender: &signer){
         assert(Signer::address_of(sender) == @creator, 1000);
-        NFT::register<XMembership,XMembershipInfo>(sender, XMembershipInfo{ price_per_millis:2 }, NFT::empty_meta());
+
+        NFT::register_v2<XMembership>(sender, NFT::empty_meta());
+        move_to(sender, XMembershipInfo{ price_per_millis:2 });
         let cap = NFT::remove_mint_capability<XMembership>(sender);
         move_to(sender, XMembershipMintCapability{ cap});
 
@@ -58,14 +60,14 @@ module creator::XMembership {
         move_to(sender, XMembershipUpdateCapability{ cap});
     }
 
-    public fun join(sender: &signer, fee: u128) acquires XMembershipMintCapability{
+    public fun join(sender: &signer, fee: u128) acquires XMembershipMintCapability, XMembershipInfo{
         let token = Account::withdraw<STC>(sender, fee);
         let cap = borrow_global_mut<XMembershipMintCapability>(@creator);
         let metadata = NFT::new_meta_with_image(b"xmembership", b"ipfs:://xxxxxx", b"This is a XMembership nft.");
-        let info = NFT::nft_type_info_ex_info<XMembership,XMembershipInfo>();
+        let info = borrow_global<XMembershipInfo>(@creator);
         let join_time = Timestamp::now_milliseconds();
         let end_time = join_time + ((Token::value(&token)/info.price_per_millis) as u64);
-        let nft = NFT::mint_with_cap<XMembership,XMembershipBody,XMembershipInfo>(@creator, &mut cap.cap, metadata, XMembership{ join_time, end_time}, XMembershipBody{ fee: token});
+        let nft = NFT::mint_with_cap_v2<XMembership,XMembershipBody>(@creator, &mut cap.cap, metadata, XMembership{ join_time, end_time}, XMembershipBody{ fee: token});
         IdentifierNFT::grant(&mut cap.cap, sender, nft);
     }
 

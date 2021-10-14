@@ -82,6 +82,7 @@ module NFT {
         }
     }
 
+    /// Note: this function is deprecated, please use nft_type_info_counter_v2
     public fun nft_type_info_counter<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(): u64 acquires NFTTypeInfo, NFTTypeInfoV2 {
         if(exists<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS())){
             Self::nft_type_info_counter_v2<NFTMeta>()
@@ -94,6 +95,11 @@ module NFT {
     public fun nft_type_info_counter_v2<NFTMeta: copy + store + drop>(): u64 acquires NFTTypeInfoV2 {
         let info = borrow_global_mut<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS());
         *&info.counter
+    }
+
+    public fun nft_type_info_meta<NFTMeta: copy + store + drop>(): Metadata acquires NFTTypeInfoV2 {
+        let info = borrow_global_mut<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS());
+        *&info.meta
     }
 
     public fun upgrade_nft_type_info_from_v1_to_v2<NFTMeta: copy + store + drop, NFTTypeInfoExt: copy + store + drop>(sender: &signer, _cap: &mut MintCapability<NFTMeta>) acquires NFTTypeInfo{
@@ -120,7 +126,7 @@ module NFT {
         let NFTTypeInfoCompat{info} = compat_info;
         info
     }
-
+    /// deprecated.
     struct GenesisSignerCapability has key {
         cap: Account::SignerCapability,
     }
@@ -422,6 +428,20 @@ module NFT {
     ///Destroy the UpdateCapability<NFTMeta>
     public fun destroy_update_capability<NFTMeta: copy + store + drop>(cap: UpdateCapability<NFTMeta>) {
         let UpdateCapability {} = cap;
+    }
+
+    /// Update the NFTTypeInfoV2 metadata with UpdateCapability<NFTMeta>
+    public fun update_nft_type_info_meta_with_cap<NFTMeta: copy + store + drop>(_cap: &mut UpdateCapability<NFTMeta>, new_meta: Metadata) acquires NFTTypeInfoV2{
+        let info = borrow_global_mut<NFTTypeInfoV2<NFTMeta>>(CoreAddresses::GENESIS_ADDRESS());
+        info.meta = new_meta;
+    }
+
+    /// Update the NFTTypeInfoV2 metadata, the `sender` must have UpdateCapability<NFTMeta>
+    public fun update_nft_type_info_meta<NFTMeta: copy + store + drop, NFTBody: store>(sender: &signer, new_meta: Metadata) acquires UpdateCapability, NFTTypeInfoV2 {
+        let addr = Signer::address_of(sender);
+        assert(exists<UpdateCapability<NFTMeta>>(addr), Errors::requires_capability(ERR_NO_UPDATE_CAPABILITY));
+        let cap = borrow_global_mut<UpdateCapability<NFTMeta>>(addr);
+        update_nft_type_info_meta_with_cap(cap, new_meta)
     }
 
     /// Update the nft's base_meta and type_meta with UpdateCapability<NFTMeta>
