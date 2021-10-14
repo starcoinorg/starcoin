@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::peer_provider::{PeerSelector, PeerStrategy};
 use crate::peer_score::{InverseScore, Score};
 use starcoin_crypto::HashValue;
@@ -54,7 +57,7 @@ fn test_peer_selector() {
         ),
     ];
 
-    let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+    let peer_selector = PeerSelector::new(peers, PeerStrategy::default(), None);
     let best_selector = peer_selector.bests(0.into()).unwrap();
     assert_eq!(2, best_selector.len());
 
@@ -71,7 +74,7 @@ fn test_better_peer() {
 
     let first_peer = peers.get(0).cloned().expect("first peer must exist.");
 
-    let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+    let peer_selector = PeerSelector::new(peers, PeerStrategy::default(), None);
     let better_selector = peer_selector.betters(first_peer.total_difficulty(), 10);
     if let Some(better_selector) = better_selector {
         assert!(!better_selector.contains(&first_peer));

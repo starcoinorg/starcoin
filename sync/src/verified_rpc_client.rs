@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::sync_metrics::SYNC_METRICS;
-use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 use anyhow::{format_err, Result};
 use logger::prelude::*;
 use network_api::peer_score::{InverseScore, Score};
@@ -24,7 +22,6 @@ use starcoin_types::{
     transaction::TransactionInfo,
 };
 use std::fmt::Debug;
-use std::sync::Arc;
 use std::time::Instant;
 use thiserror::Error;
 
@@ -107,7 +104,7 @@ static BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
 pub struct VerifiedRpcClient {
     peer_selector: PeerSelector,
     client: NetworkRpcClient,
-    score_handler: Arc<dyn Score<u32> + 'static>,
+    score_handler: InverseScore,
 }
 
 impl VerifiedRpcClient {
@@ -122,7 +119,7 @@ impl VerifiedRpcClient {
         Self {
             peer_selector,
             client,
-            score_handler: Arc::new(InverseScore::new(100, 60)),
+            score_handler: InverseScore::new(100, 60),
         }
     }
 
@@ -130,11 +127,11 @@ impl VerifiedRpcClient {
         &self.peer_selector
     }
 
-    pub fn record(&self, peer: &PeerId, score: i64) {
+    pub fn record(&self, peer: &PeerId, score: u64) {
         self.peer_selector.peer_score(peer, score);
     }
 
-    fn score(&self, time: u32) -> i64 {
+    fn score(&self, time: u32) -> u64 {
         self.score_handler.execute(time)
     }
 
@@ -368,10 +365,6 @@ impl VerifiedRpcClient {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>> {
-        let _timer = SYNC_METRICS
-            .sync_get_block_ids_time
-            .with_label_values(&["time"])
-            .start_timer();
         let peer_id = match peer_id {
             None => self.select_a_peer()?,
             Some(p) => p,
@@ -389,20 +382,14 @@ impl VerifiedRpcClient {
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let peer_id = self.select_a_peer()?;
-        let timer = SYNC_SCORE_METRICS
-            .peer_sync_per_time
-            .with_label_values(&[&format!("peer-{:?}", peer_id)])
-            .start_timer();
         let start_time = Instant::now();
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
-        let _ = timer.stop_and_record();
         let time = (Instant::now()
             .saturating_duration_since(start_time)
             .as_millis()) as u32;
         let score = self.score(time);
         self.record(&peer_id, score);
-        SYNC_SCORE_METRICS.update_metrics(peer_id.clone(), time, score);
         Ok(ids
             .into_iter()
             .zip(blocks)

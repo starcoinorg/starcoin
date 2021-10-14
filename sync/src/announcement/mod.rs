@@ -63,7 +63,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
 
                 if !fresh_ids.is_empty() {
                     let peer_selector =
-                        PeerSelector::new(Vec::new(), PeerStrategy::default());
+                        PeerSelector::new(Vec::new(), PeerStrategy::default(), None);
                     let rpc_client = VerifiedRpcClient::new(
                         peer_selector,
                         network.clone(),

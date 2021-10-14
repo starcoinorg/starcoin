@@ -149,7 +149,8 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                                 info!("Peers is empty.");
                                 None
                             } else {
-                                let peer_selector = PeerSelector::new(peer_set, PeerStrategy::Best);
+                                let peer_selector =
+                                    PeerSelector::new(peer_set, PeerStrategy::Best, None);
                                 peer_selector.retain_rpc_peers();
                                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                                 let mut blocks = rpc_client.get_blocks(vec![block_hash]).await?;

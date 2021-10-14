@@ -1,72 +1,78 @@
-use once_cell::sync::Lazy;
-use starcoin_metrics::{
-    default_registry, register_histogram_vec, HistogramOpts, HistogramVec, Opts, PrometheusError,
-    UIntCounterVec,
-};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
 
-const SC_NS: &str = "starcoin";
-const PREFIX: &str = "sync_";
-
-pub const LABEL_BLOCK: &str = "block";
-pub const LABEL_BLOCK_BODY: &str = "body";
-pub const LABEL_HASH: &str = "hash";
-pub const LABEL_STATE: &str = "state";
-pub const LABEL_TXN_INFO: &str = "txn_info";
-pub const LABEL_ACCUMULATOR: &str = "accumulator";
-
-pub static SYNC_METRICS: Lazy<SyncMetrics> = Lazy::new(|| SyncMetrics::register().unwrap());
+use starcoin_metrics::{register, Opts, PrometheusError, Registry, UIntCounterVec, UIntGauge};
 
 #[derive(Clone)]
 pub struct SyncMetrics {
-    pub sync_get_block_ids_time: HistogramVec,
-    pub sync_apply_block_time: HistogramVec,
     pub sync_times: UIntCounterVec,
     pub sync_break_times: UIntCounterVec,
+    pub sync_block_count: UIntGauge,
+    pub sync_peer_count: UIntGauge,
+    pub sync_time: UIntGauge,
+    pub sync_time_per_block: UIntGauge,
 }
 
 impl SyncMetrics {
-    pub fn register() -> Result<Self, PrometheusError> {
-        let sync_get_block_ids_time = register_histogram_vec!(
-            HistogramOpts::new(
-                format!("{}{}", PREFIX, "sync_get_block_ids_time"),
-                "sync get_block_ids time".to_string()
-            )
-            .namespace(SC_NS),
-            &["sync_get_block_ids_time"]
-        )?;
-        let sync_apply_block_time = register_histogram_vec!(
-            HistogramOpts::new(
-                format!("{}{}", PREFIX, "sync_apply_block_time"),
-                "sync apply_block time".to_string()
-            )
-            .namespace(SC_NS),
-            &["sync_apply_block_time"]
-        )?;
-
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let sync_times = UIntCounterVec::new(
             Opts::new(
-                format!("{}{}", PREFIX, "sync_times"),
-                "sync times".to_string(),
+                "sync_times",
+                "sync times counter, how many sync task for every type".to_string(),
             )
-            .namespace(SC_NS),
+            .namespace("starcoin"),
             &["type"],
         )?;
+
         let sync_break_times = UIntCounterVec::new(
             Opts::new(
-                format!("{}{}", PREFIX, "sync_break_times"),
-                "sync break times".to_string(),
+                "sync_break_times",
+                "sync break times counter, how many sync break for every type".to_string(),
             )
-            .namespace(SC_NS),
+            .namespace("starcoin"),
             &["type"],
         )?;
-        default_registry().register(Box::new(sync_times.clone()))?;
-        default_registry().register(Box::new(sync_break_times.clone()))?;
+
+        let sync_block_count = UIntGauge::with_opts(
+            Opts::new(
+                "sync_block_count",
+                "sync blocks count gauge, how many block synced".to_string(),
+            )
+            .namespace("starcoin"),
+        )?;
+
+        let sync_peer_count = UIntGauge::with_opts(
+            Opts::new(
+                "sync_peer_count",
+                "sync peers gauge, how many peers of sync target".to_string(),
+            )
+            .namespace("starcoin"),
+        )?;
+
+        let sync_time = UIntGauge::with_opts(
+            Opts::new(
+                "sync_time",
+                "sync time gauge, how many milliseconds were used for sync".to_string(),
+            )
+            .namespace("starcoin"),
+        )?;
+
+        let sync_time_per_block = UIntGauge::with_opts(
+            Opts::new(
+                "sync_time_per_block",
+                "sync time per block gauge, how many milliseconds were used for sync one block"
+                    .to_string(),
+            )
+            .namespace("starcoin"),
+        )?;
 
         Ok(Self {
-            sync_get_block_ids_time,
-            sync_apply_block_time,
-            sync_times,
-            sync_break_times,
+            sync_times: register(sync_times, registry)?,
+            sync_break_times: register(sync_break_times, registry)?,
+            sync_block_count: register(sync_block_count, registry)?,
+            sync_peer_count: register(sync_peer_count, registry)?,
+            sync_time: register(sync_time, registry)?,
+            sync_time_per_block: register(sync_time_per_block, registry)?,
         })
     }
 }

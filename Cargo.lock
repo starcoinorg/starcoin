@@ -5544,6 +5544,7 @@ dependencies = [
  "serde",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-metrics",
  "starcoin-service-registry",
  "starcoin-types",
 ]

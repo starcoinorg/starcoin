@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_metrics::Registry;
+use starcoin_metrics::{default_registry, Registry};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -144,7 +144,12 @@ impl MetricsConfig {
 impl ConfigModule for MetricsConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
-        self.registry = Some(Registry::new_custom(Some("starcoin".to_string()), None)?);
+
+        //TODO change to new_custom registry after refactor all metrics.
+        let registry = default_registry().clone();
+        //let registry = Registry::new_custom(Some("starcoin".to_string()), None)?;
+
+        self.registry = Some(registry);
 
         if opt.metrics.disable_metrics.is_some() {
             self.disable_metrics = opt.metrics.disable_metrics;

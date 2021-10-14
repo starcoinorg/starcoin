@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::sync_metrics::SYNC_METRICS;
+use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
@@ -12,6 +12,7 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
+use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
@@ -57,6 +58,8 @@ pub struct SyncService {
     stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
+    metrics: Option<SyncMetrics>,
+    peer_score_metrics: Option<PeerScoreMetrics>,
 }
 
 impl SyncService {
@@ -71,12 +74,22 @@ impl SyncService {
         let head_block_info = storage
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-
+        //TODO bail PrometheusError after use custom metrics registry.
+        let metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| SyncMetrics::register(registry).ok());
+        let peer_score_metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| PeerScoreMetrics::register(registry).ok());
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
             config,
             storage,
+            metrics,
+            peer_score_metrics,
         })
     }
 
@@ -87,6 +100,14 @@ impl SyncService {
         peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
+        let sync_times = self
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.sync_times.clone());
+
+        if let Some(sync_times) = sync_times.as_ref() {
+            sync_times.with_label_values(&["check"]).inc();
+        }
         match std::mem::replace(&mut self.stage, SyncStage::Checking) {
             SyncStage::NotStart | SyncStage::Done => {
                 //continue
@@ -119,6 +140,8 @@ impl SyncService {
         let self_ref = ctx.self_ref();
         let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
+        let peer_score_metrics = self.peer_score_metrics.clone();
+        let sync_metrics = self.metrics.clone();
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -159,8 +182,12 @@ impl SyncService {
                 })
                 .collect();
 
-            let peer_selector =
-                PeerSelector::new_with_reputation(peer_reputations, peer_set, peer_select_strategy);
+            let peer_selector = PeerSelector::new_with_reputation(
+                peer_reputations,
+                peer_set,
+                peer_select_strategy,
+                peer_score_metrics,
+            );
 
             peer_selector.retain_rpc_peers();
             if !peers.is_empty() {
@@ -199,6 +226,7 @@ impl SyncService {
                     self_ref.clone(),
                     network.clone(),
                     config.sync.max_retry_times(),
+                    sync_metrics.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -207,7 +235,9 @@ impl SyncService {
                     task_event_handle,
                     peer_selector,
                 })?;
-                SYNC_METRICS.sync_times.with_label_values(&["start"]).inc();
+                if let Some(sync_times) = sync_times.as_ref() {
+                    sync_times.with_label_values(&["start"]).inc();
+                }
                 Ok(Some(fut.await?))
             } else {
                 debug!("[sync]No best peer to request, current is beast.");
@@ -216,12 +246,24 @@ impl SyncService {
         };
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let self_ref = ctx.self_ref();
+
+        let sync_times = self
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.sync_times.clone());
+        let sync_break_times = self
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.sync_break_times.clone());
+
         ctx.spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
-                        SYNC_METRICS.sync_times.with_label_values(&["done"]).inc();
+                        if let Some(sync_times) = sync_times.as_ref() {
+                            sync_times.with_label_values(&["done"]).inc();
+                        }
                         false
                     }
                     Ok(None) => {
@@ -233,11 +275,13 @@ impl SyncService {
                             match task_err {
                                 TaskError::Canceled => {
                                     info!("[sync] Sync task is cancel");
-                                    SYNC_METRICS.sync_times.with_label_values(&["cancel"]).inc();
+                                    if let Some(sync_times) = sync_times.as_ref() {
+                                        sync_times.with_label_values(&["cancel"]).inc();
+                                    }
                                     true
                                 }
                                 TaskError::BreakError(err) => {
-                                    if let Some(rpc_verify_err) =
+                                    let reason = if let Some(rpc_verify_err) =
                                         err.downcast_ref::<RpcVerifyError>()
                                     {
                                         for peer_id in rpc_verify_err.peers.as_slice() {
@@ -246,30 +290,39 @@ impl SyncService {
                                                 ReputationChange::new_fatal("invalid_response"),
                                             )
                                         }
-                                        SYNC_METRICS.sync_break_times.with_label_values(&["verify_err"]).inc();
+                                        "verify_err"
                                     }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
-                                        SYNC_METRICS.sync_break_times.with_label_values(&["bcs_err"]).inc();
+                                        "bcs_err"
                                     } else {
-                                        SYNC_METRICS.sync_break_times.with_label_values(&["other_err"]).inc();
+                                        "other_err"
+                                    };
+                                    if let Some(sync_break_times) = sync_break_times.as_ref() {
+                                        sync_break_times.with_label_values(&[reason]).inc();
                                     }
                                     warn!(
                                         "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
                                         err,
                                         err.root_cause(),
                                     );
-                                    SYNC_METRICS.sync_times.with_label_values(&["break"]).inc();
+                                    if let Some(sync_times) = sync_times.as_ref() {
+                                        sync_times.with_label_values(&["break"]).inc();
+                                    }
                                     false
                                 }
                                 task_err => {
                                     error!("[sync] Sync task error: {:?}", task_err);
-                                    SYNC_METRICS.sync_times.with_label_values(&["error"]).inc();
+                                    if let Some(sync_times) = sync_times.as_ref() {
+                                        sync_times.with_label_values(&["error"]).inc();
+                                    }
                                     false
                                 }
                             }
                         } else {
                             error!("[sync] Sync task error: {:?}", err);
-                            SYNC_METRICS.sync_times.with_label_values(&["error"]).inc();
+                            if let Some(sync_times) = sync_times.as_ref() {
+                                sync_times.with_label_values(&["error"]).inc();
+                            }
                             false
                         }
                     }

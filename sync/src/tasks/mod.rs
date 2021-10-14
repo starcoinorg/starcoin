@@ -506,11 +506,10 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
-pub mod sync_score_metrics;
 #[cfg(test)]
 mod tests;
 
-use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
+use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
@@ -526,6 +525,7 @@ pub fn full_sync_task<H, A, F, N>(
     ancestor_event_handle: A,
     peer_provider: N,
     max_retry_times: u64,
+    sync_metrics: Option<SyncMetrics>,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -645,24 +645,30 @@ where
                 .saturating_duration_since(start_now)
                 .as_millis();
             latest_block_chain = block_chain;
-            let total_num = latest_block_chain
+            let total_block_count = latest_block_chain
                 .current_header()
                 .number()
                 .saturating_sub(latest_ancestor.number);
+            let time_per_block = total_time
+                .checked_div(total_block_count as u128)
+                .unwrap_or(0);
             info!(
                 "[sync] sync strategy : {:?}, sync blocks: {:?}, time : {:?}, avg: {:?}",
                 fetcher.peer_selector().strategy(),
-                total_num,
+                total_block_count,
                 total_time,
-                total_time.checked_div(total_num as u128).unwrap_or(0)
+                time_per_block
             );
 
-            SYNC_SCORE_METRICS.report_sub_sync_target_metrics(
-                fetcher.peer_selector().len(),
-                fetcher.peer_selector().strategy(),
-                total_num as i64,
-                total_time as i64,
-            );
+            if let Some(sync_metrics) = sync_metrics.as_ref() {
+                sync_metrics.sync_time.set(total_time as u64);
+                sync_metrics.sync_time_per_block.set(time_per_block as u64);
+                sync_metrics.sync_block_count.set(total_block_count);
+                sync_metrics
+                    .sync_peer_count
+                    .set(fetcher.peer_selector().len() as u64);
+            }
+
             if target.target_id.number() <= latest_block_chain.status().head.number() {
                 break;
             }
