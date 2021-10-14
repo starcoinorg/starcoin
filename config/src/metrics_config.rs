@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use starcoin_metrics::Registry;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -52,7 +53,7 @@ impl PushParameterConfig {
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MetricsConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -82,7 +83,28 @@ pub struct MetricsConfig {
     #[serde(skip)]
     #[structopt(skip)]
     metrics_address: Option<SocketAddr>,
+
+    #[serde(skip)]
+    #[structopt(skip)]
+    registry: Option<Registry>,
 }
+
+impl PartialEq for MetricsConfig {
+    fn eq(&self, other: &Self) -> bool {
+        (
+            &self.disable_metrics,
+            &self.push_config,
+            &self.address,
+            &self.port,
+        ) == (
+            &other.disable_metrics,
+            &other.push_config,
+            &other.address,
+            &other.port,
+        )
+    }
+}
+
 impl MetricsConfig {
     fn base(&self) -> &BaseConfig {
         self.base.as_ref().expect("Config should init.")
@@ -113,11 +135,16 @@ impl MetricsConfig {
             ));
         }
     }
+
+    pub fn registry(&self) -> Option<&Registry> {
+        self.registry.as_ref()
+    }
 }
 
 impl ConfigModule for MetricsConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
+        self.registry = Some(Registry::new_custom(Some("starcoin".to_string()), None)?);
 
         if opt.metrics.disable_metrics.is_some() {
             self.disable_metrics = opt.metrics.disable_metrics;
