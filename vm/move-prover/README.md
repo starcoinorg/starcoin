@@ -1,4 +1,3 @@
-
 # The Move Prover
 
 The Move Prover supports formal specification and verification of Move programs. It can automatically prove
@@ -12,5 +11,4 @@ It's purpose is to make contracts more *trustworthy*, specifically:
 
 For more information, refer to the documentation:
 
--  [Move Prover User Guide](./docs/prover-guide.md)
--  [Move Specification Language](./docs/spec-lang.md)
+- [move-prover](https://github.com/diem/diem/tree/main/language/move-prover)
