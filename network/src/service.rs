@@ -7,7 +7,10 @@ use crate::{build_network_worker, Announcement};
 use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
-use futures::FutureExt;
+use futures::{
+    stream::{self, StreamExt},
+    FutureExt,
+};
 use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
@@ -186,12 +189,12 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
         ctx: &mut ServiceContext<NetworkActorService>,
     ) {
         let prepared_to_broadcast = self.inner.prepare_broadcast(msg);
-        for (protocol, peer_ids, data) in prepared_to_broadcast {
-            for peer_id in peer_ids {
-                let protocol = protocol.clone();
-                let data = data.clone();
-                let network_service = self.network_service();
-                let fut = async move {
+        let network_service = self.network_service();
+        let fut = stream::iter(prepared_to_broadcast).for_each_concurrent(
+            Some(5),
+            move |(protocol, peer_id, data)| {
+                let network_service = network_service.clone();
+                async move {
                     if network_service
                         .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
                         .await
@@ -202,10 +205,10 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
                             peer_id, protocol
                         );
                     }
-                };
-                ctx.spawn(fut)
-            }
-        }
+                }
+            },
+        );
+        ctx.spawn(fut)
     }
 }
 
@@ -214,7 +217,7 @@ impl EventHandler<Self, PeerMessage> for NetworkActorService {
         let network_service = self.network_service();
         let peer_id = msg.peer_id;
         let notification = msg.notification;
-        if let Ok((protocol, data)) = self
+        if let Some((protocol, data)) = self
             .inner
             .prepare_send_peer_message(peer_id.clone(), notification)
         {
@@ -252,12 +255,12 @@ impl EventHandler<Self, PropagateTransactions> for NetworkActorService {
                 .prepare_broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
                     txns,
                 )));
-        for (protocol, peer_ids, data) in prepared_to_broadcast {
-            for peer_id in peer_ids {
-                let protocol = protocol.clone();
-                let data = data.clone();
-                let network_service = self.network_service();
-                let fut = async move {
+        let network_service = self.network_service();
+        let fut = stream::iter(prepared_to_broadcast).for_each_concurrent(
+            Some(5),
+            move |(protocol, peer_id, data)| {
+                let network_service = network_service.clone();
+                async move {
                     if network_service
                         .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
                         .await
@@ -268,10 +271,10 @@ impl EventHandler<Self, PropagateTransactions> for NetworkActorService {
                             peer_id, protocol
                         );
                     }
-                };
-                ctx.spawn(fut)
-            }
-        }
+                }
+            },
+        );
+        ctx.spawn(fut)
     }
 }
 
@@ -575,7 +578,7 @@ impl Inner {
         &mut self,
         peer_id: PeerId,
         notification: NotificationMessage,
-    ) -> Result<(Cow<'static, str>, Vec<u8>)> {
+    ) -> Option<(Cow<'static, str>, Vec<u8>)> {
         let (protocol_name, data) = notification
             .encode_notification()
             .expect("Encode notification message should ok");
@@ -584,7 +587,7 @@ impl Inner {
                 "[network]protocol {:?} not supported by peer {:?}",
                 protocol_name, peer_id
             );
-            anyhow::bail!("Invalid protocol")
+            return None;
         }
         match notification {
             NotificationMessage::Transactions(txn_message) => {
@@ -605,13 +608,13 @@ impl Inner {
                 }
             }
         };
-        Ok((protocol_name, data))
+        Some((protocol_name, data))
     }
 
     pub(crate) fn prepare_broadcast(
         &mut self,
         notification: NotificationMessage,
-    ) -> Vec<(Cow<'static, str>, Vec<PeerId>, Vec<u8>)> {
+    ) -> Vec<(Cow<'static, str>, PeerId, Vec<u8>)> {
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .broadcast_duration
@@ -675,12 +678,16 @@ impl Inner {
                 for peer_id in &selected_peers {
                     let peer = self.peers.get_mut(peer_id).expect("peer should exists");
                     peer.known_blocks.put(id, ());
+                    prepare_to_broadcast.push((
+                        protocol_name.clone(),
+                        peer_id.clone(),
+                        message.clone(),
+                    ));
                 }
                 debug!(
                     "[network] broadcast new compact block message {:?} to {} peers, total_peers: {}, peers_after_known_hash_filter: {}, peers_after_protocol_filter: {}",
                     id, peers_send_message, peers_len, peers_after_known_hash_filter, peers_after_protocol_filter
                 );
-                prepare_to_broadcast.push((protocol_name, selected_peers, message));
             }
             NotificationMessage::Transactions(msg) => {
                 let (protocol_name, origin_message) = notification
@@ -756,7 +763,7 @@ impl Inner {
                         continue;
                     }
                     send_peer_count = send_peer_count.saturating_add(1);
-                    prepare_to_broadcast.push((real_protocol_name, vec![peer_id], data));
+                    prepare_to_broadcast.push((real_protocol_name, peer_id, data));
                 }
                 debug!(
                     "[network] broadcast new {} transactions to {} peers",
