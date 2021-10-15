@@ -15,18 +15,18 @@
 - Collection2、Treasury、TransferScripts
 - init_script: "cargo run -- -v 3 -m StdlibUpgradeScripts -f upgrade_from_v2_to_v3 -a 3185136000000000000u128"
 - need update Consensus Config 'base_reward_per_block'
-    
+
 ## Version 4
-    
+
 - remove deprecated methods
 
 ## Version 5
-    
+
 - Add max amount limit to treasury withdraw propose.
 - New authentication_key check strategy, create account do not need authentication_key. Provider Account::create_account_with_address, and TransactionManager::epilogue_v2
 
 ## Version 6
-    
+
 - init_script: "cargo run -- -v 6 -m StdlibUpgradeScripts -f upgrade_from_v5_to_v6"
 - Update specs to use move 1.3 syntax. (#2603)
 - Support contract account by using `SignerCapability` abstraction. (#2673)
@@ -45,3 +45,10 @@
 - NFT improvements, resolve #2842 . (#2856)
 - Implement yield farming module (#2832) (#2852)
 - Support language version OnChainConfig (#2845)
+
+## Version 8
+
+- Account: `Account::remove_signer_capability` now is available to every user.  (#2926)
+- Dao: If the user revokes all vote, should destroy the user's vote resource. Add change_vote script to DaoVoteScripts, and add more scripts to DaoVoteScripts. Support auto change_vote in DaoVoteScripts::cast_vote. (#2925, #2947)
+- NFT: Support update NFTTypeInfo metadata. (#2952, #2887)
+- And all stdlib modules now use v3 bytecode version. (#2956)
