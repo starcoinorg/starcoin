@@ -6,9 +6,12 @@ use crate::dev::sign_txn_helper::get_dao_config;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use move_command_line_common::testing::format_diff;
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::BuiltinNetworkID;
+use starcoin_rpc_client::StateRootOption;
 use starcoin_transaction_builder::build_vm_config_upgrade_proposal;
+use starcoin_vm_types::on_chain_config::{OnChainConfig, VMConfig};
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
@@ -41,6 +44,18 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
         let opt = ctx.opt();
 
         let genesis_config = opt.net.genesis_config().clone();
+        let onchain_vm_config = {
+            let client = ctx.state().client();
+            let reader = client.state_reader(StateRootOption::Latest)?;
+            VMConfig::fetch_config(&reader)?.unwrap()
+        };
+        let diff = {
+            let current_config = serde_json::to_string_pretty(&onchain_vm_config)?;
+            let new_config = serde_json::to_string_pretty(&genesis_config.vm_config)?;
+            format_diff(current_config, new_config)
+        };
+        println!("{}", diff);
+
         let min_action_delay = get_dao_config(ctx.state())?.min_action_delay;
         let vm_config_upgrade_proposal =
             build_vm_config_upgrade_proposal(genesis_config.vm_config, min_action_delay);

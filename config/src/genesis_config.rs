@@ -699,7 +699,6 @@ pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_numbe
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
-pub static MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 4096 * 32; // 128k
 
 /// For V1 all accounts will be ~800 bytes
 static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
@@ -751,7 +750,7 @@ pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
         maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
         min_price_per_gas_unit: GasPrice::new(0),
         max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V3, // to pass stdlib_upgrade
+        max_transaction_size_in_bytes: 4096 * 32, // 128k, to pass stdlib_upgrade
         gas_unit_scaling_factor: 1,
         default_account_size: *DEFAULT_ACCOUNT_SIZE,
     }
@@ -891,7 +890,23 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            gas_schedule: CostTable {
+                instruction_table: initial_instruction_table(),
+                native_table: initial_native_table(),
+                gas_constants: GasConstants {
+                    global_memory_per_byte_cost: InternalGasUnits::new(4),
+                    global_memory_per_byte_write_cost: InternalGasUnits::new(9),
+                    min_transaction_gas_units: InternalGasUnits::new(600),
+                    large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+                    intrinsic_gas_per_byte: InternalGasUnits::new(8),
+                    maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
+                    min_price_per_gas_unit: GasPrice::new(1),
+                    max_price_per_gas_unit: GasPrice::new(10_000),
+                    max_transaction_size_in_bytes: 4096 * 32, // 128k
+                    gas_unit_scaling_factor: 1,
+                    default_account_size: *DEFAULT_ACCOUNT_SIZE,
+                }
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
