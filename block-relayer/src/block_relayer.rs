@@ -187,7 +187,7 @@ impl BlockRelayer {
                     .get_peer(peer_id.clone())
                     .await?
                     .ok_or_else(|| format_err!("CompatBlockMessage's peer {} is not connected"))?;
-                let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default());
+                let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default(), None);
                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                 let timer = BLOCK_RELAYER_METRICS.txns_filled_time.start_timer();
                 let block = BlockRelayer::fill_compact_block(

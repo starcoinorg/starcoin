@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
@@ -218,10 +217,6 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        let _timer = SYNC_METRICS
-            .sync_apply_block_time
-            .with_label_values(&["time"])
-            .start_timer();
         if let Some((_failed_block, pre_peer_id, err)) = self
             .chain
             .get_storage()

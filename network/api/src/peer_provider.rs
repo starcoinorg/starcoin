@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::peer_score::ScoreCounter;
+use crate::peer_score::{PeerScoreMetrics, ScoreCounter};
 use crate::PeerId;
 use crate::PeerInfo;
 use anyhow::Result;
@@ -41,7 +41,6 @@ pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     fn ban_peer(&self, peer_id: PeerId, ban: bool);
 }
 
-#[derive(Clone)]
 pub struct PeerDetail {
     peer_info: PeerInfo,
     score_counter: ScoreCounter,
@@ -134,6 +133,7 @@ pub struct PeerSelector {
     details: Arc<Mutex<Vec<PeerDetail>>>,
     total_score: Arc<AtomicU64>,
     strategy: PeerStrategy,
+    peer_score_metrics: Option<PeerScoreMetrics>,
 }
 
 impl Debug for PeerSelector {
@@ -149,14 +149,19 @@ impl Debug for PeerSelector {
 }
 
 impl PeerSelector {
-    pub fn new(peers: Vec<PeerInfo>, strategy: PeerStrategy) -> Self {
-        Self::new_with_reputation(Vec::new(), peers, strategy)
+    pub fn new(
+        peers: Vec<PeerInfo>,
+        strategy: PeerStrategy,
+        peer_score_metrics: Option<PeerScoreMetrics>,
+    ) -> Self {
+        Self::new_with_reputation(Vec::new(), peers, strategy, peer_score_metrics)
     }
 
     pub fn new_with_reputation(
         reputations: Vec<(PeerId, u64)>,
         peers: Vec<PeerInfo>,
         strategy: PeerStrategy,
+        peer_score_metrics: Option<PeerScoreMetrics>,
     ) -> Self {
         let reputations = reputations.into_iter().collect::<HashMap<PeerId, u64>>();
         let mut total_score = 0u64;
@@ -176,6 +181,7 @@ impl PeerSelector {
             details: Arc::new(Mutex::new(peer_details)),
             total_score: Arc::new(AtomicU64::new(total_score)),
             strategy,
+            peer_score_metrics,
         }
     }
 
@@ -210,13 +216,24 @@ impl PeerSelector {
             .collect()
     }
 
-    pub fn peer_score(&self, peer_id: &PeerId, score: i64) {
+    //TODO performance review
+    pub fn peer_score(&self, peer_id: &PeerId, score: u64) {
         self.details
             .lock()
             .iter()
-            .filter(|peer| &peer.peer_id() == peer_id)
-            .for_each(|peer| peer.score_counter.inc_by(score));
-        self.total_score.fetch_add(score as u64, Ordering::SeqCst);
+            .find(|peer| &peer.peer_id() == peer_id)
+            .map(|peer| {
+                peer.score_counter.inc_by(score);
+                Some(peer)
+            });
+        let total_score = self.total_score.fetch_add(score, Ordering::SeqCst);
+        if let Some(peer_score_metrics) = self.peer_score_metrics.as_ref() {
+            peer_score_metrics
+                .peer_score
+                .with_label_values(&[format!("{}", peer_id).as_str()])
+                .set(score);
+            peer_score_metrics.total_score.set(total_score);
+        }
     }
 
     pub fn peer_exist(&self, peer_id: &PeerId) -> bool {

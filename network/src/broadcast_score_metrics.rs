@@ -21,7 +21,7 @@ impl BroadcastScoreMetrics {
     pub fn register() -> Result<Self, PrometheusError> {
         let peer_broadcast_score = register_int_counter_vec!(
             Opts::new("peer_broadcast_score", "peer broadcast score".to_string()).namespace(SC_NS),
-            &["broadcast_score"]
+            &["peer"]
         )?;
 
         let peer_broadcast_total_new_count = UIntCounterVec::new(
@@ -30,7 +30,7 @@ impl BroadcastScoreMetrics {
                 "total new count".to_string(),
             )
             .namespace(SC_NS),
-            &["total_new_count"],
+            &["peer"],
         )?;
 
         let peer_broadcast_total_old_count = UIntCounterVec::new(
@@ -39,7 +39,7 @@ impl BroadcastScoreMetrics {
                 "total old count".to_string(),
             )
             .namespace(SC_NS),
-            &["total_old_count"],
+            &["peer"],
         )?;
 
         default_registry().register(Box::new(peer_broadcast_total_new_count.clone()))?;
@@ -52,21 +52,21 @@ impl BroadcastScoreMetrics {
         })
     }
 
-    pub fn report_new(&self, peer: PeerId, score: i64) {
+    pub fn report_new(&self, peer: PeerId, score: u64) {
         self.peer_broadcast_score
-            .with_label_values(&[&format!("peer-{:?}", peer)])
-            .inc_by(score as u64);
+            .with_label_values(&[&format!("{}", peer)])
+            .inc_by(score);
         self.peer_broadcast_total_new_count
-            .with_label_values(&[&format!("peer-{:?}", peer)])
+            .with_label_values(&[&format!("{}", peer)])
             .inc();
     }
 
-    pub fn report_expire(&self, peer: PeerId, score: i64) {
+    pub fn report_expire(&self, peer: PeerId, score: u64) {
         self.peer_broadcast_score
-            .with_label_values(&[&format!("peer-{:?}", peer)])
-            .inc_by(score as u64);
+            .with_label_values(&[&format!("{}", peer)])
+            .inc_by(score);
         self.peer_broadcast_total_old_count
-            .with_label_values(&[&format!("peer-{:?}", peer)])
+            .with_label_values(&[&format!("{}", peer)])
             .inc();
     }
 }

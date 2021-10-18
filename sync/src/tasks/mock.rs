@@ -152,7 +152,7 @@ impl SyncNodeMocker {
             NotificationMessage::protocols(),
             RPC_INFO.clone().into_protocols(),
         );
-        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
+        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
         Ok(Self::new_inner(
             peer_id,
             chain,
@@ -170,7 +170,7 @@ impl SyncNodeMocker {
         let chain = MockChain::new(net)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![]);
-        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default());
+        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
         Ok(Self::new_inner(
             peer_id,
             chain,

@@ -77,7 +77,7 @@ impl Inner {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
         let peers = self.peer_provider.peer_set().await?;
-        let peer_selector = PeerSelector::new(peers, PeerStrategy::default());
+        let peer_selector = PeerSelector::new(peers, PeerStrategy::default(), None);
         peer_selector.retain_rpc_peers_by_protocol(
             vec![format!("{}/{}", RpcInfo::RPC_PROTOCOL_PREFIX, "get_txns_from_pool").into()]
                 .as_slice(),

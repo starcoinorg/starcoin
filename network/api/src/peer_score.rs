@@ -1,24 +1,25 @@
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc,
-};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
 
-#[derive(Clone)]
+use anyhow::Result;
+use starcoin_metrics::{register, Opts, Registry, UIntGauge, UIntGaugeVec};
+use std::sync::atomic::{AtomicU64, Ordering};
+
 pub struct ScoreCounter {
-    score: Arc<AtomicU64>,
-    count: Arc<AtomicU64>,
+    score: AtomicU64,
+    count: AtomicU64,
 }
 
 impl ScoreCounter {
     pub fn new(score: u64) -> Self {
         Self {
-            score: Arc::new(AtomicU64::new(if score == 0 { 1 } else { score })),
-            count: Arc::new(AtomicU64::new(0)),
+            score: AtomicU64::new(if score == 0 { 1 } else { score }),
+            count: AtomicU64::new(0),
         }
     }
 
-    pub fn inc_by(&self, score: i64) {
-        self.score.fetch_add(score as u64, Ordering::SeqCst);
+    pub fn inc_by(&self, score: u64) {
+        self.score.fetch_add(score, Ordering::SeqCst);
         self.count.fetch_add(1, Ordering::SeqCst);
     }
 
@@ -40,29 +41,31 @@ impl Default for ScoreCounter {
 }
 
 pub trait Score<Entry>: Sync + Send {
-    fn execute(&self, entry: Entry) -> i64;
+    fn execute(&self, entry: Entry) -> u64;
 }
 
 #[derive(Clone)]
 pub struct InverseScore {
-    k: i64,
+    k: u64,
 }
 
 impl InverseScore {
     pub fn new(x: u32, y: u32) -> Self {
         Self {
-            k: x.saturating_mul(y) as i64,
+            k: x.saturating_mul(y) as u64,
         }
     }
 }
 
 impl Score<u32> for InverseScore {
-    fn execute(&self, time: u32) -> i64 {
+    fn execute(&self, time: u32) -> u64 {
         //if time is 0, treat as 1
-        self.k.checked_div(time as i64).unwrap_or(self.k)
+        self.k.checked_div(time as u64).unwrap_or(self.k)
     }
 }
 
+//TODO rework on peer score.
+//the future,and fail state do not used.
 pub enum HandleState {
     Future,
     Succ,
@@ -90,20 +93,20 @@ impl LinearScore {
         Self { base }
     }
 
-    pub fn linear(&self) -> i64 {
-        self.base as i64
+    pub fn linear(&self) -> u64 {
+        self.base
     }
 
-    pub fn percentage(&self, percent: usize) -> i64 {
+    pub fn percentage(&self, percent: usize) -> u64 {
         self.base
             .saturating_mul(percent as u64)
             .checked_div(100)
-            .unwrap_or_default() as i64
+            .unwrap_or_default()
     }
 }
 
 impl Score<BlockBroadcastEntry> for LinearScore {
-    fn execute(&self, entry: BlockBroadcastEntry) -> i64 {
+    fn execute(&self, entry: BlockBroadcastEntry) -> u64 {
         match entry.state {
             HandleState::Future => {
                 if entry.new {
@@ -119,7 +122,31 @@ impl Score<BlockBroadcastEntry> for LinearScore {
                     self.percentage(10)
                 }
             }
-            HandleState::Fail => 0i64.saturating_sub(self.base as i64),
+            HandleState::Fail => 0u64,
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct PeerScoreMetrics {
+    pub peer_score: UIntGaugeVec,
+    pub total_score: UIntGauge,
+}
+
+impl PeerScoreMetrics {
+    pub fn register(registry: &Registry) -> Result<PeerScoreMetrics> {
+        let peer_score = UIntGaugeVec::new(
+            Opts::new("peer_score", "peer sync score".to_string()).namespace("starcoin"),
+            &["peer"],
+        )?;
+        let total_score = UIntGauge::with_opts(
+            Opts::new("total_score", "total peer score".to_string()).namespace("starcoin"),
+        )?;
+        let peer_score = register(peer_score, registry)?;
+        let total_score = register(total_score, registry)?;
+        Ok(Self {
+            peer_score,
+            total_score,
+        })
     }
 }
