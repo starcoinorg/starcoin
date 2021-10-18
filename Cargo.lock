@@ -8487,6 +8487,7 @@ dependencies = [
  "futures 0.3.13",
  "hex",
  "itertools 0.10.1",
+ "move-command-line-common",
  "network-api",
  "network-p2p-types",
  "rand 0.8.4",

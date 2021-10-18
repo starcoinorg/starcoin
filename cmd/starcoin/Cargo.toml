@@ -54,6 +54,7 @@ starcoin-network-rpc-api = {path = "../../network-rpc/api"}
 short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
 starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-abi-types = {path = "../../abi/types"}
+move-command-line-common = {git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}
