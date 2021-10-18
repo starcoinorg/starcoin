@@ -8,7 +8,7 @@ use crypto::keygen::KeyGen;
 use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
-use starcoin_config::NodeConfig;
+use starcoin_config::{MetricsConfig, NodeConfig};
 use starcoin_executor::{
     create_signed_txn_with_association_account, encode_transfer_script_function,
     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
@@ -101,33 +101,81 @@ async fn test_subscribe_txns() {
 
 #[stest::test(timeout = 200)]
 async fn test_pool_pending() -> Result<()> {
-    let count = 5;
+    let pool_size = 5;
+    let expect_reject = 3;
     let (txpool_service, _storage, node_config, _, _) =
-        test_helper::start_txpool_with_size(count).await;
-    let mut txn_vec = vec![];
-    let mut index = 0;
-    loop {
-        txn_vec.push(generate_txn(node_config.clone(), index));
-        index += 1;
-        if index > count * 2 {
-            break;
-        }
-    }
+        test_helper::start_txpool_with_size(pool_size).await;
+    let metrics_config: &MetricsConfig = &node_config.metrics;
+
+    let txn_vec = (0..pool_size + expect_reject)
+        .into_iter()
+        .map(|index| generate_txn(node_config.clone(), index))
+        .collect::<Vec<_>>();
+
     let _ = txpool_service.add_txns(txn_vec.clone());
     delay_for(Duration::from_millis(200)).await;
 
-    txn_vec.clear();
-    loop {
-        txn_vec.push(generate_txn(node_config.clone(), index));
-        index += 1;
-        if index > count * 4 {
-            break;
-        }
-    }
+    let txn_count_metric = metrics_config
+        .get_metric("txpool_status", Some(("name", "count")))
+        .unwrap()
+        .pop()
+        .unwrap();
+    let txn_count_metric_value = txn_count_metric.get_gauge().get_value();
+    assert_eq!(
+        pool_size, txn_count_metric_value as u64,
+        "expect {} txn in pool, but got: {}",
+        pool_size, txn_count_metric_value
+    );
+
+    let txn_added_event_metric = metrics_config
+        .get_metric("txpool_txn_event_counter", Some(("event", "added")))
+        .unwrap()
+        .pop()
+        .unwrap();
+    let txn_added_event_metric_value = txn_added_event_metric.get_counter().get_value();
+    assert_eq!(
+        pool_size, txn_added_event_metric_value as u64,
+        "expect {} added events, but got: {}",
+        pool_size, txn_added_event_metric_value
+    );
+
+    let txn_rejected_event_metric = metrics_config
+        .get_metric("txpool_txn_event_counter", Some(("event", "rejected")))
+        .unwrap()
+        .pop()
+        .unwrap();
+    let txn_rejected_event_metric_value = txn_rejected_event_metric.get_counter().get_value();
+    assert_eq!(
+        expect_reject, txn_rejected_event_metric_value as u64,
+        "expect {} rejected events, but got: {}",
+        expect_reject, txn_rejected_event_metric_value
+    );
+
+    let txn_vec = (pool_size..(pool_size + expect_reject))
+        .into_iter()
+        .map(|index| generate_txn(node_config.clone(), index))
+        .collect::<Vec<_>>();
+
     let _ = txpool_service.add_txns(txn_vec.clone());
-    let pending = txpool_service.get_pending_txns(Some(count), None);
+    let pending = txpool_service.get_pending_txns(Some(pool_size), None);
     assert!(!pending.is_empty());
+
     delay_for(Duration::from_millis(200)).await;
+
+    let txn_rejected_event_metric = metrics_config
+        .get_metric("txpool_txn_event_counter", Some(("event", "rejected")))
+        .unwrap()
+        .pop()
+        .unwrap();
+    let txn_rejected_event_metric_value = txn_rejected_event_metric.get_counter().get_value();
+    assert_eq!(
+        expect_reject * 2,
+        txn_rejected_event_metric_value as u64,
+        "expect {} rejected events, but got: {}",
+        expect_reject * 2,
+        txn_rejected_event_metric_value
+    );
+
     Ok(())
 }
 

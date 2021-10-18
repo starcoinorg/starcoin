@@ -1,19 +1,41 @@
-use once_cell::sync::Lazy;
-use prometheus::{HistogramOpts, HistogramVec, IntGauge, IntGaugeVec, Opts};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
 
-pub static TXPOOL_TXNS_GAUGE: Lazy<IntGauge> = Lazy::new(|| {
-    let opts =
-        Opts::new("txpool_txn_nums", "Counter of how many txns in txpool").namespace("starcoin");
-    register_int_gauge!(opts).unwrap()
-});
+use starcoin_metrics::{
+    register, HistogramOpts, HistogramVec, Opts, PrometheusError, Registry, UIntCounterVec,
+    UIntGaugeVec,
+};
 
-pub static TXPOOL_STATUS_GAUGE_VEC: Lazy<IntGaugeVec> = Lazy::new(|| {
-    let opts = Opts::new("txpool_status", "Gauge of pool status").namespace("starcoin");
-    register_int_gauge_vec!(opts, &["name"]).unwrap()
-});
+#[derive(Clone)]
+pub struct TxPoolMetrics {
+    pub txpool_txn_event_counter: UIntCounterVec,
+    pub txpool_status: UIntGaugeVec,
+    pub txpool_service_timer: HistogramVec,
+}
 
-pub static TXPOOL_SERVICE_HISTOGRAM: Lazy<HistogramVec> = Lazy::new(|| {
-    let opts =
-        HistogramOpts::new("txpool_service", "Histogram of txpool service").namespace("starcoin");
-    register_histogram_vec!(opts, &["api"]).unwrap()
-});
+impl TxPoolMetrics {
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
+        let txpool_txn_event_counter = UIntCounterVec::new(
+            Opts::new(
+                "txpool_txn_event_counter",
+                "Counters of txn events, such as added|dropped|rejected etc",
+            )
+            .namespace("starcoin"),
+            &["event"],
+        )?;
+        let txpool_status = UIntGaugeVec::new(
+            Opts::new("txpool_status", "Gauge of pool status").namespace("starcoin"),
+            &["name"],
+        )?;
+        let txpool_service_timer = HistogramVec::new(
+            HistogramOpts::new("txpool_service_timer", "Histogram of txpool service")
+                .namespace("starcoin"),
+            &["api"],
+        )?;
+        Ok(Self {
+            txpool_txn_event_counter: register(txpool_txn_event_counter, registry)?,
+            txpool_status: register(txpool_status, registry)?,
+            txpool_service_timer: register(txpool_service_timer, registry)?,
+        })
+    }
+}

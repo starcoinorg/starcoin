@@ -4,7 +4,6 @@
 use futures_timer::Delay;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
-use starcoin_miner::MinerService;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
@@ -23,6 +22,7 @@ pub async fn start_txpool_with_size(
 ) {
     let mut config = NodeConfig::random_for_test();
     config.tx_pool.set_max_count(pool_size);
+    config.miner.disable_miner_client = Some(true);
     let node_config = Arc::new(config);
     // let node_config = Arc::new(NodeConfig::random_for_test());
 
@@ -33,7 +33,7 @@ pub async fn start_txpool_with_size(
     registry.put_shared(storage.clone()).await.unwrap();
     let bus = registry.service_ref::<BusService>().await.unwrap();
     registry.put_shared(bus).await.unwrap();
-    registry.register::<MinerService>().await.unwrap();
+    //registry.register::<MinerService>().await.unwrap();
     let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
     Delay::new(Duration::from_millis(200)).await;
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
