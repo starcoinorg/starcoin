@@ -42,6 +42,7 @@
 -  [Function `exists_at`](#0x1_YieldFarmingV2_exists_at)
 -  [Function `exists_asset_at`](#0x1_YieldFarmingV2_exists_asset_at)
 -  [Function `exists_stake_at_address`](#0x1_YieldFarmingV2_exists_stake_at_address)
+-  [Specification](#@Specification_1)
 
 
 <pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
@@ -1417,3 +1418,12 @@ Check stake at address exists.
 
 
 </details>
+
+<a name="@Specification_1"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
