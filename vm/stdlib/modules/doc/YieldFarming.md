@@ -35,8 +35,6 @@
 
 
 <pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
-<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
-<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
 </code></pre>
 
@@ -226,6 +224,15 @@ To store user's asset token
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x1_YieldFarming_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
+</code></pre>
+
 
 
 <a name="0x1_YieldFarming_ERR_EXP_DIVIDE_BY_ZERO"></a>
@@ -446,7 +453,7 @@ Called by token issuer
 this will declare a yield farming pool
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_initialize">initialize</a>&lt;PoolType: store, RewardTokenT: store&gt;(account: &signer, treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_initialize">initialize</a>&lt;PoolType: store, RewardTokenT: store&gt;(_account: &signer, _treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
 </code></pre>
 
 
@@ -457,14 +464,9 @@ this will declare a yield farming pool
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_initialize">initialize</a>&lt;
     PoolType: store,
-    RewardTokenT: store&gt;(account: &signer, treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
-    <b>assert</b>(!<a href="YieldFarming.md#0x1_YieldFarming_exists_at">exists_at</a>&lt;PoolType, RewardTokenT&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
-        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_INIT_REPEATE">ERR_FARMING_INIT_REPEATE</a>));
-
-    move_to(account, <a href="YieldFarming.md#0x1_YieldFarming_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt; {
-        treasury_token,
-    });
+    RewardTokenT: store&gt;(_account: &signer,
+                         _treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -478,7 +480,7 @@ this will declare a yield farming pool
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_initialize_asset">initialize_asset</a>&lt;PoolType: store, AssetT: store&gt;(account: &signer, release_per_second: u128, delay: u64): <a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">YieldFarming::ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_initialize_asset">initialize_asset</a>&lt;PoolType: store, AssetT: store&gt;(_account: &signer, _release_per_second: u128, _delay: u64): <a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">YieldFarming::ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;
 </code></pre>
 
 
@@ -488,23 +490,10 @@ this will declare a yield farming pool
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_initialize_asset">initialize_asset</a>&lt;PoolType: store, AssetT: store&gt;(
-    account: &signer,
-    release_per_second: u128,
-    delay: u64): <a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt; {
-
-    <b>assert</b>(!<a href="YieldFarming.md#0x1_YieldFarming_exists_asset_at">exists_asset_at</a>&lt;PoolType, AssetT&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
-        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_INIT_REPEATE">ERR_FARMING_INIT_REPEATE</a>));
-
-    <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-
-    move_to(account, <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt; {
-        asset_total_weight: 0,
-        harvest_index: 0,
-        last_update_timestamp: now_seconds,
-        release_per_second,
-        start_time: now_seconds + delay,
-    });
-    <a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt; {}
+    _account: &signer,
+    _release_per_second: u128,
+    _delay: u64): <a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt; {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -518,7 +507,7 @@ this will declare a yield farming pool
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_modify_parameter">modify_parameter</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_cap: &<a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">YieldFarming::ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;, broker: address, release_per_second: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_modify_parameter">modify_parameter</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_cap: &<a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">YieldFarming::ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;, _broker: address, _release_per_second: u128)
 </code></pre>
 
 
@@ -529,16 +518,9 @@ this will declare a yield farming pool
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_modify_parameter">modify_parameter</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(
     _cap: &<a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;,
-    broker: address,
-    release_per_second: u128) <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a> {
-    <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-
-    <b>let</b> new_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
-
-    farming_asset.release_per_second = release_per_second;
-    farming_asset.harvest_index = new_index;
-    farming_asset.last_update_timestamp = now_seconds;
+    _broker: address,
+    _release_per_second: u128) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -553,7 +535,7 @@ this will declare a yield farming pool
 Call by stake user, staking amount of asset in order to get yield farming token
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_stake">stake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: &signer, broker: address, asset: AssetT, asset_weight: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_stake">stake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_account: &signer, _broker: address, _asset: AssetT, _asset_weight: u128)
 </code></pre>
 
 
@@ -563,46 +545,11 @@ Call by stake user, staking amount of asset in order to get yield farming token
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_stake">stake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(
-    account: &signer,
-    broker: address,
-    asset: AssetT,
-    asset_weight: u128) <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a> {
-
-    // <a href="Debug.md#0x1_Debug_print">Debug::print</a>(account);
-    <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>assert</b>(!<a href="YieldFarming.md#0x1_YieldFarming_exists_stake_at_address">exists_stake_at_address</a>&lt;PoolType, AssetT&gt;(account_address),
-        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_STAKE_EXISTS">ERR_FARMING_STAKE_EXISTS</a>));
-
-    <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-
-    // Check locking time
-    <b>assert</b>(farming_asset.start_time &lt;= now_seconds, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_NOT_STILL_FREEZE">ERR_FARMING_NOT_STILL_FREEZE</a>));
-
-    <b>let</b> time_period = now_seconds - farming_asset.last_update_timestamp;
-
-    <b>if</b> (farming_asset.asset_total_weight &lt;= 0) { // <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a> <b>as</b> first user
-        <b>let</b> gain = farming_asset.release_per_second * (time_period <b>as</b> u128);
-        move_to(account, <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;{
-            asset,
-            asset_weight,
-            last_harvest_index: 0,
-            gain,
-        });
-        farming_asset.harvest_index = 0;
-        farming_asset.asset_total_weight = asset_weight;
-    } <b>else</b> {
-        <b>let</b> new_harvest_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
-        move_to(account, <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;{
-            asset,
-            asset_weight,
-            last_harvest_index: new_harvest_index,
-            gain: 0,
-        });
-        farming_asset.asset_total_weight = farming_asset.asset_total_weight + asset_weight;
-        farming_asset.harvest_index = new_harvest_index;
-    };
-    farming_asset.last_update_timestamp = now_seconds;
+    _account: &signer,
+    _broker: address,
+    _asset: AssetT,
+    _asset_weight: u128) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -617,7 +564,7 @@ Call by stake user, staking amount of asset in order to get yield farming token
 Unstake asset from farming pool
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_unstake">unstake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: &signer, broker: address): (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_unstake">unstake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_account: &signer, _broker: address): (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
 </code></pre>
 
 
@@ -626,31 +573,9 @@ Unstake asset from farming pool
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_unstake">unstake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: &signer, broker: address)
-    : (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_Farming">Farming</a>, <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>, <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a> {
-    <b>let</b> farming = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt;&gt;(broker);
-    <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-
-    <b>let</b> <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt; {last_harvest_index, asset_weight, asset, gain} =
-        move_from&lt;<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-
-    <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>let</b> new_harvest_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
-
-    <b>let</b> period_gain = <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(new_harvest_index, last_harvest_index, asset_weight);
-    <b>let</b> total_gain = gain + period_gain;
-    <b>let</b> withdraw_token = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>&lt;RewardTokenT&gt;(&<b>mut</b> farming.treasury_token, total_gain);
-
-    // Dont <b>update</b> harvest index that because the `<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>` object has droped.
-    // <b>let</b> new_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
-    <b>assert</b>(farming_asset.asset_total_weight &gt;= asset_weight, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_NOT_ENOUGH_ASSET">ERR_FARMING_NOT_ENOUGH_ASSET</a>));
-
-    // Update farm asset
-    farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
-    farming_asset.harvest_index = new_harvest_index;
-    farming_asset.last_update_timestamp = now_seconds;
-
-    (asset, withdraw_token)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_unstake">unstake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_account: &signer, _broker: address)
+: (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -665,7 +590,7 @@ Unstake asset from farming pool
 Harvest yield farming token from stake
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_harvest">harvest</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: &signer, broker: address, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_harvest">harvest</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_account: &signer, _broker: address, _amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;
 </code></pre>
 
 
@@ -677,41 +602,10 @@ Harvest yield farming token from stake
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_harvest">harvest</a>&lt;PoolType: store,
                    RewardTokenT: store,
                    AssetT: store&gt;(
-    account: &signer,
-    broker: address,
-    amount: u128) : <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt; <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_Farming">Farming</a>, <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>, <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a> {
-
-    <b>let</b> farming = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt;&gt;(broker);
-    <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-
-    <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>let</b> new_harvest_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
-
-    <b>let</b> period_gain = <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(
-        new_harvest_index,
-        stake.last_harvest_index,
-        stake.asset_weight
-    );
-
-    <b>let</b> total_gain = stake.gain + period_gain;
-    //<b>assert</b>(total_gain &gt; 0, <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_HAVERST_NO_GAIN">ERR_FARMING_HAVERST_NO_GAIN</a>));
-    <b>assert</b>(total_gain &gt;= amount, <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_BALANCE_EXCEEDED">ERR_FARMING_BALANCE_EXCEEDED</a>));
-
-    <b>let</b> withdraw_amount = <b>if</b> (amount &lt;= 0) {
-        total_gain
-    } <b>else</b> {
-        amount
-    };
-
-    <b>let</b> withdraw_token = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>&lt;RewardTokenT&gt;(&<b>mut</b> farming.treasury_token, withdraw_amount);
-    stake.gain = total_gain - withdraw_amount;
-    stake.last_harvest_index = new_harvest_index;
-
-    farming_asset.harvest_index = new_harvest_index;
-    farming_asset.last_update_timestamp = now_seconds;
-
-    withdraw_token
+    _account: &signer,
+    _broker: address,
+    _amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt; {
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -726,7 +620,7 @@ Harvest yield farming token from stake
 The user can quering all yield farming amount in any time and scene
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_gov_token_amount">query_gov_token_amount</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: &signer, broker: address): u128
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_gov_token_amount">query_gov_token_amount</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_account: &signer, _broker: address): u128
 </code></pre>
 
 
@@ -737,29 +631,8 @@ The user can quering all yield farming amount in any time and scene
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_gov_token_amount">query_gov_token_amount</a>&lt;PoolType: store,
                                   RewardTokenT: store,
-                                  AssetT: store&gt;(account: &signer, broker: address): u128 <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>, <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a> {
-    <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-    <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-
-    <b>let</b> new_harvest_index = <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(
-        farming_asset,
-        now_seconds
-    );
-
-    <b>let</b> new_gain = <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(
-        new_harvest_index,
-        stake.last_harvest_index,
-        stake.asset_weight
-    );
-
-    stake.gain = stake.gain + new_gain;
-    stake.last_harvest_index = new_harvest_index;
-
-    farming_asset.harvest_index = new_harvest_index;
-    farming_asset.last_update_timestamp = now_seconds;
-
-    stake.gain
+                                  AssetT: store&gt;(_account: &signer, _broker: address): u128 {
+    0
 }
 </code></pre>
 
@@ -774,7 +647,7 @@ The user can quering all yield farming amount in any time and scene
 Query total stake count from yield farming resource
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_total_stake">query_total_stake</a>&lt;PoolType: store, AssetT: store&gt;(broker: address): u128
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_total_stake">query_total_stake</a>&lt;PoolType: store, AssetT: store&gt;(_broker: address): u128
 </code></pre>
 
 
@@ -784,9 +657,8 @@ Query total stake count from yield farming resource
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_total_stake">query_total_stake</a>&lt;PoolType: store,
-                             AssetT: store&gt;(broker: address): u128 <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a> {
-    <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    farming_asset.asset_total_weight
+                             AssetT: store&gt;(_broker: address): u128 {
+    0
 }
 </code></pre>
 
@@ -801,7 +673,7 @@ Query total stake count from yield farming resource
 Query stake weight from user staking objects.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_stake">query_stake</a>&lt;PoolType: store, AssetT: store&gt;(account: &signer): u128
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_stake">query_stake</a>&lt;PoolType: store, AssetT: store&gt;(_account: &signer): u128
 </code></pre>
 
 
@@ -811,9 +683,8 @@ Query stake weight from user staking objects.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_query_stake">query_stake</a>&lt;PoolType: store,
-                       AssetT: store&gt;(account: &signer): u128 <b>acquires</b> <a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a> {
-    <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarming.md#0x1_YieldFarming_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-    stake.asset_weight
+                       AssetT: store&gt;(_account: &signer): u128 {
+    0
 }
 </code></pre>
 
@@ -828,7 +699,7 @@ Query stake weight from user staking objects.
 Update farming asset
 
 
-<pre><code><b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset: &<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">YieldFarming::FarmingAsset</a>&lt;PoolType, AssetT&gt;, now_seconds: u64): u128
+<pre><code><b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(_farming_asset: &<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">YieldFarming::FarmingAsset</a>&lt;PoolType, AssetT&gt;, _now_seconds: u64): u128
 </code></pre>
 
 
@@ -837,24 +708,8 @@ Update farming asset
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset: &<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;, now_seconds: u64) : u128 {
-    // Recalculate harvest index
-    <b>if</b> (farming_asset.asset_total_weight &lt;= 0) {
-        <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_weight_zero">calculate_harvest_index_weight_zero</a>(
-            farming_asset.harvest_index,
-            farming_asset.last_update_timestamp,
-            now_seconds,
-            farming_asset.release_per_second
-        )
-    } <b>else</b> {
-        <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index">calculate_harvest_index</a>(
-            farming_asset.harvest_index,
-            farming_asset.asset_total_weight,
-            farming_asset.last_update_timestamp,
-            now_seconds,
-            farming_asset.release_per_second
-        )
-    }
+<pre><code><b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(_farming_asset: &<a href="YieldFarming.md#0x1_YieldFarming_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;, _now_seconds: u64): u128 {
+    0
 }
 </code></pre>
 
@@ -869,7 +724,7 @@ Update farming asset
 There is calculating from harvest index and global parameters without asset_total_weight
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_weight_zero">calculate_harvest_index_weight_zero</a>(harvest_index: u128, last_update_timestamp: u64, now_seconds: u64, release_per_second: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_weight_zero">calculate_harvest_index_weight_zero</a>(_harvest_index: u128, _last_update_timestamp: u64, _now_seconds: u64, _release_per_second: u128): u128
 </code></pre>
 
 
@@ -878,13 +733,11 @@ There is calculating from harvest index and global parameters without asset_tota
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_weight_zero">calculate_harvest_index_weight_zero</a>(harvest_index: u128,
-                                               last_update_timestamp: u64,
-                                               now_seconds: u64,
-                                               release_per_second: u128): u128 {
-    <b>assert</b>(last_update_timestamp &lt;= now_seconds, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_TIMESTAMP_INVALID">ERR_FARMING_TIMESTAMP_INVALID</a>));
-    <b>let</b> time_period = now_seconds - last_update_timestamp;
-    harvest_index + (release_per_second * ((time_period <b>as</b> u128)))
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index_weight_zero">calculate_harvest_index_weight_zero</a>(_harvest_index: u128,
+                                               _last_update_timestamp: u64,
+                                               _now_seconds: u64,
+                                               _release_per_second: u128): u128 {
+    0
 }
 </code></pre>
 
@@ -899,7 +752,7 @@ There is calculating from harvest index and global parameters without asset_tota
 There is calculating from harvest index and global parameters
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index">calculate_harvest_index</a>(harvest_index: u128, asset_total_weight: u128, last_update_timestamp: u64, now_seconds: u64, release_per_second: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index">calculate_harvest_index</a>(_harvest_index: u128, _asset_total_weight: u128, _last_update_timestamp: u64, _now_seconds: u64, _release_per_second: u128): u128
 </code></pre>
 
 
@@ -908,19 +761,12 @@ There is calculating from harvest index and global parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index">calculate_harvest_index</a>(harvest_index: u128,
-                                   asset_total_weight: u128,
-                                   last_update_timestamp: u64,
-                                   now_seconds: u64,
-                                   release_per_second: u128): u128 {
-    <b>assert</b>(asset_total_weight &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_TOTAL_WEIGHT_IS_ZERO">ERR_FARMING_TOTAL_WEIGHT_IS_ZERO</a>));
-    <b>assert</b>(last_update_timestamp &lt;= now_seconds, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="YieldFarming.md#0x1_YieldFarming_ERR_FARMING_TIMESTAMP_INVALID">ERR_FARMING_TIMESTAMP_INVALID</a>));
-
-    <b>let</b> time_period = now_seconds - last_update_timestamp;
-    <b>let</b> numr = (release_per_second * (time_period <b>as</b> u128));
-    <b>let</b> denom = asset_total_weight;
-    <b>let</b> added_index = <a href="YieldFarming.md#0x1_YieldFarming_truncate">truncate</a>(<a href="YieldFarming.md#0x1_YieldFarming_exp">exp</a>(numr, denom));
-    harvest_index + added_index
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_harvest_index">calculate_harvest_index</a>(_harvest_index: u128,
+                                   _asset_total_weight: u128,
+                                   _last_update_timestamp: u64,
+                                   _now_seconds: u64,
+                                   _release_per_second: u128): u128 {
+    0
 }
 </code></pre>
 
@@ -935,7 +781,7 @@ There is calculating from harvest index and global parameters
 This function will return a gain index
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(harvest_index: u128, last_harvest_index: u128, asset_weight: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(_harvest_index: u128, _last_harvest_index: u128, _asset_weight: u128): u128
 </code></pre>
 
 
@@ -944,10 +790,10 @@ This function will return a gain index
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(harvest_index: u128,
-                                     last_harvest_index: u128,
-                                     asset_weight: u128): u128 {
-    asset_weight * (harvest_index - last_harvest_index)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_calculate_withdraw_amount">calculate_withdraw_amount</a>(_harvest_index: u128,
+                                     _last_harvest_index: u128,
+                                     _asset_weight: u128): u128 {
+    0
 }
 </code></pre>
 
