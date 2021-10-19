@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-address 0x3db7a2da7444995338a2413b151ee437 {
+address 0x1 {
 module YieldFarmingV2 {
     use 0x1::Token;
     use 0x1::Signer;
