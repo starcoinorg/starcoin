@@ -7,7 +7,10 @@ use crate::{build_network_worker, Announcement};
 use anyhow::{format_err, Result};
 use bytes::Bytes;
 use futures::future::{abortable, AbortHandle};
-use futures::FutureExt;
+use futures::{
+    stream::{self, StreamExt},
+    FutureExt,
+};
 use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
@@ -183,15 +186,55 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
     fn handle_event(
         &mut self,
         msg: NotificationMessage,
-        _ctx: &mut ServiceContext<NetworkActorService>,
+        ctx: &mut ServiceContext<NetworkActorService>,
     ) {
-        self.inner.broadcast(msg);
+        let prepared_to_broadcast = self.inner.prepare_broadcast(msg);
+        let network_service = self.network_service();
+        let fut = stream::iter(prepared_to_broadcast).for_each_concurrent(
+            Some(5),
+            move |(protocol, peer_id, data)| {
+                let network_service = network_service.clone();
+                async move {
+                    if network_service
+                        .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
+                        .await
+                        .is_err()
+                    {
+                        error!(
+                            "[network] write notification failed on {}, {}",
+                            peer_id, protocol
+                        );
+                    }
+                }
+            },
+        );
+        ctx.spawn(fut)
     }
 }
 
 impl EventHandler<Self, PeerMessage> for NetworkActorService {
-    fn handle_event(&mut self, msg: PeerMessage, _ctx: &mut ServiceContext<NetworkActorService>) {
-        self.inner.send_peer_message(msg.peer_id, msg.notification);
+    fn handle_event(&mut self, msg: PeerMessage, ctx: &mut ServiceContext<NetworkActorService>) {
+        let network_service = self.network_service();
+        let peer_id = msg.peer_id;
+        let notification = msg.notification;
+        if let Some((protocol, data)) = self
+            .inner
+            .prepare_send_peer_message(peer_id.clone(), notification)
+        {
+            let fut = async move {
+                if network_service
+                    .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
+                    .await
+                    .is_err()
+                {
+                    error!(
+                        "[network] write notification failed on {}, {}",
+                        peer_id, protocol
+                    );
+                }
+            };
+            ctx.spawn(fut)
+        }
     }
 }
 
@@ -200,17 +243,38 @@ impl EventHandler<Self, PropagateTransactions> for NetworkActorService {
     fn handle_event(
         &mut self,
         msg: PropagateTransactions,
-        _ctx: &mut ServiceContext<NetworkActorService>,
+        ctx: &mut ServiceContext<NetworkActorService>,
     ) {
         let txns = msg.transaction_to_propagate();
         if txns.is_empty() {
             return;
         }
         debug!("prepare to propagate txns, len: {}", txns.len());
-        self.inner
-            .broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
-                txns,
-            )));
+        let prepared_to_broadcast =
+            self.inner
+                .prepare_broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
+                    txns,
+                )));
+        let network_service = self.network_service();
+        let fut = stream::iter(prepared_to_broadcast).for_each_concurrent(
+            Some(5),
+            move |(protocol, peer_id, data)| {
+                let network_service = network_service.clone();
+                async move {
+                    if network_service
+                        .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
+                        .await
+                        .is_err()
+                    {
+                        error!(
+                            "[network] write notification failed on {}, {}",
+                            peer_id, protocol
+                        );
+                    }
+                }
+            },
+        );
+        ctx.spawn(fut)
     }
 }
 
@@ -510,7 +574,11 @@ impl Inner {
         self.peers.remove(&peer_id);
     }
 
-    pub(crate) fn send_peer_message(&mut self, peer_id: PeerId, notification: NotificationMessage) {
+    pub(crate) fn prepare_send_peer_message(
+        &mut self,
+        peer_id: PeerId,
+        notification: NotificationMessage,
+    ) -> Option<(Cow<'static, str>, Vec<u8>)> {
         let (protocol_name, data) = notification
             .encode_notification()
             .expect("Encode notification message should ok");
@@ -519,7 +587,7 @@ impl Inner {
                 "[network]protocol {:?} not supported by peer {:?}",
                 protocol_name, peer_id
             );
-            return;
+            return None;
         }
         match notification {
             NotificationMessage::Transactions(txn_message) => {
@@ -540,18 +608,20 @@ impl Inner {
                 }
             }
         };
-        self.network_service
-            .write_notification(peer_id.into(), protocol_name, data);
+        Some((protocol_name, data))
     }
 
-    pub(crate) fn broadcast(&mut self, notification: NotificationMessage) {
+    pub(crate) fn prepare_broadcast(
+        &mut self,
+        notification: NotificationMessage,
+    ) -> Vec<(Cow<'static, str>, PeerId, Vec<u8>)> {
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .broadcast_duration
                 .with_label_values(&[notification.protocol_name().as_ref()])
                 .start_timer()
         });
-
+        let mut prepare_to_broadcast = vec![];
         match &notification {
             NotificationMessage::CompactBlock(msg) => {
                 let id = msg.compact_block.header.id();
@@ -605,15 +675,14 @@ impl Inner {
                     filtered_peer_ids.iter(),
                 );
                 let peers_send_message = selected_peers.len();
-                for peer_id in selected_peers {
-                    let peer = self.peers.get_mut(&peer_id).expect("peer should exists");
+                for peer_id in &selected_peers {
+                    let peer = self.peers.get_mut(peer_id).expect("peer should exists");
                     peer.known_blocks.put(id, ());
-
-                    self.network_service.write_notification(
-                        peer_id.into(),
+                    prepare_to_broadcast.push((
                         protocol_name.clone(),
+                        peer_id.clone(),
                         message.clone(),
-                    )
+                    ));
                 }
                 debug!(
                     "[network] broadcast new compact block message {:?} to {} peers, total_peers: {}, peers_after_known_hash_filter: {}, peers_after_protocol_filter: {}",
@@ -693,12 +762,8 @@ impl Inner {
                         );
                         continue;
                     }
-                    self.network_service.write_notification(
-                        peer_id.into(),
-                        real_protocol_name,
-                        data,
-                    );
                     send_peer_count = send_peer_count.saturating_add(1);
+                    prepare_to_broadcast.push((real_protocol_name, peer_id, data));
                 }
                 debug!(
                     "[network] broadcast new {} transactions to {} peers",
@@ -710,6 +775,7 @@ impl Inner {
                 error!("[network] can not broadcast announcement message directly.");
             }
         }
+        prepare_to_broadcast
     }
 }
 

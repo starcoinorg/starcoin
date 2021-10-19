@@ -639,6 +639,16 @@ impl NetworkService {
                 .map(|histogram| histogram.with_label_values(&["out", &protocol_name])),
         })
     }
+    pub async fn write_notification_async(
+        &self,
+        target: PeerId,
+        protocol_name: Cow<'static, str>,
+        data: Vec<u8>,
+    ) -> Result<(), NotificationSenderError> {
+        let sender = self.notification_sender(target, protocol_name)?;
+        let ready_sender = sender.ready().await?;
+        ready_sender.send(data)
+    }
 
     pub async fn broadcast_message(&self, protocol_name: Cow<'static, str>, message: Vec<u8>) {
         debug!("start send broadcast message");

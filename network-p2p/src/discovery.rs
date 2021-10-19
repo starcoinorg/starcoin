@@ -734,7 +734,8 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             let ev = DiscoveryOut::Discovered(peer);
                             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
                         }
-                        KademliaEvent::PendingRoutablePeer { .. } => {
+                        KademliaEvent::PendingRoutablePeer { .. }
+                        | KademliaEvent::InboundRequestServed { .. } => {
                             // We are not interested in this event at the moment.
                         }
                         KademliaEvent::OutboundQueryCompleted {
