@@ -10,7 +10,7 @@ module alice::YieldFarmingWarpper {
     use 0x1::Token;
     use 0x1::Account;
     use 0x1::Signer;
-    use 0x1::YieldFarming;
+    use 0x1::YieldFarmingV2;
 
     struct Usdx has copy, drop, store {}
 
@@ -19,16 +19,16 @@ module alice::YieldFarmingWarpper {
     struct AssetType_A has copy, drop, store { value: u128 }
 
     struct GovModfiyParamCapability has key, store {
-        cap: YieldFarming::ParameterModifyCapability<PoolType_A, AssetType_A>,
+        cap: YieldFarmingV2::ParameterModifyCapability<PoolType_A, AssetType_A>,
     }
 
     struct HarvestWrapperCapability has key, store {
-        cap: YieldFarming::HarvestCapability<PoolType_A, AssetType_A>
+        cap: YieldFarmingV2::HarvestCapability<PoolType_A, AssetType_A>
     }
 
     public fun initialize(account: &signer, treasury: Token::Token<Usdx>) {
-        YieldFarming::initialize<PoolType_A, Usdx>(account, treasury);
-        let asset_cap = YieldFarming::add_asset<PoolType_A, AssetType_A>(account, 1000000000, 0);
+        YieldFarmingV2::initialize<PoolType_A, Usdx>(account, treasury);
+        let asset_cap = YieldFarmingV2::add_asset<PoolType_A, AssetType_A>(account, 1000000000, 0);
         move_to(account, GovModfiyParamCapability {
             cap: asset_cap,
         });
@@ -36,7 +36,7 @@ module alice::YieldFarmingWarpper {
 
     public fun stake(account: &signer, value: u128) acquires GovModfiyParamCapability {
         let cap = borrow_global_mut<GovModfiyParamCapability>(@alice);
-        let harvest_cap = YieldFarming::stake_for_cap<PoolType_A, Usdx, AssetType_A>(
+        let harvest_cap = YieldFarmingV2::stake_for_cap<PoolType_A, Usdx, AssetType_A>(
         account,
         @alice,
         AssetType_A { value },
@@ -50,7 +50,7 @@ module alice::YieldFarmingWarpper {
     public fun unstake(account: &signer): (u128, u128) acquires HarvestWrapperCapability {
         let account_addr = Signer::address_of(account);
         let HarvestWrapperCapability {cap} = move_from<HarvestWrapperCapability>(account_addr);
-        let (asset, token) = YieldFarming::unstake_with_cap<PoolType_A, Usdx, AssetType_A>(account_addr, @alice, cap);
+        let (asset, token) = YieldFarmingV2::unstake_with_cap<PoolType_A, Usdx, AssetType_A>(account_addr, @alice, cap);
         let token_val = Token::value<Usdx>(&token);
         Account::deposit<Usdx>(Signer::address_of(account), token);
         (asset.value, token_val)
@@ -58,11 +58,11 @@ module alice::YieldFarmingWarpper {
 
     public fun harvest(account: &signer): Token::Token<Usdx> acquires HarvestWrapperCapability {
         let cap = borrow_global_mut<HarvestWrapperCapability>(Signer::address_of(account));
-        YieldFarming::harvest_with_cap<PoolType_A, Usdx, AssetType_A>(Signer::address_of(account), @alice, 0, &cap.cap)
+        YieldFarmingV2::harvest_with_cap<PoolType_A, Usdx, AssetType_A>(Signer::address_of(account), @alice, 0, &cap.cap)
     }
 
     public fun query_gov_token_amount(account: address): u128 {
-        YieldFarming::query_gov_token_amount<PoolType_A, Usdx, AssetType_A>(account, @alice)
+        YieldFarmingV2::query_gov_token_amount<PoolType_A, Usdx, AssetType_A>(account, @alice)
     }
 }
 // check: EXECUTED
@@ -75,7 +75,7 @@ module alice::YieldFarmingWarpper {
 //! new-transaction
 //! sender: alice
 script {
-    use 0x1::YieldFarming;
+    use 0x1::YieldFarmingV2;
     use 0x1::Timestamp;
     use 0x1::Debug;
 
@@ -85,22 +85,22 @@ script {
         let last_update_timestamp: u64 = 86395;
         let _asset_total_weight = 1000000000;
 
-        let index_1 = YieldFarming::calculate_harvest_index(
+        let index_1 = YieldFarmingV2::calculate_harvest_index(
             harvest_index,
             _asset_total_weight,
             last_update_timestamp,
             Timestamp::now_seconds(), 2000000000);
-        let withdraw_1 = YieldFarming::calculate_withdraw_amount(index_1, harvest_index, _asset_total_weight);
+        let withdraw_1 = YieldFarmingV2::calculate_withdraw_amount(index_1, harvest_index, _asset_total_weight);
         assert((2000000000 * 5) == withdraw_1, 1001);
 
         // Denominator bigger than numberator
-        let index_2 = YieldFarming::calculate_harvest_index(0, 100000000000000, 0, 5, 10000000);
-        let amount_2 = YieldFarming::calculate_withdraw_amount(index_2, 0, 40000000000);
+        let index_2 = YieldFarmingV2::calculate_harvest_index(0, 100000000000000, 0, 5, 10000000);
+        let amount_2 = YieldFarmingV2::calculate_withdraw_amount(index_2, 0, 40000000000);
         Debug::print(&index_2);
         Debug::print(&amount_2);
         assert(index_2 > 0, 1002);
         assert(amount_2 > 0, 1003);
-        //let withdraw_1 = YieldFarming::calculate_withdraw_amount(index_1, harvest_index, _asset_total_weight);
+        //let withdraw_1 = YieldFarmingV2::calculate_withdraw_amount(index_1, harvest_index, _asset_total_weight);
         //assert((2000000000 * 5) == withdraw_1, 10001);
     }
 }
