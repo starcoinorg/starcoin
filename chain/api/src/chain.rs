@@ -68,6 +68,13 @@ pub trait ChainReader {
     fn verify(&self, block: Block) -> Result<VerifiedBlock>;
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
     fn execute(&self, block: VerifiedBlock) -> Result<ExecutedBlock>;
+    /// Get chain transaction infos by (start_index, end_index)
+    fn get_txn_info_and_blocks(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64
+    ) -> Result<Vec<(BlockTransactionInfo, Block)>>;
 }
 
 pub trait ChainWriter {

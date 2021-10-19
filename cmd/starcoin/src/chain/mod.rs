@@ -9,6 +9,7 @@ mod get_txn_info_cmd;
 mod get_txn_infos_cmd;
 mod info_cmd;
 mod list_block_cmd;
+mod get_txn_info_list_cmd;
 
 pub use epoch_info::*;
 pub use get_block_cmd::*;
@@ -18,3 +19,4 @@ pub use get_txn_info_cmd::*;
 pub use get_txn_infos_cmd::*;
 pub use info_cmd::*;
 pub use list_block_cmd::*;
+pub use get_txn_info_list_cmd::*;
