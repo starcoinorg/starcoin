@@ -26,6 +26,10 @@ module YieldFarmingV2 {
 
     const EXP_MAX_SCALE: u128 = 9;
 
+    spec module {
+        pragma verify = false;
+    }
+
     //////////////////////////////////////////////////////////////////////
     // Exponential functions
 
