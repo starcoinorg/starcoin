@@ -18,4 +18,4 @@ pub use node::{run_node_by_config, run_test_node};
 pub use starcoin_executor::Account;
 pub use starcoin_genesis::Genesis;
 pub use starcoin_node::NodeHandle;
-pub use txpool::{start_txpool, start_txpool_with_size};
+pub use txpool::{start_txpool, start_txpool_with_miner, start_txpool_with_size};
