@@ -35,7 +35,8 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     starcoin_logger::init_for_test();
     // prepare
 
-    let (_txpool_service, storage, config, _, registry) = test_helper::start_txpool().await;
+    let (_txpool_service, storage, config, _, registry) =
+        test_helper::start_txpool_with_miner(1000, true).await;
     let startup_info = storage.get_startup_info()?.unwrap();
     let net = config.net();
     let mut block_chain = BlockChain::new(net.time_service(), startup_info.main, storage)?;
@@ -132,7 +133,8 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
-    let (txpool_service, _, config, _, registry) = test_helper::start_txpool().await;
+    let (txpool_service, _, config, _, registry) =
+        test_helper::start_txpool_with_miner(1000, true).await;
     let service = registry
         .register_by_factory::<PubSubService, PubSubServiceFactory>()
         .await?;
@@ -191,7 +193,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 
 #[stest::test]
 pub async fn test_subscribe_to_mint_block() -> Result<()> {
-    let (_txpool_service, .., registry) = test_helper::start_txpool().await;
+    let (_txpool_service, .., registry) = test_helper::start_txpool_with_miner(1000, true).await;
     let bus = registry.service_ref::<BusService>().await?;
     let service = registry
         .register_by_factory::<PubSubService, PubSubServiceFactory>()

@@ -1,17 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(dead_code)]
-extern crate serde_derive;
+
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate trace_time;
-#[macro_use]
-extern crate prometheus;
 extern crate transaction_pool as tx_pool;
 
 use anyhow::{format_err, Result};
-use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
@@ -169,32 +166,36 @@ impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
 impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
     fn handle_event(&mut self, item: TxnStatusFullEvent, _ctx: &mut ServiceContext<Self>) {
         // do metrics.
-        {
+        if let Some(metrics) = self.inner.metrics.as_ref() {
             let status = self.inner.pool_status().status;
             let mem_usage = status.mem_usage;
             let senders = status.senders;
             let txn_count = status.transaction_count;
-            TXPOOL_STATUS_GAUGE_VEC
+
+            metrics
+                .txpool_status
                 .with_label_values(&["mem_usage"])
-                .set(mem_usage as i64);
-            TXPOOL_STATUS_GAUGE_VEC
+                .set(mem_usage as u64);
+            metrics
+                .txpool_status
                 .with_label_values(&["senders"])
-                .set(senders as i64);
-            TXPOOL_STATUS_GAUGE_VEC
+                .set(senders as u64);
+            metrics
+                .txpool_status
                 .with_label_values(&["count"])
-                .set(txn_count as i64);
+                .set(txn_count as u64);
         }
         let mut has_new_txns = false;
         for (_, s) in item.iter() {
-            match *s {
-                TxStatus::Added => {
-                    TXPOOL_TXNS_GAUGE.inc();
-                    has_new_txns = true;
-                }
-                TxStatus::Rejected => {}
-                _ => {
-                    TXPOOL_TXNS_GAUGE.dec();
-                }
+            if let Some(metrics) = self.inner.metrics.as_ref() {
+                metrics
+                    .txpool_txn_event_counter
+                    .with_label_values(&[format!("{}", s).as_str()])
+                    .inc();
+            }
+
+            if *s == TxStatus::Added {
+                has_new_txns = true;
             }
         }
         if has_new_txns {

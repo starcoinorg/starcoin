@@ -15,6 +15,8 @@ pub static DEFAULT_METRIC_SERVER_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIF
 pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
 pub static DEFAULT_METRIC_PUSH_AUTH_PASSWORD: &str = "";
 
+pub static DEFAULT_METRIC_NAMESPACE: &str = "starcoin";
+
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct PushParameterConfig {
@@ -138,6 +140,42 @@ impl MetricsConfig {
 
     pub fn registry(&self) -> Option<&Registry> {
         self.registry.as_ref()
+    }
+
+    // this function just for test the metric.
+    pub fn get_metric(
+        &self,
+        name: &str,
+        label: Option<(&str, &str)>,
+    ) -> Option<Vec<starcoin_metrics::proto::Metric>> {
+        //auto add namespace
+        let metric_name = if name.starts_with(DEFAULT_METRIC_NAMESPACE) {
+            name.to_string()
+        } else {
+            format!("{}_{}", DEFAULT_METRIC_NAMESPACE, name)
+        };
+        self.registry.as_ref().and_then(|registry| {
+            registry.gather().into_iter().find_map(|metric_fm| {
+                if metric_fm.get_name() == metric_name.as_str() {
+                    let metrics = metric_fm.get_metric().to_vec();
+                    if let Some((label_name, label_value)) = label {
+                        metrics
+                            .into_iter()
+                            .find(|metric| {
+                                metric.get_label().iter().any(|label_pair| {
+                                    label_pair.get_name() == label_name
+                                        && label_pair.get_value() == label_value
+                                })
+                            })
+                            .map(|metric| vec![metric])
+                    } else {
+                        Some(metrics)
+                    }
+                } else {
+                    None
+                }
+            })
+        })
     }
 }
 

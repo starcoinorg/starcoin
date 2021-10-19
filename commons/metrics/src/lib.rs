@@ -42,6 +42,10 @@ pub use prometheus::{
     IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
 };
 
+pub mod proto {
+    pub use prometheus::proto::*;
+}
+
 pub mod prometheus_export {
     pub use prometheus::register;
 }

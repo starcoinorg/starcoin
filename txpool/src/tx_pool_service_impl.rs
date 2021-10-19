@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    counters::TXPOOL_SERVICE_HISTOGRAM,
     pool,
     pool::{
         PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
@@ -11,6 +10,7 @@ use crate::{
     pool_client::{NonceCache, PoolClient},
 };
 
+use crate::counters::TxPoolMetrics;
 use crate::pool::{Client, TransactionQueue};
 use anyhow::Result;
 use crypto::hash::HashValue;
@@ -38,6 +38,11 @@ impl TxPoolService {
         storage: Arc<dyn Store>,
         chain_header: BlockHeader,
     ) -> Self {
+        let metrics = node_config
+            .metrics
+            .registry()
+            .and_then(|registry| TxPoolMetrics::register(registry).ok());
+
         let pool_config = &node_config.tx_pool;
         let verifier_options = pool::VerifierOptions {
             no_early_reject: false,
@@ -59,6 +64,7 @@ impl TxPoolService {
             storage,
             chain_header: Arc::new(RwLock::new(chain_header)),
             sequence_number_cache: NonceCache::new(128),
+            metrics,
         };
 
         Self { inner }
@@ -92,16 +98,22 @@ impl TxPoolSyncService for TxPoolService {
     ) -> Vec<Result<(), transaction::TransactionError>> {
         // _timer will observe_duration when it's dropped.
         // We don't need to call it explicitly.
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["add_txns"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["add_txns"])
+                .start_timer()
+        });
         self.inner.import_txns(txns)
     }
 
     fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["remove_txn"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["remove_txn"])
+                .start_timer()
+        });
         self.inner
             .remove_txn(txn_hash, is_invalid)
             .map(|t| t.signed().clone())
@@ -113,9 +125,12 @@ impl TxPoolSyncService for TxPoolService {
         max_len: Option<u64>,
         current_timestamp_secs: Option<u64>,
     ) -> Vec<SignedUserTransaction> {
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["get_pending_txns"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["get_pending_txns"])
+                .start_timer()
+        });
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
         let r = self
@@ -127,32 +142,44 @@ impl TxPoolSyncService for TxPoolService {
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["next_sequence_number"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["next_sequence_number"])
+                .start_timer()
+        });
         self.inner.next_sequence_number(address)
     }
 
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, transaction::TxStatus)]>> {
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["subscribe_txns"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["subscribe_txns"])
+                .start_timer()
+        });
         self.inner.subscribe_txns()
     }
 
     fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["subscribe_pending_txns"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["subscribe_pending_txns"])
+                .start_timer()
+        });
         self.inner.subscribe_pending_txns()
     }
 
     /// rollback
     fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
-        let _timer = TXPOOL_SERVICE_HISTOGRAM
-            .with_label_values(&["rollback"])
-            .start_timer();
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_timer
+                .with_label_values(&["rollback"])
+                .start_timer()
+        });
         self.inner.chain_new_block(enacted, retracted);
         Ok(())
     }
@@ -189,6 +216,7 @@ pub(crate) struct Inner {
     chain_header: Arc<RwLock<BlockHeader>>,
     storage: Arc<dyn Store>,
     sequence_number_cache: NonceCache,
+    pub(crate) metrics: Option<TxPoolMetrics>,
 }
 impl std::fmt::Debug for Inner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
