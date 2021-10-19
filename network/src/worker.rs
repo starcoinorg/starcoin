@@ -12,8 +12,8 @@ use network_p2p::{
     identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
 };
 use network_p2p_types::{is_memory_addr, ProtocolRequest};
-use prometheus::default_registry;
 use starcoin_config::NetworkConfig;
+use starcoin_metrics::Registry;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::RpcInfo;
@@ -30,6 +30,7 @@ pub fn build_network_worker(
     chain_info: ChainInfo,
     protocols: Vec<Cow<'static, str>>,
     rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
+    metrics_registry: Option<Registry>,
 ) -> Result<(PeerInfo, NetworkWorker)> {
     let node_name = network_config.node_name();
     let discover_local = network_config.discover_local();
@@ -112,8 +113,7 @@ pub fn build_network_worker(
         config,
         protocol_id,
         chain_info,
-        //TODO use a custom registry for each instance.
-        Some(default_registry().clone()),
+        metrics_registry,
     ))?;
 
     Ok((self_info, worker))

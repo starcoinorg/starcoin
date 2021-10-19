@@ -22,5 +22,6 @@ pub fn build_lighting_network(
         chain_info,
         NotificationMessage::protocols(),
         None,
+        None,
     )
 }

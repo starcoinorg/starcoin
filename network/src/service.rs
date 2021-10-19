@@ -61,6 +61,7 @@ impl NetworkActorService {
             chain_info,
             config.network.supported_network_protocols(),
             rpc,
+            config.metrics.registry().cloned(),
         )?;
         let service = worker.service().clone();
         //let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
