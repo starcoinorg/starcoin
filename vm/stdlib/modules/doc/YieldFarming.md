@@ -226,6 +226,15 @@ To store user's asset token
 ## Constants
 
 
+<a name="0x1_YieldFarming_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
+</code></pre>
+
+
+
 <a name="0x1_YieldFarming_ERR_EXP_DIVIDE_BY_ZERO"></a>
 
 
@@ -457,7 +466,7 @@ this will declare a yield farming pool
     PoolType: store,
     RewardTokenT: store&gt;(_account: &signer,
                          _treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
-    <b>abort</b> (1)
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -484,7 +493,7 @@ this will declare a yield farming pool
     _account: &signer,
     _release_per_second: u128,
     _delay: u64): <a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt; {
-    <b>abort</b> (1)
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -511,7 +520,7 @@ this will declare a yield farming pool
     _cap: &<a href="YieldFarming.md#0x1_YieldFarming_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;,
     _broker: address,
     _release_per_second: u128) {
-    <b>abort</b> (1)
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -540,7 +549,7 @@ Call by stake user, staking amount of asset in order to get yield farming token
     _broker: address,
     _asset: AssetT,
     _asset_weight: u128) {
-    <b>abort</b> (1)
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -566,7 +575,7 @@ Unstake asset from farming pool
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarming.md#0x1_YieldFarming_unstake">unstake</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(_account: &signer, _broker: address)
 : (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
-    <b>abort</b> (1)
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 
@@ -596,7 +605,7 @@ Harvest yield farming token from stake
     _account: &signer,
     _broker: address,
     _amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt; {
-    <b>abort</b> (1)
+    <b>abort</b> <a href="Errors.md#0x1_Errors_deprecated">Errors::deprecated</a>(<a href="YieldFarming.md#0x1_YieldFarming_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
 }
 </code></pre>
 

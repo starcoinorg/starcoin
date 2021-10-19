@@ -329,7 +329,7 @@ module YieldFarmingV2 {
     public fun harvest_with_cap<PoolType: store,
                                 RewardTokenT: store,
                                 AssetT: store>(
-        broker: address
+        broker: address,
         amount: u128,
         _cap: &HarvestCapability<PoolType, AssetT>): Token::Token<RewardTokenT> acquires Farming, FarmingAsset, Stake {
         let farming = borrow_global_mut<Farming<PoolType, RewardTokenT>>(broker);

@@ -399,15 +399,6 @@ Harvest ability to harvest
 
 
 
-<a name="0x1_YieldFarmingV2_ERR_FARMING_NO_AUTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_NO_AUTH">ERR_FARMING_NO_AUTH</a>: u64 = 115;
-</code></pre>
-
-
-
 <a name="0x1_YieldFarmingV2_ERR_FARMING_TOKEN_SCALE_OVERFLOW"></a>
 
 
@@ -694,7 +685,7 @@ Called by token issuer
 this will declare a yield farming pool
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_initialize">initialize</a>&lt;PoolType: store, RewardTokenT: store&gt;(account: &signer, treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_initialize">initialize</a>&lt;PoolType: store, RewardTokenT: store&gt;(signer: &signer, treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
 </code></pre>
 
 
@@ -705,14 +696,14 @@ this will declare a yield farming pool
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_initialize">initialize</a>&lt;
     PoolType: store,
-    RewardTokenT: store&gt;(account: &signer, treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
+    RewardTokenT: store&gt;(signer: &signer, treasury_token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) {
     <b>let</b> scaling_factor = <a href="Math.md#0x1_Math_pow">Math::pow</a>(10, (<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_EXP_MAX_SCALE">EXP_MAX_SCALE</a> <b>as</b> u64));
     <b>let</b> token_scale = <a href="Token.md#0x1_Token_scaling_factor">Token::scaling_factor</a>&lt;RewardTokenT&gt;();
     <b>assert</b>(token_scale &lt;= scaling_factor, <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_TOKEN_SCALE_OVERFLOW">ERR_FARMING_TOKEN_SCALE_OVERFLOW</a>));
     <b>assert</b>(!<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_exists_at">exists_at</a>&lt;PoolType, RewardTokenT&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_INIT_REPEATE">ERR_FARMING_INIT_REPEATE</a>));
+        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer)), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_INIT_REPEATE">ERR_FARMING_INIT_REPEATE</a>));
 
-    move_to(account, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt; {
+    move_to(signer, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt; {
         treasury_token,
     });
 }
@@ -729,7 +720,7 @@ this will declare a yield farming pool
 Add asset pools
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_add_asset">add_asset</a>&lt;PoolType: store, AssetT: store&gt;(account: &signer, release_per_second: u128, delay: u64): <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ParameterModifyCapability">YieldFarmingV2::ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_add_asset">add_asset</a>&lt;PoolType: store, AssetT: store&gt;(signer: &signer, release_per_second: u128, delay: u64): <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ParameterModifyCapability">YieldFarmingV2::ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;
 </code></pre>
 
 
@@ -739,16 +730,16 @@ Add asset pools
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_add_asset">add_asset</a>&lt;PoolType: store, AssetT: store&gt;(
-    account: &signer,
+    signer: &signer,
     release_per_second: u128,
     delay: u64): <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt; {
     <b>assert</b>(!<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_exists_asset_at">exists_asset_at</a>&lt;PoolType, AssetT&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
+        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer)),
         <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_INIT_REPEATE">ERR_FARMING_INIT_REPEATE</a>));
 
     <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
 
-    move_to(account, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt; {
+    move_to(signer, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt; {
         asset_total_weight: 0,
         harvest_index: 0,
         last_update_timestamp: now_seconds,
@@ -867,7 +858,6 @@ Call by stake user, staking amount of asset in order to get yield farming token
     asset_weight: u128,
     _cap: &<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;)
 : <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt; <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a> {
-    // <a href="Debug.md#0x1_Debug_print">Debug::print</a>(account);
     <b>let</b> account = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
     <b>assert</b>(!<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_exists_stake_at_address">exists_stake_at_address</a>&lt;PoolType, AssetT&gt;(account),
         <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_STAKE_EXISTS">ERR_FARMING_STAKE_EXISTS</a>));
@@ -934,7 +924,7 @@ Unstake asset from farming pool
 : (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a> {
     <b>let</b> account = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
     <b>let</b> cap = move_from&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt;&gt;(account);
-    <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_unstake_with_cap">unstake_with_cap</a>(account, broker, cap)
+    <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_unstake_with_cap">unstake_with_cap</a>(broker, cap)
 }
 </code></pre>
 
@@ -948,7 +938,7 @@ Unstake asset from farming pool
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_unstake_with_cap">unstake_with_cap</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: address, broker: address, cap: <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">YieldFarmingV2::HarvestCapability</a>&lt;PoolType, AssetT&gt;): (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_unstake_with_cap">unstake_with_cap</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(broker: address, cap: <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">YieldFarmingV2::HarvestCapability</a>&lt;PoolType, AssetT&gt;): (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;)
 </code></pre>
 
 
@@ -958,20 +948,17 @@ Unstake asset from farming pool
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_unstake_with_cap">unstake_with_cap</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(
-    account: address,
     broker: address,
     cap: <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt;)
 : (AssetT, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;) <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a> {
     // Destroy capability
     <b>let</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt; { trigger } = cap;
 
-    <b>assert</b>(trigger == account, <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_NO_AUTH">ERR_FARMING_NO_AUTH</a>));
-
     <b>let</b> farming = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt;&gt;(broker);
     <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
 
     <b>let</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a>&lt;PoolType, AssetT&gt; { last_harvest_index, asset_weight, asset, gain } =
-        move_from&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(account);
+        move_from&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(trigger);
 
     <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> new_harvest_index = <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
@@ -1024,7 +1011,7 @@ Harvest yield farming token from stake
     amount: u128) : <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt; <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a> {
     <b>let</b> account = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
     <b>let</b> cap = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, RewardTokenT&gt;&gt;(account);
-    <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_harvest_with_cap">harvest_with_cap</a>(account, broker, amount, cap)
+    <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_harvest_with_cap">harvest_with_cap</a>(broker, amount, cap)
 }
 </code></pre>
 
@@ -1038,7 +1025,7 @@ Harvest yield farming token from stake
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_harvest_with_cap">harvest_with_cap</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(account: address, broker: address, amount: u128, _cap: &<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">YieldFarmingV2::HarvestCapability</a>&lt;PoolType, AssetT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_harvest_with_cap">harvest_with_cap</a>&lt;PoolType: store, RewardTokenT: store, AssetT: store&gt;(broker: address, amount: u128, _cap: &<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">YieldFarmingV2::HarvestCapability</a>&lt;PoolType, AssetT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt;
 </code></pre>
 
 
@@ -1050,15 +1037,12 @@ Harvest yield farming token from stake
 <pre><code><b>public</b> <b>fun</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_harvest_with_cap">harvest_with_cap</a>&lt;PoolType: store,
                             RewardTokenT: store,
                             AssetT: store&gt;(
-    account: address,
     broker: address,
     amount: u128,
     _cap: &<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt; <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a> {
     <b>let</b> farming = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>&lt;PoolType, RewardTokenT&gt;&gt;(broker);
     <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(account);
-
-    <b>assert</b>(_cap.trigger == account, <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_NO_AUTH">ERR_FARMING_NO_AUTH</a>));
+    <b>let</b> stake = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a>&lt;PoolType, AssetT&gt;&gt;(_cap.trigger);
 
     <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> new_harvest_index = <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_calculate_harvest_index_with_asset">calculate_harvest_index_with_asset</a>&lt;PoolType, AssetT&gt;(farming_asset, now_seconds);
