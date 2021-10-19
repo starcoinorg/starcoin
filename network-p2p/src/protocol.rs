@@ -341,8 +341,10 @@ impl NetworkBehaviour for Protocol {
 impl DiscoveryNetBehaviour for Protocol {
     fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
         for peer_id in peer_ids {
-            self.peerset_handle
-                .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
+            for (set_id, _) in self.notif_protocols.iter().enumerate() {
+                self.peerset_handle
+                    .add_to_peers_set(SetId::from(set_id), peer_id);
+            }
         }
     }
 }
@@ -593,8 +595,10 @@ impl Protocol {
             self.rpc_protocols.to_vec(),
             self.chain_info.clone(),
         );
-        self.behaviour
-            .set_notif_protocol_handshake(HARD_CORE_PROTOCOL_ID, handshake_msg)
+        for (set_id, _) in self.notif_protocols.iter().enumerate() {
+            self.behaviour
+                .set_notif_protocol_handshake(SetId::from(set_id), handshake_msg.clone());
+        }
     }
 
     fn format_stats(&self) -> String {
