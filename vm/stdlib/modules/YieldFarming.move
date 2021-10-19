@@ -6,6 +6,7 @@ module YieldFarming {
     use 0x1::Token;
     use 0x1::Errors;
 
+    const EDEPRECATED_FUNCTION: u64 = 19;
     const ERR_FARMING_INIT_REPEATE: u64 = 101;
     const ERR_FARMING_NOT_STILL_FREEZE: u64 = 102;
     const ERR_FARMING_STAKE_EXISTS: u64 = 103;
@@ -16,7 +17,7 @@ module YieldFarming {
     const ERR_FARMING_BALANCE_EXCEEDED: u64 = 108;
     const ERR_FARMING_NOT_ENOUGH_ASSET: u64 = 109;
     const ERR_FARMING_TIMESTAMP_INVALID: u64 = 110;
-
+    
     spec module {
         pragma verify = false;
     }
@@ -94,7 +95,7 @@ module YieldFarming {
         PoolType: store,
         RewardTokenT: store>(_account: &signer,
                              _treasury_token: Token::Token<RewardTokenT>) {
-        abort (1)
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     // Initialize asset pools
@@ -102,14 +103,14 @@ module YieldFarming {
         _account: &signer,
         _release_per_second: u128,
         _delay: u64): ParameterModifyCapability<PoolType, AssetT> {
-        abort (1)
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     public fun modify_parameter<PoolType: store, RewardTokenT: store, AssetT: store>(
         _cap: &ParameterModifyCapability<PoolType, AssetT>,
         _broker: address,
         _release_per_second: u128) {
-        abort (1)
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     /// Call by stake user, staking amount of asset in order to get yield farming token
@@ -118,13 +119,13 @@ module YieldFarming {
         _broker: address,
         _asset: AssetT,
         _asset_weight: u128) {
-        abort (1)
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     /// Unstake asset from farming pool
     public fun unstake<PoolType: store, RewardTokenT: store, AssetT: store>(_account: &signer, _broker: address)
     : (AssetT, Token::Token<RewardTokenT>) {
-        abort (1)
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     /// Harvest yield farming token from stake
@@ -134,7 +135,7 @@ module YieldFarming {
         _account: &signer,
         _broker: address,
         _amount: u128): Token::Token<RewardTokenT> {
-        abort (1)
+        abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
 
     /// The user can quering all yield farming amount in any time and scene

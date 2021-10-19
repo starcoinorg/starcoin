@@ -23,7 +23,6 @@ module YieldFarmingV2 {
     const ERR_FARMING_CALC_LAST_IDX_BIGGER_THAN_NOW: u64 = 112;
     const ERR_FARMING_NOT_ALIVE: u64 = 113;
     const ERR_FARMING_ALIVE_STATE_INVALID: u64 = 114;
-    const ERR_FARMING_NO_AUTH: u64 = 115;
 
     const EXP_MAX_SCALE: u128 = 9;
 
@@ -135,30 +134,30 @@ module YieldFarmingV2 {
     /// this will declare a yield farming pool
     public fun initialize<
         PoolType: store,
-        RewardTokenT: store>(account: &signer, treasury_token: Token::Token<RewardTokenT>) {
+        RewardTokenT: store>(signer: &signer, treasury_token: Token::Token<RewardTokenT>) {
         let scaling_factor = Math::pow(10, (EXP_MAX_SCALE as u64));
         let token_scale = Token::scaling_factor<RewardTokenT>();
         assert(token_scale <= scaling_factor, Errors::limit_exceeded(ERR_FARMING_TOKEN_SCALE_OVERFLOW));
         assert(!exists_at<PoolType, RewardTokenT>(
-            Signer::address_of(account)), Errors::invalid_state(ERR_FARMING_INIT_REPEATE));
+            Signer::address_of(signer)), Errors::invalid_state(ERR_FARMING_INIT_REPEATE));
 
-        move_to(account, Farming<PoolType, RewardTokenT> {
+        move_to(signer, Farming<PoolType, RewardTokenT> {
             treasury_token,
         });
     }
 
     /// Add asset pools
     public fun add_asset<PoolType: store, AssetT: store>(
-        account: &signer,
+        signer: &signer,
         release_per_second: u128,
         delay: u64): ParameterModifyCapability<PoolType, AssetT> {
         assert(!exists_asset_at<PoolType, AssetT>(
-            Signer::address_of(account)),
+            Signer::address_of(signer)),
             Errors::invalid_state(ERR_FARMING_INIT_REPEATE));
 
         let now_seconds = Timestamp::now_seconds();
 
-        move_to(account, FarmingAsset<PoolType, AssetT> {
+        move_to(signer, FarmingAsset<PoolType, AssetT> {
             asset_total_weight: 0,
             harvest_index: 0,
             last_update_timestamp: now_seconds,
@@ -231,7 +230,6 @@ module YieldFarmingV2 {
         asset_weight: u128,
         _cap: &ParameterModifyCapability<PoolType, AssetT>)
     : HarvestCapability<PoolType, AssetT> acquires FarmingAsset {
-        // Debug::print(account);
         let account = Signer::address_of(signer);
         assert(!exists_stake_at_address<PoolType, AssetT>(account),
             Errors::invalid_state(ERR_FARMING_STAKE_EXISTS));
@@ -278,24 +276,21 @@ module YieldFarmingV2 {
     : (AssetT, Token::Token<RewardTokenT>) acquires HarvestCapability, Farming, FarmingAsset, Stake {
         let account = Signer::address_of(signer);
         let cap = move_from<HarvestCapability<PoolType, AssetT>>(account);
-        unstake_with_cap(account, broker, cap)
+        unstake_with_cap(broker, cap)
     }
 
     public fun unstake_with_cap<PoolType: store, RewardTokenT: store, AssetT: store>(
-        account: address,
         broker: address,
         cap: HarvestCapability<PoolType, AssetT>)
     : (AssetT, Token::Token<RewardTokenT>) acquires Farming, FarmingAsset, Stake {
         // Destroy capability
         let HarvestCapability<PoolType, AssetT> { trigger } = cap;
 
-        assert(trigger == account, Errors::requires_capability(ERR_FARMING_NO_AUTH));
-
         let farming = borrow_global_mut<Farming<PoolType, RewardTokenT>>(broker);
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
 
         let Stake<PoolType, AssetT> { last_harvest_index, asset_weight, asset, gain } =
-            move_from<Stake<PoolType, AssetT>>(account);
+            move_from<Stake<PoolType, AssetT>>(trigger);
 
         let now_seconds = Timestamp::now_seconds();
         let new_harvest_index = calculate_harvest_index_with_asset<PoolType, AssetT>(farming_asset, now_seconds);
@@ -328,21 +323,18 @@ module YieldFarmingV2 {
         amount: u128) : Token::Token<RewardTokenT> acquires HarvestCapability, Farming, FarmingAsset, Stake {
         let account = Signer::address_of(signer);
         let cap = borrow_global_mut<HarvestCapability<PoolType, RewardTokenT>>(account);
-        harvest_with_cap(account, broker, amount, cap)
+        harvest_with_cap(broker, amount, cap)
     }
 
     public fun harvest_with_cap<PoolType: store,
                                 RewardTokenT: store,
                                 AssetT: store>(
-        account: address,
-        broker: address,
+        broker: address
         amount: u128,
         _cap: &HarvestCapability<PoolType, AssetT>): Token::Token<RewardTokenT> acquires Farming, FarmingAsset, Stake {
         let farming = borrow_global_mut<Farming<PoolType, RewardTokenT>>(broker);
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
-        let stake = borrow_global_mut<Stake<PoolType, AssetT>>(account);
-
-        assert(_cap.trigger == account, Errors::requires_capability(ERR_FARMING_NO_AUTH));
+        let stake = borrow_global_mut<Stake<PoolType, AssetT>>(_cap.trigger);
 
         let now_seconds = Timestamp::now_seconds();
         let new_harvest_index = calculate_harvest_index_with_asset<PoolType, AssetT>(farming_asset, now_seconds);

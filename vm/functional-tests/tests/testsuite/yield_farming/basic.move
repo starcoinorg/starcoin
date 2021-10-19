@@ -50,7 +50,7 @@ module alice::YieldFarmingWarpper {
     public fun unstake(account: &signer): (u128, u128) acquires HarvestWrapperCapability {
         let account_addr = Signer::address_of(account);
         let HarvestWrapperCapability {cap} = move_from<HarvestWrapperCapability>(account_addr);
-        let (asset, token) = YieldFarmingV2::unstake_with_cap<PoolType_A, Usdx, AssetType_A>(account_addr, @alice, cap);
+        let (asset, token) = YieldFarmingV2::unstake_with_cap<PoolType_A, Usdx, AssetType_A>(@alice, cap);
         let token_val = Token::value<Usdx>(&token);
         Account::deposit<Usdx>(Signer::address_of(account), token);
         (asset.value, token_val)
@@ -58,7 +58,7 @@ module alice::YieldFarmingWarpper {
 
     public fun harvest(account: &signer): Token::Token<Usdx> acquires HarvestWrapperCapability {
         let cap = borrow_global_mut<HarvestWrapperCapability>(Signer::address_of(account));
-        YieldFarmingV2::harvest_with_cap<PoolType_A, Usdx, AssetType_A>(Signer::address_of(account), @alice, 0, &cap.cap)
+        YieldFarmingV2::harvest_with_cap<PoolType_A, Usdx, AssetType_A>(@alice, 0, &cap.cap)
     }
 
     public fun query_gov_token_amount(account: address): u128 {
