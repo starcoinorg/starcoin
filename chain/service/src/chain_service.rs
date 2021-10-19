@@ -213,7 +213,15 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             }
             ChainRequest::GetHeaders(ids) => {
                 Ok(ChainResponse::BlockHeaderVec(self.inner.get_headers(ids)?))
-            }
+            },
+            ChainRequest::GetTransactionInfoAndBlocks {
+                start_index,
+                reverse,
+                max_size,
+            } => Ok(ChainResponse::TransactionInfoAndBlockVec(
+                self.inner
+                    .get_txn_info_and_blocks(start_index, reverse, max_size)?,
+            )),
         }
     }
 }
@@ -352,6 +360,15 @@ impl ReadableChainService for ChainReaderServiceInner {
         max_size: u64,
     ) -> Result<Vec<HashValue>> {
         self.main.get_block_ids(start_number, reverse, max_size)
+    }
+
+    fn get_txn_info_and_blocks(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> Result<Vec<(BlockTransactionInfo, Block)>> {
+        self.main.get_txn_info_and_blocks(start_index, reverse, max_size)
     }
 }
 

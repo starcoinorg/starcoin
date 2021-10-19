@@ -412,6 +412,22 @@ where
 
         Box::pin(fut.boxed())
     }
+
+    fn get_transaction_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64) -> FutureResult<Vec<TransactionInfoView>>  {
+        let service = self.service.clone();
+        let fut = async move {
+            let txn_info_and_blocks = service.get_txn_info_and_blocks(start_index, reverse, max_size).await?;
+            txn_info_and_blocks.into_iter().map(|(info, block)| {
+                TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(info).1, &block)
+            }).collect::<Result<Vec<_>, _>>()
+        }.map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
 }
 
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
