@@ -48,6 +48,13 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
+
+    fn get_txn_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> Result<Vec<BlockTransactionInfo>>;
 }
 
 /// Writeable block chain service trait
@@ -99,6 +106,12 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
+    async fn get_txn_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> Result<Vec<BlockTransactionInfo>>;
 }
 
 #[async_trait::async_trait]
@@ -345,6 +358,26 @@ where
             Ok(ids)
         } else {
             bail!("get_block_ids invalid response")
+        }
+    }
+
+    async fn get_txn_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> Result<Vec<BlockTransactionInfo>> {
+        let response = self
+            .send(ChainRequest::GetTransactionInfos {
+                start_index,
+                reverse,
+                max_size,
+            })
+            .await??;
+        if let ChainResponse::TransactionInfos(tx_infos) = response {
+            Ok(tx_infos)
+        } else {
+            bail!("get txn infos error")
         }
     }
 }

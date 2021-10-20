@@ -54,7 +54,7 @@ pub trait ChainApi {
         transaction_hash: HashValue,
         option: Option<GetTransactionOption>,
     ) -> FutureResult<Option<TransactionView>>;
-    /// Get chain transactions
+    /// Get chain transaction info
     #[rpc(name = "chain.get_transaction_info")]
     fn get_transaction_info(
         &self,
@@ -88,6 +88,13 @@ pub trait ChainApi {
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]
     fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
+    #[rpc(name = "chain.get_transaction_infos")]
+    fn get_transaction_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> FutureResult<Vec<TransactionInfoView>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

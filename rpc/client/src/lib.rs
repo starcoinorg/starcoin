@@ -753,6 +753,20 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn chain_get_transaction_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> anyhow::Result<Vec<TransactionInfoView>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .chain_client
+                .get_transaction_infos(start_index, reverse, max_size)
+        })
+        .map_err(map_err)
+    }
+
     pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<DryRunOutputView> {
         self.call_rpc_blocking(|inner| inner.contract_client.dry_run(txn))
             .map_err(map_err)

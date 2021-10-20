@@ -23,6 +23,7 @@ use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::TransactionInfo;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::sync::Arc;
 pub struct ChainRpcImpl<S>
@@ -407,6 +408,54 @@ where
         let fut = async move {
             let headers = service.get_headers(block_hashes).await?;
             Ok(headers.into_iter().map(Into::into).collect())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_infos(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> FutureResult<Vec<TransactionInfoView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let txn_infos = service
+                .get_txn_infos(start_index, reverse, max_size)
+                .await?;
+            // remove duplicate block_id
+            let id_sets = txn_infos
+                .iter()
+                .map(|info| info.block_id())
+                .collect::<HashSet<HashValue>>();
+            let block_ids = id_sets.into_iter().collect();
+            let blocks = service.get_blocks(block_ids).await?;
+            let mut block_cache = HashMap::new();
+            for block in blocks {
+                let block = block.ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "cannot find block which start_index {}, reverse {}, max_size {}",
+                        start_index,
+                        reverse,
+                        max_size
+                    )
+                })?;
+
+                block_cache.insert(block.header.id(), block);
+            }
+
+            txn_infos
+                .into_iter()
+                .map(|info| {
+                    let block_id = info.block_id();
+                    TransactionInfoView::new(
+                        Into::<(_, TransactionInfo)>::into(info).1,
+                        block_cache.get(&block_id).unwrap(),
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()
         }
         .map_err(map_err);
 
