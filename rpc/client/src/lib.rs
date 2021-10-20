@@ -759,8 +759,12 @@ impl RpcClient {
         reverse: bool,
         max_size: u64,
     ) -> anyhow::Result<Vec<TransactionInfoView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction_infos(start_index, reverse, max_size))
-            .map_err(map_err)
+        self.call_rpc_blocking(|inner| {
+            inner
+                .chain_client
+                .get_transaction_infos(start_index, reverse, max_size)
+        })
+        .map_err(map_err)
     }
 
     pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<DryRunOutputView> {

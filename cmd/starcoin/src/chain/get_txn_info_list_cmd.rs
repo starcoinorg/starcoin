@@ -8,7 +8,6 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
-
 /// Get transaction infos list
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get-txn-info-list", alias = "get_txn_info_list")]
@@ -40,7 +39,9 @@ impl CommandAction for GetTransactionInfoListCommand {
         let opt = ctx.opt();
         let txn_infos = client.chain_get_transaction_infos(
             opt.start_index,
-            opt.reverse.unwrap_or(false), opt.count)?;
+            opt.reverse.unwrap_or(false),
+            opt.count,
+        )?;
         Ok(txn_infos)
     }
 }

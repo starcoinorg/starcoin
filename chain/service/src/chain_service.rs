@@ -213,15 +213,16 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             }
             ChainRequest::GetHeaders(ids) => {
                 Ok(ChainResponse::BlockHeaderVec(self.inner.get_headers(ids)?))
-            },
+            }
             ChainRequest::GetTransactionInfos {
                 start_index,
                 reverse,
                 max_size,
-            } => Ok(ChainResponse::TransactionInfos(
-                self.inner
-                    .get_txn_infos(start_index, reverse, max_size)?,
-            )),
+            } => Ok(ChainResponse::TransactionInfos(self.inner.get_txn_infos(
+                start_index,
+                reverse,
+                max_size,
+            )?)),
         }
     }
 }

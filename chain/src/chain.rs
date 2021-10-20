@@ -726,10 +726,12 @@ impl ChainReader for BlockChain {
         &self,
         start_index: u64,
         reverse: bool,
-        max_size: u64
+        max_size: u64,
     ) -> Result<Vec<BlockTransactionInfo>> {
         let chain_header = self.current_header();
-        let hash_list = self.txn_accumulator.get_leaves(start_index, reverse, max_size)?;
+        let hash_list = self
+            .txn_accumulator
+            .get_leaves(start_index, reverse, max_size)?;
         let mut infos = vec![];
         for hash in hash_list {
             let info = self.storage.get_transaction_info(hash)?.ok_or_else(|| {

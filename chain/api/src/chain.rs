@@ -73,7 +73,7 @@ pub trait ChainReader {
         &self,
         start_index: u64,
         reverse: bool,
-        max_size: u64
+        max_size: u64,
     ) -> Result<Vec<BlockTransactionInfo>>;
 }
 

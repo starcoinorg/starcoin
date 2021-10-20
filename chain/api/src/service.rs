@@ -379,6 +379,5 @@ where
         } else {
             bail!("get txn infos error")
         }
-
     }
 }
