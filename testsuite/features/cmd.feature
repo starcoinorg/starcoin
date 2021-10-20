@@ -14,6 +14,7 @@ Feature: cmd integration test
     Then cmd: "chain get-txn-infos @$.header.block_hash@"
     Then cmd: "chain get-txn @$[0].transaction_hash@"
     Then cmd: "chain get-events @$.transaction_hash@"
+    Then cmd: "chain get-txn-info-list -s 0 -c 5"
     Then stop
 
     Examples:

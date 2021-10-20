@@ -89,7 +89,6 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_headers")]
     fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
 
-    /// Get chain transaction infos by (start_index, end_index)
     #[rpc(name = "chain.get_transaction_infos")]
     fn get_transaction_infos(
         &self,

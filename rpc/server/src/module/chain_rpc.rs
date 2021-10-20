@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::{HashMap, HashSet};
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_abi_decoder::decode_txn_payload;
@@ -420,9 +421,25 @@ where
         max_size: u64) -> FutureResult<Vec<TransactionInfoView>>  {
         let service = self.service.clone();
         let fut = async move {
-            let txn_info_and_blocks = service.get_txn_info_and_blocks(start_index, reverse, max_size).await?;
-            txn_info_and_blocks.into_iter().map(|(info, block)| {
-                TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(info).1, &block)
+            let txn_infos = service.get_txn_infos(start_index, reverse, max_size).await?;
+            let mut id_sets = HashSet::new();
+            for info in &txn_infos {
+                id_sets.insert(info.block_id());
+            }
+            let block_ids = id_sets.into_iter().collect();
+            let blocks = service.get_blocks(block_ids).await?;
+            let mut block_cache = HashMap::new();
+            for block in blocks {
+                let block = block.ok_or_else(||anyhow::anyhow!(
+                     "cannot find block which start_index {}, reverse {}, max_size {}",
+                                start_index, reverse, max_size))?;
+
+                block_cache.insert(block.header.id(), block);
+            }
+
+            let block_ids  = txn_infos.iter().map(|info| info.block_id()).collect::<Vec<HashValue>>();
+            txn_infos.into_iter().zip(block_ids.iter()).map(|( info, block_id)| {
+                TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(info).1, block_cache.get(block_id).unwrap())
             }).collect::<Result<Vec<_>, _>>()
         }.map_err(map_err);
 

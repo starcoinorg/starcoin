@@ -722,26 +722,26 @@ impl ChainReader for BlockChain {
         )
     }
 
-    fn get_txn_info_and_blocks(
+    fn get_txn_infos(
         &self,
         start_index: u64,
         reverse: bool,
         max_size: u64
-    ) -> Result<Vec<(BlockTransactionInfo, Block)>> {
+    ) -> Result<Vec<BlockTransactionInfo>> {
+        let chain_header = self.current_header();
         let hash_list = self.txn_accumulator.get_leaves(start_index, reverse, max_size)?;
-        let mut info_and_blocks = vec![];
+        let mut infos = vec![];
         for hash in hash_list {
-            let info = self.storage.get_transaction_info(hash)?;
-            if info.is_none() {
-                continue;
-            }
-            let block = self.storage.get_block(info.as_ref().unwrap().block_id())?;
-            if block.is_none() {
-                continue;
-            }
-            info_and_blocks.push((info.unwrap(), block.unwrap()));
+            let info = self.storage.get_transaction_info(hash)?.ok_or_else(|| {
+                anyhow::anyhow!(format!(
+                    "cannot find hash({}) on main chain(head: {})",
+                    hash,
+                    chain_header.id()
+                ))
+            })?;
+            infos.push(info);
         }
-        Ok(info_and_blocks)
+        Ok(infos)
     }
 }
 

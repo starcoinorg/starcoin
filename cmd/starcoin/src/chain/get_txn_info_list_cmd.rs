@@ -9,7 +9,7 @@ use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
 
-/// Get transaction infos list by (start_index, end_index)
+/// Get transaction infos list
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get-txn-info-list", alias = "get_txn_info_list")]
 pub struct GetTransactionInfoListOpt {

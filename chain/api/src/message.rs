@@ -47,7 +47,7 @@ pub enum ChainRequest {
     },
     GetBlocks(Vec<HashValue>),
     GetHeaders(Vec<HashValue>),
-    GetTransactionInfoAndBlocks {
+    GetTransactionInfos {
         start_index: u64,
         reverse: bool,
         max_size: u64,
@@ -80,5 +80,4 @@ pub enum ChainResponse {
     None,
     HashVec(Vec<HashValue>),
     TPS(TPS),
-    TransactionInfoAndBlockVec(Vec<(BlockTransactionInfo, Block)>),
 }
