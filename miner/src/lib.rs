@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metrics::MINER_METRICS;
+use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
 use consensus::Consensus;
@@ -49,6 +49,7 @@ pub struct MinerService {
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
     client_subscribers_num: u32,
+    metrics: Option<MinerMetrics>,
 }
 
 impl ServiceRequest for SubmitSealRequest {
@@ -109,11 +110,16 @@ impl ServiceFactory<MinerService> for MinerService {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let create_block_template_service =
             ctx.service_ref::<CreateBlockTemplateService>()?.clone();
+        let metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| MinerMetrics::register(registry).ok());
         Ok(MinerService {
             config,
             current_task: None,
             create_block_template_service,
             client_subscribers_num: 0,
+            metrics,
         })
     }
 }
@@ -163,7 +169,7 @@ impl MinerService {
             let strategy = block_template.strategy;
             let number = block_template.number;
             let parent_hash = block_template.parent_hash;
-            let task = MintTask::new(block_template);
+            let task = MintTask::new(block_template, self.metrics.clone());
             let mining_blob = task.minting_blob.clone();
             if let Some(current_task) = self.current_task.as_ref() {
                 debug!(
@@ -217,7 +223,9 @@ impl MinerService {
             let block_hash = block.id();
             info!(target: "miner", "Mint new block: {}", block);
             ctx.broadcast(MinedBlock(Arc::new(block)));
-            MINER_METRICS.block_mint_count.inc();
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics.block_mint_count.inc();
+            }
             Ok(block_hash)
         } else {
             Err(MinerError::TaskEmptyError.into())

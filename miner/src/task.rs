@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metrics::MINER_METRICS;
+use crate::metrics::MinerMetrics;
 use crate::BlockHeaderExtra;
 use starcoin_metrics::HistogramTimer;
 use types::block::{Block, BlockTemplate};
@@ -9,7 +9,7 @@ use types::block::{Block, BlockTemplate};
 pub struct MintTask {
     pub(crate) minting_blob: Vec<u8>,
     pub(crate) block_template: BlockTemplate,
-    metrics_timer: HistogramTimer,
+    metrics_timer: Option<HistogramTimer>,
 }
 
 impl std::fmt::Debug for MintTask {
@@ -27,12 +27,13 @@ impl std::fmt::Debug for MintTask {
 }
 
 impl MintTask {
-    pub fn new(block_template: BlockTemplate) -> MintTask {
+    pub fn new(block_template: BlockTemplate, metrics: Option<MinerMetrics>) -> MintTask {
         let minting_blob = block_template.as_pow_header_blob();
-        let metrics_timer = MINER_METRICS
-            .block_mint_time
-            .with_label_values(&["mint"])
-            .start_timer();
+        let metrics_timer = if let Some(metrics) = metrics.as_ref() {
+            Some(metrics.block_mint_time.start_timer())
+        } else {
+            None
+        };
         MintTask {
             minting_blob,
             block_template,
@@ -42,7 +43,9 @@ impl MintTask {
 
     pub fn finish(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
         let block = self.block_template.into_block(nonce, extra);
-        self.metrics_timer.observe_duration();
+        if let Some(metrics_timer) = self.metrics_timer {
+            metrics_timer.observe_duration();
+        }
         block
     }
 }

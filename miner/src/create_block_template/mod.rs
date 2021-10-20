@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::metrics::MINER_METRICS;
+use crate::create_block_template::metrics::BlockBuilderMetrics;
 use anyhow::{format_err, Result};
 use consensus::Consensus;
 use crypto::hash::HashValue;
@@ -28,6 +28,7 @@ use types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 
+mod metrics;
 #[cfg(test)]
 mod test_create_block_template;
 
@@ -45,6 +46,7 @@ impl ServiceRequest for CreateBlockTemplateRequest {
     type Response = Result<BlockTemplate>;
 }
 
+//TODO should rename to BlockBuilderService
 pub struct CreateBlockTemplateService {
     inner: Inner<TxPoolService>,
 }
@@ -67,6 +69,10 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
                 format_err!("Default account should exist when CreateBlockTemplateService start.")
             })?;
         let txpool = ctx.get_shared::<TxPoolService>()?;
+        let metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
         let inner = Inner::new(
             config.net(),
             storage,
@@ -74,6 +80,7 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
             txpool,
             config.miner.block_gas_limit,
             miner_account,
+            metrics,
         )?;
         Ok(Self { inner })
     }
@@ -183,6 +190,7 @@ pub struct Inner<P> {
     uncles: HashMap<HashValue, BlockHeader>,
     local_block_gas_limit: Option<u64>,
     miner_account: AccountInfo,
+    metrics: Option<BlockBuilderMetrics>,
 }
 
 impl<P> Inner<P>
@@ -196,6 +204,7 @@ where
         tx_provider: P,
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
+        metrics: Option<BlockBuilderMetrics>,
     ) -> Result<Self> {
         let chain = BlockChain::new(net.time_service(), block_id, storage.clone())?;
 
@@ -207,6 +216,7 @@ where
             uncles: HashMap::new(),
             local_block_gas_limit,
             miner_account,
+            metrics,
         })
     }
 
@@ -216,7 +226,11 @@ where
             .or_insert_with(Vec::new)
             .push(uncle.id());
         self.uncles.insert(uncle.id(), uncle);
-        MINER_METRICS.maybe_uncle_count.inc();
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .current_epoch_maybe_uncles
+                .set(self.uncles.len() as u64);
+        }
     }
 
     pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
@@ -232,7 +246,12 @@ where
             )?;
             //current block possible bean uncle.
             self.uncles.insert(current_id, current_header);
-            MINER_METRICS.maybe_uncle_count.inc();
+
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics
+                    .current_epoch_maybe_uncles
+                    .set(self.uncles.len() as u64);
+            }
         }
         Ok(())
     }
@@ -262,6 +281,11 @@ where
             if epoch.end_block_number() == (self.chain.current_header().number() + 2) {
                 self.uncles.clear();
             }
+        }
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .current_epoch_maybe_uncles
+                .set(self.uncles.len() as u64);
         }
     }
 
