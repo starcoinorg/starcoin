@@ -29,11 +29,9 @@ impl std::fmt::Debug for MintTask {
 impl MintTask {
     pub fn new(block_template: BlockTemplate, metrics: Option<MinerMetrics>) -> MintTask {
         let minting_blob = block_template.as_pow_header_blob();
-        let metrics_timer = if let Some(metrics) = metrics.as_ref() {
-            Some(metrics.block_mint_time.start_timer())
-        } else {
-            None
-        };
+        let metrics_timer = metrics
+            .as_ref()
+            .map(|metrics| metrics.block_mint_time.start_timer());
         MintTask {
             minting_blob,
             block_template,

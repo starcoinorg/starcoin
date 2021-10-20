@@ -47,6 +47,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
         EmptyProvider,
         None,
         miner_account,
+        None,
     )
     .unwrap();
 
@@ -86,6 +87,7 @@ fn test_switch_main() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
         )
         .unwrap();
 
@@ -122,6 +124,7 @@ fn test_switch_main() {
                 txpool.clone(),
                 None,
                 miner_account.clone(),
+                None,
             )
             .unwrap();
 
@@ -197,6 +200,7 @@ fn test_do_uncles() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
         )
         .unwrap();
 
@@ -222,6 +226,7 @@ fn test_do_uncles() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
         )
         .unwrap();
 
@@ -290,6 +295,7 @@ fn test_new_head() {
         txpool,
         None,
         miner_account,
+        None,
     )
     .unwrap();
 
@@ -333,6 +339,7 @@ fn test_new_branch() {
         txpool.clone(),
         None,
         miner_account.clone(),
+        None,
     )
     .unwrap();
     for _i in 0..times {
@@ -357,6 +364,7 @@ fn test_new_branch() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
         )
         .unwrap();
         let block_template = inner.create_block_template().unwrap();
@@ -422,6 +430,7 @@ fn test_create_block_template_by_adjust_time() -> Result<()> {
         EmptyProvider,
         None,
         AccountInfo::random(),
+        None,
     )?;
     let template = inner.create_block_template()?;
     let previous_block_time = template.timestamp;
