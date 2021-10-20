@@ -8491,7 +8491,6 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "rand 0.8.4",
- "reqwest 0.11.5",
  "scmd",
  "serde",
  "serde_json",
