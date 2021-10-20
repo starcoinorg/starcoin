@@ -2,12 +2,14 @@ use super::*;
 use futures::executor::block_on;
 use jsonrpc_core::{MetaIoHandler, Params, Value};
 use rand::Rng;
-use starcoin_metrics::get_all_metrics;
+use starcoin_metrics::{get_all_metrics, Registry};
 use std::time::Duration;
 
 #[stest::test]
 fn test_middleware() {
-    let mut io_handler = MetaIoHandler::with_middleware(MetricMiddleware);
+    let registry = Registry::new();
+    let metrics = RpcMetrics::register(&registry).unwrap();
+    let mut io_handler = MetaIoHandler::with_middleware(MetricMiddleware::new(Some(metrics)));
     io_handler.add_method("status", |_params: Params| async {
         let mut rng = rand::thread_rng();
         let sleep_time = rng.gen_range(1..50);
@@ -27,5 +29,5 @@ fn test_middleware() {
     for fut in futs {
         assert!(block_on(fut).is_some());
     }
-    info!("metrics: {:?}", get_all_metrics());
+    info!("metrics: {:?}", get_all_metrics(&registry));
 }
