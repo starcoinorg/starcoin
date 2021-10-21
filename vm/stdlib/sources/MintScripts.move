@@ -1,0 +1,4 @@
+address Std {
+module MintScripts {
+}
+}

@@ -122,25 +122,37 @@ pub fn instruction_table_v1() -> Vec<GasCost> {
     ];
     // Note that the DiemVM is expecting the table sorted by instruction order.
     instrs.sort_by_key(|cost| instruction_key(&cost.0));
-    {
-        let mut instructions_covered = 0;
-        for (index, (instr, _)) in instrs.iter().enumerate() {
-            let key = instruction_key(instr);
-            if index == (key - 1) as usize {
-                instructions_covered += 1;
-            }
-        }
-        debug_assert!(
-            instructions_covered == Bytecode::VARIANT_COUNT,
-            "all instructions must be in the cost table"
-        );
-    }
+
+    // {
+    //     let mut instructions_covered = 0;
+    //     for (index, (instr, _)) in instrs.iter().enumerate() {
+    //         let key = instruction_key(instr);
+    //         if index == (key - 1) as usize {
+    //             instructions_covered += 1;
+    //         }
+    //     }
+    //     debug_assert!(
+    //         instructions_covered == Bytecode::VARIANT_COUNT,
+    //         "all instructions must be in the cost table"
+    //     );
+    // }
+
     instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>()
 }
 
-pub static LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(instruction_table_v1);
+/// return latest instruction table, as `initial_instruction_table` function should not be modified.
+pub static LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
+    let latest_ins = move_vm_types::gas_schedule::INITIAL_GAS_SCHEDULE
+        .instruction_table
+        .clone();
+    debug_assert!(
+        latest_ins.len() == Bytecode::VARIANT_COUNT,
+        "all instructions must be in the cost table"
+    );
+    latest_ins
+});
 
-pub fn v1_native_table() -> Vec<GasCost> {
+pub fn native_table_v1() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
         (N::SHA3_256, GasCost::new(64, 1)),
@@ -169,7 +181,8 @@ pub fn v1_native_table() -> Vec<GasCost> {
         .map(|(_, cost)| cost)
         .collect::<Vec<_>>()
 }
-pub fn v2_native_table() -> Vec<GasCost> {
+
+pub fn native_table_v2() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),
         (N::SHA3_256, GasCost::new(64, 1)),
@@ -199,6 +212,7 @@ pub fn v2_native_table() -> Vec<GasCost> {
         .map(|(_, cost)| cost)
         .collect::<Vec<_>>()
 }
+
 pub fn v3_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
         (N::SHA2_256, GasCost::new(21, 1)),

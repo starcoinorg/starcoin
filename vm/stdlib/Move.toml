@@ -1,0 +1,9 @@
+[package]
+name = "starcoin-stdlib"
+version = "0.1.0"
+
+[addresses]
+Std = "0x1"
+StarcoinFramework = "0x1"
+StarcoinAssociation = "0xA550C18"
+VMReserved = "0x0"

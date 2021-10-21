@@ -11,8 +11,9 @@ anyhow = "1.0.41"
 once_cell = "1.8.0"
 
 starcoin-types = { path = "../../types"}
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
+move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
 tracing = "0.1.29"
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}

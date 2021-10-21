@@ -1,6 +1,6 @@
 use anyhow::Result;
 use bcs_ext::BCSCodec;
-use clap::Clap;
+use clap::Parser;
 use jsonrpc_core_client::{RpcChannel, RpcError};
 use serde::Deserialize;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
@@ -24,7 +24,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-#[derive(Clap, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
     #[clap(long, default_value = "http://localhost:9850")]

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
 use move_command_line_common::env::read_bool_env_var;
+use move_lang::compiled_unit::{NamedCompiledModule, NamedCompiledScript};
+use move_lang::diagnostics::report_warnings;
 use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
 use starcoin_move_compiler::compiled_unit::CompiledUnit;
@@ -68,7 +70,9 @@ impl Compiler for MoveSourceCompiler {
                     MoveSourceCompilerError(String::from_utf8(error_buffer).unwrap()).into(),
                 );
             }
-            Ok(mut units) => {
+            Ok(units) => {
+                let (mut units, warnings) = units;
+                report_warnings(&files, warnings);
                 let len = units.len();
                 if len != 1 {
                     bail!("Invalid input. Expected 1 compiled unit but got {}", len)
@@ -77,9 +81,11 @@ impl Compiler for MoveSourceCompiler {
             }
         };
 
-        Ok(match unit {
-            CompiledUnit::Script { script, .. } => ScriptOrModule::Script(script),
-            CompiledUnit::Module { module, .. } => {
+        Ok(match unit.into_compiled_unit() {
+            CompiledUnit::Script(NamedCompiledScript { script, .. }) => {
+                ScriptOrModule::Script(script)
+            }
+            CompiledUnit::Module(NamedCompiledModule { module, .. }) => {
                 // let input = format!("address {} {{\n{}\n}}", sender_addr, input);
                 // cur_file.reopen()?.write_all(input.as_bytes())?;
                 self.temp_files.push(cur_file);

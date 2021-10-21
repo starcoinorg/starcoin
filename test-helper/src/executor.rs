@@ -132,8 +132,10 @@ pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
     .1
     .expect("compile fail");
     compile_unit
+        .0
         .pop()
         .expect("at least contain one script")
+        .into_compiled_unit()
         .serialize()
 }
 

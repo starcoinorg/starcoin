@@ -22,8 +22,8 @@ const ENV_TEST_INCONSISTENCY: &str = "MVP_TEST_INCONSISTENCY";
 const ENV_TEST_FEATURE: &str = "MVP_TEST_FEATURE";
 const ENV_TEST_ON_CI: &str = "MVP_TEST_ON_CI";
 const INCONSISTENCY_TEST_FLAGS: &[&str] =
-    &["--dependency=../stdlib/modules", "--check-inconsistency"];
-const REGULAR_TEST_FLAGS: &[&str] = &["--dependency=../stdlib/modules"];
+    &["--dependency=../stdlib/sources", "--check-inconsistency"];
+const REGULAR_TEST_FLAGS: &[&str] = &["--dependency=../stdlib/sources"];
 
 static NOT_CONFIGURED_WARNED: AtomicBool = AtomicBool::new(false);
 
@@ -100,14 +100,14 @@ fn cvc4_deny_listed(path_str: &str) -> bool {
         || path_str == "../stdlib/transaction_scripts/cast_vote.move"
         || path_str == "../stdlib/transaction_scripts/unstake_vote.move"
         || path_str == "../stdlib/transaction_scripts/revoke_vote.move"
-        || path_str == "../stdlib/modules/TransactionPublishOption.move"
-        || path_str == "../stdlib/modules/OnChainConfigDao.move"
-        || path_str == "../stdlib/modules/Authenticator.move"
-        || path_str == "../stdlib/modules/MintDaoProposal.move"
-        || path_str == "../stdlib/modules/Dao.move"
-        || path_str == "../stdlib/modules/ConsensusConfig.move"
-        || path_str == "../stdlib/modules/UpgradeModuleDaoProposal.move"
-        || path_str == "../stdlib/modules/ModifyDaoConfigProposal.move"
+        || path_str == "../stdlib/sources/TransactionPublishOption.move"
+        || path_str == "../stdlib/sources/OnChainConfigDao.move"
+        || path_str == "../stdlib/sources/Authenticator.move"
+        || path_str == "../stdlib/sources/MintDaoProposal.move"
+        || path_str == "../stdlib/sources/Dao.move"
+        || path_str == "../stdlib/sources/ConsensusConfig.move"
+        || path_str == "../stdlib/sources/UpgradeModuleDaoProposal.move"
+        || path_str == "../stdlib/sources/ModifyDaoConfigProposal.move"
         || false
     {
         return true;
@@ -304,7 +304,7 @@ fn main() {
         if feature_narrow.is_empty() && feature.only_if_requested {
             continue;
         }
-        collect_enabled_tests(&mut reqs, "stdlib", feature, "../stdlib/modules");
+        collect_enabled_tests(&mut reqs, "stdlib", feature, "../stdlib/sources");
     }
     datatest_stable::runner(&reqs);
 }

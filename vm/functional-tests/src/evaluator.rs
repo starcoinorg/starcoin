@@ -285,7 +285,7 @@ fn get_transaction_parameters<'a>(
         .read_balance_resource(config.sender)
         .expect("read_balance_resource fail");
     let gas_unit_price = config.gas_price.unwrap_or(0);
-    let max_number_of_gas_units = LATEST_GAS_CONSTANTS.clone().maximum_number_of_gas_units;
+    let max_number_of_gas_units = LATEST_GAS_CONSTANTS.maximum_number_of_gas_units;
     let max_gas_amount = config.max_gas.unwrap_or_else(|| {
         if gas_unit_price == 0 {
             max_number_of_gas_units.get()

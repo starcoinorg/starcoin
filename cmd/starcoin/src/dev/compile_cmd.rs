@@ -6,7 +6,6 @@ use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::temp_path;
-use starcoin_move_compiler::diagnostics::Diagnostics;
 use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
@@ -105,17 +104,24 @@ impl CommandAction for CompileCommand {
         };
 
         let compile_result = if ctx.opt().no_verify {
-            compile_result
+            compile_result.and_then(|v| if v.1.is_empty() { Ok(v.0) } else { Err(v.1) })
         } else {
             compile_result.and_then(|units| {
-                let (units, errors) = units.into_iter().map(|unit| unit.verify()).fold(
-                    (vec![], Diagnostics::new()),
-                    |(mut units, mut errors), (unit, error)| {
-                        units.push(unit);
-                        errors.extend(error);
-                        (units, errors)
-                    },
-                );
+                let (units, errors) = units
+                    .0
+                    .into_iter()
+                    .map(|unit| {
+                        let dig = unit.verify();
+                        (unit, dig)
+                    })
+                    .fold(
+                        (vec![], units.1),
+                        |(mut units, mut errors), (unit, error)| {
+                            units.push(unit);
+                            errors.extend(error);
+                            (units, errors)
+                        },
+                    );
                 if !errors.is_empty() {
                     Err(errors)
                 } else {
@@ -152,7 +158,8 @@ impl CommandAction for CompileCommand {
         ensure!(out_dir.is_dir(), "out_dir should is a dir.");
         let mut results = vec![];
         for unit in compile_units {
-            let mut file_path = out_dir.join(unit.name());
+            let unit = unit.into_compiled_unit();
+            let mut file_path = out_dir.join(unit.name().as_str());
             file_path.set_extension(MOVE_COMPILED_EXTENSION);
             let mut file = File::create(file_path.as_path())
                 .map_err(|e| format_err!("create file({:?} error: {:?})", file_path, e))?;

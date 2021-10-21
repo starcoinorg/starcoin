@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use clap::Clap;
+use clap::Parser;
 use elasticsearch::auth::Credentials;
 use elasticsearch::http::transport::SingleNodeConnectionPool;
 use elasticsearch::http::Url;
@@ -15,7 +15,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use tokio::runtime;
 
-#[derive(Clap, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
     #[clap(long, about = "es url", default_value = "http://localhost:9200")]
@@ -39,13 +39,13 @@ pub struct Options {
     subcmd: Option<SubCommand>,
 }
 
-#[derive(Clap, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 enum SubCommand {
     Repair(Repair),
 }
 
 /// repair sub command
-#[derive(Clap, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 struct Repair {
     // block to repair from. default to 0.
     #[clap(long = "from-block")]

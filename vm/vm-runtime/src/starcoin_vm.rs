@@ -9,7 +9,7 @@ use crate::errors::{
 use crate::metrics::VMMetrics;
 use anyhow::{format_err, Error, Result};
 use crypto::HashValue;
-use move_vm_runtime::data_cache::MoveStorage;
+use move_core_types::resolver::MoveResolver;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
@@ -612,7 +612,7 @@ impl StarcoinVM {
 
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_prologue<R: MoveStorage>(
+    fn run_prologue<R: MoveResolver>(
         &self,
         session: &mut SessionAdapter<R>,
         gas_status: &mut GasStatus,
@@ -673,7 +673,7 @@ impl StarcoinVM {
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_epilogue<R: MoveStorage>(
+    fn run_epilogue<R: MoveResolver>(
         &self,
         session: &mut SessionAdapter<R>,
         gas_status: &mut GasStatus,
@@ -1124,7 +1124,7 @@ impl StarcoinVM {
         Ok(result)
     }
 
-    fn success_transaction_cleanup<R: MoveStorage>(
+    fn success_transaction_cleanup<R: MoveResolver>(
         &self,
         mut session: SessionAdapter<R>,
         gas_schedule: &CostTable,
@@ -1230,7 +1230,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
-pub(crate) fn charge_global_write_gas_usage<R: MoveStorage>(
+pub(crate) fn charge_global_write_gas_usage<R: MoveResolver>(
     cost_strategy: &mut GasStatus,
     session: &SessionAdapter<R>,
     sender: &AccountAddress,
@@ -1329,7 +1329,7 @@ pub fn convert_changeset_and_events(
     convert_changeset_and_events_cached(&mut (), changeset, events)
 }
 
-pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveStorage>(
+pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolver>(
     ap_cache: &mut A,
     session: SessionAdapter<R>,
     cost_strategy: &GasStatus,

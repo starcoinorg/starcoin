@@ -25,7 +25,7 @@ proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
 move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
 vm = { git = "https://github.com/starcoinorg/diem", package = "move-binary-format", rev = "6b1533f22b3075cc15ff68db21b5b84e6baa2955"}
 move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
 
