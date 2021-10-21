@@ -94,6 +94,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
     fn create(ctx: &mut ServiceContext<TxPoolActorService>) -> Result<TxPoolActorService> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let txpool_service = ctx.get_shared_or_put(|| {
             let startup_info = storage
                 .get_startup_info()?
@@ -106,9 +107,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
                         startup_info.main
                     )
                 })?;
-
             let best_block_header = best_block.into_inner().0;
-            let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
             Ok(TxPoolService::new(
                 node_config,
                 storage,
