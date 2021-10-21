@@ -25,6 +25,7 @@ const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
 // UNSPECIFIED is 0.0.0.0
 const DEFAULT_RPC_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const DEFAULT_BLOCK_QUERY_MAX_RANGE: u64 = 32;
+const DEFAULT_TXN_INFO_QUEYR_MAX_RANGE: u64 = 32;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct HttpConfiguration {
@@ -386,6 +387,10 @@ pub struct RpcConfig {
     #[serde(skip)]
     #[structopt(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(long = "event-query-max-txn-info-range")]
+    pub txn_info_query_max_range: Option<u64>,
 }
 
 #[derive(Clone, Eq, PartialEq)]
@@ -449,6 +454,11 @@ impl RpcConfig {
     pub fn block_query_max_range(&self) -> u64 {
         self.block_query_max_range
             .unwrap_or(DEFAULT_BLOCK_QUERY_MAX_RANGE)
+    }
+
+    pub fn txn_info_query_max_range(&self) -> u64 {
+        self.txn_info_query_max_range
+            .unwrap_or(DEFAULT_TXN_INFO_QUEYR_MAX_RANGE)
     }
 
     fn base(&self) -> &BaseConfig {
@@ -522,6 +532,9 @@ impl ConfigModule for RpcConfig {
         }
         if opt.rpc.block_query_max_range.is_some() {
             self.block_query_max_range = opt.rpc.block_query_max_range;
+        }
+        if opt.rpc.txn_info_query_max_range.is_some() {
+            self.txn_info_query_max_range = opt.rpc.txn_info_query_max_range;
         }
         self.http.merge(&opt.rpc.http)?;
         self.tcp.merge(&opt.rpc.tcp)?;
