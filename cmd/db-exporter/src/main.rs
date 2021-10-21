@@ -22,7 +22,7 @@ pub fn export<W: std::io::Write>(
     schema: DbSchema,
 ) -> anyhow::Result<()> {
     let db_storage =
-        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default())?;
+        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default(), None)?;
     let mut iter = db_storage.iter(schema.to_string().as_str())?;
     iter.seek_to_first();
     let key_codec = schema.get_key_codec();
