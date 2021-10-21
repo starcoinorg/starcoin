@@ -1,20 +1,36 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    register_histogram_vec, register_int_counter_vec, HistogramVec, IntCounterVec,
+    register, HistogramOpts, HistogramVec, Opts, PrometheusError, Registry, UIntCounterVec,
 };
 
-pub static RPC_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
-    register_int_counter_vec!(
-        "starcoin_rpc",
-        "Counters of how many rpc request",
-        &["type", "method", "code"]
-    )
-    .unwrap()
-});
+#[derive(Clone)]
+pub struct RpcMetrics {
+    pub rpc_counter: UIntCounterVec,
+    pub rpc_timer: HistogramVec,
+}
 
-pub static RPC_HISTOGRAMS: Lazy<HistogramVec> = Lazy::new(|| {
-    register_histogram_vec!("starcoin_rpc_time", "Histogram of rpc request", &["method"]).unwrap()
-});
+impl RpcMetrics {
+    pub fn new_rpc_timer() -> Result<HistogramVec, PrometheusError> {
+        HistogramVec::new(
+            HistogramOpts::new("rpc_time", "Histogram of rpc request").namespace("starcoin"),
+            &["method"],
+        )
+    }
+
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
+        let rpc_counter = register(
+            UIntCounterVec::new(
+                Opts::new("rpc", "Counters of how many rpc request").namespace("starcoin"),
+                &["type", "method", "code"],
+            )?,
+            registry,
+        )?;
+        let rpc_timer = register(Self::new_rpc_timer()?, registry)?;
+        Ok(Self {
+            rpc_counter,
+            rpc_timer,
+        })
+    }
+}

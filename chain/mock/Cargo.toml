@@ -26,7 +26,6 @@ starcoin-storage = { path = "../../storage" }
 futures-timer = "3.0"
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 starcoin-statedb = { path = "../../state/statedb" }
-starcoin-metrics = { path = "../../commons/metrics" }
 starcoin-open-block = { path = "../open-block" }
 starcoin-vm-types = { path = "../../vm/types" }
 proptest = { version = "1.0.0", default-features = false, optional = true }

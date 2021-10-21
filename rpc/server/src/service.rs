@@ -27,6 +27,7 @@ use starcoin_rpc_api::{
     account::AccountApi, chain::ChainApi, debug::DebugApi, miner::MinerApi, node::NodeApi,
     pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
+use starcoin_rpc_middleware::RpcMetrics;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
 use std::collections::HashSet;
 use std::ops::Deref;
@@ -98,7 +99,12 @@ impl RpcService {
         M: MinerApi,
         Contract: ContractApi,
     {
-        let mut api_registry = ApiRegistry::new(config.rpc.api_quotas.clone());
+        let metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| RpcMetrics::register(registry).ok());
+
+        let mut api_registry = ApiRegistry::new(config.rpc.api_quotas.clone(), metrics);
 
         api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
         if let Some(node_manager_api) = node_manager_api {

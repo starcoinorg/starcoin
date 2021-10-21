@@ -64,6 +64,10 @@ impl NodeApi for NodeRpcImpl {
     }
 
     fn metrics(&self) -> Result<HashMap<String, String>> {
-        Ok(starcoin_metrics::get_all_metrics())
+        if let Some(registry) = self.config.metrics.registry() {
+            Ok(starcoin_metrics::get_all_metrics(registry))
+        } else {
+            Ok(HashMap::new())
+        }
     }
 }

@@ -4,8 +4,8 @@
 use futures::{future::Either, Future, FutureExt};
 use jsonrpc_core::{Call, FutureResponse, Id, Metadata, Middleware, Output, Request, Response};
 use starcoin_logger::prelude::*;
-use starcoin_metrics::HistogramTimer;
 use std::fmt;
+use std::time::Instant;
 
 mod metrics;
 
@@ -34,51 +34,11 @@ struct RpcCallRecord {
     id: String,
     method: String,
     call_type: CallType,
-    timer: HistogramTimer,
+    timer: Instant,
 }
 
 impl RpcCallRecord {
-    pub fn new(id: String, method: Option<String>, call_type: CallType) -> Self {
-        let method = method.unwrap_or_else(|| "".to_owned());
-        let timer = RPC_HISTOGRAMS
-            .with_label_values(&[method.as_str()])
-            .start_timer();
-        Self {
-            id,
-            method,
-            call_type,
-            timer,
-        }
-    }
-
-    pub fn end(self, code: i64) {
-        let use_time = self.timer.stop_and_record();
-
-        info!(
-            "rpc_call\t{}\t{}\t{}\t{}\t{}",
-            self.id, self.call_type, self.method, code, use_time
-        );
-
-        RPC_COUNTERS
-            .with_label_values(&[
-                self.call_type.to_string().as_str(),
-                self.method.as_str(),
-                &code.to_string(),
-            ])
-            .inc();
-    }
-}
-
-fn id_to_string(id: &Id) -> String {
-    match id {
-        Id::Null => "".to_owned(),
-        Id::Num(num) => num.to_string(),
-        Id::Str(str) => str.clone(),
-    }
-}
-
-impl From<&Call> for RpcCallRecord {
-    fn from(call: &Call) -> Self {
+    pub fn with_call(call: &Call) -> Self {
         match call {
             Call::MethodCall(method_call) => RpcCallRecord::new(
                 id_to_string(&method_call.id),
@@ -93,10 +53,71 @@ impl From<&Call> for RpcCallRecord {
             Call::Invalid { id } => RpcCallRecord::new(id_to_string(id), None, CallType::Invalid),
         }
     }
+
+    pub fn new(id: String, method: Option<String>, call_type: CallType) -> Self {
+        let method = method.unwrap_or_else(|| "".to_owned());
+        let timer = Instant::now();
+
+        Self {
+            id,
+            method,
+            call_type,
+            timer,
+        }
+    }
+
+    pub fn end(self, code: i64, metrics: Option<RpcMetrics>) {
+        let use_time = self.timer.elapsed();
+
+        info!(
+            "rpc_call\t{}\t{}\t{}\t{}\t{}",
+            self.id,
+            self.call_type,
+            self.method,
+            code,
+            use_time.as_millis()
+        );
+        if let Some(metrics) = metrics {
+            metrics
+                .rpc_counter
+                .with_label_values(&[
+                    self.call_type.to_string().as_str(),
+                    self.method.as_str(),
+                    &code.to_string(),
+                ])
+                .inc();
+            metrics
+                .rpc_timer
+                .with_label_values(&[self.method.as_str()])
+                .observe(use_time.as_secs_f64())
+        }
+    }
+}
+
+fn id_to_string(id: &Id) -> String {
+    match id {
+        Id::Null => "".to_owned(),
+        Id::Num(num) => num.to_string(),
+        Id::Str(str) => str.clone(),
+    }
+}
+
+impl From<&Call> for RpcCallRecord {
+    fn from(call: &Call) -> Self {
+        Self::with_call(call)
+    }
 }
 
 #[derive(Clone)]
-pub struct MetricMiddleware;
+pub struct MetricMiddleware {
+    metrics: Option<RpcMetrics>,
+}
+
+impl MetricMiddleware {
+    pub fn new(metrics: Option<RpcMetrics>) -> Self {
+        Self { metrics }
+    }
+}
 
 impl<M: Metadata> Middleware<M> for MetricMiddleware {
     type Future = FutureResponse;
@@ -116,8 +137,9 @@ impl<M: Metadata> Middleware<M> for MetricMiddleware {
         X: Future<Output = Option<Output>> + Send + 'static,
     {
         let record: RpcCallRecord = (&call).into();
+        let metrics = self.metrics.clone();
         let fut = next(call, meta).map(move |output| {
-            record.end(output_to_code(output.as_ref()));
+            record.end(output_to_code(output.as_ref()), metrics);
             output
         });
         // must declare type to convert type then wrap with Either.

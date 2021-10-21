@@ -87,8 +87,8 @@ fn get_all_metrics_as_serialized_string() -> Result<Vec<u8>> {
     Ok(buffer)
 }
 
-pub fn get_all_metrics() -> HashMap<String, String> {
-    let all_metric_families = prometheus::gather();
+pub fn get_all_metrics(registry: &Registry) -> HashMap<String, String> {
+    let all_metric_families = registry.gather();
     let mut all_metrics = HashMap::new();
     for metric_family in all_metric_families {
         let name = metric_family.get_name();
