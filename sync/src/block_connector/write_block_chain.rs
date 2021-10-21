@@ -70,13 +70,13 @@ where
         let _timer = self
             .metrics
             .as_ref()
-            .map(|metrics| metrics.block_connect_time.start_timer());
+            .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
         let result = self.connect_inner(block);
 
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .block_connect_counters
+                .chain_block_connect_counters
                 .with_label_values(&["try_connect"])
                 .inc();
             let result_str = match result.as_ref() {
@@ -90,7 +90,7 @@ where
                 }
             };
             metrics
-                .block_connect_counters
+                .chain_block_connect_counters
                 .with_label_values(&[result_str.as_str()])
                 .inc();
         }
@@ -216,7 +216,7 @@ where
         self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             if let Some(metrics) = self.metrics.as_ref() {
-                metrics.rollback_block_counter.inc_by(retracted_count);
+                metrics.chain_rollback_block_counter.inc_by(retracted_count);
             }
         }
         self.commit_2_txpool(enacted_blocks, retracted_blocks);
@@ -228,11 +228,11 @@ where
 
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .block_num
+                .chain_block_num
                 .set(executed_block.block.header().number());
 
             metrics
-                .txn_num
+                .chain_txn_num
                 .set(executed_block.block_info.txn_accumulator_info.num_leaves);
         }
 
@@ -381,7 +381,7 @@ where
     fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .block_connect_counters
+                .chain_block_connect_counters
                 .with_label_values(&["new_head"])
                 .inc()
         }
@@ -394,7 +394,7 @@ where
     fn broadcast_new_branch(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .block_connect_counters
+                .chain_block_connect_counters
                 .with_label_values(&["new_branch"])
                 .inc()
         }

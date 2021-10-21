@@ -136,12 +136,11 @@ pub struct PeerScoreMetrics {
 impl PeerScoreMetrics {
     pub fn register(registry: &Registry) -> Result<PeerScoreMetrics> {
         let peer_score = UIntGaugeVec::new(
-            Opts::new("peer_score", "peer sync score".to_string()).namespace("starcoin"),
+            Opts::new("peer_score", "peer sync score".to_string()),
             &["peer"],
         )?;
-        let total_score = UIntGauge::with_opts(
-            Opts::new("total_score", "total peer score".to_string()).namespace("starcoin"),
-        )?;
+        let total_score =
+            UIntGauge::with_opts(Opts::new("total_score", "total peer score".to_string()))?;
         let peer_score = register(peer_score, registry)?;
         let total_score = register(total_score, registry)?;
         Ok(Self {

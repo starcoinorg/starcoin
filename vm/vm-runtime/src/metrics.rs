@@ -17,28 +17,23 @@ impl VMMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let vm_txn_counters = register(
             UIntCounterVec::new(
-                Opts::new("vm_txn_counters", "Counters of executed transaction")
-                    .namespace("starcoin"),
+                Opts::new("vm_txn_counters", "Counters of executed transaction"),
                 &["type", "status"],
             )?,
             registry,
         )?;
         let vm_txn_exe_time = register(
             HistogramVec::new(
-                HistogramOpts::new("vm_txn_exe_time", "vm transaction execution time usage")
-                    .namespace("starcoin"),
+                HistogramOpts::new("vm_txn_exe_time", "vm transaction execution time usage"),
                 &["type"],
             )?,
             registry,
         )?;
         let vm_txn_gas_usage = register(
-            Histogram::with_opts(
-                HistogramOpts::new(
-                    "vm_txn_gas_usage",
-                    "vm user transaction execution gas usage",
-                )
-                .namespace("starcoin"),
-            )?,
+            Histogram::with_opts(HistogramOpts::new(
+                "vm_txn_gas_usage",
+                "vm user transaction execution gas usage",
+            ))?,
             registry,
         )?;
         Ok(Self {

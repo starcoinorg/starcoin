@@ -6,82 +6,57 @@ use starcoin_metrics::{
     UIntCounterVec, UIntGauge,
 };
 
-const SC_NS: &str = "starcoin";
-const PREFIX: &str = "chain_";
-
 #[derive(Clone)]
 pub struct ChainMetrics {
-    pub block_connect_counters: UIntCounterVec,
-    pub block_connect_time: Histogram,
-    pub rollback_block_counter: UIntCounter,
-    pub block_num: UIntGauge,
-    pub txn_num: UIntGauge,
+    pub chain_block_connect_counters: UIntCounterVec,
+    pub chain_block_connect_time: Histogram,
+    pub chain_rollback_block_counter: UIntCounter,
+    pub chain_block_num: UIntGauge,
+    pub chain_txn_num: UIntGauge,
 }
 
 impl ChainMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let block_connect_counters = register(
+        let chain_block_connect_counters = register(
             UIntCounterVec::new(
-                Opts::new(
-                    format!("{}{}", PREFIX, "block_connect_counters"),
-                    "block connect count".to_string(),
-                )
-                .namespace(SC_NS),
+                Opts::new("chain_block_connect_counters", "block connect count"),
                 &["type"],
             )?,
             registry,
         )?;
 
-        let block_connect_time = register(
-            Histogram::with_opts(
-                HistogramOpts::new(
-                    format!("{}{}", PREFIX, "block_connect_time"),
-                    "connect block time".to_string(),
-                )
-                .namespace(SC_NS),
-            )?,
+        let chain_block_connect_time = register(
+            Histogram::with_opts(HistogramOpts::new(
+                "chain_block_connect_time",
+                "connect block time",
+            ))?,
             registry,
         )?;
 
-        let rollback_block_counter = register(
-            UIntCounter::with_opts(
-                Opts::new(
-                    format!("{}{}", PREFIX, "rollback_block_counter"),
-                    "rollback block counter".to_string(),
-                )
-                .namespace(SC_NS),
-            )?,
+        let chain_rollback_block_counter = register(
+            UIntCounter::with_opts(Opts::new(
+                "chain_rollback_block_counter",
+                "rollback block counter",
+            ))?,
             registry,
         )?;
 
-        let block_num = register(
-            UIntGauge::with_opts(
-                Opts::new(
-                    format!("{}{}", PREFIX, "block_num"),
-                    "how many block in main chain".to_string(),
-                )
-                .namespace(SC_NS),
-            )?,
+        let chain_block_num = register(
+            UIntGauge::with_opts(Opts::new("chain_block_num", "how many block in main chain"))?,
             registry,
         )?;
 
-        let txn_num = register(
-            UIntGauge::with_opts(
-                Opts::new(
-                    format!("{}{}", PREFIX, "txn_num"),
-                    "how many txn in main chain".to_string(),
-                )
-                .namespace(SC_NS),
-            )?,
+        let chain_txn_num = register(
+            UIntGauge::with_opts(Opts::new("chain_txn_num", "how many txn in main chain"))?,
             registry,
         )?;
 
         Ok(Self {
-            block_connect_counters,
-            block_connect_time,
-            rollback_block_counter,
-            block_num,
-            txn_num,
+            chain_block_connect_counters,
+            chain_block_connect_time,
+            chain_rollback_block_counter,
+            chain_block_num,
+            chain_txn_num,
         })
     }
 }

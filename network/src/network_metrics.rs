@@ -18,9 +18,8 @@ impl NetworkMetrics {
                 Opts::new(
                     "broadcast_counters",
                     "network broadcast message counter by in|out and protocol",
-                )
-                .namespace("starcoin"),
-                &["in|out", "notification_protocol"],
+                ),
+                &["in_or_out", "notification_protocol"],
             )?,
             registry,
         )?;
@@ -29,8 +28,7 @@ impl NetworkMetrics {
                 HistogramOpts::new(
                     "broadcast_duration",
                     "network broadcast message duration by protocol",
-                )
-                .namespace("starcoin"),
+                ),
                 &["notification_protocol"],
             )?,
             registry,
@@ -41,9 +39,8 @@ impl NetworkMetrics {
                 Opts::new(
                     "broadcast_in_message_counters",
                     "network broadcast receive message counters by known|unknown and protocol",
-                )
-                .namespace("starcoin"),
-                &["known|unknown", "notification_protocol"],
+                ),
+                &["known_or_unknown", "notification_protocol"],
             )?,
             registry,
         )?;

@@ -19,17 +19,15 @@ impl TxPoolMetrics {
             Opts::new(
                 "txpool_txn_event_counter",
                 "Counters of txn events, such as added|dropped|rejected etc",
-            )
-            .namespace("starcoin"),
+            ),
             &["event"],
         )?;
         let txpool_status = UIntGaugeVec::new(
-            Opts::new("txpool_status", "Gauge of pool status").namespace("starcoin"),
+            Opts::new("txpool_status", "Gauge of pool status"),
             &["name"],
         )?;
         let txpool_service_timer = HistogramVec::new(
-            HistogramOpts::new("txpool_service_timer", "Histogram of txpool service")
-                .namespace("starcoin"),
+            HistogramOpts::new("txpool_service_timer", "Histogram of txpool service"),
             &["api"],
         )?;
         Ok(Self {

@@ -14,7 +14,7 @@ pub struct RpcMetrics {
 impl RpcMetrics {
     pub fn new_rpc_timer() -> Result<HistogramVec, PrometheusError> {
         HistogramVec::new(
-            HistogramOpts::new("rpc_time", "Histogram of rpc request").namespace("starcoin"),
+            HistogramOpts::new("rpc_time", "Histogram of rpc request"),
             &["method"],
         )
     }
@@ -22,7 +22,7 @@ impl RpcMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let rpc_counter = register(
             UIntCounterVec::new(
-                Opts::new("rpc", "Counters of how many rpc request").namespace("starcoin"),
+                Opts::new("rpc", "Counters of how many rpc request"),
                 &["type", "method", "code"],
             )?,
             registry,

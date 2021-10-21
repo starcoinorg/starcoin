@@ -20,16 +20,14 @@ impl StorageMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let storage_counters = register(
             UIntCounterVec::new(
-                Opts::new("storage", "Counters of how many storage read/write")
-                    .namespace("starcoin"),
+                Opts::new("storage", "Counters of how many storage read/write"),
                 &["storage_type", "key_type", "method", "result"],
             )?,
             registry,
         )?;
         let storage_item_bytes = register(
             HistogramVec::new(
-                HistogramOpts::new("storage_item_bytes", "storage write item size in bytes")
-                    .namespace("starcoin"),
+                HistogramOpts::new("storage_item_bytes", "storage write item size in bytes"),
                 &["cf_name"],
             )?,
             registry,
@@ -40,17 +38,14 @@ impl StorageMetrics {
                 HistogramOpts::new(
                     "storage_time",
                     "Histogram of storage, measure storage method time usage.",
-                )
-                .namespace("starcoin"),
+                ),
                 &["storage_type", "key_type", "method"],
             )?,
             registry,
         )?;
 
         let cache_items = register(
-            UIntGauge::with_opts(
-                Opts::new("cache_items", "How many items in cache").namespace("starcoin"),
-            )?,
+            UIntGauge::with_opts(Opts::new("cache_items", "How many items in cache"))?,
             registry,
         )?;
 

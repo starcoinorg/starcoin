@@ -21,38 +21,29 @@ impl BlockRelayerMetrics {
                 Opts::new(
                     "txns_filled",
                     "Count of block filled transactions from network|txpool|prefill",
-                )
-                .namespace("starcoin"),
+                ),
                 &["source"],
             )?,
             registry,
         )?;
 
         let txns_filled_time = register(
-            Histogram::with_opts(
-                HistogramOpts::new("txns_filled_time", "txns filled time").namespace("starcoin"),
-            )?,
+            Histogram::with_opts(HistogramOpts::new("txns_filled_time", "txns filled time"))?,
             registry,
         )?;
         let block_relay_time = register(
-            Histogram::with_opts(
-                HistogramOpts::new(
-                    "block_relay_time",
-                    "block relay time, measure the time usage in network",
-                )
-                .namespace("starcoin"),
-            )?,
+            Histogram::with_opts(HistogramOpts::new(
+                "block_relay_time",
+                "block relay time, measure the time usage in network",
+            ))?,
             registry,
         )?;
 
         let txns_filled_failed = register(
-            UIntCounter::with_opts(
-                Opts::new(
-                    "txns_filled_failed",
-                    "txns filled failed counter".to_string(),
-                )
-                .namespace("starcoin"),
-            )?,
+            UIntCounter::with_opts(Opts::new(
+                "txns_filled_failed",
+                "txns filled failed counter".to_string(),
+            ))?,
             registry,
         )?;
 

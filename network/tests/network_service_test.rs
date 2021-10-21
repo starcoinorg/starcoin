@@ -281,6 +281,8 @@ async fn test_event_broadcast() {
 
     let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver3.next()).await;
     assert!(msg_receive3.is_err());
+
+    print!("{:?}", node1.config.metrics.registry().unwrap().gather());
 }
 
 #[stest::test]

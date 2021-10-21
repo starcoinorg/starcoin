@@ -53,8 +53,7 @@ pub async fn start_server(addr: SocketAddr, registry: Registry) -> anyhow::Resul
     // metric process info.
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
-        let process_collector =
-            crate::process_collector::ProcessCollector::for_self("starcoin".to_string())?;
+        let process_collector = crate::process_collector::ProcessCollector::for_self()?;
         if let Err(e) = registry.register(Box::new(process_collector)) {
             warn!("Register process_collector metric failed: {:?}", e);
         }
