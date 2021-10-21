@@ -26,7 +26,7 @@ impl MockChain {
         let (storage, chain_info, _) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)?;
+        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)?;
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner))
     }
@@ -37,7 +37,7 @@ impl MockChain {
         head_block_hash: HashValue,
         miner: AccountInfo,
     ) -> Result<Self> {
-        let chain = BlockChain::new(net.time_service(), head_block_hash, storage)?;
+        let chain = BlockChain::new(net.time_service(), head_block_hash, storage, None)?;
         Ok(Self::new_inner(net, chain, miner))
     }
 
@@ -68,7 +68,12 @@ impl MockChain {
             None => self.head.current_header().id(),
         };
         assert!(self.head.exist_block(block_id)?);
-        BlockChain::new(self.head.time_service(), block_id, self.head.get_storage())
+        BlockChain::new(
+            self.head.time_service(),
+            block_id,
+            self.head.get_storage(),
+            None,
+        )
     }
 
     pub fn fork(&self, head_id: Option<HashValue>) -> Result<MockChain> {
@@ -88,6 +93,7 @@ impl MockChain {
             self.net.time_service(),
             new_block_id,
             self.head.get_storage(),
+            None,
         )?;
         let branch_total_difficulty = branch.get_total_difficulty()?;
         let head_total_difficulty = self.head.get_total_difficulty()?;

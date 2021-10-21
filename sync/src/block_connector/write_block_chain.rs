@@ -4,6 +4,7 @@
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
+use executor::VMMetrics;
 use logger::prelude::*;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
@@ -35,6 +36,7 @@ where
     txpool: P,
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
+    vm_metrics: Option<VMMetrics>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -106,13 +108,20 @@ where
         storage: Arc<dyn Store>,
         txpool: P,
         bus: ServiceRef<BusService>,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let main = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
+        let main = BlockChain::new(
+            net.time_service(),
+            startup_info.main,
+            storage.clone(),
+            vm_metrics.clone(),
+        )?;
         let metrics = config
             .metrics
             .registry()
             .and_then(|registry| ChainMetrics::register(registry).ok());
+
         Ok(Self {
             config,
             startup_info,
@@ -121,6 +130,7 @@ where
             txpool,
             bus,
             metrics,
+            vm_metrics,
         })
     }
 
@@ -139,6 +149,7 @@ where
                     net.time_service(),
                     block_id,
                     self.storage.clone(),
+                    self.vm_metrics.clone(),
                 )?)
             }
         } else if self.block_exist(header.parent_hash())? {
@@ -147,6 +158,7 @@ where
                 net.time_service(),
                 header.parent_hash(),
                 self.storage.clone(),
+                self.vm_metrics.clone(),
             )?)
         } else {
             None
@@ -239,6 +251,7 @@ where
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
+            self.vm_metrics.clone(),
         )?;
 
         // delete block since from block.number + 1 to latest.
@@ -275,6 +288,7 @@ where
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),
+            self.vm_metrics.clone(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block)

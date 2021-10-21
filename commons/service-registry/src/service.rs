@@ -89,6 +89,14 @@ where
         registry_ref.get_shared_sync()
     }
 
+    pub fn get_shared_opt<T>(&self) -> Result<Option<T>>
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        let registry_ref = self.registry_ref();
+        registry_ref.get_shared_opt_sync()
+    }
+
     pub fn get_shared_or_put<T, F>(&self, f: F) -> Result<T>
     where
         T: Send + Sync + Clone + 'static,

@@ -181,7 +181,7 @@ impl FakeExecutor {
         &self,
         txn_block: Vec<Transaction>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
-        let mut vm = StarcoinVM::new();
+        let mut vm = StarcoinVM::new(None);
         vm.execute_block_transactions(&self.data_store, txn_block, None)
     }
 
@@ -202,7 +202,7 @@ impl FakeExecutor {
 
     /// Verifies the given transaction by running it through the VM verifier.
     pub fn verify_transaction(&self, txn: SignedUserTransaction) -> Option<VMStatus> {
-        let mut vm = StarcoinVM::new();
+        let mut vm = StarcoinVM::new(None);
         vm.verify_transaction(&self.data_store, txn)
     }
 

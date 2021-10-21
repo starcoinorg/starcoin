@@ -74,7 +74,7 @@ fn main() {
     );
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
         .expect("init storage by genesis fail.");
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)
+    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
         .expect("create block chain should success.");
     //read from first chain
     let begin = SystemTime::now();
@@ -104,6 +104,7 @@ fn main() {
         net.time_service(),
         chain_info2.status().head().id(),
         storage2,
+        None,
     )
     .expect("create block chain should success.");
     let begin = SystemTime::now();

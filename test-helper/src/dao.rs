@@ -51,6 +51,7 @@ pub fn proposal_state(
             MoveValue::Address(proposer_address),
             MoveValue::U64(proposal_id),
         ]),
+        None,
     )
     .unwrap_or_else(|e| {
         panic!(
@@ -78,6 +79,7 @@ pub fn proposal_exist(
             MoveValue::Address(proposer_address),
             MoveValue::U64(proposal_id),
         ]),
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
@@ -170,6 +172,7 @@ pub fn quorum_vote(state_view: &dyn StateView, token: TypeTag) -> u128 {
         &Identifier::new("quorum_votes").unwrap(),
         vec![token],
         vec![],
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
@@ -183,6 +186,7 @@ pub fn voting_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
         &Identifier::new("voting_delay").unwrap(),
         vec![token],
         vec![],
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
@@ -195,6 +199,7 @@ pub fn voting_period(state_view: &dyn StateView, token: TypeTag) -> u64 {
         &Identifier::new("voting_period").unwrap(),
         vec![token],
         vec![],
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);
@@ -208,6 +213,7 @@ pub fn min_action_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
         &Identifier::new("min_action_delay").unwrap(),
         vec![token],
         vec![],
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);

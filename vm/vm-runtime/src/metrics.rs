@@ -1,29 +1,50 @@
-use once_cell::sync::Lazy;
-use prometheus::{Histogram, HistogramOpts, HistogramVec, IntCounterVec, Opts};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
 
-pub static TXN_STATUS_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
-    let opts = Opts::new("vm_txn_stats", "Counters of executed txn").namespace("starcoin");
-    register_int_counter_vec!(opts, &["status"]).unwrap()
-});
+use starcoin_metrics::{
+    register, Histogram, HistogramOpts, HistogramVec, IntCounterVec, Opts, PrometheusError,
+    Registry, UIntCounterVec,
+};
 
-pub static TXN_EXECUTION_HISTOGRAM: Lazy<HistogramVec> = Lazy::new(|| {
-    let opts =
-        HistogramOpts::new("vm_execution", "Histogram of txn execution").namespace("starcoin");
-    register_histogram_vec!(opts, &["api"]).unwrap()
-});
+#[derive(Clone)]
+pub struct VMMetrics {
+    pub vm_txn_counters: IntCounterVec,
+    pub vm_txn_exe_time: HistogramVec,
+    pub vm_txn_gas_usage: Histogram,
+}
 
-pub static TXN_EXECUTION_GAS_USAGE: Lazy<Histogram> = Lazy::new(|| {
-    register_histogram!(
-        "vm_txn_execution_gas_usage",
-        "Histogram for the gas used during txn execution"
-    )
-    .unwrap()
-});
-
-pub static BLOCK_UNCLES: Lazy<Histogram> = Lazy::new(|| {
-    register_histogram!(
-        "vm_block_uncles",
-        "Histogram for the uncles of block handle"
-    )
-    .unwrap()
-});
+impl VMMetrics {
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
+        let vm_txn_counters = register(
+            UIntCounterVec::new(
+                Opts::new("vm_txn_counters", "Counters of executed transaction")
+                    .namespace("starcoin"),
+                &["type", "status"],
+            )?,
+            registry,
+        )?;
+        let vm_txn_exe_time = register(
+            HistogramVec::new(
+                HistogramOpts::new("vm_txn_exe_time", "vm transaction execution time usage")
+                    .namespace("starcoin"),
+                &["type"],
+            )?,
+            registry,
+        )?;
+        let vm_txn_gas_usage = register(
+            Histogram::with_opts(
+                HistogramOpts::new(
+                    "vm_txn_gas_usage",
+                    "vm user transaction execution gas usage",
+                )
+                .namespace("starcoin"),
+            )?,
+            registry,
+        )?;
+        Ok(Self {
+            vm_txn_counters,
+            vm_txn_exe_time,
+            vm_txn_gas_usage,
+        })
+    }
+}

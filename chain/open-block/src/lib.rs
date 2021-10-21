@@ -6,7 +6,7 @@ use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
-use starcoin_executor::{execute_block_transactions, execute_transactions};
+use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
@@ -38,6 +38,7 @@ pub struct OpenedBlock {
     chain_id: ChainId,
     difficulty: U256,
     strategy: ConsensusStrategy,
+    vm_metrics: Option<VMMetrics>,
 }
 
 impl OpenedBlock {
@@ -50,6 +51,7 @@ impl OpenedBlock {
         uncles: Vec<BlockHeader>,
         difficulty: U256,
         strategy: ConsensusStrategy,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -87,6 +89,7 @@ impl OpenedBlock {
             chain_id,
             difficulty,
             strategy,
+            vm_metrics,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -147,7 +150,12 @@ impl OpenedBlock {
                     self.gas_limit
                 )
             })?;
-            execute_block_transactions(&self.state, txns.clone(), gas_left)?
+            execute_block_transactions(
+                &self.state,
+                txns.clone(),
+                gas_left,
+                self.vm_metrics.clone(),
+            )?
         };
 
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
@@ -189,8 +197,12 @@ impl OpenedBlock {
     fn initialize(&mut self) -> Result<()> {
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
-        let mut results = execute_transactions(&self.state, vec![block_metadata_txn])
-            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let mut results = execute_transactions(
+            &self.state,
+            vec![block_metadata_txn],
+            self.vm_metrics.clone(),
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
         let output = results.pop().expect("execute txn has output");
 
         match output.status() {

@@ -226,6 +226,7 @@ async fn test_rollback() -> Result<()> {
             vec![],
             U256::from(1024u64),
             config.net().genesis_config().consensus(),
+            None,
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
@@ -257,7 +258,7 @@ async fn test_rollback() -> Result<()> {
             0,
             Transaction::BlockMetadata(enacted_block.to_metadata(parent_block_header.gas_used())),
         );
-        let root = starcoin_executor::block_execute(&chain_state, txns, u64::MAX)?.state_root;
+        let root = starcoin_executor::block_execute(&chain_state, txns, u64::MAX, None)?.state_root;
 
         assert_eq!(root, enacted_block.header().state_root());
         chain_state.flush()?;

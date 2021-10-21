@@ -72,6 +72,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         DummyNetworkService::default(),
         15,
         None,
+        None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
@@ -101,6 +102,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        None,
         None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
@@ -151,6 +153,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
         DummyNetworkService::default(),
         15,
         None,
+        None,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver_1).await;
     let sync_result = sync_task.await;
@@ -174,7 +177,12 @@ pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let (storage, chain_info, _) = Genesis::init_storage_for_test(&net)?;
 
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage.clone())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )?;
     let (sender, _) = unbounded();
     let chain_status = chain.status();
     let target = SyncTarget {
@@ -233,6 +241,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         DummyNetworkService::default(),
         15,
         None,
+        None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -264,6 +273,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        None,
         None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -312,6 +322,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        None,
         None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -366,6 +377,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         DummyNetworkService::default(),
         15,
         None,
+        None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -399,6 +411,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        None,
         None,
     )?;
 
@@ -450,6 +463,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        None,
         None,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -892,6 +906,7 @@ async fn test_net_rpc_err() -> Result<()> {
         sender_2,
         DummyNetworkService::default(),
         15,
+        None,
         None,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;

@@ -145,7 +145,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     );
 
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
-    let output = crate::execute_transactions(&chain_state, vec![txn2]).unwrap();
+    let output = crate::execute_transactions(&chain_state, vec![txn2], None).unwrap();
     assert_eq!(
         KeptVMStatus::MiscellaneousError,
         output[0].status().status().unwrap()

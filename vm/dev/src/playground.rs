@@ -8,6 +8,7 @@ use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
+use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
@@ -21,11 +22,15 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct PlaygroudService {
     state: Arc<dyn StateNodeStore>,
+    pub metrics: Option<VMMetrics>,
 }
 
 impl PlaygroudService {
-    pub fn new(state_store: Arc<dyn StateNodeStore>) -> Self {
-        Self { state: state_store }
+    pub fn new(state_store: Arc<dyn StateNodeStore>, metrics: Option<VMMetrics>) -> Self {
+        Self {
+            state: state_store,
+            metrics,
+        }
     }
 }
 
@@ -36,7 +41,7 @@ impl PlaygroudService {
         txn: DryRunTransaction,
     ) -> Result<(VMStatus, TransactionOutput)> {
         let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
-        dry_run(&state_view, txn)
+        dry_run(&state_view, txn, self.metrics.clone())
     }
 
     pub fn call_contract(
@@ -48,7 +53,14 @@ impl PlaygroudService {
         args: Vec<TransactionArgument>,
     ) -> Result<Vec<AnnotatedMoveValue>> {
         let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
-        let rets = call_contract(&state_view, module_id, func.as_str(), type_args, args)?;
+        let rets = call_contract(
+            &state_view,
+            module_id,
+            func.as_str(),
+            type_args,
+            args,
+            self.metrics.clone(),
+        )?;
         let annotator = MoveValueAnnotator::new(&state_view);
         rets.into_iter()
             .map(|(ty, v)| annotator.view_value(&ty, &v))
@@ -78,8 +90,9 @@ pub fn view_resource(
 pub fn dry_run(
     state_view: &dyn StateView,
     txn: DryRunTransaction,
+    metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
-    let mut vm = StarcoinVM::new();
+    let mut vm = StarcoinVM::new(metrics);
     vm.dry_run_transaction(state_view, txn)
 }
 
@@ -89,6 +102,7 @@ pub fn call_contract(
     func: &str,
     type_args: Vec<TypeTag>,
     args: Vec<TransactionArgument>,
+    metrics: Option<VMMetrics>,
 ) -> Result<Vec<(TypeTag, Vec<u8>)>> {
     let function_name = IdentStr::new(func)?;
     let abi_resolver = ABIResolver::new(state_view);
@@ -142,7 +156,7 @@ pub fn call_contract(
         }
     }
 
-    let mut vm = StarcoinVM::new();
+    let mut vm = StarcoinVM::new(metrics);
     let rets = vm.execute_readonly_function(
         state_view,
         &module_id,

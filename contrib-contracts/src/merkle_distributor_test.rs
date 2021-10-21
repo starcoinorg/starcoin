@@ -91,6 +91,7 @@ fn test_merkle_distributor() -> Result<()> {
                 distribution_address.simple_serialize().unwrap(),
                 index.simple_serialize().unwrap(),
             ],
+            None,
         )?;
         let is_claimed: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
         assert!(!is_claimed, "should not claimed");
@@ -205,6 +206,7 @@ fn test_merkle_distributor() -> Result<()> {
                 distribution_address.simple_serialize().unwrap(),
                 index.simple_serialize().unwrap(),
             ],
+            None,
         )?;
         let is_claimed: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
         assert!(is_claimed, "should already claimed");

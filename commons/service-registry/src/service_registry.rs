@@ -828,11 +828,15 @@ pub trait RegistryAsyncService {
     where
         T: Send + Sync + Clone + 'static,
     {
-        block_on(async {
-            self.get_shared_opt().await?.ok_or_else(|| {
-                format_err!("Can not find shared data by type: {}", type_name::<T>())
-            })
-        })
+        self.get_shared_opt_sync()?
+            .ok_or_else(|| format_err!("Can not find shared data by type: {}", type_name::<T>()))
+    }
+
+    fn get_shared_opt_sync<T>(&self) -> Result<Option<T>>
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        block_on(async { self.get_shared_opt().await })
     }
 
     async fn remove_shared<T>(&self) -> Result<()>

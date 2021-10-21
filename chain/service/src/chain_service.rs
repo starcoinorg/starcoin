@@ -23,6 +23,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
     transaction::Transaction,
 };
+use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -35,9 +36,10 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            inner: ChainReaderServiceInner::new(config, startup_info, storage)?,
+            inner: ChainReaderServiceInner::new(config, startup_info, storage, vm_metrics)?,
         })
     }
 }
@@ -49,7 +51,8 @@ impl ServiceFactory<Self> for ChainReaderService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
-        Self::new(config, startup_info, storage)
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        Self::new(config, startup_info, storage, vm_metrics)
     }
 }
 
@@ -232,6 +235,7 @@ pub struct ChainReaderServiceInner {
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
+    vm_metrics: Option<VMMetrics>,
 }
 
 impl ChainReaderServiceInner {
@@ -239,14 +243,21 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let main = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
+        let main = BlockChain::new(
+            net.time_service(),
+            startup_info.main,
+            storage.clone(),
+            vm_metrics.clone(),
+        )?;
         Ok(Self {
             config,
             startup_info,
             main,
             storage,
+            vm_metrics,
         })
     }
 
@@ -261,7 +272,12 @@ impl ChainReaderServiceInner {
 
     pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
         let net = self.config.net();
-        self.main = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
+        self.main = BlockChain::new(
+            net.time_service(),
+            new_head_id,
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+        )?;
         Ok(())
     }
 }

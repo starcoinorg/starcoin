@@ -17,6 +17,7 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::set_global_logger;
@@ -266,7 +267,13 @@ impl NodeService {
 
         registry.put_shared(config.clone()).await?;
         registry.put_shared(logger_handle).await?;
-
+        let vm_metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| VMMetrics::register(registry).ok());
+        if let Some(vm_metrics) = vm_metrics {
+            registry.put_shared(vm_metrics).await?;
+        }
         let bus = registry.service_ref::<BusService>().await?;
         let storage_metrics = config
             .metrics

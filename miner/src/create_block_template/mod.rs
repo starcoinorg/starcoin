@@ -5,6 +5,7 @@ use crate::create_block_template::metrics::BlockBuilderMetrics;
 use anyhow::{format_err, Result};
 use consensus::Consensus;
 use crypto::hash::HashValue;
+use executor::VMMetrics;
 use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
@@ -73,6 +74,8 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
             .metrics
             .registry()
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
+
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let inner = Inner::new(
             config.net(),
             storage,
@@ -81,6 +84,7 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
             config.miner.block_gas_limit,
             miner_account,
             metrics,
+            vm_metrics,
         )?;
         Ok(Self { inner })
     }
@@ -191,6 +195,7 @@ pub struct Inner<P> {
     local_block_gas_limit: Option<u64>,
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
+    vm_metrics: Option<VMMetrics>,
 }
 
 impl<P> Inner<P>
@@ -205,8 +210,14 @@ where
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
         metrics: Option<BlockBuilderMetrics>,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
-        let chain = BlockChain::new(net.time_service(), block_id, storage.clone())?;
+        let chain = BlockChain::new(
+            net.time_service(),
+            block_id,
+            storage.clone(),
+            vm_metrics.clone(),
+        )?;
 
         Ok(Inner {
             storage,
@@ -217,6 +228,7 @@ where
             local_block_gas_limit,
             miner_account,
             metrics,
+            vm_metrics,
         })
     }
 
@@ -243,6 +255,7 @@ where
                 self.chain.time_service(),
                 block.header().id(),
                 self.storage.clone(),
+                self.vm_metrics.clone(),
             )?;
             //current block possible bean uncle.
             self.uncles.insert(current_id, current_header);
@@ -336,6 +349,7 @@ where
             uncles,
             difficulty,
             strategy,
+            self.vm_metrics.clone(),
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;

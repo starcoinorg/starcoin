@@ -222,7 +222,7 @@ impl<'test> TxnExecutor<'test> {
             let num_txns = transactions.len();
             version += num_txns as u64;
 
-            let _ = executor::block_execute(self.chain_state, transactions, u64::MAX)
+            let _ = executor::block_execute(self.chain_state, transactions, u64::MAX, None)
                 .expect("Execute transactions fail.");
             self.chain_state.flush().expect("flush state should be ok");
 

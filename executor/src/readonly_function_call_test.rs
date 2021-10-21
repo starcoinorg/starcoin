@@ -85,6 +85,7 @@ fn test_readonly_function_call() -> Result<()> {
         "get_s",
         vec![],
         vec![],
+        None,
     )?;
 
     let ty = TypeTag::Struct(StructTag {
@@ -109,6 +110,7 @@ fn test_readonly_function_call() -> Result<()> {
             "get_tuple",
             vec![],
             vec![],
+            None,
         )?;
         assert_eq!(result.len(), 2);
 
@@ -126,6 +128,7 @@ fn test_readonly_function_call() -> Result<()> {
         "set_s",
         vec![],
         vec![TransactionArgument::Address(*account1.address())],
+        None,
     )
     .map_err(|err| {
         assert_eq!(

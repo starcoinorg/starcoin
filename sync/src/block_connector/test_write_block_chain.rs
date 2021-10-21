@@ -37,6 +37,7 @@ pub async fn create_writeable_block_chain() -> (
             storage.clone(),
             txpool_service,
             bus,
+            None,
         )
         .unwrap(),
         node_config,
@@ -120,6 +121,7 @@ fn gen_fork_block_chain(
                 net.time_service(),
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
+                None,
             )
             .unwrap();
             let (block_template, _) = block_chain

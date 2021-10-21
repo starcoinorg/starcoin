@@ -103,6 +103,7 @@ fn test_starcoin_merkle() -> Result<()> {
                 account_state_hash.simple_serialize().unwrap(),
                 proof.simple_serialize().unwrap(),
             ],
+            None,
         )?
         .pop()
         .unwrap();

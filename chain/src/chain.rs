@@ -14,6 +14,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, ExecutedBlock,
     MintedUncleNumber, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_executor::VMMetrics;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -55,6 +56,7 @@ pub struct BlockChain {
     time_service: Arc<dyn TimeService>,
     uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
+    vm_metrics: Option<VMMetrics>,
 }
 
 impl BlockChain {
@@ -62,11 +64,12 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage)
+        Self::new_with_uncles(time_service, head, None, storage, vm_metrics)
     }
 
     fn new_with_uncles(
@@ -74,6 +77,7 @@ impl BlockChain {
         head_block: Block,
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -109,6 +113,7 @@ impl BlockChain {
             storage,
             uncles: HashMap::new(),
             epoch,
+            vm_metrics,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
@@ -141,8 +146,9 @@ impl BlockChain {
             &genesis_epoch,
             None,
             genesis_block,
+            None,
         )?;
-        Self::new(time_service, executed_block.block.id(), storage)
+        Self::new(time_service, executed_block.block.id(), storage, None)
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -254,6 +260,7 @@ impl BlockChain {
             uncles,
             difficulty,
             strategy,
+            None,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -345,6 +352,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -370,8 +378,12 @@ impl BlockChain {
         };
 
         watch(CHAIN_WATCH_NAME, "n21");
-        let executed_data =
-            starcoin_executor::block_execute(&statedb, txns.clone(), epoch.block_gas_limit())?;
+        let executed_data = starcoin_executor::block_execute(
+            &statedb,
+            txns.clone(),
+            epoch.block_gas_limit(),
+            vm_metrics,
+        )?;
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
@@ -676,6 +688,7 @@ impl ChainReader for BlockChain {
             head,
             uncles,
             self.storage.clone(),
+            self.vm_metrics.clone(),
         )
     }
 
@@ -719,6 +732,7 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
+            self.vm_metrics.clone(),
         )
     }
 
