@@ -57,7 +57,7 @@ pub const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
 const DISCONNECT_REPUTATION_CHANGE: i32 = -256;
 /// Amount of time between the moment we disconnect from a node and the moment we remove it from
 /// the list.
-const FORGET_AFTER: Duration = Duration::from_secs(3600);
+const FORGET_AFTER: Duration = Duration::from_secs(10);
 
 #[derive(Debug)]
 enum Action {
@@ -523,13 +523,8 @@ impl Peerset {
                     self.message_queue.push_back(Message::Banned(peer_id))
                 }
                 peer_reputation.set_reputation(after);
-                if after != 0 {
-                    continue;
-                }
-
                 drop(peer_reputation);
-
-                // If the peer reaches a reputation of 0, and there is no connection to it,
+                // If the peer has no connection to it,
                 // forget it.
                 for set_index in 0..self.data.num_sets() {
                     match self.data.peer(set_index, &peer_id) {
