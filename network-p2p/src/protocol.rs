@@ -490,9 +490,9 @@ impl Protocol {
             }
             self.peerset_handle.report_peer(who, rep::GENESIS_MISMATCH);
             self.behaviour.disconnect_peer(&who, set_id);
-            return CustomMessageOutcome::None;
+            return CustomMessageOutcome::Banned(who);
         }
-        if status.version < MIN_VERSION && CURRENT_VERSION < status.min_supported_version {
+        if status.version < MIN_VERSION || CURRENT_VERSION < status.min_supported_version {
             log!(
                 target: "network-p2p",
                 if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
@@ -500,7 +500,7 @@ impl Protocol {
             );
             self.peerset_handle.report_peer(who, rep::BAD_PROTOCOL);
             self.behaviour.disconnect_peer(&who, set_id);
-            return CustomMessageOutcome::None;
+            return CustomMessageOutcome::Banned(who);
         }
         debug!(target: "network-p2p", "Connected {}", who);
         let peer = Peer {

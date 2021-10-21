@@ -607,11 +607,10 @@ impl<'a> NotConnectedPeer<'a> {
             peer.sets[self.set] = MembershipState::NotMember;
 
             // Remove the peer from `self.state.nodes` entirely if it isn't a member of any set.
-            if peer.reputation == 0
-                && peer
-                    .sets
-                    .iter()
-                    .all(|set| matches!(set, MembershipState::NotMember))
+            if peer
+                .sets
+                .iter()
+                .all(|set| matches!(set, MembershipState::NotMember))
             {
                 self.state.nodes.remove(&*self.peer_id);
             }
