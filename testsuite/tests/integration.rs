@@ -51,10 +51,11 @@ pub fn steps() -> Steps<MyWorld> {
     builder
         .given("a storage", |world: &mut MyWorld, _step| {
             let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-                CacheStorage::new(),
+                CacheStorage::new(None),
                 DBStorage::new(
                     starcoin_config::temp_path().as_ref(),
                     RocksdbConfig::default(),
+                    None,
                 )
                 .unwrap(),
             ))

@@ -39,7 +39,7 @@ pub mod chain_info;
 pub mod contract_event;
 pub mod db_storage;
 pub mod errors;
-mod metrics;
+pub mod metrics;
 pub mod state_node;
 pub mod storage;
 #[cfg(test)]

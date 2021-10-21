@@ -15,6 +15,7 @@ fn test_storage() {
         DBStorage::new(
             starcoin_config::temp_path().as_ref(),
             RocksdbConfig::default(),
+            None,
         )
         .unwrap(),
     ))

@@ -32,10 +32,11 @@ impl ChainBencher {
         let temp_path = temp_path();
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
-                CacheStorage::new(),
+                CacheStorage::new(None),
                 DBStorage::new(
                     temp_path.path().join("starcoindb"),
                     RocksdbConfig::default(),
+                    None,
                 )
                 .unwrap(),
             ))

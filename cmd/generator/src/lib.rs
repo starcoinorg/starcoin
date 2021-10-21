@@ -28,8 +28,8 @@ pub fn init_or_load_data_dir(
         bail!("Please set data_dir option.")
     }
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new_with_capacity(config.storage.cache_size()),
-        DBStorage::new(config.storage.dir(), config.storage.rocksdb_config())?,
+        CacheStorage::new_with_capacity(config.storage.cache_size(), None),
+        DBStorage::new(config.storage.dir(), config.storage.rocksdb_config(), None)?,
     ))?);
     let (chain_info, _genesis) =
         Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;

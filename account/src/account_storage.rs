@@ -201,6 +201,7 @@ impl AccountStorage {
             ],
             false,
             rocksdb_config,
+            None,
         )?;
         let storage_instance =
             StorageInstance::new_cache_and_db_instance(CacheStorage::default(), db);

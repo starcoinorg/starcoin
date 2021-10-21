@@ -58,12 +58,16 @@ fn main() {
         start_watch();
     }
 
-    let db_storage =
-        DBStorage::new(from_dir.join("starcoindb/db"), RocksdbConfig::default()).unwrap();
+    let db_storage = DBStorage::new(
+        from_dir.join("starcoindb/db"),
+        RocksdbConfig::default(),
+        None,
+    )
+    .unwrap();
 
     let storage = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new(),
+            CacheStorage::new(None),
             db_storage,
         ))
         .unwrap(),
@@ -88,8 +92,8 @@ fn main() {
 
     let storage2 = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new(),
-            DBStorage::new(to_dir.join("starcoindb"), RocksdbConfig::default()).unwrap(),
+            CacheStorage::new(None),
+            DBStorage::new(to_dir.join("starcoindb"), RocksdbConfig::default(), None).unwrap(),
         ))
         .unwrap(),
     );

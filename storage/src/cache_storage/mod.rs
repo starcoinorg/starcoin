@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
-use crate::metrics::{record_metrics, CACHE_ITEMS};
+use crate::metrics::{record_metrics, StorageMetrics};
 use crate::storage::{CacheObject, InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
@@ -10,21 +10,24 @@ use parking_lot::Mutex;
 use starcoin_config::DEFAULT_CACHE_SIZE;
 pub struct CacheStorage {
     cache: Mutex<LruCache<Vec<u8>, CacheObject>>,
+    metrics: Option<StorageMetrics>,
 }
 
 impl CacheStorage {
-    pub fn new() -> Self {
+    pub fn new(metrics: Option<StorageMetrics>) -> Self {
         CacheStorage {
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            metrics,
         }
     }
-    pub fn new_with_capacity(size: usize) -> Self {
+    pub fn new_with_capacity(size: usize, metrics: Option<StorageMetrics>) -> Self {
         CacheStorage {
             cache: Mutex::new(LruCache::new(size)),
+            metrics,
         }
     }
     pub fn get_obj(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<CacheObject>> {
-        record_metrics("cache", prefix_name, "get").end_with(|| {
+        record_metrics("cache", prefix_name, "get", self.metrics.as_ref()).call(|| {
             Ok(self
                 .cache
                 .lock()
@@ -34,10 +37,12 @@ impl CacheStorage {
     }
 
     pub fn put_obj(&self, prefix_name: &str, key: Vec<u8>, obj: CacheObject) -> Result<()> {
-        record_metrics("cache", prefix_name, "put").end_with(|| {
+        record_metrics("cache", prefix_name, "put", self.metrics.as_ref()).call(|| {
             let mut cache = self.cache.lock();
             cache.put(compose_key(prefix_name.to_string(), key), obj);
-            CACHE_ITEMS.set(cache.len() as u64);
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics.cache_items.set(cache.len() as u64);
+            }
             Ok(())
         })
     }
@@ -48,7 +53,7 @@ impl CacheStorage {
     }
 
     pub fn write_batch_obj(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("cache", "batch", prefix_name).end_with(|| {
+        record_metrics("cache", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
             for (key, write_op) in &batch.rows {
                 match write_op {
                     WriteOp::Value(value) => {
@@ -64,13 +69,13 @@ impl CacheStorage {
 
 impl Default for CacheStorage {
     fn default() -> Self {
-        Self::new()
+        Self::new(None)
     }
 }
 
 impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        record_metrics("cache", prefix_name, "get").end_with(|| {
+        record_metrics("cache", prefix_name, "get", self.metrics.as_ref()).call(|| {
             Ok(self
                 .cache
                 .lock()
@@ -80,19 +85,21 @@ impl InnerStore for CacheStorage {
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        record_metrics("cache", prefix_name, "put").end_with(|| {
+        record_metrics("cache", prefix_name, "put", self.metrics.as_ref()).call(|| {
             let mut cache = self.cache.lock();
             cache.put(
                 compose_key(prefix_name.to_string(), key),
                 CacheObject::Value(value),
             );
-            CACHE_ITEMS.set(cache.len() as u64);
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics.cache_items.set(cache.len() as u64);
+            }
             Ok(())
         })
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
-        record_metrics("cache", prefix_name, "contains_key").end_with(|| {
+        record_metrics("cache", prefix_name, "contains_key", self.metrics.as_ref()).call(|| {
             Ok(self
                 .cache
                 .lock()
@@ -100,16 +107,18 @@ impl InnerStore for CacheStorage {
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        record_metrics("cache", prefix_name, "remove").end_with(|| {
-            self.cache
-                .lock()
-                .pop(&compose_key(prefix_name.to_string(), key));
+        record_metrics("cache", prefix_name, "remove", self.metrics.as_ref()).call(|| {
+            let mut cache = self.cache.lock();
+            cache.pop(&compose_key(prefix_name.to_string(), key));
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics.cache_items.set(cache.len() as u64);
+            }
             Ok(())
         })
     }
 
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("cache", "batch", prefix_name).end_with(|| {
+        record_metrics("cache", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
             for (key, write_op) in &batch.rows {
                 match write_op {
                     WriteOp::Value(value) => self.put(prefix_name, key.to_vec(), value.to_vec())?,

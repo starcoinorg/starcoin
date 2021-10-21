@@ -3,7 +3,7 @@
 
 use crate::batch::WriteBatch;
 use crate::errors::StorageInitError;
-use crate::metrics::{record_metrics, STORAGE_ITER_BYTES};
+use crate::metrics::{record_metrics, StorageMetrics};
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
@@ -17,16 +17,24 @@ use std::path::Path;
 pub struct DBStorage {
     db: DB,
     cfs: Vec<ColumnFamilyName>,
+    metrics: Option<StorageMetrics>,
 }
 
 impl DBStorage {
     pub fn new<P: AsRef<Path> + Clone>(
         db_root_path: P,
         rocksdb_config: RocksdbConfig,
+        metrics: Option<StorageMetrics>,
     ) -> Result<Self> {
         //TODO find a compat way to remove the `starcoindb` path
         let path = db_root_path.as_ref().join("starcoindb");
-        Self::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), false, rocksdb_config)
+        Self::open_with_cfs(
+            path,
+            VEC_PREFIX_NAME.to_vec(),
+            false,
+            rocksdb_config,
+            metrics,
+        )
     }
 
     pub fn open_with_cfs(
@@ -34,6 +42,7 @@ impl DBStorage {
         column_families: Vec<ColumnFamilyName>,
         readonly: bool,
         rocksdb_config: RocksdbConfig,
+        metrics: Option<StorageMetrics>,
     ) -> Result<Self> {
         let path = root_path.as_ref();
 
@@ -85,6 +94,7 @@ impl DBStorage {
         Ok(DBStorage {
             db,
             cfs: column_families,
+            metrics,
         })
     }
 
@@ -265,7 +275,7 @@ impl<'a> Iterator for SchemaIterator<'a> {
 
 impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        record_metrics("db", prefix_name, "get").end_with(|| {
+        record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             let result = self.db.get_cf(cf_handle, key.as_slice())?;
             Ok(result)
@@ -273,10 +283,14 @@ impl InnerStore for DBStorage {
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        STORAGE_ITER_BYTES
-            .with_label_values(&[prefix_name])
-            .observe((key.len() + value.len()) as f64);
-        record_metrics("db", prefix_name, "put").end_with(|| {
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .storage_item_bytes
+                .with_label_values(&[prefix_name])
+                .observe((key.len() + value.len()) as f64);
+        }
+
+        record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db
                 .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
@@ -285,15 +299,15 @@ impl InnerStore for DBStorage {
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
-        record_metrics("db", prefix_name, "contains_key").end_with(|| {
-            match self.get(prefix_name, key) {
-                Ok(Some(_)) => Ok(true),
-                _ => Ok(false),
-            }
+        record_metrics("db", prefix_name, "contains_key", self.metrics.as_ref()).call(|| match self
+            .get(prefix_name, key)
+        {
+            Ok(Some(_)) => Ok(true),
+            _ => Ok(false),
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        record_metrics("db", prefix_name, "remove").end_with(|| {
+        record_metrics("db", prefix_name, "remove", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db.delete_cf(cf_handle, &key)?;
             Ok(())
@@ -302,7 +316,7 @@ impl InnerStore for DBStorage {
 
     /// Writes a group of records wrapped in a WriteBatch.
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("db", "batch", prefix_name).end_with(|| {
+        record_metrics("db", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
             let cf_handle = self.get_cf_handle(prefix_name)?;
             for (key, write_op) in &batch.rows {
