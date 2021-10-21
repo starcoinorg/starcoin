@@ -1,65 +1,87 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    default_registry, register_histogram_vec, register_int_gauge, HistogramOpts, HistogramVec,
-    IntGauge, Opts, PrometheusError, UIntCounterVec,
+    register, Histogram, HistogramOpts, Opts, PrometheusError, Registry, UIntCounter,
+    UIntCounterVec, UIntGauge,
 };
 
 const SC_NS: &str = "starcoin";
-const PREFIX: &str = "starcoin_write_block_chain_";
-
-pub static WRITE_BLOCK_CHAIN_METRICS: Lazy<ChainMetrics> =
-    Lazy::new(|| ChainMetrics::register().unwrap());
+const PREFIX: &str = "chain_";
 
 #[derive(Clone)]
 pub struct ChainMetrics {
-    pub block_connect_count: UIntCounterVec,
-    pub exe_block_time: HistogramVec,
-    pub rollback_block_size: IntGauge,
-    pub current_head_number: IntGauge,
+    pub block_connect_counters: UIntCounterVec,
+    pub block_connect_time: Histogram,
+    pub rollback_block_counter: UIntCounter,
+    pub block_num: UIntGauge,
+    pub txn_num: UIntGauge,
 }
 
 impl ChainMetrics {
-    pub fn register() -> Result<Self, PrometheusError> {
-        let exe_block_time = register_histogram_vec!(
-            HistogramOpts::new(
-                format!("{}{}", PREFIX, "exe_block_time"),
-                "execute block time".to_string()
-            )
-            .namespace(SC_NS),
-            &["time"]
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
+        let block_connect_counters = register(
+            UIntCounterVec::new(
+                Opts::new(
+                    format!("{}{}", PREFIX, "block_connect_counters"),
+                    "block connect count".to_string(),
+                )
+                .namespace(SC_NS),
+                &["type"],
+            )?,
+            registry,
         )?;
 
-        let rollback_block_size = register_int_gauge!(Opts::new(
-            format!("{}{}", PREFIX, "rollback_block_size"),
-            "rollback block size".to_string()
-        )
-        .namespace(SC_NS))?;
-
-        let current_head_number = register_int_gauge!(Opts::new(
-            format!("{}{}", PREFIX, "current_head_number"),
-            "current head number".to_string()
-        )
-        .namespace(SC_NS))?;
-
-        let block_connect_count = UIntCounterVec::new(
-            Opts::new(
-                format!("{}{}", PREFIX, "block_connect_count"),
-                "block connect count".to_string(),
-            )
-            .namespace(SC_NS),
-            &["type"],
+        let block_connect_time = register(
+            Histogram::with_opts(
+                HistogramOpts::new(
+                    format!("{}{}", PREFIX, "block_connect_time"),
+                    "connect block time".to_string(),
+                )
+                .namespace(SC_NS),
+            )?,
+            registry,
         )?;
 
-        default_registry().register(Box::new(block_connect_count.clone()))?;
+        let rollback_block_counter = register(
+            UIntCounter::with_opts(
+                Opts::new(
+                    format!("{}{}", PREFIX, "rollback_block_counter"),
+                    "rollback block counter".to_string(),
+                )
+                .namespace(SC_NS),
+            )?,
+            registry,
+        )?;
+
+        let block_num = register(
+            UIntGauge::with_opts(
+                Opts::new(
+                    format!("{}{}", PREFIX, "block_num"),
+                    "how many block in main chain".to_string(),
+                )
+                .namespace(SC_NS),
+            )?,
+            registry,
+        )?;
+
+        let txn_num = register(
+            UIntGauge::with_opts(
+                Opts::new(
+                    format!("{}{}", PREFIX, "txn_num"),
+                    "how many txn in main chain".to_string(),
+                )
+                .namespace(SC_NS),
+            )?,
+            registry,
+        )?;
 
         Ok(Self {
-            exe_block_time,
-            rollback_block_size,
-            current_head_number,
-            block_connect_count,
+            block_connect_counters,
+            block_connect_time,
+            rollback_block_counter,
+            block_num,
+            txn_num,
         })
     }
 }

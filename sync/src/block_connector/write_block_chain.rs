@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::metrics::WRITE_BLOCK_CHAIN_METRICS;
+use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
 use logger::prelude::*;
@@ -19,6 +19,7 @@ use starcoin_types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
+use std::fmt::Formatter;
 use std::sync::Arc;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
@@ -33,6 +34,30 @@ where
     storage: Arc<dyn Store>,
     txpool: P,
     bus: ServiceRef<BusService>,
+    metrics: Option<ChainMetrics>,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ConnectOk {
+    Duplicate,
+    //Execute block and connect to main
+    ExeConnectMain,
+    //Execute block and connect to branch.
+    ExeConnectBranch,
+    //Block has executed, just connect.
+    Connect,
+}
+
+impl std::fmt::Display for ConnectOk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ConnectOk::Duplicate => "Duplicate",
+            ConnectOk::ExeConnectMain => "ExeConnectMain",
+            ConnectOk::ExeConnectBranch => "ExeConnectBranch",
+            ConnectOk::Connect => "Connect",
+        };
+        write!(f, "{}", s)
+    }
 }
 
 impl<P> WriteableChainService for WriteBlockChainService<P>
@@ -40,7 +65,34 @@ where
     P: TxPoolSyncService + 'static,
 {
     fn try_connect(&mut self, block: Block) -> Result<()> {
-        self.connect_inner(block)
+        let _timer = self
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.block_connect_time.start_timer());
+
+        let result = self.connect_inner(block);
+
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .block_connect_counters
+                .with_label_values(&["try_connect"])
+                .inc();
+            let result_str = match result.as_ref() {
+                Ok(connect) => connect.to_string(),
+                Err(err) => {
+                    if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
+                        connect_err.reason().to_string()
+                    } else {
+                        "other_error".to_string()
+                    }
+                }
+            };
+            metrics
+                .block_connect_counters
+                .with_label_values(&[result_str.as_str()])
+                .inc();
+        }
+        result.map(|_| ())
     }
 }
 
@@ -57,6 +109,10 @@ where
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
+        let metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| ChainMetrics::register(registry).ok());
         Ok(Self {
             config,
             startup_info,
@@ -64,6 +120,7 @@ where
             storage,
             txpool,
             bus,
+            metrics,
         })
     }
 
@@ -71,10 +128,6 @@ where
         &self,
         header: &BlockHeader,
     ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
-        WRITE_BLOCK_CHAIN_METRICS
-            .block_connect_count
-            .with_label_values(&["try_connect"])
-            .inc();
         let block_id = header.id();
         let block_info = self.storage.get_block_info(block_id)?;
         let block_chain = if block_info.is_some() {
@@ -150,21 +203,29 @@ where
         debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
         self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
-            WRITE_BLOCK_CHAIN_METRICS
-                .rollback_block_size
-                .set(retracted_count as i64);
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics.rollback_block_counter.inc_by(retracted_count);
+            }
         }
         self.commit_2_txpool(enacted_blocks, retracted_blocks);
-        WRITE_BLOCK_CHAIN_METRICS
-            .block_connect_count
-            .with_label_values(&["broadcast_head"])
-            .inc();
         self.config
             .net()
             .time_service()
             .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp()));
         info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number(), executed_block.block_info().total_difficulty, enacted_count, retracted_count);
+
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .block_num
+                .set(executed_block.block.header().number());
+
+            metrics
+                .txn_num
+                .set(executed_block.block_info.txn_accumulator_info.num_leaves);
+        }
+
         self.broadcast_new_head(executed_block);
+
         Ok(())
     }
 
@@ -225,9 +286,6 @@ where
 
     fn update_startup_info(&mut self, main_head: &BlockHeader) -> Result<()> {
         self.startup_info.update_main(main_head.id());
-        WRITE_BLOCK_CHAIN_METRICS
-            .current_head_number
-            .set(main_head.number() as i64);
         self.storage.save_startup_info(self.startup_info.clone())
     }
 
@@ -307,36 +365,43 @@ where
     }
 
     fn broadcast_new_head(&self, block: ExecutedBlock) {
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .block_connect_counters
+                .with_label_values(&["new_head"])
+                .inc()
+        }
+
         if let Err(e) = self.bus.broadcast(NewHeadBlock(Arc::new(block))) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
     }
 
     fn broadcast_new_branch(&self, block: ExecutedBlock) {
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .block_connect_counters
+                .with_label_values(&["new_branch"])
+                .inc()
+        }
         if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(block))) {
             error!("Broadcast NewBranch error: {:?}", e);
         }
     }
 
-    fn connect_inner(&mut self, block: Block) -> Result<()> {
+    fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
-            return Ok(());
+            return Ok(ConnectOk::Duplicate);
         }
         if self.main.current_header().id() == block.header().parent_hash()
             && !self.block_exist(block_id)?
         {
-            let executed_block = self.main.apply(block).map_err(|e| {
-                WRITE_BLOCK_CHAIN_METRICS
-                    .block_connect_count
-                    .with_label_values(&["verify_failed"])
-                    .inc();
-                e
-            })?;
+            let executed_block = self.main.apply(block)?;
             let enacted_blocks = vec![executed_block.block().clone()];
             self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
-            return Ok(());
+            return Ok(ConnectOk::ExeConnectMain);
         }
         let (block_info, fork) = self.find_or_fork(block.header())?;
         match (block_info, fork) {
@@ -347,12 +412,8 @@ where
                     block_id,
                     branch.get_total_difficulty()?
                 );
-                WRITE_BLOCK_CHAIN_METRICS
-                    .block_connect_count
-                    .with_label_values(&["duplicate_connect"])
-                    .inc();
                 self.select_head(branch)?;
-                Ok(())
+                Ok(ConnectOk::Duplicate)
             }
             //block has bean processed, and it parent is main chain ,so just connect it to main chain.
             (Some(block_info), None) => {
@@ -361,23 +422,12 @@ where
                     block_info,
                 })?;
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
-                Ok(())
+                Ok(ConnectOk::Connect)
             }
             (None, Some(mut branch)) => {
-                let timer = WRITE_BLOCK_CHAIN_METRICS
-                    .exe_block_time
-                    .with_label_values(&["time"])
-                    .start_timer();
-                let _executed_block = branch.apply(block).map_err(|e| {
-                    WRITE_BLOCK_CHAIN_METRICS
-                        .block_connect_count
-                        .with_label_values(&["verify_failed"])
-                        .inc();
-                    e
-                })?;
-                timer.observe_duration();
+                let _executed_block = branch.apply(block)?;
                 self.select_head(branch)?;
-                Ok(())
+                Ok(ConnectOk::ExeConnectBranch)
             }
             (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }
