@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use starcoin_metrics::{default_registry, Registry};
+use starcoin_metrics::{get_metric_from_registry, Registry};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -154,28 +154,9 @@ impl MetricsConfig {
         } else {
             format!("{}_{}", DEFAULT_METRIC_NAMESPACE, name)
         };
-        self.registry.as_ref().and_then(|registry| {
-            registry.gather().into_iter().find_map(|metric_fm| {
-                if metric_fm.get_name() == metric_name.as_str() {
-                    let metrics = metric_fm.get_metric().to_vec();
-                    if let Some((label_name, label_value)) = label {
-                        metrics
-                            .into_iter()
-                            .find(|metric| {
-                                metric.get_label().iter().any(|label_pair| {
-                                    label_pair.get_name() == label_name
-                                        && label_pair.get_value() == label_value
-                                })
-                            })
-                            .map(|metric| vec![metric])
-                    } else {
-                        Some(metrics)
-                    }
-                } else {
-                    None
-                }
-            })
-        })
+        self.registry
+            .as_ref()
+            .and_then(|registry| get_metric_from_registry(registry, metric_name.as_str(), label))
     }
 }
 
@@ -183,9 +164,7 @@ impl ConfigModule for MetricsConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
 
-        //TODO change to new_custom registry after refactor all metrics.
-        let registry = default_registry().clone();
-        //let registry = Registry::new_custom(Some("starcoin".to_string()), None)?;
+        let registry = Registry::new_custom(Some(DEFAULT_METRIC_NAMESPACE.to_string()), None)?;
 
         self.registry = Some(registry);
 

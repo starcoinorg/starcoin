@@ -4,6 +4,7 @@
 use anyhow::{bail, Result};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
+use starcoin_metrics::{default_registry, Registry};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -12,6 +13,7 @@ use std::time::Duration;
 
 pub struct MetricsServerActorService {
     listen_addr: SocketAddr,
+    registry: Registry,
 }
 
 impl ServiceFactory<Self> for MetricsServerActorService {
@@ -19,8 +21,12 @@ impl ServiceFactory<Self> for MetricsServerActorService {
         ctx: &mut ServiceContext<MetricsServerActorService>,
     ) -> Result<MetricsServerActorService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let registry = config.metrics.registry().cloned();
         if let Some(listen_addr) = config.metrics.metrics_address() {
-            Ok(MetricsServerActorService { listen_addr })
+            Ok(MetricsServerActorService {
+                listen_addr,
+                registry: registry.unwrap_or_else(|| default_registry().clone()),
+            })
         } else {
             bail!("Metric server not config.");
         }
@@ -30,9 +36,10 @@ impl ServiceFactory<Self> for MetricsServerActorService {
 impl ActorService for MetricsServerActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         let addr = self.listen_addr;
+        let registry = self.registry.clone();
         ctx.spawn(async move {
             info!("Metric server start at: {}", addr);
-            if let Err(e) = starcoin_metrics::metric_server::start_server(addr).await {
+            if let Err(e) = starcoin_metrics::metric_server::start_server(addr, registry).await {
                 error!("Start metrics server error: {}", e);
             }
         });
