@@ -389,7 +389,7 @@ pub struct RpcConfig {
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "event-query-max-txn-info-range")]
+    #[structopt(long = "query-max-txn-info-range")]
     pub txn_info_query_max_range: Option<u64>,
 }
 
