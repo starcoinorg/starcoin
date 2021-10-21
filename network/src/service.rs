@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::broadcast_score_metrics::BROADCAST_SCORE_METRICS;
 use crate::network_metrics::NetworkMetrics;
 use crate::{build_network_worker, Announcement};
 use anyhow::{format_err, Result};
@@ -17,7 +16,6 @@ use network_api::messages::{
     AnnouncementType, BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage,
     PeerEvent, PeerMessage, PeerReputations, ReportReputation, TransactionsMessage,
 };
-use network_api::peer_score::{BlockBroadcastEntry, HandleState, LinearScore, Score};
 use network_api::{BroadcastProtocolFilter, NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
@@ -191,10 +189,21 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
     ) {
         let prepared_to_broadcast = self.inner.prepare_broadcast(msg);
         let network_service = self.network_service();
+        let metrics = self.inner.metrics.clone();
         let fut = stream::iter(prepared_to_broadcast).for_each_concurrent(
             Some(5),
             move |(protocol, peer_id, data)| {
                 let network_service = network_service.clone();
+                let timer = metrics.as_ref().map(|metrics| {
+                    metrics
+                        .broadcast_counters
+                        .with_label_values(&["out", protocol.as_ref()])
+                        .inc();
+                    metrics
+                        .broadcast_duration
+                        .with_label_values(&[protocol.as_ref()])
+                        .start_timer()
+                });
                 async move {
                     if network_service
                         .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
@@ -205,6 +214,9 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
                             "[network] write notification failed on {}, {}",
                             peer_id, protocol
                         );
+                    }
+                    if let Some(timer) = timer {
+                        timer.observe_duration()
                     }
                 }
             },
@@ -250,32 +262,12 @@ impl EventHandler<Self, PropagateTransactions> for NetworkActorService {
         if txns.is_empty() {
             return;
         }
+
         debug!("prepare to propagate txns, len: {}", txns.len());
-        let prepared_to_broadcast =
-            self.inner
-                .prepare_broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
-                    txns,
-                )));
-        let network_service = self.network_service();
-        let fut = stream::iter(prepared_to_broadcast).for_each_concurrent(
-            Some(5),
-            move |(protocol, peer_id, data)| {
-                let network_service = network_service.clone();
-                async move {
-                    if network_service
-                        .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
-                        .await
-                        .is_err()
-                    {
-                        error!(
-                            "[network] write notification failed on {}, {}",
-                            peer_id, protocol
-                        );
-                    }
-                }
-            },
-        );
-        ctx.spawn(fut)
+        //just notify NotificationMessage handler
+        ctx.notify(NotificationMessage::Transactions(TransactionsMessage::new(
+            txns,
+        )));
     }
 }
 
@@ -372,7 +364,6 @@ pub(crate) struct Inner {
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
-    score_handler: Arc<dyn Score<BlockBroadcastEntry> + 'static>,
 }
 
 impl BroadcastProtocolFilter for Inner {
@@ -400,7 +391,10 @@ impl Inner {
     where
         H: PeerMessageHandler + 'static,
     {
-        let metrics = NetworkMetrics::register().ok();
+        let metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| NetworkMetrics::register(registry).ok());
 
         Ok(Inner {
             config,
@@ -409,7 +403,6 @@ impl Inner {
             peers: HashMap::new(),
             peer_message_handler: Arc::new(peer_message_handler),
             metrics,
-            score_handler: Arc::new(LinearScore::new(10)),
         })
     }
 
@@ -512,24 +505,26 @@ impl Inner {
                 }
             };
 
+            if let Some(metrics) = self.metrics.as_ref() {
+                metrics
+                    .broadcast_counters
+                    .with_label_values(&["in", protocol.as_ref()])
+                    .inc();
+                let known_or_unknown = notification.as_ref().map(|_| "unknown").unwrap_or("known");
+                metrics
+                    .broadcast_in_message_counters
+                    .with_label_values(&[known_or_unknown, protocol.as_ref()])
+                    .inc();
+            }
+
             if let Some(notification) = notification {
                 debug!("notification protocol : {:?}", notification.protocol_name());
                 let peer_message = PeerMessage::new(peer_id.clone(), notification);
                 self.peer_message_handler.handle_message(peer_message);
-                BROADCAST_SCORE_METRICS.report_new(
-                    peer_id,
-                    self.score_handler
-                        .execute(BlockBroadcastEntry::new(true, HandleState::Succ)),
-                );
             } else {
                 debug!(
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
-                );
-                BROADCAST_SCORE_METRICS.report_expire(
-                    peer_id,
-                    self.score_handler
-                        .execute(BlockBroadcastEntry::new(false, HandleState::Succ)),
                 );
             };
         } else {
@@ -616,12 +611,6 @@ impl Inner {
         &mut self,
         notification: NotificationMessage,
     ) -> Vec<(Cow<'static, str>, PeerId, Vec<u8>)> {
-        let _timer = self.metrics.as_ref().map(|metrics| {
-            metrics
-                .broadcast_duration
-                .with_label_values(&[notification.protocol_name().as_ref()])
-                .start_timer()
-        });
         let mut prepare_to_broadcast = vec![];
         match &notification {
             NotificationMessage::CompactBlock(msg) => {
