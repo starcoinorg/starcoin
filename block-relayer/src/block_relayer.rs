@@ -171,19 +171,19 @@ impl BlockRelayer {
 
             if let Some(metrics) = metrics {
                 metrics
-                    .txns_filled
+                    .txns_filled_total
                     .with_label_values(&["expect"])
                     .inc_by(expect_txn_len as u64);
                 metrics
-                    .txns_filled
+                    .txns_filled_total
                     .with_label_values(&["txpool"])
                     .inc_by(filled_from_txpool);
                 metrics
-                    .txns_filled
+                    .txns_filled_total
                     .with_label_values(&["network"])
                     .inc_by(filled_from_network);
                 metrics
-                    .txns_filled
+                    .txns_filled_total
                     .with_label_values(&["prefilled"])
                     .inc_by(filled_from_prefilled);
             }
@@ -324,7 +324,7 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
 
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
             if let Some(metrics) = self.metrics.as_ref() {
-                metrics.txns_filled_failed.inc();
+                metrics.txns_filled_failed_total.inc();
             }
             error!(
                 "[block-relay] handle PeerCompactBlockMessage error: {:?}",

@@ -8,18 +8,18 @@ use starcoin_metrics::{
 
 #[derive(Clone)]
 pub struct BlockRelayerMetrics {
-    pub txns_filled: UIntCounterVec,
+    pub txns_filled_total: UIntCounterVec,
     pub txns_filled_time: Histogram,
     pub block_relay_time: Histogram,
-    pub txns_filled_failed: UIntCounter,
+    pub txns_filled_failed_total: UIntCounter,
 }
 
 impl BlockRelayerMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let txns_filled = register(
+        let txns_filled_total = register(
             UIntCounterVec::new(
                 Opts::new(
-                    "txns_filled",
+                    "txns_filled_total",
                     "Count of block filled transactions from network|txpool|prefill",
                 ),
                 &["source"],
@@ -39,19 +39,19 @@ impl BlockRelayerMetrics {
             registry,
         )?;
 
-        let txns_filled_failed = register(
+        let txns_filled_failed_total = register(
             UIntCounter::with_opts(Opts::new(
-                "txns_filled_failed",
+                "txns_filled_failed_total",
                 "txns filled failed counter".to_string(),
             ))?,
             registry,
         )?;
 
         Ok(Self {
-            txns_filled,
+            txns_filled_total,
             txns_filled_time,
             block_relay_time,
-            txns_filled_failed,
+            txns_filled_failed_total,
         })
     }
 }

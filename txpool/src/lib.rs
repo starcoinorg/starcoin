@@ -195,7 +195,7 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
         for (_, s) in item.iter() {
             if let Some(metrics) = self.inner.metrics.as_ref() {
                 metrics
-                    .txpool_txn_event_counter
+                    .txpool_txn_event_total
                     .with_label_values(&[format!("{}", s).as_str()])
                     .inc();
             }

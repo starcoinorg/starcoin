@@ -7,30 +7,30 @@ use starcoin_metrics::{
 
 #[derive(Clone)]
 pub struct RpcMetrics {
-    pub rpc_counter: UIntCounterVec,
-    pub rpc_timer: HistogramVec,
+    pub json_rpc_total: UIntCounterVec,
+    pub json_rpc_time: HistogramVec,
 }
 
 impl RpcMetrics {
     pub fn new_rpc_timer() -> Result<HistogramVec, PrometheusError> {
         HistogramVec::new(
-            HistogramOpts::new("rpc_time", "Histogram of rpc request"),
+            HistogramOpts::new("json_rpc_time", "Histogram of rpc request"),
             &["method"],
         )
     }
 
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let rpc_counter = register(
+        let json_rpc_total = register(
             UIntCounterVec::new(
-                Opts::new("rpc", "Counters of how many rpc request"),
+                Opts::new("json_rpc_total", "Counters of how many rpc request"),
                 &["type", "method", "code"],
             )?,
             registry,
         )?;
-        let rpc_timer = register(Self::new_rpc_timer()?, registry)?;
+        let json_rpc_time = register(Self::new_rpc_timer()?, registry)?;
         Ok(Self {
-            rpc_counter,
-            rpc_timer,
+            json_rpc_total,
+            json_rpc_time,
         })
     }
 }

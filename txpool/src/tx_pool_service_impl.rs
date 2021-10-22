@@ -103,7 +103,7 @@ impl TxPoolSyncService for TxPoolService {
         // We don't need to call it explicitly.
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["add_txns"])
                 .start_timer()
         });
@@ -113,7 +113,7 @@ impl TxPoolSyncService for TxPoolService {
     fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["remove_txn"])
                 .start_timer()
         });
@@ -130,7 +130,7 @@ impl TxPoolSyncService for TxPoolService {
     ) -> Vec<SignedUserTransaction> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["get_pending_txns"])
                 .start_timer()
         });
@@ -147,7 +147,7 @@ impl TxPoolSyncService for TxPoolService {
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
@@ -158,7 +158,7 @@ impl TxPoolSyncService for TxPoolService {
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, transaction::TxStatus)]>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["subscribe_txns"])
                 .start_timer()
         });
@@ -168,7 +168,7 @@ impl TxPoolSyncService for TxPoolService {
     fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["subscribe_pending_txns"])
                 .start_timer()
         });
@@ -179,7 +179,7 @@ impl TxPoolSyncService for TxPoolService {
     fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
-                .txpool_service_timer
+                .txpool_service_time
                 .with_label_values(&["rollback"])
                 .start_timer()
         });

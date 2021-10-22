@@ -5,8 +5,9 @@ use starcoin_metrics::{register, Opts, PrometheusError, Registry, UIntCounterVec
 
 #[derive(Clone)]
 pub struct SyncMetrics {
-    pub sync_times: UIntCounterVec,
-    pub sync_break_times: UIntCounterVec,
+    pub sync_task_total: UIntCounterVec,
+    pub sync_task_break_total: UIntCounterVec,
+    // TODO should move the task metrics to sync task.
     pub sync_block_count: UIntGauge,
     pub sync_peer_count: UIntGauge,
     pub sync_time: UIntGauge,
@@ -15,46 +16,45 @@ pub struct SyncMetrics {
 
 impl SyncMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let sync_times = UIntCounterVec::new(
+        let sync_task_total = UIntCounterVec::new(
             Opts::new(
-                "sync_times",
-                "sync times counter, how many sync task for every type".to_string(),
+                "sync_task_total",
+                "sync counter, how many sync task for every type".to_string(),
             ),
             &["type"],
         )?;
 
-        let sync_break_times = UIntCounterVec::new(
+        let sync_task_break_total = UIntCounterVec::new(
             Opts::new(
-                "sync_break_times",
-                "sync break times counter, how many sync break for every type".to_string(),
+                "sync_task_break_total",
+                "sync break counter, how many sync break for every type".to_string(),
             ),
             &["type"],
         )?;
 
         let sync_block_count = UIntGauge::with_opts(Opts::new(
             "sync_block_count",
-            "sync blocks count gauge, how many block synced".to_string(),
+            "how many block synced in latest sync task".to_string(),
         ))?;
 
         let sync_peer_count = UIntGauge::with_opts(Opts::new(
             "sync_peer_count",
-            "sync peers gauge, how many peers of sync target".to_string(),
+            "how many peers used for latest sync task".to_string(),
         ))?;
 
         let sync_time = UIntGauge::with_opts(Opts::new(
             "sync_time",
-            "sync time gauge, how many milliseconds were used for sync".to_string(),
+            "how many milliseconds were used in latest sync task".to_string(),
         ))?;
 
         let sync_time_per_block = UIntGauge::with_opts(Opts::new(
             "sync_time_per_block",
-            "sync time per block gauge, how many milliseconds were used for sync one block"
-                .to_string(),
+            "how many milliseconds were used for sync one block in latest sync task.".to_string(),
         ))?;
 
         Ok(Self {
-            sync_times: register(sync_times, registry)?,
-            sync_break_times: register(sync_break_times, registry)?,
+            sync_task_total: register(sync_task_total, registry)?,
+            sync_task_break_total: register(sync_task_break_total, registry)?,
             sync_block_count: register(sync_block_count, registry)?,
             sync_peer_count: register(sync_peer_count, registry)?,
             sync_time: register(sync_time, registry)?,

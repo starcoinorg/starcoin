@@ -954,7 +954,7 @@ impl StarcoinVM {
                         if let Some(metrics) = self.metrics.as_ref() {
                             metrics.vm_txn_gas_usage.observe(output.gas_used() as f64);
                             metrics
-                                .vm_txn_counters
+                                .vm_txn_exe_total
                                 .with_label_values(&[
                                     txn_type_name.as_str(),
                                     status.status_type().to_string().as_str(),
@@ -994,7 +994,7 @@ impl StarcoinVM {
                     }
                     if let Some(metrics) = self.metrics.as_ref() {
                         metrics
-                            .vm_txn_counters
+                            .vm_txn_exe_total
                             .with_label_values(&[
                                 txn_type_name.as_str(),
                                 status.status_type().to_string().as_str(),
