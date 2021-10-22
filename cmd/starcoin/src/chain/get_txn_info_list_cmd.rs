@@ -19,7 +19,7 @@ pub struct GetTransactionInfoListOpt {
     #[structopt(name = "reverse", long, short = "r")]
     reverse: Option<bool>,
 
-    #[structopt(name = "count", long, short = "c")]
+    #[structopt(name = "count", long, short = "c", default_value = "32")]
     count: u64,
 }
 

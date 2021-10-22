@@ -421,9 +421,11 @@ where
         max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView>> {
         let service = self.service.clone();
+        let config = self.config.clone();
         let fut = async move {
+            let max_return_num = max_size.min(config.rpc.txn_info_query_max_range());
             let txn_infos = service
-                .get_txn_infos(start_index, reverse, max_size)
+                .get_txn_infos(start_index, reverse, max_return_num)
                 .await?;
             // remove duplicate block_id
             let id_sets = txn_infos
