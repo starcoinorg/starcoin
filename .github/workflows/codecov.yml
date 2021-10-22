@@ -17,7 +17,6 @@ jobs:
       - name: setup rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           components: rustfmt,clippy
       - name: setup environment
         run: bash ./scripts/dev_setup.sh -b -t -y
