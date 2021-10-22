@@ -30,6 +30,7 @@ pub fn test_open_block() -> Result<()> {
             vec![],
             U256::from(0),
             chain.consensus(),
+            None,
         )?
     };
 

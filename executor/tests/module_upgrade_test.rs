@@ -641,6 +641,7 @@ fn read_foo(state_view: &dyn StateView) -> u8 {
         &Identifier::new("foo").unwrap(),
         vec![],
         vec![],
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);

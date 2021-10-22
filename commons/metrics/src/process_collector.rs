@@ -17,28 +17,23 @@ pub struct ProcessCollector {
 }
 
 impl ProcessCollector {
-    pub fn for_self(namespace: String) -> Result<Self> {
+    pub fn for_self() -> Result<Self> {
         let pid = std::process::id();
-        Self::new(pid, namespace)
+        Self::new(pid)
     }
-    pub fn new(pid: u32, namespace: String) -> Result<ProcessCollector> {
-        let vsize = Gauge::with_opts(
-            Opts::new(
-                "process_virtual_memory_bytes",
-                "Virtual memory size in bytes.",
-            )
-            .namespace(namespace.clone()),
-        )?;
-        let rss = Gauge::with_opts(
-            Opts::new(
-                "process_resident_memory_bytes",
-                "Resident memory size in bytes.",
-            )
-            .namespace(namespace.clone()),
-        )?;
-        let cpu_usage = Gauge::with_opts(
-            Opts::new("process_cpu_usage", "Total user and system CPU usage").namespace(namespace),
-        )?;
+    pub fn new(pid: u32) -> Result<ProcessCollector> {
+        let vsize = Gauge::with_opts(Opts::new(
+            "process_virtual_memory_bytes",
+            "Virtual memory size in bytes.",
+        ))?;
+        let rss = Gauge::with_opts(Opts::new(
+            "process_resident_memory_bytes",
+            "Resident memory size in bytes.",
+        ))?;
+        let cpu_usage = Gauge::with_opts(Opts::new(
+            "process_cpu_usage",
+            "Total user and system CPU usage",
+        ))?;
         let mut descs = vec![];
         descs.extend(vsize.desc().into_iter().cloned());
         descs.extend(rss.desc().into_iter().cloned());

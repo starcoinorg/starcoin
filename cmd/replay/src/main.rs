@@ -58,19 +58,23 @@ fn main() {
         start_watch();
     }
 
-    let db_storage =
-        DBStorage::new(from_dir.join("starcoindb/db"), RocksdbConfig::default()).unwrap();
+    let db_storage = DBStorage::new(
+        from_dir.join("starcoindb/db"),
+        RocksdbConfig::default(),
+        None,
+    )
+    .unwrap();
 
     let storage = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new(),
+            CacheStorage::new(None),
             db_storage,
         ))
         .unwrap(),
     );
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
         .expect("init storage by genesis fail.");
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)
+    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
         .expect("create block chain should success.");
     //read from first chain
     let begin = SystemTime::now();
@@ -88,8 +92,8 @@ fn main() {
 
     let storage2 = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new(),
-            DBStorage::new(to_dir.join("starcoindb"), RocksdbConfig::default()).unwrap(),
+            CacheStorage::new(None),
+            DBStorage::new(to_dir.join("starcoindb"), RocksdbConfig::default(), None).unwrap(),
         ))
         .unwrap(),
     );
@@ -100,6 +104,7 @@ fn main() {
         net.time_service(),
         chain_info2.status().head().id(),
         storage2,
+        None,
     )
     .expect("create block chain should success.");
     let begin = SystemTime::now();

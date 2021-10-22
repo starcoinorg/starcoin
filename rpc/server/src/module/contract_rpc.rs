@@ -12,6 +12,7 @@ use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation, TypeInstan
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::{call_contract, PlaygroudService};
+use starcoin_executor::VMMetrics;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::contract_api::ContractApi;
@@ -149,7 +150,7 @@ where
             type_args,
             args,
         } = call;
-
+        let metrics = self.playground.metrics.clone();
         let f = async move {
             let state_root = service.state_root().await?;
             let state = ChainStateDB::new(storage, Some(state_root));
@@ -159,6 +160,7 @@ where
                 function_id.0.function.as_str(),
                 type_args.into_iter().map(|v| v.0).collect(),
                 args.into_iter().map(|v| v.0).collect(),
+                metrics,
             )?;
             let annotator = MoveValueAnnotator::new(&state);
             output
@@ -174,6 +176,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let txn_builder = self.txn_request_filler();
+        let metrics = self.playground.metrics.clone();
         let f = async move {
             let state_root = service.state_root().await?;
             let DryRunTransactionRequest {
@@ -189,6 +192,7 @@ where
                     raw_txn: txn,
                     public_key: sender_public_key.0,
                 },
+                metrics,
             )
         }
         .map_err(map_err);
@@ -202,6 +206,7 @@ where
     ) -> FutureResult<DryRunOutputView> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
+        let metrics = self.playground.metrics.clone();
         let f = async move {
             let state_root = service.state_root().await?;
             let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
@@ -212,6 +217,7 @@ where
                     raw_txn,
                     public_key: sender_public_key.0,
                 },
+                metrics,
             )
         }
         .map_err(map_err);
@@ -256,8 +262,9 @@ where
 pub fn dry_run(
     state_view: &dyn StateView,
     txn: DryRunTransaction,
+    metrics: Option<VMMetrics>,
 ) -> anyhow::Result<DryRunOutputView> {
-    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn.clone())?;
+    let (vm_status, output) = starcoin_dev::playground::dry_run(state_view, txn.clone(), metrics)?;
     let vm_status_explain = vm_status_translator::explain_vm_status(state_view, vm_status)?;
     let mut txn_output: TransactionOutputView = output.into();
 

@@ -7,6 +7,7 @@ use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use config::NodeConfig;
+use executor::VMMetrics;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -60,10 +61,15 @@ pub struct SyncService {
     storage: Arc<Storage>,
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
+    vm_metrics: Option<VMMetrics>,
 }
 
 impl SyncService {
-    pub fn new(config: Arc<NodeConfig>, storage: Arc<Storage>) -> Result<Self> {
+    pub fn new(
+        config: Arc<NodeConfig>,
+        storage: Arc<Storage>,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Result<Self> {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("can't get startup info"))?;
@@ -90,6 +96,7 @@ impl SyncService {
             storage,
             metrics,
             peer_score_metrics,
+            vm_metrics,
         })
     }
 
@@ -142,6 +149,7 @@ impl SyncService {
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
+        let vm_metrics = self.vm_metrics.clone();
         let fut = async move {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
@@ -227,6 +235,7 @@ impl SyncService {
                     network.clone(),
                     config.sync.max_retry_times(),
                     sync_metrics.clone(),
+                    vm_metrics.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -357,8 +366,8 @@ impl ServiceFactory<Self> for SyncService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-
-        Self::new(config, storage)
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        Self::new(config, storage, vm_metrics)
     }
 }
 

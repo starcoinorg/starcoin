@@ -8,7 +8,7 @@ use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::contract_event::ContractEvent;
-use vm_runtime::metrics::TXN_STATUS_COUNTERS;
+use vm_runtime::metrics::VMMetrics;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BlockExecutedData {
@@ -31,10 +31,15 @@ pub fn block_execute(
     chain_state: &dyn ChainState,
     txns: Vec<Transaction>,
     block_gas_limit: u64,
+    vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
-    let txn_outputs =
-        crate::execute_block_transactions(chain_state.as_super(), txns.clone(), block_gas_limit)
-            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+    let txn_outputs = crate::execute_block_transactions(
+        chain_state.as_super(),
+        txns.clone(),
+        block_gas_limit,
+        vm_metrics,
+    )
+    .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
     let mut executed_data = BlockExecutedData::default();
     for (txn, output) in txns
@@ -46,13 +51,11 @@ pub fn block_execute(
         let (write_set, events, gas_used, status) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
-                TXN_STATUS_COUNTERS.with_label_values(&["DISCARD"]).inc();
                 return Err(BlockExecutorError::BlockTransactionDiscard(
                     status, txn_hash,
                 ));
             }
             TransactionStatus::Keep(status) => {
-                TXN_STATUS_COUNTERS.with_label_values(&["KEEP"]).inc();
                 chain_state
                     .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;

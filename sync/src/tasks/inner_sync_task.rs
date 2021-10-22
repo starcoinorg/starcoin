@@ -3,6 +3,7 @@ use crate::tasks::{
     BlockFetcher, BlockIdFetcher, BlockSyncTask, PeerOperator,
 };
 use anyhow::format_err;
+use executor::VMMetrics;
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
@@ -80,6 +81,7 @@ where
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
+        vm_metrics: Option<VMMetrics>,
     ) -> Result<(BlockChain, TaskHandle), TaskError> {
         let buffer_size = self.target.peers.len();
 
@@ -125,8 +127,12 @@ where
                 self.storage.clone(),
                 1,
             );
-            let chain =
-                BlockChain::new(self.time_service.clone(), ancestor.id, self.storage.clone())?;
+            let chain = BlockChain::new(
+                self.time_service.clone(),
+                ancestor.id,
+                self.storage.clone(),
+                vm_metrics,
+            )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
                 self.target.clone(),

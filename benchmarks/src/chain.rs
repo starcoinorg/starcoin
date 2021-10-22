@@ -32,10 +32,11 @@ impl ChainBencher {
         let temp_path = temp_path();
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
-                CacheStorage::new(),
+                CacheStorage::new(None),
                 DBStorage::new(
                     temp_path.path().join("starcoindb"),
                     RocksdbConfig::default(),
+                    None,
                 )
                 .unwrap(),
             ))
@@ -45,7 +46,7 @@ impl ChainBencher {
             Genesis::init_and_check_storage(&net, storage.clone(), temp_path.path())
                 .expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage)
+        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
             .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 

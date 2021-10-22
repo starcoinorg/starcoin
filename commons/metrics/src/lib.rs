@@ -210,5 +210,32 @@ where
     metric.collect()[0].get_name().to_string()
 }
 
+pub fn get_metric_from_registry(
+    registry: &Registry,
+    metric_name: &str,
+    label: Option<(&str, &str)>,
+) -> Option<Vec<crate::proto::Metric>> {
+    registry.gather().into_iter().find_map(|metric_fm| {
+        if metric_fm.get_name() == metric_name {
+            let metrics = metric_fm.get_metric().to_vec();
+            if let Some((label_name, label_value)) = label {
+                metrics
+                    .into_iter()
+                    .find(|metric| {
+                        metric.get_label().iter().any(|label_pair| {
+                            label_pair.get_name() == label_name
+                                && label_pair.get_value() == label_value
+                        })
+                    })
+                    .map(|metric| vec![metric])
+            } else {
+                Some(metrics)
+            }
+        } else {
+            None
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests;

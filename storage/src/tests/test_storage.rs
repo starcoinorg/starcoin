@@ -22,7 +22,7 @@ fn test_reopen() {
     let key = HashValue::random();
     let value = HashValue::zero();
     {
-        let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap();
+        let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
         db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec())
             .unwrap();
         assert_eq!(
@@ -31,7 +31,7 @@ fn test_reopen() {
         );
     }
     {
-        let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap();
+        let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
         assert_eq!(
             db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
             Some(value.to_vec())
@@ -42,7 +42,7 @@ fn test_reopen() {
 #[test]
 fn test_open_read_only() {
     let tmpdir = starcoin_config::temp_path();
-    let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap();
+    let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
     let key = HashValue::random();
     let value = HashValue::zero();
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
@@ -53,6 +53,7 @@ fn test_open_read_only() {
         VEC_PREFIX_NAME.to_vec(),
         true,
         RocksdbConfig::default(),
+        None,
     )
     .unwrap();
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
@@ -65,8 +66,8 @@ fn test_open_read_only() {
 fn test_storage() {
     let tmpdir = starcoin_config::temp_path();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
     let transaction_info1 = BlockTransactionInfo::new(
@@ -92,8 +93,8 @@ fn test_storage() {
 fn test_two_level_storage() {
     let tmpdir = starcoin_config::temp_path();
     let instance = StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     );
     let cache_storage = instance.cache().unwrap();
     let db_storage = instance.db().unwrap();
@@ -164,7 +165,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
 
     {
         let storage = Storage::new(StorageInstance::new_db_instance(
-            DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+            DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
         ))
         .unwrap();
         storage
@@ -173,8 +174,8 @@ fn test_two_level_storage_read_through() -> Result<()> {
             .unwrap();
     }
     let storage_instance = StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     );
     let storage2 = Storage::new(storage_instance.clone()).unwrap();
 
@@ -196,8 +197,8 @@ fn test_two_level_storage_read_through() -> Result<()> {
 fn test_missing_key_handle() -> Result<()> {
     let tmpdir = starcoin_config::temp_path();
     let instance = StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     );
     let cache_storage = instance.cache().unwrap();
     let db_storage = instance.db().unwrap();

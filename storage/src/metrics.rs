@@ -1,44 +1,62 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
+
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    self, register_histogram_vec, register_int_counter_vec, register_uint_gauge, HistogramTimer,
-    HistogramVec, IntCounterVec, UIntGauge,
+    self, register, HistogramOpts, HistogramVec, Opts, PrometheusError, Registry, UIntCounterVec,
+    UIntGauge,
 };
+use std::time::Instant;
 
-pub static STORAGE_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
-    register_int_counter_vec!(
-        "starcoin_storage",
-        "Counters of how many storage read/write",
-        &["storage_type", "key_type", "method", "result"]
-    )
-    .unwrap()
-});
+#[derive(Clone)]
+pub struct StorageMetrics {
+    pub storage_counters: UIntCounterVec,
+    pub storage_item_bytes: HistogramVec,
+    pub storage_times: HistogramVec,
+    pub cache_items: UIntGauge,
+}
 
-pub static STORAGE_ITER_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
-    register_histogram_vec!(
-        // metric name
-        "storage_iter_bytes",
-        // metric description
-        "storage iter size in bytess",
-        // metric labels (dimensions)
-        &["cf_name"]
-    )
-    .unwrap()
-});
+impl StorageMetrics {
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
+        let storage_counters = register(
+            UIntCounterVec::new(
+                Opts::new("storage", "Counters of how many storage read/write"),
+                &["storage_type", "key_type", "method", "result"],
+            )?,
+            registry,
+        )?;
+        let storage_item_bytes = register(
+            HistogramVec::new(
+                HistogramOpts::new("storage_item_bytes", "storage write item size in bytes"),
+                &["cf_name"],
+            )?,
+            registry,
+        )?;
 
-pub static STORAGE_TIMES: Lazy<HistogramVec> = Lazy::new(|| {
-    register_histogram_vec!(
-        "starcoin_storage_time",
-        "Histogram of storage",
-        &["storage_type", "key_type", "method"]
-    )
-    .unwrap()
-});
+        let storage_times = register(
+            HistogramVec::new(
+                HistogramOpts::new(
+                    "storage_time",
+                    "Histogram of storage, measure storage method time usage.",
+                ),
+                &["storage_type", "key_type", "method"],
+            )?,
+            registry,
+        )?;
 
-pub static CACHE_ITEMS: Lazy<UIntGauge> =
-    Lazy::new(|| register_uint_gauge!("starcoin_cache_items", "How many items in cache").unwrap());
+        let cache_items = register(
+            UIntGauge::with_opts(Opts::new("cache_items", "How many items in cache"))?,
+            registry,
+        )?;
+
+        Ok(Self {
+            storage_counters,
+            storage_item_bytes,
+            storage_times,
+            cache_items,
+        })
+    }
+}
 
 #[allow(clippy::upper_case_acronyms)]
 pub enum ResultType {
@@ -97,52 +115,66 @@ pub struct MetricsRecord<'a> {
     storage_type: &'a str,
     key_type: &'a str,
     method: &'a str,
-    timer: HistogramTimer,
+    timer: Instant,
+    metrics: Option<&'a StorageMetrics>,
 }
 
 impl<'a> MetricsRecord<'a> {
-    pub fn new(storage_type: &'a str, key_type: &'a str, method: &'a str) -> Self {
-        let timer = STORAGE_TIMES
-            .with_label_values(&[storage_type, key_type, method])
-            .start_timer();
+    pub fn new(
+        storage_type: &'a str,
+        key_type: &'a str,
+        method: &'a str,
+        metrics: Option<&'a StorageMetrics>,
+    ) -> Self {
+        let timer = Instant::now();
         MetricsRecord {
             storage_type,
             key_type,
             method,
             timer,
+            metrics,
         }
     }
-    pub fn end<R>(self, result: R) -> R
+
+    pub fn record<R>(self, result: R) -> R
     where
         R: AsResultType,
     {
         let result_type = result.as_result_type();
-        STORAGE_COUNTERS
-            .with_label_values(&[
-                self.storage_type,
-                self.key_type,
-                self.method,
-                result_type.into_str(),
-            ])
-            .inc();
-        self.timer.stop_and_record();
+        if let Some(metrics) = self.metrics {
+            metrics
+                .storage_counters
+                .with_label_values(&[
+                    self.storage_type,
+                    self.key_type,
+                    self.method,
+                    result_type.into_str(),
+                ])
+                .inc();
+            metrics
+                .storage_times
+                .with_label_values(&[self.storage_type, self.key_type, self.method])
+                .observe(self.timer.elapsed().as_secs_f64());
+        }
         result
     }
 
-    pub fn end_with<R, F>(self, f: F) -> R
+    pub fn call<R, F>(self, f: F) -> R
     where
         F: FnOnce() -> R,
         R: AsResultType,
     {
         let r = f();
-        self.end(r)
+        self.record(r)
     }
 }
 
+//TODO implement a generic metrics macros.
 pub fn record_metrics<'a>(
     storage_type: &'a str,
     key_type: &'a str,
     method: &'a str,
+    metrics: Option<&'a StorageMetrics>,
 ) -> MetricsRecord<'a> {
-    MetricsRecord::new(storage_type, key_type, method)
+    MetricsRecord::new(storage_type, key_type, method, metrics)
 }

@@ -12,6 +12,7 @@ use anyhow::{format_err, Result};
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_state_api::AccountStateReader;
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
@@ -93,6 +94,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
     fn create(ctx: &mut ServiceContext<TxPoolActorService>) -> Result<TxPoolActorService> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let txpool_service = ctx.get_shared_or_put(|| {
             let startup_info = storage
                 .get_startup_info()?
@@ -105,9 +107,13 @@ impl ServiceFactory<Self> for TxPoolActorService {
                         startup_info.main
                     )
                 })?;
-
             let best_block_header = best_block.into_inner().0;
-            Ok(TxPoolService::new(node_config, storage, best_block_header))
+            Ok(TxPoolService::new(
+                node_config,
+                storage,
+                best_block_header,
+                vm_metrics,
+            ))
         })?;
         Ok(Self::new(txpool_service.get_inner()))
     }

@@ -122,6 +122,7 @@ fn test_eth_state_proof_verify() -> Result<()> {
                 proof.simple_serialize().unwrap(),
                 expected_value.simple_serialize().unwrap(),
             ],
+            None,
         )?
         .pop()
         .unwrap();
@@ -168,6 +169,7 @@ fn test_eth_state_proof_verify() -> Result<()> {
                     proof.simple_serialize().unwrap(),
                     expected_value.simple_serialize().unwrap(),
                 ],
+                None,
             )?
             .pop()
             .unwrap();

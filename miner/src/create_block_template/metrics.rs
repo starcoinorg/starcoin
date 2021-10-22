@@ -11,13 +11,10 @@ pub struct BlockBuilderMetrics {
 impl BlockBuilderMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let current_epoch_maybe_uncles = register(
-            UIntGauge::with_opts(
-                Opts::new(
-                    "current_epoch_maybe_uncles",
-                    "maybe uncle count in current epoch.",
-                )
-                .namespace("starcoin"),
-            )?,
+            UIntGauge::with_opts(Opts::new(
+                "current_epoch_maybe_uncles",
+                "maybe uncle count in current epoch.",
+            ))?,
             registry,
         )?;
 

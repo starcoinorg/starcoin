@@ -33,7 +33,7 @@ pub fn export(
     fields: &[String],
 ) -> anyhow::Result<()> {
     let db_storage =
-        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default())?;
+        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default(), None)?;
     let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
     let storage = Arc::new(storage);
     let block = storage

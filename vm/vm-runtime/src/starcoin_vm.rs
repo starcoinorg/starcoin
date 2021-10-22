@@ -6,7 +6,7 @@ use crate::data_cache::{RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::metrics::{BLOCK_UNCLES, TXN_EXECUTION_GAS_USAGE};
+use crate::metrics::VMMetrics;
 use anyhow::{format_err, Error, Result};
 use crypto::HashValue;
 use move_vm_runtime::data_cache::MoveStorage;
@@ -70,16 +70,11 @@ pub struct StarcoinVM {
     vm_config: Option<VMConfig>,
     version: Option<Version>,
     move_version: Option<MoveLanguageVersion>,
-}
-
-impl Default for StarcoinVM {
-    fn default() -> Self {
-        Self::new()
-    }
+    metrics: Option<VMMetrics>,
 }
 
 impl StarcoinVM {
-    pub fn new() -> Self {
+    pub fn new(metrics: Option<VMMetrics>) -> Self {
         let inner = MoveVM::new(super::natives::starcoin_natives())
             .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
@@ -87,6 +82,7 @@ impl StarcoinVM {
             vm_config: None,
             version: None,
             move_version: None,
+            metrics,
         }
     }
 
@@ -306,6 +302,12 @@ impl StarcoinVM {
         state_view: &dyn StateView,
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
+        let _timer = self.metrics.as_ref().map(|metrics| {
+            metrics
+                .vm_txn_exe_time
+                .with_label_values(&["verify_transaction"])
+                .start_timer()
+        });
         let data_cache = StateViewCache::new(state_view);
         let signature_verified_txn = match txn.check_signature() {
             Ok(t) => t,
@@ -722,7 +724,6 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
-        BLOCK_UNCLES.observe(uncles as f64);
         get_transaction_output(
             &mut (),
             session,
@@ -917,9 +918,16 @@ impl StarcoinVM {
 
         let blocks = chunk_block_transactions(transactions);
         'outer: for block in blocks {
+            let txn_type_name = block.type_name().to_string();
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
+                        let timer = self.metrics.as_ref().map(|metrics| {
+                            metrics
+                                .vm_txn_exe_time
+                                .with_label_values(&[txn_type_name.as_str()])
+                                .start_timer()
+                        });
                         let gas_unit_price = transaction.gas_unit_price();
                         let (status, output) =
                             self.execute_user_transaction(transaction, &mut data_cache);
@@ -940,10 +948,29 @@ impl StarcoinVM {
                             data_cache.push_write_set(output.write_set())
                         }
                         self.check_reconfigure(&data_cache, &output)?;
+                        if let Some(timer) = timer {
+                            timer.observe_duration();
+                        }
+                        if let Some(metrics) = self.metrics.as_ref() {
+                            metrics.vm_txn_gas_usage.observe(output.gas_used() as f64);
+                            metrics
+                                .vm_txn_counters
+                                .with_label_values(&[
+                                    txn_type_name.as_str(),
+                                    status.status_type().to_string().as_str(),
+                                ])
+                                .inc();
+                        }
                         result.push((status, output));
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
+                    let timer = self.metrics.as_ref().map(|metrics| {
+                        metrics
+                            .vm_txn_exe_time
+                            .with_label_values(&[txn_type_name.as_str()])
+                            .start_timer()
+                    });
                     let (status, output) =
                         match self.process_block_metadata(&mut data_cache, block_metadata) {
                             Ok(output) => (VMStatus::Executed, output),
@@ -962,6 +989,18 @@ impl StarcoinVM {
                         );
                         data_cache.push_write_set(output.write_set())
                     }
+                    if let Some(timer) = timer {
+                        timer.observe_duration();
+                    }
+                    if let Some(metrics) = self.metrics.as_ref() {
+                        metrics
+                            .vm_txn_counters
+                            .with_label_values(&[
+                                txn_type_name.as_str(),
+                                status.status_type().to_string().as_str(),
+                            ])
+                            .inc();
+                    }
                     result.push((status, output));
                 }
             }
@@ -977,6 +1016,12 @@ impl StarcoinVM {
         type_params: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, VMStatus> {
+        let _timer = self.metrics.as_ref().map(|metrics| {
+            metrics
+                .vm_txn_exe_time
+                .with_label_values(&["execute_readonly_function"])
+                .start_timer()
+        });
         let data_cache = StateViewCache::new(state_view);
         if let Err(err) = self.load_configs(&data_cache) {
             warn!("Load config error at verify_transaction: {}", err);
@@ -1075,6 +1120,15 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
+}
+
+impl TransactionBlock {
+    pub fn type_name(&self) -> &str {
+        match self {
+            TransactionBlock::UserTransaction(_) => "UserTransaction",
+            TransactionBlock::BlockPrologue(_) => "BlockMetadata",
+        }
+    }
 }
 
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
@@ -1212,9 +1266,6 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveStorage>(
         .finish()
         .map_err(|e| e.into_vm_status())?;
     let (write_set, events) = convert_changeset_and_events_cached(ap_cache, changeset, events)?;
-
-    TXN_EXECUTION_GAS_USAGE.observe(gas_used as f64);
-
     Ok(TransactionOutput::new(
         write_set,
         events,

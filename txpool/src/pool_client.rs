@@ -1,6 +1,7 @@
 use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
+use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
@@ -115,6 +116,7 @@ impl AccountSeqNumberClient for CachedSeqNumberClient {
 pub struct PoolClient {
     best_block_header: BlockHeader,
     nonce_client: CachedSeqNumberClient,
+    vm_metrics: Option<VMMetrics>,
 }
 
 impl std::fmt::Debug for PoolClient {
@@ -124,13 +126,19 @@ impl std::fmt::Debug for PoolClient {
 }
 
 impl PoolClient {
-    pub fn new(best_block_header: BlockHeader, storage: Arc<dyn Store>, cache: NonceCache) -> Self {
+    pub fn new(
+        best_block_header: BlockHeader,
+        storage: Arc<dyn Store>,
+        cache: NonceCache,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Self {
         let root_hash = best_block_header.state_root();
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(root_hash));
         let nonce_client = CachedSeqNumberClient::new(statedb, cache);
         Self {
             best_block_header,
             nonce_client,
+            vm_metrics,
         }
     }
 }
@@ -151,7 +159,11 @@ impl crate::pool::Client for PoolClient {
             .clone()
             .check_signature()
             .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
-        match starcoin_executor::validate_transaction(self.nonce_client.statedb.as_ref(), txn) {
+        match starcoin_executor::validate_transaction(
+            self.nonce_client.statedb.as_ref(),
+            txn,
+            self.vm_metrics.clone(),
+        ) {
             None => Ok(checked_txn),
             Some(status) => Err(TransactionError::CallErr(CallError::ExecutionError(status))),
         }

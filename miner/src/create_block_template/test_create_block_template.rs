@@ -48,6 +48,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
         None,
         miner_account,
         None,
+        None,
     )
     .unwrap();
 
@@ -74,11 +75,11 @@ fn test_switch_main() {
         .get_block_header_by_hash(genesis_id)
         .unwrap()
         .unwrap();
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
 
     let net = node_config.net();
     for i in 0..times {
-        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
 
         let mut tmp_inner = Inner::new(
             net,
@@ -87,6 +88,7 @@ fn test_switch_main() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
         )
         .unwrap();
@@ -114,7 +116,8 @@ fn test_switch_main() {
     }
 
     for i in 0..3 {
-        let mut new_main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut new_main =
+            BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
 
         let block_template = if i == 0 {
             let tmp = Inner::new(
@@ -124,6 +127,7 @@ fn test_switch_main() {
                 txpool.clone(),
                 None,
                 miner_account.clone(),
+                None,
                 None,
             )
             .unwrap();
@@ -187,11 +191,11 @@ fn test_do_uncles() {
         .get_block_header_by_hash(genesis_id)
         .unwrap()
         .unwrap();
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
 
     let net = node_config.net();
     for _i in 0..times {
-        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
 
         let mut tmp_inner = Inner::new(
             net,
@@ -200,6 +204,7 @@ fn test_do_uncles() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
         )
         .unwrap();
@@ -218,7 +223,8 @@ fn test_do_uncles() {
 
     // branch
     for _i in 0..times {
-        let mut branch = BlockChain::new(net.time_service(), genesis_id, storage.clone()).unwrap();
+        let mut branch =
+            BlockChain::new(net.time_service(), genesis_id, storage.clone(), None).unwrap();
         let inner = Inner::new(
             net,
             storage.clone(),
@@ -226,6 +232,7 @@ fn test_do_uncles() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
         )
         .unwrap();
@@ -246,7 +253,7 @@ fn test_do_uncles() {
 
     // uncles
     for i in 0..times {
-        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), None).unwrap();
 
         let block_template = main_inner
             .as_ref()
@@ -286,7 +293,7 @@ fn test_new_head() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
 
     let mut main_inner = Inner::new(
         node_config.net(),
@@ -295,6 +302,7 @@ fn test_new_head() {
         txpool,
         None,
         miner_account,
+        None,
         None,
     )
     .unwrap();
@@ -327,7 +335,7 @@ fn test_new_branch() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
 
     let miner_account = AccountInfo::random();
     // main
@@ -339,6 +347,7 @@ fn test_new_branch() {
         txpool.clone(),
         None,
         miner_account.clone(),
+        None,
         None,
     )
     .unwrap();
@@ -356,7 +365,8 @@ fn test_new_branch() {
     let mut new_head_id = genesis_id;
     let net = node_config.net();
     for i in 0..(times * 2) {
-        let mut branch = BlockChain::new(net.time_service(), new_head_id, storage.clone()).unwrap();
+        let mut branch =
+            BlockChain::new(net.time_service(), new_head_id, storage.clone(), None).unwrap();
         let inner = Inner::new(
             net,
             storage.clone(),
@@ -364,6 +374,7 @@ fn test_new_branch() {
             txpool.clone(),
             None,
             miner_account.clone(),
+            None,
             None,
         )
         .unwrap();
@@ -397,7 +408,7 @@ async fn test_create_block_template_actor() {
         .unwrap();
 
     //TODO mock txpool.
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
     registry.put_shared(txpool).await.unwrap();
 
     registry.put_shared(storage).await.unwrap();
@@ -430,6 +441,7 @@ fn test_create_block_template_by_adjust_time() -> Result<()> {
         EmptyProvider,
         None,
         AccountInfo::random(),
+        None,
         None,
     )?;
     let template = inner.create_block_template()?;

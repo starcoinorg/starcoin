@@ -17,6 +17,7 @@ use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::sync::Arc;
@@ -37,6 +38,7 @@ impl TxPoolService {
         node_config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
         chain_header: BlockHeader,
+        vm_metrics: Option<VMMetrics>,
     ) -> Self {
         let metrics = node_config
             .metrics
@@ -65,6 +67,7 @@ impl TxPoolService {
             chain_header: Arc::new(RwLock::new(chain_header)),
             sequence_number_cache: NonceCache::new(128),
             metrics,
+            vm_metrics,
         };
 
         Self { inner }
@@ -217,6 +220,7 @@ pub(crate) struct Inner {
     storage: Arc<dyn Store>,
     sequence_number_cache: NonceCache,
     pub(crate) metrics: Option<TxPoolMetrics>,
+    vm_metrics: Option<VMMetrics>,
 }
 impl std::fmt::Debug for Inner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -355,6 +359,7 @@ impl Inner {
             self.chain_header.read().clone(),
             self.storage.clone(),
             self.sequence_number_cache.clone(),
+            self.vm_metrics.clone(),
         )
     }
 }

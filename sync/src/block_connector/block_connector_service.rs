@@ -6,6 +6,7 @@ use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
+use executor::VMMetrics;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network_api::PeerProvider;
@@ -51,8 +52,9 @@ impl ServiceFactory<Self> for BlockConnectorService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let chain_service =
-            WriteBlockChainService::new(config, startup_info, storage, txpool, bus)?;
+            WriteBlockChainService::new(config, startup_info, storage, txpool, bus, vm_metrics)?;
 
         Ok(Self::new(chain_service))
     }

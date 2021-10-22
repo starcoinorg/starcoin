@@ -17,6 +17,7 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_executor::VMMetrics;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::set_global_logger;
@@ -41,6 +42,7 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
+use starcoin_storage::metrics::StorageMetrics;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
@@ -265,11 +267,25 @@ impl NodeService {
 
         registry.put_shared(config.clone()).await?;
         registry.put_shared(logger_handle).await?;
-
+        let vm_metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| VMMetrics::register(registry).ok());
+        if let Some(vm_metrics) = vm_metrics {
+            registry.put_shared(vm_metrics).await?;
+        }
         let bus = registry.service_ref::<BusService>().await?;
+        let storage_metrics = config
+            .metrics
+            .registry()
+            .and_then(|registry| StorageMetrics::register(registry).ok());
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new_with_capacity(config.storage.cache_size()),
-            DBStorage::new(config.storage.dir(), config.storage.rocksdb_config())?,
+            CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
+            DBStorage::new(
+                config.storage.dir(),
+                config.storage.rocksdb_config(),
+                storage_metrics,
+            )?,
         ))?);
         registry.put_shared(storage.clone()).await?;
         let (chain_info, genesis) =

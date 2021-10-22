@@ -53,6 +53,7 @@ fn verify_genesis_nft_address(mint_address: AccountAddress) -> Result<bool> {
             index.simple_serialize().unwrap(),
             proofs.simple_serialize().unwrap(),
         ],
+        None,
     )?;
     let verified: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
     Ok(verified)

@@ -163,9 +163,10 @@ impl Genesis {
         let txn = Transaction::UserTransaction(txn);
         let txn_hash = txn.id();
 
-        let output = starcoin_executor::execute_transactions(chain_state.as_super(), vec![txn])?
-            .pop()
-            .expect("Execute output must exist.");
+        let output =
+            starcoin_executor::execute_transactions(chain_state.as_super(), vec![txn], None)?
+                .pop()
+                .expect("Execute output must exist.");
         let (write_set, events, gas_used, status) = output.into_inner();
         assert_eq!(gas_used, 0, "Genesis txn output's gas_used must be zero");
         let keep_status = status

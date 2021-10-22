@@ -71,6 +71,14 @@ impl ConnectBlockError {
     pub const REP_VERIFY_BLOCK_FAILED: ReputationChange =
         ReputationChange::new_fatal("VerifyBlockFailed");
 
+    pub fn reason(&self) -> &str {
+        match self {
+            ConnectBlockError::FutureBlock(_) => "FutureBlock",
+            ConnectBlockError::ParentNotExist(_) => "ParentNotExist",
+            ConnectBlockError::VerifyBlockFailed(_, _) => "VerifyBlockFailed",
+        }
+    }
+
     pub fn reputation(&self) -> ReputationChange {
         match self {
             ConnectBlockError::FutureBlock(_) => ConnectBlockError::REP_FUTURE_BLOCK,

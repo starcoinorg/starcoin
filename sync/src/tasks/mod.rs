@@ -512,6 +512,7 @@ mod tests;
 use crate::sync_metrics::SyncMetrics;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
+use executor::VMMetrics;
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 
 pub fn full_sync_task<H, A, F, N>(
@@ -526,6 +527,7 @@ pub fn full_sync_task<H, A, F, N>(
     peer_provider: N,
     max_retry_times: u64,
     sync_metrics: Option<SyncMetrics>,
+    vm_metrics: Option<VMMetrics>,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -639,6 +641,7 @@ where
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,
+                    vm_metrics.clone(),
                 )
                 .await?;
             let total_time = Instant::now()

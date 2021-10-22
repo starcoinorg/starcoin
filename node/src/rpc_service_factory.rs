@@ -7,6 +7,7 @@ use starcoin_account_service::AccountService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
+use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerService;
@@ -78,7 +79,8 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));
 
         let contract_api = {
-            let dev_playground = PlaygroudService::new(storage.clone());
+            let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+            let dev_playground = PlaygroudService::new(storage.clone(), vm_metrics);
             ContractRpcImpl::new(
                 config.clone(),
                 account_service,

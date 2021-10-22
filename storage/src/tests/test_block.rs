@@ -21,8 +21,8 @@ use starcoin_uint::U256;
 fn test_block() {
     let tmpdir = starcoin_config::temp_path();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
     let dt = Local::now();
@@ -80,8 +80,8 @@ fn test_block() {
 fn test_block_number() {
     let tmpdir = starcoin_config::temp_path();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
     let dt = Local::now();

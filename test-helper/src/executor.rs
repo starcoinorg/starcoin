@@ -64,7 +64,7 @@ pub fn prepare_customized_genesis(net: &ChainNetwork) -> ChainStateDB {
 }
 
 pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
-    let output = execute_transactions(chain_state, vec![txn])
+    let output = execute_transactions(chain_state, vec![txn], None)
         .unwrap()
         .pop()
         .expect("Output must exist.");
@@ -83,6 +83,7 @@ pub fn current_block_number(state_view: &dyn StateView) -> u64 {
         &Identifier::new("get_current_block_number").unwrap(),
         vec![],
         vec![],
+        None,
     )
     .unwrap();
     assert_eq!(ret.len(), 1);

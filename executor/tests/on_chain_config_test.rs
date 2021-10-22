@@ -56,6 +56,7 @@ fn test_modify_on_chain_consensus_config() -> Result<()> {
             "get_config",
             vec![],
             vec![],
+            None,
         )?;
 
         let r = rets.pop().unwrap().1;
@@ -91,6 +92,7 @@ fn test_modify_on_chain_reward_config() -> Result<()> {
             "reward_delay",
             vec![],
             vec![],
+            None,
         )?;
 
         let r = rets.pop().unwrap().1;
@@ -163,6 +165,7 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
         &Identifier::new("is_module_allowed")?,
         vec![],
         serialize_values(&vec![MoveValue::Address(genesis_address())]),
+        None,
     )?;
     let is_module_allowed_on_chain: bool =
         bcs_ext::from_bytes(&read_config.pop().unwrap()).unwrap();
@@ -175,6 +178,7 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
             "is_script_allowed",
             vec![],
             vec![TransactionArgument::Address(genesis_address())],
+            None,
         )?;
 
         let r = rets.pop().unwrap().1;

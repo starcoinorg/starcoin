@@ -14,17 +14,15 @@ pub struct MinerMetrics {
 impl MinerMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let block_mint_count = register(
-            UIntGauge::with_opts(
-                Opts::new("block_mint_count", "Count of block mint").namespace("starcoin"),
-            )?,
+            UIntGauge::with_opts(Opts::new("block_mint_count", "Count of block mint"))?,
             registry,
         )?;
 
         let block_mint_time = register(
-            Histogram::with_opts(
-                HistogramOpts::new("block_mint_time", "Histogram of block mint")
-                    .namespace("starcoin"),
-            )?,
+            Histogram::with_opts(HistogramOpts::new(
+                "block_mint_time",
+                "Histogram of block mint",
+            ))?,
             registry,
         )?;
 

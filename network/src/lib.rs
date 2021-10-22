@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![deny(clippy::integer_arithmetic)]
-mod broadcast_score_metrics;
+
 pub mod helper;
 mod network_metrics;
 mod service;
