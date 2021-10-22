@@ -69,7 +69,7 @@ use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
 use network_p2p_types::IfDisconnected;
 use parking_lot::Mutex;
-use sc_peerset::{PeersetHandle, ReputationChange};
+use sc_peerset::{peersstate, PeersetHandle, ReputationChange};
 use starcoin_metrics::{Histogram, HistogramVec};
 use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
@@ -1510,6 +1510,29 @@ impl Future for NetworkWorker {
                     .connection_counters()
                     .num_pending() as u64,
             );
+            let mut peers_state = this
+                .network_service
+                .behaviour_mut()
+                .user_protocol_mut()
+                .peerset_info();
+            for set_index in 0..peers_state.num_sets() {
+                let node_count = peers_state
+                    .peers()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .filter(|peer_id| {
+                        matches!(
+                            peers_state.peer(set_index, peer_id),
+                            peersstate::Peer::Connected(_)
+                        )
+                    })
+                    .count();
+                metrics
+                    .peerset_nodes
+                    .with_label_values(&[format!("set_{}", set_index).as_str()])
+                    .set(node_count as u64)
+            }
         }
 
         Poll::Pending

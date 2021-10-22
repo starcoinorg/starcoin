@@ -32,7 +32,7 @@
 //! In addition, for each, set, the peerset also holds a list of reserved nodes towards which it
 //! will at all time try to maintain a connection with.
 
-mod peersstate;
+pub mod peersstate;
 
 use futures::prelude::*;
 use log::{debug, error, trace};
@@ -47,6 +47,7 @@ use std::{
 use std::{collections::HashSet, collections::VecDeque};
 use wasm_timer::Instant;
 
+use crate::peersstate::PeersState;
 use futures::channel::oneshot;
 use futures::channel::oneshot::{Receiver, Sender};
 pub use libp2p::PeerId;
@@ -599,7 +600,9 @@ impl Peerset {
             }
         }
     }
-
+    pub fn get_peers_state(&self) -> PeersState {
+        self.data.clone()
+    }
     /// Indicate that we received an incoming connection. Must be answered either with
     /// a corresponding `Accept` or `Reject`, except if we were already connected to this peer.
     ///

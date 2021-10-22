@@ -17,7 +17,7 @@ use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
-use sc_peerset::SetId;
+use sc_peerset::{peersstate::PeersState, SetId};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -447,7 +447,9 @@ impl Protocol {
     pub fn peerset_debug_info(&mut self) -> serde_json::Value {
         self.behaviour.peerset_debug_info()
     }
-
+    pub fn peerset_info(&self) -> PeersState {
+        self.behaviour.peerset_info()
+    }
     pub fn on_notify(
         &mut self,
         who: PeerId,
