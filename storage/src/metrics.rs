@@ -10,17 +10,20 @@ use std::time::Instant;
 
 #[derive(Clone)]
 pub struct StorageMetrics {
-    pub storage_counters: UIntCounterVec,
+    pub storage_rw_total: UIntCounterVec,
     pub storage_item_bytes: HistogramVec,
-    pub storage_times: HistogramVec,
+    pub storage_time: HistogramVec,
     pub cache_items: UIntGauge,
 }
 
 impl StorageMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let storage_counters = register(
+        let storage_rw_total = register(
             UIntCounterVec::new(
-                Opts::new("storage", "Counters of how many storage read/write"),
+                Opts::new(
+                    "storage_rw_total",
+                    "Counters of how many storage read/write",
+                ),
                 &["storage_type", "key_type", "method", "result"],
             )?,
             registry,
@@ -28,12 +31,12 @@ impl StorageMetrics {
         let storage_item_bytes = register(
             HistogramVec::new(
                 HistogramOpts::new("storage_item_bytes", "storage write item size in bytes"),
-                &["cf_name"],
+                &["key_type"],
             )?,
             registry,
         )?;
 
-        let storage_times = register(
+        let storage_time = register(
             HistogramVec::new(
                 HistogramOpts::new(
                     "storage_time",
@@ -50,9 +53,9 @@ impl StorageMetrics {
         )?;
 
         Ok(Self {
-            storage_counters,
+            storage_rw_total,
             storage_item_bytes,
-            storage_times,
+            storage_time,
             cache_items,
         })
     }
@@ -143,7 +146,7 @@ impl<'a> MetricsRecord<'a> {
         let result_type = result.as_result_type();
         if let Some(metrics) = self.metrics {
             metrics
-                .storage_counters
+                .storage_rw_total
                 .with_label_values(&[
                     self.storage_type,
                     self.key_type,
@@ -152,7 +155,7 @@ impl<'a> MetricsRecord<'a> {
                 ])
                 .inc();
             metrics
-                .storage_times
+                .storage_time
                 .with_label_values(&[self.storage_type, self.key_type, self.method])
                 .observe(self.timer.elapsed().as_secs_f64());
         }

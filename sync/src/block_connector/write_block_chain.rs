@@ -76,7 +76,7 @@ where
 
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .chain_block_connect_counters
+                .chain_block_connect_total
                 .with_label_values(&["try_connect"])
                 .inc();
             let result_str = match result.as_ref() {
@@ -90,7 +90,7 @@ where
                 }
             };
             metrics
-                .chain_block_connect_counters
+                .chain_block_connect_total
                 .with_label_values(&[result_str.as_str()])
                 .inc();
         }
@@ -216,7 +216,7 @@ where
         self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             if let Some(metrics) = self.metrics.as_ref() {
-                metrics.chain_rollback_block_counter.inc_by(retracted_count);
+                metrics.chain_rollback_block_total.inc_by(retracted_count);
             }
         }
         self.commit_2_txpool(enacted_blocks, retracted_blocks);
@@ -381,7 +381,7 @@ where
     fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .chain_block_connect_counters
+                .chain_block_connect_total
                 .with_label_values(&["new_head"])
                 .inc()
         }
@@ -394,7 +394,7 @@ where
     fn broadcast_new_branch(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .chain_block_connect_counters
+                .chain_block_connect_total
                 .with_label_values(&["new_branch"])
                 .inc()
         }

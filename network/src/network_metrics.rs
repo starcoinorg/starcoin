@@ -6,27 +6,27 @@ use starcoin_metrics::{HistogramVec, Opts, UIntCounterVec};
 
 #[derive(Clone)]
 pub struct NetworkMetrics {
-    pub broadcast_counters: UIntCounterVec,
-    pub broadcast_duration: HistogramVec,
-    pub broadcast_in_message_counters: UIntCounterVec,
+    pub network_broadcast_total: UIntCounterVec,
+    pub network_broadcast_time: HistogramVec,
+    pub network_broadcast_in_msg_total: UIntCounterVec,
 }
 
 impl NetworkMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let broadcast_counters = register(
+        let network_broadcast_total = register(
             UIntCounterVec::new(
                 Opts::new(
-                    "broadcast_counters",
+                    "network_broadcast_total",
                     "network broadcast message counter by in|out and protocol",
                 ),
                 &["in_or_out", "notification_protocol"],
             )?,
             registry,
         )?;
-        let broadcast_duration = register(
+        let network_broadcast_time = register(
             HistogramVec::new(
                 HistogramOpts::new(
-                    "broadcast_duration",
+                    "network_broadcast_time",
                     "network broadcast message duration by protocol",
                 ),
                 &["notification_protocol"],
@@ -34,10 +34,10 @@ impl NetworkMetrics {
             registry,
         )?;
 
-        let broadcast_in_message_counters = register(
+        let network_broadcast_in_msg_total = register(
             UIntCounterVec::new(
                 Opts::new(
-                    "broadcast_in_message_counters",
+                    "network_broadcast_in_msg_total",
                     "network broadcast receive message counters by known|unknown and protocol",
                 ),
                 &["known_or_unknown", "notification_protocol"],
@@ -46,9 +46,9 @@ impl NetworkMetrics {
         )?;
 
         Ok(Self {
-            broadcast_counters,
-            broadcast_duration,
-            broadcast_in_message_counters,
+            network_broadcast_total,
+            network_broadcast_time,
+            network_broadcast_in_msg_total,
         })
     }
 }

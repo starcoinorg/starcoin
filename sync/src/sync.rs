@@ -107,13 +107,13 @@ impl SyncService {
         peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
-        let sync_times = self
+        let sync_task_total = self
             .metrics
             .as_ref()
-            .map(|metrics| metrics.sync_times.clone());
+            .map(|metrics| metrics.sync_task_total.clone());
 
-        if let Some(sync_times) = sync_times.as_ref() {
-            sync_times.with_label_values(&["check"]).inc();
+        if let Some(sync_task_total) = sync_task_total.as_ref() {
+            sync_task_total.with_label_values(&["check"]).inc();
         }
         match std::mem::replace(&mut self.stage, SyncStage::Checking) {
             SyncStage::NotStart | SyncStage::Done => {
@@ -244,8 +244,8 @@ impl SyncService {
                     task_event_handle,
                     peer_selector,
                 })?;
-                if let Some(sync_times) = sync_times.as_ref() {
-                    sync_times.with_label_values(&["start"]).inc();
+                if let Some(sync_task_total) = sync_task_total.as_ref() {
+                    sync_task_total.with_label_values(&["start"]).inc();
                 }
                 Ok(Some(fut.await?))
             } else {
@@ -256,22 +256,22 @@ impl SyncService {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let self_ref = ctx.self_ref();
 
-        let sync_times = self
+        let sync_task_total = self
             .metrics
             .as_ref()
-            .map(|metrics| metrics.sync_times.clone());
-        let sync_break_times = self
+            .map(|metrics| metrics.sync_task_total.clone());
+        let sync_task_break_total = self
             .metrics
             .as_ref()
-            .map(|metrics| metrics.sync_break_times.clone());
+            .map(|metrics| metrics.sync_task_break_total.clone());
 
         ctx.spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
-                        if let Some(sync_times) = sync_times.as_ref() {
-                            sync_times.with_label_values(&["done"]).inc();
+                        if let Some(sync_task_total) = sync_task_total.as_ref() {
+                            sync_task_total.with_label_values(&["done"]).inc();
                         }
                         false
                     }
@@ -284,8 +284,8 @@ impl SyncService {
                             match task_err {
                                 TaskError::Canceled => {
                                     info!("[sync] Sync task is cancel");
-                                    if let Some(sync_times) = sync_times.as_ref() {
-                                        sync_times.with_label_values(&["cancel"]).inc();
+                                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                                        sync_task_total.with_label_values(&["cancel"]).inc();
                                     }
                                     true
                                 }
@@ -306,31 +306,31 @@ impl SyncService {
                                     } else {
                                         "other_err"
                                     };
-                                    if let Some(sync_break_times) = sync_break_times.as_ref() {
-                                        sync_break_times.with_label_values(&[reason]).inc();
+                                    if let Some(sync_task_break_total) = sync_task_break_total.as_ref() {
+                                        sync_task_break_total.with_label_values(&[reason]).inc();
                                     }
                                     warn!(
                                         "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
                                         err,
                                         err.root_cause(),
                                     );
-                                    if let Some(sync_times) = sync_times.as_ref() {
-                                        sync_times.with_label_values(&["break"]).inc();
+                                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                                        sync_task_total.with_label_values(&["break"]).inc();
                                     }
                                     false
                                 }
                                 task_err => {
                                     error!("[sync] Sync task error: {:?}", task_err);
-                                    if let Some(sync_times) = sync_times.as_ref() {
-                                        sync_times.with_label_values(&["error"]).inc();
+                                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                                        sync_task_total.with_label_values(&["error"]).inc();
                                     }
                                     false
                                 }
                             }
                         } else {
                             error!("[sync] Sync task error: {:?}", err);
-                            if let Some(sync_times) = sync_times.as_ref() {
-                                sync_times.with_label_values(&["error"]).inc();
+                            if let Some(sync_task_total) = sync_task_total.as_ref() {
+                                sync_task_total.with_label_values(&["error"]).inc();
                             }
                             false
                         }

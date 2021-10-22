@@ -164,10 +164,6 @@ impl ConfigModule for MetricsConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
 
-        let registry = Registry::new_custom(Some(DEFAULT_METRIC_NAMESPACE.to_string()), None)?;
-
-        self.registry = Some(registry);
-
         if opt.metrics.disable_metrics.is_some() {
             self.disable_metrics = opt.metrics.disable_metrics;
         }
@@ -181,6 +177,12 @@ impl ConfigModule for MetricsConfig {
             self.push_config = opt.metrics.push_config.clone();
         }
         self.generate_address();
+
+        if !self.disable_metrics() {
+            let registry = Registry::new_custom(Some(DEFAULT_METRIC_NAMESPACE.to_string()), None)?;
+            self.registry = Some(registry);
+        }
+
         Ok(())
     }
 }

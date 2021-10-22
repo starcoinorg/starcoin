@@ -12,8 +12,6 @@ jobs:
           submodules: recursive
       - name: setup rust toolchain
         uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - uses: boa-dev/criterion-compare-action@master
         env:
           RUST_LOG: error

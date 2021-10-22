@@ -79,7 +79,7 @@ impl RpcCallRecord {
         );
         if let Some(metrics) = metrics {
             metrics
-                .rpc_counter
+                .json_rpc_total
                 .with_label_values(&[
                     self.call_type.to_string().as_str(),
                     self.method.as_str(),
@@ -87,7 +87,7 @@ impl RpcCallRecord {
                 ])
                 .inc();
             metrics
-                .rpc_timer
+                .json_rpc_time
                 .with_label_values(&[self.method.as_str()])
                 .observe(use_time.as_secs_f64())
         }

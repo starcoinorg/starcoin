@@ -196,11 +196,11 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
                 let network_service = network_service.clone();
                 let timer = metrics.as_ref().map(|metrics| {
                     metrics
-                        .broadcast_counters
+                        .network_broadcast_total
                         .with_label_values(&["out", protocol.as_ref()])
                         .inc();
                     metrics
-                        .broadcast_duration
+                        .network_broadcast_time
                         .with_label_values(&[protocol.as_ref()])
                         .start_timer()
                 });
@@ -507,12 +507,12 @@ impl Inner {
 
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics
-                    .broadcast_counters
+                    .network_broadcast_total
                     .with_label_values(&["in", protocol.as_ref()])
                     .inc();
                 let known_or_unknown = notification.as_ref().map(|_| "unknown").unwrap_or("known");
                 metrics
-                    .broadcast_in_message_counters
+                    .network_broadcast_in_msg_total
                     .with_label_values(&[known_or_unknown, protocol.as_ref()])
                     .inc();
             }

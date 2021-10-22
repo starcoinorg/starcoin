@@ -8,18 +8,21 @@ use starcoin_metrics::{
 
 #[derive(Clone)]
 pub struct ChainMetrics {
-    pub chain_block_connect_counters: UIntCounterVec,
+    pub chain_block_connect_total: UIntCounterVec,
     pub chain_block_connect_time: Histogram,
-    pub chain_rollback_block_counter: UIntCounter,
+    pub chain_rollback_block_total: UIntCounter,
     pub chain_block_num: UIntGauge,
     pub chain_txn_num: UIntGauge,
 }
 
 impl ChainMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
-        let chain_block_connect_counters = register(
+        let chain_block_connect_total = register(
             UIntCounterVec::new(
-                Opts::new("chain_block_connect_counters", "block connect count"),
+                Opts::new(
+                    "chain_block_connect_total",
+                    "total block try to connect to chain",
+                ),
                 &["type"],
             )?,
             registry,
@@ -33,10 +36,10 @@ impl ChainMetrics {
             registry,
         )?;
 
-        let chain_rollback_block_counter = register(
+        let chain_rollback_block_total = register(
             UIntCounter::with_opts(Opts::new(
-                "chain_rollback_block_counter",
-                "rollback block counter",
+                "chain_rollback_block_total",
+                "total rollback blocks",
             ))?,
             registry,
         )?;
@@ -52,9 +55,9 @@ impl ChainMetrics {
         )?;
 
         Ok(Self {
-            chain_block_connect_counters,
+            chain_block_connect_total,
             chain_block_connect_time,
-            chain_rollback_block_counter,
+            chain_rollback_block_total,
             chain_block_num,
             chain_txn_num,
         })
