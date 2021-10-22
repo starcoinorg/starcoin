@@ -29,6 +29,7 @@ use libp2p::swarm::{
 use log::{debug, error, trace, warn};
 use parking_lot::RwLock;
 use rand::distributions::{Distribution as _, Uniform};
+use sc_peerset::peersstate::PeersState;
 use smallvec::SmallVec;
 use std::task::{Context, Poll};
 use std::{
@@ -643,7 +644,9 @@ impl GenericProto {
     pub fn peerset_debug_info(&mut self) -> serde_json::Value {
         self.peerset.debug_info()
     }
-
+    pub fn peerset_info(&self) -> PeersState {
+        self.peerset.get_peers_state()
+    }
     /// Function that is called when the peerset wants us to connect to a peer.
     fn peerset_report_connect(&mut self, peer_id: PeerId, set_id: sc_peerset::SetId) {
         // If `PeerId` is unknown to us, insert an entry, start dialing, and return early.

@@ -32,6 +32,7 @@ pub struct Metrics {
     pub requests_out_failure_total: UIntCounterVec,
     pub requests_out_success_total: HistogramVec,
     pub requests_out_started_total: UIntCounterVec,
+    pub peerset_nodes: UIntGaugeVec,
 }
 
 impl Metrics {
@@ -272,6 +273,13 @@ impl Metrics {
                         "Total number of requests emitted",
                     ),
                     &["protocol"],
+                )?,
+                registry,
+            )?,
+            peerset_nodes: register(
+                UIntGaugeVec::new(
+                    Opts::new("sub_libp2p_peerset_nodes", "nodes numbers in each peer set"),
+                    &["sets"],
                 )?,
                 registry,
             )?,
