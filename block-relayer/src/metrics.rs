@@ -22,7 +22,7 @@ impl BlockRelayerMetrics {
                     "txns_filled_total",
                     "Count of block filled transactions from network|txpool|prefill",
                 ),
-                &["source"],
+                &["type"],
             )?,
             registry,
         )?;
