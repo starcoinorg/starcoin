@@ -326,7 +326,7 @@ module YieldFarmingV2 {
         broker: address,
         amount: u128) : Token::Token<RewardTokenT> acquires HarvestCapability, Farming, FarmingAsset, Stake {
         let account = Signer::address_of(signer);
-        let cap = borrow_global_mut<HarvestCapability<PoolType, RewardTokenT>>(account);
+        let cap = borrow_global_mut<HarvestCapability<PoolType, AssetT>>(account);
         harvest_with_cap(broker, amount, cap)
     }
 

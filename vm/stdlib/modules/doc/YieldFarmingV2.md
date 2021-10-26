@@ -1011,7 +1011,7 @@ Harvest yield farming token from stake
     broker: address,
     amount: u128) : <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;RewardTokenT&gt; <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Farming">Farming</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>, <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_Stake">Stake</a> {
     <b>let</b> account = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
-    <b>let</b> cap = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, RewardTokenT&gt;&gt;(account);
+    <b>let</b> cap = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt;&gt;(account);
     <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_harvest_with_cap">harvest_with_cap</a>(broker, amount, cap)
 }
 </code></pre>
