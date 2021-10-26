@@ -186,7 +186,7 @@ impl InnerStore for StorageInstance {
             StorageInstance::CacheAndDb { cache, db } => {
                 match db.write_batch(prefix_name, batch.clone()) {
                     Ok(_) => cache.write_batch_obj(prefix_name, batch),
-                    Err(err) => bail!("write batch db error: {}", err),
+                    Err(err) => bail!("write batch db error: {}, prefix_name {}", err, prefix_name),
                 }
             }
         }

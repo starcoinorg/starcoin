@@ -3,6 +3,7 @@
 use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use crypto::HashValue;
+use pprof::criterion::{Output, PProfProfiler};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_config::RocksdbConfig;
 use starcoin_storage::cache_storage::CacheStorage;
@@ -70,8 +71,10 @@ fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
         .collect()
 }
 criterion_group!(
-    starcoin_storage_benches,
-    storage_transaction,
-    accumulator_append
+    name=starcoin_storage_benches;
+    config = Criterion::default()
+    .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    targets=accumulator_append
+    // targets=storage_transaction
 );
 criterion_main!(starcoin_storage_benches);
