@@ -9,6 +9,7 @@ use starcoin_metrics::{
 #[derive(Clone)]
 pub struct ChainMetrics {
     pub chain_block_connect_total: UIntCounterVec,
+    pub chain_select_head_total: UIntCounterVec,
     pub chain_block_connect_time: Histogram,
     pub chain_rollback_block_total: UIntCounter,
     pub chain_block_num: UIntGauge,
@@ -22,6 +23,17 @@ impl ChainMetrics {
                 Opts::new(
                     "chain_block_connect_total",
                     "total block try to connect to chain",
+                ),
+                &["type"],
+            )?,
+            registry,
+        )?;
+
+        let chain_select_head_total = register(
+            UIntCounterVec::new(
+                Opts::new(
+                    "chain_select_head_total",
+                    "total select head count, new_head or new_branch",
                 ),
                 &["type"],
             )?,
@@ -56,6 +68,7 @@ impl ChainMetrics {
 
         Ok(Self {
             chain_block_connect_total,
+            chain_select_head_total,
             chain_block_connect_time,
             chain_rollback_block_total,
             chain_block_num,
