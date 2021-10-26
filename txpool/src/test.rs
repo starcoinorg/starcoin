@@ -128,7 +128,7 @@ async fn test_pool_pending() -> Result<()> {
     );
 
     let txn_added_event_metric = metrics_config
-        .get_metric("txpool_txn_event_counter", Some(("event", "added")))
+        .get_metric("txpool_txn_event_total", Some(("type", "added")))
         .unwrap()
         .pop()
         .unwrap();
@@ -140,7 +140,7 @@ async fn test_pool_pending() -> Result<()> {
     );
 
     let txn_rejected_event_metric = metrics_config
-        .get_metric("txpool_txn_event_counter", Some(("event", "rejected")))
+        .get_metric("txpool_txn_event_total", Some(("type", "rejected")))
         .unwrap()
         .pop()
         .unwrap();
@@ -163,7 +163,7 @@ async fn test_pool_pending() -> Result<()> {
     delay_for(Duration::from_millis(200)).await;
 
     let txn_rejected_event_metric = metrics_config
-        .get_metric("txpool_txn_event_counter", Some(("event", "rejected")))
+        .get_metric("txpool_txn_event_total", Some(("type", "rejected")))
         .unwrap()
         .pop()
         .unwrap();
