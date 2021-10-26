@@ -37,7 +37,7 @@ use crate::Event;
 use futures::{channel::mpsc, prelude::*, ready, stream::FusedStream};
 use parking_lot::Mutex;
 use prometheus::Registry;
-use starcoin_metrics::{register, Opts, PrometheusError, UIntCounterVec, UIntGaugeVec};
+use starcoin_metrics::{register, Opts, PrometheusError, UIntCounterVec, UIntGauge};
 use std::{
     convert::TryFrom as _,
     fmt,
@@ -89,7 +89,7 @@ impl Drop for Sender {
     fn drop(&mut self) {
         let metrics = self.metrics.lock();
         if let Some(Some(metrics)) = metrics.as_ref().map(|m| &**m) {
-            metrics.num_channels.with_label_values(&[self.name]).dec();
+            metrics.num_channels.dec();
         }
     }
 }
@@ -170,7 +170,7 @@ impl OutChannels {
         drop(metrics);
 
         if let Some(metrics) = &*self.metrics {
-            metrics.num_channels.with_label_values(&[sender.name]).inc();
+            metrics.num_channels.inc();
         }
 
         self.event_streams.push(sender);
@@ -201,7 +201,7 @@ struct Metrics {
     // This list is ordered alphabetically
     events_total: UIntCounterVec,
     notifications_sizes: UIntCounterVec,
-    num_channels: UIntGaugeVec,
+    num_channels: UIntGauge,
 }
 
 impl Metrics {
@@ -209,54 +209,54 @@ impl Metrics {
         Ok(Self {
             events_total: register(UIntCounterVec::new(
                 Opts::new(
-                    "sub_libp2p_out_events_events_total",
+                    "networkp2p_out_events_total",
                     "Number of broadcast network events that have been sent or received across all \
 					 channels",
                 ),
-                &["event_name", "action", "name"],
+                &["protocol", "action"],
             )?, registry)?,
             notifications_sizes: register(UIntCounterVec::new(
                 Opts::new(
-                    "sub_libp2p_out_events_notifications_sizes",
+                    "networkp2p_out_events_notifications_sizes",
                     "Size of notification events that have been sent or received across all \
 					 channels",
                 ),
-                &["protocol", "action", "name"],
+                &["protocol", "action"],
             )?, registry)?,
-            num_channels: register(UIntGaugeVec::new(
+            num_channels: register(UIntGauge::with_opts(
                 Opts::new(
-                    "sub_libp2p_out_events_num_channels",
+                    "networkp2p_out_events_num_channels",
                     "Number of internal active channels that broadcast network events",
                 ),
-                &["name"],
+
             )?, registry)?,
         })
     }
 
-    fn event_in(&self, event: &Event, num: u64, name: &str) {
+    fn event_in(&self, event: &Event, num: u64, _name: &str) {
         match event {
             Event::Dht(_) => {
                 self.events_total
-                    .with_label_values(&["dht", "sent", name])
+                    .with_label_values(&["dht", "sent"])
                     .inc_by(num);
             }
-            Event::NotificationStreamOpened { remote, .. } => {
+            Event::NotificationStreamOpened { .. } => {
                 self.events_total
-                    .with_label_values(&[&format!("notif-open-{:?}", remote), "sent", name])
+                    .with_label_values(&["notif-open", "sent"])
                     .inc_by(num);
             }
-            Event::NotificationStreamClosed { remote, .. } => {
+            Event::NotificationStreamClosed { .. } => {
                 self.events_total
-                    .with_label_values(&[&format!("notif-closed-{:?}", remote), "sent", name])
+                    .with_label_values(&["notif-closed", "sent"])
                     .inc_by(num);
             }
             Event::NotificationsReceived { messages, .. } => {
                 for (protocol_name, message) in messages {
                     self.events_total
-                        .with_label_values(&[&format!("notif-{:?}", protocol_name), "sent", name])
+                        .with_label_values(&[&format!("notif-{:?}", protocol_name), "sent"])
                         .inc_by(num);
                     self.notifications_sizes
-                        .with_label_values(&[protocol_name, "sent", name])
+                        .with_label_values(&[protocol_name, "sent"])
                         .inc_by(num.saturating_mul(
                             u64::try_from(message.len()).unwrap_or(u64::max_value()),
                         ));
@@ -265,34 +265,30 @@ impl Metrics {
         }
     }
 
-    fn event_out(&self, event: &Event, name: &str) {
+    fn event_out(&self, event: &Event, _name: &str) {
         match event {
             Event::Dht(_) => {
                 self.events_total
-                    .with_label_values(&["dht", "received", name])
+                    .with_label_values(&["dht", "received"])
                     .inc();
             }
-            Event::NotificationStreamOpened { remote, .. } => {
+            Event::NotificationStreamOpened { .. } => {
                 self.events_total
-                    .with_label_values(&[&format!("notif-open-{:?}", remote), "received", name])
+                    .with_label_values(&["notif-open", "received"])
                     .inc();
             }
-            Event::NotificationStreamClosed { remote, .. } => {
+            Event::NotificationStreamClosed { .. } => {
                 self.events_total
-                    .with_label_values(&[&format!("notif-closed-{:?}", remote), "received", name])
+                    .with_label_values(&["notif-closed", "received"])
                     .inc();
             }
             Event::NotificationsReceived { messages, .. } => {
                 for (protocol_name, message) in messages {
                     self.events_total
-                        .with_label_values(&[
-                            &format!("notif-{:?}", protocol_name),
-                            "received",
-                            name,
-                        ])
+                        .with_label_values(&[&format!("notif-{:?}", protocol_name), "received"])
                         .inc();
                     self.notifications_sizes
-                        .with_label_values(&[protocol_name, "received", name])
+                        .with_label_values(&[protocol_name, "received"])
                         .inc_by(u64::try_from(message.len()).unwrap_or(u64::max_value()));
                 }
             }
