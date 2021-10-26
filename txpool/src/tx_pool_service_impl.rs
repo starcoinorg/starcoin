@@ -10,7 +10,7 @@ use crate::{
     pool_client::{NonceCache, PoolClient},
 };
 
-use crate::counters::TxPoolMetrics;
+use crate::metrics::TxPoolMetrics;
 use crate::pool::{Client, TransactionQueue};
 use anyhow::Result;
 use crypto::hash::HashValue;

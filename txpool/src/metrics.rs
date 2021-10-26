@@ -18,10 +18,10 @@ impl TxPoolMetrics {
         let txpool_txn_event_total = register(
             UIntCounterVec::new(
                 Opts::new(
-                    "txpool_txn_event_counter",
+                    "txpool_txn_event_total",
                     "Counters of txn events, such as added|dropped|rejected etc",
                 ),
-                &["event"],
+                &["type"],
             )?,
             registry,
         )?;

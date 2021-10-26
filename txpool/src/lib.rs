@@ -27,7 +27,7 @@ use types::{
     transaction::SignedUserTransaction,
 };
 
-mod counters;
+mod metrics;
 mod pool;
 mod pool_client;
 #[cfg(test)]
