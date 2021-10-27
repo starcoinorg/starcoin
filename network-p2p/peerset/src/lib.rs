@@ -520,9 +520,6 @@ impl Peerset {
                 let before = peer_reputation.reputation();
                 let after = reput_tick(before);
                 trace!(target: "peerset", "Fleeting {}: {} -> {}", peer_id, before, after);
-                if after < BANNED_THRESHOLD {
-                    self.message_queue.push_back(Message::Banned(peer_id))
-                }
                 peer_reputation.set_reputation(after);
                 drop(peer_reputation);
                 // If the peer has no connection to it,
@@ -533,6 +530,9 @@ impl Peerset {
                         peersstate::Peer::NotConnected(peer) => {
                             if peer.last_connected_or_discovered() + FORGET_AFTER < now {
                                 peer.forget_peer();
+                                if after < BANNED_THRESHOLD {
+                                    self.message_queue.push_back(Message::Banned(peer_id))
+                                }
                             }
                         }
                         peersstate::Peer::Unknown(_) => {

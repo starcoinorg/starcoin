@@ -348,7 +348,9 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
         endpoint: &ConnectedPoint,
     ) {
         for (p, _) in self.protocols.values_mut() {
-            NetworkBehaviour::inject_connection_closed(p, peer_id, conn, endpoint)
+            if p.is_connected(peer_id) {
+                NetworkBehaviour::inject_connection_closed(p, peer_id, conn, endpoint)
+            }
         }
     }
 
