@@ -491,8 +491,7 @@ impl Protocol {
                 );
             }
             self.peerset_handle.report_peer(who, rep::GENESIS_MISMATCH);
-            self.behaviour.disconnect_peer(&who, set_id);
-            return CustomMessageOutcome::Banned(who);
+            return CustomMessageOutcome::None;
         }
         if status.version < MIN_VERSION || CURRENT_VERSION < status.min_supported_version {
             log!(
@@ -501,8 +500,7 @@ impl Protocol {
                 "Peer {:?} using unsupported protocol version {}", who, status.version
             );
             self.peerset_handle.report_peer(who, rep::BAD_PROTOCOL);
-            self.behaviour.disconnect_peer(&who, set_id);
-            return CustomMessageOutcome::Banned(who);
+            return CustomMessageOutcome::None;
         }
         debug!(target: "network-p2p", "Connected {}", who);
         let peer = Peer {

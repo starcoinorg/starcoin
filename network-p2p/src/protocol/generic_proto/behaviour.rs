@@ -1235,8 +1235,6 @@ impl NetworkBehaviour for GenericProto {
             let mut entry = if let Entry::Occupied(entry) = self.peers.entry((*peer_id, set_id)) {
                 entry
             } else {
-                error!(target: "sub-libp2p", "inject_connection_closed: State mismatch in the custom protos handler");
-                debug_assert!(false);
                 return;
             };
             match mem::replace(entry.get_mut(), PeerState::Poisoned) {
