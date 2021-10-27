@@ -75,17 +75,13 @@ where
         let result = self.connect_inner(block);
 
         if let Some(metrics) = self.metrics.as_ref() {
-            metrics
-                .chain_block_connect_total
-                .with_label_values(&["try_connect"])
-                .inc();
             let result_str = match result.as_ref() {
-                Ok(connect) => connect.to_string(),
+                Ok(connect) => format!("Ok_{}", connect),
                 Err(err) => {
                     if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
-                        connect_err.reason().to_string()
+                        format!("Err_{}", connect_err.reason())
                     } else {
-                        "other_error".to_string()
+                        "Err_other".to_string()
                     }
                 }
             };
@@ -381,7 +377,7 @@ where
     fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .chain_block_connect_total
+                .chain_select_head_total
                 .with_label_values(&["new_head"])
                 .inc()
         }
@@ -394,7 +390,7 @@ where
     fn broadcast_new_branch(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
-                .chain_block_connect_total
+                .chain_select_head_total
                 .with_label_values(&["new_branch"])
                 .inc()
         }
