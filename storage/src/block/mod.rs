@@ -180,13 +180,12 @@ impl BlockStorage {
     }
 
     pub fn commit_block(&self, block: Block) -> Result<()> {
-        let (header, body) = block.clone().into_inner();
+        let (header, _) = block.clone().into_inner();
         //save header
-        let block_id = header.id();
         self.save_header(header)?;
-        //save body
-        self.save_body(block_id, body)?;
-        //save block cache
+        // save block , no need body
+        // self.save_body(block_id, body)?;
+        //save block
         self.save(block)
     }
     pub fn delete_block(&self, block_id: HashValue) -> Result<()> {
