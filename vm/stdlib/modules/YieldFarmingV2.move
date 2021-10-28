@@ -198,7 +198,7 @@ module YieldFarmingV2 {
         assert(alive, Errors::invalid_state(ERR_FARMING_ALIVE_STATE_INVALID));
 
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
-        assert(farming_asset.alive != alive, Errors::invalid_state(ERR_FARMING_ALIVE_STATE_INVALID));
+        // assert(farming_asset.alive != alive, Errors::invalid_state(ERR_FARMING_ALIVE_STATE_INVALID));
 
         let now_seconds = Timestamp::now_seconds();
 

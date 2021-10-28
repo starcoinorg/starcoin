@@ -50,6 +50,11 @@ module alice::YieldFarmingWarpper {
     public fun query_gov_token_amount(account: address): u128 {
         YieldFarmingV2::query_gov_token_amount<PoolType_A, Usdx, AssetType_A>(account, @alice)
     }
+
+    public fun modify_parameter(release_per_second: u128) acquires GovModfiyParamCapability {
+        let cap = borrow_global_mut<GovModfiyParamCapability>(@alice);
+        YieldFarmingV2::modify_parameter<PoolType_A, Usdx, AssetType_A>(&cap.cap, @alice, release_per_second, true);
+    }
 }
 // check: EXECUTED
 
@@ -236,6 +241,19 @@ script {
         assert(amount1 > 0, 10005);
         // assert(amount1 == 20000000000, 10004);
         Account::deposit<Usdx>(Signer::address_of(&account), token);
+    }
+}
+// check: EXECUTED
+
+//! new-transaction
+//! sender: alice
+address alice = {{alice}};
+script {
+    use alice::YieldFarmingWarpper::{Self};
+
+    /// modify parameter test
+    fun init(_signer: signer) {
+        YieldFarmingWarpper::modify_parameter(100000000);
     }
 }
 // check: EXECUTED
