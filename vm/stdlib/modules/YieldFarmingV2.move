@@ -194,11 +194,11 @@ module YieldFarmingV2 {
         release_per_second: u128,
         alive: bool) acquires FarmingAsset {
 
-        // Not support to shuttingdown alive state.
+        // Not support to shuttingdown alive state now
         assert(alive, Errors::invalid_state(ERR_FARMING_ALIVE_STATE_INVALID));
 
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
-        assert(farming_asset.alive != alive, Errors::invalid_state(ERR_FARMING_ALIVE_STATE_INVALID));
+        // assert(farming_asset.alive != alive, Errors::invalid_state(ERR_FARMING_ALIVE_STATE_INVALID));
 
         let now_seconds = Timestamp::now_seconds();
 
@@ -235,8 +235,7 @@ module YieldFarmingV2 {
         _cap: &ParameterModifyCapability<PoolType, AssetT>)
     : HarvestCapability<PoolType, AssetT> acquires FarmingAsset {
         let account = Signer::address_of(signer);
-        assert(!exists_stake_at_address<PoolType, AssetT>(account),
-            Errors::invalid_state(ERR_FARMING_STAKE_EXISTS));
+        assert(!exists_stake_at_address<PoolType, AssetT>(account), Errors::invalid_state(ERR_FARMING_STAKE_EXISTS));
 
         let farming_asset = borrow_global_mut<FarmingAsset<PoolType, AssetT>>(broker);
         assert(farming_asset.alive, Errors::invalid_state(ERR_FARMING_NOT_ALIVE));

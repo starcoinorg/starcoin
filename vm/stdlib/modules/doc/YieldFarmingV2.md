@@ -779,11 +779,11 @@ Please make sure all user unstaking from this pool
     release_per_second: u128,
     alive: bool) <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a> {
 
-    // Not support <b>to</b> shuttingdown alive state.
+    // Not support <b>to</b> shuttingdown alive state now
     <b>assert</b>(alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_ALIVE_STATE_INVALID">ERR_FARMING_ALIVE_STATE_INVALID</a>));
 
     <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>assert</b>(farming_asset.alive != alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_ALIVE_STATE_INVALID">ERR_FARMING_ALIVE_STATE_INVALID</a>));
+    // <b>assert</b>(farming_asset.alive != alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_ALIVE_STATE_INVALID">ERR_FARMING_ALIVE_STATE_INVALID</a>));
 
     <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
 
@@ -860,8 +860,7 @@ Call by stake user, staking amount of asset in order to get yield farming token
     _cap: &<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ParameterModifyCapability">ParameterModifyCapability</a>&lt;PoolType, AssetT&gt;)
 : <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_HarvestCapability">HarvestCapability</a>&lt;PoolType, AssetT&gt; <b>acquires</b> <a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a> {
     <b>let</b> account = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
-    <b>assert</b>(!<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_exists_stake_at_address">exists_stake_at_address</a>&lt;PoolType, AssetT&gt;(account),
-        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_STAKE_EXISTS">ERR_FARMING_STAKE_EXISTS</a>));
+    <b>assert</b>(!<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_exists_stake_at_address">exists_stake_at_address</a>&lt;PoolType, AssetT&gt;(account), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_STAKE_EXISTS">ERR_FARMING_STAKE_EXISTS</a>));
 
     <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
     <b>assert</b>(farming_asset.alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_NOT_ALIVE">ERR_FARMING_NOT_ALIVE</a>));
