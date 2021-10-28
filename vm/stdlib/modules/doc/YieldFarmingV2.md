@@ -783,7 +783,7 @@ Please make sure all user unstaking from this pool
     <b>assert</b>(alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_ALIVE_STATE_INVALID">ERR_FARMING_ALIVE_STATE_INVALID</a>));
 
     <b>let</b> farming_asset = borrow_global_mut&lt;<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_FarmingAsset">FarmingAsset</a>&lt;PoolType, AssetT&gt;&gt;(broker);
-    <b>assert</b>(farming_asset.alive != alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_ALIVE_STATE_INVALID">ERR_FARMING_ALIVE_STATE_INVALID</a>));
+    // <b>assert</b>(farming_asset.alive != alive, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="YieldFarmingV2.md#0x1_YieldFarmingV2_ERR_FARMING_ALIVE_STATE_INVALID">ERR_FARMING_ALIVE_STATE_INVALID</a>));
 
     <b>let</b> now_seconds = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
 
