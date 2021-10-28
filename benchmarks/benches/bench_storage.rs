@@ -17,15 +17,11 @@ use std::sync::Arc;
 //
 fn storage_transaction(c: &mut Criterion) {
     ::logger::init_for_test();
+    let path = starcoin_config::temp_path();
     c.bench_function("storage_transaction", |b| {
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(None),
-            DBStorage::new(
-                starcoin_config::temp_path().as_ref(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .unwrap(),
+            DBStorage::new(path.as_ref(), RocksdbConfig::default(), None).unwrap(),
         ))
         .unwrap();
         let bencher = StorageBencher::new(storage);
@@ -70,7 +66,6 @@ criterion_group!(
     name=starcoin_storage_benches;
     config = Criterion::default()
     .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-    targets=accumulator_append
-    // targets=storage_transaction
+    targets=storage_transaction, accumulator_append
 );
 criterion_main!(starcoin_storage_benches);

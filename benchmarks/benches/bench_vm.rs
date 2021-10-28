@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor_benchmark::run_benchmark;
+use pprof::criterion::{Output, PProfProfiler};
 
 pub fn transaction_execution(c: &mut Criterion) {
     ::logger::init();
@@ -15,5 +16,9 @@ pub fn transaction_execution(c: &mut Criterion) {
     }
 }
 
-criterion_group!(starcoin_vm_benches, transaction_execution);
+criterion_group!(
+    name=starcoin_vm_benches;
+     config = Criterion::default()
+    .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    targets=transaction_execution);
 criterion_main!(starcoin_vm_benches);

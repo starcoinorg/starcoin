@@ -5,6 +5,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::HashValueKey;
+use pprof::criterion::{Output, PProfProfiler};
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::RocksdbConfig;
 use starcoin_state_store_api::StateNodeStore;
@@ -98,7 +99,11 @@ fn bench_put_and_commit(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_get_with_proof, bench_put_and_commit);
+criterion_group!(
+    name=benches;
+    config = Criterion::default()
+    .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    targets=bench_get_with_proof, bench_put_and_commit);
 criterion_main!(benches);
 
 fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValueKey, Blob> {
