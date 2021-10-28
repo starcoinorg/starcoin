@@ -4,6 +4,7 @@
 use benchmarks::chain::ChainBencher;
 #[allow(deprecated)]
 use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
+use pprof::criterion::{Output, PProfProfiler};
 
 #[allow(deprecated)]
 fn block_apply(c: &mut Criterion) {
@@ -38,5 +39,9 @@ fn query_block(c: &mut Criterion) {
     }
 }
 
-criterion_group!(starcoin_chain_benches, block_apply, query_block);
+criterion_group!(
+    name=starcoin_chain_benches;
+    config = Criterion::default()
+    .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    targets=block_apply,query_block);
 criterion_main!(starcoin_chain_benches);

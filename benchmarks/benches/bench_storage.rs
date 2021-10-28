@@ -3,6 +3,7 @@
 use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use crypto::HashValue;
+use pprof::criterion::{Output, PProfProfiler};
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
 use starcoin_config::RocksdbConfig;
 use starcoin_storage::cache_storage::CacheStorage;
@@ -16,15 +17,11 @@ use std::sync::Arc;
 //
 fn storage_transaction(c: &mut Criterion) {
     ::logger::init_for_test();
+    let path = starcoin_config::temp_path();
     c.bench_function("storage_transaction", |b| {
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(None),
-            DBStorage::new(
-                starcoin_config::temp_path().as_ref(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .unwrap(),
+            DBStorage::new(path.as_ref(), RocksdbConfig::default(), None).unwrap(),
         ))
         .unwrap();
         let bencher = StorageBencher::new(storage);
@@ -35,16 +32,12 @@ fn storage_transaction(c: &mut Criterion) {
 /// accumulator benchmarks
 fn accumulator_append(c: &mut Criterion) {
     ::logger::init_for_test();
+    let path = starcoin_config::temp_path();
     c.bench_function("accumulator_append", |b| {
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(None),
-                DBStorage::new(
-                    starcoin_config::temp_path().as_ref(),
-                    RocksdbConfig::default(),
-                    None,
-                )
-                .unwrap(),
+                DBStorage::new(path.as_ref(), RocksdbConfig::default(), None).unwrap(),
             ))
             .unwrap(),
         );
@@ -70,8 +63,9 @@ fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
         .collect()
 }
 criterion_group!(
-    starcoin_storage_benches,
-    storage_transaction,
-    accumulator_append
+    name=starcoin_storage_benches;
+    config = Criterion::default()
+    .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+    targets=storage_transaction, accumulator_append
 );
 criterion_main!(starcoin_storage_benches);
