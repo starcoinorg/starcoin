@@ -18,11 +18,3 @@ groups:
         severity: warning
     annotations:
         description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
-
-  - alert: centauriNodeDown
-      expr: up{job=~"centauri_.+"} == 0
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
