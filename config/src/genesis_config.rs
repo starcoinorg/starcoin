@@ -699,6 +699,7 @@ pub static BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_numbe
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static MAX_TRANSACTION_SIZE_IN_BYTES_V2: u64 = 60000;
+pub static MAX_TRANSACTION_SIZE_IN_BYTES_V3: u64 = 1024 * 128;
 
 /// For V1 all accounts will be ~800 bytes
 static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
@@ -735,6 +736,21 @@ pub static DEFAULT_GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
         min_price_per_gas_unit: GasPrice::new(1),
         max_price_per_gas_unit: GasPrice::new(10_000),
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V2, // to pass stdlib_upgrade
+        gas_unit_scaling_factor: 1,
+        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+    }
+});
+pub static GAS_CONSTANTS_V3: Lazy<GasConstants> = Lazy::new(|| {
+    GasConstants {
+        global_memory_per_byte_cost: InternalGasUnits::new(4),
+        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
+        min_transaction_gas_units: InternalGasUnits::new(600),
+        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        intrinsic_gas_per_byte: InternalGasUnits::new(8),
+        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
+        min_price_per_gas_unit: GasPrice::new(1),
+        max_price_per_gas_unit: GasPrice::new(10_000),
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES_V3,
         gas_unit_scaling_factor: 1,
         default_account_size: *DEFAULT_ACCOUNT_SIZE,
     }
@@ -948,7 +964,7 @@ pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(6);
+    let stdlib_version = StdlibVersion::Version(7);
     let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
@@ -964,8 +980,8 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             gas_schedule: CostTable {
                 instruction_table: initial_instruction_table(),
-                native_table: v1_native_table(),
-                gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+                native_table: initial_native_table(),
+                gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
         publishing_option: TransactionPublishOption::open(),
