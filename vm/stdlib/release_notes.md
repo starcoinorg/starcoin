@@ -52,3 +52,7 @@
 - Dao: If the user revokes all vote, should destroy the user's vote resource. Add change_vote script to DaoVoteScripts, and add more scripts to DaoVoteScripts. Support auto change_vote in DaoVoteScripts::cast_vote. (#2925, #2947)
 - NFT: Support update NFTTypeInfo metadata. (#2952, #2887)
 - And all stdlib modules now use v3 bytecode version. (#2956)
+
+## Version 9
+
+- YieldFarmingV2: fix #2989
