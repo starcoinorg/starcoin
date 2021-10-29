@@ -659,7 +659,7 @@ impl GenesisConfig {
         P: AsRef<Path>,
     {
         let mut file = File::create(&path)?;
-        let buf = serde_json::to_vec(self)?;
+        let buf = serde_json::to_vec_pretty(self)?;
         file.write_all(buf.as_slice())?;
         Ok(())
     }
