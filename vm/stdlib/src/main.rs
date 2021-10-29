@@ -20,7 +20,6 @@ use starcoin_vm_types::{
     transaction::{Module, Package},
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use std::process::exit;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
     build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map,
@@ -316,7 +315,7 @@ fn main() {
             .or_else(load_latest_stable_compiled_modules)
         {
             println!(
-                "Check compat with latest stable version: {}",
+                "Check compat with pre stable version: {}",
                 pre_stable_version
             );
             let pre_stable_modules = pre_stable_modules
