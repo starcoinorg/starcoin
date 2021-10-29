@@ -9,6 +9,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::transaction::{
     parse_transaction_argument, ScriptFunction, TransactionArgument,
@@ -22,8 +23,9 @@ use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
     build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map,
-    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    COMPILED_SCRIPTS_ABI_DIR, LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR,
+    load_compiled_modules, load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION,
+    COMPILED_OUTPUT_PATH, COMPILED_SCRIPTS_ABI_DIR, LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
+    STD_LIB_DOC_DIR,
 };
 
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
@@ -113,12 +115,24 @@ fn full_update_with_version(version_number: u64) -> PathBuf {
     let mut stdlib_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     stdlib_src.push(STDLIB_DIR_NAME);
 
+    // into version dir.
     let mut dest = PathBuf::from(COMPILED_OUTPUT_PATH);
     dest.push(format!("{}", version_number));
-    if dest.exists() {
-        std::fs::remove_dir_all(&dest).unwrap();
+
+    // create if not exists.
+    {
+        if !dest.exists() {
+            std::fs::create_dir_all(&dest).unwrap();
+        }
     }
-    std::fs::create_dir_all(&dest).unwrap();
+
+    {
+        dest.push(STDLIB_DIR_NAME);
+        if dest.exists() {
+            std::fs::remove_dir_all(&dest).unwrap();
+        }
+        dest.pop();
+    }
     fs_extra::dir::copy(stdlib_src, &dest, &options).unwrap();
     dest
 }
@@ -172,6 +186,13 @@ fn main() {
                 .help("version number for compiled stdlib, for example 1. don't forget to record the release note"),
         )
         .arg(
+            Arg::with_name("pre-version")
+                .short("p")
+                .long("pre-version")
+                .takes_value(true)
+                .value_name("PRE_VERSION")
+                .help("pre version of stdlib to generate diff and check compatibility with"))
+        .arg(
             Arg::with_name("no-check-compatibility")
                 .short("n")
                 .long("no-check-compatibility")
@@ -218,7 +239,15 @@ fn main() {
     }
 
     let pre_version = if version_number > 0 {
-        Some(version_number - 1)
+        Some(if matches.is_present("pre-version") {
+            matches
+                .value_of("pre-version")
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+        } else {
+            version_number - 1
+        })
     } else {
         None
     };
@@ -280,14 +309,16 @@ fn main() {
     let new_modules = build_stdlib();
 
     if !no_check_compatibility {
-        if let Some((latest_stable_version, latest_stable_modules)) =
-            load_latest_stable_compiled_modules()
+        if let Some((pre_stable_version, pre_stable_modules)) = pre_version
+            .map(StdlibVersion::Version)
+            .map(|v| (v, load_compiled_modules(v)))
+            .or_else(load_latest_stable_compiled_modules)
         {
             println!(
-                "Check compat with latest stable version: {}",
-                latest_stable_version
+                "Check compat with pre stable version: {}",
+                pre_stable_version
             );
-            let latest_stable_modules = latest_stable_modules
+            let pre_stable_modules = pre_stable_modules
                 .into_iter()
                 .map(|module| (module.self_id(), module))
                 .collect::<BTreeMap<_, _>>();
@@ -296,7 +327,7 @@ fn main() {
                 .into_iter()
                 .filter_map(|module| {
                     let module_id = module.self_id();
-                    if let Some(old_module) = latest_stable_modules.get(&module_id) {
+                    if let Some(old_module) = pre_stable_modules.get(&module_id) {
                         let compatibility = check_compiled_module_compat(old_module, module);
                         if !compatibility {
                             Some(module_id)
@@ -316,12 +347,14 @@ fn main() {
                         .into_iter()
                         .map(|module_id| module_id.to_string())
                         .join(","),
-                    latest_stable_version
+                    pre_stable_version
                 );
                 std::process::exit(1);
             }
         }
     }
+
+    replace_stdlib_by_path(&mut module_path, new_modules.clone());
 
     if generate_new_version {
         let dest_dir = full_update_with_version(version_number);
@@ -338,5 +371,4 @@ fn main() {
             );
         }
     }
-    replace_stdlib_by_path(&mut module_path, new_modules);
 }
