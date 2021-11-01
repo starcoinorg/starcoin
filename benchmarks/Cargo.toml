@@ -34,6 +34,7 @@ starcoin-network-api = {path = "../network/api", package="network-api"}
 executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor-benchmark" }
 futures = "0.3.12"
 logger = {path = "../commons/logger",package="starcoin-logger"}
+[target."cfg(target_os=\"linux\")".dependencies]
 pprof = { version = "0.4", features = ["flamegraph", "criterion"] }
 [dev-dependencies]
 
