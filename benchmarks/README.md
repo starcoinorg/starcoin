@@ -12,7 +12,7 @@ cargo bench
 cargo bench --bench bench_state_tree
 ```
 
-3. run a special benchmark with pprof
+3. run a special benchmark with pprof (on linux)
 ```shell
 cargo bench --bench bench_state_tree -- --profile-time=10
 ```

@@ -4,6 +4,7 @@
 use benchmarks::chain::ChainBencher;
 #[allow(deprecated)]
 use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
+#[cfg(target_os = "linux")]
 use pprof::criterion::{Output, PProfProfiler};
 
 #[allow(deprecated)]
@@ -38,10 +39,12 @@ fn query_block(c: &mut Criterion) {
         }
     }
 }
-
+#[cfg(target_os = "linux")]
 criterion_group!(
     name=starcoin_chain_benches;
     config = Criterion::default()
     .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
     targets=block_apply,query_block);
+#[cfg(not(target_os = "linux"))]
+criterion_group!(starcoin_chain_benches, block_apply, query_block);
 criterion_main!(starcoin_chain_benches);
