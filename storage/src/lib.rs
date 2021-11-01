@@ -295,6 +295,7 @@ impl BlockStore for Storage {
         self.block_storage.get_blocks(ids)
     }
 
+    #[allow(deprecated)]
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.block_storage.get_body(block_id)
     }
