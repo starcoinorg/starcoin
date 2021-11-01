@@ -6479,9 +6479,9 @@ dependencies = [
 
 [[package]]
 name = "pprof"
-version = "0.4.4"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c7600124d694d855283caf9f333befe2abce090833bb638009aeddd9e156dee"
+checksum = "35ec6927a8c4b0bb3418964ddae137ed6b2d5aa98f4b2210d61764fb30cec4bd"
 dependencies = [
  "backtrace",
  "criterion",
@@ -6489,7 +6489,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "log 0.4.14",
- "nix 0.20.0",
+ "nix 0.23.0",
  "parking_lot 0.11.2",
  "symbolic-demangle",
  "tempfile",
