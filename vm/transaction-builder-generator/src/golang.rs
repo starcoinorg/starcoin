@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
-use starcoin_vm_types::transaction::{
-    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
-};
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, TypeTag},
@@ -13,6 +10,9 @@ use serde_generate::{
     golang,
     indent::{IndentConfig, IndentedWriter},
     CodeGeneratorConfig,
+};
+use starcoin_vm_types::transaction::{
+    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
 
 use heck::CamelCase;
@@ -54,7 +54,9 @@ pub fn output(
     }
     for abi in abis {
         match abi {
-            ScriptABI::TransactionScript(abi) => emitter.output_script_decoder_function(abi)?,
+            ScriptABI::TransactionScript(abi) => {
+                emitter.output_transaction_script_decoder_function(abi)?
+            }
             ScriptABI::ScriptFunction(abi) => {
                 emitter.output_script_function_decoder_function(abi)?
             }
@@ -67,7 +69,8 @@ pub fn output(
     emitter.output_transaction_script_decoder_map(&common::transaction_script_abis(abis))?;
     emitter.output_script_function_decoder_map(&common::script_function_abis(abis))?;
 
-    emitter.output_decoding_helpers(abis)?;
+    emitter.output_encoding_helpers(abis)?;
+    emitter.output_decoding_helpers(&common::filter_transaction_scripts(abis))?;
 
     Ok(())
 }
@@ -96,6 +99,12 @@ where
             None => "diemtypes".into(),
         };
         let mut external_definitions = crate::common::get_external_definitions(&diem_types_package);
+        // We need BCS for argument encoding and decoding
+        external_definitions.insert(
+            "github.com/novifinancial/serde-reflection/serde-generate/runtime/golang/bcs"
+                .to_string(),
+            Vec::new(),
+        );
         // Add standard imports
         external_definitions.insert("fmt".to_string(), Vec::new());
 
@@ -300,7 +309,7 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
 }}"#,
             abi.name(),
             Self::quote_type_arguments(abi.ty_args()),
-            Self::quote_arguments(abi.args()),
+            Self::quote_arguments_for_script(abi.args()),
         )?;
         self.out.unindent();
         writeln!(self.out, "}}")
@@ -327,7 +336,7 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
                 Module: {},
                 Function: {},
                 TyArgs: []diemtypes.TypeTag{{{}}},
-                Args: []diemtypes.TransactionArgument{{{}}},
+                Args: [][]byte{{{}}},
     }},
 }}"#,
             Self::quote_module_id(abi.module_name()),
@@ -339,7 +348,10 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
         writeln!(self.out, "}}")
     }
 
-    fn output_script_decoder_function(&mut self, abi: &TransactionScriptABI) -> Result<()> {
+    fn output_transaction_script_decoder_function(
+        &mut self,
+        abi: &TransactionScriptABI,
+    ) -> Result<()> {
         writeln!(
             self.out,
             "\nfunc decode_{}_script(script *diemtypes.Script) (ScriptCall, error) {{",
@@ -427,16 +439,30 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
             )?;
         }
         for (index, arg) in abi.args().iter().enumerate() {
+            let decoding = match Self::bcs_primitive_type_name(arg.type_tag()) {
+                None => {
+                    let quoted_type = Self::quote_type(arg.type_tag());
+                    let splits: Vec<_> = quoted_type.rsplitn(2, '.').collect();
+                    format!(
+                        "{}.BcsDeserialize{}(script.Value.Args[{}])",
+                        splits[1], splits[0], index
+                    )
+                }
+                Some(type_name) => format!(
+                    "bcs.NewDeserializer(script.Value.Args[{}]).Deserialize{}()",
+                    index, type_name
+                ),
+            };
             writeln!(
                 self.out,
-                r#"if val, err := decode_{}_argument(script.Value.Args[{}]); err == nil {{
+                r#"
+if val, err := {}; err == nil {{
 	call.{} = val
 }} else {{
 	return nil, err
 }}
 "#,
-                common::mangle_type(arg.type_tag()),
-                index,
+                decoding,
                 arg.name().to_camel_case(),
             )?;
         }
@@ -496,8 +522,51 @@ var script_function_decoder_map = map[string]func(diemtypes.TransactionPayload) 
         writeln!(self.out, "}}")
     }
 
+    fn output_encoding_helpers(&mut self, abis: &[ScriptABI]) -> Result<()> {
+        let required_types = common::get_required_helper_types(abis);
+        for required_type in required_types {
+            self.output_encoding_helper(required_type)?;
+        }
+        Ok(())
+    }
+
+    fn output_encoding_helper(&mut self, type_tag: &TypeTag) -> Result<()> {
+        let encoding = match Self::bcs_primitive_type_name(type_tag) {
+            None => r#"
+    if val, err := arg.BcsSerialize(); err == nil {{
+        return val;
+    }}
+    "#
+            .into(),
+            Some(type_name) => {
+                format!(
+                    r#"
+    s := bcs.NewSerializer();
+    if err := s.Serialize{}(arg); err == nil {{
+        return s.GetBytes();
+    }}
+    "#,
+                    type_name
+                )
+            }
+        };
+        writeln!(
+            self.out,
+            r#"
+func encode_{}_argument(arg {}) []byte {{
+    {}
+    panic("Unable to serialize argument of type {}");
+}}
+"#,
+            common::mangle_type(type_tag),
+            Self::quote_type(type_tag),
+            encoding,
+            common::mangle_type(type_tag)
+        )
+    }
+
     fn output_decoding_helpers(&mut self, abis: &[ScriptABI]) -> Result<()> {
-        let required_types = common::get_required_decoding_helper_types(abis);
+        let required_types = common::get_required_helper_types(abis);
         for required_type in required_types {
             self.output_decoding_helper(required_type)?;
         }
@@ -515,6 +584,9 @@ var script_function_decoder_map = map[string]func(diemtypes.TransactionPayload) 
             Address => ("Address", "value = arg.Value".into()),
             Vector(type_tag) => match type_tag.as_ref() {
                 U8 => ("U8Vector", default_stmt),
+                U128 => ("VecU128", default_stmt),
+                Address => ("VecAccountAddress", "value = arg.Value".into()),
+                Vector(type_tag) if type_tag.as_ref() == &U8 => ("VecBytes", default_stmt),
                 _ => common::type_not_allowed(type_tag),
             },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
@@ -611,6 +683,13 @@ func decode_{0}_argument(arg diemtypes.TransactionArgument) (value {1}, err erro
             .join(", ")
     }
 
+    fn quote_arguments_for_script(args: &[ArgumentABI]) -> String {
+        args.iter()
+            .map(|arg| Self::quote_transaction_argument_for_script(arg.type_tag(), arg.name()))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
     fn quote_type(type_tag: &TypeTag) -> String {
         use TypeTag::*;
         match type_tag {
@@ -621,14 +700,24 @@ func decode_{0}_argument(arg diemtypes.TransactionArgument) (value {1}, err erro
             Address => "diemtypes.AccountAddress".into(),
             Vector(type_tag) => match type_tag.as_ref() {
                 U8 => "[]byte".into(),
+                U128 => "diemtypes.VecU128".into(),
+                Address => "diemtypes.VecAccountAddress".into(),
+                Vector(type_tag) if type_tag.as_ref() == &U8 => "diemtypes.VecBytes".into(),
                 _ => common::type_not_allowed(type_tag),
             },
-
             Struct(_) | Signer => common::type_not_allowed(type_tag),
         }
     }
 
     fn quote_transaction_argument(type_tag: &TypeTag, name: &str) -> String {
+        format!(
+            "encode_{}_argument({})",
+            common::mangle_type(type_tag),
+            name
+        )
+    }
+
+    fn quote_transaction_argument_for_script(type_tag: &TypeTag, name: &str) -> String {
         use TypeTag::*;
         match type_tag {
             Bool => format!("(*diemtypes.TransactionArgument__Bool)(&{})", name),
@@ -638,9 +727,39 @@ func decode_{0}_argument(arg diemtypes.TransactionArgument) (value {1}, err erro
             Address => format!("&diemtypes.TransactionArgument__Address{{{}}}", name),
             Vector(type_tag) => match type_tag.as_ref() {
                 U8 => format!("(*diemtypes.TransactionArgument__U8Vector)(&{})", name),
+                U128 => format!("(*diemtypes.TransactionArgument__VecU128)(&{})", name),
+                Address => format!(
+                    "&diemtypes.TransactionArgument__VecAccountAddress{{{}}}",
+                    name
+                ),
+                Vector(type_tag_inner) => match type_tag_inner.as_ref() {
+                    U8 => format!("(*diemtypes.TransactionArgument__VecBytes)({})", name),
+                    _ => common::type_not_allowed(type_tag_inner),
+                },
                 _ => common::type_not_allowed(type_tag),
             },
+            Struct(_) | Signer => common::type_not_allowed(type_tag),
+        }
+    }
 
+    // - if a `type_tag` is a primitive type in BCS, we can call
+    //   `NewSerializer().Serialize<name>(arg)` and `NewDeserializer().Deserialize<name>(arg)`
+    //   to convert into and from `[]byte`.
+    // - otherwise, we can use `<arg>.BcsSerialize()`, `<arg>.BcsDeserialize()` to do the work.
+    fn bcs_primitive_type_name(type_tag: &TypeTag) -> Option<&'static str> {
+        use TypeTag::*;
+        match type_tag {
+            Bool => Some("Bool"),
+            U8 => Some("U8"),
+            U64 => Some("U64"),
+            U128 => Some("U128"),
+            Address => None,
+            Vector(type_tag) => match type_tag.as_ref() {
+                U8 => Some("Bytes"),
+                U128 | Address => None,
+                Vector(type_tag) if type_tag.as_ref() == &U8 => None,
+                _ => common::type_not_allowed(type_tag),
+            },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
         }
     }

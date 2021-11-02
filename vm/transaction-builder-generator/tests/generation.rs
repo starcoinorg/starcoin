@@ -18,7 +18,7 @@ fn get_starcoin_registry() -> Registry {
 
 fn get_stdlib_script_abis() -> Vec<ScriptABI> {
     let path = Path::new("../stdlib/compiled/latest/transaction_scripts/abi");
-    buildgen::read_abis(path)
+    buildgen::read_abis(&[path])
         .expect("reading ABI files should not fail")
         .into_iter()
         .filter(is_supported_abi)
@@ -286,4 +286,67 @@ fn test_that_java_code_compiles_and_demo_runs() {
         .unwrap();
     assert!(output.status.success());
     assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
+}
+
+#[ignore]
+#[test]
+fn test_that_golang_code_compiles_and_demo_runs() {
+    let registry = get_starcoin_registry();
+    let abis = get_stdlib_script_abis();
+    let dir = tempdir().unwrap();
+
+    let config = serdegen::CodeGeneratorConfig::new("diemtypes".to_string())
+        .with_encodings(vec![serdegen::Encoding::Bcs]);
+    let bcs_installer = serdegen::golang::Installer::new(
+        dir.path().to_path_buf(),
+        /* default Serde module */ None,
+    );
+    bcs_installer.install_module(&config, &registry).unwrap();
+
+    let abi_installer = buildgen::golang::Installer::new(
+        dir.path().to_path_buf(),
+        /* default Serde module */ None,
+        Some("testing".to_string()),
+    );
+    abi_installer
+        .install_transaction_builders("diemstdlib", &abis)
+        .unwrap();
+
+    std::fs::copy(
+        "examples/golang/stdlib_demo.go",
+        dir.path().join("stdlib_demo.go"),
+    )
+    .unwrap();
+
+    let status = Command::new("go")
+        .current_dir(dir.path())
+        .arg("mod")
+        .arg("init")
+        .arg("testing")
+        .status()
+        .unwrap();
+    assert!(status.success());
+
+    let status = Command::new("go")
+        .current_dir(dir.path())
+        .arg("mod")
+        .arg("edit")
+        .arg("-replace")
+        .arg(format!("testing={}", dir.path().to_string_lossy(),))
+        .status()
+        .unwrap();
+    assert!(status.success());
+
+    let output = Command::new("go")
+        .current_dir(dir.path())
+        .arg("run")
+        .arg(dir.path().join("stdlib_demo.go"))
+        .output()
+        .unwrap();
+    eprintln!("{}", std::str::from_utf8(&output.stderr).unwrap());
+    assert_eq!(
+        std::str::from_utf8(&output.stdout).unwrap(),
+        EXPECTED_OUTPUT
+    );
+    assert!(output.status.success());
 }

@@ -691,11 +691,10 @@ dependencies = [
 
 [[package]]
 name = "bincode"
-version = "1.3.1"
+version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f30d3a39baa26f9651f17b375061f3233dde33424a8b72b0dbe93a68a0bc896d"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
 dependencies = [
- "byteorder 1.4.3",
  "serde",
 ]
 
@@ -7693,7 +7692,7 @@ dependencies = [
  "include_dir",
  "maplit",
  "serde",
- "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b)",
+ "serde-reflection 0.3.2",
  "serde_bytes",
  "serde_yaml",
  "structopt 0.3.25",
@@ -7734,8 +7733,7 @@ dependencies = [
 [[package]]
 name = "serde-reflection"
 version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "695ca48311bdeac687d09bbd558de507f0874a401c56cce52ee5665705f817f3"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
 dependencies = [
  "serde",
  "thiserror",
@@ -7743,9 +7741,11 @@ dependencies = [
 
 [[package]]
 name = "serde-reflection"
-version = "0.3.2"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "167450ba550f903a2b35a81ba3ca387585189e2430e3df6b94b95f3bec2f26bd"
 dependencies = [
+ "once_cell",
  "serde",
  "thiserror",
 ]
@@ -8623,7 +8623,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "serde",
- "serde-reflection 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde-reflection 0.3.5",
  "serde_yaml",
  "starcoin-crypto",
  "starcoin-types",
@@ -10938,7 +10938,7 @@ dependencies = [
  "move-core-types",
  "regex",
  "serde-generate",
- "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b)",
+ "serde-reflection 0.3.2",
  "serde_yaml",
  "starcoin-vm-types",
  "structopt 0.3.25",

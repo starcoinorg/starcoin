@@ -32,9 +32,14 @@ fn quote_type_as_format(type_tag: &TypeTag) -> Format {
         Address => Format::TypeName("AccountAddress".into()),
         Vector(type_tag) => match type_tag.as_ref() {
             U8 => Format::Bytes,
+            U128 => Format::TypeName("VecU128".into()),
+            Address => Format::TypeName("VecAccountAddress".into()),
+            Vector(type_tag) => match type_tag.as_ref() {
+                U8 => Format::TypeName("VecBytes".into()),
+                _ => type_not_allowed(type_tag),
+            },
             _ => type_not_allowed(type_tag),
         },
-
         Struct(_) | Signer => type_not_allowed(type_tag),
     }
 }
@@ -79,15 +84,23 @@ pub(crate) fn mangle_type(type_tag: &TypeTag) -> String {
     use TypeTag::*;
     match type_tag {
         Bool => "bool".into(),
-        U8 => "st.uint8".into(),
-        U64 => "st.uint64".into(),
-        U128 => "st.uint128".into(),
-        Address => "starcoin_types.AccountAddress".into(),
+        U8 => "u8".into(),
+        U64 => "u64".into(),
+        U128 => "u128".into(),
+        Address => "address".into(),
         Vector(type_tag) => match type_tag.as_ref() {
-            U8 => "bytes".into(),
+            U8 => "u8vector".into(),
+            Address => "vecaccountaddress".into(),
+            U128 => "vecu128".into(),
+            Vector(type_tag) => {
+                if type_tag.as_ref() == &U8 {
+                    "vecbytes".into()
+                } else {
+                    type_not_allowed(type_tag)
+                }
+            }
             _ => type_not_allowed(type_tag),
         },
-
         Struct(_) | Signer => type_not_allowed(type_tag),
     }
 }
@@ -95,7 +108,15 @@ pub(crate) fn mangle_type(type_tag: &TypeTag) -> String {
 pub(crate) fn get_external_definitions(diem_types: &str) -> serde_generate::ExternalDefinitions {
     let definitions = vec![(
         diem_types,
-        vec!["AccountAddress", "TypeTag", "Script", "TransactionArgument"],
+        vec![
+            "AccountAddress",
+            "TypeTag",
+            "Script",
+            "TransactionArgument",
+            "VecBytes",
+            "VecU128",
+            "VecAccountAddress",
+        ],
     )];
     definitions
         .into_iter()
@@ -108,7 +129,7 @@ pub(crate) fn get_external_definitions(diem_types: &str) -> serde_generate::Exte
         .collect()
 }
 
-pub(crate) fn get_required_decoding_helper_types(abis: &[ScriptABI]) -> BTreeSet<&TypeTag> {
+pub(crate) fn get_required_helper_types(abis: &[ScriptABI]) -> BTreeSet<&TypeTag> {
     let mut required_types = BTreeSet::new();
     for abi in abis {
         for arg in abi.args() {
@@ -117,6 +138,13 @@ pub(crate) fn get_required_decoding_helper_types(abis: &[ScriptABI]) -> BTreeSet
         }
     }
     required_types
+}
+
+pub(crate) fn filter_transaction_scripts(abis: &[ScriptABI]) -> Vec<ScriptABI> {
+    abis.iter()
+        .cloned()
+        .filter(|abi| abi.is_transaction_script_abi())
+        .collect()
 }
 
 pub(crate) fn transaction_script_abis(abis: &[ScriptABI]) -> Vec<TransactionScriptABI> {
