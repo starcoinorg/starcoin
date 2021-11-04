@@ -57,13 +57,10 @@ use futures::{
     prelude::*,
 };
 use libp2p::core::network::ConnectionLimits;
-use libp2p::core::{
-    connection::{ConnectionError, PendingConnectionError},
-    ConnectedPoint,
-};
+use libp2p::core::{connection::ConnectionError, ConnectedPoint};
 use libp2p::swarm::{
-    protocols_handler::NodeHandlerWrapperError, AddressScore, NetworkBehaviour, SwarmBuilder,
-    SwarmEvent,
+    protocols_handler::NodeHandlerWrapperError, AddressScore, DialError, NetworkBehaviour,
+    SwarmBuilder, SwarmEvent,
 };
 use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
@@ -191,7 +188,7 @@ impl NetworkWorker {
         // Private and public keys configuration.
         let local_identity = params.network_config.node_key.clone().into_keypair()?;
         let local_public = local_identity.public();
-        let local_peer_id = local_public.clone().into_peer_id();
+        let local_peer_id = local_public.to_peer_id();
         info!(target: "sub-libp2p", "Local node identity is: {}", local_peer_id.to_base58());
 
         let num_connected = Arc::new(AtomicUsize::new(0));
@@ -1387,44 +1384,42 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::ExpiredListenAddr { address, .. }) => {
                     trace!(target: "sub-libp2p", "Libp2p => ExpiredListenAddr({})", address)
                 }
-                Poll::Ready(SwarmEvent::UnreachableAddr {
-                    peer_id,
-                    address,
-                    error,
-                    ..
-                }) => {
-                    trace!(
-                        target: "sub-libp2p", "Libp2p => Failed to reach {:?} through {:?}: {}",
+                Poll::Ready(SwarmEvent::OutgoingConnectionError { peer_id, error, .. }) => {
+                    if let Some(peer_id) = peer_id {
+                        trace!(
+                        target: "sub-libp2p", "Libp2p => Failed to reach {:?}: {}",
                         peer_id,
-                        address,
-                        error,
-                    );
+                        error);
 
-                    if this.boot_node_ids.contains(&peer_id) {
-                        if let PendingConnectionError::InvalidPeerId = error {
-                            error!(
-                                "💔 The bootnode you want to connect to at `{}` provided a different peer ID than the one you expect: `{}`.",
-                                address,
+                        if this.boot_node_ids.contains(&peer_id) {
+                            if let DialError::InvalidPeerId = error {
+                                error!(
+                                "💔 The bootnode you want to connect to provided a different peer ID than the one you expect: `{}`.",
                                 peer_id,
                             );
+                            }
                         }
                     }
 
                     if let Some(metrics) = this.metrics.as_ref() {
                         match error {
-                            PendingConnectionError::ConnectionLimit(_) => metrics
+                            DialError::ConnectionLimit(_) => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["limit-reached"])
                                 .inc(),
-                            PendingConnectionError::InvalidPeerId => metrics
+                            DialError::InvalidPeerId => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["invalid-peer-id"])
                                 .inc(),
-                            PendingConnectionError::Transport(_)
-                            | PendingConnectionError::IO(_) => metrics
+                            DialError::Transport(_) | DialError::ConnectionIo(_) => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["transport-error"])
                                 .inc(),
+                            DialError::Banned => {}
+                            DialError::LocalPeerId => {}
+                            DialError::NoAddresses => {}
+                            DialError::DialPeerConditionFalse(_) => {}
+                            DialError::Aborted => {}
                         }
                     }
                 }
@@ -1449,10 +1444,6 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::BannedPeer { peer_id, endpoint }) => {
                     trace!(target: "sub-libp2p", "Libp2p => BannedPeer({}). Connected via {:?}.",
                            peer_id, endpoint);
-                }
-                Poll::Ready(SwarmEvent::UnknownPeerUnreachableAddr { address, error }) => {
-                    trace!(target: "sub-libp2p", "Libp2p => UnknownPeerUnreachableAddr({}): {}",
-                           address, error)
                 }
                 Poll::Ready(SwarmEvent::ListenerClosed { reason, .. }) => {
                     warn!(target: "sub-libp2p", "Libp2p => ListenerClosed: {:?}", reason);

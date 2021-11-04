@@ -26,10 +26,7 @@ use libp2p::core::{
     transport::MemoryTransport,
     upgrade, ConnectedPoint,
 };
-use libp2p::swarm::{
-    IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
-    ProtocolsHandler, Swarm, SwarmEvent,
-};
+use libp2p::swarm::{DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters, ProtocolsHandler, Swarm, SwarmEvent};
 use libp2p::{identity, noise, yamux};
 use libp2p::{Multiaddr, PeerId, Transport};
 use std::{
@@ -76,7 +73,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
                     keypairs
                         .iter()
                         .skip(1)
-                        .map(|keypair| keypair.public().into_peer_id())
+                        .map(|keypair| keypair.public().to_peer_id())
                         .collect()
                 } else {
                     vec![]
@@ -96,7 +93,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
                 .enumerate()
                 .filter_map(|(n, a)| {
                     if n != index {
-                        Some((keypairs[n].public().into_peer_id(), a.clone()))
+                        Some((keypairs[n].public().to_peer_id(), a.clone()))
                     } else {
                         None
                     }
@@ -107,7 +104,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
         let mut swarm = Swarm::new(
             transport,
             behaviour,
-            keypairs[index].public().into_peer_id(),
+            keypairs[index].public().to_peer_id(),
         );
         Swarm::listen_on(&mut swarm, addrs[index].clone()).unwrap();
         out.push(swarm);
@@ -171,9 +168,10 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        failed_addresses: Option<&Vec<Multiaddr>>,
     ) {
         self.inner
-            .inject_connection_established(peer_id, conn, endpoint)
+            .inject_connection_established(peer_id, conn, endpoint, failed_addresses)
     }
 
     fn inject_connection_closed(
@@ -181,8 +179,9 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
-        self.inner.inject_connection_closed(peer_id, conn, endpoint)
+        self.inner.inject_connection_closed(peer_id, conn, endpoint, handler)
     }
 
     fn inject_event(
@@ -198,26 +197,12 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         &mut self,
         cx: &mut Context,
         params: &mut impl PollParameters,
-    ) -> Poll<
-        NetworkBehaviourAction<
-            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
-            Self::OutEvent
-        >
-    >{
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         self.inner.poll(cx, params)
     }
 
-    fn inject_addr_reach_failure(
-        &mut self,
-        peer_id: Option<&PeerId>,
-        addr: &Multiaddr,
-        error: &dyn std::error::Error,
-    ) {
-        self.inner.inject_addr_reach_failure(peer_id, addr, error)
-    }
-
-    fn inject_dial_failure(&mut self, peer_id: &PeerId) {
-        self.inner.inject_dial_failure(peer_id)
+    fn inject_dial_failure(&mut self, peer_id: Option<PeerId>, handler: Self::ProtocolsHandler, error: &DialError) {
+        self.inner.inject_dial_failure(peer_id, handler, error)
     }
 
     fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
@@ -274,8 +259,8 @@ fn reconnect_after_disconnect() {
 
             match event {
                 future::Either::Left(SwarmEvent::Behaviour(
-                    GenericProtoOut::CustomProtocolOpen { .. },
-                )) => match service1_state {
+                                         GenericProtoOut::CustomProtocolOpen { .. },
+                                     )) => match service1_state {
                     ServiceState::NotConnected => {
                         service1_state = ServiceState::FirstConnec;
                         if service2_state == ServiceState::FirstConnec {
@@ -289,16 +274,16 @@ fn reconnect_after_disconnect() {
                     ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
                 },
                 future::Either::Left(SwarmEvent::Behaviour(
-                    GenericProtoOut::CustomProtocolClosed { .. },
-                )) => match service1_state {
+                                         GenericProtoOut::CustomProtocolClosed { .. },
+                                     )) => match service1_state {
                     ServiceState::FirstConnec => service1_state = ServiceState::Disconnected,
                     ServiceState::ConnectedAgain
                     | ServiceState::NotConnected
                     | ServiceState::Disconnected => panic!(),
                 },
                 future::Either::Right(SwarmEvent::Behaviour(
-                    GenericProtoOut::CustomProtocolOpen { .. },
-                )) => match service2_state {
+                                          GenericProtoOut::CustomProtocolOpen { .. },
+                                      )) => match service2_state {
                     ServiceState::NotConnected => {
                         service2_state = ServiceState::FirstConnec;
                         if service1_state == ServiceState::FirstConnec {
@@ -312,8 +297,8 @@ fn reconnect_after_disconnect() {
                     ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
                 },
                 future::Either::Right(SwarmEvent::Behaviour(
-                    GenericProtoOut::CustomProtocolClosed { .. },
-                )) => match service2_state {
+                                          GenericProtoOut::CustomProtocolClosed { .. },
+                                      )) => match service2_state {
                     ServiceState::FirstConnec => service2_state = ServiceState::Disconnected,
                     ServiceState::ConnectedAgain
                     | ServiceState::NotConnected
