@@ -479,6 +479,51 @@ fn test_non_existence() {
 }
 
 #[test]
+fn test_non_existence_and_build_new_root_with_proof() {
+    let db = MockTreeStore::default();
+    let tree = JellyfishMerkleTree::new(&db);
+
+    let key1 = HashValue::new([0x00u8; HashValue::LENGTH]);
+    let value1 = Blob::from(vec![1u8]);
+
+    let key2 = update_nibble(&key1, 0, 15);
+    let value2 = Blob::from(vec![2u8]);
+
+    let key3 = update_nibble(&key1, 2, 3);
+    let value3 = Blob::from(vec![3u8]);
+
+    let (root, batch) = tree
+        .put_blob_set(
+            None,
+            vec![
+                (key1.into(), value1),
+                (key2.into(), value2),
+                (key3.into(), value3.clone()),
+            ],
+        )
+        .unwrap();
+    db.write_tree_update_batch(batch).unwrap();
+
+    let non_existing_key = update_nibble(&key1, 0, 1);
+    let non_existing_value = Blob::from(vec![4u8]);
+    let (value, mut proof) = tree.get_with_proof(root, non_existing_key).unwrap();
+    assert_eq!(value, None);
+
+    let new_root_by_proof = proof
+        .update_leaf(non_existing_key, &non_existing_value)
+        .unwrap();
+
+    let (new_root, batch) = tree
+        .put_blob_set(
+            Some(root),
+            vec![(non_existing_key.into(), non_existing_value.clone())],
+        )
+        .unwrap();
+    db.write_tree_update_batch(batch).unwrap();
+    assert_eq!(new_root_by_proof, new_root);
+}
+
+#[test]
 fn test_put_blob_sets() {
     let mut keys = vec![];
     let mut values = vec![];

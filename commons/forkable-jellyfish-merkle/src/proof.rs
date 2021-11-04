@@ -17,7 +17,7 @@ pub struct SparseMerkleProof {
     ///           second `HashValue` equals the hash of the corresponding account blob.
     ///         - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key
     ///           that exists in the subtree and the second `HashValue` equals the hash of the
-    ///           corresponding account blob.
+    ///           corresponding blob.
     ///     - If this is `None`, this is also a non-inclusion proof which indicates the subtree is
     ///       empty.
     leaf: Option<(HashValue, HashValue)>,
@@ -133,6 +133,41 @@ impl SparseMerkleProof {
         );
 
         Ok(())
+    }
+
+    /// Update the leaf, and compute new root.
+    /// Only available for non existence proof
+    pub fn update_leaf(
+        &mut self,
+        element_key: HashValue,
+        element_blob: &Blob,
+    ) -> Result<HashValue> {
+        ensure!(
+            self.leaf.is_none(),
+            "Only non existence proof support update leaf, expect None got leaf: {:?}",
+            self.leaf,
+        );
+        let element_hash = element_blob.crypto_hash();
+        let leaf_node = SparseMerkleLeafNode::new(element_key, element_hash);
+        let current_hash = leaf_node.crypto_hash();
+        let new_root_hash = self
+            .siblings
+            .iter()
+            .zip(
+                element_key
+                    .iter_bits()
+                    .rev()
+                    .skip(HashValue::LENGTH_IN_BITS - self.siblings.len()),
+            )
+            .fold(current_hash, |hash, (sibling_hash, bit)| {
+                if bit {
+                    SparseMerkleInternalNode::new(*sibling_hash, hash).crypto_hash()
+                } else {
+                    SparseMerkleInternalNode::new(hash, *sibling_hash).crypto_hash()
+                }
+            });
+        self.leaf = Some((element_key, element_hash));
+        Ok(new_root_hash)
     }
 }
 
