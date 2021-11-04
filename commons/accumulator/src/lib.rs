@@ -120,7 +120,11 @@ impl Accumulator for MerkleAccumulator {
             self.tree.lock().num_leaves - 1
         };
         if leaf_index > num_leaves {
-            return Err(format_err!("leaf_index {} out of num_leaves{}", leaf_index, num_leaves));
+            return Err(format_err!(
+                "leaf_index {} out of num_leaves{}",
+                leaf_index,
+                num_leaves
+            ));
         }
         self.tree
             .lock()

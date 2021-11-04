@@ -1,15 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use starcoin_crypto::HashValue;
 use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::{VEC_PREFIX_NAME};
-
-
+use starcoin_storage::storage::InnerStore;
+use starcoin_storage::VEC_PREFIX_NAME;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use starcoin_storage::storage::InnerStore;
-use starcoin_crypto::HashValue;
-
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(name = "db-scan", about = "starcoin db scan")]
@@ -35,10 +32,13 @@ fn main() -> anyhow::Result<()> {
     )?;
 
     let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
-    if result.is_some()  {
+    if result.is_some() {
         println!("{} block_hash {} exist", option.cf_name, option.block_hash);
     } else {
-        println!("{} block_hash {} not exist", option.cf_name, option.block_hash);
+        println!(
+            "{} block_hash {} not exist",
+            option.cf_name, option.block_hash
+        );
     }
     Ok(())
 }
