@@ -114,6 +114,14 @@ impl Accumulator for MerkleAccumulator {
     }
 
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>> {
+        let num_leaves = if self.tree.lock().num_leaves == 0 {
+            0
+        } else {
+            self.tree.lock().num_leaves - 1
+        };
+        if leaf_index > num_leaves {
+            return Err(format_err!("leaf_index {} out of num_leaves{}", leaf_index, num_leaves));
+        }
         self.tree
             .lock()
             .get_node_hash(NodeIndex::from_leaf_index(leaf_index))

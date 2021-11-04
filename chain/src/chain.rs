@@ -188,20 +188,11 @@ impl BlockChain {
             let block_uncles = if block_number == head_number {
                 head_block.uncle_ids()
             } else {
-                // this not use get_block_by_number for report error
-                let block_hash = self.get_hash_by_number(block_number)?.ok_or_else(|| {
-                    format_err!(
-                        "Can not find block hash by number {}, head block number: {}",
-                        block_number,
-                        head_number
-                    )
-                })?;
-                self.storage
-                    .get_block_by_hash(block_hash)?
+                self.get_block_by_number(block_number)?
                     .ok_or_else(|| {
                         format_err!(
-                            "Can not find block by block hash {}, head block number: {}",
-                            block_hash,
+                            "Can not find block by number {}, head block number: {}",
+                            block_number,
                             head_number
                         )
                     })?
