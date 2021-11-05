@@ -7,6 +7,7 @@ use anyhow::{bail, ensure, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
+
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -142,14 +143,34 @@ impl SparseMerkleProof {
         element_key: HashValue,
         element_blob: &Blob,
     ) -> Result<HashValue> {
+        let element_hash = element_blob.crypto_hash();
+
+        let is_non_exists_proof = match self.leaf.as_ref() {
+            None => true,
+            Some((leaf_key, _leaf_value)) => &element_key != leaf_key,
+        };
         ensure!(
-            self.leaf.is_none(),
-            "Only non existence proof support update leaf, expect None got leaf: {:?}",
+            is_non_exists_proof,
+            "Only non existence proof support update leaf, got element_key: {:?} leaf: {:?}",
+            element_key,
             self.leaf,
         );
-        let element_hash = element_blob.crypto_hash();
-        let leaf_node = SparseMerkleLeafNode::new(element_key, element_hash);
-        let current_hash = leaf_node.crypto_hash();
+
+        let new_leaf_node = SparseMerkleLeafNode::new(element_key, element_hash);
+        let current_hash = new_leaf_node.crypto_hash();
+        if let Some(leaf_node) = self
+            .leaf
+            .as_ref()
+            .map(|(leaf_key, leaf_value)| SparseMerkleLeafNode::new(*leaf_key, *leaf_value))
+        {
+            let mut new_siblings = vec![leaf_node.crypto_hash()];
+            let prefix_len = leaf_node.key.common_prefix_bits_len(element_key);
+            if prefix_len > 0 {
+                new_siblings.resize(prefix_len, *SPARSE_MERKLE_PLACEHOLDER_HASH);
+            }
+            new_siblings.extend(self.siblings.iter());
+            self.siblings = new_siblings;
+        }
         let new_root_hash = self
             .siblings
             .iter()

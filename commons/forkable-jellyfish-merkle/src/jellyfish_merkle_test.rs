@@ -482,45 +482,94 @@ fn test_non_existence() {
 fn test_non_existence_and_build_new_root_with_proof() {
     let db = MockTreeStore::default();
     let tree = JellyfishMerkleTree::new(&db);
+    // ```text
+    //                     internal(root)
+    //                    /        \
+    //                internal      2
+    //                   |
+    //                internal
+    //                /      \
+    //               1        3
+    // Total: 7 nodes
+    // ```
+
+    //test one key in the tree
 
     let key1 = HashValue::new([0x00u8; HashValue::LENGTH]);
     let value1 = Blob::from(vec![1u8]);
 
+    let (root, batch) = tree
+        .put_blob_set(None, vec![(key1.into(), value1.clone())])
+        .unwrap();
+    db.write_tree_update_batch(batch).unwrap();
+    assert_eq!(tree.get(root, key1).unwrap().unwrap(), value1);
+
     let key2 = update_nibble(&key1, 0, 15);
     let value2 = Blob::from(vec![2u8]);
+
+    let (value, mut proof) = tree.get_with_proof(root, key2).unwrap();
+    assert_eq!(value, None);
+    assert!(proof.verify(root, key2, None).is_ok());
+
+    let new_root_by_proof = proof.update_leaf(key2, &value2).unwrap();
+
+    //test two key in the tree
+
+    let (root, batch) = tree
+        .put_blob_set(Some(root), vec![(key2.into(), value2.clone())])
+        .unwrap();
+    db.write_tree_update_batch(batch).unwrap();
+    assert_eq!(tree.get(root, key2).unwrap().unwrap(), value2);
+
+    let (value, new_proof) = tree.get_with_proof(root, key2).unwrap();
+    assert!(value.is_some());
+    assert_eq!(proof, new_proof);
+
+    assert_eq!(new_root_by_proof, root);
 
     let key3 = update_nibble(&key1, 2, 3);
     let value3 = Blob::from(vec![3u8]);
 
-    let (root, batch) = tree
-        .put_blob_set(
-            None,
-            vec![
-                (key1.into(), value1),
-                (key2.into(), value2),
-                (key3.into(), value3),
-            ],
-        )
-        .unwrap();
-    db.write_tree_update_batch(batch).unwrap();
-
-    let non_existing_key = update_nibble(&key1, 0, 1);
-    let non_existing_value = Blob::from(vec![4u8]);
-    let (value, mut proof) = tree.get_with_proof(root, non_existing_key).unwrap();
+    let (value, mut proof) = tree.get_with_proof(root, key3).unwrap();
     assert_eq!(value, None);
+    assert!(proof.verify(root, key3, None).is_ok());
 
-    let new_root_by_proof = proof
-        .update_leaf(non_existing_key, &non_existing_value)
-        .unwrap();
+    let new_root_by_proof = proof.update_leaf(key3, &value3).unwrap();
 
-    let (new_root, batch) = tree
-        .put_blob_set(
-            Some(root),
-            vec![(non_existing_key.into(), non_existing_value.clone())],
-        )
+    // test three key in the tree
+
+    let (root, batch) = tree
+        .put_blob_set(Some(root), vec![(key3.into(), value3.clone())])
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
-    assert_eq!(new_root_by_proof, new_root);
+    assert_eq!(tree.get(root, key3,).unwrap().unwrap(), value3);
+
+    let (value, new_proof) = tree.get_with_proof(root, key3).unwrap();
+    assert!(value.is_some());
+    assert_eq!(proof, new_proof);
+
+    assert_eq!(new_root_by_proof, root);
+
+    // test random key
+    let key4 = HashValue::random();
+    let value4 = Blob::from(vec![4u8]);
+    let (value, mut proof) = tree.get_with_proof(root, key4).unwrap();
+    assert_eq!(value, None);
+    assert!(proof.verify(root, key4, None).is_ok());
+
+    let new_root_by_proof = proof.update_leaf(key4, &value4).unwrap();
+
+    let (root, batch) = tree
+        .put_blob_set(Some(root), vec![(key4.into(), value4.clone())])
+        .unwrap();
+    db.write_tree_update_batch(batch).unwrap();
+    assert_eq!(tree.get(root, key4).unwrap().unwrap(), value4);
+
+    let (value, new_proof) = tree.get_with_proof(root, key4).unwrap();
+    assert!(value.is_some());
+    assert_eq!(proof, new_proof);
+
+    assert_eq!(new_root_by_proof, root);
 }
 
 #[test]

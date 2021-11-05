@@ -633,8 +633,8 @@ impl SparseMerkleInternalNode {
 
 #[derive(CryptoHasher, Deserialize, Serialize, CryptoHash)]
 pub struct SparseMerkleLeafNode {
-    key: HashValue,
-    value_hash: HashValue,
+    pub key: HashValue,
+    pub value_hash: HashValue,
 }
 
 impl SparseMerkleLeafNode {
