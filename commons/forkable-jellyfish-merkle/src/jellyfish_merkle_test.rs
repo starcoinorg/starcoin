@@ -498,7 +498,7 @@ fn test_non_existence_and_build_new_root_with_proof() {
             vec![
                 (key1.into(), value1),
                 (key2.into(), value2),
-                (key3.into(), value3.clone()),
+                (key3.into(), value3),
             ],
         )
         .unwrap();
