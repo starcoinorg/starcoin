@@ -2015,16 +2015,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "db-checkkey"
-version = "1.8.0-alpha"
-dependencies = [
- "anyhow",
- "starcoin-crypto",
- "starcoin-storage",
- "structopt 0.3.25",
-]
-
-[[package]]
 name = "db-exporter"
 version = "1.8.0-rc.1"
 dependencies = [
