@@ -125,7 +125,7 @@ impl InnerStore for StorageInstance {
                         CacheObject::None => Ok(None),
                     }
                 } else {
-                    match db.get(prefix_name, key.clone())? {
+                    match db.get(prefix_name, key)? {
                         Some(value) => {
                             // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
                             Ok(Some(value))
