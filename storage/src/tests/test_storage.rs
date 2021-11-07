@@ -207,7 +207,7 @@ fn test_missing_key_handle() -> Result<()> {
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
     let value2 = cache_storage.get_obj(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
-    assert_eq!(value2.unwrap(), CACHE_NONE_OBJECT.clone());
+    assert!(value2.is_none());
     let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
     // test remove
