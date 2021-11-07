@@ -17,7 +17,7 @@ hex = { version = "0.4.3", default-features = false }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 actix = "0.10.0"
-actix-rt = "1.1"
+actix-rt = "2.4"
 jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "17.0.0"
 jsonrpc-http-server = "17.1.0"
