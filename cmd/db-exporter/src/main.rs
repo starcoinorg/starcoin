@@ -4,8 +4,10 @@
 use anyhow::{bail, Result};
 use bcs_ext::Sample;
 use csv::Writer;
+use starcoin_crypto::HashValue;
 use starcoin_storage::block::FailedBlock;
 use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::InnerStore;
 use starcoin_storage::storage::ValueCodec;
 use starcoin_storage::{
     BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, VEC_PREFIX_NAME,
@@ -149,6 +151,19 @@ impl FromStr for DbSchema {
     }
 }
 
+#[derive(StructOpt)]
+#[structopt(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
+struct Opt {
+    #[structopt(subcommand)]
+    cmd: Option<Cmd>,
+}
+
+#[derive(StructOpt)]
+enum Cmd {
+    Exporter(ExporterOptions),
+    Checkkey(CheckKeyOptions),
+}
+
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(name = "db-exporter", about = "starcoin db exporter")]
 pub struct ExporterOptions {
@@ -164,47 +179,92 @@ pub struct ExporterOptions {
     pub schema: DbSchema,
 }
 
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(name = "checkkey", about = "starcoin db check key")]
+pub struct CheckKeyOptions {
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
+    pub db_path: PathBuf,
+    #[structopt(long, short = "n",
+    possible_values=&["block", "block_header"],)]
+    pub cf_name: String,
+    #[structopt(long, short = "b")]
+    pub block_hash: HashValue,
+}
+
 fn main() -> anyhow::Result<()> {
-    let option: ExporterOptions = ExporterOptions::from_args();
-    let output = option.output.as_deref();
-    let mut writer_builder = csv::WriterBuilder::new();
-    let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
-    let result = match output {
-        Some(output) => {
-            let writer = writer_builder.from_path(output)?;
-            export(
-                option.db_path.display().to_string().as_str(),
-                writer,
-                option.schema,
-            )
-        }
+    let opt = Opt::from_args();
+    let cmd = match opt.cmd {
+        Some(cmd) => cmd,
         None => {
-            let writer = writer_builder.from_writer(std::io::stdout());
-            export(
-                option.db_path.display().to_string().as_str(),
-                writer,
-                option.schema,
-            )
+            Opt::clap().print_help().ok();
+            return Ok(());
         }
     };
-    if let Err(err) = result {
-        let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
-            if let csv::ErrorKind::Io(io_err) = err.kind() {
-                if io_err.kind() == std::io::ErrorKind::BrokenPipe {
-                    Some(io_err)
+
+    if let Cmd::Exporter(option) = cmd {
+        let output = option.output.as_deref();
+        let mut writer_builder = csv::WriterBuilder::new();
+        let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
+        let result = match output {
+            Some(output) => {
+                let writer = writer_builder.from_path(output)?;
+                export(
+                    option.db_path.display().to_string().as_str(),
+                    writer,
+                    option.schema,
+                )
+            }
+            None => {
+                let writer = writer_builder.from_writer(std::io::stdout());
+                export(
+                    option.db_path.display().to_string().as_str(),
+                    writer,
+                    option.schema,
+                )
+            }
+        };
+        if let Err(err) = result {
+            let broken_pipe_err = err.downcast_ref::<csv::Error>().and_then(|err| {
+                if let csv::ErrorKind::Io(io_err) = err.kind() {
+                    if io_err.kind() == std::io::ErrorKind::BrokenPipe {
+                        Some(io_err)
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
+            });
+            //ignore BrokenPipe
+            return if let Some(_broken_pipe_err) = broken_pipe_err {
+                Ok(())
             } else {
-                None
-            }
-        });
-        //ignore BrokenPipe
-        return if let Some(_broken_pipe_err) = broken_pipe_err {
-            Ok(())
-        } else {
-            Err(err)
-        };
+                Err(err)
+            };
+        }
+        return result;
     }
-    result
+
+    if let Cmd::Checkkey(option) = cmd {
+        let db = DBStorage::open_with_cfs(
+            option.db_path.display().to_string().as_str(),
+            VEC_PREFIX_NAME.to_vec(),
+            true,
+            Default::default(),
+            None,
+        )?;
+
+        let result = db.get(option.cf_name.as_str(), option.block_hash.to_vec())?;
+        if result.is_some() {
+            println!("{} block_hash {} exist", option.cf_name, option.block_hash);
+        } else {
+            println!(
+                "{} block_hash {} not exist",
+                option.cf_name, option.block_hash
+            );
+        }
+        return Ok(());
+    }
+    Ok(())
 }

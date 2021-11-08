@@ -204,6 +204,7 @@ default-members = [
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
+    "cmd/db-exporter"
 ]
 
 [profile.dev]

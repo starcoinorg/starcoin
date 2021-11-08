@@ -177,12 +177,13 @@ impl BlockChain {
         let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
         let head_block = self.head_block().block;
         let head_number = head_block.header().number();
-        debug_assert!(
-            head_number >= epoch.start_block_number() && head_number < epoch.end_block_number(),
-            "head block {} should in current epoch: {:?}.",
-            head_number,
-            epoch
-        );
+        if head_number < epoch.start_block_number() || head_number >= epoch.end_block_number() {
+            return Err(format_err!(
+                "head block {} not in current epoch: {:?}.",
+                head_number,
+                epoch
+            ));
+        }
         for block_number in epoch.start_block_number()..epoch.end_block_number() {
             let block_uncles = if block_number == head_number {
                 head_block.uncle_ids()

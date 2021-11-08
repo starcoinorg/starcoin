@@ -5,7 +5,7 @@ extern crate chrono;
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
+use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::{
     BlockTransactionInfoStore, Storage, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     VEC_PREFIX_NAME,
@@ -140,7 +140,7 @@ fn test_two_level_storage() {
     let value6 = cache_storage
         .get_obj(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
-    assert_eq!(value6.unwrap(), CACHE_NONE_OBJECT.clone());
+    assert!(value6.is_none());
     let value7 = db_storage
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())
         .unwrap();
@@ -182,14 +182,16 @@ fn test_two_level_storage_read_through() -> Result<()> {
     let transaction_info2 = storage2.transaction_info_storage.get(id).unwrap();
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 
-    //verfiy cache storage
+    //verfiy cache storage get null
     let transaction_info_data = storage_instance
         .cache()
         .unwrap()
         .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
-    let transaction_info3 =
-        BlockTransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
-    assert_eq!(transaction_info3, transaction_info1);
+    assert!(transaction_info_data.is_none());
+
+    //let transaction_info3 =
+    //BlockTransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
+    //assert_eq!(transaction_info3, transaction_info1);
     Ok(())
 }
 
@@ -207,7 +209,7 @@ fn test_missing_key_handle() -> Result<()> {
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
     let value2 = cache_storage.get_obj(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
-    assert_eq!(value2.unwrap(), CACHE_NONE_OBJECT.clone());
+    assert!(value2.is_none());
     let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
     // test remove
