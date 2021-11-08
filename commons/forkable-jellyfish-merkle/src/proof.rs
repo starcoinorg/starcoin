@@ -165,8 +165,10 @@ impl SparseMerkleProof {
         {
             let mut new_siblings = vec![leaf_node.crypto_hash()];
             let prefix_len = leaf_node.key.common_prefix_bits_len(element_key);
-            if prefix_len > 0 {
-                new_siblings.resize(prefix_len, *SPARSE_MERKLE_PLACEHOLDER_HASH);
+
+            let place_holder_len = (prefix_len - self.siblings.len()) + 1;
+            if place_holder_len > 0 {
+                new_siblings.resize(place_holder_len, *SPARSE_MERKLE_PLACEHOLDER_HASH);
             }
             new_siblings.extend(self.siblings.iter());
             self.siblings = new_siblings;
