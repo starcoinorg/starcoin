@@ -182,7 +182,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
     let transaction_info2 = storage2.transaction_info_storage.get(id).unwrap();
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 
-    //verfiy cache storage
+    //verfiy cache storage get null
     let transaction_info_data = storage_instance
         .cache()
         .unwrap()
@@ -190,8 +190,8 @@ fn test_two_level_storage_read_through() -> Result<()> {
     assert!(transaction_info_data.is_none());
 
     //let transaction_info3 =
-      //  BlockTransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
-    // assert_eq!(transaction_info3, transaction_info1);
+    //BlockTransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
+    //assert_eq!(transaction_info3, transaction_info1);
     Ok(())
 }
 
