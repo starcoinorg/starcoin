@@ -20,3 +20,7 @@ serde = "~1"
 serde_json = {version="~1", features=["arbitrary_precision"]}
 anyhow="~1"
 hex="~0.4"
+
+[[bin]]
+name = "starcoin_db_exporter"
+path = "src/main.rs"

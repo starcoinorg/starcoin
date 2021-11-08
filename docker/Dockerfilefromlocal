@@ -13,7 +13,7 @@ COPY $RELEASE_PATH/starcoin \
      $RELEASE_PATH/starcoin_faucet \
      $RELEASE_PATH/starcoin_generator \
      $RELEASE_PATH/starcoin_indexer \
-     $RELEASE_PATH/db_exporter \
+     $RELEASE_PATH/startcoin_db_exporter \
      /starcoin/
      
 CMD ["/starcoin/starcoin"]
