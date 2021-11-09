@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use move_stdlib::natives::{bcs, event, hash, signer, vector};
 use move_vm_runtime::native_functions::{NativeFunction, NativeFunctionTable};
 use starcoin_natives::{account, debug, signature};

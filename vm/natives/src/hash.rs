@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
@@ -9,7 +12,6 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use tiny_keccak::Hasher;
 
 pub fn native_keccak_256(
     context: &mut NativeContext,
@@ -26,13 +28,7 @@ pub fn native_keccak_256(
         NativeCostIndex::KECCAK_256,
         hash_arg.len(),
     );
-    let output = {
-        let mut output = [0u8; 32];
-        let mut keccak = tiny_keccak::Keccak::v256();
-        keccak.update(hash_arg.as_slice());
-        keccak.finalize(&mut output);
-        output.to_vec()
-    };
+    let output = crate::ecrecover::keccak(hash_arg.as_slice());
 
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(output)]))
 }
