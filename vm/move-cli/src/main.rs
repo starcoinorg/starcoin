@@ -44,13 +44,10 @@ use std::{
 };
 use structopt::StructOpt;
 use vm::errors::Location;
-use vm::normalized::Module;
 use vm::{
     access::ModuleAccess,
-    compatibility::Compatibility,
     errors::{PartialVMError, VMError},
     file_format::{AbilitySet, CompiledModule, CompiledScript, SignatureToken},
-    normalized,
 };
 
 #[derive(StructOpt)]
@@ -367,25 +364,33 @@ fn publish(
         .iter()
         .filter(|u| matches!(u, CompiledUnit::Module { .. }))
         .count();
+    if num_modules == 0 {
+        println!("Warning: No modules found");
+        return Ok(());
+    }
+
     if verbose {
         println!("Found and compiled {} modules", num_modules)
     }
 
-    let mut modules = vec![];
-    for c in compiled_units {
-        match c {
-            CompiledUnit::Script { loc, .. } => {
-                if verbose {
-                    println!(
-                        "Warning: Found script in specified files for publishing. But scripts \
+    let modules = {
+        let mut modules = vec![];
+        for c in compiled_units {
+            match c {
+                CompiledUnit::Script { loc, .. } => {
+                    if verbose {
+                        println!(
+                            "Warning: Found script in specified files for publishing. But scripts \
                          cannot be published. Script found in: {}",
-                        loc.file()
-                    )
+                            loc.file()
+                        )
+                    }
                 }
+                CompiledUnit::Module { module, .. } => modules.push(module),
             }
-            CompiledUnit::Module { module, .. } => modules.push(module),
         }
-    }
+        starcoin_move_compiler::dependency_order::sort_by_dependency_order(modules.iter())?
+    };
 
     // use the the publish_module API frm the VM if we do not allow breaking changes
     if !ignore_breaking_changes {
@@ -394,37 +399,24 @@ fn publish(
         let mut session: SessionAdapter<_> = vm.new_session(&state).into();
 
         let mut has_error = false;
-        for module in &modules {
-            let mut module_bytes = vec![];
-            module.serialize(&mut module_bytes)?;
-
-            let id = module.self_id();
-            let sender = *id.address();
-
-            // check compatibility.
-            if state.has_module(&id) {
-                let old_module = state.get_compiled_module(&id)?;
-                if !Compatibility::check(&Module::new(&old_module), &Module::new(module))
-                    .is_fully_compatible()
-                {
-                    let err = PartialVMError::new(StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE)
-                        .finish(Location::Module(id));
-                    explain_publish_error(err, &state, module)?;
-                    has_error = true;
-                    break;
-                }
-            }
-
-            let res = session
-                .as_mut()
-                .publish_module(module_bytes, sender, &mut cost_strategy);
-            if let Err(err) = res {
-                explain_publish_error(err, &state, module)?;
-                has_error = true;
-                break;
-            }
+        let sender = modules.first().map(|m| *m.self_id().address()).unwrap();
+        let res = session.as_mut().publish_module_bundle(
+            modules
+                .iter()
+                .map(|m| {
+                    let mut module_bytes = vec![];
+                    m.serialize(&mut module_bytes).unwrap();
+                    module_bytes
+                })
+                .collect(),
+            sender,
+            &mut cost_strategy,
+        );
+        if let Err(err) = res {
+            // TODO (mengxu): explain publish errors in multi-module publishing
+            println!("Invalid multi-module publishing: {}", err);
+            has_error = true;
         }
-
         if !has_error {
             let (changeset, events) = Into::<Session<_>>::into(session)
                 .finish()
@@ -910,98 +902,6 @@ fn explain_type_error(
     // TODO: print more helpful error message pinpointing the (argument, type)
     // pair that didn't match
     println!("Execution failed with type error when binding type arguments to type parameters")
-}
-
-fn explain_publish_error(
-    error: VMError,
-    state: &OnDiskStateView,
-    module: &CompiledModule,
-) -> Result<()> {
-    use StatusCode::*;
-
-    let module_id = module.self_id();
-    match error.into_vm_status() {
-        VMStatus::Error(DUPLICATE_MODULE_NAME) => {
-            println!(
-                "Module {} exists already. Re-run without --no-republish to publish anyway.",
-                module_id
-            );
-        }
-        VMStatus::Error(BACKWARD_INCOMPATIBLE_MODULE_UPDATE) => {
-            println!("Breaking change detected--publishing aborted. Re-run with --ignore-breaking-changes to publish anyway.");
-
-            let old_module = state.get_compiled_module(&module_id)?;
-            let old_api = normalized::Module::new(&old_module);
-            let new_api = normalized::Module::new(module);
-            let compat = Compatibility::check(&old_api, &new_api);
-            // the only way we get this error code is compatibility checking failed, so assert here
-            assert!(!compat.is_fully_compatible());
-
-            if !compat.struct_layout {
-                // TODO: we could choose to make this more precise by walking the global state and looking for published
-                // structs of this type. but probably a bad idea
-                println!("Layout API for structs of module {} has changed. Need to do a data migration of published structs", module_id)
-            } else if !compat.struct_and_function_linking {
-                // TODO: this will report false positives if we *are* simultaneously redeploying all dependent modules.
-                // but this is not easy to check without walking the global state and looking for everything
-                println!("Linking API for structs/functions of module {} has changed. Need to redeploy all dependent modules.", module_id)
-            }
-        }
-        VMStatus::Error(CYCLIC_MODULE_DEPENDENCY) => {
-            println!(
-                "Publishing module {} introduces cyclic dependencies.",
-                module_id
-            );
-            // find all cycles with an iterative DFS
-            let code_cache = state.get_code_cache()?;
-
-            let mut stack = vec![];
-            let mut state = BTreeMap::new();
-            state.insert(module_id.clone(), true);
-            for dep in module.immediate_dependencies() {
-                stack.push((code_cache.get_module(&dep)?, false));
-            }
-
-            while !stack.is_empty() {
-                let (cur, is_exit) = stack.pop().unwrap();
-                let cur_id = cur.self_id();
-                if is_exit {
-                    state.insert(cur_id, false);
-                } else {
-                    state.insert(cur_id, true);
-                    stack.push((cur, true));
-                    for next in cur.immediate_dependencies() {
-                        if let Some(is_discovered_but_not_finished) = state.get(&next) {
-                            if *is_discovered_but_not_finished {
-                                let cycle_path: Vec<_> = stack
-                                    .iter()
-                                    .filter(|(_, is_exit)| *is_exit)
-                                    .map(|(m, _)| m.self_id().to_string())
-                                    .collect();
-                                println!(
-                                    "Cycle detected: {} -> {} -> {}",
-                                    module_id,
-                                    cycle_path.join(" -> "),
-                                    module_id,
-                                );
-                            }
-                        } else {
-                            stack.push((code_cache.get_module(&next)?, false));
-                        }
-                    }
-                }
-            }
-            println!("Re-run with --ignore-breaking-changes to publish anyway.")
-        }
-        VMStatus::Error(status_code) => {
-            println!("Publishing failed with unexpected error {:?}", status_code)
-        }
-        VMStatus::Executed | VMStatus::MoveAbort(..) | VMStatus::ExecutionFailure { .. } => {
-            unreachable!()
-        }
-    }
-
-    Ok(())
 }
 
 /// Explain an execution error
