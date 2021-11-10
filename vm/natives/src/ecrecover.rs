@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::NativeCostIndex;
 use arrayref::array_ref;
 use libsecp256k1::curve::Scalar;
 use libsecp256k1::{recover, Message, PublicKey, RecoveryId, Signature};
@@ -8,7 +9,6 @@ use log::debug;
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
-    gas_schedule::NativeCostIndex,
     loaded_data::runtime_types::Type,
     natives::function::{native_gas, NativeResult},
     pop_arg,
@@ -33,16 +33,18 @@ pub fn native_ecrecover(
     debug_assert!(_ty_args.is_empty());
     debug_assert!(arguments.len() == 2);
 
-    let hash_arg = pop_arg!(arguments, Vec<u8>);
+    // second arg is sig
     let sig_arg = pop_arg!(arguments, Vec<u8>);
+    // first arg is hash
+    let hash_arg = pop_arg!(arguments, Vec<u8>);
 
     let cost = native_gas(
         context.cost_table(),
-        //TODO define cost index.
-        NativeCostIndex::KECCAK_256,
+        NativeCostIndex::ECRECOVER as u8,
         hash_arg.len(),
     );
-    if hash_arg.len() != HASH_LENGTH {
+    if hash_arg.len() != HASH_LENGTH || sig_arg.len() != SIG_REC_LENGTH {
+        debug!("ecrecover failed, invalid hash or sig");
         return Ok(NativeResult::ok(
             cost,
             smallvec![Value::vector_u8(ZERO_ADDR)],

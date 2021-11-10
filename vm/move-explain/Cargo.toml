@@ -12,7 +12,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.25"
 stdlib = { package="stdlib", path = "../stdlib"}
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "4ea57e12f63109ef413cc9037ca5ceb78664b11c" }
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 
 [features]

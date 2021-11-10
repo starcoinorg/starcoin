@@ -1,9 +1,12 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::NativeCostIndex;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::vm_status::sub_status::NFE_TOKEN_INVALID_TYPE_ARG_FAILURE;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
-    gas_schedule::NativeCostIndex,
     loaded_data::runtime_types::Type,
     natives::function::{native_gas, NativeResult},
     values::Value,
@@ -19,8 +22,11 @@ pub fn native_token_name_of(
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.len() == 1);
     debug_assert!(arguments.is_empty());
-    //TODO add gas index
-    let cost = native_gas(context.cost_table(), NativeCostIndex::TOKEN_NAME_OF, 1);
+    let cost = native_gas(
+        context.cost_table(),
+        NativeCostIndex::TOKEN_NAME_OF as u8,
+        1,
+    );
     let type_tag = context.type_to_type_tag(&ty_args[0])?;
     if let TypeTag::Struct(struct_tag) = type_tag {
         let mut name = struct_tag.name.as_bytes().to_vec();

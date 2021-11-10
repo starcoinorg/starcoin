@@ -15,7 +15,7 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 libp2p = { version = "0.39.1", default-features = false, features = ["request-response"] }
 sc-peerset = { path = "../peerset"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="67e185dd17fa24ad349bf2ad0828068cdae77505"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="b1a5ef4c51d52526357249de2291fd7cefb26c65"}
 [features]
 default = []
 
