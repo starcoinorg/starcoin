@@ -188,79 +188,79 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
-fn test_modify_on_chain_vm_config_option() -> Result<()> {
-    let alice = Account::new();
-    let bob = Account::new();
-    let (chain_state, net) = prepare_genesis();
-    let pre_mint_amount = net.genesis_config().pre_mine_amount;
-    let action_type_tag = vm_config_type_tag();
-
-    let one_day: u64 = 60 * 60 * 24 * 1000;
-
-    // blockmeta txn is needed to create reward info.
-    // block 1
-    {
-        let block_number = current_block_number(&chain_state) + 1;
-        let block_timestamp = net.time_service().now_millis() + one_day * block_number - 1;
-        let miner = Account::new();
-        blockmeta_execute(
-            &chain_state,
-            BlockMetadata::new(
-                HashValue::zero(),
-                block_timestamp,
-                *miner.address(),
-                Some(miner.auth_key()),
-                0,
-                block_number,
-                net.chain_id(),
-                0,
-            ),
-        )?;
-    }
-    //create user for txn verifier
-    let script_function = encode_create_account_script_function(
-        net.stdlib_version(),
-        stc_type_tag(),
-        bob.address(),
-        bob.auth_key(),
-        pre_mint_amount / 8,
-    );
-    association_execute_should_success(
-        &net,
-        &chain_state,
-        TransactionPayload::ScriptFunction(script_function),
-    )?;
-
-    //get gas_used
-    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
-    let old_gas_used = output.gas_used();
-    let account_state_reader = AccountStateReader::new(&chain_state);
-    let mut vm_config = account_state_reader
-        .get_on_chain_config::<VMConfig>()?
-        .unwrap();
-    //set vm config parameter
-    vm_config
-        .gas_schedule
-        .gas_constants
-        .global_memory_per_byte_cost = InternalGasUnits::new(8);
-    vm_config
-        .gas_schedule
-        .gas_constants
-        .global_memory_per_byte_write_cost = InternalGasUnits::new(12);
-    let vote_script = vote_vm_config_script(&net, vm_config);
-
-    dao_vote_test(
-        &alice,
-        &chain_state,
-        &net,
-        vote_script,
-        on_chain_config_type_tag(action_type_tag.clone()),
-        execute_script_on_chain_config(&net, action_type_tag, 0u64),
-        0,
-    )?;
-    // get gas used of modified gas schedule
-    let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
-    assert!(output.gas_used() > old_gas_used);
-    Ok(())
-}
+// #[stest::test]
+// fn test_modify_on_chain_vm_config_option() -> Result<()> {
+//     let alice = Account::new();
+//     let bob = Account::new();
+//     let (chain_state, net) = prepare_genesis();
+//     let pre_mint_amount = net.genesis_config().pre_mine_amount;
+//     let action_type_tag = vm_config_type_tag();
+//
+//     let one_day: u64 = 60 * 60 * 24 * 1000;
+//
+//     // blockmeta txn is needed to create reward info.
+//     // block 1
+//     {
+//         let block_number = current_block_number(&chain_state) + 1;
+//         let block_timestamp = net.time_service().now_millis() + one_day * block_number - 1;
+//         let miner = Account::new();
+//         blockmeta_execute(
+//             &chain_state,
+//             BlockMetadata::new(
+//                 HashValue::zero(),
+//                 block_timestamp,
+//                 *miner.address(),
+//                 Some(miner.auth_key()),
+//                 0,
+//                 block_number,
+//                 net.chain_id(),
+//                 0,
+//             ),
+//         )?;
+//     }
+//     //create user for txn verifier
+//     let script_function = encode_create_account_script_function(
+//         net.stdlib_version(),
+//         stc_type_tag(),
+//         bob.address(),
+//         bob.auth_key(),
+//         pre_mint_amount / 8,
+//     );
+//     association_execute_should_success(
+//         &net,
+//         &chain_state,
+//         TransactionPayload::ScriptFunction(script_function),
+//     )?;
+//
+//     //get gas_used
+//     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
+//     let old_gas_used = output.gas_used();
+//     let account_state_reader = AccountStateReader::new(&chain_state);
+//     let mut vm_config = account_state_reader
+//         .get_on_chain_config::<VMConfig>()?
+//         .unwrap();
+//     //set vm config parameter
+//     vm_config
+//         .gas_schedule
+//         .gas_constants
+//         .global_memory_per_byte_cost = InternalGasUnits::new(8);
+//     vm_config
+//         .gas_schedule
+//         .gas_constants
+//         .global_memory_per_byte_write_cost = InternalGasUnits::new(12);
+//     let vote_script = vote_vm_config_script(&net, vm_config);
+//
+//     dao_vote_test(
+//         &alice,
+//         &chain_state,
+//         &net,
+//         vote_script,
+//         on_chain_config_type_tag(action_type_tag.clone()),
+//         execute_script_on_chain_config(&net, action_type_tag, 0u64),
+//         0,
+//     )?;
+//     // get gas used of modified gas schedule
+//     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload());
+//     assert!(output.gas_used() > old_gas_used);
+//     Ok(())
+// }

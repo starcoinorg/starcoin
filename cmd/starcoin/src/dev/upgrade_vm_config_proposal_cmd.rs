@@ -11,7 +11,8 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_rpc_client::StateRootOption;
 use starcoin_transaction_builder::build_vm_config_upgrade_proposal;
-use starcoin_vm_types::on_chain_config::{OnChainConfig, VMConfig};
+use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
@@ -47,7 +48,11 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
         let onchain_vm_config = {
             let client = ctx.state().client();
             let reader = client.state_reader(StateRootOption::Latest)?;
-            VMConfig::fetch_config(&reader)?.unwrap()
+            let mut vm = StarcoinVM::new(None);
+            vm.load_configs(&reader)?;
+            VMConfig {
+                gas_schedule: vm.get_gas_schedule()?.clone(),
+            }
         };
         let diff = {
             let current_config = serde_json::to_string_pretty(&onchain_vm_config)?;
