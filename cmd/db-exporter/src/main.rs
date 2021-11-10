@@ -1,21 +1,32 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
-use starcoin_crypto::HashValue;
-use starcoin_storage::block::FailedBlock;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::InnerStore;
-use starcoin_storage::storage::ValueCodec;
-use starcoin_storage::{
-    BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, VEC_PREFIX_NAME,
+use starcoin_chain::verifier::{
+    BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
+use starcoin_crypto::HashValue;
+use starcoin_genesis::Genesis;
+use starcoin_storage::block::FailedBlock;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::ValueCodec;
+use starcoin_storage::storage::{InnerStore, StorageInstance};
+use starcoin_storage::{
+    Storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, VEC_PREFIX_NAME,
+};
+use starcoin_types::block::{Block, BlockHeader, BlockNumber};
 use std::fmt::{Debug, Formatter};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
+use std::time::SystemTime;
 use structopt::StructOpt;
 
 pub fn export<W: std::io::Write>(
@@ -162,6 +173,8 @@ struct Opt {
 enum Cmd {
     Exporter(ExporterOptions),
     Checkkey(CheckKeyOptions),
+    ExportBlockRange(ExportBlockRangeOptions),
+    ApplyBlock(ApplyBlockOptions),
 }
 
 #[derive(Debug, Clone, StructOpt)]
@@ -190,6 +203,44 @@ pub struct CheckKeyOptions {
     pub cf_name: String,
     #[structopt(long, short = "b")]
     pub block_hash: HashValue,
+}
+
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(name = "export-block-range", about = "export block range")]
+pub struct ExportBlockRangeOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network, like main, proxima
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// output file, like block.csv
+    pub output: PathBuf,
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub db_path: PathBuf,
+    #[structopt(long, short = "s")]
+    pub start: BlockNumber,
+    #[structopt(long, short = "e")]
+    pub end: BlockNumber,
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "apply-block-range", about = "apply block range")]
+pub struct ApplyBlockOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// input file, like accounts.csv
+    pub input_path: PathBuf,
+    #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
+    /// Verify type:  Basic, Consensus, Full, None, eg.
+    pub verifier: Option<Verifier>,
+    #[structopt(long, short = "w")]
+    /// Watch metrics logs.
+    pub watch: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -266,5 +317,96 @@ fn main() -> anyhow::Result<()> {
         }
         return Ok(());
     }
+
+    if let Cmd::ExportBlockRange(option) = cmd {
+        let result = export_block_range(
+            option.db_path,
+            option.output,
+            option.net,
+            option.start,
+            option.end,
+        );
+        return result;
+    }
+
+    if let Cmd::ApplyBlock(option) = cmd {
+        let verifier = option.verifier.unwrap_or(Verifier::Basic);
+        let result = apply_blocks(option.to_path, option.input_path, option.net, verifier);
+        return result;
+    }
+    Ok(())
+}
+
+pub fn export_block_range(
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+    start: BlockNumber,
+    end: BlockNumber,
+) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::new(
+        from_dir.join("starcoindb/db"),
+        RocksdbConfig::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
+        .expect("create block chain should success.");
+    let start_time = SystemTime::now();
+    let block_list: Result<Vec<Block>> = (start..end)
+        .collect::<Vec<BlockNumber>>()
+        .into_iter()
+        .map(|num| {
+            chain
+                .get_block_by_number(num)?
+                .ok_or_else(|| format_err!("{} get block error", num))
+        })
+        .collect();
+    let block_list = block_list?;
+    let mut file = File::create(output)?;
+    for block in block_list {
+        writeln!(file, "{}", serde_json::to_string(&block)?)?;
+    }
+    file.flush()?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("export range block use time: {:?}", use_time.as_nanos());
+    Ok(())
+}
+
+pub fn apply_blocks(
+    to_dir: PathBuf,
+    input_path: PathBuf,
+    network: BuiltinNetworkID,
+    verifier: Verifier,
+) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let mut chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
+        .expect("create block chain should success.");
+    let start_time = SystemTime::now();
+    let reader = BufReader::new(File::open(input_path)?);
+    for record in reader.lines() {
+        let record = record?;
+        let block: Block = serde_json::from_str(record.as_str())?;
+        match verifier {
+            Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
+            Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
+            Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block)?,
+            Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
+        };
+    }
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("apply blocks use time: {:?}", use_time.as_nanos());
     Ok(())
 }
