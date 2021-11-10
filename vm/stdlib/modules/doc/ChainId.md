@@ -7,11 +7,13 @@ The module provides chain id information.
 
 
 -  [Resource `ChainId`](#0x1_ChainId_ChainId)
+-  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_ChainId_initialize)
 -  [Function `get`](#0x1_ChainId_get)
--  [Specification](#@Specification_0)
-    -  [Function `initialize`](#@Specification_0_initialize)
-    -  [Function `get`](#@Specification_0_get)
+-  [Function `is_dev`](#0x1_ChainId_is_dev)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `get`](#@Specification_1_get)
 
 
 <pre><code><b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
@@ -47,6 +49,65 @@ chain id data structure.
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_ChainId_BARNARD_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="ChainId.md#0x1_ChainId_BARNARD_CHAIN_ID">BARNARD_CHAIN_ID</a>: u8 = 251;
+</code></pre>
+
+
+
+<a name="0x1_ChainId_DEV_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="ChainId.md#0x1_ChainId_DEV_CHAIN_ID">DEV_CHAIN_ID</a>: u8 = 254;
+</code></pre>
+
+
+
+<a name="0x1_ChainId_HALLEY_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="ChainId.md#0x1_ChainId_HALLEY_CHAIN_ID">HALLEY_CHAIN_ID</a>: u8 = 253;
+</code></pre>
+
+
+
+<a name="0x1_ChainId_MAIN_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="ChainId.md#0x1_ChainId_MAIN_CHAIN_ID">MAIN_CHAIN_ID</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x1_ChainId_PROXIMA_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="ChainId.md#0x1_ChainId_PROXIMA_CHAIN_ID">PROXIMA_CHAIN_ID</a>: u8 = 252;
+</code></pre>
+
+
+
+<a name="0x1_ChainId_TEST_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="ChainId.md#0x1_ChainId_TEST_CHAIN_ID">TEST_CHAIN_ID</a>: u8 = 255;
+</code></pre>
+
+
 
 <a name="0x1_ChainId_initialize"></a>
 
@@ -100,7 +161,31 @@ Return the chain ID of this chain
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="0x1_ChainId_is_dev"></a>
+
+## Function `is_dev`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ChainId.md#0x1_ChainId_is_dev">is_dev</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ChainId.md#0x1_ChainId_is_dev">is_dev</a>(): bool <b>acquires</b> <a href="ChainId.md#0x1_ChainId">ChainId</a> {
+    <a href="ChainId.md#0x1_ChainId_get">get</a>() == <a href="ChainId.md#0x1_ChainId_DEV_CHAIN_ID">DEV_CHAIN_ID</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="@Specification_1"></a>
 
 ## Specification
 
@@ -112,7 +197,7 @@ Return the chain ID of this chain
 
 
 
-<a name="@Specification_0_initialize"></a>
+<a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -131,7 +216,7 @@ Return the chain ID of this chain
 
 
 
-<a name="@Specification_0_get"></a>
+<a name="@Specification_1_get"></a>
 
 ### Function `get`
 

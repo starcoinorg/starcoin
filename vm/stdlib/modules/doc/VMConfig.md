@@ -20,7 +20,8 @@
     -  [Function `initialize`](#@Specification_0_initialize)
 
 
-<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<pre><code><b>use</b> <a href="ChainId.md#0x1_ChainId">0x1::ChainId</a>;
+<b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
@@ -385,6 +386,7 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_gas_constants">gas_constants</a>(): <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
+    <b>let</b> min_price_per_gas_unit: u64 = <b>if</b> (<a href="ChainId.md#0x1_ChainId_is_dev">ChainId::is_dev</a>()) { 0 }  <b>else</b> { 1 };
     <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
         global_memory_per_byte_cost: 4,
         global_memory_per_byte_write_cost: 9,
@@ -392,7 +394,7 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
         large_transaction_cutoff: 600,
         instrinsic_gas_per_byte: 8,
         maximum_number_of_gas_units: 40000000, //must less than base_block_gas_limit
-        min_price_per_gas_unit: 1,
+        min_price_per_gas_unit,
         max_price_per_gas_unit: 10000,
         max_transaction_size_in_bytes: 1024 * 128,
         gas_unit_scaling_factor: 1,

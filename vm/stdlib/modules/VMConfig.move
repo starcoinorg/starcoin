@@ -5,6 +5,7 @@ module VMConfig {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::Vector;
+    use 0x1::ChainId;
     spec module {
         pragma verify = false;
         pragma aborts_if_is_strict;
@@ -167,6 +168,7 @@ module VMConfig {
     }
 
     public fun gas_constants(): GasConstants {
+        let min_price_per_gas_unit: u64 = if (ChainId::is_dev()) { 0 }  else { 1 };
         GasConstants {
             global_memory_per_byte_cost: 4,
             global_memory_per_byte_write_cost: 9,
@@ -174,7 +176,7 @@ module VMConfig {
             large_transaction_cutoff: 600,
             instrinsic_gas_per_byte: 8,
             maximum_number_of_gas_units: 40000000, //must less than base_block_gas_limit
-            min_price_per_gas_unit: 1,
+            min_price_per_gas_unit,
             max_price_per_gas_unit: 10000,
             max_transaction_size_in_bytes: 1024 * 128,
             gas_unit_scaling_factor: 1,

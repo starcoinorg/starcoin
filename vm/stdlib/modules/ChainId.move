@@ -16,6 +16,13 @@ module ChainId {
         id: u8
     }
 
+    const MAIN_CHAIN_ID: u8 = 1;
+    const BARNARD_CHAIN_ID: u8 = 251;
+    const PROXIMA_CHAIN_ID: u8 = 252;
+    const HALLEY_CHAIN_ID: u8 = 253;
+    const DEV_CHAIN_ID: u8 = 254;
+    const TEST_CHAIN_ID: u8 = 255;
+
     /// Publish the chain ID under the genesis account
     public fun initialize(account: &signer, id: u8) {
         Timestamp::assert_genesis();
@@ -33,6 +40,10 @@ module ChainId {
     /// Return the chain ID of this chain
     public fun get(): u8 acquires ChainId {
         borrow_global<ChainId>(CoreAddresses::GENESIS_ADDRESS()).id
+    }
+
+    public fun is_dev(): bool acquires ChainId {
+        get() == DEV_CHAIN_ID
     }
 
     spec get {

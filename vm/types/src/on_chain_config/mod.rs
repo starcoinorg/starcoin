@@ -30,10 +30,7 @@ pub use self::{
     },
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
-    vm_config::{
-        vm_config_type_tag, TransactionPublishOption, VMConfig, SCRIPT_HASH_LENGTH,
-        VM_CONFIG_IDENTIFIER,
-    },
+    vm_config::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 
