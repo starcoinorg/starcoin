@@ -45,6 +45,46 @@ module ChainId {
     public fun is_dev(): bool acquires ChainId {
         get() == DEV_CHAIN_ID
     }
+    public fun is_test(): bool acquires ChainId {
+        get() == TEST_CHAIN_ID
+    }
+    public fun is_halley(): bool acquires ChainId {
+        get() == HALLEY_CHAIN_ID
+    }
+    public fun is_proxima(): bool acquires ChainId {
+        get() == PROXIMA_CHAIN_ID
+    }
+    public fun is_barnard(): bool acquires ChainId {
+        get() == BARNARD_CHAIN_ID
+    }
+    public fun is_main(): bool acquires ChainId {
+        get() == MAIN_CHAIN_ID
+    }
+
+    spec is_dev {
+        aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        ensures exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+    spec is_test {
+        aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        ensures exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+    spec is_halley {
+        aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        ensures exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+    spec is_proxima {
+        aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        ensures exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+    spec is_barnard {
+        aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        ensures exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+    spec is_main {
+        aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        ensures exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
 
     spec get {
         aborts_if !exists<ChainId>(CoreAddresses::SPEC_GENESIS_ADDRESS());

@@ -851,7 +851,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: CostTable {
                 instruction_table: initial_instruction_table(),
                 native_table: initial_native_table(),
-                gas_constants: TEST_GAS_CONSTANTS.clone(),
+                gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
         publishing_option: TransactionPublishOption::open(),
@@ -909,19 +909,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: CostTable {
                 instruction_table: initial_instruction_table(),
                 native_table: initial_native_table(),
-                gas_constants: GasConstants {
-                    global_memory_per_byte_cost: InternalGasUnits::new(4),
-                    global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-                    min_transaction_gas_units: InternalGasUnits::new(600),
-                    large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
-                    intrinsic_gas_per_byte: InternalGasUnits::new(8),
-                    maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-                    min_price_per_gas_unit: GasPrice::new(1),
-                    max_price_per_gas_unit: GasPrice::new(10_000),
-                    max_transaction_size_in_bytes: 4096 * 32, // 128k
-                    gas_unit_scaling_factor: 1,
-                    default_account_size: *DEFAULT_ACCOUNT_SIZE,
-                }
+                gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
         publishing_option: TransactionPublishOption::open(),

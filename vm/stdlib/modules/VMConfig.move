@@ -168,7 +168,7 @@ module VMConfig {
     }
 
     public fun gas_constants(): GasConstants {
-        let min_price_per_gas_unit: u64 = if (ChainId::is_dev()) { 0 }  else { 1 };
+        let min_price_per_gas_unit: u64 = if (ChainId::is_test()) { 0 }  else { 1 };
         GasConstants {
             global_memory_per_byte_cost: 4,
             global_memory_per_byte_write_cost: 9,

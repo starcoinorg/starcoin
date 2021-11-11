@@ -386,7 +386,7 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_gas_constants">gas_constants</a>(): <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
-    <b>let</b> min_price_per_gas_unit: u64 = <b>if</b> (<a href="ChainId.md#0x1_ChainId_is_dev">ChainId::is_dev</a>()) { 0 }  <b>else</b> { 1 };
+    <b>let</b> min_price_per_gas_unit: u64 = <b>if</b> (<a href="ChainId.md#0x1_ChainId_is_test">ChainId::is_test</a>()) { 0 }  <b>else</b> { 1 };
     <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
         global_memory_per_byte_cost: 4,
         global_memory_per_byte_write_cost: 9,
