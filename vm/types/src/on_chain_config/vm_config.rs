@@ -14,8 +14,14 @@ use starcoin_crypto::HashValue;
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 const VM_CONFIG_MODULE_NAME: &str = "VMConfig";
-static VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
+pub static VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VM_CONFIG_MODULE_NAME).unwrap());
+pub static INSTRUCTION_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("instruction_schedule").unwrap());
+pub static NATIVE_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("native_schedule").unwrap());
+pub static GAS_CONSTANTS_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("gas_constants").unwrap());
 
 /// Defines and holds the publishing policies for the VM. There are three possible configurations:
 /// 1.  !script_allowed && !module_publishing_allowed No module publishing, only script function are allowed.

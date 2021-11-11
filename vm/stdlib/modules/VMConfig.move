@@ -4,7 +4,8 @@ module VMConfig {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
-
+    use 0x1::Vector;
+    use 0x1::ChainId;
     spec module {
         pragma verify = false;
         pragma aborts_if_is_strict;
@@ -61,6 +62,135 @@ module VMConfig {
         /// default account size.
         default_account_size: u64,
     }
+
+    /// The  `GasCost` tracks:
+    /// - instruction cost: how much time/computational power is needed to perform the instruction
+    /// - memory cost: how much memory is required for the instruction, and storage overhead
+    struct GasCost has copy, drop, store {
+        instruction_gas: u64,
+        memory_gas: u64,
+    }
+
+    public fun instruction_schedule(): vector<GasCost> {
+        let table = Vector::empty();
+
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(638, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1132, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(3, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(41, 1));
+        Vector::push_back(&mut table, new_gas_cost(21, 1));
+        Vector::push_back(&mut table, new_gas_cost(23, 1));
+        Vector::push_back(&mut table, new_gas_cost(459, 1));
+        Vector::push_back(&mut table, new_gas_cost(13, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(1, 1));
+        Vector::push_back(&mut table, new_gas_cost(582, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        Vector::push_back(&mut table, new_gas_cost(34, 1));
+        Vector::push_back(&mut table, new_gas_cost(15, 1));
+        Vector::push_back(&mut table, new_gas_cost(14, 1));
+        Vector::push_back(&mut table, new_gas_cost(13, 1));
+        Vector::push_back(&mut table, new_gas_cost(27, 1));
+
+        table
+    }
+
+    public fun native_schedule(): vector<GasCost> {
+        let table = Vector::empty();
+        Vector::push_back(&mut table, new_gas_cost(21, 1));
+        Vector::push_back(&mut table, new_gas_cost(64, 1));
+        Vector::push_back(&mut table, new_gas_cost(61, 1));
+        Vector::push_back(&mut table, new_gas_cost(3351, 1));
+        Vector::push_back(&mut table, new_gas_cost(181, 1));
+        Vector::push_back(&mut table, new_gas_cost(98, 1));
+        Vector::push_back(&mut table, new_gas_cost(84, 1));
+        Vector::push_back(&mut table, new_gas_cost(1334, 1));
+        Vector::push_back(&mut table, new_gas_cost(1902, 1));
+        Vector::push_back(&mut table, new_gas_cost(53, 1));
+        Vector::push_back(&mut table, new_gas_cost(227, 1));
+        Vector::push_back(&mut table, new_gas_cost(572, 1));
+        Vector::push_back(&mut table, new_gas_cost(1436, 1));
+        Vector::push_back(&mut table, new_gas_cost(26, 1));
+        Vector::push_back(&mut table, new_gas_cost(353, 1));
+        Vector::push_back(&mut table, new_gas_cost(24, 1));
+        Vector::push_back(&mut table, new_gas_cost(212, 1));
+        Vector::push_back(&mut table, new_gas_cost(52, 1));
+        Vector::push_back(&mut table, new_gas_cost(26, 1));
+        Vector::push_back(&mut table, new_gas_cost(2002, 1));
+        Vector::push_back(&mut table, new_gas_cost(64, 1));
+        table
+    }
+
+    public fun gas_constants(): GasConstants {
+        let min_price_per_gas_unit: u64 = if (ChainId::is_test()) { 0 }  else { 1 };
+        GasConstants {
+            global_memory_per_byte_cost: 4,
+            global_memory_per_byte_write_cost: 9,
+            min_transaction_gas_units: 600,
+            large_transaction_cutoff: 600,
+            instrinsic_gas_per_byte: 8,
+            maximum_number_of_gas_units: 40000000, //must less than base_block_gas_limit
+            min_price_per_gas_unit,
+            max_price_per_gas_unit: 10000,
+            max_transaction_size_in_bytes: 1024 * 128,
+            gas_unit_scaling_factor: 1,
+            default_account_size: 800,
+        }
+    }
+
+    fun new_gas_cost(instr_gas: u64, mem_gas: u64): GasCost {
+        GasCost {
+            instruction_gas: instr_gas,
+            memory_gas: mem_gas,
+        }
+    }
+
 
     /// Create a new vm config, mainly used in DAO.
     public fun new_vm_config(

@@ -9,14 +9,21 @@
 -  [Struct `VMConfig`](#0x1_VMConfig_VMConfig)
 -  [Struct `GasSchedule`](#0x1_VMConfig_GasSchedule)
 -  [Struct `GasConstants`](#0x1_VMConfig_GasConstants)
+-  [Struct `GasCost`](#0x1_VMConfig_GasCost)
+-  [Function `instruction_schedule`](#0x1_VMConfig_instruction_schedule)
+-  [Function `native_schedule`](#0x1_VMConfig_native_schedule)
+-  [Function `gas_constants`](#0x1_VMConfig_gas_constants)
+-  [Function `new_gas_cost`](#0x1_VMConfig_new_gas_cost)
 -  [Function `new_vm_config`](#0x1_VMConfig_new_vm_config)
 -  [Function `initialize`](#0x1_VMConfig_initialize)
 -  [Specification](#@Specification_0)
     -  [Function `initialize`](#@Specification_0_initialize)
 
 
-<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<pre><code><b>use</b> <a href="ChainId.md#0x1_ChainId">0x1::ChainId</a>;
+<b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
 
@@ -187,6 +194,242 @@ The gas constants contains all kind of constants used in gas calculation.
  default account size.
 </dd>
 </dl>
+
+
+</details>
+
+<a name="0x1_VMConfig_GasCost"></a>
+
+## Struct `GasCost`
+
+The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
+- instruction cost: how much time/computational power is needed to perform the instruction
+- memory cost: how much memory is required for the instruction, and storage overhead
+
+
+<pre><code><b>struct</b> <a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a> has <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>instruction_gas: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>memory_gas: u64</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_VMConfig_instruction_schedule"></a>
+
+## Function `instruction_schedule`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_instruction_schedule">instruction_schedule</a>(): vector&lt;<a href="VMConfig.md#0x1_VMConfig_GasCost">VMConfig::GasCost</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_instruction_schedule">instruction_schedule</a>(): vector&lt;<a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a>&gt; {
+    <b>let</b> table = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>();
+
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(638, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1132, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(3, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(41, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(21, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(23, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(459, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(13, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(582, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(34, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(15, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(14, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(13, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(27, 1));
+
+    table
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_VMConfig_native_schedule"></a>
+
+## Function `native_schedule`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_native_schedule">native_schedule</a>(): vector&lt;<a href="VMConfig.md#0x1_VMConfig_GasCost">VMConfig::GasCost</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_native_schedule">native_schedule</a>(): vector&lt;<a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a>&gt; {
+    <b>let</b> table = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>();
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(21, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(64, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(61, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(3351, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(181, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(98, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(84, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1334, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1902, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(53, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(227, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(572, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1436, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(26, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(353, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(24, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(212, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(52, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(26, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2002, 1));
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(64, 1));
+    table
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_VMConfig_gas_constants"></a>
+
+## Function `gas_constants`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_gas_constants">gas_constants</a>(): <a href="VMConfig.md#0x1_VMConfig_GasConstants">VMConfig::GasConstants</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_gas_constants">gas_constants</a>(): <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
+    <b>let</b> min_price_per_gas_unit: u64 = <b>if</b> (<a href="ChainId.md#0x1_ChainId_is_test">ChainId::is_test</a>()) { 0 }  <b>else</b> { 1 };
+    <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
+        global_memory_per_byte_cost: 4,
+        global_memory_per_byte_write_cost: 9,
+        min_transaction_gas_units: 600,
+        large_transaction_cutoff: 600,
+        instrinsic_gas_per_byte: 8,
+        maximum_number_of_gas_units: 40000000, //must less than base_block_gas_limit
+        min_price_per_gas_unit,
+        max_price_per_gas_unit: 10000,
+        max_transaction_size_in_bytes: 1024 * 128,
+        gas_unit_scaling_factor: 1,
+        default_account_size: 800,
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_VMConfig_new_gas_cost"></a>
+
+## Function `new_gas_cost`
+
+
+
+<pre><code><b>fun</b> <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(instr_gas: u64, mem_gas: u64): <a href="VMConfig.md#0x1_VMConfig_GasCost">VMConfig::GasCost</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(instr_gas: u64, mem_gas: u64): <a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a> {
+    <a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a> {
+        instruction_gas: instr_gas,
+        memory_gas: mem_gas,
+    }
+}
+</code></pre>
+
 
 
 </details>

@@ -30,7 +30,7 @@ pub use self::{
     },
     move_lang_version::MoveLanguageVersion,
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
-    vm_config::{vm_config_type_tag, TransactionPublishOption, VMConfig, SCRIPT_HASH_LENGTH},
+    vm_config::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 
@@ -65,7 +65,6 @@ impl ConfigID {
 #[allow(clippy::vec_init_then_push)]
 pub static ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
     let mut configs: Vec<ConfigID> = Vec::new();
-    configs.push(VMConfig::config_id());
     configs.push(Version::config_id());
     configs.push(ConsensusConfig::config_id());
     configs.push(DaoConfig::config_id());

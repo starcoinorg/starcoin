@@ -32,16 +32,19 @@ use starcoin_vm_types::access::{ModuleAccess, ScriptAccess};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{
-    genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource, EPILOGUE_NAME,
-    EPILOGUE_V2_NAME, PROLOGUE_NAME,
+    core_code_address, genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
+    EPILOGUE_NAME, EPILOGUE_V2_NAME, PROLOGUE_NAME,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::{zero_cost_schedule, GasStatus};
+use starcoin_vm_types::gas_schedule::{zero_cost_schedule, GasConstants, GasCost, GasStatus};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::on_chain_config::MoveLanguageVersion;
+use starcoin_vm_types::on_chain_config::{
+    MoveLanguageVersion, GAS_CONSTANTS_IDENTIFIER, INSTRUCTION_SCHEDULE_IDENTIFIER,
+    NATIVE_SCHEDULE_IDENTIFIER, VM_CONFIG_IDENTIFIER,
+};
 use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -73,6 +76,9 @@ pub struct StarcoinVM {
     metrics: Option<VMMetrics>,
 }
 
+/// marking of stdlib version which includes vmconfig upgrades.
+const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
+
 impl StarcoinVM {
     pub fn new(metrics: Option<VMMetrics>) -> Self {
         let inner = MoveVM::new(super::natives::starcoin_natives())
@@ -100,17 +106,76 @@ impl StarcoinVM {
 
     fn load_configs_impl(&mut self, state: &dyn StateView) -> Result<(), Error> {
         let remote_storage = RemoteStorage::new(state);
-        self.vm_config = Some(
-            VMConfig::fetch_config(&remote_storage)?
-                .ok_or_else(|| format_err!("Load VMConfig fail, VMConfig resource not exist."))?,
-        );
-
         self.version = Some(
             Version::fetch_config(&remote_storage)?
                 .ok_or_else(|| format_err!("Load Version fail, Version resource not exist."))?,
         );
         // move version can be none.
         self.move_version = MoveLanguageVersion::fetch_config(&remote_storage)?;
+
+        if let Some(v) = &self.version {
+            self.vm_config = if v.major < VMCONFIG_UPGRADE_VERSION_MARK {
+                Some(VMConfig::fetch_config(&remote_storage)?.ok_or_else(|| {
+                    format_err!("Load VMConfig fail, VMConfig resource not exist.")
+                })?)
+            } else {
+                let instruction_schedule = {
+                    let data = self
+                        .execute_readonly_function(
+                            state,
+                            &ModuleId::new(core_code_address(), VM_CONFIG_IDENTIFIER.to_owned()),
+                            INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
+                            vec![],
+                            vec![],
+                        )?
+                        .pop()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "Expect 0x1::VMConfig::instruction_schedule() return value"
+                            )
+                        })?;
+                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
+                };
+                let native_schedule = {
+                    let data = self
+                        .execute_readonly_function(
+                            state,
+                            &ModuleId::new(core_code_address(), VM_CONFIG_IDENTIFIER.to_owned()),
+                            NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
+                            vec![],
+                            vec![],
+                        )?
+                        .pop()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("Expect 0x1::VMConfig::native_schedule() return value")
+                        })?;
+                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
+                };
+                let gas_constants = {
+                    let data = self
+                        .execute_readonly_function(
+                            state,
+                            &ModuleId::new(core_code_address(), VM_CONFIG_IDENTIFIER.to_owned()),
+                            GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
+                            vec![],
+                            vec![],
+                        )?
+                        .pop()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("Expect 0x1::VMConfig::gas_constants() return value")
+                        })?;
+                    bcs_ext::from_bytes::<GasConstants>(&data)?
+                };
+
+                Some(VMConfig {
+                    gas_schedule: CostTable {
+                        instruction_table: instruction_schedule,
+                        native_table: native_schedule,
+                        gas_constants,
+                    },
+                })
+            }
+        }
         Ok(())
     }
 
@@ -890,9 +955,7 @@ impl StarcoinVM {
     ) -> Result<(), Error> {
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>()
-                    || event.is::<ConfigChangeEvent<VMConfig>>()
-                    || event.is::<ConfigChangeEvent<Version>>())
+                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
             {
                 info!("Load vm configs trigger by reconfigure event. ");
                 self.load_configs(state_view)?;
