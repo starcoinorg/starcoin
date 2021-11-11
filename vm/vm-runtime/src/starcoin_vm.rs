@@ -1086,10 +1086,6 @@ impl StarcoinVM {
                 .start_timer()
         });
         let data_cache = StateViewCache::new(state_view);
-        if let Err(err) = self.load_configs(&data_cache) {
-            warn!("Load config error at verify_transaction: {}", err);
-            return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
-        }
 
         let cost_table = zero_cost_schedule();
         let mut gas_status = {

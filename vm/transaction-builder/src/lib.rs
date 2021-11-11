@@ -319,14 +319,25 @@ pub fn create_signed_txn_with_association_account(
 }
 
 pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
-    let init_script = match net.genesis_config().stdlib_version {
-        StdlibVersion::Version(1) => build_init_script_v1(net),
-        _ => build_init_script_v2(net),
+    let stdlib_version = match net.genesis_config().stdlib_version {
+        StdlibVersion::Latest => {
+            // latest version = latest stable version + 1
+            stdlib::stdlib_latest_stable_version()
+                .map(|version| version.version() + 1)
+                .unwrap_or(1)
+        }
+        StdlibVersion::Version(v) => v,
+    };
+    let init_script = if stdlib_version == 1 {
+        build_init_script_v1(net, stdlib_version)
+    } else {
+        build_init_script_v2(net, stdlib_version)
     };
     stdlib_package(stdlib_option, Some(init_script))
 }
 
-pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
+pub fn build_init_script_v1(net: &ChainNetwork, stdlib_version: u64) -> ScriptFunction {
+    assert_ne!(stdlib_version, 0, "invalid stdlib_version 0");
     let genesis_config = net.genesis_config();
     let chain_id = net.chain_id().id();
     let genesis_timestamp = net.genesis_block_parameter().timestamp;
@@ -351,7 +362,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
         Identifier::new("initialize").unwrap(),
         vec![],
         vec![
-            bcs_ext::to_bytes(&net.genesis_config().stdlib_version.version()).unwrap(),
+            bcs_ext::to_bytes(&stdlib_version).unwrap(),
             bcs_ext::to_bytes(&genesis_config.reward_delay).unwrap(),
             bcs_ext::to_bytes(&genesis_config.pre_mine_amount).unwrap(),
             bcs_ext::to_bytes(&genesis_config.time_mint_amount).unwrap(),
@@ -498,7 +509,9 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
     )
 }
 
-pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
+pub fn build_init_script_v2(net: &ChainNetwork, stdlib_version: u64) -> ScriptFunction {
+    assert_ne!(stdlib_version, 0, "invalid stdlib_version 0");
+
     let genesis_config = net.genesis_config();
     let chain_id = net.chain_id().id();
     let genesis_timestamp = net.genesis_block_parameter().timestamp;
@@ -523,7 +536,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
         Identifier::new("initialize_v2").unwrap(),
         vec![],
         vec![
-            bcs_ext::to_bytes(&net.genesis_config().stdlib_version.version()).unwrap(),
+            bcs_ext::to_bytes(&stdlib_version).unwrap(),
             bcs_ext::to_bytes(&genesis_config.reward_delay).unwrap(),
             bcs_ext::to_bytes(&TOTAL_STC_AMOUNT.scaling()).unwrap(),
             bcs_ext::to_bytes(&genesis_config.pre_mine_amount).unwrap(),
