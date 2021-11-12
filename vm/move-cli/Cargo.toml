@@ -18,28 +18,28 @@ structopt = "0.3.25"
 
 bcs = "0.1.2"
 starcoin-logger = {path = "../../commons/logger"}
-bytecode-verifier = { package = "bytecode-verifier", git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c"  }
+bytecode-verifier = { package = "bytecode-verifier", git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1"  }
 # diem-framework-releases = { path = "../../diem-framework/releases" }
-disassembler = { package = "disassembler", git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c"  }
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c"  }
-diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c"  }
+disassembler = { package = "disassembler", git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1"  }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1"  }
+diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1"  }
 # diem-state-view = { path = "../../../storage/state-view" }
 starcoin-types = { path = "../../types" }
 # diem-vm = { path = "../../diem-vm" }
-move-coverage =  { git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c"  }
+move-coverage =  { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1"  }
 starcoin-vm-types = {path = "../../vm/types"}
-move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c"  }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "4ea57e12f63109ef413cc9037ca5ceb78664b11c" }
-# move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "4ea57e12f63109ef413cc9037ca5ceb78664b11c" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="4ea57e12f63109ef413cc9037ca5ceb78664b11c" }
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1"  }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+# move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
 resource-viewer = { path = "../resource-viewer", package = "starcoin-resource-viewer" }
-move-unit-test = { git = "https://github.com/starcoinorg/diem", rev = "4ea57e12f63109ef413cc9037ca5ceb78664b11c" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev = "4ea57e12f63109ef413cc9037ca5ceb78664b11c" }
+move-unit-test = { git = "https://github.com/starcoinorg/diem", rev = "5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev = "5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
 starcoin-config ={path = "../../config"}
 stdlib = {path = "../stdlib"}
 starcoin-vm-runtime = {path = "../vm-runtime"}
 # diem-framework = { path = "../../diem-framework" }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/diem", rev = "4ea57e12f63109ef413cc9037ca5ceb78664b11c"}
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/diem", rev = "5a8ea734641cce096914fe10a2fbd8aea2e65fd1"}
 starcoin-functional-tests = {path = "../functional-tests"}
 # vm-genesis = { path = "../vm-genesis" }
 walkdir = "2.3.1"
