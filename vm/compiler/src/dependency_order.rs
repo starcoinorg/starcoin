@@ -45,10 +45,9 @@ impl<'a> DependencyGraph<'a> {
         let mut graph = DiGraphMap::new();
         for module in &modules {
             let module_idx: ModuleIndex = *reverse_modules.get(&module.self_id()).unwrap();
+            graph.add_node(module_idx);
             let mut deps = module.immediate_dependencies();
-            if deps.is_empty() {
-                graph.add_node(module_idx);
-            } else {
+            if !deps.is_empty() {
                 // make the function stable.
                 deps.sort();
                 for dep in deps {
