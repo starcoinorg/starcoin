@@ -4,6 +4,7 @@
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
+use config::CRATE_VERSION;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -217,22 +218,24 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        if let Some((_failed_block, pre_peer_id, err)) = self
+        if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
             .get_storage()
             .get_failed_block_by_id(block.id())?
         {
-            warn!(
-                "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, err: {}",
-                block.id(),
-                pre_peer_id,
-                err
-            );
-            if let Some(peer) = peer_id {
-                self.peer_provider
-                    .report_peer(peer, ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
+            if version == *CRATE_VERSION {
+                warn!(
+                    "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, err: {}",
+                    block.id(),
+                    pre_peer_id,
+                    err
+                );
+                if let Some(peer) = peer_id {
+                    self.peer_provider
+                        .report_peer(peer, ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
+                }
+                return Err(format_err!("collect previous failed block:{}", block.id()));
             }
-            return Err(format_err!("collect previous failed block:{}", block.id()));
         }
         let apply_result = if self.skip_pow_verify {
             self.chain
@@ -257,6 +260,7 @@ where
                             block,
                             peer_id.clone(),
                             error_msg,
+                            CRATE_VERSION.to_string(),
                         )?;
                         if let Some(peer) = peer_id {
                             self.peer_provider.report_peer(peer, e.reputation());

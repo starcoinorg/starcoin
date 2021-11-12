@@ -4,6 +4,7 @@
 use crate::metrics::BlockRelayerMetrics;
 use anyhow::{ensure, format_err, Result};
 use config::NodeConfig;
+use config::CRATE_VERSION;
 use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -211,8 +212,12 @@ impl BlockRelayer {
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
-            if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
-                warn!("Block is failed block : {:?}", block_id);
+            if let Ok(Some((_, _, _, version))) =
+                txpool.get_store().get_failed_block_by_id(block_id)
+            {
+                if version == *CRATE_VERSION {
+                    warn!("Block is failed block : {:?}", block_id);
+                }
             } else {
                 let peer = network
                     .get_peer(peer_id.clone())

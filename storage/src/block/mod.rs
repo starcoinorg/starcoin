@@ -15,25 +15,44 @@ use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct FailedBlock {
+pub struct OldFailedBlock {
     block: Block,
     peer_id: Option<PeerId>,
     failed: String,
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<(Block, Option<PeerId>, String)> for FailedBlock {
-    fn into(self) -> (Block, Option<PeerId>, String) {
-        (self.block, self.peer_id, self.failed)
-    }
-}
-
-impl From<(Block, Option<PeerId>, String)> for FailedBlock {
+impl From<(Block, Option<PeerId>, String)> for OldFailedBlock {
     fn from(block: (Block, Option<PeerId>, String)) -> Self {
         Self {
             block: block.0,
             peer_id: block.1,
             failed: block.2,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct FailedBlock {
+    block: Block,
+    peer_id: Option<PeerId>,
+    failed: String,
+    version: String,
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
+    fn into(self) -> (Block, Option<PeerId>, String, String) {
+        (self.block, self.peer_id, self.failed, self.version)
+    }
+}
+
+impl From<(Block, Option<PeerId>, String, String)> for FailedBlock {
+    fn from(block: (Block, Option<PeerId>, String, String)) -> Self {
+        Self {
+            block: block.0,
+            peer_id: block.1,
+            failed: block.2,
+            version: block.3,
         }
     }
 }
@@ -44,6 +63,7 @@ impl Sample for FailedBlock {
             block: Block::sample(),
             peer_id: Some(PeerId::random()),
             failed: "Unknown reason".to_string(),
+            version: "Unknow version".to_string(),
         }
     }
 }
@@ -239,9 +259,10 @@ impl BlockStorage {
         block: Block,
         peer_id: Option<PeerId>,
         failed: String,
+        version: String,
     ) -> Result<()> {
         self.failed_block_storage
-            .put(block_id, (block, peer_id, failed).into())
+            .put(block_id, (block, peer_id, failed, version).into())
     }
 
     pub fn delete_failed_block(&self, block_id: HashValue) -> Result<()> {
@@ -251,7 +272,7 @@ impl BlockStorage {
     pub fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String)>> {
+    ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
         match self.failed_block_storage.get(block_id)? {
             Some(failed_block) => Ok(Some(failed_block.into())),
             None => Ok(None),
