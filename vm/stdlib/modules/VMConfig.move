@@ -143,27 +143,52 @@ module VMConfig {
 
     public fun native_schedule(): vector<GasCost> {
         let table = Vector::empty();
+        //Hash::sha2_256 0
         Vector::push_back(&mut table, new_gas_cost(21, 1));
+        //Hash::sha3_256 1
         Vector::push_back(&mut table, new_gas_cost(64, 1));
+        //Signature::ed25519_verify 2
         Vector::push_back(&mut table, new_gas_cost(61, 1));
+        //ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated
         Vector::push_back(&mut table, new_gas_cost(3351, 1));
+        //BSC::to_bytes 4
         Vector::push_back(&mut table, new_gas_cost(181, 1));
+        //Vector::length 5
         Vector::push_back(&mut table, new_gas_cost(98, 1));
+        //Vector::empty 6
         Vector::push_back(&mut table, new_gas_cost(84, 1));
+        //Vector::borrow 7
         Vector::push_back(&mut table, new_gas_cost(1334, 1));
+        //Vector::borrow_mut 8
         Vector::push_back(&mut table, new_gas_cost(1902, 1));
+        //Vector::push_back 9
         Vector::push_back(&mut table, new_gas_cost(53, 1));
+        //Vector::pop_back 10
         Vector::push_back(&mut table, new_gas_cost(227, 1));
+        //Vector::destory_empty 11
         Vector::push_back(&mut table, new_gas_cost(572, 1));
+        //Vector::swap 12
         Vector::push_back(&mut table, new_gas_cost(1436, 1));
+        //Signature::ed25519_validate_pubkey 13
         Vector::push_back(&mut table, new_gas_cost(26, 1));
+        //Signer::borrow_address 14
         Vector::push_back(&mut table, new_gas_cost(353, 1));
+        //Account::creator_signer 15
         Vector::push_back(&mut table, new_gas_cost(24, 1));
+        //Account::destroy_signer 16
         Vector::push_back(&mut table, new_gas_cost(212, 1));
+        //Event::emit_event 17
         Vector::push_back(&mut table, new_gas_cost(52, 1));
+        //BCS::to_address 18
         Vector::push_back(&mut table, new_gas_cost(26, 1));
+        //Token::name_of 19
         Vector::push_back(&mut table, new_gas_cost(2002, 1));
+        //Hash::keccak_256 20
         Vector::push_back(&mut table, new_gas_cost(64, 1));
+        //Hash::ripemd160 21
+        Vector::push_back(&mut table, new_gas_cost(64, 1));
+        //Signature::native_ecrecover 22
+        Vector::push_back(&mut table, new_gas_cost(128, 1));
         table
     }
 

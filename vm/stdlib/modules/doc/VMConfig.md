@@ -341,27 +341,52 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
 
 <pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_native_schedule">native_schedule</a>(): vector&lt;<a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a>&gt; {
     <b>let</b> table = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>();
+    //<a href="Hash.md#0x1_Hash_sha2_256">Hash::sha2_256</a> 0
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(21, 1));
+    //<a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a> 1
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(64, 1));
+    //<a href="Signature.md#0x1_Signature_ed25519_verify">Signature::ed25519_verify</a> 2
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(61, 1));
+    //ED25519_THRESHOLD_VERIFY 3 this <b>native</b> funciton is deprecated
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(3351, 1));
+    //BSC::to_bytes 4
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(181, 1));
+    //<a href="Vector.md#0x1_Vector_length">Vector::length</a> 5
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(98, 1));
+    //<a href="Vector.md#0x1_Vector_empty">Vector::empty</a> 6
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(84, 1));
+    //<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a> 7
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1334, 1));
+    //<a href="Vector.md#0x1_Vector_borrow_mut">Vector::borrow_mut</a> 8
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1902, 1));
+    //<a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a> 9
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(53, 1));
+    //<a href="Vector.md#0x1_Vector_pop_back">Vector::pop_back</a> 10
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(227, 1));
+    //Vector::destory_empty 11
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(572, 1));
+    //<a href="Vector.md#0x1_Vector_swap">Vector::swap</a> 12
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(1436, 1));
+    //<a href="Signature.md#0x1_Signature_ed25519_validate_pubkey">Signature::ed25519_validate_pubkey</a> 13
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(26, 1));
+    //<a href="Signer.md#0x1_Signer_borrow_address">Signer::borrow_address</a> 14
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(353, 1));
+    //Account::creator_signer 15
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(24, 1));
+    //Account::destroy_signer 16
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(212, 1));
+    //<a href="Event.md#0x1_Event_emit_event">Event::emit_event</a> 17
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(52, 1));
+    //<a href="BCS.md#0x1_BCS_to_address">BCS::to_address</a> 18
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(26, 1));
+    //<a href="Token.md#0x1_Token_name_of">Token::name_of</a> 19
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(2002, 1));
+    //<a href="Hash.md#0x1_Hash_keccak_256">Hash::keccak_256</a> 20
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(64, 1));
+    //<a href="Hash.md#0x1_Hash_ripemd160">Hash::ripemd160</a> 21
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(64, 1));
+    //<a href="Signature.md#0x1_Signature_native_ecrecover">Signature::native_ecrecover</a> 22
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(128, 1));
     table
 }
 </code></pre>

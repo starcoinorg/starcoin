@@ -7,14 +7,14 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-docgen = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-prover = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+docgen = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-prover = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev="5a8ea734641cce096914fe10a2fbd8aea2e65fd1" }
 starcoin-crypto={path = "../../commons/crypto"}
 log = "0.4.14"
 walkdir = "2.3.1"
@@ -22,6 +22,8 @@ smallvec = "1.7.0"
 tiny-keccak={version="2", features = ["keccak"]}
 libsecp256k1 = "0.7.0"
 arrayref = "0.3"
+ripemd160 = "0.9.1"
+num_enum = "0.5.4"
 
 
 [dev-dependencies]

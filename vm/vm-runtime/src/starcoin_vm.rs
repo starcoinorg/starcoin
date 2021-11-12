@@ -114,11 +114,23 @@ impl StarcoinVM {
         self.move_version = MoveLanguageVersion::fetch_config(&remote_storage)?;
 
         if let Some(v) = &self.version {
-            self.vm_config = if v.major < VMCONFIG_UPGRADE_VERSION_MARK {
+            // if version is 0, it represent latest version. we should consider it.
+            let stdlib_version = v.clone().into_stdlib_version();
+            self.vm_config = if stdlib_version
+                < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
+            {
+                debug!(
+                    "stdlib version: {}, fetch vmconfig from onchain resource",
+                    stdlib_version
+                );
                 Some(VMConfig::fetch_config(&remote_storage)?.ok_or_else(|| {
                     format_err!("Load VMConfig fail, VMConfig resource not exist.")
                 })?)
             } else {
+                debug!(
+                    "stdlib version: {}, fetch vmconfig from onchain module",
+                    stdlib_version
+                );
                 let instruction_schedule = {
                     let data = self
                         .execute_readonly_function(
@@ -1086,10 +1098,6 @@ impl StarcoinVM {
                 .start_timer()
         });
         let data_cache = StateViewCache::new(state_view);
-        if let Err(err) = self.load_configs(&data_cache) {
-            warn!("Load config error at verify_transaction: {}", err);
-            return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
-        }
 
         let cost_table = zero_cost_schedule();
         let mut gas_status = {

@@ -20,6 +20,11 @@ pub fn starcoin_natives() -> NativeFunctionTable {
             "keccak_256",
             starcoin_natives::hash::native_keccak_256,
         ),
+        (
+            "Hash",
+            "ripemd160",
+            starcoin_natives::hash::native_ripemd160,
+        ),
         ("BCS", "to_bytes", bcs::native_to_bytes),
         (
             "BCS",
@@ -35,6 +40,11 @@ pub fn starcoin_natives() -> NativeFunctionTable {
             "Signature",
             "ed25519_verify",
             signature::native_ed25519_signature_verification,
+        ),
+        (
+            "Signature",
+            "native_ecrecover",
+            starcoin_natives::ecrecover::native_ecrecover,
         ),
         ("Vector", "length", vector::native_length),
         ("Vector", "empty", vector::native_empty),

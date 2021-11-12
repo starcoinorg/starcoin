@@ -184,7 +184,7 @@ impl NodeHandle {
             let head = chain_service.main_head_block().await?;
             debug!("generate_block: current head block: {:?}", head.header);
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
-            bus.broadcast(GenerateBlockEvent::new(false))?;
+            bus.broadcast(GenerateBlockEvent::new(true))?;
             let block = if let Ok(Ok(event)) =
                 async_std::future::timeout(Duration::from_secs(5), receiver).await
             {
@@ -193,7 +193,11 @@ impl NodeHandle {
                 event.0.block().clone()
             } else {
                 let latest_head = chain_service.main_head_block().await?;
-                debug!("generate_block: latest block: {:?}", latest_head.header);
+                debug!(
+                    "generate_block: head before generate:{:?}, head after generate:{:?}",
+                    head.header(),
+                    latest_head.header
+                );
                 if latest_head.header().number() > head.header().number() {
                     latest_head
                 } else {

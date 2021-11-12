@@ -1,8 +1,14 @@
+// Copyright (c) The Diem Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::NativeCostIndex;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::sub_status::NFE_BCS_TO_ADDRESS_FAILURE;
 use move_vm_runtime::native_functions::NativeContext;
-use move_vm_types::gas_schedule::NativeCostIndex;
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::{native_gas, NativeResult};
 use move_vm_types::pop_arg;
@@ -23,7 +29,7 @@ pub fn native_to_address(
     let key_bytes = pop_arg!(args, Vec<u8>);
     let cost = native_gas(
         context.cost_table(),
-        NativeCostIndex::BCS_TO_ADDRESS,
+        NativeCostIndex::BCS_TO_ADDRESS as u8,
         key_bytes.len(),
     );
     if key_bytes.len() != AccountAddress::LENGTH {
