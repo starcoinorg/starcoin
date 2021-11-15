@@ -31,6 +31,13 @@ impl From<(Block, Option<PeerId>, String)> for OldFailedBlock {
     }
 }
 
+#[allow(clippy::from_over_into)]
+impl Into<(Block, Option<PeerId>, String, String)> for OldFailedBlock {
+    fn into(self) -> (Block, Option<PeerId>, String, String) {
+        (self.block, self.peer_id, self.failed, "".to_string())
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
     block: Block,
@@ -140,6 +147,15 @@ impl ValueCodec for BlockBody {
     }
 }
 
+impl ValueCodec for OldFailedBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
 impl ValueCodec for FailedBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -273,9 +289,29 @@ impl BlockStorage {
         &self,
         block_id: HashValue,
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
-        match self.failed_block_storage.get(block_id)? {
-            Some(failed_block) => Ok(Some(failed_block.into())),
+        let res = self.failed_block_storage.get_raw(block_id)?;
+        match res {
+            Some(res) => {
+                let result = OldFailedBlock::decode_value(res.as_slice());
+                if result.is_ok() {
+                    return Ok(Some(result?.into()));
+                }
+                let result = FailedBlock::decode_value(res.as_slice())?;
+                Ok(Some(result.into()))
+            }
             None => Ok(None),
         }
+    }
+
+    pub fn save_old_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+        failed: String,
+    ) -> Result<()> {
+        let old_block: OldFailedBlock = (block, peer_id, failed).into();
+        self.failed_block_storage
+            .put_raw(block_id, old_block.encode_value()?)
     }
 }

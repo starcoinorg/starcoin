@@ -160,3 +160,66 @@ fn test_old_failed_block_decode() {
     let result = FailedBlock::decode(encode_str.unwrap().as_slice());
     assert!(result.is_err());
 }
+
+#[test]
+fn test_save_failed_block() {
+    let tmpdir = starcoin_config::temp_path();
+    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
+    ))
+    .unwrap();
+    let dt = Local::now();
+
+    let block_header = BlockHeader::new(
+        HashValue::random(),
+        dt.timestamp_nanos() as u64,
+        3,
+        AccountAddress::random(),
+        HashValue::zero(),
+        HashValue::random(),
+        HashValue::zero(),
+        0,
+        U256::zero(),
+        HashValue::random(),
+        ChainId::test(),
+        0,
+        BlockHeaderExtra::new([0u8; 4]),
+    );
+
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+
+    let block = Block::new(block_header, block_body);
+
+    storage
+        .block_storage
+        .save_old_failed_block(block.id(), block.clone(), None, "test old block".to_string())
+        .unwrap();
+
+    let result = storage
+        .block_storage
+        .get_failed_block_by_id(block.id())
+        .unwrap()
+        .unwrap();
+    assert_eq!(result.0, block);
+    assert_eq!(result.3, "".to_string());
+
+    storage
+        .block_storage
+        .save_failed_block(
+            block.id(),
+            block.clone(),
+            None,
+            "test old block".to_string(),
+            "1".to_string(),
+        )
+        .unwrap();
+
+    let result = storage
+        .block_storage
+        .get_failed_block_by_id(block.id())
+        .unwrap()
+        .unwrap();
+    assert_eq!(result.0, block);
+    assert_eq!(result.3, "1".to_string());
+}
