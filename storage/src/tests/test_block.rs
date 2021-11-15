@@ -193,7 +193,12 @@ fn test_save_failed_block() {
 
     storage
         .block_storage
-        .save_old_failed_block(block.id(), block.clone(), None, "test old block".to_string())
+        .save_old_failed_block(
+            block.id(),
+            block.clone(),
+            None,
+            "test old block".to_string(),
+        )
         .unwrap();
 
     let result = storage
