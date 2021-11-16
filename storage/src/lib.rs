@@ -135,6 +135,7 @@ pub trait BlockStore {
         block: Block,
         peer_id: Option<PeerId>,
         failed: String,
+        version: String,
     ) -> Result<()>;
 
     fn delete_failed_block(&self, block_id: HashValue) -> Result<()>;
@@ -142,7 +143,7 @@ pub trait BlockStore {
     fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String)>>;
+    ) -> Result<Option<(Block, Option<PeerId>, String, String)>>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -348,9 +349,10 @@ impl BlockStore for Storage {
         block: Block,
         peer_id: Option<PeerId>,
         failed: String,
+        version: String,
     ) -> Result<()> {
         self.block_storage
-            .save_failed_block(block_id, block, peer_id, failed)
+            .save_failed_block(block_id, block, peer_id, failed, version)
     }
 
     fn delete_failed_block(&self, block_id: HashValue) -> Result<()> {
@@ -360,7 +362,7 @@ impl BlockStore for Storage {
     fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String)>> {
+    ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
         self.block_storage.get_failed_block_by_id(block_id)
     }
 }

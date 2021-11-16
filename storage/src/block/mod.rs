@@ -15,25 +15,51 @@ use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct FailedBlock {
+pub struct OldFailedBlock {
     block: Block,
     peer_id: Option<PeerId>,
     failed: String,
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<(Block, Option<PeerId>, String)> for FailedBlock {
-    fn into(self) -> (Block, Option<PeerId>, String) {
-        (self.block, self.peer_id, self.failed)
-    }
-}
-
-impl From<(Block, Option<PeerId>, String)> for FailedBlock {
+impl From<(Block, Option<PeerId>, String)> for OldFailedBlock {
     fn from(block: (Block, Option<PeerId>, String)) -> Self {
         Self {
             block: block.0,
             peer_id: block.1,
             failed: block.2,
+        }
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<(Block, Option<PeerId>, String, String)> for OldFailedBlock {
+    fn into(self) -> (Block, Option<PeerId>, String, String) {
+        (self.block, self.peer_id, self.failed, "".to_string())
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct FailedBlock {
+    block: Block,
+    peer_id: Option<PeerId>,
+    failed: String,
+    version: String,
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
+    fn into(self) -> (Block, Option<PeerId>, String, String) {
+        (self.block, self.peer_id, self.failed, self.version)
+    }
+}
+
+impl From<(Block, Option<PeerId>, String, String)> for FailedBlock {
+    fn from(block: (Block, Option<PeerId>, String, String)) -> Self {
+        Self {
+            block: block.0,
+            peer_id: block.1,
+            failed: block.2,
+            version: block.3,
         }
     }
 }
@@ -44,6 +70,7 @@ impl Sample for FailedBlock {
             block: Block::sample(),
             peer_id: Some(PeerId::random()),
             failed: "Unknown reason".to_string(),
+            version: "Unknow version".to_string(),
         }
     }
 }
@@ -120,6 +147,15 @@ impl ValueCodec for BlockBody {
     }
 }
 
+impl ValueCodec for OldFailedBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
 impl ValueCodec for FailedBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -239,9 +275,10 @@ impl BlockStorage {
         block: Block,
         peer_id: Option<PeerId>,
         failed: String,
+        version: String,
     ) -> Result<()> {
         self.failed_block_storage
-            .put(block_id, (block, peer_id, failed).into())
+            .put(block_id, (block, peer_id, failed, version).into())
     }
 
     pub fn delete_failed_block(&self, block_id: HashValue) -> Result<()> {
@@ -251,10 +288,30 @@ impl BlockStorage {
     pub fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String)>> {
-        match self.failed_block_storage.get(block_id)? {
-            Some(failed_block) => Ok(Some(failed_block.into())),
+    ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
+        let res = self.failed_block_storage.get_raw(block_id)?;
+        match res {
+            Some(res) => {
+                let result = OldFailedBlock::decode_value(res.as_slice());
+                if result.is_ok() {
+                    return Ok(Some(result?.into()));
+                }
+                let result = FailedBlock::decode_value(res.as_slice())?;
+                Ok(Some(result.into()))
+            }
             None => Ok(None),
         }
+    }
+
+    pub fn save_old_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+        failed: String,
+    ) -> Result<()> {
+        let old_block: OldFailedBlock = (block, peer_id, failed).into();
+        self.failed_block_storage
+            .put_raw(block_id, old_block.encode_value()?)
     }
 }
