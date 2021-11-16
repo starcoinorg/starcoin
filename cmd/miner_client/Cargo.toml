@@ -34,7 +34,7 @@ structopt = "0.3.25"
 starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-rpc-api = { path = "../../rpc/api" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
-libloading = "0.7.1"
+libloading = "0.7.2"
 dyn-clone = "1.0.4"
 parking_lot = "0.11.2"
 starcoin-stratum = { path = "../../stratum" }
