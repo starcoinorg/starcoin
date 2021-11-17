@@ -8639,6 +8639,7 @@ dependencies = [
  "rand 0.8.4",
  "rand_core 0.6.3",
  "serde",
+ "starcoin-accumulator",
  "starcoin-crypto",
  "starcoin-service-registry",
  "starcoin-state-api",

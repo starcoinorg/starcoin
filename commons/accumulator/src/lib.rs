@@ -18,7 +18,7 @@ mod accumulator_test;
 pub mod inmemory;
 pub mod node;
 pub mod node_index;
-mod proof;
+pub mod proof;
 mod tree;
 pub mod tree_store;
 

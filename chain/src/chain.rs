@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, FullVerifier};
-use anyhow::{ensure, format_err, Result};
+use anyhow::{bail, ensure, format_err, Result};
 use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
+use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, ExecutedBlock,
-    MintedUncleNumber, VerifiedBlock, VerifyBlockField,
+    MintedUncleNumber, TransactionProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_executor::VMMetrics;
 use starcoin_open_block::OpenedBlock;
@@ -31,6 +32,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
@@ -737,7 +739,7 @@ impl ChainReader for BlockChain {
         )
     }
 
-    fn get_txn_infos(
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
@@ -759,6 +761,40 @@ impl ChainReader for BlockChain {
             infos.push(info);
         }
         Ok(infos)
+    }
+
+    fn get_transaction_proof(
+        &self,
+        index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionProof>> {
+        let proof = self.txn_accumulator.get_proof(index)?;
+        let txn_info_hash = self.txn_accumulator.get_leaf(index)?;
+        match (proof, txn_info_hash) {
+            (None, None) => return Ok(None),
+            (Some(txn_proof), Some(txn_info_hash)) => {
+                if let Some(event_index) = event_index {
+                    let events = self
+                        .storage
+                        .get_contract_events(txn_info_hash)?
+                        .unwrap_or_default();
+                    if event_index as usize > events.len() {
+                        bail!("event index out of bounds, events len:{}", events.len())
+                    }
+                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+                    let events_accumulator_hash =
+                        InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+                }
+            }
+            (_, _) => {
+                bail!(
+                    "Can not get proof or leaf from txn_accumulator by index:{}",
+                    index
+                )
+            }
+        }
+        todo!()
     }
 }
 

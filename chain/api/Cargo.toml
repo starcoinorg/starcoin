@@ -20,6 +20,7 @@ starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-state-api = { path = "../../state/api" }
 network-api = {package="network-api", path="../../network/api"}
+starcoin-accumulator = { path = "../../commons/accumulator"}
 
 [dev-dependencies]
 
