@@ -24,7 +24,7 @@ libsecp256k1 = "0.7.0"
 arrayref = "0.3"
 ripemd160 = "0.9.1"
 num_enum = "0.5.4"
-
+starcoin-uint = {path = "../../types/uint"}
 
 [dev-dependencies]
 rand = "0.8.4"

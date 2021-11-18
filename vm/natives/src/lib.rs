@@ -7,6 +7,7 @@ pub mod debug;
 pub mod hash;
 pub mod signature;
 pub mod token;
+pub mod u256;
 // for support evm compat and cross chain.
 pub mod ecrecover;
 
@@ -37,6 +38,13 @@ pub enum NativeCostIndex {
     KECCAK_256 = 20,
     RIPEMD160 = 21,
     ECRECOVER = 22,
+    U256_FROM_BYTES = 23,
+    U256_ADD = 24,
+    U256_SUB = 25,
+    U256_MUL = 26,
+    U256_DIV = 27,
+    U256_REM = 28,
+    U256_POW = 29,
 }
 
 impl NativeCostIndex {

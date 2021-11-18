@@ -189,6 +189,20 @@ module VMConfig {
         Vector::push_back(&mut table, new_gas_cost(64, 1));
         //Signature::native_ecrecover 22
         Vector::push_back(&mut table, new_gas_cost(128, 1));
+        //U256::from_bytes 23
+        Vector::push_back(&mut table, new_gas_cost(10, 1));
+        //U256::add 24
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        //U256::sub 25
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        //U256::mul 26
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        //U256::div 27
+        Vector::push_back(&mut table, new_gas_cost(8, 1));
+        // U256::rem 28
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        // U256::pow 29
+        Vector::push_back(&mut table, new_gas_cost(10, 1));
         table
     }
 

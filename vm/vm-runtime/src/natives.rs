@@ -3,6 +3,10 @@
 
 use move_stdlib::natives::{bcs, event, hash, signer, vector};
 use move_vm_runtime::native_functions::{NativeFunction, NativeFunctionTable};
+use starcoin_natives::u256::{
+    native_u256_add, native_u256_div, native_u256_from_bytes, native_u256_mul, native_u256_pow,
+    native_u256_rem, native_u256_sub,
+};
 use starcoin_natives::{account, debug, signature};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::CORE_CODE_ADDRESS;
@@ -79,6 +83,13 @@ pub fn starcoin_natives() -> NativeFunctionTable {
             "create_signers_for_testing",
             move_stdlib::natives::unit_test::native_create_signers_for_testing,
         ),
+        ("U256", "from_bytes", native_u256_from_bytes),
+        ("U256", "native_add", native_u256_add),
+        ("U256", "native_sub", native_u256_sub),
+        ("U256", "native_mul", native_u256_mul),
+        ("U256", "native_div", native_u256_div),
+        ("U256", "native_rem", native_u256_rem),
+        ("U256", "native_pow", native_u256_pow),
     ];
     NATIVES
         .iter()
