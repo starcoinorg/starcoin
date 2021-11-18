@@ -4,8 +4,6 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
-#[cfg(target_os = "linux")]
-use pprof::criterion::{Output, PProfProfiler};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
