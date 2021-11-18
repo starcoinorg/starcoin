@@ -337,12 +337,9 @@ fn main() -> anyhow::Result<()> {
         let verifier = option.verifier.unwrap_or(Verifier::Basic);
         let result = apply_block(option.to_path, option.input_path, option.net, verifier);
         #[cfg(target_os = "linux")]
-        match guard.report().build() {
-            Ok(report) => {
-                let file = File::create("/tmp/flamegraph.svg").unwrap();
-                report.flamegraph(file).unwrap();
-            }
-            Err(_) => {}
+        if let Ok(report) = guard.report().build() {
+            let file = File::create("/tmp/flamegraph.svg").unwrap();
+            report.flamegraph(file).unwrap();
         }
         return result;
     }
