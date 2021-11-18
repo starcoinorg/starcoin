@@ -38,3 +38,8 @@ pub enum NativeCostIndex {
     RIPEMD160 = 21,
     ECRECOVER = 22,
 }
+
+impl NativeCostIndex {
+    //note: should change this value when add new native function.
+    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 23;
+}

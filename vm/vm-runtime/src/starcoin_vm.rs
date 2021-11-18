@@ -13,8 +13,10 @@ use move_vm_runtime::data_cache::MoveStorage;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
+use once_cell::sync::Lazy;
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
+use starcoin_natives::NativeCostIndex;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
     access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
@@ -64,6 +66,9 @@ use starcoin_vm_types::{
 };
 use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
+
+static ZERO_COST_SCHEDULE: Lazy<CostTable> =
+    Lazy::new(|| zero_cost_schedule(NativeCostIndex::NUMBER_OF_NATIVE_FUNCTIONS));
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -758,9 +763,9 @@ impl StarcoinVM {
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount = GasUnits::new(0);
-        let gas_schedule = zero_cost_schedule();
+        let cost_table = &ZERO_COST_SCHEDULE;
         let mut gas_status = {
-            let mut gas_status = GasStatus::new(&gas_schedule, max_gas_amount);
+            let mut gas_status = GasStatus::new(cost_table, max_gas_amount);
             gas_status.set_metering(false);
             gas_status
         };
@@ -1099,9 +1104,9 @@ impl StarcoinVM {
         });
         let data_cache = StateViewCache::new(state_view);
 
-        let cost_table = zero_cost_schedule();
+        let cost_table = &ZERO_COST_SCHEDULE;
         let mut gas_status = {
-            let mut gas_status = GasStatus::new(&cost_table, GasUnits::new(0));
+            let mut gas_status = GasStatus::new(cost_table, GasUnits::new(0));
             gas_status.set_metering(false);
             gas_status
         };
