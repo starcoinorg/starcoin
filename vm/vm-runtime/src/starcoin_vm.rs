@@ -16,6 +16,7 @@ use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
+use starcoin_natives::NativeCostIndex;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
     access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
@@ -67,7 +68,7 @@ use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 static ZERO_COST_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| zero_cost_schedule(super::natives::starcoin_natives().len()));
+    Lazy::new(|| zero_cost_schedule(NativeCostIndex::NUMBER_OF_NATIVE_FUNCTIONS));
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
