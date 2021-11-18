@@ -812,7 +812,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_block_time_target: MIN_BLOCK_TIME_TARGET,
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT * 10,
             strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (
@@ -865,7 +865,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_block_time_target: MIN_BLOCK_TIME_TARGET,
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT * 10,
             strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (
@@ -892,14 +892,15 @@ pub static HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    let stdlib_version = StdlibVersion::Latest;
+    let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
+
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::Static(
-            GenesisBlockParameter{
-                parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
-                timestamp: 1616415168000,
-                difficulty: 100.into(),
-            }
-        ),
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
+            parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
+            timestamp: 1637208128000,
+            difficulty: 100.into(),
+        }),
         version: Version { major: 1 },
         reward_delay: 3,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
@@ -923,19 +924,19 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_block_time_target: MIN_BLOCK_TIME_TARGET,
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT * 10,
             strategy: ConsensusStrategy::CryptoNight.value(),
         },
         association_key_pair: (
             None,
-            MultiEd25519PublicKey::from_encoded_string("fde53c76807c8a5ec5855ed6200868be8653c34a0f18c6b01f60040ead5daa87b1157be91c2637b709c09ed5d420976c0d4df79537372d69a272fc4869c1364ce3700a1ed3f00ea87c015028cd4a03a4881f6fe203b02f7059db906b764cd23202")
+            MultiEd25519PublicKey::from_encoded_string(association_public_key)
                 .expect("create multi public key must success."),
         ),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version,
         dao_config: DaoConfig {
-            voting_delay: 60_000,       // 1min
+            voting_delay: 60_000,          // 1min
             voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60 * 1000, // 1h

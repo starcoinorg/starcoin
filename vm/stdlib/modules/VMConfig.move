@@ -194,13 +194,18 @@ module VMConfig {
 
     public fun gas_constants(): GasConstants {
         let min_price_per_gas_unit: u64 = if (ChainId::is_test()) { 0 }  else { 1 };
+        let maximum_number_of_gas_units: u64 = 40000000;//must less than base_block_gas_limit
+
+        if (ChainId::is_test() || ChainId::is_dev() || ChainId::is_halley()) {
+            maximum_number_of_gas_units = maximum_number_of_gas_units * 10
+        };
         GasConstants {
             global_memory_per_byte_cost: 4,
             global_memory_per_byte_write_cost: 9,
             min_transaction_gas_units: 600,
             large_transaction_cutoff: 600,
             instrinsic_gas_per_byte: 8,
-            maximum_number_of_gas_units: 40000000, //must less than base_block_gas_limit
+            maximum_number_of_gas_units,
             min_price_per_gas_unit,
             max_price_per_gas_unit: 10000,
             max_transaction_size_in_bytes: 1024 * 128,
