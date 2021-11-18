@@ -4,6 +4,8 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
+#[cfg(target_os = "linux")]
+use pprof::criterion::{Output, PProfProfiler};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -17,9 +19,11 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
 use starcoin_storage::storage::{InnerStore, StorageInstance};
 use starcoin_storage::{
-    Storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, VEC_PREFIX_NAME,
+    BlockStore, Storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    VEC_PREFIX_NAME,
 };
 use starcoin_types::block::{Block, BlockHeader, BlockNumber};
+use starcoin_types::startup_info::StartupInfo;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
@@ -229,10 +233,10 @@ pub struct ApplyBlockOptions {
     #[structopt(long, short = "n")]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[structopt(long, short = "o", parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[structopt(long, short = "i", parse(from_os_str))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
     #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
@@ -330,8 +334,18 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ApplyBlock(option) = cmd {
+        #[cfg(target_os = "linux")]
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
         let verifier = option.verifier.unwrap_or(Verifier::Basic);
-        let result = apply_blocks(option.to_path, option.input_path, option.net, verifier);
+        let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+        #[cfg(target_os = "linux")]
+        match guard.report().build() {
+            Ok(report) => {
+                let file = File::create("/tmp/flamegraph.svg").unwrap();
+                report.flamegraph(file).unwrap();
+            }
+            Err(_) => {}
+        }
         return result;
     }
     Ok(())
@@ -345,9 +359,11 @@ pub fn export_block_range(
     end: BlockNumber,
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::new(
-        from_dir.join("starcoindb/db"),
-        RocksdbConfig::default(),
+    let db_stoarge = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        VEC_PREFIX_NAME.to_vec(),
+        true,
+        Default::default(),
         None,
     )?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -379,7 +395,7 @@ pub fn export_block_range(
     Ok(())
 }
 
-pub fn apply_blocks(
+pub fn apply_block(
     to_dir: PathBuf,
     input_path: PathBuf,
     network: BuiltinNetworkID,
@@ -392,13 +408,36 @@ pub fn apply_blocks(
         db_stoarge,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
-    let mut chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-        .expect("create block chain should success.");
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
     let start_time = SystemTime::now();
     let reader = BufReader::new(File::open(input_path)?);
+    let mut blocks = vec![];
     for record in reader.lines() {
         let record = record?;
         let block: Block = serde_json::from_str(record.as_str())?;
+        blocks.push(block);
+    }
+    let mut last_block_hash = None;
+    if let Some(last_block) = blocks.last() {
+        let start = blocks.get(0).unwrap().header().number();
+        let end = last_block.header().number();
+        let cur_num = chain.status().head().number();
+        println!(
+            "current number {}, import [{},{}] block number",
+            cur_num, start, end
+        );
+        last_block_hash = Some(last_block.header.id());
+    }
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("load blocks from file use time: {:?}", use_time.as_millis());
+    let start_time = SystemTime::now();
+    for block in blocks {
         match verifier {
             Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
             Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
@@ -406,7 +445,11 @@ pub fn apply_blocks(
             Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
         };
     }
+    if let Some(last_block_hash) = last_block_hash {
+        let startup_info = StartupInfo::new(last_block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
     let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("apply blocks use time: {:?}", use_time.as_nanos());
+    println!("apply block use time: {:?}", use_time.as_secs());
     Ok(())
 }

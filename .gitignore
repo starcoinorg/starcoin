@@ -43,3 +43,5 @@ examples/*.mv
 
 # Move Build Output
 move_build_output/
+
+*.bak

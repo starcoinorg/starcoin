@@ -2022,6 +2022,7 @@ dependencies = [
  "bcs-ext",
  "csv",
  "hex",
+ "pprof",
  "serde",
  "serde_json",
  "starcoin-chain",
@@ -9482,12 +9483,14 @@ dependencies = [
 name = "starcoin-replay"
 version = "1.8.0-rc.1"
 dependencies = [
+ "anyhow",
  "sp-utils",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-storage",
+ "starcoin-types",
  "starcoin-vm-types",
  "structopt 0.3.25",
 ]
