@@ -49,5 +49,5 @@ pub enum NativeCostIndex {
 
 impl NativeCostIndex {
     //note: should change this value when add new native function.
-    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 23;
+    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 30;
 }
