@@ -463,7 +463,7 @@ pub fn apply_block(
         }
         blocks.push(block);
     }
-    if blocks.len() == 0 {
+    if blocks.is_empty() {
         return Err(format_err!("cur_num {} exceed apply block number", cur_num));
     }
 
