@@ -26,9 +26,9 @@ module Arith {
         let (a1, a0) = split_u64(a);
         let (b1, b0) = split_u64(b);
         let (b, r0) = split_u64((1 << 32) + a0 - b0 - *borrow);
-        let borrowed = if(b==0) {0} else {1};
+        let borrowed = if(b==0) {1} else {0};
         let (b, r1) = split_u64((1 << 32) + a1 - b1 - borrowed);
-        *borrow = if(b==0) {0} else {1};
+        *borrow = if(b==0) {1} else {0};
 
         combine_u64(r1, r0)
     }
@@ -128,37 +128,6 @@ module U256 {
     }
 
 
-    /// implementation native_add in move.
-    fun add_nocarry(a: &mut U256, b: &U256) {
-        let carry = 0;
-        let idx = 0;
-        let len = (WORD as u64);
-        while (idx < len) {
-            let a_bit = Vector::borrow_mut(&mut a.bits, idx);
-            let b_bit = Vector::borrow(&b.bits, idx);
-            *a_bit = 0x1::Arith::adc(*a_bit, *b_bit, &mut carry);
-        };
-
-        // check overflow
-        assert(carry == 0, 100);
-    }
-
-    /// implementation native_sub in move.
-    fun sub_noborrow(a: &mut U256, b: &U256) {
-        let borrow = 0;
-        let idx = 0;
-        let len =(WORD as u64);
-        while (idx < len) {
-            let a_bit = Vector::borrow_mut(&mut a.bits, idx);
-            let b_bit = Vector::borrow(&b.bits, idx);
-            *a_bit = 0x1::Arith::sbb(*a_bit, *b_bit, &mut borrow);
-        };
-
-        // check overflow
-        assert(borrow == 0, 100);
-
-    }
-
     public fun add(a: U256, b: U256): U256 {
         add_nocarry(&mut a, &b);
         a
@@ -216,8 +185,9 @@ module U256 {
         let a = Self::from_u128(10);
         let b = Self::from_u64(2);
         let c = Self::from_u64(3);
-        assert(compare(&Self::div(a, b), &from_u64(5)) == EQUAL, 0);
-        assert(compare(&Self::div(a, c), &from_u64(3)) == EQUAL, 0);
+        // as U256 cannot be implicitly copied, we need to add copy keyword.
+        assert(compare(&Self::div(copy a, b), &from_u64(5)) == EQUAL, 0);
+        assert(compare(&Self::div(copy a, c), &from_u64(3)) == EQUAL, 0);
     }
 
     public fun rem(a: U256, b: U256): U256 {
@@ -230,8 +200,41 @@ module U256 {
         let a = Self::from_u128(10);
         let b = Self::from_u64(2);
         let c = Self::from_u64(3);
-        assert(compare(&Self::rem(a, b), &from_u64(0)) == EQUAL, 0);
-        assert(compare(&Self::div(a, c), &from_u64(1)) == EQUAL, 0);
+        assert(compare(&Self::rem(copy a, b), &from_u64(0)) == EQUAL, 0);
+        assert(compare(&Self::rem(copy a, c), &from_u64(1)) == EQUAL, 0);
+    }
+
+    /// move implementation of native_add.
+    fun add_nocarry(a: &mut U256, b: &U256) {
+        let carry = 0;
+        let idx = 0;
+        let len = (WORD as u64);
+        while (idx < len) {
+            let a_bit = Vector::borrow_mut(&mut a.bits, idx);
+            let b_bit = Vector::borrow(&b.bits, idx);
+            *a_bit = 0x1::Arith::adc(*a_bit, *b_bit, &mut carry);
+            idx = idx + 1;
+        };
+
+        // check overflow
+        assert(carry == 0, 100);
+    }
+
+    /// move implementation of native_sub.
+    fun sub_noborrow(a: &mut U256, b: &U256) {
+        let borrow = 0;
+        let idx = 0;
+        let len =(WORD as u64);
+        while (idx < len) {
+            let a_bit = Vector::borrow_mut(&mut a.bits, idx);
+            let b_bit = Vector::borrow(&b.bits, idx);
+            *a_bit = 0x1::Arith::sbb(*a_bit, *b_bit, &mut borrow);
+            idx = idx + 1;
+        };
+
+        // check overflow
+        assert(borrow == 0, 100);
+
     }
 
     native fun from_bytes(data: vector<u8>, be: bool): U256;

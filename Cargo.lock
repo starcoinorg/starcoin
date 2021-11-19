@@ -9301,6 +9301,7 @@ dependencies = [
  "move-command-line-common",
  "move-core-types",
  "move-prover",
+ "move-stdlib",
  "move-vm-runtime",
  "move-vm-types",
  "num_enum",
@@ -9309,6 +9310,7 @@ dependencies = [
  "smallvec 1.7.0",
  "starcoin-crypto",
  "starcoin-uint",
+ "starcoin-vm-types",
  "tiny-keccak",
  "walkdir",
 ]
@@ -10222,6 +10224,7 @@ dependencies = [
  "sha2 0.9.8",
  "starcoin-crypto",
  "starcoin-move-compiler",
+ "starcoin-natives",
  "starcoin-vm-types",
  "walkdir",
 ]

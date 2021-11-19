@@ -30,3 +30,4 @@ itertools = "0.10.1"
 
 [dev-dependencies]
 move-unit-test = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c"  }
+starcoin-natives = {path = "../natives", features = ["testing"]}
