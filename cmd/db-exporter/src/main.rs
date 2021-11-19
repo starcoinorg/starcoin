@@ -32,6 +32,8 @@ use std::sync::Arc;
 use std::time::SystemTime;
 use structopt::StructOpt;
 
+const BLOCK_GAP: u64 = 1000;
+
 pub fn export<W: std::io::Write>(
     db: &str,
     mut csv_writer: Writer<W>,
@@ -370,6 +372,20 @@ pub fn export_block_range(
         Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
         .expect("create block chain should success.");
+    let cur_num = chain.status().head().number();
+    let end = if cur_num > end + BLOCK_GAP {
+        end
+    } else {
+        cur_num - BLOCK_GAP
+    };
+    if start > cur_num || start > end {
+        return Err(format_err!(
+            "cur_num {} start {} end {} illegal",
+            cur_num,
+            start,
+            end
+        ));
+    }
     let start_time = SystemTime::now();
     let total = end - start + 1;
     let load_bar = ProgressBar::new(total);
@@ -406,7 +422,12 @@ pub fn export_block_range(
     file.flush()?;
     bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("export range block use time: {:?}", use_time.as_secs());
+    println!(
+        "export range block [{}..{}] use time: {:?}",
+        start,
+        end,
+        use_time.as_secs()
+    );
     Ok(())
 }
 
