@@ -32,7 +32,7 @@ script {
 //! new-transaction
 //! sender: alice
 //! gas-price: 1
-//! max-gas: 40000001
+//! max-gas: 400000001
 
 script {
     fun main() {

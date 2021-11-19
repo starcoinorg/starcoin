@@ -9,7 +9,7 @@ use 0x1::Option;
 
 fun main() {
     let config = ConsensusConfig::get_config();
-    let block_gas_limit: u64 = 200000000;
+    let block_gas_limit: u64 = 2000000000;
     let block_count = ConsensusConfig::epoch_block_count(&config);
 
     // min

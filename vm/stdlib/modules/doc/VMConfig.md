@@ -412,13 +412,18 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
 
 <pre><code><b>public</b> <b>fun</b> <a href="VMConfig.md#0x1_VMConfig_gas_constants">gas_constants</a>(): <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
     <b>let</b> min_price_per_gas_unit: u64 = <b>if</b> (<a href="ChainId.md#0x1_ChainId_is_test">ChainId::is_test</a>()) { 0 }  <b>else</b> { 1 };
+    <b>let</b> maximum_number_of_gas_units: u64 = 40000000;//must less than base_block_gas_limit
+
+    <b>if</b> (<a href="ChainId.md#0x1_ChainId_is_test">ChainId::is_test</a>() || <a href="ChainId.md#0x1_ChainId_is_dev">ChainId::is_dev</a>() || <a href="ChainId.md#0x1_ChainId_is_halley">ChainId::is_halley</a>()) {
+        maximum_number_of_gas_units = maximum_number_of_gas_units * 10
+    };
     <a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a> {
         global_memory_per_byte_cost: 4,
         global_memory_per_byte_write_cost: 9,
         min_transaction_gas_units: 600,
         large_transaction_cutoff: 600,
         instrinsic_gas_per_byte: 8,
-        maximum_number_of_gas_units: 40000000, //must less than base_block_gas_limit
+        maximum_number_of_gas_units,
         min_price_per_gas_unit,
         max_price_per_gas_unit: 10000,
         max_transaction_size_in_bytes: 1024 * 128,
