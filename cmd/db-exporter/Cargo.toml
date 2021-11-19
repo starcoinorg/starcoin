@@ -23,6 +23,7 @@ serde = "~1"
 serde_json = {version="~1", features=["arbitrary_precision"]}
 anyhow="~1"
 hex="~0.4"
+indicatif = "0.15.0"
 [target."cfg(target_os=\"linux\")".dependencies]
 pprof = { version = "0.6", features = ["flamegraph"] }
 

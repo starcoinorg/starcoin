@@ -4,6 +4,7 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
+use indicatif::{ProgressBar, ProgressStyle};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -214,7 +215,7 @@ pub struct ExportBlockRangeOptions {
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
     #[structopt(long, short = "o", parse(from_os_str))]
-    /// output file, like block.csv
+    /// output dir, like ~/, output filename like ~/block_start_end.csv
     pub output: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
@@ -370,23 +371,42 @@ pub fn export_block_range(
     let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
         .expect("create block chain should success.");
     let start_time = SystemTime::now();
-    let block_list: Result<Vec<Block>> = (start..end)
+    let total = end - start + 1;
+    let load_bar = ProgressBar::new(total);
+    load_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+
+    let block_list: Result<Vec<Block>> = (start..=end)
         .collect::<Vec<BlockNumber>>()
         .into_iter()
         .map(|num| {
+            load_bar.set_message(format!("load block {}", num).as_str());
+            load_bar.inc(1);
             chain
                 .get_block_by_number(num)?
                 .ok_or_else(|| format_err!("{} get block error", num))
         })
         .collect();
+    load_bar.finish();
     let block_list = block_list?;
-    let mut file = File::create(output)?;
+    let filename = format!("block_{}_{}.csv", start, end);
+    let mut file = File::create(output.join(filename))?;
+    let bar = ProgressBar::new(end - start + 1);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
     for block in block_list {
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
+        bar.set_message(format!("write block {}", block.header().number()).as_str());
+        bar.inc(1);
     }
     file.flush()?;
+    bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("export range block use time: {:?}", use_time.as_nanos());
+    println!("export range block use time: {:?}", use_time.as_secs());
     Ok(())
 }
 
@@ -411,39 +431,53 @@ pub fn apply_block(
     )
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
+    let cur_num = chain.status().head().number();
     let reader = BufReader::new(File::open(input_path)?);
     let mut blocks = vec![];
     for record in reader.lines() {
         let record = record?;
         let block: Block = serde_json::from_str(record.as_str())?;
+        if block.header().number() <= cur_num {
+            continue;
+        }
         blocks.push(block);
     }
-    let mut last_block_hash = None;
+    if blocks.len() == 0 {
+        return Err(format_err!("cur_num {} exceed apply block number", cur_num));
+    }
+
     if let Some(last_block) = blocks.last() {
         let start = blocks.get(0).unwrap().header().number();
         let end = last_block.header().number();
-        let cur_num = chain.status().head().number();
         println!(
             "current number {}, import [{},{}] block number",
             cur_num, start, end
         );
-        last_block_hash = Some(last_block.header.id());
     }
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("load blocks from file use time: {:?}", use_time.as_millis());
     let start_time = SystemTime::now();
+    let bar = ProgressBar::new(blocks.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
     for block in blocks {
+        let block_hash = block.header().id();
+        let block_number = block.header().number();
         match verifier {
             Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
             Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
             Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block)?,
             Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
         };
-    }
-    if let Some(last_block_hash) = last_block_hash {
-        let startup_info = StartupInfo::new(last_block_hash);
+        // apply block then flush startup_info for breakpoint resume
+        let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
+        bar.set_message(format!("apply block {}", block_number).as_str());
+        bar.inc(1);
     }
+    bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply block use time: {:?}", use_time.as_secs());
     Ok(())
