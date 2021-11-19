@@ -41,6 +41,7 @@ pub struct ReplayOpt {
     pub watch: bool,
 }
 
+// deprecated use starcoin_db_exporter replace
 fn main() -> anyhow::Result<()> {
     let _logger = starcoin_logger::init();
     let opts = ReplayOpt::from_args();
