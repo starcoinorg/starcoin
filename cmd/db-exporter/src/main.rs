@@ -4,6 +4,7 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
+use indicatif::{ProgressBar, ProgressStyle};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -17,9 +18,11 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
 use starcoin_storage::storage::{InnerStore, StorageInstance};
 use starcoin_storage::{
-    Storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, VEC_PREFIX_NAME,
+    BlockStore, Storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    VEC_PREFIX_NAME,
 };
 use starcoin_types::block::{Block, BlockHeader, BlockNumber};
+use starcoin_types::startup_info::StartupInfo;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
@@ -28,6 +31,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::SystemTime;
 use structopt::StructOpt;
+
+const BLOCK_GAP: u64 = 1000;
 
 pub fn export<W: std::io::Write>(
     db: &str,
@@ -212,7 +217,7 @@ pub struct ExportBlockRangeOptions {
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
     #[structopt(long, short = "o", parse(from_os_str))]
-    /// output file, like block.csv
+    /// output dir, like ~/, output filename like ~/block_start_end.csv
     pub output: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
@@ -229,10 +234,10 @@ pub struct ApplyBlockOptions {
     #[structopt(long, short = "n")]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[structopt(long, short = "o", parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[structopt(long, short = "i", parse(from_os_str))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
     #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
@@ -330,8 +335,15 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ApplyBlock(option) = cmd {
+        #[cfg(target_os = "linux")]
+        let guard = pprof::ProfilerGuard::new(100).unwrap();
         let verifier = option.verifier.unwrap_or(Verifier::Basic);
-        let result = apply_blocks(option.to_path, option.input_path, option.net, verifier);
+        let result = apply_block(option.to_path, option.input_path, option.net, verifier);
+        #[cfg(target_os = "linux")]
+        if let Ok(report) = guard.report().build() {
+            let file = File::create("/tmp/flamegraph.svg").unwrap();
+            report.flamegraph(file).unwrap();
+        }
         return result;
     }
     Ok(())
@@ -345,9 +357,11 @@ pub fn export_block_range(
     end: BlockNumber,
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
-    let db_stoarge = DBStorage::new(
-        from_dir.join("starcoindb/db"),
-        RocksdbConfig::default(),
+    let db_stoarge = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        VEC_PREFIX_NAME.to_vec(),
+        true,
+        Default::default(),
         None,
     )?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -358,28 +372,66 @@ pub fn export_block_range(
         Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
         .expect("create block chain should success.");
+    let cur_num = chain.status().head().number();
+    let end = if cur_num > end + BLOCK_GAP {
+        end
+    } else {
+        cur_num - BLOCK_GAP
+    };
+    if start > cur_num || start > end {
+        return Err(format_err!(
+            "cur_num {} start {} end {} illegal",
+            cur_num,
+            start,
+            end
+        ));
+    }
     let start_time = SystemTime::now();
-    let block_list: Result<Vec<Block>> = (start..end)
+    let total = end - start + 1;
+    let load_bar = ProgressBar::new(total);
+    load_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+
+    let block_list: Result<Vec<Block>> = (start..=end)
         .collect::<Vec<BlockNumber>>()
         .into_iter()
         .map(|num| {
+            load_bar.set_message(format!("load block {}", num).as_str());
+            load_bar.inc(1);
             chain
                 .get_block_by_number(num)?
                 .ok_or_else(|| format_err!("{} get block error", num))
         })
         .collect();
+    load_bar.finish();
     let block_list = block_list?;
-    let mut file = File::create(output)?;
+    let filename = format!("block_{}_{}.csv", start, end);
+    let mut file = File::create(output.join(filename))?;
+    let bar = ProgressBar::new(end - start + 1);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
     for block in block_list {
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
+        bar.set_message(format!("write block {}", block.header().number()).as_str());
+        bar.inc(1);
     }
     file.flush()?;
+    bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("export range block use time: {:?}", use_time.as_nanos());
+    println!(
+        "export range block [{}..{}] use time: {:?}",
+        start,
+        end,
+        use_time.as_secs()
+    );
     Ok(())
 }
 
-pub fn apply_blocks(
+pub fn apply_block(
     to_dir: PathBuf,
     input_path: PathBuf,
     network: BuiltinNetworkID,
@@ -392,21 +444,62 @@ pub fn apply_blocks(
         db_stoarge,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
-    let mut chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-        .expect("create block chain should success.");
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
     let start_time = SystemTime::now();
+    let cur_num = chain.status().head().number();
     let reader = BufReader::new(File::open(input_path)?);
+    let mut blocks = vec![];
     for record in reader.lines() {
         let record = record?;
         let block: Block = serde_json::from_str(record.as_str())?;
+        if block.header().number() <= cur_num {
+            continue;
+        }
+        blocks.push(block);
+    }
+    if blocks.is_empty() {
+        return Err(format_err!("cur_num {} exceed apply block number", cur_num));
+    }
+
+    if let Some(last_block) = blocks.last() {
+        let start = blocks.get(0).unwrap().header().number();
+        let end = last_block.header().number();
+        println!(
+            "current number {}, import [{},{}] block number",
+            cur_num, start, end
+        );
+    }
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("load blocks from file use time: {:?}", use_time.as_millis());
+    let start_time = SystemTime::now();
+    let bar = ProgressBar::new(blocks.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    for block in blocks {
+        let block_hash = block.header().id();
+        let block_number = block.header().number();
         match verifier {
             Verifier::Basic => chain.apply_with_verifier::<BasicVerifier>(block)?,
             Verifier::Consensus => chain.apply_with_verifier::<ConsensusVerifier>(block)?,
             Verifier::Full => chain.apply_with_verifier::<FullVerifier>(block)?,
             Verifier::None => chain.apply_with_verifier::<NoneVerifier>(block)?,
         };
+        // apply block then flush startup_info for breakpoint resume
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+        bar.set_message(format!("apply block {}", block_number).as_str());
+        bar.inc(1);
     }
+    bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("apply blocks use time: {:?}", use_time.as_nanos());
+    println!("apply block use time: {:?}", use_time.as_secs());
     Ok(())
 }

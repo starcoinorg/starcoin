@@ -11,7 +11,8 @@ use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::startup_info::StartupInfo;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -40,7 +41,8 @@ pub struct ReplayOpt {
     pub watch: bool,
 }
 
-fn main() {
+// deprecated use starcoin_db_exporter replace
+fn main() -> anyhow::Result<()> {
     let _logger = starcoin_logger::init();
     let opts = ReplayOpt::from_args();
 
@@ -103,10 +105,14 @@ fn main() {
     let mut chain2 = BlockChain::new(
         net.time_service(),
         chain_info2.status().head().id(),
-        storage2,
+        storage2.clone(),
         None,
     )
     .expect("create block chain should success.");
+    let mut last_block_hash = None;
+    if let Some(last_block) = block_vec.last() {
+        last_block_hash = Some(last_block.header.id());
+    }
     let begin = SystemTime::now();
     for block in block_vec {
         match opts.verifier {
@@ -126,6 +132,11 @@ fn main() {
             }
         };
     }
+    if let Some(last_block_hash) = last_block_hash {
+        let startup_info = StartupInfo::new(last_block_hash);
+        storage2.save_startup_info(startup_info)?;
+    }
     let use_time = SystemTime::now().duration_since(begin).unwrap();
     println!("apply use time: {:?}", use_time.as_nanos());
+    Ok(())
 }
