@@ -10215,6 +10215,7 @@ dependencies = [
  "itertools 0.10.1",
  "log 0.4.14",
  "move-prover",
+ "move-unit-test",
  "once_cell",
  "rayon",
  "serde",

@@ -1,4 +1,39 @@
-module 0x1::U256 {
+address 0x1 {
+module Arith {
+    /// split u64 to (high, low)
+    public fun split_u64(i: u64): (u64, u64) {
+        (i >> 32, i & 0xFFFFFFFF)
+    }
+
+    /// combine (high, low) to u64,
+    /// any lower bits of `high` will be erased, any higher bits of `low` will be erased.
+    public fun combine_u64(hi: u64, lo: u64): u64 {
+        (hi << 32) | (lo & 0xFFFFFFFF)
+    }
+
+    /// a + b, with carry
+    public fun adc(a: u64, b: u64, carry: &mut u64) : u64 {
+        let (a1, a0) = split_u64(a);
+        let (b1, b0) = split_u64(b);
+        let (c, r0) = split_u64(a0 + b0 + *carry);
+        let (c, r1) = split_u64(a1 + b1 + c);
+        *carry = c;
+        combine_u64(r1, r0)
+    }
+
+    /// a - b, with borrow
+    public fun sbb(a: u64, b: u64, borrow: &mut u64): u64 {
+        let (a1, a0) = split_u64(a);
+        let (b1, b0) = split_u64(b);
+        let (b, r0) = split_u64((1 << 32) + a0 - b0 - *borrow);
+        let borrowed = if(b==0) {0} else {1};
+        let (b, r1) = split_u64((1 << 32) + a1 - b1 - borrowed);
+        *borrow = if(b==0) {0} else {1};
+
+        combine_u64(r1, r0)
+    }
+}
+module U256 {
 
     use 0x1::Vector;
 
@@ -16,6 +51,7 @@ module 0x1::U256 {
     public fun zero(): U256 {
         from_u128(0u128)
     }
+
     public fun one(): U256 {
         from_u128(1u128)
     }
@@ -25,7 +61,7 @@ module 0x1::U256 {
     }
 
     public fun from_u128(v: u128): U256 {
-        let low = ( (v & 0xffffffffffffffff) as u64);
+        let low = ((v & 0xffffffffffffffff) as u64);
         let high = ((v >> 64) as u64);
         let bits = Vector::singleton(low);
         Vector::push_back(&mut bits, high);
@@ -51,6 +87,7 @@ module 0x1::U256 {
         assert(Vector::length(&data) <= 32, 4040);
         from_bytes(data, true)
     }
+
     public fun from_little_endian(data: vector<u8>): U256 {
         // TODO: define error code.
         assert(Vector::length(&data) <= 32, 4040);
@@ -90,8 +127,40 @@ module 0x1::U256 {
         assert(compare(&a, &d) == GREATER_THAN, 2);
     }
 
+
+    /// implementation native_add in move.
+    fun add_nocarry(a: &mut U256, b: &U256) {
+        let carry = 0;
+        let idx = 0;
+        let len = (WORD as u64);
+        while (idx < len) {
+            let a_bit = Vector::borrow_mut(&mut a.bits, idx);
+            let b_bit = Vector::borrow(&b.bits, idx);
+            *a_bit = 0x1::Arith::adc(*a_bit, *b_bit, &mut carry);
+        };
+
+        // check overflow
+        assert(carry == 0, 100);
+    }
+
+    /// implementation native_sub in move.
+    fun sub_noborrow(a: &mut U256, b: &U256) {
+        let borrow = 0;
+        let idx = 0;
+        let len =(WORD as u64);
+        while (idx < len) {
+            let a_bit = Vector::borrow_mut(&mut a.bits, idx);
+            let b_bit = Vector::borrow(&b.bits, idx);
+            *a_bit = 0x1::Arith::sbb(*a_bit, *b_bit, &mut borrow);
+        };
+
+        // check overflow
+        assert(borrow == 0, 100);
+
+    }
+
     public fun add(a: U256, b: U256): U256 {
-        native_add(&mut a, &b);
+        add_nocarry(&mut a, &b);
         a
     }
 
@@ -104,9 +173,10 @@ module 0x1::U256 {
     }
 
     public fun sub(a: U256, b: U256): U256 {
-        native_sub(&mut a, &b);
+        sub_noborrow(&mut a, &b);
         a
     }
+
     #[test]
     #[expected_failure]
     fun test_sub_overflow() {
@@ -114,6 +184,7 @@ module 0x1::U256 {
         let b = Self::from_u128(10);
         let _ = Self::sub(a, b);
     }
+
     #[test]
     fun test_sub_ok() {
         let a = Self::from_u128(10);
@@ -139,6 +210,7 @@ module 0x1::U256 {
         native_div(&mut a, &b);
         a
     }
+
     #[test]
     fun test_div() {
         let a = Self::from_u128(10);
@@ -148,10 +220,11 @@ module 0x1::U256 {
         assert(compare(&Self::div(a, c), &from_u64(3)) == EQUAL, 0);
     }
 
-    public fun rem(a: U256, b:U256): U256 {
+    public fun rem(a: U256, b: U256): U256 {
         native_rem(&mut a, &b);
         a
     }
+
     #[test]
     fun test_rem() {
         let a = Self::from_u128(10);
@@ -168,4 +241,5 @@ module 0x1::U256 {
     native fun native_div(a: &mut U256, b: &U256);
     native fun native_rem(a: &mut U256, b: &U256);
     native fun native_pow(a: &mut U256, b: &U256);
+}
 }
