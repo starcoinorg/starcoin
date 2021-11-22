@@ -33,7 +33,7 @@ impl AccumulatorProof {
         expected_root_hash: HashValue,
         element_hash: HashValue,
         element_index: u64,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         ensure!(
             self.siblings.len() <= MAX_ACCUMULATOR_PROOF_DEPTH,
             "Accumulator proof has more than {} ({}) siblings.",
@@ -50,10 +50,20 @@ impl AccumulatorProof {
                     (
                         if index % 2 == 0 {
                             // the current node is a left child.
-                            InternalNode::new(NodeIndex::new(index), hash, *sibling_hash).hash()
+                            InternalNode::new(
+                                NodeIndex::from_inorder_index(index),
+                                hash,
+                                *sibling_hash,
+                            )
+                            .hash()
                         } else {
                             // the current node is a right child.
-                            InternalNode::new(NodeIndex::new(index), *sibling_hash, hash).hash()
+                            InternalNode::new(
+                                NodeIndex::from_inorder_index(index),
+                                *sibling_hash,
+                                hash,
+                            )
+                            .hash()
                         },
                         // The index of the parent at its level.
                         index / 2,
@@ -61,13 +71,6 @@ impl AccumulatorProof {
                 },
             )
             .0;
-        ensure!(
-            actual_root_hash == expected_root_hash,
-            "Root hashes do not match. Actual root hash: {:x}. Expected root hash: {:x}.",
-            actual_root_hash,
-            expected_root_hash
-        );
-
-        Ok(())
+        Ok(actual_root_hash == expected_root_hash)
     }
 }

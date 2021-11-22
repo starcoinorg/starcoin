@@ -161,7 +161,9 @@ impl Accumulator for MerkleAccumulator {
     }
 
     fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>> {
-        self.tree.lock().get_node_hash(NodeIndex::new(position))
+        self.tree
+            .lock()
+            .get_node_hash(NodeIndex::from_inorder_index(position))
     }
 
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>> {

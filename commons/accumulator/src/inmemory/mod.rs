@@ -16,6 +16,8 @@
 #[cfg(test)]
 mod accumulator_test;
 
+use crate::node_index::NodeIndex;
+use crate::proof::AccumulatorProof;
 use crate::{LeafCount, MAX_ACCUMULATOR_LEAVES};
 use anyhow::{ensure, format_err, Result};
 use starcoin_crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
@@ -87,6 +89,53 @@ impl InMemoryAccumulator {
     /// Constructs a new accumulator with given leaves.
     pub fn from_leaves(leaves: &[HashValue]) -> Self {
         Self::default().append(leaves)
+    }
+
+    pub fn get_proof_from_leaves(
+        leaves: &[HashValue],
+        leaf_index: u64,
+    ) -> Result<AccumulatorProof> {
+        let leaf_count = leaves.len() as u64;
+        let root_pos = NodeIndex::root_from_leaf_count(leaf_count);
+        let siblings = NodeIndex::from_leaf_index(leaf_index)
+            .iter_ancestor_sibling()
+            .take(root_pos.level() as usize)
+            .map(|p| Self::get_hash(leaves, p))
+            .collect::<Vec<_>>();
+        Ok(AccumulatorProof::new(siblings))
+    }
+
+    fn hash_internal_node(left: HashValue, right: HashValue) -> HashValue {
+        MerkleTreeInternalNode::new(left, right).hash()
+    }
+
+    fn get_hash(leaves: &[HashValue], node_index: NodeIndex) -> HashValue {
+        let rightmost_leaf_index = (leaves.len() - 1) as u64;
+        if node_index.is_placeholder(rightmost_leaf_index) {
+            *ACCUMULATOR_PLACEHOLDER_HASH
+        } else if node_index.is_freezable(rightmost_leaf_index) {
+            let leaf_index = node_index.to_leaf_index();
+            if let Some(leaf_index) = leaf_index {
+                debug_assert!(
+                    leaf_index < leaves.len() as u64,
+                    "leaf index out of range, index: {}, size: {}",
+                    leaf_index,
+                    leaves.len()
+                );
+                leaves[leaf_index as usize]
+            } else {
+                Self::hash_internal_node(
+                    Self::get_hash(leaves, node_index.left_child()),
+                    Self::get_hash(leaves, node_index.right_child()),
+                )
+            }
+        } else {
+            // non-frozen non-placeholder node
+            Self::hash_internal_node(
+                Self::get_hash(leaves, node_index.left_child()),
+                Self::get_hash(leaves, node_index.right_child()),
+            )
+        }
     }
 
     /// Appends a list of new leaves to an existing accumulator. Since the accumulator is

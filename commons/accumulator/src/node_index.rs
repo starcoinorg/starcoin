@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
 pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
-pub static NODE_ERROR_INDEX: Lazy<NodeIndex> = Lazy::new(|| NodeIndex::new(u64::max_value()));
+pub static NODE_ERROR_INDEX: Lazy<NodeIndex> =
+    Lazy::new(|| NodeIndex::from_inorder_index(u64::max_value()));
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeDirection {
@@ -18,10 +19,6 @@ pub enum NodeDirection {
 }
 
 impl NodeIndex {
-    pub fn new(index: u64) -> Self {
-        NodeIndex(index)
-    }
-
     pub fn is_freezable(self, leaf_index: u64) -> bool {
         let leaf = Self::from_leaf_index(leaf_index);
         let right_most_child = self.right_most_child();
@@ -30,6 +27,15 @@ impl NodeIndex {
 
     pub fn is_leaf(self) -> bool {
         self.0 & 1 == 0
+    }
+
+    pub fn to_leaf_index(self) -> Option<u64> {
+        let level = self.level();
+        if level != 0 {
+            None
+        } else {
+            Some(self.0 >> 1)
+        }
     }
 
     pub fn to_inorder_index(self) -> u64 {
@@ -81,18 +87,6 @@ impl NodeIndex {
         assert!(leaf_count > 0);
         let index = (leaf_count - 1) as u64;
         MAX_ACCUMULATOR_PROOF_DEPTH as u32 + 1 - index.leading_zeros()
-    }
-
-    /// Get leaves count end from index
-    pub fn leaves_count_end_from_index(leaf_index: u64) -> u64 {
-        let mut count = 0u64;
-        for index in 0..leaf_index {
-            let leaf = Self::new(index);
-            if leaf.is_leaf() {
-                count += 1;
-            }
-        }
-        count
     }
 
     /// Creates an `AncestorSiblingIterator` using this node_index.
@@ -358,5 +352,20 @@ impl Iterator for FrozenSubtreeSiblingIterator {
         Some(NodeIndex::from_inorder_index(
             (first_leaf_index + last_leaf_index) as u64,
         ))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::node_index::NodeIndex;
+
+    #[test]
+    fn test_node_index_to_leaf() {
+        for i in 0..1024 {
+            let node_index = NodeIndex::from_leaf_index(i);
+            let leaf_index = node_index.to_leaf_index();
+            assert!(leaf_index.is_some(), "leaf index: {} got None", i);
+            assert_eq!(i, leaf_index.unwrap());
+        }
     }
 }
