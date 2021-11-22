@@ -20,7 +20,7 @@ pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
 
-pub use create_block_template::{BlockTemplateRequest, CreateBlockTemplateService};
+pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
 use crypto::HashValue;
 use std::fmt;
 use thiserror::Error;
@@ -47,7 +47,7 @@ impl ServiceRequest for UpdateSubscriberNumRequest {
 pub struct MinerService {
     config: Arc<NodeConfig>,
     current_task: Option<MintTask>,
-    create_block_template_service: ServiceRef<CreateBlockTemplateService>,
+    create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
     metrics: Option<MinerMetrics>,
 }
@@ -108,8 +108,7 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
 impl ServiceFactory<MinerService> for MinerService {
     fn create(ctx: &mut ServiceContext<MinerService>) -> Result<MinerService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let create_block_template_service =
-            ctx.service_ref::<CreateBlockTemplateService>()?.clone();
+        let create_block_template_service = ctx.service_ref::<BlockBuilderService>()?.clone();
         let metrics = config
             .metrics
             .registry()

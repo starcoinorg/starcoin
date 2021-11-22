@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::{
-    BlockTemplateRequest, CreateBlockTemplateService, EmptyProvider, Inner,
+    BlockBuilderService, BlockTemplateRequest, EmptyProvider, Inner,
 };
 use anyhow::Result;
 use consensus::Consensus;
@@ -419,10 +419,7 @@ async fn test_create_block_template_actor() {
         .await
         .unwrap();
 
-    let create_block_template_service = registry
-        .register::<CreateBlockTemplateService>()
-        .await
-        .unwrap();
+    let create_block_template_service = registry.register::<BlockBuilderService>().await.unwrap();
     let response = create_block_template_service
         .send(BlockTemplateRequest)
         .await

@@ -5,7 +5,7 @@ use futures_timer::Delay;
 use starcoin_account_service::{AccountService, AccountStorage};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
-use starcoin_miner::{CreateBlockTemplateService, MinerService};
+use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
@@ -60,10 +60,7 @@ pub async fn start_txpool_with_miner(
     registry.register::<AccountService>().await.unwrap();
 
     if enable_miner {
-        registry
-            .register::<CreateBlockTemplateService>()
-            .await
-            .unwrap();
+        registry.register::<BlockBuilderService>().await.unwrap();
         registry.register::<MinerService>().await.unwrap();
     }
     //registry.register::<MinerService>().await.unwrap();

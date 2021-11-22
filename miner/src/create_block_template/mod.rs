@@ -53,17 +53,14 @@ pub struct BlockTemplateResponse {
     pub template: BlockTemplate,
 }
 
-//TODO should rename to BlockBuilderService
-pub struct CreateBlockTemplateService {
+pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
 }
 
-impl CreateBlockTemplateService {}
+impl BlockBuilderService {}
 
-impl ServiceFactory<Self> for CreateBlockTemplateService {
-    fn create(
-        ctx: &mut ServiceContext<CreateBlockTemplateService>,
-    ) -> Result<CreateBlockTemplateService> {
+impl ServiceFactory<Self> for BlockBuilderService {
+    fn create(ctx: &mut ServiceContext<BlockBuilderService>) -> Result<BlockBuilderService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
@@ -73,7 +70,7 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
         let account_service = ctx.service_ref::<AccountService>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
             .ok_or_else(|| {
-                format_err!("Default account should exist when CreateBlockTemplateService start.")
+                format_err!("Default account should exist when BlockBuilderService start.")
             })?;
         let txpool = ctx.get_shared::<TxPoolService>()?;
         let metrics = config
@@ -96,7 +93,7 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
     }
 }
 
-impl ActorService for CreateBlockTemplateService {
+impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewBranch>();
@@ -112,44 +109,36 @@ impl ActorService for CreateBlockTemplateService {
     }
 }
 
-impl EventHandler<Self, NewHeadBlock> for CreateBlockTemplateService {
-    fn handle_event(
-        &mut self,
-        msg: NewHeadBlock,
-        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
-    ) {
+impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<BlockBuilderService>) {
         if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
             error!("err : {:?}", e)
         }
     }
 }
 
-impl EventHandler<Self, NewBranch> for CreateBlockTemplateService {
-    fn handle_event(
-        &mut self,
-        msg: NewBranch,
-        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
-    ) {
+impl EventHandler<Self, NewBranch> for BlockBuilderService {
+    fn handle_event(&mut self, msg: NewBranch, _ctx: &mut ServiceContext<BlockBuilderService>) {
         self.inner.insert_uncle(msg.0.block.header().clone());
     }
 }
 
-impl EventHandler<Self, DefaultAccountChangeEvent> for CreateBlockTemplateService {
+impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     fn handle_event(
         &mut self,
         msg: DefaultAccountChangeEvent,
-        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+        _ctx: &mut ServiceContext<BlockBuilderService>,
     ) {
         info!("Miner account change to {}", msg.new_account.address);
         self.inner.miner_account = msg.new_account;
     }
 }
 
-impl ServiceHandler<Self, BlockTemplateRequest> for CreateBlockTemplateService {
+impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
         _msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+        _ctx: &mut ServiceContext<BlockBuilderService>,
     ) -> Result<BlockTemplateResponse> {
         let template = self.inner.create_block_template();
         self.inner.uncles_prune();
@@ -157,11 +146,11 @@ impl ServiceHandler<Self, BlockTemplateRequest> for CreateBlockTemplateService {
     }
 }
 
-impl ServiceHandler<Self, GetHeadRequest> for CreateBlockTemplateService {
+impl ServiceHandler<Self, GetHeadRequest> for BlockBuilderService {
     fn handle(
         &mut self,
         _msg: GetHeadRequest,
-        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+        _ctx: &mut ServiceContext<BlockBuilderService>,
     ) -> HashValue {
         self.inner.chain.current_header().id()
     }
