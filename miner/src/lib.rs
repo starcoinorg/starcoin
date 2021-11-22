@@ -20,7 +20,7 @@ pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
 
-pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
+pub use create_block_template::{BlockTemplateRequest, CreateBlockTemplateService};
 use crypto::HashValue;
 use std::fmt;
 use thiserror::Error;
@@ -150,16 +150,25 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
     }
 }
 
+// one hour
+const MAX_BLOCK_TIME_GAP: u64 = 3600 * 1000;
+
 impl MinerService {
     pub fn dispatch_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
         //create block template should block_on for avoid mint same block template.
-        let block_template = block_on(async {
+        let response = block_on(async {
             self.create_block_template_service
-                .send(CreateBlockTemplateRequest)
+                .send(BlockTemplateRequest)
                 .await?
         })?;
+        let parent = response.parent;
+        let block_template = response.template;
+        let block_time_gap = block_template.timestamp - parent.timestamp();
+
         if block_template.body.transactions.is_empty()
             && self.config.miner.is_disable_mint_empty_block()
+            //if block time gap > 3600, force create a empty block for fix https://github.com/starcoinorg/starcoin/issues/3036
+            && block_time_gap < MAX_BLOCK_TIME_GAP
         {
             debug!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
             Ok(())

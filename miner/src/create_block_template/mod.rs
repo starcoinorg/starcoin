@@ -41,10 +41,16 @@ impl ServiceRequest for GetHeadRequest {
 }
 
 #[derive(Debug)]
-pub struct CreateBlockTemplateRequest;
+pub struct BlockTemplateRequest;
 
-impl ServiceRequest for CreateBlockTemplateRequest {
-    type Response = Result<BlockTemplate>;
+impl ServiceRequest for BlockTemplateRequest {
+    type Response = Result<BlockTemplateResponse>;
+}
+
+#[derive(Debug)]
+pub struct BlockTemplateResponse {
+    pub parent: BlockHeader,
+    pub template: BlockTemplate,
 }
 
 //TODO should rename to BlockBuilderService
@@ -139,12 +145,12 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for CreateBlockTemplateServic
     }
 }
 
-impl ServiceHandler<Self, CreateBlockTemplateRequest> for CreateBlockTemplateService {
+impl ServiceHandler<Self, BlockTemplateRequest> for CreateBlockTemplateService {
     fn handle(
         &mut self,
-        _msg: CreateBlockTemplateRequest,
+        _msg: BlockTemplateRequest,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
-    ) -> Result<BlockTemplate> {
+    ) -> Result<BlockTemplateResponse> {
         let template = self.inner.create_block_template();
         self.inner.uncles_prune();
         template
@@ -302,7 +308,7 @@ where
         }
     }
 
-    pub fn create_block_template(&self) -> Result<BlockTemplate> {
+    pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
         let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
             .local_block_gas_limit
@@ -342,7 +348,7 @@ where
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
-            previous_header,
+            previous_header.clone(),
             block_gas_limit,
             author,
             now_millis,
@@ -356,6 +362,10 @@ where
         for invalid_txn in excluded_txns.discarded_txns {
             let _ = self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
-        Ok(template)
+
+        Ok(BlockTemplateResponse {
+            parent: previous_header,
+            template,
+        })
     }
 }

@@ -6,7 +6,7 @@ use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_miner::{
-    BlockHeaderExtra, CreateBlockTemplateRequest, CreateBlockTemplateService, MinerService,
+    BlockHeaderExtra, BlockTemplateRequest, CreateBlockTemplateService, MinerService,
     SubmitSealRequest,
 };
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
@@ -45,10 +45,11 @@ async fn test_miner_service() {
         .await
         .unwrap();
     let response = template
-        .send(CreateBlockTemplateRequest)
+        .send(BlockTemplateRequest)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .template;
     assert_eq!(response.number, 1);
 
     let miner = registry.register::<MinerService>().await;
