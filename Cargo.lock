@@ -35,7 +35,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1be241f88f3b1e7e9a3fbe3b5a8a0f6915b5a1d7ee0d9a248d3376d01068cc60"
 dependencies = [
- "actix-rt",
+ "actix-rt 1.1.1",
  "actix_derive",
  "bitflags",
  "bytes 0.5.6",
@@ -65,18 +65,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "465a6172cf69b960917811022d8f29bc0b7fa1398bc4f78b3c466673db1213b6"
+dependencies = [
+ "quote 1.0.9",
+ "syn 1.0.80",
+]
+
+[[package]]
 name = "actix-rt"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "143fcc2912e0d1de2bcf4e2f720d2a60c28652ab4179685a1ee159e0fb3db227"
 dependencies = [
- "actix-macros",
+ "actix-macros 0.1.3",
  "actix-threadpool",
  "copyless",
  "futures-channel",
  "futures-util",
  "smallvec 1.7.0",
  "tokio 0.2.25",
+]
+
+[[package]]
+name = "actix-rt"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05c2f80ce8d0c990941c7a7a931f69fd0701b76d521f8d36298edf59cd3fbf1f"
+dependencies = [
+ "actix-macros 0.2.3",
+ "futures-core",
+ "tokio 1.11.0",
 ]
 
 [[package]]
@@ -9143,7 +9164,7 @@ name = "starcoin-miner-client"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.5.0",
  "anyhow",
  "async-std",
  "byteorder 1.4.3",
@@ -9391,7 +9412,7 @@ name = "starcoin-node"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.5.0",
  "anyhow",
  "async-std",
  "async-trait",
@@ -9570,7 +9591,7 @@ name = "starcoin-rpc-client"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.5.0",
  "anyhow",
  "async-std",
  "bcs-ext",
@@ -9629,7 +9650,7 @@ name = "starcoin-rpc-server"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.5.0",
  "anyhow",
  "api-limiter",
  "bcs",
@@ -9703,7 +9724,7 @@ name = "starcoin-service-registry"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.5.0",
  "anyhow",
  "async-std",
  "async-trait",
@@ -10193,7 +10214,7 @@ name = "stest"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 2.5.0",
  "anyhow",
  "futures 0.3.13",
  "log 0.4.14",
@@ -10208,7 +10229,7 @@ name = "stest-macro"
 version = "1.8.0-rc.1"
 dependencies = [
  "actix",
- "actix-rt",
+ "actix-rt 1.1.1",
  "darling 0.10.2",
  "quote 1.0.9",
  "stest",
