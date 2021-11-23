@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, FullVerifier};
-use anyhow::{bail, ensure, format_err, Result};
+use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
+use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -12,8 +13,8 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, ExecutedBlock,
-    MintedUncleNumber, TransactionProof, VerifiedBlock, VerifyBlockField,
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
+    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_executor::VMMetrics;
 use starcoin_open_block::OpenedBlock;
@@ -763,38 +764,60 @@ impl ChainReader for BlockChain {
         Ok(infos)
     }
 
+    fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
+        self.storage.get_contract_events(txn_info_id)
+    }
+
     fn get_transaction_proof(
         &self,
         index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
-    ) -> Result<Option<TransactionProof>> {
-        let proof = self.txn_accumulator.get_proof(index)?;
-        let txn_info_hash = self.txn_accumulator.get_leaf(index)?;
-        match (proof, txn_info_hash) {
-            (None, None) => return Ok(None),
-            (Some(txn_proof), Some(txn_info_hash)) => {
-                if let Some(event_index) = event_index {
-                    let events = self
-                        .storage
-                        .get_contract_events(txn_info_hash)?
-                        .unwrap_or_default();
-                    if event_index as usize > events.len() {
-                        bail!("event index out of bounds, events len:{}", events.len())
-                    }
-                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-                    let events_accumulator_hash =
-                        InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-                }
-            }
-            (_, _) => {
-                bail!(
-                    "Can not get proof or leaf from txn_accumulator by index:{}",
-                    index
-                )
-            }
-        }
-        todo!()
+    ) -> Result<TransactionInfoWithProof> {
+        let txn_proof = self.txn_accumulator.get_proof(index)?;
+
+        let txn_info_hash = self
+            .txn_accumulator
+            .get_leaf(index)?
+            .ok_or_else(|| format_err!("Can not find txn info hash by index {}", index))?;
+        let transaction_info = self
+            .storage
+            .get_transaction_info(txn_info_hash)?
+            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
+
+        let event_proof = if let Some(event_index) = event_index {
+            let events = self
+                .storage
+                .get_contract_events(txn_info_hash)?
+                .unwrap_or_default();
+            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                format_err!("event index out of range, events len:{}", events.len())
+            })?;
+            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+
+            let event_proof =
+                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
+            Some(EventWithProof {
+                event,
+                proof: event_proof,
+            })
+        } else {
+            None
+        };
+        let state_proof = if let Some(access_path) = access_path {
+            let statedb = self
+                .statedb
+                .fork_at(transaction_info.txn_info().state_root_hash());
+            Some(statedb.get_with_proof(&access_path)?)
+        } else {
+            None
+        };
+        Ok(TransactionInfoWithProof {
+            transaction_info: transaction_info.txn_info,
+            proof: txn_proof,
+            event_proof,
+            state_proof,
+        })
     }
 }
 

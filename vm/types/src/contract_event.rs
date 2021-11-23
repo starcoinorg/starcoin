@@ -124,6 +124,3 @@ impl std::fmt::Display for ContractEvent {
         write!(f, "{:?}", self)
     }
 }
-
-//TODO implement EventWithProof
-pub struct EventWithProof {}

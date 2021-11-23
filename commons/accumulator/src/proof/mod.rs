@@ -33,7 +33,7 @@ impl AccumulatorProof {
         expected_root_hash: HashValue,
         element_hash: HashValue,
         element_index: u64,
-    ) -> Result<bool> {
+    ) -> Result<()> {
         ensure!(
             self.siblings.len() <= MAX_ACCUMULATOR_PROOF_DEPTH,
             "Accumulator proof has more than {} ({}) siblings.",
@@ -71,6 +71,12 @@ impl AccumulatorProof {
                 },
             )
             .0;
-        Ok(actual_root_hash == expected_root_hash)
+        ensure!(
+            actual_root_hash == expected_root_hash,
+            "Root hashes do not match. Actual root hash: {:x}. Expected root hash: {:x}.",
+            actual_root_hash,
+            expected_root_hash
+        );
+        Ok(())
     }
 }

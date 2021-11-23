@@ -143,7 +143,7 @@ impl Inner {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db.change_root(root);
+                let reader = self.state_db.fork_at(root);
                 reader.get_account_state_set(&address)
             }
             None => self.get_account_state_set(&address),
@@ -155,7 +155,7 @@ impl Inner {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db.change_root(state_root);
+        let reader = self.state_db.fork_at(state_root);
         reader.get_with_proof(&access_path)
     }
 
@@ -164,12 +164,12 @@ impl Inner {
         account: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db.change_root(state_root);
+        let reader = self.state_db.fork_at(state_root);
         reader.get_account_state(&account)
     }
 
     pub(crate) fn change_root(&mut self, state_root: HashValue) {
-        self.state_db = self.state_db.change_root(state_root);
+        self.state_db = self.state_db.fork_at(state_root);
         self.adjust_time();
     }
 

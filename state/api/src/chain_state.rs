@@ -109,6 +109,11 @@ impl StateWithProof {
     pub fn get_state(&self) -> &Option<Vec<u8>> {
         &self.state
     }
+
+    pub fn verify(&self, expect_root: HashValue, access_path: AccessPath) -> Result<()> {
+        self.proof
+            .verify(expect_root, access_path, self.state.as_deref())
+    }
 }
 
 pub trait ChainStateReader: StateView {

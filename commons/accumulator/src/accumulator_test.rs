@@ -326,7 +326,7 @@ fn proof_verify(
         let leaf_index = first_leaf_idx + i as u64;
         let proof = accumulator.get_proof(leaf_index).unwrap();
         assert!(
-            proof.verify(root_hash, *hash, leaf_index).unwrap(),
+            proof.verify(root_hash, *hash, leaf_index).is_ok(),
             "leaf_index:{}, proof:{:?} verify failed",
             leaf_index,
             proof
