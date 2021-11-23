@@ -6,7 +6,8 @@ script {
     }
 }
 
-//check: "gas_used: 31743"
+// check: gas_used
+// check: 31743
 
 //! new-transaction
 
@@ -19,7 +20,8 @@ script {
 }
 
 
-//check: "gas_used: 31709"
+//check: gas_used
+// check: 31709
 
 //! new-transaction
 
@@ -30,7 +32,8 @@ script {
     }
 
 }
-// check: "gas_used: 28804"
+// check: gas_used
+// check: 28804
 
 //! new-transaction
 
@@ -41,7 +44,8 @@ script {
         let _ = U256::from_little_endian(Vector::singleton(1u8));
     }
 }
-// check: "gas_used: 24514"
+// check: gas_used
+// check: 31329
 
 //! new-transaction
 script {
@@ -54,7 +58,7 @@ script {
     }
 }
 // check: gas_used
-// check: 182112
+// check: 62764
 
 
 
@@ -69,7 +73,7 @@ script {
     }
 }
 // check: gas_used
-// check: 183488
+// check: 62764
 
 
 
@@ -99,6 +103,6 @@ script {
     }
 }
 // check: gas_used
-// check: 62768
+// check: 62770
 
 
