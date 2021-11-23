@@ -63,10 +63,19 @@ Feature: cmd integration test
       | x@$.auth_key@  |
 
  #dev
-  Scenario Outline: [cmd] dev test
+  Scenario Outline: [cmd] dev resolve test
     Then cmd: "dev resolve function 0x1::TransferScripts::peer_to_peer_v2"
     Then cmd: "dev resolve struct 0x1::Account::Account"
     Then cmd: "dev resolve module 0x1::Account"
+    Then stop
+
+    Examples:
+      |  |
+
+  Scenario Outline: [cmd] dev sleep test
+    Then cmd: "dev get-coin"
+    Then cmd: "dev sleep -t 864000000"
+    #TODO support wait and add an assert for result.
     Then stop
 
     Examples:

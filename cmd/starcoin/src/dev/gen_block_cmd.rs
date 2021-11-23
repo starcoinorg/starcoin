@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::transaction::TransactionPayload;
@@ -29,7 +29,7 @@ impl CommandAction for GenBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let cli_state = ctx.state();
         let net = cli_state.net();
-        assert!(net.is_dev());
+        ensure!(net.is_dev(), "Only dev network support this command");
         let empty = build_empty_script();
         let txn_opts = TransactionOptions {
             blocking: true,

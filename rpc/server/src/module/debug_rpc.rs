@@ -9,17 +9,29 @@ use starcoin_logger::prelude::LevelFilter;
 use starcoin_logger::{LogPattern, LoggerHandle};
 use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::types::FactoryAction;
+use starcoin_service_registry::bus::{Bus, BusService};
+use starcoin_service_registry::ServiceRef;
+use starcoin_types::system_events::GenerateBlockEvent;
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub struct DebugRpcImpl {
     config: Arc<NodeConfig>,
     log_handle: Arc<LoggerHandle>,
+    bus: ServiceRef<BusService>,
 }
 
 impl DebugRpcImpl {
-    pub fn new(config: Arc<NodeConfig>, log_handle: Arc<LoggerHandle>) -> Self {
-        Self { config, log_handle }
+    pub fn new(
+        config: Arc<NodeConfig>,
+        log_handle: Arc<LoggerHandle>,
+        bus: ServiceRef<BusService>,
+    ) -> Self {
+        Self {
+            config,
+            log_handle,
+            bus,
+        }
     }
 }
 
@@ -56,11 +68,12 @@ impl DebugApi for DebugRpcImpl {
 
     fn sleep(&self, time: u64) -> Result<()> {
         if !self.config.net().is_test() && !self.config.net().is_dev() {
-            panic!("DebugApi.panic");
+            return Err(jsonrpc_core::Error::invalid_request());
         }
-
         self.config.net().time_service().sleep(time);
-
+        self.bus
+            .broadcast(GenerateBlockEvent::new(true))
+            .map_err(|_e| jsonrpc_core::Error::internal_error())?;
         Ok(())
     }
 

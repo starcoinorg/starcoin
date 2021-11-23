@@ -73,7 +73,11 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         });
         let pubsub_service = ctx.service_ref::<PubSubService>()?.clone();
         let pubsub_api = Some(PubSubImpl::new(pubsub_service));
-        let debug_api = Some(DebugRpcImpl::new(config.clone(), log_handler));
+        let debug_api = Some(DebugRpcImpl::new(
+            config.clone(),
+            log_handler,
+            ctx.bus_ref().clone(),
+        ));
         let miner_api = ctx
             .service_ref_opt::<MinerService>()?
             .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));

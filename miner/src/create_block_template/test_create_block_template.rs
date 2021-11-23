@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::{
-    CreateBlockTemplateRequest, CreateBlockTemplateService, EmptyProvider, Inner,
+    BlockBuilderService, BlockTemplateRequest, EmptyProvider, Inner,
 };
 use anyhow::Result;
 use consensus::Consensus;
@@ -52,7 +52,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
     )
     .unwrap();
 
-    let block_template = inner.create_block_template().unwrap();
+    let block_template = inner.create_block_template().unwrap().template;
     assert_eq!(block_template.parent_hash, genesis_id);
     assert_eq!(block_template.parent_hash, chain_info.head().id());
     assert_eq!(block_template.number, 1);
@@ -93,7 +93,7 @@ fn test_switch_main() {
         )
         .unwrap();
 
-        let block_template = tmp_inner.create_block_template().unwrap();
+        let block_template = tmp_inner.create_block_template().unwrap().template;
 
         let block = main
             .consensus()
@@ -132,13 +132,14 @@ fn test_switch_main() {
             )
             .unwrap();
 
-            tmp.create_block_template().unwrap()
+            tmp.create_block_template().unwrap().template
         } else {
             main_inner
                 .as_ref()
                 .unwrap()
                 .create_block_template()
                 .unwrap()
+                .template
         };
 
         let block = new_main
@@ -209,7 +210,7 @@ fn test_do_uncles() {
         )
         .unwrap();
 
-        let block_template = tmp_inner.create_block_template().unwrap();
+        let block_template = tmp_inner.create_block_template().unwrap().template;
 
         let block = main
             .consensus()
@@ -237,7 +238,7 @@ fn test_do_uncles() {
         )
         .unwrap();
 
-        let block_template = inner.create_block_template().unwrap();
+        let block_template = inner.create_block_template().unwrap().template;
         let uncle_block = branch
             .consensus()
             .create_block(block_template, node_config.net().time_service().as_ref())
@@ -259,7 +260,8 @@ fn test_do_uncles() {
             .as_ref()
             .unwrap()
             .create_block_template()
-            .unwrap();
+            .unwrap()
+            .template;
         let block = main
             .consensus()
             .create_block(block_template, node_config.net().time_service().as_ref())
@@ -308,7 +310,7 @@ fn test_new_head() {
     .unwrap();
 
     for i in 0..times {
-        let block_template = main_inner.create_block_template().unwrap();
+        let block_template = main_inner.create_block_template().unwrap().template;
         let block = main_inner
             .chain
             .consensus()
@@ -352,7 +354,7 @@ fn test_new_branch() {
     )
     .unwrap();
     for _i in 0..times {
-        let block_template = main_inner.create_block_template().unwrap();
+        let block_template = main_inner.create_block_template().unwrap().template;
         let block = main_inner
             .chain
             .consensus()
@@ -378,7 +380,7 @@ fn test_new_branch() {
             None,
         )
         .unwrap();
-        let block_template = inner.create_block_template().unwrap();
+        let block_template = inner.create_block_template().unwrap().template;
         let new_block = branch
             .consensus()
             .create_block(block_template, node_config.net().time_service().as_ref())
@@ -417,16 +419,13 @@ async fn test_create_block_template_actor() {
         .await
         .unwrap();
 
-    let create_block_template_service = registry
-        .register::<CreateBlockTemplateService>()
-        .await
-        .unwrap();
+    let create_block_template_service = registry.register::<BlockBuilderService>().await.unwrap();
     let response = create_block_template_service
-        .send(CreateBlockTemplateRequest)
+        .send(BlockTemplateRequest)
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(response.number, 1);
+    assert_eq!(response.template.number, 1);
 }
 
 #[stest::test]
@@ -444,7 +443,7 @@ fn test_create_block_template_by_adjust_time() -> Result<()> {
         None,
         None,
     )?;
-    let template = inner.create_block_template()?;
+    let template = inner.create_block_template()?.template;
     let previous_block_time = template.timestamp;
     let block = node_config
         .net()
@@ -460,7 +459,7 @@ fn test_create_block_template_by_adjust_time() -> Result<()> {
         .unwrap();
     mock_time_service.set(previous_block_time - 1);
     // then create block template, create_block_template() should adjust new block's timestamp.
-    let template = inner.create_block_template()?;
+    let template = inner.create_block_template()?.template;
     let block = node_config
         .net()
         .genesis_config()
