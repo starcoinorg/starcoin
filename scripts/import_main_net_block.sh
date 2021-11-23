@@ -1,7 +1,7 @@
 #!/bin/bash
 
 STEP=500000
-main_cnt=$(ps -ef | grep starcoin | grep main | | grep -v export | grep -v grep | wc -l)
+main_cnt=$(ps -ef | grep starcoin | grep main | grep -v export | grep -v grep | wc -l)
 echo $main_cnt
 if [ $main_cnt -ne 0 ]; then
   echo "main_net running, exit"
