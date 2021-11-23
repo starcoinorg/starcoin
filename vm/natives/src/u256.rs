@@ -71,7 +71,11 @@ pub fn native_u256_from_bytes(
     debug_assert!(_ty_args.is_empty());
     debug_assert!(arguments.len() == 2);
     let big_endian = pop_arg!(arguments, bool);
-    let bytes = pop_arg!(arguments, Vec<u8>);
+    let bytes: Vec<u8> = {
+        let byte_ref = pop_arg!(arguments, Reference);
+        byte_ref.read_ref()?.cast()?
+    };
+
     debug_assert!(bytes.len() <= 32);
     let ret = if big_endian {
         U256::from_big_endian(&bytes)
@@ -83,7 +87,7 @@ pub fn native_u256_from_bytes(
     let cost = native_gas(
         context.cost_table(),
         U256_FROM_BYTES as u8,
-        ret.size().get() as usize + bytes.len(),
+        ret.size().get() as usize,
     );
     Ok(NativeResult::ok(cost, smallvec![ret]))
 }

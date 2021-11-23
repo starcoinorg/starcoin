@@ -1,4 +1,5 @@
 address 0x1 {
+/// Helper module to do u64 arith.
 module Arith {
     /// split u64 to (high, low)
     public fun split_u64(i: u64): (u64, u64) {
@@ -33,13 +34,18 @@ module Arith {
         combine_u64(r1, r0)
     }
 }
+
+/// Implementation u256.
 module U256 {
 
     use 0x1::Vector;
+    use 0x1::Errors;
 
     const WORD: u8 = 4;
 
 
+    const ERR_INVALID_LENGTH: u64 = 100;
+    const ERR_OVERFLOW: u64 = 200;
     /// use vector to represent data.
     /// so that we can use buildin vector ops later to construct U256.
     /// vector should always has two elements.
@@ -84,16 +90,38 @@ module U256 {
 
     public fun from_big_endian(data: vector<u8>): U256 {
         // TODO: define error code.
-        assert(Vector::length(&data) <= 32, 4040);
-        from_bytes(data, true)
+        assert(Vector::length(&data) <= 32, Errors::invalid_argument(ERR_INVALID_LENGTH));
+        from_bytes(&data, true)
     }
 
     public fun from_little_endian(data: vector<u8>): U256 {
         // TODO: define error code.
-        assert(Vector::length(&data) <= 32, 4040);
-        from_bytes(data, false)
+        assert(Vector::length(&data) <= 32, Errors::invalid_argument(ERR_INVALID_LENGTH));
+        from_bytes(&data, false)
     }
 
+    public fun to_u128(v: &U256): u128 {
+        assert(*Vector::borrow(&v.bits, 3) == 0, Errors::invalid_state(ERR_OVERFLOW));
+        assert(*Vector::borrow(&v.bits, 2) == 0, Errors::invalid_state(ERR_OVERFLOW));
+        ((*Vector::borrow(&v.bits, 1) as u128) << 64) | (*Vector::borrow(&v.bits, 0) as u128)
+    }
+
+    #[test]
+    fun test_to_u128() {
+        // 2^^128 - 1
+        let i = 340282366920938463463374607431768211455u128;
+        let v = from_u128(i);
+        assert(to_u128(&v) == i, 128);
+    }
+    #[test]
+    #[expected_failure]
+    fun test_to_u128_overflow() {
+        // 2^^128 - 1
+        let i = 340282366920938463463374607431768211455u128;
+        let v = from_u128(i);
+        let v = add(v, one());
+        to_u128(&v);
+    }
 
     const EQUAL: u8 = 0;
     const LESS_THAN: u8 = 1;
@@ -129,7 +157,7 @@ module U256 {
 
 
     public fun add(a: U256, b: U256): U256 {
-        add_nocarry(&mut a, &b);
+        native_add(&mut a, &b);
         a
     }
 
@@ -142,7 +170,7 @@ module U256 {
     }
 
     public fun sub(a: U256, b: U256): U256 {
-        sub_noborrow(&mut a, &b);
+        native_sub(&mut a, &b);
         a
     }
 
@@ -237,7 +265,7 @@ module U256 {
 
     }
 
-    native fun from_bytes(data: vector<u8>, be: bool): U256;
+    native fun from_bytes(data: &vector<u8>, be: bool): U256;
     native fun native_add(a: &mut U256, b: &U256);
     native fun native_sub(a: &mut U256, b: &U256);
     native fun native_mul(a: &mut U256, b: &U256);
