@@ -39,39 +39,40 @@ echo "run build with cmd: ${cmd}"
 eval "$cmd"
 
 today=$(date +"%Y%m%d")
+echo "time $today"
 #today=""
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"accumulator_append" --body $STARCOIN_DIR/target/criterion/accumulator_append/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"storage_transaction" --body $STARCOIN_DIR/target/criterion/storage_transaction/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"accumulator_append.svg" --body $STARCOIN_DIR/target/criterion/accumulator_append/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"storage_transaction.svg" --body $STARCOIN_DIR/target/criterion/storage_transaction/profile/flamegraph.svg
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in10_times100" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(10)_times(100)"/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in10_times1000" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(10)_times(1000)"/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in10_times10000" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(10)_times(10000)"/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in10_times100.svg" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(10)_times(100)"/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in10_times1000.svg" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(10)_times(1000)"/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in10_times10000.svg" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(10)_times(10000)"/profile/flamegraph.svg
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in1000_times100" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(1000)_times(100)"/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in1000_times1000" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(1000)_times(1000)"/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in1000_times10000" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(1000)_times(10000)"/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in1000_times100.svg" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(1000)_times(100)"/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in1000_times1000.svg" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(1000)_times(1000)"/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"query_block_in1000_times10000.svg" --body $STARCOIN_DIR/target/criterion/query_block/"query_block_in(1000)_times(10000)"/profile/flamegraph.svg
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"get_with_proof_mem_store"  --body $STARCOIN_DIR/target/criterion/get_with_proof/mem_store/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"get_with_proof_db_store"  --body $STARCOIN_DIR/target/criterion/get_with_proof/db_store/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"get_with_proof_mem_store.svg"  --body $STARCOIN_DIR/target/criterion/get_with_proof/mem_store/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"get_with_proof_db_store.svg"  --body $STARCOIN_DIR/target/criterion/get_with_proof/db_store/profile/flamegraph.svg
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_1"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/1/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_10"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/10/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_100"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/100/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_5"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/5/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_50"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/50/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_1.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/1/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_10.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/10/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_100.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/100/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_5.svg.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/5/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_50.svg.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/50/profile/flamegraph.svg
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_1"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/1/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_10"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/10/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_100"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/100/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_5"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/5/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_50"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/50/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_1.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/1/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_10.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/10/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_100.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/100/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_5.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/5/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_50.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/50/profile/flamegraph.svg
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_1"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/1/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_10"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/10/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_20"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/20/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_5"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/5/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_50"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/50/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_1.svg"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/1/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_10.svg"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/10/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_20.svg"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/20/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_5.svg"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/5/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"transaction_execution_50.svg"  --body $STARCOIN_DIR/target/criterion/vm/transaction_execution/50/profile/flamegraph.svg
 
 cd /tmp
 rm -f block_1_10000.csv
@@ -80,4 +81,4 @@ mkdir -p /tmp/$today/main
 rm -rf /tmp/$today/main/*
 $STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_1_10000.csv -n main -o /tmp/$today/main
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"apply_block" --body /tmp/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"apply_block.svg" --body /tmp/flamegraph.svg
