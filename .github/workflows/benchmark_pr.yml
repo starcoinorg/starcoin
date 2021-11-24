@@ -22,7 +22,7 @@ jobs:
 #          benchName: "bench_state_tree" # Optional. Compare only this benchmark target
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: run flamegraph
-        run: bash ./scripts/flamegraph.sh
+        run: bash ../scripts/flamegraph.sh
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full

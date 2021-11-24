@@ -69,6 +69,6 @@ mkdir -p /tmp/$COMMIT_ID/main
 rm -rf /tmp/$COMMIT_ID/main/*
 $STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_1_10000.csv -n main -o /tmp/$COMMIT_ID/main
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$COMMIT_ID"/"apply_block.svg" --body /tmp/$COMMIT_ID/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$COMMIT_ID"/"apply_block.svg" --body /tmp/flamegraph.svg
 
 rm -rf /tmp/$COMMIT_ID/
