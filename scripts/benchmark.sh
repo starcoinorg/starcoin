@@ -39,7 +39,7 @@ echo "run build with cmd: ${cmd}"
 eval "$cmd"
 
 today=$(date +"%Y%m%d")
-today=$branchName
+today=$COMMIT_ID
 echo "time $today"
 #today=""
 
