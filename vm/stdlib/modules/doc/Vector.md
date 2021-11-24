@@ -26,11 +26,14 @@ the return on investment didn't seem worth it for these simple functions.
 -  [Function `swap`](#0x1_Vector_swap)
 -  [Function `singleton`](#0x1_Vector_singleton)
 -  [Function `reverse`](#0x1_Vector_reverse)
+-  [Function `native_reverse`](#0x1_Vector_native_reverse)
 -  [Function `append`](#0x1_Vector_append)
+-  [Function `native_append`](#0x1_Vector_native_append)
 -  [Function `is_empty`](#0x1_Vector_is_empty)
 -  [Function `contains`](#0x1_Vector_contains)
 -  [Function `index_of`](#0x1_Vector_index_of)
 -  [Function `remove`](#0x1_Vector_remove)
+-  [Function `native_remove`](#0x1_Vector_native_remove)
 -  [Function `swap_remove`](#0x1_Vector_swap_remove)
 -  [Function `split`](#0x1_Vector_split)
 -  [Specification](#@Specification_1)
@@ -298,17 +301,30 @@ Reverses the order of the elements in the vector <code>v</code> in place.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_reverse">reverse</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;) {
-    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v);
-    <b>if</b> (len == 0) <b>return</b> ();
-
-    <b>let</b> front_index = 0;
-    <b>let</b> back_index = len -1;
-    <b>while</b> (front_index &lt; back_index) {
-        <a href="Vector.md#0x1_Vector_swap">swap</a>(v, front_index, back_index);
-        front_index = front_index + 1;
-        back_index = back_index - 1;
-    }
+    <a href="Vector.md#0x1_Vector_native_reverse">native_reverse</a>(v)
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Vector_native_reverse"></a>
+
+## Function `native_reverse`
+
+
+
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_native_reverse">native_reverse</a>&lt;Element&gt;(this: &<b>mut</b> vector&lt;Element&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="Vector.md#0x1_Vector_native_reverse">native_reverse</a>&lt;Element&gt;(this: &<b>mut</b> vector&lt;Element&gt;);
 </code></pre>
 
 
@@ -332,10 +348,30 @@ Pushes all of the elements of the <code>other</code> vector into the <code>lhs</
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_append">append</a>&lt;Element&gt;(lhs: &<b>mut</b> vector&lt;Element&gt;, other: vector&lt;Element&gt;) {
-    <a href="Vector.md#0x1_Vector_reverse">reverse</a>(&<b>mut</b> other);
-    <b>while</b> (!<a href="Vector.md#0x1_Vector_is_empty">is_empty</a>(&other)) <a href="Vector.md#0x1_Vector_push_back">push_back</a>(lhs, <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>(&<b>mut</b> other));
-    <a href="Vector.md#0x1_Vector_destroy_empty">destroy_empty</a>(other);
+    <a href="Vector.md#0x1_Vector_native_append">native_append</a>(lhs, other);
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Vector_native_append"></a>
+
+## Function `native_append`
+
+
+
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_native_append">native_append</a>&lt;Element&gt;(lhs: &<b>mut</b> vector&lt;Element&gt;, other: vector&lt;Element&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="Vector.md#0x1_Vector_native_append">native_append</a>&lt;Element&gt;(lhs: &<b>mut</b> vector&lt;Element&gt;, other: vector&lt;Element&gt;);
 </code></pre>
 
 
@@ -453,10 +489,30 @@ Aborts if <code>i</code> is out of bounds.
     // i out of bounds; <b>abort</b>
     <b>if</b> (i &gt;= len) <b>abort</b> <a href="Vector.md#0x1_Vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>;
 
-    len = len - 1;
-    <b>while</b> (i &lt; len) <a href="Vector.md#0x1_Vector_swap">swap</a>(v, i, { i = i + 1; i });
-    <a href="Vector.md#0x1_Vector_pop_back">pop_back</a>(v)
+    <a href="Vector.md#0x1_Vector_native_remove">native_remove</a>(v, i)
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Vector_native_remove"></a>
+
+## Function `native_remove`
+
+
+
+<pre><code><b>fun</b> <a href="Vector.md#0x1_Vector_native_remove">native_remove</a>&lt;Element&gt;(this: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="Vector.md#0x1_Vector_native_remove">native_remove</a>&lt;Element&gt;(this: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element;
 </code></pre>
 
 

@@ -16,7 +16,6 @@ use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
 use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
-use starcoin_natives::NativeCostIndex;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
     access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
@@ -39,6 +38,7 @@ use starcoin_vm_types::account_config::{
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
+use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, GasConstants, GasCost, GasStatus};
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;

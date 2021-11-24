@@ -1,7 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::NativeCostIndex;
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
@@ -12,6 +11,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use starcoin_crypto::{ed25519, traits::*};
+use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::{collections::VecDeque, convert::TryFrom};
 
 pub fn native_ed25519_publickey_validation(

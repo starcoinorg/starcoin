@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::NativeCostIndex;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::vm_status::sub_status::NFE_TOKEN_INVALID_TYPE_ARG_FAILURE;
@@ -12,6 +11,7 @@ use move_vm_types::{
     values::Value,
 };
 use smallvec::smallvec;
+use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
 
 /// Return Token types ModuleAddress, ModuleName and StructName

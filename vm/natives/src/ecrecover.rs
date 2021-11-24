@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::NativeCostIndex;
 use arrayref::array_ref;
 use libsecp256k1::curve::Scalar;
 use libsecp256k1::{recover, Message, PublicKey, RecoveryId, Signature};
@@ -15,6 +14,7 @@ use move_vm_types::{
     values::Value,
 };
 use smallvec::smallvec;
+use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
 use tiny_keccak::Hasher;
 

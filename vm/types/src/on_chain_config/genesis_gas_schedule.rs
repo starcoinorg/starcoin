@@ -3,13 +3,12 @@
 
 //! This file contains the starting gas schedule published at genesis.
 
-use crate::gas_schedule::{CostTable, GasConstants, GasCost};
-use move_vm_types::gas_schedule::NativeCostIndex as N;
+use crate::gas_schedule::{CostTable, GasConstants, GasCost, NativeCostIndex as N};
 use vm::{
     file_format::{
         Bytecode, ConstantPoolIndex, FieldHandleIndex, FieldInstantiationIndex,
         FunctionHandleIndex, FunctionInstantiationIndex, StructDefInstantiationIndex,
-        StructDefinitionIndex, NUMBER_OF_NATIVE_FUNCTIONS,
+        StructDefinitionIndex,
     },
     file_format_common::instruction_key,
 };
@@ -161,6 +160,18 @@ pub fn initial_native_table() -> Vec<GasCost> {
         (N::BCS_TO_ADDRESS, GasCost::new(26, 1)),
         (N::TOKEN_NAME_OF, GasCost::new(2002, 1)),
         (N::KECCAK_256, GasCost::new(64, 1)),
+        (N::RIPEMD160, GasCost::new(64, 1)),
+        (N::ECRECOVER, GasCost::new(128, 1)),
+        (N::U256_FROM_BYTES, GasCost::new(2, 1)),
+        (N::U256_ADD, GasCost::new(4, 1)),
+        (N::U256_SUB, GasCost::new(4, 1)),
+        (N::U256_MUL, GasCost::new(4, 1)),
+        (N::U256_DIV, GasCost::new(10, 1)),
+        (N::U256_REM, GasCost::new(4, 1)),
+        (N::U256_POW, GasCost::new(8, 1)),
+        (N::VEC_APPEND, GasCost::new(8, 1)),
+        (N::VEC_REMOVE, GasCost::new(8, 1)),
+        (N::VEC_REVERSE, GasCost::new(8, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
     let native_table = raw_native_table
@@ -169,7 +180,7 @@ pub fn initial_native_table() -> Vec<GasCost> {
         .collect::<Vec<_>>();
 
     debug_assert!(
-        native_table.len() == NUMBER_OF_NATIVE_FUNCTIONS,
+        native_table.len() == N::NUMBER_OF_NATIVE_FUNCTIONS,
         "all native functions must be in the cost table"
     );
     native_table
