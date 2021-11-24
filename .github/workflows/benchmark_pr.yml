@@ -12,6 +12,15 @@ jobs:
           submodules: recursive
       - name: setup rust toolchain
         uses: actions-rs/toolchain@v1
+      - name: run flamegraph
+          run: bash /scripts/flamegraph.sh
+          env:
+            RUST_LOG: error
+            RUST_BACKTRACE: full
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
       - uses: boa-dev/criterion-compare-action@master
         env:
           RUST_LOG: error
@@ -21,10 +30,4 @@ jobs:
           branchName: ${{ github.base_ref }}
 #          benchName: "bench_state_tree" # Optional. Compare only this benchmark target
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: run flamegraph
-        run: bash ../scripts/flamegraph.sh
-        env:
-          RUST_LOG: error
-          RUST_BACKTRACE: full
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
