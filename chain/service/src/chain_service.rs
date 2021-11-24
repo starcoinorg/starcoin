@@ -385,7 +385,8 @@ impl ReadableChainService for ChainReaderServiceInner {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<BlockTransactionInfo>> {
-        self.main.get_transaction_infos(start_index, reverse, max_size)
+        self.main
+            .get_transaction_infos(start_index, reverse, max_size)
     }
 }
 
