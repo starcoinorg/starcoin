@@ -13,7 +13,7 @@ jobs:
       - name: setup rust toolchain
         uses: actions-rs/toolchain@v1
       - name: run flamegraph
-          run: bash /scripts/flamegraph.sh
+          run: bash ./scripts/flamegraph.sh
           env:
             RUST_LOG: error
             RUST_BACKTRACE: full
