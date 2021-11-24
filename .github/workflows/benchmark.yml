@@ -19,8 +19,8 @@ jobs:
           components: rustfmt,clippy
       - name: setup environment
         run: bash ./scripts/dev_setup.sh  -b -t -y
-      - name: run cargo bench
-        run: bash ./scripts/benchmark.sh
+      - name: run flamegraph
+        run: bash ./scripts/flamegraph.sh
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
