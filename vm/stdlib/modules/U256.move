@@ -54,6 +54,10 @@ module U256 {
         bits: vector<u64>,
     }
 
+    spec module {
+        pragma verify = false;
+    }
+
     public fun zero(): U256 {
         from_u128(0u128)
     }
