@@ -39,6 +39,7 @@ echo "run build with cmd: ${cmd}"
 eval "$cmd"
 
 today=$(date +"%Y%m%d")
+today=$branchName
 echo "time $today"
 #today=""
 
@@ -59,8 +60,8 @@ aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"get_with_p
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_1.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/1/profile/flamegraph.svg
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_10.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/10/profile/flamegraph.svg
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_100.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/100/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_5.svg.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/5/profile/flamegraph.svg
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_50.svg.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/50/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_5.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/5/profile/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_db_store_50.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/db_store/50/profile/flamegraph.svg
 
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_1.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/1/profile/flamegraph.svg
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"put_and_commit_mem_store_10.svg"  --body $STARCOIN_DIR/target/criterion/put_and_commit/mem_store/10/profile/flamegraph.svg
@@ -81,4 +82,4 @@ mkdir -p /tmp/$today/main
 rm -rf /tmp/$today/main/*
 $STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_1_10000.csv -n main -o /tmp/$today/main
 
-aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"apply_block.svg" --body /tmp/flamegraph.svg
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"apply_block.svg" --body /tmp/$today/flamegraph.svg
