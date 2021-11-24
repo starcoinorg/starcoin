@@ -2,17 +2,17 @@
 
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 
-cmd="RUST_LOG=error cargo bench --bench bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm"
+#cmd="RUST_LOG=error cargo bench --bench bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm"
 # shellcheck disable=SC2236
-if [ -n "$1" ]
-  then
-    target_dir="$1"
+#if [ -n "$1" ]
+ # then
+  #  target_dir="$1"
     # cargo bench criterion use env to detect target dir https://github.com/bheisler/criterion.rs/issues/192
-    export CARGO_TARGET_DIR="${target_dir}"
-    cmd="${cmd} --target-dir ${target_dir}"
-fi
-echo "run benchmark with cmd: ${cmd}"
-eval "$cmd"
+   # export CARGO_TARGET_DIR="${target_dir}"
+    #cmd="${cmd} --target-dir ${target_dir}"
+#fi
+#echo "run benchmark with cmd: ${cmd}"
+#eval "$cmd"
 
 if [[ "$(uname)" != "Linux" ]]; then
   echo "run flamegraph only in linux. exit"
@@ -38,8 +38,8 @@ cmd="RUST_LOG=error cargo build --release --bin=starcoin_db_exporter"
 echo "run build with cmd: ${cmd}"
 eval "$cmd"
 
-today=$(date +"%Y_%m_%d_%H_%M")
-today=""
+today=$(date +"%Y%m%d")
+#today=""
 
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"accumulator_append" --body $STARCOIN_DIR/target/criterion/accumulator_append/profile/flamegraph.svg
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$today"_"storage_transaction" --body $STARCOIN_DIR/target/criterion/storage_transaction/profile/flamegraph.svg
