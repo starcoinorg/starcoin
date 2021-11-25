@@ -74,68 +74,132 @@ module VMConfig {
     public fun instruction_schedule(): vector<GasCost> {
         let table = Vector::empty();
 
+        // POP
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // RET
         Vector::push_back(&mut table, new_gas_cost(638, 1));
+        // BR_TRUE
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // BR_FALSE
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // BRANCH
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LD_U64
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LD_CONST
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LD_TRUE
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LD_FALSE
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // COPY_LOC
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // MOVE_LOC
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // ST_LOC
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // MUT_BORROW_LOC
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // IMM_BORROW_LOC
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // MUT_BORROW_FIELD
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // IMM_BORROW_FIELD
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // CALL
         Vector::push_back(&mut table, new_gas_cost(1132, 1));
+        // PACK
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // UNPACK
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // READ_REF
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // WRITE_REF
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // ADD
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // SUB
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // MUL
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // MOD
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // DIV
         Vector::push_back(&mut table, new_gas_cost(3, 1));
+        // BIT_OR
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // BIT_AND
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // XOR
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // OR
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // AND
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // NOT
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // EQ
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // NEQ
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LT
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // GT
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LE
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // GE
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // ABORT
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // NOP
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // EXISTS
         Vector::push_back(&mut table, new_gas_cost(41, 1));
+        // MUT_BORROW_GLOBAL
         Vector::push_back(&mut table, new_gas_cost(21, 1));
+        // IML_BORROW_GLOBAL
         Vector::push_back(&mut table, new_gas_cost(23, 1));
+        // MOVE_FROM
         Vector::push_back(&mut table, new_gas_cost(459, 1));
+        // MOVE_TO
         Vector::push_back(&mut table, new_gas_cost(13, 1));
+        // FREEZE_REF
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // SHL
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // SHR
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LD_U8
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // LD_U128
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+
+        // CAST_U8
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // CAST_U64
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // CAST_U128
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // MUT_BORORW_FIELD_GENERIC
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // IMM_BORORW_FIELD_GENERIC
         Vector::push_back(&mut table, new_gas_cost(1, 1));
+        // CALL_GENERIC
         Vector::push_back(&mut table, new_gas_cost(582, 1));
+        // PACK_GENERIC
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // UNPACK_GENERIC
         Vector::push_back(&mut table, new_gas_cost(2, 1));
+        // EXISTS_GENERIC
         Vector::push_back(&mut table, new_gas_cost(34, 1));
+        // MUT_BORROW_GLOBAL_GENERIC
         Vector::push_back(&mut table, new_gas_cost(15, 1));
+        // IMM_BORROW_GLOBAL_GENERIC
         Vector::push_back(&mut table, new_gas_cost(14, 1));
+        // MOVE_FROM_GENERIC
         Vector::push_back(&mut table, new_gas_cost(13, 1));
+        // MOVE_TO_GENERIC
         Vector::push_back(&mut table, new_gas_cost(27, 1));
 
         table
@@ -189,6 +253,20 @@ module VMConfig {
         Vector::push_back(&mut table, new_gas_cost(64, 1));
         //Signature::native_ecrecover 22
         Vector::push_back(&mut table, new_gas_cost(128, 1));
+        //U256::from_bytes 23
+        Vector::push_back(&mut table, new_gas_cost(2, 1));
+        //U256::add 24
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        //U256::sub 25
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        //U256::mul 26
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        //U256::div 27
+        Vector::push_back(&mut table, new_gas_cost(10, 1));
+        // U256::rem 28
+        Vector::push_back(&mut table, new_gas_cost(4, 1));
+        // U256::pow 29
+        Vector::push_back(&mut table, new_gas_cost(8, 1));
         table
     }
 

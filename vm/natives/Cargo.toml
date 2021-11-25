@@ -7,14 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-docgen = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-move-prover = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c" }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+docgen = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-prover = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac" }
 starcoin-crypto={path = "../../commons/crypto"}
 log = "0.4.14"
 walkdir = "2.3.1"
@@ -24,11 +25,12 @@ libsecp256k1 = "0.7.0"
 arrayref = "0.3"
 ripemd160 = "0.9.1"
 num_enum = "0.5.4"
-
+starcoin-uint = {path = "../../types/uint"}
+starcoin-vm-types=  {path = "../types"}
 
 [dev-dependencies]
 rand = "0.8.4"
 hex = "0.4"
 
 [features]
-testing=[]
+testing=["move-stdlib/testing"]

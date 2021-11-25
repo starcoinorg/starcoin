@@ -11,10 +11,10 @@ anyhow = "1.0.41"
 once_cell = "1.8.0"
 tempfile = "3.1.0"
 regex = { version = "1.4.3", default-features = false, features = ["std", "perf"] }
-move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c"  }
-move-command-line-common = {git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c"}
-move-lang-test-utils = { package="move-lang-test-utils", git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c"  }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="77c39e00b2030959abfc200aeabdfe1096c12a1c"  }
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"  }
+move-command-line-common = {git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"}
+move-lang-test-utils = { package="move-lang-test-utils", git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"  }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"  }
 petgraph = "0.5.1"
 walkdir = "2.3"
 rayon = "1.5.1"
