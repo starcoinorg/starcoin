@@ -466,7 +466,7 @@ pub fn apply_block(
     }
     if blocks.is_empty() {
         println!("file {} has apply", file_name);
-        return Ok(())
+        return Ok(());
     }
 
     if let Some(last_block) = blocks.last() {
