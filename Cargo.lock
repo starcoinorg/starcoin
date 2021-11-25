@@ -1570,29 +1570,15 @@ dependencies = [
 
 [[package]]
 name = "crossbeam"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69323bff1fb41c635347b8ead484a5ca6c3f11914d784170b158d8449ab07f8e"
-dependencies = [
- "cfg-if 0.1.10",
- "crossbeam-channel 0.4.4",
- "crossbeam-deque 0.7.4",
- "crossbeam-epoch 0.8.2",
- "crossbeam-queue 0.2.3",
- "crossbeam-utils 0.7.2",
-]
-
-[[package]]
-name = "crossbeam"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ae5588f6b3c3cb05239e90bd110f257254aecd01e4635400391aeae07497845"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-channel 0.5.1",
- "crossbeam-deque 0.8.1",
- "crossbeam-epoch 0.9.5",
- "crossbeam-queue 0.3.2",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
  "crossbeam-utils 0.8.5",
 ]
 
@@ -1618,39 +1604,13 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-deque"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20ff29ded3204c5106278a81a38f4b482636ed4fa1e6cfbeef193291beb29ed"
-dependencies = [
- "crossbeam-epoch 0.8.2",
- "crossbeam-utils 0.7.2",
- "maybe-uninit",
-]
-
-[[package]]
-name = "crossbeam-deque"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-epoch 0.9.5",
+ "crossbeam-epoch",
  "crossbeam-utils 0.8.5",
-]
-
-[[package]]
-name = "crossbeam-epoch"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058ed274caafc1f60c4997b5fc07bf7dc7cca454af7c6e81edffe5f33f70dace"
-dependencies = [
- "autocfg 1.0.1",
- "cfg-if 0.1.10",
- "crossbeam-utils 0.7.2",
- "lazy_static",
- "maybe-uninit",
- "memoffset 0.5.6",
- "scopeguard",
 ]
 
 [[package]]
@@ -1662,19 +1622,8 @@ dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils 0.8.5",
  "lazy_static",
- "memoffset 0.6.4",
+ "memoffset",
  "scopeguard",
-]
-
-[[package]]
-name = "crossbeam-queue"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "774ba60a54c213d409d5353bda12d49cd68d14e45036a285234c8d6f91f92570"
-dependencies = [
- "cfg-if 0.1.10",
- "crossbeam-utils 0.7.2",
- "maybe-uninit",
 ]
 
 [[package]]
@@ -2181,7 +2130,7 @@ name = "diem-proptest-helpers"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=533a5432a7b29199f784956c9335bef625e6f8ac#533a5432a7b29199f784956c9335bef625e6f8ac"
 dependencies = [
- "crossbeam 0.8.1",
+ "crossbeam",
  "diem-workspace-hack",
  "proptest",
  "proptest-derive",
@@ -2214,7 +2163,7 @@ dependencies = [
  "clap 2.33.3",
  "codespan-reporting",
  "crossbeam-channel 0.5.1",
- "crossbeam-deque 0.8.1",
+ "crossbeam-deque",
  "crossbeam-utils 0.8.5",
  "either",
  "futures 0.3.17",
@@ -4929,15 +4878,6 @@ dependencies = [
 
 [[package]]
 name = "memoffset"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa"
-dependencies = [
- "autocfg 1.0.1",
-]
-
-[[package]]
-name = "memoffset"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
@@ -5812,7 +5752,7 @@ dependencies = [
  "cc",
  "cfg-if 1.0.0",
  "libc",
- "memoffset 0.6.4",
+ "memoffset",
 ]
 
 [[package]]
@@ -5825,7 +5765,7 @@ dependencies = [
  "cc",
  "cfg-if 1.0.0",
  "libc",
- "memoffset 0.6.4",
+ "memoffset",
 ]
 
 [[package]]
@@ -7204,7 +7144,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06aca804d41dbc8ba42dfd964f0d01334eceb64314b9ecf7c5fad5188a06d90"
 dependencies = [
  "autocfg 1.0.1",
- "crossbeam-deque 0.8.1",
+ "crossbeam-deque",
  "either",
  "rayon-core",
 ]
@@ -7216,7 +7156,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e"
 dependencies = [
  "crossbeam-channel 0.5.1",
- "crossbeam-deque 0.8.1",
+ "crossbeam-deque",
  "crossbeam-utils 0.8.5",
  "lazy_static",
  "num_cpus",
@@ -9546,7 +9486,7 @@ dependencies = [
 name = "starcoin-proptest-helpers"
 version = "1.8.0-rc.1"
 dependencies = [
- "crossbeam 0.7.3",
+ "crossbeam",
  "diem-proptest-helpers",
  "proptest",
  "proptest-derive",
