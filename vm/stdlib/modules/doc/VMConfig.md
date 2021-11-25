@@ -463,7 +463,7 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(10, 1));
     // <a href="U256.md#0x1_U256_rem">U256::rem</a> 28
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(4, 1));
-    // U256::pow 29
+    // <a href="U256.md#0x1_U256_pow">U256::pow</a> 29
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(8, 1));
     table
 }

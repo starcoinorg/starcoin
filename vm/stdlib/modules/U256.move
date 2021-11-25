@@ -236,6 +236,22 @@ module U256 {
         assert(compare(&Self::rem(copy a, c), &from_u64(1)) == EQUAL, 0);
     }
 
+    public fun pow(a: U256, b: U256): U256 {
+        native_pow(&mut a, &b);
+        a
+    }
+
+    #[test]
+    fun test_pow() {
+        let a = Self::from_u128(10);
+        let b = Self::from_u64(1);
+        let c = Self::from_u64(2);
+        let d = Self::zero();
+        assert(compare(&Self::pow(copy a, b), &from_u64(10)) == EQUAL, 0);
+        assert(compare(&Self::pow(copy a, c), &from_u64(100)) == EQUAL, 0);
+        assert(compare(&Self::pow(copy a, d), &from_u64(1)) == EQUAL, 0);
+    }
+
     /// move implementation of native_add.
     fun add_nocarry(a: &mut U256, b: &U256) {
         let carry = 0;
