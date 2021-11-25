@@ -52,7 +52,7 @@ impl TransactionInfoHashStorage {
     ) -> Result<(), Error> {
         let mut batch = CodecWriteBatch::new();
         for txn_info in vec_txn_info {
-            if let Ok(Some(mut id_vec)) = self.get(txn_info.transaction_hash()) {
+            if let Some(mut id_vec) = self.get(txn_info.transaction_hash())? {
                 id_vec.push(txn_info.id());
                 batch.put(txn_info.transaction_hash(), id_vec)?;
             } else {

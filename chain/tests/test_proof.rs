@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use consensus::Consensus;
 use logger::prelude::debug;
 use rand::Rng;
@@ -7,8 +7,9 @@ use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::transaction::Transaction;
+use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::sync::Arc;
 
 #[stest::test(timeout = 480)]
@@ -24,21 +25,17 @@ fn test_transaction_info_proof() -> Result<()> {
     let mut seq_number = 0;
     let mut all_txns = vec![];
     let mut all_address = vec![];
-    println!(
-        "txn accumulator info: {:?}",
-        block_chain.get_txn_accumulator().get_info()
-    );
+
     let genesis_block = block_chain.get_block_by_number(0).unwrap().unwrap();
-    //put the genesis txn and genesis block metadata txn
+    //put the genesis txn, the genesis block metadata txn do not generate txn info
+
     all_txns.push(Transaction::UserTransaction(
         genesis_block.body.transactions.get(0).cloned().unwrap(),
     ));
 
-    all_txns.push(Transaction::BlockMetadata(genesis_block.to_metadata(0)));
-
     (0..block_count).for_each(|_block_idx| {
         let txn_count: u64 = rng.gen_range(1..10);
-        let txns = (0..txn_count)
+        let txns: Vec<SignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
                 let account_address = AccountAddress::random();
                 all_address.push(account_address);
@@ -50,7 +47,6 @@ fn test_transaction_info_proof() -> Result<()> {
                     config.net(),
                 );
                 seq_number += 1;
-                all_txns.push(Transaction::UserTransaction(txn.clone()));
                 txn
             })
             .collect();
@@ -59,7 +55,7 @@ fn test_transaction_info_proof() -> Result<()> {
             .create_block_template(
                 *miner_account.address(),
                 Some(parent_header.id()),
-                txns,
+                txns.clone(),
                 vec![],
                 None,
             )
@@ -73,45 +69,64 @@ fn test_transaction_info_proof() -> Result<()> {
         all_txns.push(Transaction::BlockMetadata(
             block.to_metadata(parent_header.gas_used()),
         ));
+        all_txns.extend(txns.into_iter().map(Transaction::UserTransaction));
         parent_header = block.header().clone();
     });
 
     let txn_index = rng.gen_range(0..all_txns.len());
     debug!("all txns len: {}, txn index:{}", all_txns.len(), txn_index);
 
-    let txn = all_txns.get(txn_index).cloned().unwrap();
-    let txn_hash = txn.id();
-    let txn_info = block_chain.get_transaction_info(txn_hash)?.unwrap();
+    for txn_index in 0..all_txns.len() {
+        let txn = all_txns.get(txn_index).cloned().unwrap();
+        let txn_hash = txn.id();
+        let txn_info = block_chain.get_transaction_info(txn_hash)?.ok_or_else(|| {
+            format_err!(
+                "Can not get txn info by txn hash:{}, txn:{:?}",
+                txn_hash,
+                txn
+            )
+        })?;
 
-    let txn_info_leaf = block_chain
-        .get_txn_accumulator()
-        .get_leaf(txn_index as u64)?
-        .unwrap();
-    assert_eq!(txn_info.txn_info.id(), txn_info_leaf);
+        let txn_info_leaf = block_chain
+            .get_txn_accumulator()
+            .get_leaf(txn_index as u64)?
+            .unwrap();
+        assert_eq!(
+            txn_info.txn_info.id(),
+            txn_info_leaf,
+            "txn_info hash do not match txn info leaf in accumulator, index: {}",
+            txn_index
+        );
 
-    let events = block_chain.get_events(txn_info.txn_info.id())?.unwrap();
-    let event_index = rng.gen_range(0..events.len()) as u64;
-    //let address_index = rng.gen_range(0..all_address.len());
-    //let addr = all_address.get(address_index).cloned().unwrap();
-    // let access_path =
-    //     AccessPath::resource_access_path(association_address(), AccountResource::struct_tag());
-    //let txn_block = block_chain.get_block(txn_info.block_id)?.unwrap();
+        let events = block_chain.get_events(txn_info.txn_info.id())?.unwrap();
+        let event_index = rng.gen_range(0..events.len()) as u64;
+        //let address_index = rng.gen_range(0..all_address.len());
+        //State Proof current not work, because block executor only keep the block state root
+        //TODO fixme
+        let access_path: Option<AccessPath> = None;
+        //AccessPath::resource_access_path(association_address(), AccountResource::struct_tag());
 
-    let txn_proof = block_chain.get_transaction_proof(txn_index as u64, Some(event_index), None)?;
+        let txn_proof = block_chain.get_transaction_proof(
+            txn_index as u64,
+            Some(event_index),
+            access_path.clone(),
+        )?;
 
-    let result = txn_proof.verify(
-        block_chain.current_header().txn_accumulator_root(),
-        txn_index as u64,
-        Some(event_index),
-        None,
-    );
+        let result = txn_proof.verify(
+            block_chain.current_header().txn_accumulator_root(),
+            txn_index as u64,
+            Some(event_index),
+            access_path,
+        );
 
-    assert!(
-        result.is_ok(),
-        "{:?} verify failed, reason: {:?}",
-        txn_proof,
-        result.err().unwrap()
-    );
+        assert!(
+            result.is_ok(),
+            "txn index: {}, {:?} verify failed, reason: {:?}",
+            txn_index,
+            txn_proof,
+            result.err().unwrap()
+        );
+    }
 
     Ok(())
 }
