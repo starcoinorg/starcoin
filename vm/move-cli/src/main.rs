@@ -33,7 +33,6 @@ use starcoin_config::INITIAL_GAS_SCHEDULE;
 use starcoin_functional_tests::executor::FakeExecutor;
 use starcoin_functional_tests::testsuite::PRETTY;
 use starcoin_vm_runtime::natives::starcoin_natives;
-use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::gas_schedule::GasStatus;
 use std::num::NonZeroUsize;
 use std::{
@@ -42,6 +41,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+use stdlib::load_latest_compiled_modules;
 use structopt::StructOpt;
 use vm::errors::Location;
 use vm::{
@@ -1132,31 +1132,33 @@ fn main() -> Result<()> {
             // get deps first.
             let view =
                 RemoteStateView::from_url(move_args.starcoin_rpc.as_str(), move_args.block_number)?;
+            let view = MergedRemoteCache { a: state, b: view };
+
+            let mut module_deps: BTreeMap<_, _> = {
+                let found_modules = resolve_deps(&view, source_files)?;
+                let mut module_deps =
+                    view.get_module_dependencies_recursively_for_all(&found_modules)?;
+                module_deps.extend(found_modules.into_iter().map(|m| (m.self_id(), m)));
+                module_deps
+            };
 
             // stdlib modules always included.
-            let mut all_module_deps = view
-                .get_modules(core_code_address())
-                .map_err(|e| e.into_vm_status())?
-                .expect("stdlib exists on chain")
-                .into_iter()
-                .map(|(k, v)| (ModuleId::new(core_code_address(), k), v))
-                .collect::<BTreeMap<_, _>>();
-
-            let view = MergedRemoteCache { a: state, b: view };
-            let mut found_modules = resolve_deps(&view, source_files)?;
-            let module_deps = view.get_module_dependencies_recursively_for_all(&found_modules)?;
-            found_modules.extend(module_deps.values().cloned());
-
-            for x in found_modules.iter().chain(module_deps.values()) {
-                all_module_deps.entry(x.self_id()).or_insert_with(|| {
-                    let mut blob = vec![];
-                    x.serialize(&mut blob).unwrap();
-                    blob
-                });
+            for m in load_latest_compiled_modules() {
+                let m_id = m.self_id();
+                module_deps.entry(m_id).or_insert(m);
             }
 
-            view.a
-                .save_modules(all_module_deps.into_iter().collect::<Vec<_>>().iter())?;
+            view.a.save_modules(
+                module_deps
+                    .into_iter()
+                    .map(|(m, d)| {
+                        let mut blob = vec![];
+                        d.serialize(&mut blob).unwrap();
+                        (m, blob)
+                    })
+                    .collect::<Vec<_>>()
+                    .iter(),
+            )?;
 
             check(view.a, !*no_republish, source_files, move_args.verbose)
         }

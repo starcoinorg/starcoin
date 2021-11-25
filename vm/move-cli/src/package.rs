@@ -248,7 +248,7 @@ pub fn parse_mode_from_string(mode: &str) -> Result<Mode> {
     match mode {
         "bare" => Ok(Mode(vec![], DepMode::Bare)),
         "stdlib" => Ok(Mode(vec![&*PACKAGE_STARCOIN_FRAMEWORK], DepMode::Stdlib)),
-        "starcoin" => Ok(Mode(vec![], DepMode::OnChain)),
+        "starcoin" => Ok(Mode(vec![&*PACKAGE_STARCOIN_FRAMEWORK], DepMode::OnChain)),
         _ => bail!("Invalid mode for dependency: {}", mode),
     }
 }
