@@ -23,7 +23,7 @@ impl tx_pool::Listener<Transaction> for Logger {
             expiration_timestamp_secs = tx.signed().expiration_timestamp_secs(),
             sender = tx.sender().to_hex(),
             hash = tx.hash().to_hex(),
-            action = "add",
+            action = "txpool_add",
         );
         if let Some(old) = old {
             debug!(target: "txqueue", "[{:?}] Dropped. Replaced by [{:?}]", old.hash(), tx.hash());
@@ -39,7 +39,7 @@ impl tx_pool::Listener<Transaction> for Logger {
             "{action} {hash} {reason}",
             reason = format!("{}", reason),
             hash = tx.hash().to_hex(),
-            action = "reject",
+            action = "txpool_reject",
         );
     }
 
@@ -50,13 +50,13 @@ impl tx_pool::Listener<Transaction> for Logger {
                     "{action} {hash} {new_hash}",
                     new_hash = new.hash().to_hex(),
                     hash = tx.hash().to_hex(),
-                    action = "drop",
+                    action = "txpool_drop",
                 )
             }
             None => sl_info!(
                 "{action} {hash}",
                 hash = tx.hash().to_hex(),
-                action = "drop",
+                action = "txpool_drop",
             ),
         }
     }
@@ -69,7 +69,7 @@ impl tx_pool::Listener<Transaction> for Logger {
         sl_info!(
             "{action} {hash}",
             hash = tx.hash().to_hex(),
-            action = "cancel",
+            action = "txpool_cancel",
         );
     }
 
@@ -77,7 +77,7 @@ impl tx_pool::Listener<Transaction> for Logger {
         sl_info!(
             "{action} {hash}",
             hash = tx.hash().to_hex(),
-            action = "cull",
+            action = "txpool_cull",
         );
     }
 }
