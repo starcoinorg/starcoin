@@ -4279,7 +4279,7 @@ dependencies = [
  "sha2 0.9.8",
  "smallvec 1.7.0",
  "thiserror",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "void",
  "zeroize",
 ]
@@ -4349,7 +4349,7 @@ dependencies = [
  "regex",
  "sha2 0.9.8",
  "smallvec 1.7.0",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "wasm-timer",
 ]
 
@@ -4390,7 +4390,7 @@ dependencies = [
  "sha2 0.9.8",
  "smallvec 1.7.0",
  "uint 0.9.1",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "void",
  "wasm-timer",
 ]
@@ -4431,7 +4431,7 @@ dependencies = [
  "parking_lot 0.11.2",
  "rand 0.7.3",
  "smallvec 1.7.0",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -4484,7 +4484,7 @@ dependencies = [
  "log 0.4.14",
  "prost",
  "prost-build",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "void",
 ]
 
@@ -4520,7 +4520,7 @@ dependencies = [
  "prost-build",
  "rand 0.7.3",
  "smallvec 1.7.0",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "void",
  "wasm-timer",
 ]
@@ -4541,7 +4541,7 @@ dependencies = [
  "minicbor",
  "rand 0.7.3",
  "smallvec 1.7.0",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "wasm-timer",
 ]
 
@@ -5523,7 +5523,7 @@ dependencies = [
  "percent-encoding 2.1.0",
  "serde",
  "static_assertions",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
  "url 2.2.2",
 ]
 
@@ -5537,7 +5537,7 @@ dependencies = [
  "generic-array 0.14.4",
  "multihash-derive",
  "sha2 0.9.8",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -5589,7 +5589,7 @@ dependencies = [
  "log 0.4.14",
  "pin-project 1.0.8",
  "smallvec 1.7.0",
- "unsigned-varint 0.7.1",
+ "unsigned-varint",
 ]
 
 [[package]]
@@ -5699,7 +5699,7 @@ dependencies = [
  "stest",
  "tempfile",
  "thiserror",
- "unsigned-varint 0.6.0",
+ "unsigned-varint",
  "void",
  "wasm-timer",
  "zeroize",
@@ -11567,18 +11567,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f30360d7979f5e9c6e6cea48af192ea8fab4afb3cf72597154b8f08935bc9c7f"
 dependencies = [
  "traitobject",
-]
-
-[[package]]
-name = "unsigned-varint"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35581ff83d4101e58b582e607120c7f5ffb17e632a980b1f38334d76b36908b2"
-dependencies = [
- "asynchronous-codec 0.5.0",
- "bytes 1.1.0",
- "futures-io",
- "futures-util",
 ]
 
 [[package]]
