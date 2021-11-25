@@ -10,7 +10,6 @@ use futures::{
     stream::{self, StreamExt},
     FutureExt,
 };
-use log::{debug, error, info, trace};
 use lru::LruCache;
 use network_api::messages::{
     AnnouncementType, BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage,
@@ -21,6 +20,7 @@ use network_p2p::{Event, NetworkWorker};
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
@@ -723,7 +723,8 @@ impl Inner {
                         );
                         continue;
                     }
-
+                    let txn_unhandled_ids: Vec<HashValue> =
+                        txns_unhandled.iter().map(|txn| txn.id()).collect();
                     // if txn after known_transactions filter is same length with origin, just send origin message for avoid encode data again.
                     let (real_protocol_name, data) =
                         if txns_unhandled.len() == origin_txn_len && is_not_announcement {
@@ -737,7 +738,7 @@ impl Inner {
                         } else {
                             NotificationMessage::Announcement(Announcement::new(
                                 AnnouncementType::Txn,
-                                txns_unhandled.into_iter().map(|txn| txn.id()).collect(),
+                                txn_unhandled_ids.clone(),
                             ))
                             .encode_notification()
                             .expect("Encode notification Announcement message should ok")
@@ -752,6 +753,10 @@ impl Inner {
                         );
                         continue;
                     }
+                    info!("[network] prepared to broadcast_transaction with protocol:{} peer: {} idx: {:?}",
+                        real_protocol_name, peer_id, txn_unhandled_ids,
+                    );
+
                     send_peer_count = send_peer_count.saturating_add(1);
                     prepare_to_broadcast.push((real_protocol_name, peer_id, data));
                 }
