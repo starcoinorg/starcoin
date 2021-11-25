@@ -15,7 +15,7 @@ dependencies = [
 [[package]]
 name = "abigen"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -854,7 +854,7 @@ dependencies = [
 [[package]]
 name = "boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -883,7 +883,7 @@ dependencies = [
 [[package]]
 name = "borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "diem-workspace-hack",
  "mirai-annotations",
@@ -944,7 +944,7 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 [[package]]
 name = "bytecode"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "borrow-graph",
  "bytecode-verifier",
@@ -969,7 +969,7 @@ dependencies = [
 [[package]]
 name = "bytecode-interpreter"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bytecode",
@@ -989,7 +989,7 @@ dependencies = [
 [[package]]
 name = "bytecode-interpreter-crypto"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "curve25519-dalek-fiat",
@@ -1002,7 +1002,7 @@ dependencies = [
 [[package]]
 name = "bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -1018,7 +1018,7 @@ dependencies = [
 [[package]]
 name = "bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "borrow-graph",
@@ -2138,7 +2138,7 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
@@ -2169,7 +2169,7 @@ dependencies = [
 [[package]]
 name = "diem-crypto-derive"
 version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "proc-macro2 1.0.32",
  "quote 1.0.10",
@@ -2179,7 +2179,7 @@ dependencies = [
 [[package]]
 name = "diem-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "crossbeam 0.8.1",
  "diem-workspace-hack",
@@ -2190,7 +2190,7 @@ dependencies = [
 [[package]]
 name = "diem-temppath"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "diem-workspace-hack",
  "hex",
@@ -2200,7 +2200,7 @@ dependencies = [
 [[package]]
 name = "diem-workspace-hack"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -2338,7 +2338,7 @@ dependencies = [
 [[package]]
 name = "disassembler"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -2372,7 +2372,7 @@ dependencies = [
 [[package]]
 name = "docgen"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bytecode",
@@ -2538,7 +2538,7 @@ dependencies = [
 [[package]]
 name = "errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -3814,7 +3814,7 @@ checksum = "68f2d64f2edebec4ce84ad108148e67e1064789bee435edc5b60ad398714a3a9"
 [[package]]
 name = "ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -3833,7 +3833,7 @@ dependencies = [
 [[package]]
 name = "ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5140,7 +5140,7 @@ checksum = "c9be0862c1b3f26a88803c4a49de6889c10e608b3ee9344e6ef5b45fb37ad3d1"
 [[package]]
 name = "move-binary-format"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5156,7 +5156,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5211,7 +5211,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5222,7 +5222,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.2"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5241,7 +5241,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5280,7 +5280,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5294,7 +5294,7 @@ dependencies = [
 [[package]]
 name = "move-lang"
 version = "0.0.1"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5333,7 +5333,7 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -5360,7 +5360,7 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "abigen",
  "anyhow",
@@ -5398,7 +5398,7 @@ dependencies = [
 [[package]]
 name = "move-prover-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5410,7 +5410,7 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "diem-workspace-hack",
  "docgen",
@@ -5431,7 +5431,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "diem-workspace-hack",
  "once_cell",
@@ -5441,7 +5441,7 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bytecode-interpreter",
@@ -5466,7 +5466,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "bytecode-verifier",
  "diem-workspace-hack",
@@ -5484,7 +5484,7 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "diem-workspace-hack",
@@ -5496,7 +5496,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "bcs",
  "diem-workspace-hack",
@@ -7428,7 +7428,7 @@ dependencies = [
 [[package]]
 name = "resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "bcs",
@@ -8200,7 +8200,7 @@ checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 [[package]]
 name = "short-hex-str"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "diem-workspace-hack",
  "mirai-annotations",
@@ -12039,7 +12039,7 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 [[package]]
 name = "x"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "anyhow",
  "camino",
@@ -12068,7 +12068,7 @@ dependencies = [
 [[package]]
 name = "x-core"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "camino",
  "determinator",
@@ -12086,7 +12086,7 @@ dependencies = [
 [[package]]
 name = "x-lint"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 dependencies = [
  "camino",
  "guppy",
@@ -12166,9 +12166,9 @@ dependencies = [
 [[patch.unused]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"
 
 [[patch.unused]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/lerencao/libra?branch=vector-append#e95376e9808a3bcda04a8026b9a67e087303a29a"
+source = "git+https://github.com/lerencao/libra?branch=vector-append#50641b4cd39c99eaaf6f64cf2acfd2b2aa840bad"

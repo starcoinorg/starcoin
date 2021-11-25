@@ -169,9 +169,9 @@ pub fn initial_native_table() -> Vec<GasCost> {
         (N::U256_DIV, GasCost::new(10, 1)),
         (N::U256_REM, GasCost::new(4, 1)),
         (N::U256_POW, GasCost::new(8, 1)),
-        (N::VEC_APPEND, GasCost::new(8, 1)),
-        (N::VEC_REMOVE, GasCost::new(8, 1)),
-        (N::VEC_REVERSE, GasCost::new(8, 1)),
+        (N::VEC_APPEND, GasCost::new(40, 1)),
+        (N::VEC_REMOVE, GasCost::new(20, 1)),
+        (N::VEC_REVERSE, GasCost::new(10, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
     let native_table = raw_native_table

@@ -1,11 +1,9 @@
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_schedule::GasAlgebra;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::{native_gas, NativeResult};
 use move_vm_types::pop_arg;
 use move_vm_types::values::{Value, VectorRef};
-use smallvec::smallvec;
 use starcoin_vm_types::gas_schedule::NativeCostIndex;
 use std::collections::VecDeque;
 
@@ -19,11 +17,7 @@ pub fn native_append(
 
     let other = args.pop_back().unwrap();
     let lhs = pop_arg!(args, VectorRef);
-    let cost = native_gas(
-        context.cost_table(),
-        NativeCostIndex::VEC_APPEND as u8,
-        other.size().get() as usize,
-    );
+    let cost = native_gas(context.cost_table(), NativeCostIndex::VEC_APPEND as u8, 1);
     lhs.append(cost, other.value_as()?, &ty_args[0])
 }
 
@@ -37,6 +31,7 @@ pub fn native_remove(
 
     let idx: u64 = args.pop_back().unwrap().value_as()?;
     let lhs = pop_arg!(args, VectorRef);
+
     let cost = native_gas(context.cost_table(), NativeCostIndex::VEC_REMOVE as u8, 1);
     lhs.remove(idx as usize, cost, &ty_args[0])
 }
