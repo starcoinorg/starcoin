@@ -20,12 +20,13 @@ jobs:
       - name: setup environment
         run: bash ./scripts/dev_setup.sh  -b -t -y
       - name: run flamegraph
-        run: bash ./scripts/flamegraph.sh
+        run: bash ./scripts/flamegraph.sh $SHA7
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SHA7: ${GITHUB_SHA:7}
       - name: upload Artifact
         uses: actions/upload-artifact@v2
         with:
