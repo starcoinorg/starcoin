@@ -6,7 +6,7 @@ function download() {
       return 0
   fi
   compress_name=$name.tar.gz
-  url=https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/main/$compress_name
+  url=https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/barnard/$compress_name
   for((i = 0; i < 3; i++));
   do
     rm -f $compress_name
@@ -31,10 +31,10 @@ function download() {
 }
 
 
-echo "usage: import_main_get_block.sh to_dir. to_dir like ~/.starcoin/main"
+echo "usage: import_main_get_block.sh to_dir. to_dir like ~/.starcoin/barnard"
 to_dir=$1
 STEP=500000
-for((i = 0; i < 5; i++));
+for((i = 0; i < 4; i++));
 do
   start=$((i * STEP + 1))
   end=$((i  * STEP + STEP))
@@ -52,7 +52,7 @@ do
     exit $case_status
   fi
 done
-name="block_2500001_2890710.csv"
+name="block_2000001_2034454.csv"
 download $name
 case_status=$?
 if [ $case_status -ne 0 ]; then

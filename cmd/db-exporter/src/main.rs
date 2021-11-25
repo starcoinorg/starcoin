@@ -453,6 +453,7 @@ pub fn apply_block(
     .expect("create block chain should success.");
     let start_time = SystemTime::now();
     let cur_num = chain.status().head().number();
+    let file_name = input_path.display().to_string();
     let reader = BufReader::new(File::open(input_path)?);
     let mut blocks = vec![];
     for record in reader.lines() {
@@ -464,7 +465,8 @@ pub fn apply_block(
         blocks.push(block);
     }
     if blocks.is_empty() {
-        return Err(format_err!("cur_num {} exceed apply block number", cur_num));
+        println!("file {} has apply", file_name);
+        return Ok(())
     }
 
     if let Some(last_block) = blocks.last() {
