@@ -12,7 +12,7 @@ rand = "0.8.4"
 serde = { version = "1.0.130" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.5.1"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.14", features = ["full"] }
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 structopt = "0.3.25"
