@@ -23,8 +23,8 @@ use starcoin_vm_types::gas_schedule::{
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
-    init_cost_table, initial_instruction_table, initial_native_table, v1_native_table,
-    ConsensusConfig, DaoConfig, TransactionPublishOption, VMConfig, Version,
+    instruction_table_v1, v1_native_table, v2_native_table, ConsensusConfig, DaoConfig,
+    TransactionPublishOption, VMConfig, Version, LATEST_INSTRUCTION_TABLE, LATEST_NATIVE_TABLE,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::{TimeService, TimeServiceType};
@@ -709,7 +709,7 @@ static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
 static LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
     Lazy::new(|| AbstractMemorySize::new(600));
 
-pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
+pub static GAS_CONSTANTS_V1: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
         global_memory_per_byte_write_cost: InternalGasUnits::new(9),
@@ -725,7 +725,7 @@ pub static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     }
 });
 
-pub static DEFAULT_GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
+pub static GAS_CONSTANTS_V2: Lazy<GasConstants> = Lazy::new(|| {
     GasConstants {
         global_memory_per_byte_cost: InternalGasUnits::new(4),
         global_memory_per_byte_write_cost: InternalGasUnits::new(9),
@@ -755,25 +755,13 @@ pub static GAS_CONSTANTS_V3: Lazy<GasConstants> = Lazy::new(|| {
         default_account_size: *DEFAULT_ACCOUNT_SIZE,
     }
 });
+pub static LATEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| GAS_CONSTANTS_V3.clone());
 
-pub static TEST_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
-    GasConstants {
-        global_memory_per_byte_cost: InternalGasUnits::new(4),
-        global_memory_per_byte_write_cost: InternalGasUnits::new(9),
-        min_transaction_gas_units: InternalGasUnits::new(600),
-        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
-        intrinsic_gas_per_byte: InternalGasUnits::new(8),
-        maximum_number_of_gas_units: GasUnits::new(40_000_000), //must less than base_block_gas_limit
-        min_price_per_gas_unit: GasPrice::new(0),
-        max_price_per_gas_unit: GasPrice::new(10_000),
-        max_transaction_size_in_bytes: 4096 * 32, // 128k, to pass stdlib_upgrade
-        gas_unit_scaling_factor: 1,
-        default_account_size: *DEFAULT_ACCOUNT_SIZE,
-    }
+pub static LATEST_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| CostTable {
+    instruction_table: LATEST_INSTRUCTION_TABLE.clone(),
+    native_table: LATEST_NATIVE_TABLE.clone(),
+    gas_constants: GAS_CONSTANTS_V2.clone(),
 });
-
-pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> =
-    Lazy::new(|| init_cost_table(DEFAULT_GAS_CONSTANTS_V2.clone()));
 
 static EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
@@ -796,9 +784,9 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: CostTable {
-                instruction_table: initial_instruction_table(),
-                native_table: initial_native_table(),
-                gas_constants: TEST_GAS_CONSTANTS.clone(),
+                instruction_table: LATEST_INSTRUCTION_TABLE.clone(),
+                native_table: LATEST_NATIVE_TABLE.clone(),
+                gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
         publishing_option: TransactionPublishOption::open(),
@@ -849,8 +837,8 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
             gas_schedule: CostTable {
-                instruction_table: initial_instruction_table(),
-                native_table: initial_native_table(),
+                instruction_table: LATEST_INSTRUCTION_TABLE.clone(),
+                native_table: LATEST_NATIVE_TABLE.clone(),
                 gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
@@ -908,8 +896,8 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
             gas_schedule: CostTable {
-                instruction_table: initial_instruction_table(),
-                native_table: initial_native_table(),
+                instruction_table: LATEST_INSTRUCTION_TABLE.clone(),
+                native_table: LATEST_NATIVE_TABLE.clone(),
                 gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
@@ -968,8 +956,8 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD / 12,
         vm_config: VMConfig {
             gas_schedule: CostTable {
-                instruction_table: initial_instruction_table(),
-                native_table: initial_native_table(),
+                instruction_table: instruction_table_v1(),
+                native_table: v2_native_table(),
                 gas_constants: GAS_CONSTANTS_V3.clone(),
             },
         },
@@ -1031,9 +1019,9 @@ pub static BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: CostTable {
-                instruction_table: initial_instruction_table(),
+                instruction_table: instruction_table_v1(),
                 native_table: v1_native_table(),
-                gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+                gas_constants: GAS_CONSTANTS_V1.clone(),
             },
         },
         publishing_option: TransactionPublishOption::locked(),
@@ -1094,7 +1082,11 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            gas_schedule: CostTable {
+                instruction_table: instruction_table_v1(),
+                native_table: v2_native_table(),
+                gas_constants: GAS_CONSTANTS_V2.clone(),
+            },
         },
         publishing_option,
         consensus_config: ConsensusConfig {

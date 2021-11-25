@@ -14,7 +14,7 @@ use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
-use starcoin_config::INITIAL_GAS_SCHEDULE;
+use starcoin_config::LATEST_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
@@ -100,7 +100,7 @@ impl StarcoinVM {
     pub fn load_configs(&mut self, state: &dyn StateView) -> Result<(), Error> {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
-                gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+                gas_schedule: LATEST_GAS_SCHEDULE.clone(),
             });
             self.version = Some(Version { major: 1 });
             Ok(())
@@ -824,7 +824,7 @@ impl StarcoinVM {
             Ok(gas_schedule) => gas_schedule,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &INITIAL_GAS_SCHEDULE
+                    &LATEST_GAS_SCHEDULE
                 } else {
                     return discard_error_vm_status(e);
                 }
@@ -914,7 +914,7 @@ impl StarcoinVM {
             Ok(gas_schedule) => gas_schedule,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &INITIAL_GAS_SCHEDULE
+                    &LATEST_GAS_SCHEDULE
                 } else {
                     return Ok(discard_error_vm_status(e));
                 }
