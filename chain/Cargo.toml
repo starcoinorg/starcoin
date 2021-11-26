@@ -47,6 +47,9 @@ starcoin-types = { path = "../types", package = "starcoin-types", features = ["f
 starcoin-functional-tests = { path = "../vm/functional-tests"}
 starcoin-resource-viewer = {path = "../vm/resource-viewer"}
 starcoin-transaction-builder = { path = "../vm/transaction-builder"}
+starcoin-rpc-api = { path = "../rpc/api"}
+serde_json = { version="1.0", features = ["arbitrary_precision"]}
+
 
 [features]
 default = []
