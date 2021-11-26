@@ -375,8 +375,10 @@ pub fn export_block_range(
     let cur_num = chain.status().head().number();
     let end = if cur_num > end + BLOCK_GAP {
         end
-    } else {
+    } else if cur_num > BLOCK_GAP {
         cur_num - BLOCK_GAP
+    } else {
+        end
     };
     if start > cur_num || start > end {
         return Err(format_err!(
