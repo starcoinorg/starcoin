@@ -194,12 +194,10 @@ pub fn v2_native_table() -> Vec<GasCost> {
         (N::KECCAK_256, GasCost::new(64, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
-    let native_table = raw_native_table
+    raw_native_table
         .into_iter()
         .map(|(_, cost)| cost)
-        .collect::<Vec<_>>();
-
-    native_table
+        .collect::<Vec<_>>()
 }
 pub fn v3_native_table() -> Vec<GasCost> {
     let mut raw_native_table = vec![
