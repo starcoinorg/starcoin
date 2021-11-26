@@ -19,11 +19,13 @@ module alice::MyToken {
 }
 // check: gas_used
 // check: 7800
+// check: EXECUTED
 
 //! block-prologue
 //! author: genesis
 //! block-number: 1
 //! block-time: 1000
+// check: EXECUTED
 
 //! new-transaction
 //! sender: alice
@@ -41,9 +43,9 @@ script {
     }
 }
 
-// check: EXECUTED
 // check: gas_used
-// check: 1405437
+// check: 417412
+// check: EXECUTED
 
 //! new-transaction
 //! sender: alice
@@ -58,10 +60,11 @@ script {
         PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(1));
     }
 }
-// check: EXECUTED
+
 // check: gas_used
-// check: 599685
-//
+// check: 204475
+// check: EXECUTED
+
 //! new-transaction
 //! sender: alice
 address alice = {{alice}};
@@ -76,9 +79,10 @@ script {
     }
 }
 
-// check: EXECUTED
+
 // check: gas_used
 // check: 58927
+// check: EXECUTED
 
 //! new-transaction
 //! sender: alice
@@ -102,14 +106,16 @@ script {
         );
     }
 }
-// check: EXECUTED
+
 // check: gas_used
 // check: 207001
+// check: EXECUTED
 
 //! block-prologue
 //! author: genesis
 //! block-number: 2
 //! block-time: 3601000
+// check: EXECUTED
 
 //! new-transaction
 //! sender: alice
@@ -132,14 +138,16 @@ script {
         Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(&signer, proposer_address, proposal_id, stake, agree);
     }
 }
-// check: EXECUTED
+
 // check: gas_used
 // check: 156894
+// check: EXECUTED
 
 //! block-prologue
 //! author: genesis
 //! block-number: 3
 //! block-time: 3662000
+// check: EXECUTED
 
 //! new-transaction
 //! sender: alice
@@ -157,15 +165,16 @@ script {
         Dao::queue_proposal_action<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(proposer_address, proposal_id);
     }
 }
-// check: EXECUTED
+
 // check: gas_used
 // check: 47257
+// check: EXECUTED
 
 //! block-prologue
 //! author: genesis
 //! block-number: 4
 //! block-time: 7262000
-
+// check: EXECUTED
 
 //! new-transaction
 //! sender: alice
@@ -179,6 +188,7 @@ script {
         UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);
     }
 }
-// check: EXECUTED
+
 // check: gas_used
 // check: 123307
+// check: EXECUTED

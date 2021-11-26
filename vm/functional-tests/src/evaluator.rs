@@ -12,7 +12,6 @@ use mirai_annotations::checked_verify;
 use once_cell::sync::Lazy;
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::genesis_config::LATEST_GAS_CONSTANTS;
-use starcoin_config::GAS_CONSTANTS_V1;
 use starcoin_types::account_config::genesis_address;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::StructTag;

@@ -156,7 +156,7 @@ script {
     }
 }
 // check: gas_used
-// check: 52756
+// check: 53698
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -168,10 +168,9 @@ script {
         BigVectorTest::remove(&account, 0);
     }
 }
-// check: EXECUTION_FAILURE
-// check: OUT_OF_GAS
+
 // check: gas_used
-// check: 40000000
+// check: 7165731
 
 
 //! new-transaction
@@ -185,5 +184,5 @@ script {
     }
 }
 // check: gas_used
-// check: 23369098
-// check: "Keep(EXECUTED)"
+// check: 3600367
+// check: "ABORTED"
