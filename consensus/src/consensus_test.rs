@@ -448,7 +448,7 @@ fn test_next_target_target() {
         },
     ];
 
-    let next_target_1 = get_next_target_helper(blocks_1, 5962).unwrap();
+    let next_target_1 = get_next_target_helper(blocks_1, 5918).unwrap();
     // let difficulty = U256::from("0x0e74b15e");
     let difficulty = U256::from("0f1ccd00");
     let ttt: U256 = "0f1ccd00".into();
