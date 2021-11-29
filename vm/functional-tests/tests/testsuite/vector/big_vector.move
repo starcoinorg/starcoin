@@ -180,9 +180,9 @@ script {
     use alice::BigVectorTest;
     fun main(account: signer) {
         BigVectorTest::remove(&account, 5000);
-        assert(BigVectorTest::value_of(&account, 9999) == 10000, 107);
+        assert(BigVectorTest::value_of(&account, 9998) == 10000, 107);
     }
 }
 // check: gas_used
-// check: 3600367
-// check: "ABORTED"
+// check: 3609011
+// check: "EXECUTED"
