@@ -126,6 +126,25 @@ fn test_tree_and_inmemory_compare() {
     assert_eq!(accumulator.num_leaves, tree_accumulator.num_leaves);
 }
 
+#[test]
+fn test_proof() {
+    let mut rng = rand::thread_rng();
+    let leaf_count = rng.gen_range(1000..2000);
+    let leaves = create_leaves(0..leaf_count);
+    let accumulator = InMemoryAccumulator::from_leaves(leaves.as_slice());
+    let root = accumulator.root_hash;
+    let leaf_index = rng.gen_range(0..leaf_count as u64);
+    let proof = InMemoryAccumulator::get_proof_from_leaves(leaves.as_slice(), leaf_index).unwrap();
+    assert!(
+        proof
+            .verify(root, leaves[leaf_index as usize], leaf_index)
+            .unwrap(),
+        "leaf_index {}, proof: {:?} verify failed",
+        leaf_index,
+        proof
+    );
+}
+
 proptest! {
     #[test]
     fn test_accumulator_append_subtrees(

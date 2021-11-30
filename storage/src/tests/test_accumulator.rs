@@ -21,7 +21,7 @@ fn test_storage() {
     ))
     .unwrap();
 
-    let acc_node = AccumulatorNode::new_leaf(NodeIndex::new(1), HashValue::random());
+    let acc_node = AccumulatorNode::new_leaf(NodeIndex::from_inorder_index(1), HashValue::random());
     let node_hash = acc_node.hash();
     storage
         .transaction_accumulator_storage
