@@ -17,9 +17,9 @@ codespan = { version = "0.8.0", features = ["serialization"] }
 colored = "2.0.0"
 bcs = "0.1.2"
 
-bytecode-source-map = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"  }
-move-coverage = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"  }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="533a5432a7b29199f784956c9335bef625e6f8ac"  }
+bytecode-source-map = { git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
+move-coverage = { git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
 [features]
 default = []
 

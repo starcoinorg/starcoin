@@ -231,37 +231,3 @@ starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
-
-[patch."https://github.com/starcoinorg/diem"]
-bytecode-source-map = {git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-bytecode-verifier = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-diem-crypto = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-diem-crypto-derive = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-diem-proptest-helpers = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-diem-temppath = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-diem-workspace-hack = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-disassembler = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-docgen = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-errmapgen = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-binary-format = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-command-line-common = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-#move-transactional-test-runner= { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-core-types={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-coverage={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-ir-types={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-lang={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-# move-lang-test-utils={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-model={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-prover={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-prover-test-utils={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-stdlib={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-unit-test={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-vm-runtime={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-vm-types={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-short-hex-str={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-x = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-x-core={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-x-lint={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-resource-viewer={ git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4"  }
-move-cli = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4" }
-move-package = { git = "https://github.com/lerencao/libra", branch="starcoin-release-1.4" }
