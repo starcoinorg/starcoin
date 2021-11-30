@@ -56,3 +56,11 @@
 ## Version 9
 
 - YieldFarmingV2: fix #2989
+
+### Version 10
+
+- Add `0x1::Signature::ecrecover` , `0x1::Hash::ripemd160` and `0x1::EVMAddress`. (#3020)
+- Store `VMConfig` info in Module, instead of Resource. (#3019)
+- Make `append`, `remove`, `reverse` native in Vector. (#3055)
+- Add `U256` implementation. (#3032)
+- improve account balance function.(#3058)
