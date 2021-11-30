@@ -11,53 +11,11 @@ pub mod u256;
 // for support evm compat and cross chain.
 pub mod ecrecover;
 
+pub mod vector;
+
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_vm_runtime::native_functions::{NativeFunction, NativeFunctionTable};
-use u256::{
-    native_u256_add, native_u256_div, native_u256_from_bytes, native_u256_mul, native_u256_pow,
-    native_u256_rem, native_u256_sub,
-};
-#[allow(non_camel_case_types)]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-#[repr(u8)]
-pub enum NativeCostIndex {
-    SHA2_256 = 0,
-    SHA3_256 = 1,
-    ED25519_VERIFY = 2,
-    ED25519_THRESHOLD_VERIFY = 3,
-    BCS_TO_BYTES = 4,
-    LENGTH = 5,
-    EMPTY = 6,
-    BORROW = 7,
-    BORROW_MUT = 8,
-    PUSH_BACK = 9,
-    POP_BACK = 10,
-    DESTROY_EMPTY = 11,
-    SWAP = 12,
-    ED25519_VALIDATE_KEY = 13,
-    SIGNER_BORROW = 14,
-    CREATE_SIGNER = 15,
-    DESTROY_SIGNER = 16,
-    EMIT_EVENT = 17,
-    BCS_TO_ADDRESS = 18,
-    TOKEN_NAME_OF = 19,
-    KECCAK_256 = 20,
-    RIPEMD160 = 21,
-    ECRECOVER = 22,
-    U256_FROM_BYTES = 23,
-    U256_ADD = 24,
-    U256_SUB = 25,
-    U256_MUL = 26,
-    U256_DIV = 27,
-    U256_REM = 28,
-    U256_POW = 29,
-}
-
-impl NativeCostIndex {
-    //note: should change this value when add new native function.
-    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 30;
-}
 
 /// The function returns all native functions supported by Starcoin.
 /// NOTICE:
@@ -130,6 +88,9 @@ pub fn starcoin_natives() -> NativeFunctionTable {
             move_stdlib::natives::vector::native_destroy_empty,
         ),
         ("Vector", "swap", move_stdlib::natives::vector::native_swap),
+        ("Vector", "native_append", vector::native_append),
+        ("Vector", "native_remove", vector::native_remove),
+        ("Vector", "native_reverse", vector::native_reverse),
         (
             "Event",
             "write_to_event_store",
@@ -155,13 +116,13 @@ pub fn starcoin_natives() -> NativeFunctionTable {
             "create_signers_for_testing",
             move_stdlib::natives::unit_test::native_create_signers_for_testing,
         ),
-        ("U256", "from_bytes", native_u256_from_bytes),
-        ("U256", "native_add", native_u256_add),
-        ("U256", "native_sub", native_u256_sub),
-        ("U256", "native_mul", native_u256_mul),
-        ("U256", "native_div", native_u256_div),
-        ("U256", "native_rem", native_u256_rem),
-        ("U256", "native_pow", native_u256_pow),
+        ("U256", "from_bytes", u256::native_u256_from_bytes),
+        ("U256", "native_add", u256::native_u256_add),
+        ("U256", "native_sub", u256::native_u256_sub),
+        ("U256", "native_mul", u256::native_u256_mul),
+        ("U256", "native_div", u256::native_u256_div),
+        ("U256", "native_rem", u256::native_u256_rem),
+        ("U256", "native_pow", u256::native_u256_pow),
     ];
     NATIVES
         .iter()

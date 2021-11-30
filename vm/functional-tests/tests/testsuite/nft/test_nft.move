@@ -62,7 +62,7 @@ script {
 }
 
 // check: gas_used
-// check: 492608
+// check: 97398
 // check: EXECUTED
 
 //! new-transaction
@@ -78,7 +78,7 @@ script {
 }
 
 // check: gas_used
-// check: 218929
+// check: 219220
 // check: EXECUTED
 
 //! new-transaction

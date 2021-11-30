@@ -663,12 +663,13 @@ module Account {
 
     /// Return the current TokenType balance of the account at `addr`.
     public fun balance<TokenType: store>(addr: address): u128 acquires Balance {
-        balance_for(borrow_global<Balance<TokenType>>(addr))
+        if (exists<Balance<TokenType>>(addr)) {
+            balance_for(borrow_global<Balance<TokenType>>(addr))
+        } else {
+            0u128
+        }
     }
 
-    spec balance {
-        aborts_if !exists<Balance<TokenType>>(addr);
-    }
 
     /// Add a balance of `Token` type to the sending account.
     public fun do_accept_token<TokenType: store>(account: &signer) acquires Account {

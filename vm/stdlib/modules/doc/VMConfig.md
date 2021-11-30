@@ -465,6 +465,14 @@ The  <code><a href="VMConfig.md#0x1_VMConfig_GasCost">GasCost</a></code> tracks:
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(4, 1));
     // <a href="U256.md#0x1_U256_pow">U256::pow</a> 29
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(8, 1));
+    // TODO: settle down the gas cost
+    // <a href="Vector.md#0x1_Vector_append">Vector::append</a> 30
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(40, 1));
+    // <a href="Vector.md#0x1_Vector_remove">Vector::remove</a> 31
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(20, 1));
+    // <a href="Vector.md#0x1_Vector_reverse">Vector::reverse</a> 32
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> table, <a href="VMConfig.md#0x1_VMConfig_new_gas_cost">new_gas_cost</a>(10, 1));
+
     table
 }
 </code></pre>

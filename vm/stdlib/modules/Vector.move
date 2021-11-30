@@ -63,28 +63,19 @@ module Vector {
 
     /// Reverses the order of the elements in the vector `v` in place.
     public fun reverse<Element>(v: &mut vector<Element>) {
-        let len = length(v);
-        if (len == 0) return ();
-
-        let front_index = 0;
-        let back_index = len -1;
-        while (front_index < back_index) {
-            swap(v, front_index, back_index);
-            front_index = front_index + 1;
-            back_index = back_index - 1;
-        }
+        native_reverse(v)
     }
     spec reverse {
         pragma intrinsic = true;
     }
-
+    native fun native_reverse<Element>(this: &mut vector<Element>);
 
     /// Pushes all of the elements of the `other` vector into the `lhs` vector.
     public fun append<Element>(lhs: &mut vector<Element>, other: vector<Element>) {
-        reverse(&mut other);
-        while (!is_empty(&other)) push_back(lhs, pop_back(&mut other));
-        destroy_empty(other);
+        native_append(lhs, other);
     }
+    native fun native_append<Element>(lhs: &mut vector<Element>, other: vector<Element>);
+
     spec append {
         pragma intrinsic = true;
     }
@@ -135,13 +126,12 @@ module Vector {
         // i out of bounds; abort
         if (i >= len) abort EINDEX_OUT_OF_BOUNDS;
 
-        len = len - 1;
-        while (i < len) swap(v, i, { i = i + 1; i });
-        pop_back(v)
+        native_remove(v, i)
     }
     spec remove {
         pragma intrinsic = true;
     }
+    native fun native_remove<Element>(this: &mut vector<Element>, i: u64): Element;
 
     /// Swap the `i`th element of the vector `v` with the last element and then pop the vector.
     /// This is O(1), but does not preserve ordering of elements in the vector.

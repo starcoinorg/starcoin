@@ -29,7 +29,7 @@ use move_vm_runtime::data_cache::MoveStorage;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::SessionAdapter;
 use move_vm_runtime::session::Session;
-use starcoin_config::INITIAL_GAS_SCHEDULE;
+use starcoin_config::LATEST_GAS_SCHEDULE;
 use starcoin_functional_tests::executor::FakeExecutor;
 use starcoin_functional_tests::testsuite::PRETTY;
 use starcoin_vm_runtime::natives::starcoin_natives;
@@ -708,7 +708,7 @@ fn execute<R: MoveStorage>(
 }
 
 fn get_cost_strategy(gas_budget: Option<u64>) -> Result<GasStatus<'static>> {
-    let gas_schedule = &INITIAL_GAS_SCHEDULE;
+    let gas_schedule = &LATEST_GAS_SCHEDULE;
     let cost_strategy = if let Some(gas_budget) = gas_budget {
         let max_gas_budget = u64::MAX
             .checked_div(gas_schedule.gas_constants.gas_unit_scaling_factor)

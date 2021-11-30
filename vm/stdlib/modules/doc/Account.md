@@ -101,7 +101,6 @@ The module for the account resource that governs every account
     -  [Function `restore_key_rotation_capability`](#@Specification_1_restore_key_rotation_capability)
     -  [Function `rotate_authentication_key`](#@Specification_1_rotate_authentication_key)
     -  [Function `balance_for`](#@Specification_1_balance_for)
-    -  [Function `balance`](#@Specification_1_balance)
     -  [Function `do_accept_token`](#@Specification_1_do_accept_token)
     -  [Function `accept_token`](#@Specification_1_accept_token)
     -  [Function `is_accepts_token`](#@Specification_1_is_accepts_token)
@@ -1723,7 +1722,11 @@ Return the current TokenType balance of the account at <code>addr</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType: store&gt;(addr: address): u128 <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <a href="Account.md#0x1_Account_balance_for">balance_for</a>(borrow_global&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr))
+    <b>if</b> (<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr)) {
+        <a href="Account.md#0x1_Account_balance_for">balance_for</a>(borrow_global&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr))
+    } <b>else</b> {
+        0u128
+    }
 }
 </code></pre>
 
@@ -2900,22 +2903,6 @@ It collects gas and bumps the sequence number
 
 
 <pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_balance"></a>
-
-### Function `balance`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType: store&gt;(addr: address): u128
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr);
 </code></pre>
 
 

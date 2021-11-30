@@ -267,6 +267,14 @@ module VMConfig {
         Vector::push_back(&mut table, new_gas_cost(4, 1));
         // U256::pow 29
         Vector::push_back(&mut table, new_gas_cost(8, 1));
+        // TODO: settle down the gas cost
+        // Vector::append 30
+        Vector::push_back(&mut table, new_gas_cost(40, 1));
+        // Vector::remove 31
+        Vector::push_back(&mut table, new_gas_cost(20, 1));
+        // Vector::reverse 32
+        Vector::push_back(&mut table, new_gas_cost(10, 1));
+
         table
     }
 

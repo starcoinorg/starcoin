@@ -1,4 +1,3 @@
-use crate::NativeCostIndex::*;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_schedule::GasAlgebra;
 use move_core_types::vm_status::StatusCode;
@@ -9,6 +8,7 @@ use move_vm_types::pop_arg;
 use move_vm_types::values::{Reference, Struct, StructRef, VMValueCast, Value};
 use smallvec::smallvec;
 use starcoin_uint::U256;
+use starcoin_vm_types::gas_schedule::NativeCostIndex::*;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 
