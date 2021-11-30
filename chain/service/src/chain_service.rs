@@ -16,7 +16,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
-use starcoin_types::transaction::BlockTransactionInfo;
+use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEvent,
@@ -179,20 +179,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                             txn_hash
                         )
                     })?;
-                    let index = block
-                        .transactions()
-                        .iter()
-                        .position(|t| t.id() == txn_hash)
-                        .map(|i| i + 1)
-                        .unwrap_or_default();
-
                     events
                         .into_iter()
                         .map(|evt| ContractEventInfo {
                             block_hash,
                             block_number: block.header().number(),
                             transaction_hash: txn_hash,
-                            transaction_index: index as u32,
+                            transaction_index: txn_info.transaction_index,
+                            transaction_global_index: txn_info.transaction_global_index,
                             event: evt,
                         })
                         .collect()
@@ -316,11 +310,11 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<BlockTransactionInfo>, Error> {
+    ) -> Result<Option<RichTransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
     }
 
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<BlockTransactionInfo>, Error> {
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>, Error> {
         self.storage.get_block_transaction_infos(block_id)
     }
 
@@ -328,7 +322,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<BlockTransactionInfo>, Error> {
+    ) -> Result<Option<RichTransactionInfo>, Error> {
         self.storage
             .get_transaction_info_by_block_and_index(block_id, idx)
     }
@@ -384,7 +378,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<BlockTransactionInfo>> {
+    ) -> Result<Vec<RichTransactionInfo>> {
         self.main
             .get_transaction_infos(start_index, reverse, max_size)
     }

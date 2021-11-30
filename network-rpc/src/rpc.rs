@@ -112,7 +112,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 Ok(Some(
                     txn_infos
                         .into_iter()
-                        .map(|info| Into::<(HashValue, TransactionInfo)>::into(info).1)
+                        .map(|info| info.transaction_info)
                         .collect(),
                 ))
             } else {

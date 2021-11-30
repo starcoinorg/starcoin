@@ -8,12 +8,13 @@ use crate::TRANSACTION_INFO_PREFIX_NAME;
 use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
 use crypto::HashValue;
-use starcoin_types::transaction::BlockTransactionInfo;
+use serde::{Deserialize, Serialize};
+use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 
 define_storage!(
     TransactionInfoStorage,
     HashValue,
-    BlockTransactionInfo,
+    RichTransactionInfo,
     TRANSACTION_INFO_PREFIX_NAME
 );
 
@@ -24,7 +25,14 @@ define_storage!(
     TRANSACTION_INFO_HASH_PREFIX_NAME
 );
 
-impl ValueCodec for BlockTransactionInfo {
+//TODO do old data compat and transform.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct OldBlockTransactionInfo {
+    pub block_id: HashValue,
+    pub txn_info: TransactionInfo,
+}
+
+impl ValueCodec for RichTransactionInfo {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -48,13 +56,15 @@ impl TransactionInfoHashStorage {
 
     pub(crate) fn save_transaction_infos(
         &self,
-        vec_txn_info: Vec<BlockTransactionInfo>,
+        vec_txn_info: &[RichTransactionInfo],
     ) -> Result<(), Error> {
         let mut batch = CodecWriteBatch::new();
         for txn_info in vec_txn_info {
             if let Some(mut id_vec) = self.get(txn_info.transaction_hash())? {
-                id_vec.push(txn_info.id());
-                batch.put(txn_info.transaction_hash(), id_vec)?;
+                if !id_vec.contains(&txn_info.id()) {
+                    id_vec.push(txn_info.id());
+                    batch.put(txn_info.transaction_hash(), id_vec)?;
+                }
             } else {
                 batch.put(txn_info.transaction_hash(), vec![txn_info.id()])?;
             }
@@ -66,12 +76,12 @@ impl TransactionInfoStorage {
     pub(crate) fn get_transaction_info(
         &self,
         id: HashValue,
-    ) -> Result<Option<BlockTransactionInfo>, Error> {
+    ) -> Result<Option<RichTransactionInfo>, Error> {
         self.get(id)
     }
     pub(crate) fn save_transaction_infos(
         &self,
-        vec_txn_info: Vec<BlockTransactionInfo>,
+        vec_txn_info: Vec<RichTransactionInfo>,
     ) -> Result<(), Error> {
         let mut batch = CodecWriteBatch::new();
         for txn_info in vec_txn_info {

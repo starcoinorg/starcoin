@@ -63,6 +63,11 @@ pub fn block_execute(
                 let txn_state_root = chain_state
                     .commit()
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
+                //every transaction's state tree root and tree nodes should save to storage
+                //TODO merge database flush.
+                chain_state
+                    .flush()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
 
                 executed_data.txn_infos.push(TransactionInfo::new(
                     txn_hash,

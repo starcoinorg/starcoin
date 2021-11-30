@@ -19,6 +19,7 @@ pub struct Event {
     pub transaction_hash: HashValue,
     // txn index in block
     pub transaction_index: Option<u32>,
+    pub transaction_global_index: Option<u64>,
     pub contract_event: ContractEvent,
 }
 
@@ -28,6 +29,7 @@ impl Event {
         block_number: BlockNumber,
         transaction_hash: HashValue,
         transaction_index: Option<u32>,
+        transaction_global_index: Option<u64>,
         contract_event: ContractEvent,
     ) -> Self {
         Self {
@@ -35,6 +37,7 @@ impl Event {
             block_number,
             transaction_hash,
             transaction_index,
+            transaction_global_index,
             contract_event,
         }
     }

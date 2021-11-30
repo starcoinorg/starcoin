@@ -41,7 +41,7 @@ use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
-    Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
+    RichTransactionInfo, Script, SignedUserTransaction, Transaction, TransactionOutput,
     TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
@@ -807,7 +807,10 @@ pub struct TransactionInfoView {
     pub block_number: StrView<u64>,
     /// The hash of this transaction.
     pub transaction_hash: HashValue,
+    /// The index of this transaction in block
     pub transaction_index: u32,
+    /// The index of this transaction in chain
+    pub transaction_global_index: u64,
     /// The root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
     pub state_root_hash: HashValue,
@@ -825,26 +828,24 @@ pub struct TransactionInfoView {
 }
 
 impl TransactionInfoView {
-    pub fn new(txn_info: TransactionInfo, txn_block: &Block) -> anyhow::Result<Self> {
-        let block_hash = txn_block.id();
-        let transaction_hash = txn_info.transaction_hash();
+    pub fn new(txn_info: RichTransactionInfo) -> Self {
+        TransactionInfoView {
+            block_hash: txn_info.block_id,
+            block_number: txn_info.block_number.into(),
+            transaction_hash: txn_info.transaction_hash,
+            transaction_index: txn_info.transaction_index,
+            transaction_global_index: txn_info.transaction_global_index,
+            state_root_hash: txn_info.transaction_info.state_root_hash,
+            event_root_hash: txn_info.transaction_info.event_root_hash,
+            gas_used: txn_info.transaction_info.gas_used.into(),
+            status: TransactionStatusView::from(txn_info.transaction_info.status),
+        }
+    }
+}
 
-        // if not found in block, it means it's block meta txn.
-        let index = txn_block
-            .transactions()
-            .iter()
-            .position(|t| t.id() == transaction_hash);
-
-        Ok(TransactionInfoView {
-            block_hash,
-            block_number: txn_block.header().number().into(),
-            transaction_hash,
-            transaction_index: index.map(|i| i + 1).unwrap_or_default() as u32,
-            state_root_hash: txn_info.state_root_hash(),
-            event_root_hash: txn_info.event_root_hash(),
-            gas_used: txn_info.gas_used().into(),
-            status: TransactionStatusView::from(txn_info.status().clone()),
-        })
+impl From<RichTransactionInfo> for TransactionInfoView {
+    fn from(txn_info: RichTransactionInfo) -> Self {
+        TransactionInfoView::new(txn_info)
     }
 }
 
@@ -929,6 +930,7 @@ pub struct TransactionEventView {
     pub transaction_hash: Option<HashValue>,
     // txn index in block
     pub transaction_index: Option<u32>,
+    pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
     pub event_key: EventKey,
@@ -942,6 +944,7 @@ impl From<ContractEventInfo> for TransactionEventView {
             block_number: Some(info.block_number.into()),
             transaction_hash: Some(info.transaction_hash),
             transaction_index: Some(info.transaction_index),
+            transaction_global_index: Some(info.transaction_global_index.into()),
             data: StrView(info.event.event_data().to_vec()),
             type_tag: info.event.type_tag().clone().into(),
             event_key: *info.event.key(),
@@ -957,6 +960,7 @@ impl From<ContractEvent> for TransactionEventView {
             block_number: None,
             transaction_hash: None,
             transaction_index: None,
+            transaction_global_index: None,
             data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone().into(),
             event_key: *event.key(),
@@ -971,6 +975,7 @@ impl TransactionEventView {
         block_number: Option<BlockNumber>,
         transaction_hash: Option<HashValue>,
         transaction_index: Option<u32>,
+        transaction_global_index: Option<u64>,
         contract_event: &ContractEvent,
     ) -> Self {
         Self {
@@ -978,6 +983,7 @@ impl TransactionEventView {
             block_number: block_number.map(Into::into),
             transaction_hash,
             transaction_index,
+            transaction_global_index: transaction_global_index.map(Into::into),
             data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone().into(),
             event_key: *contract_event.key(),
