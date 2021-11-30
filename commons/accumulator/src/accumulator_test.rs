@@ -79,7 +79,7 @@ fn test_error_on_bad_parameters() {
         0,
         Arc::new(mock_store),
     );
-    assert!(accumulator.get_proof(10).is_err());
+    assert!(accumulator.get_proof(10).unwrap().is_none());
 }
 
 #[test]
