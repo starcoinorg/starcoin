@@ -773,9 +773,13 @@ impl ChainReader for BlockChain {
         index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
-    ) -> Result<TransactionInfoWithProof> {
-        let txn_proof = self.txn_accumulator.get_proof(index)?;
+    ) -> Result<Option<TransactionInfoWithProof>> {
+        let txn_proof = match self.txn_accumulator.get_proof(index)? {
+            Some(proof) => proof,
+            None => return Ok(None),
+        };
 
+        //if can get proof by leaf_index, the leaf and transaction info should exist.
         let txn_info_hash = self
             .txn_accumulator
             .get_leaf(index)?
@@ -812,12 +816,12 @@ impl ChainReader for BlockChain {
         } else {
             None
         };
-        Ok(TransactionInfoWithProof {
+        Ok(Some(TransactionInfoWithProof {
             transaction_info: transaction_info.txn_info,
             proof: txn_proof,
             event_proof,
             state_proof,
-        })
+        }))
     }
 }
 

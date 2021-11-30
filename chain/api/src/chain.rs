@@ -88,7 +88,7 @@ pub trait ChainReader {
         index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
-    ) -> Result<TransactionInfoWithProof>;
+    ) -> Result<Option<TransactionInfoWithProof>>;
 }
 
 pub trait ChainWriter {
