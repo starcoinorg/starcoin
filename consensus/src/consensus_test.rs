@@ -452,7 +452,6 @@ fn test_next_target_target() {
     println!("{}", next_target_1);
     // let difficulty = U256::from("0x0e74b15e");
     let difficulty = U256::from("0f1ccd00");
-    let ttt: U256 = "0f1ccd00".into();
 
     println!("max uint 256 is {}", U256::max_value());
     println!("target is {}", target_to_difficulty(next_target_1));
