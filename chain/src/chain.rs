@@ -606,8 +606,11 @@ impl ChainReader for BlockChain {
         Ok(None)
     }
 
-    fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<RichTransactionInfo>> {
-        match self.txn_accumulator.get_leaf(version)? {
+    fn get_transaction_info_by_global_index(
+        &self,
+        transaction_global_index: u64,
+    ) -> Result<Option<RichTransactionInfo>> {
+        match self.txn_accumulator.get_leaf(transaction_global_index)? {
             None => Ok(None),
             Some(hash) => self.storage.get_transaction_info(hash),
         }
@@ -766,11 +769,11 @@ impl ChainReader for BlockChain {
 
     fn get_transaction_proof(
         &self,
-        index: u64,
+        transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
-        let txn_proof = match self.txn_accumulator.get_proof(index)? {
+        let txn_proof = match self.txn_accumulator.get_proof(transaction_global_index)? {
             Some(proof) => proof,
             None => return Ok(None),
         };
@@ -778,8 +781,13 @@ impl ChainReader for BlockChain {
         //if can get proof by leaf_index, the leaf and transaction info should exist.
         let txn_info_hash = self
             .txn_accumulator
-            .get_leaf(index)?
-            .ok_or_else(|| format_err!("Can not find txn info hash by index {}", index))?;
+            .get_leaf(transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not find txn info hash by index {}",
+                    transaction_global_index
+                )
+            })?;
         let transaction_info = self
             .storage
             .get_transaction_info(txn_info_hash)?

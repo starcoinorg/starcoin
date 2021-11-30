@@ -43,8 +43,11 @@ pub trait ChainReader {
     /// Get transaction info by transaction's hash
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
 
-    /// get txn info at version in main chain.
-    fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<RichTransactionInfo>>;
+    /// get transaction info by global index in chain.
+    fn get_transaction_info_by_global_index(
+        &self,
+        transaction_global_index: u64,
+    ) -> Result<Option<RichTransactionInfo>>;
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
@@ -81,10 +84,10 @@ pub trait ChainReader {
 
     fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
 
-    /// Get transaction info by accumulator leaf index
+    /// Get transaction info proof by `transaction_global_index`
     fn get_transaction_proof(
         &self,
-        index: u64,
+        transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
