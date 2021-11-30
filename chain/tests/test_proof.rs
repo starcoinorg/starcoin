@@ -106,11 +106,9 @@ fn test_transaction_info_proof() -> Result<()> {
         let access_path: Option<AccessPath> = None;
         //AccessPath::resource_access_path(association_address(), AccountResource::struct_tag());
 
-        let txn_proof = block_chain.get_transaction_proof(
-            txn_index as u64,
-            Some(event_index),
-            access_path.clone(),
-        )?;
+        let txn_proof = block_chain
+            .get_transaction_proof(txn_index as u64, Some(event_index), access_path.clone())?
+            .expect("get transaction proof return none");
 
         let result = txn_proof.verify(
             block_chain.current_header().txn_accumulator_root(),
