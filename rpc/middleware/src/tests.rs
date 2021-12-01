@@ -23,7 +23,7 @@ fn test_middleware() {
     let mut futs = vec![];
     for i in 0..count {
         let request = format!("{}{}{}", request_tmpl_prefix, i, request_tmpl_suffix);
-        let fut = io_handler.handle_request(request.as_str(), ());
+        let fut = io_handler.handle_request(request.as_str(), Metadata::default());
         futs.push(fut);
     }
     for fut in futs {

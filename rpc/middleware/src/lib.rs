@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2
 
 use futures::{future::Either, Future, FutureExt};
-use jsonrpc_core::{Call, FutureResponse, Id, Metadata, Middleware, Output, Request, Response};
+use jsonrpc_core::{Call, FutureResponse, Id, Middleware, Output, Request, Response};
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::metadata::Metadata;
 use std::fmt;
 use std::time::Instant;
 
@@ -66,12 +67,13 @@ impl RpcCallRecord {
         }
     }
 
-    pub fn end(self, code: i64, metrics: Option<RpcMetrics>) {
+    pub fn end(self, code: i64, user: Option<String>, metrics: Option<RpcMetrics>) {
         let use_time = self.timer.elapsed();
 
         info!(
-            "rpc_call\t{}\t{}\t{}\t{}\t{}",
+            "rpc_call\t{}\t{}\t{}\t{}\t{}\t{}",
             self.id,
+            user.unwrap_or_else(|| "unknown".into()),
             self.call_type,
             self.method,
             code,
@@ -119,27 +121,28 @@ impl MetricMiddleware {
     }
 }
 
-impl<M: Metadata> Middleware<M> for MetricMiddleware {
+impl Middleware<Metadata> for MetricMiddleware {
     type Future = FutureResponse;
     type CallFuture = NoopCallFuture;
 
-    fn on_request<F, X>(&self, request: Request, meta: M, next: F) -> Either<Self::Future, X>
+    fn on_request<F, X>(&self, request: Request, meta: Metadata, next: F) -> Either<Self::Future, X>
     where
-        F: Fn(Request, M) -> X + Send + Sync,
+        F: Fn(Request, Metadata) -> X + Send + Sync,
         X: Future<Output = Option<Response>> + Send + 'static,
     {
         Either::Right(next(request, meta))
     }
 
-    fn on_call<F, X>(&self, call: Call, meta: M, next: F) -> Either<Self::CallFuture, X>
+    fn on_call<F, X>(&self, call: Call, meta: Metadata, next: F) -> Either<Self::CallFuture, X>
     where
-        F: Fn(Call, M) -> X + Send + Sync,
+        F: Fn(Call, Metadata) -> X + Send + Sync,
         X: Future<Output = Option<Output>> + Send + 'static,
     {
         let record: RpcCallRecord = (&call).into();
         let metrics = self.metrics.clone();
+        let user_addr = meta.user.clone();
         let fut = next(call, meta).map(move |output| {
-            record.end(output_to_code(output.as_ref()), metrics);
+            record.end(output_to_code(output.as_ref()), user_addr, metrics);
             output
         });
         // must declare type to convert type then wrap with Either.
