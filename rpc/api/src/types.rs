@@ -1417,10 +1417,15 @@ macro_rules! impl_str_view_for {
             s.parse::<$t>().map(StrView)
         }
     }
+    impl From<StrView<$t>> for $t {
+        fn from(view: StrView<$t>) -> $t {
+            view.0
+        }
+    }
     )*}
 }
 impl_str_view_for! {u64 i64 u128 i128}
-impl_str_view_for! {ByteCodeOrScriptFunction}
+impl_str_view_for! {ByteCodeOrScriptFunction AccessPath}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BytesView(Box<[u8]>);
@@ -1493,20 +1498,6 @@ impl Serialize for BytesView {
         S: Serializer,
     {
         hex::encode(self).serialize(serializer)
-    }
-}
-
-impl FromStr for StrView<AccessPath> {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StrView(AccessPath::from_str(s)?))
-    }
-}
-
-impl std::fmt::Display for StrView<AccessPath> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
