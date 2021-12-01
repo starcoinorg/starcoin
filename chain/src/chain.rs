@@ -821,7 +821,7 @@ impl ChainReader for BlockChain {
             None
         };
         Ok(Some(TransactionInfoWithProof {
-            transaction_info: transaction_info.transaction_info,
+            transaction_info,
             proof: txn_proof,
             event_proof,
             state_proof,

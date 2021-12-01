@@ -4,12 +4,11 @@
 use crate::blob::Blob;
 use crate::node_type::{SparseMerkleInternalNode, SparseMerkleLeafNode};
 use anyhow::{bail, ensure, Result};
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
-#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SparseMerkleProof {
     /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
     ///     - If this is `Some(HashValue, HashValue)`
@@ -20,11 +19,11 @@ pub struct SparseMerkleProof {
     ///           corresponding account blob.
     ///     - If this is `None`, this is also a non-inclusion proof which indicates the subtree is
     ///       empty.
-    leaf: Option<(HashValue, HashValue)>,
+    pub leaf: Option<(HashValue, HashValue)>,
 
     /// All siblings in this proof, including the default ones. Siblings are ordered from the bottom
     /// level to the root level.
-    siblings: Vec<HashValue>,
+    pub siblings: Vec<HashValue>,
 }
 
 impl SparseMerkleProof {

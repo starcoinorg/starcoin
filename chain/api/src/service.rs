@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
+use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
@@ -13,6 +14,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
+use starcoin_vm_types::access_path::AccessPath;
 
 /// Readable block chain service trait
 pub trait ReadableChainService {
@@ -49,12 +51,19 @@ pub trait ReadableChainService {
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
 
-    fn get_txn_infos(
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<RichTransactionInfo>>;
+
+    fn get_transaction_proof(
+        &self,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>>;
 }
 
 /// Writeable block chain service trait
@@ -105,12 +114,19 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
-    async fn get_txn_infos(
+    async fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<RichTransactionInfo>>;
+
+    async fn get_transaction_proof(
+        &self,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>>;
 }
 
 #[async_trait::async_trait]
@@ -357,7 +373,7 @@ where
         }
     }
 
-    async fn get_txn_infos(
+    async fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
@@ -374,6 +390,26 @@ where
             Ok(tx_infos)
         } else {
             bail!("get txn infos error")
+        }
+    }
+
+    async fn get_transaction_proof(
+        &self,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>> {
+        let response = self
+            .send(ChainRequest::GetTransactionProof {
+                transaction_global_index,
+                event_index,
+                access_path,
+            })
+            .await??;
+        if let ChainResponse::TransactionProof(proof) = response {
+            Ok(*proof)
+        } else {
+            bail!("get transactin proof error")
         }
     }
 }

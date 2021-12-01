@@ -5,7 +5,7 @@ pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockView, ChainId, ChainInfoView, TransactionEventResponse,
-    TransactionInfoView, TransactionView,
+    TransactionInfoView, TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -14,6 +14,7 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockInfo, BlockNumber};
+use starcoin_vm_types::access_path::AccessPath;
 
 #[rpc(client, server, schema)]
 pub trait ChainApi {
@@ -89,7 +90,7 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_headers")]
     fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
 
-    ///Get transaction info list
+    /// Get transaction info list
     /// `start_global_index` is the transaction global index
     #[rpc(name = "chain.get_transaction_infos")]
     fn get_transaction_infos(
@@ -98,6 +99,17 @@ pub trait ChainApi {
         reverse: bool,
         max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView>>;
+
+    /// Get TransactionInfoWithProof, if the transaction with `transaction_global_index` do not exists, return None.
+    /// if `event_index` is some, also return the EventWithProof in current transaction event_root
+    /// if `access_path` is some, also return the StateWithProof in current transaction state_root
+    #[rpc(name = "chain.get_transaction_proof")]
+    fn get_transaction_proof(
+        &self,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> FutureResult<Option<TransactionInfoWithProofView>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

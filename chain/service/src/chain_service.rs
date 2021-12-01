@@ -4,7 +4,9 @@
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
-use starcoin_chain_api::{ChainReader, ChainWriter, ReadableChainService};
+use starcoin_chain_api::{
+    ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
+};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -24,6 +26,7 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -215,11 +218,21 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 start_index,
                 reverse,
                 max_size,
-            } => Ok(ChainResponse::TransactionInfos(self.inner.get_txn_infos(
-                start_index,
-                reverse,
-                max_size,
-            )?)),
+            } => Ok(ChainResponse::TransactionInfos(
+                self.inner
+                    .get_transaction_infos(start_index, reverse, max_size)?,
+            )),
+            ChainRequest::GetTransactionProof {
+                transaction_global_index,
+                event_index,
+                access_path,
+            } => Ok(ChainResponse::TransactionProof(Box::new(
+                self.inner.get_transaction_proof(
+                    transaction_global_index,
+                    event_index,
+                    access_path,
+                )?,
+            ))),
         }
     }
 }
@@ -373,7 +386,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.main.get_block_ids(start_number, reverse, max_size)
     }
 
-    fn get_txn_infos(
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
@@ -381,6 +394,16 @@ impl ReadableChainService for ChainReaderServiceInner {
     ) -> Result<Vec<RichTransactionInfo>> {
         self.main
             .get_transaction_infos(start_index, reverse, max_size)
+    }
+
+    fn get_transaction_proof(
+        &self,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>> {
+        self.main
+            .get_transaction_proof(transaction_global_index, event_index, access_path)
     }
 }
 

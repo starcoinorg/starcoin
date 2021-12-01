@@ -14,13 +14,13 @@ use starcoin_abi_decoder::{
     DecodedPackage, DecodedScript, DecodedScriptFunction, DecodedTransactionPayload,
 };
 use starcoin_abi_types::ModuleABI;
+use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof};
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, BlockSummary,
-    EpochUncleSummary, UncleSummary,
+    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -783,25 +783,6 @@ impl TryFrom<Block> for BlockView {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
-pub struct BlockSummaryView {
-    pub header: BlockHeaderView,
-    pub uncles: Vec<BlockHeaderView>,
-}
-
-impl From<BlockSummary> for BlockSummaryView {
-    fn from(summary: BlockSummary) -> Self {
-        BlockSummaryView {
-            header: summary.block_header.into(),
-            uncles: summary
-                .uncles
-                .into_iter()
-                .map(|uncle| uncle.into())
-                .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {
     pub block_hash: HashValue,
     pub block_number: StrView<u64>,
@@ -994,6 +975,7 @@ impl TransactionEventView {
 
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
+use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 pub use vm_status_translator::VmStatusExplainView;
@@ -1066,47 +1048,6 @@ pub enum WriteOpView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct UncleSummaryView {
-    /// total uncle
-    pub uncles: StrView<u64>,
-    /// sum(number of the block which contain uncle block - uncle parent block number).
-    pub sum: StrView<u64>,
-    pub avg: StrView<u64>,
-    pub time_sum: StrView<u64>,
-    pub time_avg: StrView<u64>,
-}
-
-impl From<UncleSummary> for UncleSummaryView {
-    fn from(origin: UncleSummary) -> Self {
-        Self {
-            uncles: origin.uncles.into(),
-            sum: origin.sum.into(),
-            avg: origin.avg.into(),
-            time_sum: origin.time_sum.into(),
-            time_avg: origin.time_avg.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct EpochUncleSummaryView {
-    /// epoch number
-    pub epoch: StrView<u64>,
-    pub number_summary: UncleSummaryView,
-    pub epoch_summary: UncleSummaryView,
-}
-
-impl From<EpochUncleSummary> for EpochUncleSummaryView {
-    fn from(origin: EpochUncleSummary) -> Self {
-        EpochUncleSummaryView {
-            epoch: origin.epoch.into(),
-            number_summary: origin.number_summary.into(),
-            epoch_summary: origin.epoch_summary.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ChainInfoView {
     pub chain_id: u8,
     pub genesis_hash: HashValue,
@@ -1147,21 +1088,53 @@ impl From<PeerInfo> for PeerInfoView {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SparseMerkleProofView {
+    /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
+    ///     - If this is `Some(HashValue, HashValue)`
+    ///         - If the first `HashValue` equals requested key, this is an inclusion proof and the
+    ///           second `HashValue` equals the hash of the corresponding account blob.
+    ///         - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key
+    ///           that exists in the subtree and the second `HashValue` equals the hash of the
+    ///           corresponding account blob.
+    ///     - If this is `None`, this is also a non-inclusion proof which indicates the subtree is
+    ///       empty.
+    pub leaf: Option<(HashValue, HashValue)>,
+
+    /// All siblings in this proof, including the default ones. Siblings are ordered from the bottom
+    /// level to the root level.
+    pub siblings: Vec<HashValue>,
+}
+
+impl From<SparseMerkleProof> for SparseMerkleProofView {
+    fn from(origin: SparseMerkleProof) -> Self {
+        Self {
+            leaf: origin.leaf,
+            siblings: origin.siblings,
+        }
+    }
+}
+
+impl From<SparseMerkleProofView> for SparseMerkleProof {
+    fn from(origin: SparseMerkleProofView) -> Self {
+        Self {
+            leaf: origin.leaf,
+            siblings: origin.siblings,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct StateWithProofView {
     pub state: Option<StrView<Vec<u8>>>,
     pub account_state: Option<StrView<Vec<u8>>>,
-    pub account_proof: SparseMerkleProof,
-    pub account_state_proof: SparseMerkleProof,
+    pub account_proof: SparseMerkleProofView,
+    pub account_state_proof: SparseMerkleProofView,
 }
 
 impl StateWithProofView {
-    pub fn state_proof(&self) -> StateProof {
-        StateProof::new(
-            self.account_state.clone().map(|v| v.0),
-            self.account_proof.clone(),
-            self.account_state_proof.clone(),
-        )
+    pub fn into_state_proof(self) -> StateWithProof {
+        self.into()
     }
 }
 
@@ -1171,8 +1144,8 @@ impl From<StateWithProof> for StateWithProofView {
         Self {
             state,
             account_state: state_proof.proof.account_state.map(|b| StrView(b.into())),
-            account_proof: state_proof.proof.account_proof,
-            account_state_proof: state_proof.proof.account_state_proof,
+            account_proof: state_proof.proof.account_proof.into(),
+            account_state_proof: state_proof.proof.account_state_proof.into(),
         }
     }
 }
@@ -1182,10 +1155,58 @@ impl From<StateWithProofView> for StateWithProof {
         let state = view.state.map(|v| v.0);
         let proof = StateProof::new(
             view.account_state.map(|v| v.0),
-            view.account_proof,
-            view.account_state_proof,
+            view.account_proof.into(),
+            view.account_state_proof.into(),
         );
         StateWithProof::new(state, proof)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct AccumulatorProofView {
+    pub siblings: Vec<HashValue>,
+}
+
+impl From<AccumulatorProof> for AccumulatorProofView {
+    fn from(origin: AccumulatorProof) -> Self {
+        Self {
+            siblings: origin.siblings,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct EventWithProofView {
+    /// event is serialized bytes in bcs format.
+    pub event: StrView<Vec<u8>>,
+    pub proof: AccumulatorProofView,
+}
+
+impl From<EventWithProof> for EventWithProofView {
+    fn from(origin: EventWithProof) -> Self {
+        Self {
+            event: StrView(origin.event.encode().expect("encode event should success")),
+            proof: origin.proof.into(),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionInfoWithProofView {
+    pub transaction_info: TransactionInfoView,
+    pub proof: AccumulatorProofView,
+    pub event_proof: Option<EventWithProofView>,
+    pub state_proof: Option<StateWithProofView>,
+}
+
+impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
+    fn from(origin: TransactionInfoWithProof) -> Self {
+        Self {
+            transaction_info: origin.transaction_info.into(),
+            proof: origin.proof.into(),
+            event_proof: origin.event_proof.map(Into::into),
+            state_proof: origin.state_proof.map(Into::into),
+        }
     }
 }
 

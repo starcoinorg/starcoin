@@ -13,17 +13,20 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTrans
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    SignedUserTransactionView, TransactionEventResponse, TransactionInfoView, TransactionView,
+    SignedUserTransactionView, TransactionEventResponse, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
+use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use std::convert::TryInto;
 use std::sync::Arc;
+
 pub struct ChainRpcImpl<S>
 where
     S: ChainAsyncService + 'static,
@@ -389,11 +392,29 @@ where
         let fut = async move {
             let max_return_num = max_size.min(config.rpc.txn_info_query_max_range());
             Ok(service
-                .get_txn_infos(start_global_index, reverse, max_return_num)
+                .get_transaction_infos(start_global_index, reverse, max_return_num)
                 .await?
                 .into_iter()
                 .map(Into::into)
                 .collect::<Vec<_>>())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_proof(
+        &self,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> FutureResult<Option<TransactionInfoWithProofView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_transaction_proof(transaction_global_index, event_index, access_path)
+                .await?
+                .map(Into::into))
         }
         .map_err(map_err);
 

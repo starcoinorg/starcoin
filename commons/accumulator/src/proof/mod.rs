@@ -12,7 +12,7 @@ use starcoin_crypto::HashValue;
 pub struct AccumulatorProof {
     /// All siblings in this proof, including the default ones. Siblings are ordered from the bottom
     /// level to the root level.
-    siblings: Vec<HashValue>,
+    pub siblings: Vec<HashValue>,
 }
 
 impl AccumulatorProof {
