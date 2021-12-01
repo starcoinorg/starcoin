@@ -9659,6 +9659,7 @@ dependencies = [
  "rand 0.8.4",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-rpc-api",
  "stest",
  "thiserror",
 ]

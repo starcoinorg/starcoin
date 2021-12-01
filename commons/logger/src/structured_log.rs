@@ -73,11 +73,13 @@ fn create_default_root_logger(
         .open(log_path)?;
 
     let decorator = slog_term::PlainDecorator::new(file);
-    let drain = slog_term::CompactFormat::new(decorator)
+    let file_drain = slog_term::CompactFormat::new(decorator)
         .use_custom_timestamp(timestamp_custom)
         .build()
         .fuse();
-
+    let decorator = slog_term::TermDecorator::new().build();
+    let io_drain = slog_term::CompactFormat::new(decorator).build().fuse();
+    let drain = slog::Duplicate::new(file_drain, io_drain).fuse();
     if is_async {
         let async_builder = match chan_size {
             Some(chan_size_inner) => Async::new(drain).chan_size(chan_size_inner),
