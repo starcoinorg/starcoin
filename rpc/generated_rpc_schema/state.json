@@ -134,7 +134,6 @@
           ],
           "properties": {
             "account_proof": {
-              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
               "type": "object",
               "required": [
                 "siblings"
@@ -176,7 +175,6 @@
               ]
             },
             "account_state_proof": {
-              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
               "type": "object",
               "required": [
                 "siblings"
@@ -673,7 +671,6 @@
           ],
           "properties": {
             "account_proof": {
-              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
               "type": "object",
               "required": [
                 "siblings"
@@ -715,7 +712,6 @@
               ]
             },
             "account_state_proof": {
-              "description": "A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.",
               "type": "object",
               "required": [
                 "siblings"

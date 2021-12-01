@@ -1496,6 +1496,20 @@ impl Serialize for BytesView {
     }
 }
 
+impl FromStr for StrView<AccessPath> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(AccessPath::from_str(s)?))
+    }
+}
+
+impl std::fmt::Display for StrView<AccessPath> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct ContractCall {
     pub function_id: FunctionIdView,

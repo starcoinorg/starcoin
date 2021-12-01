@@ -13,7 +13,7 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTrans
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    SignedUserTransactionView, TransactionEventResponse, TransactionInfoView,
+    SignedUserTransactionView, StrView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -407,12 +407,16 @@ where
         &self,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
-                .get_transaction_proof(transaction_global_index, event_index, access_path)
+                .get_transaction_proof(
+                    transaction_global_index,
+                    event_index,
+                    access_path.map(Into::into),
+                )
                 .await?
                 .map(Into::into))
         }

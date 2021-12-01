@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
-    BlockHeaderView, BlockView, ChainId, ChainInfoView, TransactionEventResponse,
+    BlockHeaderView, BlockView, ChainId, ChainInfoView, StrView, TransactionEventResponse,
     TransactionInfoView, TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
@@ -108,7 +108,7 @@ pub trait ChainApi {
         &self,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>>;
 }
 
