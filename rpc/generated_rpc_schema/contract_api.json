@@ -889,6 +889,12 @@
                   "event_seq_number": {
                     "type": "string"
                   },
+                  "transaction_global_index": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "transaction_hash": {
                     "type": [
                       "string",
@@ -2110,6 +2116,12 @@
                   },
                   "event_seq_number": {
                     "type": "string"
+                  },
+                  "transaction_global_index": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "transaction_hash": {
                     "type": [
