@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::storage::{ColumnFamily, InnerStorage, KVStore};
-use crate::CHAIN_INFO_PREFIX_NAME;
+use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use crypto::HashValue;
 use starcoin_types::startup_info::StartupInfo;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
 pub struct ChainInfoColumnFamily;
@@ -25,6 +25,7 @@ pub type ChainInfoStorage = InnerStorage<ChainInfoColumnFamily>;
 impl ChainInfoStorage {
     const STARTUP_INFO_KEY: &'static str = "startup_info";
     const GENESIS_KEY: &'static str = "genesis";
+    const STORAGE_VERSION_KEY: &'static str = "storage_version";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
@@ -53,6 +54,29 @@ impl ChainInfoStorage {
         self.put(
             Self::GENESIS_KEY.as_bytes().to_vec(),
             genesis_block_hash.to_vec(),
+        )
+    }
+
+    pub fn get_storage_version(&self) -> Result<StorageVersion> {
+        Ok(self
+            .get(Self::STORAGE_VERSION_KEY.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(mut bytes) => {
+                    let b = bytes.pop();
+                    match b {
+                        None => Ok(None),
+                        Some(v) => Ok(Some(StorageVersion::try_from(v)?)),
+                    }
+                }
+                None => Ok(None),
+            })?
+            .unwrap_or(StorageVersion::V1))
+    }
+
+    pub fn set_storage_version(&self, version: StorageVersion) -> Result<()> {
+        self.put(
+            Self::STORAGE_VERSION_KEY.as_bytes().to_vec(),
+            vec![version as u8],
         )
     }
 }

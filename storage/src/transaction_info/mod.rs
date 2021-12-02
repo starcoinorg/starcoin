@@ -3,19 +3,29 @@
 
 use crate::define_storage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
-use crate::TRANSACTION_INFO_HASH_PREFIX_NAME;
-use crate::TRANSACTION_INFO_PREFIX_NAME;
+use crate::{
+    TRANSACTION_INFO_HASH_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME_V2,
+};
 use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
 use crypto::HashValue;
 use serde::{Deserialize, Serialize};
 use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 
+// This column family is deprecated
+define_storage!(
+    OldTransactionInfoStorage,
+    HashValue,
+    BlockTransactionInfo,
+    TRANSACTION_INFO_PREFIX_NAME
+);
+
 define_storage!(
     TransactionInfoStorage,
     HashValue,
     RichTransactionInfo,
-    TRANSACTION_INFO_PREFIX_NAME
+    TRANSACTION_INFO_PREFIX_NAME_V2
 );
 
 define_storage!(
@@ -25,11 +35,20 @@ define_storage!(
     TRANSACTION_INFO_HASH_PREFIX_NAME
 );
 
-//TODO do old data compat and transform.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct OldBlockTransactionInfo {
+pub struct BlockTransactionInfo {
     pub block_id: HashValue,
     pub txn_info: TransactionInfo,
+}
+
+impl ValueCodec for BlockTransactionInfo {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
 }
 
 impl ValueCodec for RichTransactionInfo {

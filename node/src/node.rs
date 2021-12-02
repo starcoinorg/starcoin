@@ -279,14 +279,17 @@ impl NodeService {
             .metrics
             .registry()
             .and_then(|registry| StorageMetrics::register(registry).ok());
-        let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+
+        let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
             DBStorage::new(
                 config.storage.dir(),
                 config.storage.rocksdb_config(),
                 storage_metrics,
             )?,
-        ))?);
+        ))?;
+        let storage = storage.check_upgrade()?;
+        let storage = Arc::new(storage);
         registry.put_shared(storage.clone()).await?;
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;

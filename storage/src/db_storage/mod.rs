@@ -4,8 +4,8 @@
 use crate::batch::WriteBatch;
 use crate::errors::StorageInitError;
 use crate::metrics::{record_metrics, StorageMetrics};
-use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
-use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
+use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp};
+use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
 use starcoin_config::RocksdbConfig;
@@ -30,7 +30,9 @@ impl DBStorage {
         let path = db_root_path.as_ref().join("starcoindb");
         Self::open_with_cfs(
             path,
-            VEC_PREFIX_NAME.to_vec(),
+            StorageVersion::current_version()
+                .get_column_family_names()
+                .to_vec(),
             false,
             rocksdb_config,
             metrics,
@@ -178,11 +180,15 @@ impl DBStorage {
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
         db_opts
     }
-    fn iter_with_direction(
+    fn iter_with_direction<K, V>(
         &self,
         prefix_name: &str,
         direction: ScanDirection,
-    ) -> Result<SchemaIterator> {
+    ) -> Result<SchemaIterator<K, V>>
+    where
+        K: KeyCodec,
+        V: ValueCodec,
+    {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         Ok(SchemaIterator::new(
             self.db
@@ -192,12 +198,20 @@ impl DBStorage {
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    pub fn iter(&self, prefix_name: &str) -> Result<SchemaIterator> {
+    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    where
+        K: KeyCodec,
+        V: ValueCodec,
+    {
         self.iter_with_direction(prefix_name, ScanDirection::Forward)
     }
 
     /// Returns a backward [`SchemaIterator`] on a certain schema.
-    pub fn rev_iter(&self, prefix_name: &str) -> Result<SchemaIterator> {
+    pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    where
+        K: KeyCodec,
+        V: ValueCodec,
+    {
         self.iter_with_direction(prefix_name, ScanDirection::Backward)
     }
 }
@@ -207,18 +221,24 @@ pub enum ScanDirection {
     Backward,
 }
 
-pub struct SchemaIterator<'a> {
+pub struct SchemaIterator<'a, K, V> {
     db_iter: rocksdb::DBRawIterator<'a>,
     direction: ScanDirection,
-    phantom: PhantomData<Vec<u8>>,
+    phantom_k: PhantomData<K>,
+    phantom_v: PhantomData<V>,
 }
 
-impl<'a> SchemaIterator<'a> {
+impl<'a, K, V> SchemaIterator<'a, K, V>
+where
+    K: KeyCodec,
+    V: ValueCodec,
+{
     fn new(db_iter: rocksdb::DBRawIterator<'a>, direction: ScanDirection) -> Self {
         SchemaIterator {
             db_iter,
             direction,
-            phantom: PhantomData,
+            phantom_k: PhantomData,
+            phantom_v: PhantomData,
         }
     }
 
@@ -246,7 +266,7 @@ impl<'a> SchemaIterator<'a> {
         Ok(())
     }
 
-    fn next_impl(&mut self) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
+    fn next_impl(&mut self) -> Result<Option<(K, V)>> {
         if !self.db_iter.valid() {
             self.db_iter.status()?;
             return Ok(None);
@@ -254,8 +274,8 @@ impl<'a> SchemaIterator<'a> {
 
         let raw_key = self.db_iter.key().expect("Iterator must be valid.");
         let raw_value = self.db_iter.value().expect("Iterator must be valid.");
-        let key = Vec::from(raw_key);
-        let value = Vec::from(raw_value);
+        let key = K::decode_key(raw_key)?;
+        let value = V::decode_value(raw_value)?;
         match self.direction {
             ScanDirection::Forward => self.db_iter.next(),
             ScanDirection::Backward => self.db_iter.prev(),
@@ -265,8 +285,12 @@ impl<'a> SchemaIterator<'a> {
     }
 }
 
-impl<'a> Iterator for SchemaIterator<'a> {
-    type Item = Result<(Vec<u8>, Vec<u8>)>;
+impl<'a, K, V> Iterator for SchemaIterator<'a, K, V>
+where
+    K: KeyCodec,
+    V: ValueCodec,
+{
+    type Item = Result<(K, V)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_impl().transpose()
