@@ -16,6 +16,7 @@ futures = "0.3.12"
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-metrics = { path = "../../commons/metrics"}
 starcoin-rpc-api = { path = "../api"}
+serde_json = { version="1.0", features = ["arbitrary_precision"]}
 [dev-dependencies]
 stest = { path = "../../commons/stest"}
 rand = "0.8.4"
