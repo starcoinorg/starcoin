@@ -390,9 +390,9 @@ impl BlockTransactionInfoStore for Storage {
         txn_hash: HashValue,
     ) -> Result<Vec<BlockTransactionInfo>, Error> {
         let mut transaction_info_vec = vec![];
-        if let Ok(Some(transaction_info_ids)) = self.transaction_info_hash_storage.get(txn_hash) {
+        if let Some(transaction_info_ids) = self.transaction_info_hash_storage.get(txn_hash)? {
             for id in transaction_info_ids {
-                if let Ok(Some(transaction_info)) = self.get_transaction_info(id) {
+                if let Some(transaction_info) = self.get_transaction_info(id)? {
                     transaction_info_vec.push(transaction_info);
                 }
             }

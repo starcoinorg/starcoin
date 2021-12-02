@@ -16,7 +16,11 @@ use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::time::TimeService;
 use std::collections::HashMap;
 
+use crate::TransactionInfoWithProof;
 pub use starcoin_types::block::ExecutedBlock;
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::contract_event::ContractEvent;
+
 pub struct VerifiedBlock(pub Block);
 pub type MintedUncleNumber = u64;
 
@@ -69,12 +73,22 @@ pub trait ChainReader {
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
     fn execute(&self, block: VerifiedBlock) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
-    fn get_txn_infos(
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<BlockTransactionInfo>>;
+
+    fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
+
+    /// Get transaction info by accumulator leaf index
+    fn get_transaction_proof(
+        &self,
+        index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>>;
 }
 
 pub trait ChainWriter {

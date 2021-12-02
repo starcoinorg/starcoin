@@ -235,11 +235,11 @@ impl ChainStateDB {
         Self::new(self.store.clone(), Some(self.state_root()))
     }
 
-    //TODO implements a change_root ChainStateReader
-    pub fn change_root(&self, root_hash: HashValue) -> Self {
+    /// Fork a new statedb at `root_hash`
+    pub fn fork_at(&self, state_root: HashValue) -> Self {
         Self {
             store: self.store.clone(),
-            state_tree: StateTree::new(self.store.clone(), Some(root_hash)),
+            state_tree: StateTree::new(self.store.clone(), Some(state_root)),
             cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
             updates: RwLock::new(HashSet::new()),
         }

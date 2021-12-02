@@ -138,7 +138,7 @@ fn test_proof() {
     assert!(
         proof
             .verify(root, leaves[leaf_index as usize], leaf_index)
-            .unwrap(),
+            .is_ok(),
         "leaf_index {}, proof: {:?} verify failed",
         leaf_index,
         proof

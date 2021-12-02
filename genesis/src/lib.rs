@@ -341,7 +341,7 @@ mod tests {
     use starcoin_state_api::AccountStateReader;
     use starcoin_storage::block_info::BlockInfoStore;
     use starcoin_storage::storage::StorageInstance;
-    use starcoin_storage::{BlockStore, IntoSuper, Storage};
+    use starcoin_storage::{BlockStore, BlockTransactionInfoStore, IntoSuper, Storage};
     use starcoin_types::account_config::{genesis_address, ModuleUpgradeStrategy};
     use starcoin_vm_types::account_config::association_address;
     use starcoin_vm_types::genesis_config::ChainId;
@@ -388,7 +388,8 @@ mod tests {
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (chain_info1, genesis1) = Genesis::init_and_check_storage(net, storage1, data_dir)?;
+        let (chain_info1, genesis1) =
+            Genesis::init_and_check_storage(net, storage1.clone(), data_dir)?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let (chain_info2, genesis2) =
@@ -500,13 +501,25 @@ mod tests {
             .expect("Genesis block info must exist.");
 
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        assert_eq!(txn_accumulator_info.num_leaves, 1);
+        //assert_eq!(txn_accumulator_info.frozen_subtree_roots.len(), 1);
+
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),
             storage2.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-        //ensure block_accumulator can work.
-        txn_accumulator.append(&[HashValue::random()])?;
-        txn_accumulator.flush()?;
+
+        let genesis_txn = genesis_block.body.transactions.get(0).cloned().unwrap();
+        assert_eq!(
+            txn_accumulator.get_leaf(0).unwrap().unwrap(),
+            storage1
+                .get_transaction_info_by_txn_id(genesis_txn.id())
+                .unwrap()
+                .pop()
+                .unwrap()
+                .id(),
+            "block metadata txn hash"
+        );
 
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let block_accumulator = MerkleAccumulator::new_with_info(

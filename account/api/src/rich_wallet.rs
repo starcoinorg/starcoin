@@ -1,24 +1,15 @@
 use anyhow::Result;
-use futures::Stream;
 use serde::de::{MapAccess, Visitor};
 use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::account_config::STC_TOKEN_CODE;
-use starcoin_types::contract_event::EventWithProof;
-use starcoin_types::event::EventKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload};
 use std::fmt;
 use std::marker::PhantomData;
 use std::str::FromStr;
 use std::time::Duration;
-
-pub trait ChainEventWatcher {
-    fn watch_event<S>(&self, key: EventKey) -> S
-    where
-        S: Stream<Item = EventWithProof>;
-}
 
 pub trait TransactionSubmitter {
     fn submit_transaction(&self, txn: SignedUserTransaction) -> Result<()>;

@@ -79,7 +79,7 @@ fn test_error_on_bad_parameters() {
         0,
         Arc::new(mock_store),
     );
-    assert!(accumulator.get_proof(10).is_err());
+    assert!(accumulator.get_proof(10).unwrap().is_none());
 }
 
 #[test]
@@ -324,9 +324,9 @@ fn proof_verify(
 ) {
     leaves.iter().enumerate().for_each(|(i, hash)| {
         let leaf_index = first_leaf_idx + i as u64;
-        let proof = accumulator.get_proof(leaf_index).unwrap();
+        let proof = accumulator.get_proof(leaf_index).unwrap().unwrap();
         assert!(
-            proof.verify(root_hash, *hash, leaf_index).unwrap(),
+            proof.verify(root_hash, *hash, leaf_index).is_ok(),
             "leaf_index:{}, proof:{:?} verify failed",
             leaf_index,
             proof

@@ -4,15 +4,17 @@
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
+use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
+use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, ExecutedBlock,
-    MintedUncleNumber, VerifiedBlock, VerifyBlockField,
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
+    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_executor::VMMetrics;
 use starcoin_open_block::OpenedBlock;
@@ -31,6 +33,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
@@ -737,7 +740,7 @@ impl ChainReader for BlockChain {
         )
     }
 
-    fn get_txn_infos(
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
@@ -759,6 +762,66 @@ impl ChainReader for BlockChain {
             infos.push(info);
         }
         Ok(infos)
+    }
+
+    fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
+        self.storage.get_contract_events(txn_info_id)
+    }
+
+    fn get_transaction_proof(
+        &self,
+        index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>> {
+        let txn_proof = match self.txn_accumulator.get_proof(index)? {
+            Some(proof) => proof,
+            None => return Ok(None),
+        };
+
+        //if can get proof by leaf_index, the leaf and transaction info should exist.
+        let txn_info_hash = self
+            .txn_accumulator
+            .get_leaf(index)?
+            .ok_or_else(|| format_err!("Can not find txn info hash by index {}", index))?;
+        let transaction_info = self
+            .storage
+            .get_transaction_info(txn_info_hash)?
+            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
+
+        let event_proof = if let Some(event_index) = event_index {
+            let events = self
+                .storage
+                .get_contract_events(txn_info_hash)?
+                .unwrap_or_default();
+            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                format_err!("event index out of range, events len:{}", events.len())
+            })?;
+            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+
+            let event_proof =
+                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
+            Some(EventWithProof {
+                event,
+                proof: event_proof,
+            })
+        } else {
+            None
+        };
+        let state_proof = if let Some(access_path) = access_path {
+            let statedb = self
+                .statedb
+                .fork_at(transaction_info.txn_info().state_root_hash());
+            Some(statedb.get_with_proof(&access_path)?)
+        } else {
+            None
+        };
+        Ok(Some(TransactionInfoWithProof {
+            transaction_info: transaction_info.txn_info,
+            proof: txn_proof,
+            event_proof,
+            state_proof,
+        }))
     }
 }
 

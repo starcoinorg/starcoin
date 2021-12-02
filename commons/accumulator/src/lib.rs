@@ -5,7 +5,7 @@ use crate::accumulator_info::AccumulatorInfo;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
-use anyhow::{ensure, format_err, Result};
+use anyhow::{format_err, Result};
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
@@ -18,7 +18,7 @@ mod accumulator_test;
 pub mod inmemory;
 pub mod node;
 pub mod node_index;
-mod proof;
+pub mod proof;
 mod tree;
 pub mod tree_store;
 
@@ -40,7 +40,7 @@ pub trait Accumulator {
     /// Get node by position.
     fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
-    fn get_proof(&self, leaf_index: u64) -> Result<AccumulatorProof>;
+    fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
     /// Flush node to storage.
     fn flush(&self) -> Result<()>;
     /// Get current accumulator tree root hash.
@@ -166,17 +166,14 @@ impl Accumulator for MerkleAccumulator {
             .get_node_hash(NodeIndex::from_inorder_index(position))
     }
 
-    fn get_proof(&self, leaf_index: u64) -> Result<AccumulatorProof> {
+    fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>> {
         let mut tree_guard = self.tree.lock();
-        ensure!(
-            leaf_index < tree_guard.num_leaves as u64,
-            "get proof invalid leaf_index {}, num_leaves {}",
-            leaf_index,
-            tree_guard.num_leaves
-        );
+        if leaf_index > tree_guard.num_leaves as u64 {
+            return Ok(None);
+        }
 
         let siblings = tree_guard.get_siblings(leaf_index, |_p| true)?;
-        Ok(AccumulatorProof::new(siblings))
+        Ok(Some(AccumulatorProof::new(siblings)))
     }
 
     fn flush(&self) -> Result<()> {

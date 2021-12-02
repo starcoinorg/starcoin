@@ -785,8 +785,8 @@ impl Sample for TransactionInfo {
 /// We cannot put the block_id into txn_info, because txn_info is accumulated into block header.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockTransactionInfo {
-    block_id: HashValue,
-    txn_info: TransactionInfo,
+    pub block_id: HashValue,
+    pub txn_info: TransactionInfo,
 }
 
 impl Deref for BlockTransactionInfo {
