@@ -9,14 +9,14 @@ edition = "2018"
 [dependencies]
 walkdir = "2.3"
 anyhow = "1.0.41"
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/diem",rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
-#datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/diem",rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
+#datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
 datatest-stable = "0.1.1"
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-move-compiler = { path = "../../vm/compiler"}
-move-prover = { package="move-prover", git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
+move-prover = { package="move-prover", git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
 once_cell = "1.8.0"
 include_dir = "0.6.2"
 sha2 = "0.9.1"
@@ -29,5 +29,5 @@ itertools = "0.10.1"
 
 
 [dev-dependencies]
-move-unit-test = { git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
+move-unit-test = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
 starcoin-natives = {path = "../natives", features = ["testing"]}
