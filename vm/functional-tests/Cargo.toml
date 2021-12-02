@@ -31,8 +31,8 @@ starcoin-genesis = { path = "../../genesis" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-account-api = { path = "../../account/api" }
 vm-status-translator = {path = "../vm-status-translator"}
-move-lang = { git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="5afe3cb94e2d01ee2eb444729fc31d627b8e698c"  }
+move-lang = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
 [dev-dependencies]
 starcoin-vm-types = { path = "../types"}
 
