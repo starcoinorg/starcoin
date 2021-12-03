@@ -12,6 +12,7 @@ mod metrics;
 
 use jsonrpc_core::middleware::NoopCallFuture;
 pub use metrics::*;
+use starcoin_config::ApiSet;
 
 #[derive(Clone, Debug)]
 enum CallType {
@@ -72,9 +73,14 @@ impl RpcCallRecord {
         }
     }
 
-    pub fn end(self, code: i64, user: Option<String>, metrics: Option<RpcMetrics>, params: Params) {
+    pub fn end(self, code: i64, user: Option<String>, metrics: Option<RpcMetrics>) {
         let use_time = self.timer.elapsed();
-        let params = serde_json::to_string(&params).expect("params should be json");
+        let params = if ApiSet::UnsafeContext.check_rpc_method(self.method.as_str()) {
+            serde_json::to_string(&self.params).expect("params should be json")
+        } else {
+            "".into()
+        };
+
         info!(
             "rpc_call\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             self.id,
@@ -147,9 +153,8 @@ impl Middleware<Metadata> for MetricMiddleware {
         let record: RpcCallRecord = (&call).into();
         let metrics = self.metrics.clone();
         let user_addr = meta.user.clone();
-        let params = record.params.clone();
         let fut = next(call, meta).map(move |output| {
-            record.end(output_to_code(output.as_ref()), user_addr, metrics, params);
+            record.end(output_to_code(output.as_ref()), user_addr, metrics);
             output
         });
         // must declare type to convert type then wrap with Either.

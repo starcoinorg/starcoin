@@ -18,6 +18,7 @@ pub enum Api {
     TxPool,
     Contract,
 }
+
 impl Serialize for Api {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -26,6 +27,7 @@ impl Serialize for Api {
         self.to_string().serialize(serializer)
     }
 }
+
 impl<'de> Deserialize<'de> for Api {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
@@ -169,6 +171,7 @@ impl Serialize for ApiSet {
         self.to_string().serialize(serializer)
     }
 }
+
 impl<'de> Deserialize<'de> for ApiSet {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
@@ -212,5 +215,15 @@ impl ApiSet {
                 public_list
             }
         }
+    }
+
+    pub fn check_rpc_method(&self, method: &str) -> bool {
+        let temp: Vec<&str> = method.split('.').collect();
+        if temp.len() != 2 {
+            return false;
+        }
+        Api::from_str(temp[0])
+            .map(|api| self.list_apis().contains(&api))
+            .unwrap_or(false)
     }
 }
