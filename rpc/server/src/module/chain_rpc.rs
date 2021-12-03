@@ -405,6 +405,7 @@ where
 
     fn get_transaction_proof(
         &self,
+        block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
@@ -413,6 +414,7 @@ where
         let fut = async move {
             Ok(service
                 .get_transaction_proof(
+                    block_hash,
                     transaction_global_index,
                     event_index,
                     access_path.map(Into::into),

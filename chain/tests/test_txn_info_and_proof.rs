@@ -20,7 +20,7 @@ use std::sync::Arc;
 fn test_transaction_info_and_proof() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
-    let mut parent_header = block_chain.current_header();
+    let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
 
     let mut rng = rand::thread_rng();
@@ -59,7 +59,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let (template, _) = block_chain
             .create_block_template(
                 *miner_account.address(),
-                Some(parent_header.id()),
+                Some(current_header.id()),
                 txns.clone(),
                 vec![],
                 None,
@@ -72,10 +72,10 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .unwrap();
         block_chain.apply(block.clone()).unwrap();
         all_txns.push(Transaction::BlockMetadata(
-            block.to_metadata(parent_header.gas_used()),
+            block.to_metadata(current_header.gas_used()),
         ));
         all_txns.extend(txns.into_iter().map(Transaction::UserTransaction));
-        parent_header = block.header().clone();
+        current_header = block.header().clone();
     });
 
     let txn_index = rng.gen_range(0..all_txns.len());
@@ -125,6 +125,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         for (event_index, event) in events.into_iter().enumerate() {
             let txn_proof = block_chain
                 .get_transaction_proof(
+                    current_header.id(),
                     txn_global_index as u64,
                     Some(event_index as u64),
                     access_path.clone(),
@@ -133,7 +134,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
 
             let result = txn_proof.verify(
-                block_chain.current_header().txn_accumulator_root(),
+                current_header.txn_accumulator_root(),
                 txn_global_index as u64,
                 Some(event_index as u64),
                 access_path.clone(),

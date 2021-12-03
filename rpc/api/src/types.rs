@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::bail;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
@@ -41,11 +42,11 @@ use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
-    RichTransactionInfo, Script, SignedUserTransaction, Transaction, TransactionOutput,
-    TransactionPayload, TransactionStatus,
+    RichTransactionInfo, Script, SignedUserTransaction, Transaction, TransactionInfo,
+    TransactionOutput, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
-use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
+use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus, StatusCode};
 use starcoin_vm_types::write_set::WriteOp;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
@@ -791,7 +792,7 @@ pub struct TransactionInfoView {
     /// The index of this transaction in block
     pub transaction_index: u32,
     /// The index of this transaction in chain
-    pub transaction_global_index: u64,
+    pub transaction_global_index: StrView<u64>,
     /// The root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
     pub state_root_hash: HashValue,
@@ -815,7 +816,7 @@ impl TransactionInfoView {
             block_number: txn_info.block_number.into(),
             transaction_hash: txn_info.transaction_hash,
             transaction_index: txn_info.transaction_index,
-            transaction_global_index: txn_info.transaction_global_index,
+            transaction_global_index: txn_info.transaction_global_index.into(),
             state_root_hash: txn_info.transaction_info.state_root_hash,
             event_root_hash: txn_info.transaction_info.event_root_hash,
             gas_used: txn_info.transaction_info.gas_used.into(),
@@ -827,6 +828,33 @@ impl TransactionInfoView {
 impl From<RichTransactionInfo> for TransactionInfoView {
     fn from(txn_info: RichTransactionInfo) -> Self {
         TransactionInfoView::new(txn_info)
+    }
+}
+
+impl TryFrom<TransactionInfoView> for RichTransactionInfo {
+    type Error = anyhow::Error;
+
+    fn try_from(view: TransactionInfoView) -> Result<Self, Self::Error> {
+        let status: TransactionStatus = view.status.clone().into();
+        match status {
+            TransactionStatus::Keep(kept_status) => Ok(RichTransactionInfo::new(
+                view.block_hash,
+                view.block_number.0,
+                TransactionInfo {
+                    transaction_hash: view.transaction_hash,
+
+                    state_root_hash: view.state_root_hash,
+                    event_root_hash: view.event_root_hash,
+                    gas_used: view.gas_used.0,
+                    status: kept_status,
+                },
+                view.transaction_index,
+                view.transaction_global_index.0,
+            )),
+            TransactionStatus::Discard(_) => {
+                bail!("TransactionInfoView's status is discard, {:?}, can not convert to RichTransactionInfo", view);
+            }
+        }
     }
 }
 
@@ -892,6 +920,41 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
         Self::Discard {
             status_code: StrView(s.into()),
             status_code_name: format!("{:?}", s),
+        }
+    }
+}
+
+impl From<TransactionStatusView> for TransactionStatus {
+    fn from(value: TransactionStatusView) -> Self {
+        match value {
+            TransactionStatusView::Executed => TransactionStatus::Keep(KeptVMStatus::Executed),
+            TransactionStatusView::OutOfGas => TransactionStatus::Keep(KeptVMStatus::OutOfGas),
+            TransactionStatusView::MoveAbort {
+                location,
+                abort_code,
+            } => TransactionStatus::Keep(KeptVMStatus::MoveAbort(location, abort_code.0)),
+            TransactionStatusView::MiscellaneousError => {
+                TransactionStatus::Keep(KeptVMStatus::MiscellaneousError)
+            }
+            TransactionStatusView::ExecutionFailure {
+                location,
+                function,
+                code_offset,
+            } => TransactionStatus::Keep(KeptVMStatus::ExecutionFailure {
+                location,
+                function,
+                code_offset,
+            }),
+            TransactionStatusView::Discard {
+                status_code,
+                status_code_name: _,
+            } => TransactionStatus::Discard(
+                status_code
+                    .0
+                    .try_into()
+                    .ok()
+                    .unwrap_or(StatusCode::UNKNOWN_STATUS),
+            ),
         }
     }
 }
@@ -1175,6 +1238,14 @@ impl From<AccumulatorProof> for AccumulatorProofView {
     }
 }
 
+impl From<AccumulatorProofView> for AccumulatorProof {
+    fn from(view: AccumulatorProofView) -> Self {
+        Self {
+            siblings: view.siblings,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EventWithProofView {
     /// event is serialized bytes in bcs format.
@@ -1188,6 +1259,17 @@ impl From<EventWithProof> for EventWithProofView {
             event: StrView(origin.event.encode().expect("encode event should success")),
             proof: origin.proof.into(),
         }
+    }
+}
+
+impl TryFrom<EventWithProofView> for EventWithProof {
+    type Error = anyhow::Error;
+
+    fn try_from(value: EventWithProofView) -> Result<Self, Self::Error> {
+        Ok(EventWithProof {
+            event: ContractEvent::decode(value.event.0.as_slice())?,
+            proof: value.proof.into(),
+        })
     }
 }
 
@@ -1207,6 +1289,19 @@ impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
             event_proof: origin.event_proof.map(Into::into),
             state_proof: origin.state_proof.map(Into::into),
         }
+    }
+}
+
+impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
+    type Error = anyhow::Error;
+
+    fn try_from(view: TransactionInfoWithProofView) -> Result<Self, Self::Error> {
+        Ok(TransactionInfoWithProof {
+            transaction_info: view.transaction_info.try_into()?,
+            proof: view.proof.into(),
+            event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
+            state_proof: view.state_proof.map(Into::into),
+        })
     }
 }
 

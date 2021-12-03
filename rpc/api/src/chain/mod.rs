@@ -100,12 +100,13 @@ pub trait ChainApi {
         max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView>>;
 
-    /// Get TransactionInfoWithProof, if the transaction with `transaction_global_index` do not exists, return None.
+    /// Get TransactionInfoWithProof, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
     /// if `event_index` is some, also return the EventWithProof in current transaction event_root
     /// if `access_path` is some, also return the StateWithProof in current transaction state_root
     #[rpc(name = "chain.get_transaction_proof")]
     fn get_transaction_proof(
         &self,
+        block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,

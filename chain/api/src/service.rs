@@ -60,6 +60,7 @@ pub trait ReadableChainService {
 
     fn get_transaction_proof(
         &self,
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
@@ -123,6 +124,7 @@ pub trait ChainAsyncService:
 
     async fn get_transaction_proof(
         &self,
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
@@ -395,12 +397,14 @@ where
 
     async fn get_transaction_proof(
         &self,
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
         let response = self
             .send(ChainRequest::GetTransactionProof {
+                block_id,
                 transaction_global_index,
                 event_index,
                 access_path,

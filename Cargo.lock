@@ -8742,6 +8742,7 @@ dependencies = [
  "starcoin-abi-decoder",
  "starcoin-abi-types",
  "starcoin-account-api",
+ "starcoin-chain-api",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",

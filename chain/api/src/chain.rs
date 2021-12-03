@@ -85,8 +85,10 @@ pub trait ChainReader {
     fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
 
     /// Get transaction info proof by `transaction_global_index`
+    /// `block_id`: use which block header's `txn_accumulator_root` for get proof
     fn get_transaction_proof(
         &self,
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,

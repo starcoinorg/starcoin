@@ -223,11 +223,13 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     .get_transaction_infos(start_index, reverse, max_size)?,
             )),
             ChainRequest::GetTransactionProof {
+                block_id,
                 transaction_global_index,
                 event_index,
                 access_path,
             } => Ok(ChainResponse::TransactionProof(Box::new(
                 self.inner.get_transaction_proof(
+                    block_id,
                     transaction_global_index,
                     event_index,
                     access_path,
@@ -398,12 +400,17 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_transaction_proof(
         &self,
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
-        self.main
-            .get_transaction_proof(transaction_global_index, event_index, access_path)
+        self.main.get_transaction_proof(
+            block_id,
+            transaction_global_index,
+            event_index,
+            access_path,
+        )
     }
 }
 

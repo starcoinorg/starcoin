@@ -730,8 +730,8 @@ impl ChainReader for BlockChain {
         Self::execute_block_and_save(
             self.storage.as_ref(),
             self.statedb.fork(),
-            self.txn_accumulator.fork(),
-            self.block_accumulator.fork(),
+            self.txn_accumulator.fork(None),
+            self.block_accumulator.fork(None),
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
@@ -769,11 +769,19 @@ impl ChainReader for BlockChain {
 
     fn get_transaction_proof(
         &self,
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
-        let txn_proof = match self.txn_accumulator.get_proof(transaction_global_index)? {
+        let block_info = match self.get_block_info(Some(block_id))? {
+            Some(block_info) => block_info,
+            None => return Ok(None),
+        };
+        let accumulator = self
+            .txn_accumulator
+            .fork(Some(block_info.txn_accumulator_info));
+        let txn_proof = match accumulator.get_proof(transaction_global_index)? {
             Some(proof) => proof,
             None => return Ok(None),
         };

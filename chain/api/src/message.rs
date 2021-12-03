@@ -54,6 +54,7 @@ pub enum ChainRequest {
         max_size: u64,
     },
     GetTransactionProof {
+        block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
