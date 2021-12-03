@@ -2462,9 +2462,7 @@
             },
             "transaction_global_index": {
               "description": "The index of this transaction in chain",
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
+              "type": "string"
             },
             "transaction_hash": {
               "description": "The hash of this transaction.",
@@ -2630,9 +2628,7 @@
               },
               "transaction_global_index": {
                 "description": "The index of this transaction in chain",
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "type": "string"
               },
               "transaction_hash": {
                 "description": "The hash of this transaction.",
@@ -2810,9 +2806,7 @@
             },
             "transaction_global_index": {
               "description": "The index of this transaction in chain",
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
+              "type": "string"
             },
             "transaction_hash": {
               "description": "The hash of this transaction.",
@@ -3380,9 +3374,7 @@
               },
               "transaction_global_index": {
                 "description": "The index of this transaction in chain",
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
+                "type": "string"
               },
               "transaction_hash": {
                 "description": "The hash of this transaction.",
@@ -3403,6 +3395,15 @@
     {
       "name": "chain.get_transaction_proof",
       "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
         {
           "name": "transaction_global_index",
           "schema": {
@@ -3722,9 +3723,7 @@
                 },
                 "transaction_global_index": {
                   "description": "The index of this transaction in chain",
-                  "type": "integer",
-                  "format": "uint64",
-                  "minimum": 0.0
+                  "type": "string"
                 },
                 "transaction_hash": {
                   "description": "The hash of this transaction.",
