@@ -49,6 +49,7 @@ impl DBUpgrade {
                     OldTransactionInfoStorage::new(storage.instance.clone());
                 let mut iter = old_transaction_info_storage.iter()?;
                 iter.seek_to_first();
+                let mut processed_count = 0;
                 for item in iter {
                     let (id, old_transaction_info) = item?;
                     let block_id = old_transaction_info.block_id;
@@ -87,8 +88,12 @@ impl DBUpgrade {
                     storage
                         .transaction_info_storage
                         .save_transaction_infos(vec![rich_transaction_info.clone()])?;
-                    info!("process transaction_info: {:?}", rich_transaction_info);
+                    debug!("process transaction_info: {:?}", rich_transaction_info);
                     old_transaction_info_storage.remove(id)?;
+                    processed_count += 1;
+                    if processed_count % 10000 == 0 {
+                        info!("processed items: {}", processed_count);
+                    }
                 }
             }
             _ => bail!(
