@@ -13,7 +13,7 @@ use structopt::StructOpt;
 #[structopt(name = "get-txn-info-list", alias = "get_txn_info_list")]
 pub struct GetTransactionInfoListOpt {
     /// The global transaction index for start scan.
-    #[structopt(name = "start-index", alias="start_index", long, short = "s")]
+    #[structopt(name = "start-index", alias = "start_index", long, short = "s")]
     start_index: u64,
 
     #[structopt(name = "reverse", long, short = "r")]
