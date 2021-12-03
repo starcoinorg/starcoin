@@ -101,7 +101,8 @@ pub fn add_command(
                 .subcommand(chain::GetTransactionInfoCommand)
                 .subcommand(chain::GetEventsCommand)
                 .subcommand(chain::EpochInfoCommand)
-                .subcommand(chain::GetTransactionInfoListCommand),
+                .subcommand(chain::GetTransactionInfoListCommand)
+                .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand),
         )
         .command(
             Command::with_name("txpool")
