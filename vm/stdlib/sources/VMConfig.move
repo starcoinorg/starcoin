@@ -202,6 +202,22 @@ module VMConfig {
         // MOVE_TO_GENERIC
         Vector::push_back(&mut table, new_gas_cost(27, 1));
 
+        // VEC_PACK
+        Vector::push_back(&mut table, new_gas_cost(84, 1));
+        // VEC_LEN
+        Vector::push_back(&mut table, new_gas_cost(98, 1));
+        // VEC_IMM_BORROW
+        Vector::push_back(&mut table, new_gas_cost(1334, 1));
+        // VEC_MUT_BORROW
+        Vector::push_back(&mut table, new_gas_cost(1902, 1));
+        // VEC_PUSH_BACK
+        Vector::push_back(&mut table, new_gas_cost(53, 1));
+        // VEC_POP_BACK
+        Vector::push_back(&mut table, new_gas_cost(227, 1));
+        // VEC_UNPACK
+        Vector::push_back(&mut table, new_gas_cost(572, 1));
+        // VEC_SWAP
+        Vector::push_back(&mut table, new_gas_cost(1436, 1));
         table
     }
 

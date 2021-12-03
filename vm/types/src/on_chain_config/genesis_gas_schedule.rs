@@ -5,6 +5,7 @@
 
 use crate::gas_schedule::{GasCost, NativeCostIndex as N};
 use once_cell::sync::Lazy;
+use vm::file_format::SignatureIndex;
 use vm::{
     file_format::{
         Bytecode, ConstantPoolIndex, FieldHandleIndex, FieldInstantiationIndex,
@@ -139,12 +140,128 @@ pub fn instruction_table_v1() -> Vec<GasCost> {
 
     instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>()
 }
+pub fn instruction_table_v2() -> Vec<GasCost> {
+    use Bytecode::*;
+    let mut instrs = vec![
+        (MoveTo(StructDefinitionIndex::new(0)), GasCost::new(13, 1)),
+        (
+            MoveToGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(27, 1),
+        ),
+        (
+            MoveFrom(StructDefinitionIndex::new(0)),
+            GasCost::new(459, 1),
+        ),
+        (
+            MoveFromGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(13, 1),
+        ),
+        (BrTrue(0), GasCost::new(1, 1)),
+        (WriteRef, GasCost::new(1, 1)),
+        (Mul, GasCost::new(1, 1)),
+        (MoveLoc(0), GasCost::new(1, 1)),
+        (And, GasCost::new(1, 1)),
+        (Pop, GasCost::new(1, 1)),
+        (BitAnd, GasCost::new(2, 1)),
+        (ReadRef, GasCost::new(1, 1)),
+        (Sub, GasCost::new(1, 1)),
+        (MutBorrowField(FieldHandleIndex::new(0)), GasCost::new(1, 1)),
+        (
+            MutBorrowFieldGeneric(FieldInstantiationIndex::new(0)),
+            GasCost::new(1, 1),
+        ),
+        (ImmBorrowField(FieldHandleIndex::new(0)), GasCost::new(1, 1)),
+        (
+            ImmBorrowFieldGeneric(FieldInstantiationIndex::new(0)),
+            GasCost::new(1, 1),
+        ),
+        (Add, GasCost::new(1, 1)),
+        (CopyLoc(0), GasCost::new(1, 1)),
+        (StLoc(0), GasCost::new(1, 1)),
+        (Ret, GasCost::new(638, 1)),
+        (Lt, GasCost::new(1, 1)),
+        (LdU8(0), GasCost::new(1, 1)),
+        (LdU64(0), GasCost::new(1, 1)),
+        (LdU128(0), GasCost::new(1, 1)),
+        (CastU8, GasCost::new(2, 1)),
+        (CastU64, GasCost::new(1, 1)),
+        (CastU128, GasCost::new(1, 1)),
+        (Abort, GasCost::new(1, 1)),
+        (MutBorrowLoc(0), GasCost::new(2, 1)),
+        (ImmBorrowLoc(0), GasCost::new(1, 1)),
+        (LdConst(ConstantPoolIndex::new(0)), GasCost::new(1, 1)),
+        (Ge, GasCost::new(1, 1)),
+        (Xor, GasCost::new(1, 1)),
+        (Shl, GasCost::new(2, 1)),
+        (Shr, GasCost::new(1, 1)),
+        (Neq, GasCost::new(1, 1)),
+        (Not, GasCost::new(1, 1)),
+        (Call(FunctionHandleIndex::new(0)), GasCost::new(1132, 1)),
+        (
+            CallGeneric(FunctionInstantiationIndex::new(0)),
+            GasCost::new(582, 1),
+        ),
+        (Le, GasCost::new(2, 1)),
+        (Branch(0), GasCost::new(1, 1)),
+        (Unpack(StructDefinitionIndex::new(0)), GasCost::new(2, 1)),
+        (
+            UnpackGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(2, 1),
+        ),
+        (Or, GasCost::new(2, 1)),
+        (LdFalse, GasCost::new(1, 1)),
+        (LdTrue, GasCost::new(1, 1)),
+        (Mod, GasCost::new(1, 1)),
+        (BrFalse(0), GasCost::new(1, 1)),
+        (Exists(StructDefinitionIndex::new(0)), GasCost::new(41, 1)),
+        (
+            ExistsGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(34, 1),
+        ),
+        (BitOr, GasCost::new(2, 1)),
+        (FreezeRef, GasCost::new(1, 1)),
+        (
+            MutBorrowGlobal(StructDefinitionIndex::new(0)),
+            GasCost::new(21, 1),
+        ),
+        (
+            MutBorrowGlobalGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(15, 1),
+        ),
+        (
+            ImmBorrowGlobal(StructDefinitionIndex::new(0)),
+            GasCost::new(23, 1),
+        ),
+        (
+            ImmBorrowGlobalGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(14, 1),
+        ),
+        (Div, GasCost::new(3, 1)),
+        (Eq, GasCost::new(1, 1)),
+        (Gt, GasCost::new(1, 1)),
+        (Pack(StructDefinitionIndex::new(0)), GasCost::new(2, 1)),
+        (
+            PackGeneric(StructDefInstantiationIndex::new(0)),
+            GasCost::new(2, 1),
+        ),
+        (Nop, GasCost::new(1, 1)),
+        (VecPack(SignatureIndex::new(0), 0), GasCost::new(84, 1)),
+        (VecLen(SignatureIndex::new(0)), GasCost::new(98, 1)),
+        (VecImmBorrow(SignatureIndex::new(0)), GasCost::new(1334, 1)),
+        (VecMutBorrow(SignatureIndex::new(0)), GasCost::new(1902, 1)),
+        (VecPushBack(SignatureIndex::new(0)), GasCost::new(53, 1)),
+        (VecPopBack(SignatureIndex::new(0)), GasCost::new(227, 1)),
+        (VecUnpack(SignatureIndex::new(0), 0), GasCost::new(572, 1)),
+        (VecSwap(SignatureIndex::new(0)), GasCost::new(1436, 1)),
+    ];
+    // Note that the DiemVM is expecting the table sorted by instruction order.
+    instrs.sort_by_key(|cost| instruction_key(&cost.0));
+    instrs.into_iter().map(|(_, cost)| cost).collect::<Vec<_>>()
+}
 
 /// return latest instruction table, as `initial_instruction_table` function should not be modified.
 pub static LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
-    let latest_ins = move_vm_types::gas_schedule::INITIAL_GAS_SCHEDULE
-        .instruction_table
-        .clone();
+    let latest_ins = instruction_table_v2();
     debug_assert!(
         latest_ins.len() == Bytecode::VARIANT_COUNT,
         "all instructions must be in the cost table"
