@@ -183,3 +183,10 @@ fn test_genesis_config_security() {
         );
     }
 }
+#[test]
+fn test_check_method_in_api_sets() {
+    assert!(ApiSet::UnsafeContext.check_rpc_method("txpool.submit_transaction"));
+    assert!(!ApiSet::UnsafeContext.check_rpc_method("account.unlock"));
+    assert!(!ApiSet::UnsafeContext.check_rpc_method("unknown"));
+    assert!(!ApiSet::UnsafeContext.check_rpc_method(""));
+}

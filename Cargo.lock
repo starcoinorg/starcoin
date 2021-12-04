@@ -9660,6 +9660,8 @@ dependencies = [
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell",
  "rand 0.8.4",
+ "serde_json",
+ "starcoin-config",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-rpc-api",

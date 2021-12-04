@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use futures::{future::Either, Future, FutureExt};
-use jsonrpc_core::{Call, FutureResponse, Id, Middleware, Output, Request, Response};
+use jsonrpc_core::{Call, FutureResponse, Id, Middleware, Output, Params, Request, Response};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use std::fmt;
@@ -12,6 +12,7 @@ mod metrics;
 
 use jsonrpc_core::middleware::NoopCallFuture;
 pub use metrics::*;
+use starcoin_config::ApiSet;
 
 #[derive(Clone, Debug)]
 enum CallType {
@@ -36,6 +37,7 @@ struct RpcCallRecord {
     method: String,
     call_type: CallType,
     timer: Instant,
+    params: Params,
 }
 
 impl RpcCallRecord {
@@ -45,39 +47,49 @@ impl RpcCallRecord {
                 id_to_string(&method_call.id),
                 Some(method_call.method.clone()),
                 CallType::MethodCall,
+                method_call.params.clone(),
             ),
             Call::Notification(notification) => RpcCallRecord::new(
                 "0".to_owned(),
                 Some(notification.method.clone()),
                 CallType::Notification,
+                notification.params.clone(),
             ),
-            Call::Invalid { id } => RpcCallRecord::new(id_to_string(id), None, CallType::Invalid),
+            Call::Invalid { id } => {
+                RpcCallRecord::new(id_to_string(id), None, CallType::Invalid, Params::None)
+            }
         }
     }
 
-    pub fn new(id: String, method: Option<String>, call_type: CallType) -> Self {
+    pub fn new(id: String, method: Option<String>, call_type: CallType, params: Params) -> Self {
         let method = method.unwrap_or_else(|| "".to_owned());
         let timer = Instant::now();
-
         Self {
             id,
             method,
             call_type,
             timer,
+            params,
         }
     }
 
     pub fn end(self, code: i64, user: Option<String>, metrics: Option<RpcMetrics>) {
         let use_time = self.timer.elapsed();
+        let params = if ApiSet::UnsafeContext.check_rpc_method(self.method.as_str()) {
+            serde_json::to_string(&self.params).expect("params should be json")
+        } else {
+            "".into()
+        };
 
         info!(
-            "rpc_call\t{}\t{}\t{}\t{}\t{}\t{}",
+            "rpc_call\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             self.id,
             user.unwrap_or_else(|| "unknown".into()),
             self.call_type,
             self.method,
             code,
-            use_time.as_millis()
+            use_time.as_millis(),
+            params
         );
         if let Some(metrics) = metrics {
             metrics
