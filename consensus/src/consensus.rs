@@ -99,14 +99,24 @@ pub trait Consensus {
         let nonce = header.nonce();
         let extra = header.extra();
         let pow_header_blob = header.as_pow_header_blob();
-        let pow_hash: U256 = self
-            .calculate_pow_hash(&pow_header_blob, nonce, extra)?
-            .into();
+        let pow_hash = self.calculate_pow_hash(&pow_header_blob, nonce, extra)?;
+        let real: U256 = pow_hash.into();
         let target = difficult_to_target(difficulty);
-        if pow_hash > target {
+
+        trace!(
+            "calculate_pow_hash blob: {:x?}, nonce: {}, extra:{:x?}, pow_hash:{}, target:{}, real: {}",
+            pow_header_blob,
+            nonce,
+            extra.as_slice(),
+            pow_hash,
+            target,
+            real,
+        );
+
+        if real > target {
             return Err(ConsensusVerifyError::VerifyNonceError {
                 target,
-                real: pow_hash,
+                real,
                 nonce,
                 extra: *extra,
                 diff: difficulty,
