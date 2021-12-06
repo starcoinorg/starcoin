@@ -2885,6 +2885,14 @@
                 "type": "string"
               },
               "decode_event_data": true,
+              "event_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
               "event_key": {
                 "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
                 "type": "string"
@@ -3051,6 +3059,14 @@
                 "type": "string"
               },
               "decode_event_data": true,
+              "event_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
               "event_key": {
                 "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
                 "type": "string"
