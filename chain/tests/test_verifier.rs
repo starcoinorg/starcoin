@@ -7,7 +7,7 @@ use starcoin_rpc_api::types::BlockView;
 use starcoin_types::block::Block;
 use std::convert::TryInto;
 
-#[test]
+#[stest::test]
 fn test_main_static_block_verify() {
     let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Main)).unwrap();
     let blocks = vec![

@@ -250,3 +250,12 @@ fn test_next_target_increment_difficulty_compare() {
     assert!(next_target_1 < target0);
     assert!(next_target_2 > target0);
 }
+//verify_header_difficulty, calculate target:11660343, header target: 11660343, nonce: 3221282425
+//Verify Nonce Error, expect target: 9930418791052389747331702421505774560256931092476487530380331351137194, got: 13177743943058275644734263735837563184445799542976421731108869862656615245537, nonce: 3221282425, extra: 00000000, diff: 11660343
+#[test]
+fn test_difficulty_to_target() {
+    let difficulty: U256 = 11660343.into();
+    let target = difficult_to_target(difficulty);
+    println!("max:{}", U256::max_value());
+    println!("target:{}", target);
+}
