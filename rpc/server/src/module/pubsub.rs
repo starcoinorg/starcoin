@@ -558,6 +558,7 @@ impl EventHandler<ContractEventNotification> for ContractEventHandler {
                         Some(e.transaction_hash),
                         e.transaction_index,
                         e.transaction_global_index,
+                        e.event_index,
                         &e.contract_event,
                     ),
                     decode_event_data: decoded_data,

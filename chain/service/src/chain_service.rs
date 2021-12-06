@@ -174,22 +174,16 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 let event_infos = if events.is_empty() {
                     vec![]
                 } else {
-                    let block_hash = txn_info.block_id();
-                    let block = self.inner.get_block_by_hash(block_hash)?.ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "cannot find block {} which include the txn {}",
-                            block_hash,
-                            txn_hash
-                        )
-                    })?;
                     events
                         .into_iter()
-                        .map(|evt| ContractEventInfo {
-                            block_hash,
-                            block_number: block.header().number(),
+                        .enumerate()
+                        .map(|(idx, evt)| ContractEventInfo {
+                            block_hash: txn_info.block_id,
+                            block_number: txn_info.block_number,
                             transaction_hash: txn_hash,
                             transaction_index: txn_info.transaction_index,
                             transaction_global_index: txn_info.transaction_global_index,
+                            event_index: idx as u32,
                             event: evt,
                         })
                         .collect()

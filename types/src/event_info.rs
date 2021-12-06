@@ -11,5 +11,7 @@ pub struct ContractEventInfo {
     pub transaction_index: u32,
     /// txn global index in chain
     pub transaction_global_index: u64,
+    /// event index in the transaction events.
+    pub event_index: u32,
     pub event: ContractEvent,
 }

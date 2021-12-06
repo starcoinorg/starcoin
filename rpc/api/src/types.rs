@@ -977,6 +977,7 @@ pub struct TransactionEventView {
     pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
+    pub event_index: Option<u32>,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
 }
@@ -991,6 +992,7 @@ impl From<ContractEventInfo> for TransactionEventView {
             transaction_global_index: Some(info.transaction_global_index.into()),
             data: StrView(info.event.event_data().to_vec()),
             type_tag: info.event.type_tag().clone().into(),
+            event_index: Some(info.event_index),
             event_key: *info.event.key(),
             event_seq_number: info.event.sequence_number().into(),
         }
@@ -1007,6 +1009,7 @@ impl From<ContractEvent> for TransactionEventView {
             transaction_global_index: None,
             data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone().into(),
+            event_index: None,
             event_key: *event.key(),
             event_seq_number: event.sequence_number().into(),
         }
@@ -1020,6 +1023,7 @@ impl TransactionEventView {
         transaction_hash: Option<HashValue>,
         transaction_index: Option<u32>,
         transaction_global_index: Option<u64>,
+        event_index: Option<u32>,
         contract_event: &ContractEvent,
     ) -> Self {
         Self {
@@ -1030,6 +1034,7 @@ impl TransactionEventView {
             transaction_global_index: transaction_global_index.map(Into::into),
             data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone().into(),
+            event_index,
             event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),
         }

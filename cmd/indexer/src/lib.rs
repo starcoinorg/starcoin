@@ -35,6 +35,7 @@ pub struct TransactionEventEsView {
     pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
+    pub event_index: Option<u32>,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
 }
@@ -48,6 +49,7 @@ impl From<TransactionEventView> for TransactionEventEsView {
             transaction_global_index: event.transaction_global_index,
             data: event.data,
             type_tag: event.type_tag,
+            event_index: event.event_index,
             event_key: event.event_key,
             event_seq_number: StrView(event.event_seq_number.0),
         }
@@ -271,12 +273,13 @@ mod tests {
             transaction_global_index: Some(StrView(1)),
             data: StrView(vec![0]),
             type_tag: StrView(TypeTag::Bool),
+            event_index: Some(0),
             event_key: EventKey::new_from_address(&AccountAddress::ZERO, 0),
             event_seq_number: StrView(0),
         };
         let event_view = TransactionEventEsView::from(v);
         let expected = r#"
-        {"block_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","block_number":"1","transaction_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","transaction_index":0,"transaction_global_index":"1","data":"0x00","type_tag":"bool","event_key":"0x000000000000000000000000000000000000000000000000","event_seq_number":"0"}
+        {"block_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","block_number":"1","transaction_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","transaction_index":0,"transaction_global_index":"1","data":"0x00","type_tag":"bool","event_index":0,"event_key":"0x000000000000000000000000000000000000000000000000","event_seq_number":"0"}
         "#;
         assert_eq!(
             serde_json::to_string(&event_view).unwrap().as_str(),

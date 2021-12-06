@@ -878,7 +878,8 @@ impl BlockChain {
                 })?;
                 let mut filtered_events = events
                     .into_iter()
-                    .filter(|evt| filter.matching(block_number, evt))
+                    .enumerate()
+                    .filter(|(_idx, evt)| filter.matching(block_number, evt))
                     .peekable();
                 if filtered_events.peek().is_none() {
                     continue;
@@ -892,14 +893,16 @@ impl BlockChain {
                     ))
                 })?;
 
-                let filtered_event_with_info = filtered_events.map(|evt| ContractEventInfo {
-                    block_hash: block_id,
-                    block_number: block.header().number(),
-                    transaction_hash: txn_info.transaction_hash(),
-                    transaction_index: txn_info.transaction_index,
-                    transaction_global_index: txn_info.transaction_global_index,
-                    event: evt,
-                });
+                let filtered_event_with_info =
+                    filtered_events.map(|(idx, evt)| ContractEventInfo {
+                        block_hash: block_id,
+                        block_number: block.header().number(),
+                        transaction_hash: txn_info.transaction_hash(),
+                        transaction_index: txn_info.transaction_index,
+                        transaction_global_index: txn_info.transaction_global_index,
+                        event_index: idx as u32,
+                        event: evt,
+                    });
                 if reverse {
                     event_with_infos.extend(filtered_event_with_info.rev())
                 } else {
