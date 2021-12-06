@@ -113,6 +113,10 @@ impl BlockMetadata {
         self.id
             .expect("BlockMetadata's id should been Some after init.")
     }
+
+    pub fn author(&self) -> AccountAddress {
+        self.author
+    }
 }
 
 impl<'de> Deserialize<'de> for BlockMetadata {

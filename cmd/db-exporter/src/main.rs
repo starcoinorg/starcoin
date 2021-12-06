@@ -18,8 +18,8 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
 use starcoin_storage::storage::{InnerStore, StorageInstance};
 use starcoin_storage::{
-    BlockStore, Storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
-    VEC_PREFIX_NAME,
+    BlockStore, Storage, StorageVersion, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
+    FAILED_BLOCK_PREFIX_NAME,
 };
 use starcoin_types::block::{Block, BlockHeader, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
@@ -39,9 +39,16 @@ pub fn export<W: std::io::Write>(
     mut csv_writer: Writer<W>,
     schema: DbSchema,
 ) -> anyhow::Result<()> {
-    let db_storage =
-        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default(), None)?;
-    let mut iter = db_storage.iter(schema.to_string().as_str())?;
+    let db_storage = DBStorage::open_with_cfs(
+        db,
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let mut iter = db_storage.iter::<Vec<u8>, Vec<u8>>(schema.to_string().as_str())?;
     iter.seek_to_first();
     let key_codec = schema.get_key_codec();
     let value_codec = schema.get_value_codec();
@@ -305,7 +312,9 @@ fn main() -> anyhow::Result<()> {
     if let Cmd::Checkkey(option) = cmd {
         let db = DBStorage::open_with_cfs(
             option.db_path.display().to_string().as_str(),
-            VEC_PREFIX_NAME.to_vec(),
+            StorageVersion::current_version()
+                .get_column_family_names()
+                .to_vec(),
             true,
             Default::default(),
             None,
@@ -359,7 +368,9 @@ pub fn export_block_range(
     let net = ChainNetwork::new_builtin(network);
     let db_stoarge = DBStorage::open_with_cfs(
         from_dir.join("starcoindb/db/starcoindb"),
-        VEC_PREFIX_NAME.to_vec(),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
         true,
         Default::default(),
         None,

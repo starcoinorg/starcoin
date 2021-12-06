@@ -6,7 +6,7 @@ use starcoin_state_tree::StateTree;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage, VEC_PREFIX_NAME};
+use starcoin_storage::{BlockStore, Storage, StorageVersion};
 use starcoin_types::access_path::DataType;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::language_storage::{StructTag, TypeTag};
@@ -32,8 +32,15 @@ pub fn export(
     resource_struct_tag: StructTag,
     fields: &[String],
 ) -> anyhow::Result<()> {
-    let db_storage =
-        DBStorage::open_with_cfs(db, VEC_PREFIX_NAME.to_vec(), true, Default::default(), None)?;
+    let db_storage = DBStorage::open_with_cfs(
+        db,
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
     let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
     let storage = Arc::new(storage);
     let block = storage

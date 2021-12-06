@@ -83,18 +83,23 @@ impl ChainNotifyHandlerService {
         let block_id = block.id();
         let txn_info_ids = store.get_block_txn_info_ids(block_id)?;
         let mut all_events: Vec<Event> = vec![];
-        for (i, txn_info_id) in txn_info_ids.into_iter().enumerate().rev() {
-            let txn_hash = store
+        for txn_info_id in txn_info_ids.into_iter().rev() {
+            let txn_info = store
                 .get_transaction_info(txn_info_id)?
-                .map(|info| info.transaction_hash())
                 .ok_or_else(|| format_err!("cannot find txn info by it's id {}", &txn_info_id))?;
             // get events directly by txn_info_id
             let events = store.get_contract_events(txn_info_id)?.unwrap_or_default();
-            all_events.extend(
-                events
-                    .into_iter()
-                    .map(|evt| Event::new(block_id, block_number, txn_hash, Some(i as u32), evt)),
-            );
+            all_events.extend(events.into_iter().enumerate().map(|(idx, evt)| {
+                Event::new(
+                    block_id,
+                    block_number,
+                    txn_info.transaction_hash(),
+                    Some(txn_info.transaction_index),
+                    Some(txn_info.transaction_global_index),
+                    Some(idx as u32),
+                    evt,
+                )
+            }));
         }
         let events_notification: ContractEventNotification =
             Notification((block.header.state_root(), all_events.into()));

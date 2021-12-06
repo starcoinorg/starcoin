@@ -882,12 +882,26 @@
                   "data": {
                     "type": "string"
                   },
+                  "event_index": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
                   "event_key": {
                     "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
                     "type": "string"
                   },
                   "event_seq_number": {
                     "type": "string"
+                  },
+                  "transaction_global_index": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "transaction_hash": {
                     "type": [
@@ -2104,12 +2118,26 @@
                   "data": {
                     "type": "string"
                   },
+                  "event_index": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
                   "event_key": {
                     "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
                     "type": "string"
                   },
                   "event_seq_number": {
                     "type": "string"
+                  },
+                  "transaction_global_index": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "transaction_hash": {
                     "type": [

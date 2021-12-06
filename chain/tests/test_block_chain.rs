@@ -425,7 +425,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
 
     let vec_txn = block_chain2
         .get_storage()
-        .get_transaction_info_ids_by_hash(txn_hash)?;
+        .get_transaction_info_ids_by_txn_hash(txn_hash)?;
 
     assert_eq!(vec_txn.len(), 2);
     let txn_info1 = block_chain.get_transaction_info(txn_hash)?;

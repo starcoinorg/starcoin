@@ -4,7 +4,9 @@
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
-use starcoin_chain_api::{ChainReader, ChainWriter, ReadableChainService};
+use starcoin_chain_api::{
+    ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
+};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -16,7 +18,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
-use starcoin_types::transaction::BlockTransactionInfo;
+use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEvent,
@@ -24,6 +26,7 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -171,28 +174,16 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 let event_infos = if events.is_empty() {
                     vec![]
                 } else {
-                    let block_hash = txn_info.block_id();
-                    let block = self.inner.get_block_by_hash(block_hash)?.ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "cannot find block {} which include the txn {}",
-                            block_hash,
-                            txn_hash
-                        )
-                    })?;
-                    let index = block
-                        .transactions()
-                        .iter()
-                        .position(|t| t.id() == txn_hash)
-                        .map(|i| i + 1)
-                        .unwrap_or_default();
-
                     events
                         .into_iter()
-                        .map(|evt| ContractEventInfo {
-                            block_hash,
-                            block_number: block.header().number(),
+                        .enumerate()
+                        .map(|(idx, evt)| ContractEventInfo {
+                            block_hash: txn_info.block_id,
+                            block_number: txn_info.block_number,
                             transaction_hash: txn_hash,
-                            transaction_index: index as u32,
+                            transaction_index: txn_info.transaction_index,
+                            transaction_global_index: txn_info.transaction_global_index,
+                            event_index: idx as u32,
                             event: evt,
                         })
                         .collect()
@@ -221,11 +212,23 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 start_index,
                 reverse,
                 max_size,
-            } => Ok(ChainResponse::TransactionInfos(self.inner.get_txn_infos(
-                start_index,
-                reverse,
-                max_size,
-            )?)),
+            } => Ok(ChainResponse::TransactionInfos(
+                self.inner
+                    .get_transaction_infos(start_index, reverse, max_size)?,
+            )),
+            ChainRequest::GetTransactionProof {
+                block_id,
+                transaction_global_index,
+                event_index,
+                access_path,
+            } => Ok(ChainResponse::TransactionProof(Box::new(
+                self.inner.get_transaction_proof(
+                    block_id,
+                    transaction_global_index,
+                    event_index,
+                    access_path,
+                )?,
+            ))),
         }
     }
 }
@@ -316,11 +319,11 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<BlockTransactionInfo>, Error> {
+    ) -> Result<Option<RichTransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
     }
 
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<BlockTransactionInfo>, Error> {
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>, Error> {
         self.storage.get_block_transaction_infos(block_id)
     }
 
@@ -328,7 +331,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<BlockTransactionInfo>, Error> {
+    ) -> Result<Option<RichTransactionInfo>, Error> {
         self.storage
             .get_transaction_info_by_block_and_index(block_id, idx)
     }
@@ -379,14 +382,29 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.main.get_block_ids(start_number, reverse, max_size)
     }
 
-    fn get_txn_infos(
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<BlockTransactionInfo>> {
+    ) -> Result<Vec<RichTransactionInfo>> {
         self.main
             .get_transaction_infos(start_index, reverse, max_size)
+    }
+
+    fn get_transaction_proof(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>> {
+        self.main.get_transaction_proof(
+            block_id,
+            transaction_global_index,
+            event_index,
+            access_path,
+        )
     }
 }
 

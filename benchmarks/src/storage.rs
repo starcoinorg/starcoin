@@ -5,7 +5,7 @@ use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
 use starcoin_storage::BlockTransactionInfoStore;
 use starcoin_storage::Storage;
-use starcoin_vm_types::transaction::BlockTransactionInfo;
+use starcoin_vm_types::transaction::RichTransactionInfo;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use types::transaction::TransactionInfo;
 
@@ -55,9 +55,12 @@ impl StorageBencher {
             );
 
             self.storage
-                .save_transaction_infos(vec![BlockTransactionInfo::new(
+                .save_transaction_infos(vec![RichTransactionInfo::new(
                     HashValue::zero(),
+                    rand::random(),
                     transaction_info1,
+                    rand::random(),
+                    rand::random(),
                 )])
                 .unwrap();
         }

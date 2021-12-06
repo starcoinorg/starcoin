@@ -6,7 +6,7 @@ use anyhow::{bail, format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_state_api::StateWithProof;
-use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionInfo};
+use starcoin_vm_types::transaction::{RichTransactionInfo, SignedUserTransaction};
 
 mod chain;
 mod errors;
@@ -42,7 +42,7 @@ impl EventWithProof {
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionInfoWithProof {
-    pub transaction_info: TransactionInfo,
+    pub transaction_info: RichTransactionInfo,
     pub proof: AccumulatorProof,
     pub event_proof: Option<EventWithProof>,
     pub state_proof: Option<StateWithProof>,
@@ -57,11 +57,7 @@ impl TransactionInfoWithProof {
         access_path: Option<AccessPath>,
     ) -> Result<()> {
         self.proof
-            .verify(
-                expect_root,
-                self.transaction_info.crypto_hash(),
-                transaction_index,
-            )
+            .verify(expect_root, self.transaction_info.id(), transaction_index)
             .map_err(|e| format_err!("transaction info proof verify failed: {}", e))?;
         match (self.event_proof.as_ref(), event_index) {
             (Some(event_proof), Some(event_index)) => {

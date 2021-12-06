@@ -8,6 +8,7 @@ mod get_txn_cmd;
 mod get_txn_info_cmd;
 mod get_txn_info_list_cmd;
 mod get_txn_infos_cmd;
+pub mod get_txn_proof_cmd;
 mod info_cmd;
 mod list_block_cmd;
 

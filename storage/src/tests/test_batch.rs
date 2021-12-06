@@ -8,7 +8,7 @@ use crate::storage::{CodecWriteBatch, InnerStore, ValueCodec};
 use crate::DEFAULT_PREFIX_NAME;
 use crypto::HashValue;
 use starcoin_config::RocksdbConfig;
-use starcoin_types::transaction::{BlockTransactionInfo, TransactionInfo};
+use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 use starcoin_types::vm_error::KeptVMStatus;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -19,8 +19,9 @@ fn test_db_batch() {
     let db_storage =
         Arc::new(DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap());
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = BlockTransactionInfo::new(
+    let transaction_info1 = RichTransactionInfo::new(
         HashValue::random(),
+        rand::random(),
         TransactionInfo::new(
             HashValue::random(),
             HashValue::zero(),
@@ -28,11 +29,14 @@ fn test_db_batch() {
             0,
             KeptVMStatus::Executed,
         ),
+        rand::random(),
+        rand::random(),
     );
     let id = transaction_info1.id();
     write_batch.put(id, transaction_info1.clone()).unwrap();
-    let transaction_info2 = BlockTransactionInfo::new(
+    let transaction_info2 = RichTransactionInfo::new(
         HashValue::random(),
+        rand::random(),
         TransactionInfo::new(
             HashValue::random(),
             HashValue::zero(),
@@ -40,6 +44,8 @@ fn test_db_batch() {
             1,
             KeptVMStatus::Executed,
         ),
+        rand::random(),
+        rand::random(),
     );
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone()).unwrap();
@@ -47,7 +53,7 @@ fn test_db_batch() {
         .write_batch(DEFAULT_PREFIX_NAME, write_batch.try_into().unwrap())
         .unwrap();
     assert_eq!(
-        BlockTransactionInfo::decode_value(
+        RichTransactionInfo::decode_value(
             &db_storage
                 .get(DEFAULT_PREFIX_NAME, id.to_vec())
                 .unwrap()
@@ -57,7 +63,7 @@ fn test_db_batch() {
         transaction_info1
     );
     assert_eq!(
-        BlockTransactionInfo::decode_value(
+        RichTransactionInfo::decode_value(
             &db_storage
                 .get(DEFAULT_PREFIX_NAME, id2.to_vec())
                 .unwrap()
@@ -72,8 +78,9 @@ fn test_db_batch() {
 fn test_cache_batch() {
     let cache_storage = Arc::new(CacheStorage::new(None));
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = BlockTransactionInfo::new(
+    let transaction_info1 = RichTransactionInfo::new(
         HashValue::random(),
+        rand::random(),
         TransactionInfo::new(
             HashValue::random(),
             HashValue::zero(),
@@ -81,11 +88,14 @@ fn test_cache_batch() {
             0,
             KeptVMStatus::Executed,
         ),
+        rand::random(),
+        rand::random(),
     );
     let id = transaction_info1.id();
     write_batch.put(id, transaction_info1.clone()).unwrap();
-    let transaction_info2 = BlockTransactionInfo::new(
+    let transaction_info2 = RichTransactionInfo::new(
         HashValue::random(),
+        rand::random(),
         TransactionInfo::new(
             HashValue::random(),
             HashValue::zero(),
@@ -93,6 +103,8 @@ fn test_cache_batch() {
             1,
             KeptVMStatus::Executed,
         ),
+        rand::random(),
+        rand::random(),
     );
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone()).unwrap();
@@ -100,7 +112,7 @@ fn test_cache_batch() {
         .write_batch(DEFAULT_PREFIX_NAME, write_batch.try_into().unwrap())
         .unwrap();
     assert_eq!(
-        BlockTransactionInfo::decode_value(
+        RichTransactionInfo::decode_value(
             &cache_storage
                 .get(DEFAULT_PREFIX_NAME, id.to_vec())
                 .unwrap()
@@ -110,7 +122,7 @@ fn test_cache_batch() {
         transaction_info1
     );
     assert_eq!(
-        BlockTransactionInfo::decode_value(
+        RichTransactionInfo::decode_value(
             &cache_storage
                 .get(DEFAULT_PREFIX_NAME, id2.to_vec())
                 .unwrap()

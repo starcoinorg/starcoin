@@ -13,19 +13,20 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTrans
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    SignedUserTransactionView, TransactionEventResponse, TransactionInfoView, TransactionView,
+    SignedUserTransactionView, StrView, TransactionEventResponse, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
+use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockInfo, BlockNumber};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::TransactionInfo;
-use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::sync::Arc;
+
 pub struct ChainRpcImpl<S>
 where
     S: ChainAsyncService + 'static,
@@ -220,27 +221,10 @@ where
     ) -> FutureResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let txn_info = {
-                let info = service.get_transaction_info(transaction_hash).await?;
-                if info.is_none() {
-                    return Ok(None);
-                }
-                info.unwrap()
-            };
-
-            let block = service
-                .get_block_by_hash(txn_info.block_id())
+            Ok(service
+                .get_transaction_info(transaction_hash)
                 .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "cannot find the block {}  which include txn {}",
-                        txn_info.block_id(),
-                        transaction_hash
-                    )
-                })?;
-
-            TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(txn_info).1, &block)
-                .map(Some)
+                .map(Into::into))
         }
         .map_err(map_err);
 
@@ -250,17 +234,12 @@ where
     fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let txn_infos = service.get_block_txn_infos(block_hash).await?;
-            let block = service.get_block_by_hash(block_hash).await?;
-            match block {
-                None => Ok(vec![]),
-                Some(block) => txn_infos
-                    .into_iter()
-                    .map(|info| {
-                        TransactionInfoView::new(Into::<(_, TransactionInfo)>::into(info).1, &block)
-                    })
-                    .collect::<Result<Vec<_>, _>>(),
-            }
+            Ok(service
+                .get_block_txn_infos(block_hash)
+                .await?
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>())
         }
         .map_err(map_err);
 
@@ -274,28 +253,16 @@ where
     ) -> FutureResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.get_block_by_hash(block_hash).await?;
-            match block {
-                None => Ok(None),
-                Some(block) => {
-                    let txn_info = service
-                        .get_txn_info_by_block_and_index(block_hash, idx)
-                        .await?;
-                    txn_info
-                        .map(|info| {
-                            TransactionInfoView::new(
-                                Into::<(_, TransactionInfo)>::into(info).1,
-                                &block,
-                            )
-                        })
-                        .transpose()
-                }
-            }
+            Ok(service
+                .get_txn_info_by_block_and_index(block_hash, idx)
+                .await?
+                .map(Into::into))
         }
         .map_err(map_err);
 
         Box::pin(fut.boxed())
     }
+
     fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
@@ -416,7 +383,7 @@ where
 
     fn get_transaction_infos(
         &self,
-        start_index: u64,
+        start_global_index: u64,
         reverse: bool,
         max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView>> {
@@ -424,40 +391,36 @@ where
         let config = self.config.clone();
         let fut = async move {
             let max_return_num = max_size.min(config.rpc.txn_info_query_max_range());
-            let txn_infos = service
-                .get_txn_infos(start_index, reverse, max_return_num)
-                .await?;
-            // remove duplicate block_id
-            let id_sets = txn_infos
-                .iter()
-                .map(|info| info.block_id())
-                .collect::<HashSet<HashValue>>();
-            let block_ids = id_sets.into_iter().collect();
-            let blocks = service.get_blocks(block_ids).await?;
-            let mut block_cache = HashMap::new();
-            for block in blocks {
-                let block = block.ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "cannot find block which start_index {}, reverse {}, max_size {}",
-                        start_index,
-                        reverse,
-                        max_size
-                    )
-                })?;
-
-                block_cache.insert(block.header.id(), block);
-            }
-
-            txn_infos
+            Ok(service
+                .get_transaction_infos(start_global_index, reverse, max_return_num)
+                .await?
                 .into_iter()
-                .map(|info| {
-                    let block_id = info.block_id();
-                    TransactionInfoView::new(
-                        Into::<(_, TransactionInfo)>::into(info).1,
-                        block_cache.get(&block_id).unwrap(),
-                    )
-                })
-                .collect::<Result<Vec<_>, _>>()
+                .map(Into::into)
+                .collect::<Vec<_>>())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_proof(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView<AccessPath>>,
+    ) -> FutureResult<Option<TransactionInfoWithProofView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_transaction_proof(
+                    block_hash,
+                    transaction_global_index,
+                    event_index,
+                    access_path.map(Into::into),
+                )
+                .await?
+                .map(Into::into))
         }
         .map_err(map_err);
 

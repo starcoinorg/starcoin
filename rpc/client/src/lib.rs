@@ -33,7 +33,8 @@ use starcoin_rpc_api::types::{
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
     SignedUserTransactionView, StateWithProofView, StrView, StructTagView,
-    TransactionEventResponse, TransactionInfoView, TransactionRequest, TransactionView,
+    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+    TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -755,14 +756,32 @@ impl RpcClient {
 
     pub fn chain_get_transaction_infos(
         &self,
-        start_index: u64,
+        start_global_index: u64,
         reverse: bool,
         max_size: u64,
     ) -> anyhow::Result<Vec<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| {
             inner
                 .chain_client
-                .get_transaction_infos(start_index, reverse, max_size)
+                .get_transaction_infos(start_global_index, reverse, max_size)
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_transaction_proof(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> anyhow::Result<Option<TransactionInfoWithProofView>> {
+        self.call_rpc_blocking(|inner| {
+            inner.chain_client.get_transaction_proof(
+                block_hash,
+                transaction_global_index,
+                event_index,
+                access_path.map(Into::into),
+            )
         })
         .map_err(map_err)
     }

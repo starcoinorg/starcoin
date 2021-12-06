@@ -3,8 +3,8 @@
 
 pub use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
-use crate::db_storage::DBStorage;
-use anyhow::{bail, Result};
+use crate::db_storage::{DBStorage, SchemaIterator};
+use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
 use once_cell::sync::Lazy;
@@ -101,10 +101,10 @@ impl StorageInstance {
         }
     }
 
-    pub fn db(&self) -> Option<Arc<DBStorage>> {
+    pub fn db(&self) -> Option<&DBStorage> {
         match self {
             StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
-                Some(db.clone())
+                Some(db.as_ref())
             }
             _ => None,
         }
@@ -236,6 +236,10 @@ where
             prefix_name: CF::name(),
             cf: PhantomData,
         }
+    }
+
+    pub fn storage(&self) -> &StorageInstance {
+        &self.instance
     }
 }
 
@@ -414,6 +418,8 @@ where
     fn put_raw(&self, key: K, value: Vec<u8>) -> Result<()>;
 
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
+
+    fn iter(&self) -> Result<SchemaIterator<K, V>>;
 }
 
 impl KeyCodec for u64 {
@@ -454,6 +460,26 @@ impl ValueCodec for Vec<HashValue> {
 
     fn decode_value(data: &[u8]) -> Result<Self> {
         bcs_ext::from_bytes(data)
+    }
+}
+
+impl KeyCodec for Vec<u8> {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        Ok(data.to_vec())
+    }
+}
+
+impl ValueCodec for Vec<u8> {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        Ok(self.to_vec())
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Ok(data.to_vec())
     }
 }
 
@@ -517,5 +543,14 @@ where
 
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>> {
         KVStore::get(self.get_store(), key.encode_key()?.as_slice())
+    }
+
+    fn iter(&self) -> Result<SchemaIterator<K, V>> {
+        let db = self
+            .get_store()
+            .storage()
+            .db()
+            .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
+        db.iter::<K, V>(self.get_store().prefix_name)
     }
 }

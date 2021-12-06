@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::bail;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
@@ -14,13 +15,13 @@ use starcoin_abi_decoder::{
     DecodedPackage, DecodedScript, DecodedScriptFunction, DecodedTransactionPayload,
 };
 use starcoin_abi_types::ModuleABI;
+use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof};
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, BlockSummary,
-    EpochUncleSummary, UncleSummary,
+    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -41,11 +42,11 @@ use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
-    Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
-    TransactionPayload, TransactionStatus,
+    RichTransactionInfo, Script, SignedUserTransaction, Transaction, TransactionInfo,
+    TransactionOutput, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
-use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
+use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus, StatusCode};
 use starcoin_vm_types::write_set::WriteOp;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
@@ -783,31 +784,15 @@ impl TryFrom<Block> for BlockView {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
-pub struct BlockSummaryView {
-    pub header: BlockHeaderView,
-    pub uncles: Vec<BlockHeaderView>,
-}
-
-impl From<BlockSummary> for BlockSummaryView {
-    fn from(summary: BlockSummary) -> Self {
-        BlockSummaryView {
-            header: summary.block_header.into(),
-            uncles: summary
-                .uncles
-                .into_iter()
-                .map(|uncle| uncle.into())
-                .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {
     pub block_hash: HashValue,
     pub block_number: StrView<u64>,
     /// The hash of this transaction.
     pub transaction_hash: HashValue,
+    /// The index of this transaction in block
     pub transaction_index: u32,
+    /// The index of this transaction in chain
+    pub transaction_global_index: StrView<u64>,
     /// The root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
     pub state_root_hash: HashValue,
@@ -825,26 +810,51 @@ pub struct TransactionInfoView {
 }
 
 impl TransactionInfoView {
-    pub fn new(txn_info: TransactionInfo, txn_block: &Block) -> anyhow::Result<Self> {
-        let block_hash = txn_block.id();
-        let transaction_hash = txn_info.transaction_hash();
+    pub fn new(txn_info: RichTransactionInfo) -> Self {
+        TransactionInfoView {
+            block_hash: txn_info.block_id,
+            block_number: txn_info.block_number.into(),
+            transaction_hash: txn_info.transaction_hash,
+            transaction_index: txn_info.transaction_index,
+            transaction_global_index: txn_info.transaction_global_index.into(),
+            state_root_hash: txn_info.transaction_info.state_root_hash,
+            event_root_hash: txn_info.transaction_info.event_root_hash,
+            gas_used: txn_info.transaction_info.gas_used.into(),
+            status: TransactionStatusView::from(txn_info.transaction_info.status),
+        }
+    }
+}
 
-        // if not found in block, it means it's block meta txn.
-        let index = txn_block
-            .transactions()
-            .iter()
-            .position(|t| t.id() == transaction_hash);
+impl From<RichTransactionInfo> for TransactionInfoView {
+    fn from(txn_info: RichTransactionInfo) -> Self {
+        TransactionInfoView::new(txn_info)
+    }
+}
 
-        Ok(TransactionInfoView {
-            block_hash,
-            block_number: txn_block.header().number().into(),
-            transaction_hash,
-            transaction_index: index.map(|i| i + 1).unwrap_or_default() as u32,
-            state_root_hash: txn_info.state_root_hash(),
-            event_root_hash: txn_info.event_root_hash(),
-            gas_used: txn_info.gas_used().into(),
-            status: TransactionStatusView::from(txn_info.status().clone()),
-        })
+impl TryFrom<TransactionInfoView> for RichTransactionInfo {
+    type Error = anyhow::Error;
+
+    fn try_from(view: TransactionInfoView) -> Result<Self, Self::Error> {
+        let status: TransactionStatus = view.status.clone().into();
+        match status {
+            TransactionStatus::Keep(kept_status) => Ok(RichTransactionInfo::new(
+                view.block_hash,
+                view.block_number.0,
+                TransactionInfo {
+                    transaction_hash: view.transaction_hash,
+
+                    state_root_hash: view.state_root_hash,
+                    event_root_hash: view.event_root_hash,
+                    gas_used: view.gas_used.0,
+                    status: kept_status,
+                },
+                view.transaction_index,
+                view.transaction_global_index.0,
+            )),
+            TransactionStatus::Discard(_) => {
+                bail!("TransactionInfoView's status is discard, {:?}, can not convert to RichTransactionInfo", view);
+            }
+        }
     }
 }
 
@@ -914,6 +924,41 @@ impl From<DiscardedVMStatus> for TransactionStatusView {
     }
 }
 
+impl From<TransactionStatusView> for TransactionStatus {
+    fn from(value: TransactionStatusView) -> Self {
+        match value {
+            TransactionStatusView::Executed => TransactionStatus::Keep(KeptVMStatus::Executed),
+            TransactionStatusView::OutOfGas => TransactionStatus::Keep(KeptVMStatus::OutOfGas),
+            TransactionStatusView::MoveAbort {
+                location,
+                abort_code,
+            } => TransactionStatus::Keep(KeptVMStatus::MoveAbort(location, abort_code.0)),
+            TransactionStatusView::MiscellaneousError => {
+                TransactionStatus::Keep(KeptVMStatus::MiscellaneousError)
+            }
+            TransactionStatusView::ExecutionFailure {
+                location,
+                function,
+                code_offset,
+            } => TransactionStatus::Keep(KeptVMStatus::ExecutionFailure {
+                location,
+                function,
+                code_offset,
+            }),
+            TransactionStatusView::Discard {
+                status_code,
+                status_code_name: _,
+            } => TransactionStatus::Discard(
+                status_code
+                    .0
+                    .try_into()
+                    .ok()
+                    .unwrap_or(StatusCode::UNKNOWN_STATUS),
+            ),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub struct TransactionEventResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -929,8 +974,10 @@ pub struct TransactionEventView {
     pub transaction_hash: Option<HashValue>,
     // txn index in block
     pub transaction_index: Option<u32>,
+    pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
+    pub event_index: Option<u32>,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
 }
@@ -942,8 +989,10 @@ impl From<ContractEventInfo> for TransactionEventView {
             block_number: Some(info.block_number.into()),
             transaction_hash: Some(info.transaction_hash),
             transaction_index: Some(info.transaction_index),
+            transaction_global_index: Some(info.transaction_global_index.into()),
             data: StrView(info.event.event_data().to_vec()),
             type_tag: info.event.type_tag().clone().into(),
+            event_index: Some(info.event_index),
             event_key: *info.event.key(),
             event_seq_number: info.event.sequence_number().into(),
         }
@@ -957,8 +1006,10 @@ impl From<ContractEvent> for TransactionEventView {
             block_number: None,
             transaction_hash: None,
             transaction_index: None,
+            transaction_global_index: None,
             data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone().into(),
+            event_index: None,
             event_key: *event.key(),
             event_seq_number: event.sequence_number().into(),
         }
@@ -971,6 +1022,8 @@ impl TransactionEventView {
         block_number: Option<BlockNumber>,
         transaction_hash: Option<HashValue>,
         transaction_index: Option<u32>,
+        transaction_global_index: Option<u64>,
+        event_index: Option<u32>,
         contract_event: &ContractEvent,
     ) -> Self {
         Self {
@@ -978,8 +1031,10 @@ impl TransactionEventView {
             block_number: block_number.map(Into::into),
             transaction_hash,
             transaction_index,
+            transaction_global_index: transaction_global_index.map(Into::into),
             data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone().into(),
+            event_index,
             event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),
         }
@@ -988,6 +1043,7 @@ impl TransactionEventView {
 
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
+use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 pub use vm_status_translator::VmStatusExplainView;
@@ -1060,47 +1116,6 @@ pub enum WriteOpView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct UncleSummaryView {
-    /// total uncle
-    pub uncles: StrView<u64>,
-    /// sum(number of the block which contain uncle block - uncle parent block number).
-    pub sum: StrView<u64>,
-    pub avg: StrView<u64>,
-    pub time_sum: StrView<u64>,
-    pub time_avg: StrView<u64>,
-}
-
-impl From<UncleSummary> for UncleSummaryView {
-    fn from(origin: UncleSummary) -> Self {
-        Self {
-            uncles: origin.uncles.into(),
-            sum: origin.sum.into(),
-            avg: origin.avg.into(),
-            time_sum: origin.time_sum.into(),
-            time_avg: origin.time_avg.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct EpochUncleSummaryView {
-    /// epoch number
-    pub epoch: StrView<u64>,
-    pub number_summary: UncleSummaryView,
-    pub epoch_summary: UncleSummaryView,
-}
-
-impl From<EpochUncleSummary> for EpochUncleSummaryView {
-    fn from(origin: EpochUncleSummary) -> Self {
-        EpochUncleSummaryView {
-            epoch: origin.epoch.into(),
-            number_summary: origin.number_summary.into(),
-            epoch_summary: origin.epoch_summary.into(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ChainInfoView {
     pub chain_id: u8,
     pub genesis_hash: HashValue,
@@ -1141,21 +1156,53 @@ impl From<PeerInfo> for PeerInfoView {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SparseMerkleProofView {
+    /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
+    ///     - If this is `Some(HashValue, HashValue)`
+    ///         - If the first `HashValue` equals requested key, this is an inclusion proof and the
+    ///           second `HashValue` equals the hash of the corresponding account blob.
+    ///         - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key
+    ///           that exists in the subtree and the second `HashValue` equals the hash of the
+    ///           corresponding account blob.
+    ///     - If this is `None`, this is also a non-inclusion proof which indicates the subtree is
+    ///       empty.
+    pub leaf: Option<(HashValue, HashValue)>,
+
+    /// All siblings in this proof, including the default ones. Siblings are ordered from the bottom
+    /// level to the root level.
+    pub siblings: Vec<HashValue>,
+}
+
+impl From<SparseMerkleProof> for SparseMerkleProofView {
+    fn from(origin: SparseMerkleProof) -> Self {
+        Self {
+            leaf: origin.leaf,
+            siblings: origin.siblings,
+        }
+    }
+}
+
+impl From<SparseMerkleProofView> for SparseMerkleProof {
+    fn from(origin: SparseMerkleProofView) -> Self {
+        Self {
+            leaf: origin.leaf,
+            siblings: origin.siblings,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct StateWithProofView {
     pub state: Option<StrView<Vec<u8>>>,
     pub account_state: Option<StrView<Vec<u8>>>,
-    pub account_proof: SparseMerkleProof,
-    pub account_state_proof: SparseMerkleProof,
+    pub account_proof: SparseMerkleProofView,
+    pub account_state_proof: SparseMerkleProofView,
 }
 
 impl StateWithProofView {
-    pub fn state_proof(&self) -> StateProof {
-        StateProof::new(
-            self.account_state.clone().map(|v| v.0),
-            self.account_proof.clone(),
-            self.account_state_proof.clone(),
-        )
+    pub fn into_state_proof(self) -> StateWithProof {
+        self.into()
     }
 }
 
@@ -1165,8 +1212,8 @@ impl From<StateWithProof> for StateWithProofView {
         Self {
             state,
             account_state: state_proof.proof.account_state.map(|b| StrView(b.into())),
-            account_proof: state_proof.proof.account_proof,
-            account_state_proof: state_proof.proof.account_state_proof,
+            account_proof: state_proof.proof.account_proof.into(),
+            account_state_proof: state_proof.proof.account_state_proof.into(),
         }
     }
 }
@@ -1176,10 +1223,90 @@ impl From<StateWithProofView> for StateWithProof {
         let state = view.state.map(|v| v.0);
         let proof = StateProof::new(
             view.account_state.map(|v| v.0),
-            view.account_proof,
-            view.account_state_proof,
+            view.account_proof.into(),
+            view.account_state_proof.into(),
         );
         StateWithProof::new(state, proof)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct AccumulatorProofView {
+    pub siblings: Vec<HashValue>,
+}
+
+impl From<AccumulatorProof> for AccumulatorProofView {
+    fn from(origin: AccumulatorProof) -> Self {
+        Self {
+            siblings: origin.siblings,
+        }
+    }
+}
+
+impl From<AccumulatorProofView> for AccumulatorProof {
+    fn from(view: AccumulatorProofView) -> Self {
+        Self {
+            siblings: view.siblings,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct EventWithProofView {
+    /// event is serialized bytes in bcs format.
+    pub event: StrView<Vec<u8>>,
+    pub proof: AccumulatorProofView,
+}
+
+impl From<EventWithProof> for EventWithProofView {
+    fn from(origin: EventWithProof) -> Self {
+        Self {
+            event: StrView(origin.event.encode().expect("encode event should success")),
+            proof: origin.proof.into(),
+        }
+    }
+}
+
+impl TryFrom<EventWithProofView> for EventWithProof {
+    type Error = anyhow::Error;
+
+    fn try_from(value: EventWithProofView) -> Result<Self, Self::Error> {
+        Ok(EventWithProof {
+            event: ContractEvent::decode(value.event.0.as_slice())?,
+            proof: value.proof.into(),
+        })
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionInfoWithProofView {
+    pub transaction_info: TransactionInfoView,
+    pub proof: AccumulatorProofView,
+    pub event_proof: Option<EventWithProofView>,
+    pub state_proof: Option<StateWithProofView>,
+}
+
+impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
+    fn from(origin: TransactionInfoWithProof) -> Self {
+        Self {
+            transaction_info: origin.transaction_info.into(),
+            proof: origin.proof.into(),
+            event_proof: origin.event_proof.map(Into::into),
+            state_proof: origin.state_proof.map(Into::into),
+        }
+    }
+}
+
+impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
+    type Error = anyhow::Error;
+
+    fn try_from(view: TransactionInfoWithProofView) -> Result<Self, Self::Error> {
+        Ok(TransactionInfoWithProof {
+            transaction_info: view.transaction_info.try_into()?,
+            proof: view.proof.into(),
+            event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
+            state_proof: view.state_proof.map(Into::into),
+        })
     }
 }
 
@@ -1390,10 +1517,15 @@ macro_rules! impl_str_view_for {
             s.parse::<$t>().map(StrView)
         }
     }
+    impl From<StrView<$t>> for $t {
+        fn from(view: StrView<$t>) -> $t {
+            view.0
+        }
+    }
     )*}
 }
 impl_str_view_for! {u64 i64 u128 i128}
-impl_str_view_for! {ByteCodeOrScriptFunction}
+impl_str_view_for! {ByteCodeOrScriptFunction AccessPath}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BytesView(Box<[u8]>);

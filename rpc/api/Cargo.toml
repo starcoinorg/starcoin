@@ -20,6 +20,7 @@ jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "ar
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
+starcoin-chain-api = { path = "../../chain/api"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-state-api = { path = "../../state/api"}
@@ -40,6 +41,7 @@ jsonrpc-derive = {git = "https://github.com/fikgol/jsonrpc",rev="2f6c2b33d3048d5
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="3f8ecc27f02b27d56c716de58d7880ae7816390c"}
 openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="2e402a834e5d7d9733c5ff5267088162a097f394"}
 structopt = "0.3.25"
+starcoin-accumulator = {path = "../../commons/accumulator"}
 [[bin]]
 name = "starcoin-rpc-schema-generate"
 path = "src/generate_schema.rs"

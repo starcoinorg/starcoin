@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::stress_test::TPS;
-use starcoin_types::transaction::BlockTransactionInfo;
+use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEventInfo,
@@ -13,6 +13,7 @@ use starcoin_types::{
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
 };
+use starcoin_vm_types::access_path::AccessPath;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
@@ -52,6 +53,12 @@ pub enum ChainRequest {
         reverse: bool,
         max_size: u64,
     },
+    GetTransactionProof {
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -73,11 +80,10 @@ pub enum ChainResponse {
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
     BlockHeaderVec(Vec<BlockHeader>),
-    TransactionInfos(Vec<BlockTransactionInfo>),
-    TransactionInfo(Option<BlockTransactionInfo>),
+    TransactionInfos(Vec<RichTransactionInfo>),
+    TransactionInfo(Option<RichTransactionInfo>),
     Events(Vec<ContractEventInfo>),
     MainEvents(Vec<ContractEventInfo>),
-    None,
     HashVec(Vec<HashValue>),
-    TPS(TPS),
+    TransactionProof(Box<Option<TransactionInfoWithProof>>),
 }
