@@ -5,10 +5,10 @@ use anyhow::Result;
 use arc_swap::ArcSwap;
 use lazy_static::lazy_static;
 use slog::{o, Discard, Drain, Logger};
-use slog_async::Async;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 const TIMESTAMP_FORMAT: &str = "%+";
@@ -17,20 +17,23 @@ const TIMESTAMP_FORMAT: &str = "%+";
 lazy_static! {
     static ref GLOBAL_SLOG_LOGGER: ArcSwap<Logger> =
         ArcSwap::from(Arc::new(Logger::root(Discard, o!())));
+    static ref SLOG_LEVEL: Arc<Mutex<slog::Level>> = Arc::new(Mutex::new(slog::Level::Info));
 }
 
 // A RuntimeLevelFilter will discard all log records whose log level is less than the level
 // specified in the struct.
 pub struct RuntimeLevelFilter<D> {
     drain: D,
-    level: Mutex<slog::Level>,
+    level: Arc<Mutex<slog::Level>>,
 }
 
 impl<D> RuntimeLevelFilter<D> {
     pub fn new(drain: D, level: slog::Level) -> Self {
+        let mut s = SLOG_LEVEL.lock().unwrap();
+        *s = level;
         RuntimeLevelFilter {
             drain,
-            level: Mutex::new(level),
+            level: SLOG_LEVEL.clone(),
         }
     }
 }
@@ -48,7 +51,6 @@ where
         values: &slog::OwnedKVList,
     ) -> std::result::Result<Self::Ok, Self::Err> {
         let log_level = self.level.lock().unwrap();
-
         if record.level().is_at_least(*log_level) {
             self.drain.log(record, values)?;
         }
@@ -62,9 +64,9 @@ fn timestamp_custom(io: &mut dyn Write) -> std::io::Result<()> {
 
 /// Creates a root logger with config settings.
 fn create_default_root_logger(
-    is_async: bool,
-    chan_size: Option<usize>,
     log_path: PathBuf,
+    level: slog::Level,
+    enable_stderr: bool,
 ) -> Result<Logger> {
     let file = OpenOptions::new()
         .read(true)
@@ -75,26 +77,33 @@ fn create_default_root_logger(
     let decorator = slog_term::PlainDecorator::new(file);
     let file_drain = slog_term::CompactFormat::new(decorator)
         .use_custom_timestamp(timestamp_custom)
-        .build()
-        .fuse();
+        .build();
     let decorator = slog_term::TermDecorator::new().build();
-    let io_drain = slog_term::CompactFormat::new(decorator).build().fuse();
-    let drain = slog::Duplicate::new(file_drain, io_drain).fuse();
-    if is_async {
-        let async_builder = match chan_size {
-            Some(chan_size_inner) => Async::new(drain).chan_size(chan_size_inner),
-            None => Async::new(drain),
-        };
-        Ok(Logger::root(async_builder.build().fuse(), o!()))
+    if enable_stderr {
+        let io_drain = slog_term::CompactFormat::new(decorator).build();
+        let drain =
+            RuntimeLevelFilter::new(slog::Duplicate::new(file_drain, io_drain), level).fuse();
+        Ok(Logger::root(Mutex::new(drain).fuse(), o!()))
     } else {
+        let drain = RuntimeLevelFilter::new(file_drain, level).fuse();
         Ok(Logger::root(Mutex::new(drain).fuse(), o!()))
     }
 }
 
-pub fn set_global_logger(is_async: bool, chan_size: Option<usize>, file: PathBuf) -> Result<()> {
-    let logger = create_default_root_logger(is_async, chan_size, file)?;
+pub fn init_slog_logger(file: PathBuf, enable_stderr: bool) -> Result<()> {
+    let logger = create_default_root_logger(file, slog::Level::Info, enable_stderr)?;
     GLOBAL_SLOG_LOGGER.store(Arc::new(logger));
     Ok(())
+}
+
+pub fn set_slog_level(level: &str) {
+    let level = slog::Level::from_str(level).unwrap_or(slog::Level::Info);
+    let mut slog_level = SLOG_LEVEL.lock().unwrap();
+    *slog_level = level;
+}
+
+pub fn disable_slog_stderr() {
+    GLOBAL_SLOG_LOGGER.swap(Arc::new(Logger::root(Discard, o!())));
 }
 
 pub fn with_logger<F, R>(f: F) -> R

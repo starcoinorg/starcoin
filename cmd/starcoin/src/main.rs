@@ -7,6 +7,7 @@ use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
+use starcoin_logger::structured_log::disable_slog_stderr;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
@@ -98,7 +99,9 @@ fn run() -> Result<()> {
     let context = context.with_console_support(
         move |_app, _opt, state| {
             info!("Start console, disable stderr output.");
+
             logger_handle.disable_stderr();
+            disable_slog_stderr();
             (*scmd::DEFAULT_CONSOLE_CONFIG, Some(state.history_file()))
         },
         |_, _, state| {

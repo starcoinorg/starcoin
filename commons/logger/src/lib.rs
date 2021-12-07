@@ -375,10 +375,8 @@ pub fn init_with_default_level(
             Err(e) => panic!("{}", e.to_string()),
         };
         let logger_handle = LoggerHandle::new(arg, handle);
-
         *LOGGER_HANDLE.lock() = Some(Arc::new(logger_handle));
     });
-
     let logger_handle = LOGGER_HANDLE
         .lock()
         .as_ref()

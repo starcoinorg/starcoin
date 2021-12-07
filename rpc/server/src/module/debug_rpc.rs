@@ -6,6 +6,7 @@ use crate::module::txfactory_rpc::TxFactoryStatusHandle;
 use jsonrpc_core::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
+use starcoin_logger::structured_log::set_slog_level;
 use starcoin_logger::{LogPattern, LoggerHandle};
 use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::types::FactoryAction;
@@ -46,6 +47,7 @@ impl DebugApi for DebugRpcImpl {
             }
         });
         let level = LevelFilter::from_str(level.as_str()).map_err(to_invalid_param_err)?;
+        set_slog_level(level.as_str());
         match logger_name {
             None => self.log_handle.update_level(level),
             Some(n) => self.log_handle.set_log_level(n, level),
