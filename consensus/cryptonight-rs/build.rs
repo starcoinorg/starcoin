@@ -13,7 +13,7 @@ fn main() {
         .file("ext/hash.c")
         .file("ext/oaes_lib.c")
         .flag("-maes")
-        .flag("-Ofast")
+        //.flag("-Ofast")
         .flag("-fexceptions")
         .compile("cryptonight")
 }
