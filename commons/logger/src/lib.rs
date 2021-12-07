@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::structured_log::disable_slog_stderr;
 use anyhow::{format_err, Result};
 use log::LevelFilter;
 use log4rs::{
@@ -23,6 +24,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
+
 pub mod structured_log;
 
 /// Logger prelude which includes all logging macros.
@@ -127,9 +129,6 @@ struct LoggerConfigArg {
     // sub path level
     module_levels: HashMap<String, LevelFilter>,
     log_path: Option<PathBuf>,
-    slog_path: Option<PathBuf>,
-    slog_is_sync: Option<bool>,
-    slog_chan_size: Option<usize>,
     max_file_size: u64,
     max_backup: u32,
     pattern: LogPattern,
@@ -157,9 +156,6 @@ impl LoggerConfigArg {
             level,
             module_levels: default_module_levels,
             log_path: None,
-            slog_path: None,
-            slog_is_sync: None,
-            slog_chan_size: None,
             max_file_size: 0,
             max_backup: 0,
             pattern: pattern.unwrap_or_else(|| LogPattern::by_level(level)),
@@ -189,19 +185,14 @@ impl LoggerHandle {
     pub fn disable_stderr(&self) {
         let mut arg = self.arg.lock().clone();
         arg.enable_stderr = false;
-        self.update_logger(arg);
+        self.update_logger(arg.clone());
+        if let Some(path) = arg.log_path {
+            disable_slog_stderr(path);
+        }
     }
-
-    pub fn enable_file(
-        &self,
-        log_path: PathBuf,
-        slog_path: PathBuf,
-        max_file_size: u64,
-        max_backup: u32,
-    ) {
+    pub fn enable_file(&self, log_path: PathBuf, max_file_size: u64, max_backup: u32) {
         let mut arg = self.arg.lock().clone();
         arg.log_path = Some(log_path);
-        arg.slog_path = Some(slog_path);
         arg.max_file_size = max_file_size;
         arg.max_backup = max_backup;
         self.update_logger(arg);
@@ -256,9 +247,6 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         level,
         module_levels,
         log_path,
-        slog_path,
-        // slog_is_sync,
-        // slog_chan_size,
         max_file_size,
         max_backup,
         pattern,
@@ -279,31 +267,12 @@ fn build_config(arg: LoggerConfigArg) -> Result<Config> {
         builder = builder.appender(Appender::builder().build("stderr", Box::new(stderr)));
         root_builder = root_builder.appender("stderr");
     }
-    if let Some(log_path) = log_path.clone() {
-        let appender = rolling_file_append(
-            "log_file",
-            max_file_size,
-            max_backup,
-            pattern.clone(),
-            log_path,
-        )?;
+    if let Some(log_path) = log_path {
+        let appender =
+            rolling_file_append("log_file", max_file_size, max_backup, pattern, log_path)?;
         builder = builder.appender(appender);
         root_builder = root_builder.appender("log_file");
     }
-    if slog_path != log_path {
-        if let Some(log_path) = slog_path {
-            let appender =
-                rolling_file_append("slog", max_file_size, max_backup, pattern, log_path)?;
-            builder = builder.appender(appender);
-            builder = builder.logger(
-                Logger::builder()
-                    .additive(false)
-                    .appender("slog")
-                    .build("slog", LevelFilter::Off),
-            );
-        }
-    }
-
     builder = builder.loggers(
         module_levels
             .into_iter()
@@ -375,10 +344,8 @@ pub fn init_with_default_level(
             Err(e) => panic!("{}", e.to_string()),
         };
         let logger_handle = LoggerHandle::new(arg, handle);
-
         *LOGGER_HANDLE.lock() = Some(Arc::new(logger_handle));
     });
-
     let logger_handle = LOGGER_HANDLE
         .lock()
         .as_ref()
