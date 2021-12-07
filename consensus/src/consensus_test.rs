@@ -6,6 +6,7 @@
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
 use crate::{difficult_to_target, target_to_difficulty, CRYPTONIGHT};
+use cryptonight::cryptonight_r;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, RawBlockHeader};
 use starcoin_types::U256;
@@ -262,3 +263,22 @@ fn test_difficulty_to_target() {
 
 //amd cpu: calculate_pow_hash blob: [5f, 9f, 98, 74, ec, 4d, ef, 41, 4b, 96, 36, 87, c4, b1, 7e, 0, 37, 71, 50, cc, 17, 5f, 5c, 6d, 6e, 41, 82, c6, cb, 43, 78, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b1, ec, 37], nonce: 3221282425, extra:[0, 0, 0, 0], pow_hash:0x1d2256b8db95f13c42759bf55eaebe9ccf10116e8550a6ec56f3a33f50fde6e1, target:9930418791052389747331702421505774560256931092476487530380331351137194, real: 13177743943058275644734263735837563184445799542976421731108869862656615245537
 //normal cpu: calculate_pow_hash blob: [5f, 9f, 98, 74, ec, 4d, ef, 41, 4b, 96, 36, 87, c4, b1, 7e, 0, 37, 71, 50, cc, 17, 5f, 5c, 6d, 6e, 41, 82, c6, cb, 43, 78, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b1, ec, 37], nonce: 3221282425, extra:[0, 0, 0, 0], pow_hash:0x0000008e67af69c3c670dab325e8fc3a9dc045c6e339aa35f43b415604513742, target:9930418791052389747331702421505774560256931092476487530380331351137194, real: 3839231753559030284598885454738139221281927754995694993797275909699394
+// data from chain/tests/test_verifier.rs
+#[test]
+fn test_cryptonight_r() {
+    let mix_hash = [
+        0x5f, 0x9f, 0x98, 0x74, 0xec, 0x4d, 0xef, 0x41, 0x4b, 0x96, 0x36, 0x87, 0xc4, 0xb1, 0x7e,
+        0x00, 0x37, 0x71, 0x50, 0xcc, 0x17, 0x5f, 0x5c, 0x6d, 0x6e, 0x41, 0x82, 0xc6, 0xcb, 0x43,
+        0x78, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79, 0xde, 0x00, 0xc0, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb1, 0xec,
+        0x37,
+    ];
+    let pow_hash = cryptonight_r(&mix_hash, mix_hash.len());
+    let pow_slice = [
+        0x0, 0x0, 0x0, 0x8e, 0x67, 0xaf, 0x69, 0xc3, 0xc6, 0x70, 0xda, 0xb3, 0x25, 0xe8, 0xfc,
+        0x3a, 0x9d, 0xc0, 0x45, 0xc6, 0xe3, 0x39, 0xaa, 0x35, 0xf4, 0x3b, 0x41, 0x56, 0x04, 0x51,
+        0x37, 0x42,
+    ];
+    assert_eq!(pow_hash.as_slice(), pow_slice);
+}
