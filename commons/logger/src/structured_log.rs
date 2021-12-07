@@ -73,7 +73,6 @@ fn create_default_root_logger(
         .append(true)
         .create(true)
         .open(log_path)?;
-
     let decorator = slog_term::PlainDecorator::new(file);
     let file_drain = slog_term::CompactFormat::new(decorator)
         .use_custom_timestamp(timestamp_custom)
@@ -102,8 +101,13 @@ pub fn set_slog_level(level: &str) {
     *slog_level = level;
 }
 
-pub fn disable_slog_stderr() {
-    GLOBAL_SLOG_LOGGER.swap(Arc::new(Logger::root(Discard, o!())));
+pub fn disable_slog_stderr(log_path: PathBuf) {
+    match create_default_root_logger(log_path, slog::Level::Info, false) {
+        Ok(logger) => {
+            GLOBAL_SLOG_LOGGER.swap(Arc::new(logger));
+        }
+        Err(e) => log::warn!("Failed to disable slog stderr:{}", e),
+    };
 }
 
 pub fn with_logger<F, R>(f: F) -> R

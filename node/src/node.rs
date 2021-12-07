@@ -203,17 +203,15 @@ impl NodeService {
         logger_handle: Arc<LoggerHandle>,
     ) -> Result<NodeHandle, NodeStartError> {
         info!("Final data-dir is : {:?}", config.data_dir());
-        if let Some((log_path, slog_path)) = config.logger.get_log_path() {
+        if let Some(log_path) = config.logger.get_log_path() {
             info!("Write log to file: {:?}", log_path);
             logger_handle.enable_file(
-                log_path,
-                slog_path.clone(),
+                log_path.clone(),
                 config.logger.max_file_size(),
                 config.logger.max_backup(),
             );
             //config slog
-            info!("Write slog to file: {:?}", slog_path);
-            if let Err(e) = init_slog_logger(slog_path, !config.logger.disable_stderr()) {
+            if let Err(e) = init_slog_logger(log_path, !config.logger.disable_stderr()) {
                 warn!("slog config error: {}", e);
             }
         }
