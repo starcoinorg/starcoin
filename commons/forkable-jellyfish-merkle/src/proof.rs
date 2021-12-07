@@ -6,6 +6,7 @@ use crate::node_type::{SparseMerkleInternalNode, SparseMerkleLeafNode};
 use anyhow::{bail, ensure, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
+
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
@@ -16,7 +17,7 @@ pub struct SparseMerkleProof {
     ///           second `HashValue` equals the hash of the corresponding account blob.
     ///         - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key
     ///           that exists in the subtree and the second `HashValue` equals the hash of the
-    ///           corresponding account blob.
+    ///           corresponding blob.
     ///     - If this is `None`, this is also a non-inclusion proof which indicates the subtree is
     ///       empty.
     pub leaf: Option<(HashValue, HashValue)>,
@@ -132,6 +133,63 @@ impl SparseMerkleProof {
         );
 
         Ok(())
+    }
+
+    /// Update the leaf, and compute new root.
+    /// Only available for non existence proof
+    pub fn update_leaf(
+        &mut self,
+        element_key: HashValue,
+        element_blob: &Blob,
+    ) -> Result<HashValue> {
+        let element_hash = element_blob.crypto_hash();
+
+        let is_non_exists_proof = match self.leaf.as_ref() {
+            None => true,
+            Some((leaf_key, _leaf_value)) => &element_key != leaf_key,
+        };
+        ensure!(
+            is_non_exists_proof,
+            "Only non existence proof support update leaf, got element_key: {:?} leaf: {:?}",
+            element_key,
+            self.leaf,
+        );
+
+        let new_leaf_node = SparseMerkleLeafNode::new(element_key, element_hash);
+        let current_hash = new_leaf_node.crypto_hash();
+        if let Some(leaf_node) = self
+            .leaf
+            .as_ref()
+            .map(|(leaf_key, leaf_value)| SparseMerkleLeafNode::new(*leaf_key, *leaf_value))
+        {
+            let mut new_siblings = vec![leaf_node.crypto_hash()];
+            let prefix_len = leaf_node.key.common_prefix_bits_len(element_key);
+
+            let place_holder_len = (prefix_len - self.siblings.len()) + 1;
+            if place_holder_len > 0 {
+                new_siblings.resize(place_holder_len, *SPARSE_MERKLE_PLACEHOLDER_HASH);
+            }
+            new_siblings.extend(self.siblings.iter());
+            self.siblings = new_siblings;
+        }
+        let new_root_hash = self
+            .siblings
+            .iter()
+            .zip(
+                element_key
+                    .iter_bits()
+                    .rev()
+                    .skip(HashValue::LENGTH_IN_BITS - self.siblings.len()),
+            )
+            .fold(current_hash, |hash, (sibling_hash, bit)| {
+                if bit {
+                    SparseMerkleInternalNode::new(*sibling_hash, hash).crypto_hash()
+                } else {
+                    SparseMerkleInternalNode::new(hash, *sibling_hash).crypto_hash()
+                }
+            });
+        self.leaf = Some((element_key, element_hash));
+        Ok(new_root_hash)
     }
 }
 

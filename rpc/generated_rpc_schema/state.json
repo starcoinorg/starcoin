@@ -140,7 +140,7 @@
               ],
               "properties": {
                 "leaf": {
-                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
                   "type": [
                     "array",
                     "null"
@@ -181,7 +181,7 @@
               ],
               "properties": {
                 "leaf": {
-                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
                   "type": [
                     "array",
                     "null"
@@ -677,7 +677,7 @@
               ],
               "properties": {
                 "leaf": {
-                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
                   "type": [
                     "array",
                     "null"
@@ -718,7 +718,7 @@
               ],
               "properties": {
                 "leaf": {
-                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                  "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
                   "type": [
                     "array",
                     "null"
