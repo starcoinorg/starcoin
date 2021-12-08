@@ -22,7 +22,7 @@ pub enum Commands {
     #[structopt(flatten)]
     Command(Command),
     // extra commands available can be added below
-    #[structopt(flatten)]
+    #[structopt(name = "spectest")]
     TransactionalTest(TransactionalTestCommand),
 }
 

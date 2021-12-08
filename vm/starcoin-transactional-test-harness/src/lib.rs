@@ -186,7 +186,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     fn fetch_balance_resource(
         &self,
         signer_addr: &AccountAddress,
-        balance_currency_code: Identifier,
+        balance_currency_code: String,
     ) -> Result<BalanceResource> {
         let token_code = TokenCode::from_str(balance_currency_code.as_str())?;
         let balance_resource_tag = BalanceResource::struct_tag_for_token(token_code.try_into()?);
@@ -213,7 +213,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let account_resource = self.fetch_account_resource(signer_addr)?;
 
         let sequence_number = account_resource.sequence_number();
-        let gas_currency_code = Identifier::new(stc_type_tag().to_string())?;
+        // let gas_currency_code = stc_type_tag().to_string();
         let vmconfig = self
             .storage
             .get_on_chain_config::<VMConfig>()?
@@ -227,7 +227,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             max_number_of_gas_units.get()
         } else {
             let account_balance =
-                self.fetch_balance_resource(signer_addr, gas_currency_code.clone())?;
+                self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
                 max_number_of_gas_units.get(),
                 (account_balance.token() / gas_unit_price as u128) as u64,
@@ -419,6 +419,12 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             let mut writes = WriteSetMut::default();
             for c in &pre_compiled_lib.compiled {
                 if let CompiledUnitEnum::Module(m) = c {
+                    // update named_address_mapping
+                    if let Some(named_address) = &m.address_name {
+                        named_address_mapping
+                            .insert(named_address.value.to_string(), m.named_module.address);
+                    }
+
                     writes.push((
                         AccessPath::code_access_path(
                             m.named_module.address.into_inner(),

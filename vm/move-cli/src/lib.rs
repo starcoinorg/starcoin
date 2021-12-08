@@ -198,5 +198,5 @@ pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> 
         r".*\.move".to_string(),
     );
     datatest_stable::runner_with_opts(&[requirements], cmd.test_opts);
-    unreachable!()
+    Ok(())
 }
