@@ -8,7 +8,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     transaction_argument::TransactionArgument,
 };
-use move_lang::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use move_lang::compiled_unit::CompiledUnitEnum;
 use move_lang::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_transactional_test_runner::{
     framework,
@@ -23,7 +23,6 @@ use starcoin_crypto::{
 };
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
-use starcoin_resource_viewer::module_cache::ModuleCacheImpl;
 use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView};
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
@@ -32,7 +31,6 @@ use starcoin_types::{
     account_config::{genesis_address, AccountResource},
     transaction::RawUserTransaction,
 };
-use starcoin_vm_runtime::data_cache::StateViewCache;
 use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
@@ -434,7 +432,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     ));
                 }
             }
-            store.apply_write_set(writes.freeze()?);
+            store.apply_write_set(writes.freeze().unwrap()).unwrap();
         }
 
         Self {

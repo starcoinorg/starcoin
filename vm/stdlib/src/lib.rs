@@ -60,7 +60,7 @@ pub const ERROR_DESC_EXTENSION: &str = "errmap";
 pub const ERROR_DESCRIPTIONS: &[u8] =
     std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
 
-pub const STDLIB_DIR: Dir = include_dir!("modules");
+pub const STDLIB_DIR: Dir = include_dir!("sources");
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
