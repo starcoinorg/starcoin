@@ -8,9 +8,11 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     transaction_argument::TransactionArgument,
 };
+use move_lang::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use move_lang::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_transactional_test_runner::{
-    framework::{run_test_impl, CompiledState, MoveTestAdapter},
+    framework,
+    framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, RawAddress, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
 };
@@ -21,6 +23,7 @@ use starcoin_crypto::{
 };
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
+use starcoin_resource_viewer::module_cache::ModuleCacheImpl;
 use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView};
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
@@ -29,7 +32,9 @@ use starcoin_types::{
     account_config::{genesis_address, AccountResource},
     transaction::RawUserTransaction,
 };
+use starcoin_vm_runtime::data_cache::StateViewCache;
 use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
+use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
     account_config::BalanceResource,
     block_metadata::BlockMetadata,
@@ -411,6 +416,27 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             data_store
         };
 
+        // add pre compiled modules
+        if let Some(pre_compiled_lib) = pre_compiled_deps {
+            let mut writes = WriteSetMut::default();
+            for c in &pre_compiled_lib.compiled {
+                if let CompiledUnitEnum::Module(m) = c {
+                    writes.push((
+                        AccessPath::code_access_path(
+                            m.named_module.address.into_inner(),
+                            Identifier::new(m.named_module.name.as_str()).unwrap(),
+                        ),
+                        WriteOp::Value({
+                            let mut bytes = vec![];
+                            m.named_module.module.serialize(&mut bytes).unwrap();
+                            bytes
+                        }),
+                    ));
+                }
+            }
+            store.apply_write_set(writes.freeze()?);
+        }
+
         Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps),
             default_syntax,
@@ -597,5 +623,12 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
 /// Run the Starcoin transactional test flow, using the given file as input.
 pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    run_test_impl::<StarcoinTestAdapter>(path, Some(&*PRECOMPILED_STARCOIN_FRAMEWORK))
+    run_test_impl(path, Some(&*PRECOMPILED_STARCOIN_FRAMEWORK))
+}
+
+pub fn run_test_impl<'a>(
+    path: &Path,
+    fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
 }

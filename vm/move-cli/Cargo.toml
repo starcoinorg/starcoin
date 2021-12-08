@@ -1,9 +1,8 @@
 [package]
-name = "move-cli"
+name = "move-package-manager"
 version = "1.9.1"
-authors = ["Diem Association <opensource@diem.com>"]
 description = "CLI frontend for the Move compiler and VM"
-repository = "https://github.com/diem/diem"
+repository = "https://github.com/starcoinorg/starcion"
 homepage = "https://diem.com"
 license = "Apache-2.0"
 publish = false
@@ -15,50 +14,51 @@ difference = "2.0.0"
 include_dir = { version = "0.6.2", features = ["search"] }
 once_cell = "1.8.0"
 structopt = "0.3.25"
-
 bcs = "0.1.2"
-starcoin-logger = {path = "../../commons/logger"}
+walkdir = "2.3.1"
+itertools = "0.10"
+jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
+
+futures = "0.3"
+tokio = {version = "0.2", features = ["full"]}
+tempfile = "~3"
+
 move-cli = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
 move-package = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
-# diem-framework-releases = { path = "../../diem-framework/releases" }
-move-disassembler = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
-move-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
+bytecode-verifier = { package = "bytecode-verifier", git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
+disassembler = { package = "disassembler", git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
+errmapgen = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
 diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
-# diem-state-view = { path = "../../../storage/state-view" }
-starcoin-types = { path = "../../types" }
-# diem-vm = { path = "../../diem-vm" }
 move-coverage =  { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
-starcoin-vm-types = {path = "../../vm/types"}
-move-compiler = { package="move-compiler", git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f"}
+move-lang = { package="move-lang", git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f"  }
 move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f" }
 # move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f" }
 move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="6ff224f42a408f584acbcd37eebac14de619b16f" }
 resource-viewer = { path = "../resource-viewer", package = "starcoin-resource-viewer" }
 move-unit-test = { git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f" }
 move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f" }
+datatest-stable = {git = "https://github.com/starcoinorg/diem-devtools", branch="feature/pub-test-opts"}
+
+
+starcoin-vm-types = {path = "../../vm/types"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-types = { path = "../../types" }
 starcoin-config ={path = "../../config"}
 stdlib = {path = "../stdlib"}
 starcoin-vm-runtime = {path = "../vm-runtime"}
-# diem-framework = { path = "../../diem-framework" }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/diem", rev = "6ff224f42a408f584acbcd37eebac14de619b16f"}
+starcoin-move-compiler = {path = "../compiler"}
 starcoin-functional-tests = {path = "../functional-tests"}
-# vm-genesis = { path = "../vm-genesis" }
-walkdir = "2.3.1"
-itertools = "0.10"
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
-jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
-jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
-starcoin-move-compiler = {path = "../compiler"}
-futures = "0.3"
-tokio = {version = "0.2", features = ["full"]}
-#datatest-stable = {git = "https://github.com/starcoinorg/diem-devtools", branch="feature/pub-test-opts"}
-datatest-stable = { version = "0.1" }
-tempfile = "~3"
+starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}
+bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+
 [dev-dependencies]
+
 [[bin]]
-name = "move"
+name = "mpm"
 path = "src/main.rs"
 
