@@ -36,7 +36,7 @@ impl ChainInfoStorage {
     }
 
     pub fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        self.put(
+        self.put_sync(
             Self::STARTUP_INFO_KEY.as_bytes().to_vec(),
             startup_info.try_into()?,
         )
@@ -51,7 +51,7 @@ impl ChainInfoStorage {
     }
 
     pub fn save_genesis(&self, genesis_block_hash: HashValue) -> Result<()> {
-        self.put(
+        self.put_sync(
             Self::GENESIS_KEY.as_bytes().to_vec(),
             genesis_block_hash.to_vec(),
         )
@@ -74,7 +74,7 @@ impl ChainInfoStorage {
     }
 
     pub fn set_storage_version(&self, version: StorageVersion) -> Result<()> {
-        self.put(
+        self.put_sync(
             Self::STORAGE_VERSION_KEY.as_bytes().to_vec(),
             vec![version as u8],
         )

@@ -170,7 +170,7 @@ impl DBStorage {
 
     fn default_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
-        opts.set_sync(true);
+        opts.set_sync(false);
         opts
     }
 
@@ -178,6 +178,8 @@ impl DBStorage {
         let mut db_opts = Options::default();
         db_opts.set_max_open_files(config.max_open_files);
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
+        db_opts.set_wal_bytes_per_sync(config.wal_bytes_per_sync);
+        db_opts.set_bytes_per_sync(config.bytes_per_sync);
         db_opts
     }
     fn iter_with_direction<K, V>(
@@ -213,6 +215,12 @@ impl DBStorage {
         V: ValueCodec,
     {
         self.iter_with_direction(prefix_name, ScanDirection::Backward)
+    }
+
+    fn sync_write_options() -> WriteOptions {
+        let mut opts = WriteOptions::new();
+        opts.set_sync(true);
+        opts
     }
 }
 
@@ -361,5 +369,36 @@ impl InnerStore for DBStorage {
 
     fn keys(&self) -> Result<Vec<Vec<u8>>> {
         unimplemented!()
+    }
+
+    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .storage_item_bytes
+                .with_label_values(&[prefix_name])
+                .observe((key.len() + value.len()) as f64);
+        }
+
+        record_metrics("db", prefix_name, "put_sync", self.metrics.as_ref()).call(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            self.db
+                .put_cf_opt(cf_handle, &key, &value, &Self::sync_write_options())?;
+            Ok(())
+        })
+    }
+
+    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+        record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
+            let mut db_batch = DBWriteBatch::default();
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            for (key, write_op) in &batch.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+            self.db.write_opt(db_batch, &Self::sync_write_options())?;
+            Ok(())
+        })
     }
 }

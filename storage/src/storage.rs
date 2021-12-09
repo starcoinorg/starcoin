@@ -30,6 +30,8 @@ pub trait KVStore: Send + Sync {
     fn write_batch(&self, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
+    fn put_sync(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn write_batch_sync(&self, batch: WriteBatch) -> Result<()>;
 }
 
 pub trait InnerStore: Send + Sync {
@@ -40,6 +42,8 @@ pub trait InnerStore: Send + Sync {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
+    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
 }
 
 pub static CACHE_NONE_OBJECT: Lazy<CacheObject> = Lazy::new(|| CacheObject::None);
@@ -207,6 +211,29 @@ impl InnerStore for StorageInstance {
             _ => bail!("DB instance not support keys method!"),
         }
     }
+
+    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
+            StorageInstance::DB { db } => db.put_sync(prefix_name, key, value),
+            StorageInstance::CacheAndDb { cache, db } => db
+                .put_sync(prefix_name, key.clone(), value.clone())
+                .and_then(|_| cache.put_obj(prefix_name, key, CacheObject::Value(value))),
+        }
+    }
+
+    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.write_batch(prefix_name, batch),
+            StorageInstance::DB { db } => db.write_batch_sync(prefix_name, batch),
+            StorageInstance::CacheAndDb { cache, db } => {
+                match db.write_batch_sync(prefix_name, batch.clone()) {
+                    Ok(_) => cache.write_batch_obj(prefix_name, batch),
+                    Err(err) => bail!("write batch db error: {}", err),
+                }
+            }
+        }
+    }
 }
 
 pub trait ColumnFamily: Send + Sync {
@@ -273,6 +300,14 @@ where
 
     fn keys(&self) -> Result<Vec<Vec<u8>>> {
         self.instance.keys()
+    }
+
+    fn put_sync(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        self.instance.put_sync(self.prefix_name, key, value)
+    }
+
+    fn write_batch_sync(&self, batch: WriteBatch) -> Result<()> {
+        self.instance.write_batch_sync(self.prefix_name, batch)
     }
 }
 

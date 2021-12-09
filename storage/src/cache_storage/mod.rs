@@ -140,6 +140,14 @@ impl InnerStore for CacheStorage {
         }
         Ok(all_keys)
     }
+
+    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        self.put(prefix_name, key, value)
+    }
+
+    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+        self.write_batch(prefix_name, batch)
+    }
 }
 
 fn compose_key(prefix_name: String, source_key: Vec<u8>) -> Vec<u8> {
