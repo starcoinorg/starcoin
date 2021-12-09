@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::db_storage::DBStorage;
 use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
@@ -37,13 +36,10 @@ impl ChainInfoStorage {
     }
 
     pub fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
-        let sync = DBStorage::set_db_sync(true);
-        let result = self.put(
+        self.put_sync(
             Self::STARTUP_INFO_KEY.as_bytes().to_vec(),
             startup_info.try_into()?,
-        );
-        DBStorage::set_db_sync(sync);
-        result
+        )
     }
 
     pub fn get_genesis(&self) -> Result<Option<HashValue>> {
@@ -55,7 +51,7 @@ impl ChainInfoStorage {
     }
 
     pub fn save_genesis(&self, genesis_block_hash: HashValue) -> Result<()> {
-        self.put(
+        self.put_sync(
             Self::GENESIS_KEY.as_bytes().to_vec(),
             genesis_block_hash.to_vec(),
         )
@@ -78,7 +74,7 @@ impl ChainInfoStorage {
     }
 
     pub fn set_storage_version(&self, version: StorageVersion) -> Result<()> {
-        self.put(
+        self.put_sync(
             Self::STORAGE_VERSION_KEY.as_bytes().to_vec(),
             vec![version as u8],
         )

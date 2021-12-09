@@ -26,12 +26,6 @@ pub struct RocksdbConfig {
     )]
     pub max_total_wal_size: u64,
     #[structopt(
-        name = "rocksdb-write-options-sync",
-        long,
-        help = "rocksdb write options sync"
-    )]
-    pub write_options_sync: bool,
-    #[structopt(
         name = "rocksdb-wal-bytes-per-sync",
         long,
         help = "rocksdb wal bytes per sync"
@@ -67,8 +61,6 @@ impl Default for RocksdbConfig {
             // For now we set the max total WAL size to be 1G. This config can be useful when column
             // families are updated at non-uniform frequencies.
             max_total_wal_size: 1u64 << 30,
-            // write options sync
-            write_options_sync: true,
             // For sst table sync every size to be 1MB
             bytes_per_sync: 1u64 << 20,
             // For wal sync every size to be 1MB
@@ -105,14 +97,6 @@ pub struct StorageConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(
-        name = "rocksdb-write-options-sync",
-        long,
-        help = "rocksdb write options sync"
-    )]
-    pub write_options_sync: Option<bool>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
         name = "rocksdb-wal-bytes-per-sync",
         long,
         help = "rocksdb wal bytes per sync"
@@ -140,7 +124,6 @@ impl StorageConfig {
             max_total_wal_size: self
                 .max_total_wal_size
                 .unwrap_or(default.max_total_wal_size),
-            write_options_sync: self.write_options_sync.unwrap_or(true),
             bytes_per_sync: self.bytes_per_sync.unwrap_or(default.bytes_per_sync),
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
@@ -163,9 +146,6 @@ impl ConfigModule for StorageConfig {
         }
         if opt.storage.cache_size.is_some() {
             self.cache_size = opt.storage.cache_size;
-        }
-        if opt.storage.write_options_sync.is_some() {
-            self.write_options_sync = opt.storage.write_options_sync;
         }
         if opt.storage.bytes_per_sync.is_some() {
             self.bytes_per_sync = opt.storage.bytes_per_sync;

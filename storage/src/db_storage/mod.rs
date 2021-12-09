@@ -12,9 +12,6 @@ use starcoin_config::RocksdbConfig;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
-
-static SYNC_STATUS: AtomicBool = AtomicBool::new(false);
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
@@ -171,9 +168,9 @@ impl DBStorage {
         })
     }
 
-    fn default_write_options() -> WriteOptions {
+    fn non_sync_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
-        opts.set_sync(SYNC_STATUS.load(Ordering::Relaxed));
+        opts.set_sync(false);
         opts
     }
 
@@ -220,10 +217,10 @@ impl DBStorage {
         self.iter_with_direction(prefix_name, ScanDirection::Backward)
     }
 
-    pub fn set_db_sync(sync: bool) -> bool {
-        let old_sync = SYNC_STATUS.load(Ordering::Relaxed);
-        SYNC_STATUS.store(sync, Ordering::Relaxed);
-        old_sync
+    fn sync_write_options() -> WriteOptions {
+        let mut opts = WriteOptions::new();
+        opts.set_sync(true);
+        opts
     }
 }
 
@@ -328,7 +325,7 @@ impl InnerStore for DBStorage {
         record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db
-                .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
+                .put_cf_opt(cf_handle, &key, &value, &Self::non_sync_write_options())?;
             Ok(())
         })
     }
@@ -361,7 +358,7 @@ impl InnerStore for DBStorage {
                 };
             }
             self.db
-                .write_opt(db_batch, &Self::default_write_options())?;
+                .write_opt(db_batch, &Self::non_sync_write_options())?;
             Ok(())
         })
     }
@@ -372,5 +369,36 @@ impl InnerStore for DBStorage {
 
     fn keys(&self) -> Result<Vec<Vec<u8>>> {
         unimplemented!()
+    }
+
+    fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics
+                .storage_item_bytes
+                .with_label_values(&[prefix_name])
+                .observe((key.len() + value.len()) as f64);
+        }
+
+        record_metrics("db", prefix_name, "put_sync", self.metrics.as_ref()).call(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            self.db
+                .put_cf_opt(cf_handle, &key, &value, &Self::sync_write_options())?;
+            Ok(())
+        })
+    }
+
+    fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
+        record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
+            let mut db_batch = DBWriteBatch::default();
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            for (key, write_op) in &batch.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+            self.db.write_opt(db_batch, &Self::sync_write_options())?;
+            Ok(())
+        })
     }
 }

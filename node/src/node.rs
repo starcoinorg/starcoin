@@ -274,13 +274,14 @@ impl NodeService {
             .registry()
             .and_then(|registry| StorageMetrics::register(registry).ok());
 
-        let rocksdb_config = config.storage.rocksdb_config();
-        let _sync = DBStorage::set_db_sync(rocksdb_config.write_options_sync);
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
-            DBStorage::new(config.storage.dir(), rocksdb_config, storage_metrics)?,
+            DBStorage::new(
+                config.storage.dir(),
+                config.storage.rocksdb_config(),
+                storage_metrics,
+            )?,
         ))?;
-        let _sync = DBStorage::set_db_sync(false);
         let start_time = SystemTime::now();
         let storage = storage.check_upgrade()?;
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
