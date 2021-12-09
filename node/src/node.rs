@@ -55,7 +55,7 @@ use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 pub struct NodeService {
     registry: ServiceRef<RegistryService>,
@@ -282,13 +282,20 @@ impl NodeService {
                 storage_metrics,
             )?,
         ))?;
+        let start_time = SystemTime::now();
         let storage = storage.check_upgrade()?;
+        let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(storage);
         registry.put_shared(storage.clone()).await?;
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
-        info!("Start node with chain info: {}", chain_info);
+        info!(
+            "Start node with chain info: {}, number {} upgrade_time cost {} secs, ",
+            chain_info,
+            chain_info.status().head().number(),
+            upgrade_time.as_secs()
+        );
 
         registry.put_shared(genesis).await?;
 
