@@ -71,8 +71,8 @@ impl Default for RocksdbConfig {
             write_options_sync: true,
             // For sst table sync every size to be 1MB
             bytes_per_sync: 1u64 << 20,
-            // For wal sync every size to be 512KB
-            wal_bytes_per_sync: 1u64 << 19,
+            // For wal sync every size to be 1MB
+            wal_bytes_per_sync: 1u64 << 20,
         }
     }
 }
