@@ -28,7 +28,7 @@ lru = "0.7.0"
 parking_lot = "0.11.2"
 rand = "0.8.4"
 pin-project = "0.4.27"
-serde = { version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.131", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 smallvec = "1.7.0"
 thiserror = "1"

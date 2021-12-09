@@ -15,7 +15,7 @@ actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3.12"
 futures-timer = "3.0"
-serde = { version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.131", features = ["derive"] }
 once_cell = "1.8.0"
 log = "0.4.14"
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="3f8ecc27f02b27d56c716de58d7880ae7816390c"}
