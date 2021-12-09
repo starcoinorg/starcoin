@@ -12,6 +12,7 @@ use structopt::StructOpt;
 /// Port selected RocksDB options for tuning underlying rocksdb instance of DiemDB.
 /// see https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h
 /// for detailed explanations.
+/// https://github.com/facebook/rocksdb/wiki/WAL-Performance
 /// wal_bytes_per_sync, bytes_per_sync see https://github.com/facebook/rocksdb/wiki/IO#range-sync
 /// for detailed explanations.
 #[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]

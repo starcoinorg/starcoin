@@ -168,7 +168,7 @@ impl DBStorage {
         })
     }
 
-    fn non_sync_write_options() -> WriteOptions {
+    fn default_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
         opts.set_sync(false);
         opts
@@ -325,7 +325,7 @@ impl InnerStore for DBStorage {
         record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db
-                .put_cf_opt(cf_handle, &key, &value, &Self::non_sync_write_options())?;
+                .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
             Ok(())
         })
     }
@@ -358,7 +358,7 @@ impl InnerStore for DBStorage {
                 };
             }
             self.db
-                .write_opt(db_batch, &Self::non_sync_write_options())?;
+                .write_opt(db_batch, &Self::default_write_options())?;
             Ok(())
         })
     }
