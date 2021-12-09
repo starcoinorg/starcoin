@@ -12,6 +12,8 @@ use structopt::StructOpt;
 /// Port selected RocksDB options for tuning underlying rocksdb instance of DiemDB.
 /// see https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h
 /// for detailed explanations.
+/// wal_bytes_per_sync, bytes_per_sync see https://github.com/facebook/rocksdb/wiki/IO#range-sync
+/// for detailed explanations.
 #[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(default, deny_unknown_fields)]
 pub struct RocksdbConfig {
@@ -23,6 +25,20 @@ pub struct RocksdbConfig {
         help = "rocksdb max total WAL sizes"
     )]
     pub max_total_wal_size: u64,
+    #[structopt(
+        name = "rocksdb-write-options-sync",
+        long,
+        help = "rocksdb write options sync"
+    )]
+    pub write_options_sync: bool,
+    #[structopt(
+        name = "rocksdb-wal-bytes-per-sync",
+        long,
+        help = "rocksdb wal bytes per sync"
+    )]
+    pub wal_bytes_per_sync: u64,
+    #[structopt(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
+    pub bytes_per_sync: u64,
 }
 
 impl RocksdbConfig {
@@ -51,6 +67,12 @@ impl Default for RocksdbConfig {
             // For now we set the max total WAL size to be 1G. This config can be useful when column
             // families are updated at non-uniform frequencies.
             max_total_wal_size: 1u64 << 30,
+            // write options sync
+            write_options_sync: true,
+            // For sst table sync every size to be 1MB
+            bytes_per_sync: 1u64 << 20,
+            // For wal sync every size to be 512KB
+            wal_bytes_per_sync: 1u64 << 19,
         }
     }
 }
@@ -80,6 +102,26 @@ pub struct StorageConfig {
     #[serde(skip)]
     #[structopt(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(
+        name = "rocksdb-write-options-sync",
+        long,
+        help = "rocksdb write options sync"
+    )]
+    pub write_options_sync: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(
+        name = "rocksdb-wal-bytes-per-sync",
+        long,
+        help = "rocksdb wal bytes per sync"
+    )]
+    pub wal_bytes_per_sync: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[structopt(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
+    pub bytes_per_sync: Option<u64>,
 }
 
 impl StorageConfig {
@@ -98,6 +140,11 @@ impl StorageConfig {
             max_total_wal_size: self
                 .max_total_wal_size
                 .unwrap_or(default.max_total_wal_size),
+            write_options_sync: self.write_options_sync.unwrap_or(true),
+            bytes_per_sync: self.bytes_per_sync.unwrap_or(default.bytes_per_sync),
+            wal_bytes_per_sync: self
+                .wal_bytes_per_sync
+                .unwrap_or(default.wal_bytes_per_sync),
         }
     }
     pub fn cache_size(&self) -> usize {
@@ -116,6 +163,15 @@ impl ConfigModule for StorageConfig {
         }
         if opt.storage.cache_size.is_some() {
             self.cache_size = opt.storage.cache_size;
+        }
+        if opt.storage.write_options_sync.is_some() {
+            self.write_options_sync = opt.storage.write_options_sync;
+        }
+        if opt.storage.bytes_per_sync.is_some() {
+            self.bytes_per_sync = opt.storage.bytes_per_sync;
+        }
+        if opt.storage.wal_bytes_per_sync.is_some() {
+            self.wal_bytes_per_sync = opt.storage.wal_bytes_per_sync;
         }
         Ok(())
     }

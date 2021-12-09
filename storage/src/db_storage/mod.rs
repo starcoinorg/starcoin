@@ -12,6 +12,9 @@ use starcoin_config::RocksdbConfig;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+static SYNC_STATUS: AtomicBool = AtomicBool::new(false);
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
@@ -170,7 +173,7 @@ impl DBStorage {
 
     fn default_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
-        opts.set_sync(true);
+        opts.set_sync(SYNC_STATUS.load(Ordering::Relaxed));
         opts
     }
 
@@ -178,6 +181,8 @@ impl DBStorage {
         let mut db_opts = Options::default();
         db_opts.set_max_open_files(config.max_open_files);
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
+        db_opts.set_wal_bytes_per_sync(config.wal_bytes_per_sync);
+        db_opts.set_bytes_per_sync(config.bytes_per_sync);
         db_opts
     }
     fn iter_with_direction<K, V>(
@@ -213,6 +218,12 @@ impl DBStorage {
         V: ValueCodec,
     {
         self.iter_with_direction(prefix_name, ScanDirection::Backward)
+    }
+
+    pub fn set_db_sync(sync: bool) -> bool {
+        let old_sync = SYNC_STATUS.load(Ordering::Relaxed);
+        SYNC_STATUS.store(sync, Ordering::Relaxed);
+        old_sync
     }
 }
 
