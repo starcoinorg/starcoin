@@ -22,7 +22,7 @@ hex = { version = "0.4.3", default-features = false }
 starcoin-logger = { path = "../commons/logger"}
 starcoin-state-api = { path = "../state/api" }
 starcoin-vm-types = { path = "../vm/types" }
-sha3 = { version = "0.9.1" }
+sha3 = { version = "0.10.0" }
 cryptonight-rs = { path = "cryptonight-rs" }
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
