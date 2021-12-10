@@ -7,7 +7,6 @@ use anyhow::Result;
 use cryptonight::cryptonight_r;
 use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::trace;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::U256;
 
