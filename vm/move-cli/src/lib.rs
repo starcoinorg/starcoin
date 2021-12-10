@@ -1,5 +1,6 @@
 use anyhow::Result;
 use move_cli::Move;
+use move_command_line_common::testing::UPDATE_BASELINE;
 use move_lang::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_lang::diagnostics::report_diagnostics;
 use move_lang::shared::unique_map::UniqueMap;
@@ -14,6 +15,9 @@ use structopt::StructOpt;
 pub struct TransactionalTestCommand {
     #[structopt(flatten)]
     test_opts: datatest_stable::TestOpts,
+    #[structopt(long = "ub")]
+    /// update test baseline.
+    update_baseline: bool,
 }
 static PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> = Lazy::new(|| Mutex::new(None));
 pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> Result<()> {
@@ -197,6 +201,10 @@ pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> 
         rerooted_path.join("spectests").display().to_string(),
         r".*\.move".to_string(),
     );
+
+    if cmd.update_baseline {
+        std::env::set_var(UPDATE_BASELINE, "true");
+    }
     datatest_stable::runner_with_opts(&[requirements], cmd.test_opts);
     Ok(())
 }
