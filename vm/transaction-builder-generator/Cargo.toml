@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.41"
-heck = "0.3.3"
+heck = "0.4.0"
 regex = "1.4.3"
 structopt = "0.3.25"
 textwrap = "0.14.0"
