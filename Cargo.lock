@@ -863,7 +863,7 @@ dependencies = [
  "codespan-reporting",
  "diem-workspace-hack",
  "futures 0.3.17",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-binary-format",
  "move-command-line-common",
@@ -953,7 +953,7 @@ dependencies = [
  "diem-workspace-hack",
  "im",
  "ir-to-bytecode",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-binary-format",
  "move-command-line-common",
@@ -976,7 +976,7 @@ dependencies = [
  "bytecode-interpreter-crypto",
  "codespan-reporting",
  "diem-workspace-hack",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "move-binary-format",
  "move-core-types",
  "move-model",
@@ -1393,7 +1393,7 @@ checksum = "410208eb08c3f3ad44b95b51c4fc0d5993cbcc9dd39cfadb4214b9115a97dcb5"
 dependencies = [
  "ansi_term 0.12.1",
  "dissimilar",
- "itertools 0.10.1",
+ "itertools 0.10.3",
 ]
 
 [[package]]
@@ -1543,7 +1543,7 @@ dependencies = [
  "clap 2.33.3",
  "criterion-plot",
  "csv",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "lazy_static",
  "num-traits",
  "oorandom",
@@ -1565,7 +1565,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d00996de9f2f7559f7f4dc286073197f83e92256a59ed395f9aac01fe717da57"
 dependencies = [
  "cast",
- "itertools 0.10.1",
+ "itertools 0.10.3",
 ]
 
 [[package]]
@@ -2121,7 +2121,7 @@ dependencies = [
  "camino",
  "globset",
  "guppy",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "once_cell",
  "petgraph",
  "rayon",
@@ -2226,7 +2226,7 @@ dependencies = [
  "getrandom 0.2.3",
  "hyper 0.14.15",
  "indexmap",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "itoa",
  "libc",
  "log 0.4.14",
@@ -2379,7 +2379,7 @@ dependencies = [
  "codespan 0.11.1",
  "codespan-reporting",
  "diem-workspace-hack",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-model",
  "num",
@@ -3165,7 +3165,7 @@ dependencies = [
  "fixedbitset",
  "guppy-summaries",
  "indexmap",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "nested",
  "once_cell",
  "pathdiff 0.2.1",
@@ -3853,9 +3853,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.1"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
+checksum = "a9a9d19fa1e79b6215ff29b9d6880b706147f16e9b1dbb1e4e5947b5b02bc5e3"
 dependencies = [
  "either",
 ]
@@ -5178,7 +5178,7 @@ dependencies = [
  "errmapgen",
  "futures 0.3.17",
  "include_dir",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "move-binary-format",
@@ -5342,7 +5342,7 @@ dependencies = [
  "diem-workspace-hack",
  "disassembler",
  "internment",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-binary-format",
  "move-command-line-common",
@@ -5376,7 +5376,7 @@ dependencies = [
  "errmapgen",
  "futures 0.3.17",
  "hex",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-binary-format",
  "move-command-line-common",
@@ -5645,7 +5645,7 @@ dependencies = [
  "bcs-ext",
  "futures 0.3.17",
  "hex",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "network-p2p-types",
  "parking_lot 0.11.2",
  "rand 0.8.4",
@@ -6803,7 +6803,7 @@ checksum = "355f634b43cdd80724ee7848f95770e7e70eefa6dcf14fea676216573b8fd603"
 dependencies = [
  "bytes 1.1.0",
  "heck",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "multimap",
  "petgraph",
@@ -6820,7 +6820,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "600d2f334aa05acb02a755e217ef1ab6dea4d51b58b7846588b747edec04efba"
 dependencies = [
  "anyhow",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "proc-macro2 1.0.32",
  "quote 1.0.10",
  "syn 1.0.81",
@@ -8544,7 +8544,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "byteorder 1.4.3",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "lru 0.7.0",
  "mirai-annotations",
  "once_cell",
@@ -8730,7 +8730,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.17",
  "hex",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "move-command-line-common",
  "network-api",
  "network-p2p-types",
@@ -8948,7 +8948,7 @@ name = "starcoin-executor-benchmark"
 version = "1.9.0-alpha"
 dependencies = [
  "anyhow",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "rand 0.8.4",
  "rayon",
  "starcoin-accumulator",
@@ -9233,7 +9233,7 @@ name = "starcoin-move-compiler"
 version = "1.9.0-alpha"
 dependencies = [
  "anyhow",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "move-binary-format",
  "move-command-line-common",
  "move-lang",
@@ -9271,7 +9271,7 @@ dependencies = [
  "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diem-temppath",
  "hex",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-command-line-common",
  "move-prover",
@@ -9910,7 +9910,7 @@ dependencies = [
  "futures-retry",
  "futures-timer",
  "hex",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "network-api",
  "network-rpc-core",
  "once_cell",
@@ -10094,7 +10094,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.17",
  "hex",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "network-p2p-types",
  "num_enum",
  "once_cell",
@@ -10224,7 +10224,7 @@ dependencies = [
  "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra",
  "include_dir",
- "itertools 0.10.1",
+ "itertools 0.10.3",
  "log 0.4.14",
  "move-prover",
  "move-unit-test",

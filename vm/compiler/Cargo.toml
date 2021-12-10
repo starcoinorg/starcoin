@@ -18,7 +18,7 @@ move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="6b1533f
 petgraph = "0.5.1"
 walkdir = "2.3"
 rayon = "1.5.1"
-itertools = "0.10.1"
+itertools = "0.10.3"
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}
 starcoin-logger = { path = "../../commons/logger"}
