@@ -55,7 +55,6 @@ starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-
 [dev-dependencies]
 
 [[bin]]

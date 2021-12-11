@@ -39,6 +39,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
+
 #[derive(
     Clone,
     Copy,
@@ -102,6 +103,20 @@ impl FromStr for BuiltinNetworkID {
             "main" => Ok(BuiltinNetworkID::Main),
             s => Err(format_err!("Unknown network: {}", s)),
         }
+    }
+}
+impl TryFrom<ChainId> for BuiltinNetworkID {
+    type Error = anyhow::Error;
+    fn try_from(id: ChainId) -> Result<Self, Self::Error> {
+        Ok(match id.id() {
+            255 => Self::Test,
+            254 => Self::Dev,
+            253 => Self::Halley,
+            252 => Self::Proxima,
+            251 => Self::Barnard,
+            1 => Self::Main,
+            id => bail!("{} is not a builtin chain id", id),
+        })
     }
 }
 

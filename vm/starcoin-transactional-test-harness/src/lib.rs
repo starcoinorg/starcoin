@@ -1,3 +1,5 @@
+use crate::in_memory_state_cache::InMemoryStateCache;
+use crate::remote_state::{RemoteStateView, SelectableStateView};
 use anyhow::{bail, Result};
 use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
@@ -48,9 +50,13 @@ use starcoin_vm_types::{
     transaction_argument::convert_txn_args,
     vm_status::KeptVMStatus,
 };
+use std::convert::TryFrom;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::{starcoin_framework_named_addresses, PRECOMPILED_STARCOIN_FRAMEWORK};
+use stdlib::PRECOMPILED_STARCOIN_FRAMEWORK;
 use structopt::StructOpt;
+
+mod in_memory_state_cache;
+pub mod remote_state;
 
 fn parse_ed25519_key<T: ValidCryptoMaterial>(s: &str) -> Result<T> {
     Ok(T::from_encoded_string(s)?)
@@ -97,10 +103,15 @@ impl FromStr for RawPublicKey {
     }
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Default)]
 pub struct ExtraInitArgs {
-    #[structopt(name = "net", long = "net", short = "n")]
-    network: Option<BuiltinNetworkID>,
+    #[structopt(name = "rpc", long)]
+    /// use remote starcoin rpc as initial state.
+    rpc: Option<String>,
+    #[structopt(long = "block-number", requires("rpc"))]
+    /// block number to read state from. default to latest block number.
+    block_number: Option<u64>,
+
     #[structopt(long = "public-keys", parse(try_from_str = parse_named_key))]
     public_keys: Option<Vec<(Identifier, Ed25519PublicKey)>>,
     // #[structopt(long = "private-keys", parse(try_from_str = parse_named_private_key))]
@@ -151,7 +162,7 @@ pub enum StarcoinSubcommands {
 
 pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
-    storage: ChainStateDB,
+    storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteStateView>>,
     default_syntax: SyntaxChoice,
     public_key_mapping: BTreeMap<Identifier, Ed25519PublicKey>,
     association_public_key: AccountPublicKey,
@@ -454,10 +465,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         pre_compiled_deps: Option<&'a FullyCompiledProgram>,
         task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> Self {
-        let (additional_mapping, _network) = match task_opt.as_ref().map(|t| &t.command) {
-            Some((InitCommand { named_addresses }, ExtraInitArgs { network, .. })) => (
-                verify_and_create_named_address_mapping(named_addresses.clone()).unwrap(),
-                network.clone(),
+        let (additional_mapping, extra_arg) = match task_opt.map(|t| t.command) {
+            Some((InitCommand { named_addresses }, extra_arg)) => (
+                verify_and_create_named_address_mapping(named_addresses).unwrap(),
+                Some(extra_arg),
             ),
             None => (BTreeMap::new(), None),
         };
@@ -475,10 +486,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         }
 
         let mut public_key_mapping = BTreeMap::default();
-        if let Some(TaskInput {
-            command: (_, init_args),
-            ..
-        }) = task_opt
+        let init_args = extra_arg.unwrap_or_default();
         {
             // Private key mapping
             if let Some(additional_public_key_mapping) = init_args.public_keys {
@@ -493,14 +501,24 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 }
             }
         }
-        let net = ChainNetwork::new_test();
-        let store = {
+        let store = if let Some(rpc) = init_args.rpc {
+            let remote_view = RemoteStateView::from_url(&rpc, init_args.block_number).unwrap();
+            SelectableStateView::B(InMemoryStateCache::new(remote_view))
+        } else {
+            let net = ChainNetwork::new_test();
             let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
             let data_store = ChainStateDB::mock();
             Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
-            data_store
+            SelectableStateView::A(data_store)
         };
-        let association_public_key = net.genesis_config().association_key_pair.1.clone().into();
+
+        let association_public_key = BuiltinNetworkID::try_from(store.get_chain_id().unwrap())
+            .unwrap()
+            .genesis_config()
+            .association_key_pair
+            .1
+            .clone()
+            .into();
 
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps {
@@ -730,9 +748,9 @@ pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     run_test_impl(path, Some(&*PRECOMPILED_STARCOIN_FRAMEWORK))
 }
 
-pub fn run_test_impl<'a>(
+pub fn run_test_impl(
     path: &Path,
-    fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+    fully_compiled_program_opt: Option<&FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
 }

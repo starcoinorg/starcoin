@@ -30,7 +30,7 @@ pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> 
     };
     let (pre_compiled_lib, _compiled_package) = {
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
-        let mut build_config = move_arg.build_config.clone();
+        let mut build_config = move_arg.build_config;
         build_config.force_recompilation = true;
         let resolved_graph = build_config.resolution_graph_for_package(&rerooted_path)?;
         let mut pre_compiled_lib = FullyCompiledProgram {
