@@ -452,8 +452,7 @@ pub fn apply_block(
 ) -> anyhow::Result<()> {
     let net = ChainNetwork::new_builtin(network);
     let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
-    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(None),
+    let storage = Arc::new(Storage::new(StorageInstance::new_db_instance(
         db_stoarge,
     ))?);
     let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
