@@ -207,11 +207,13 @@ default-members = [
 
 [profile.dev]
 panic = "unwind"
+codegen-units = 4
 
 [profile.release]
 debug = false
 panic = "unwind"
 debug-assertions = false
+codegen-units = 1
 
 [profile.release.package]
 starcoin-service-registry.debug = 1
