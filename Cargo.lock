@@ -880,7 +880,7 @@ dependencies = [
  "move-model",
  "num",
  "once_cell",
- "pretty",
+ "pretty 0.10.0",
  "rand 0.8.4",
  "regex",
  "serde",
@@ -5414,7 +5414,7 @@ dependencies = [
  "move-model",
  "num",
  "once_cell",
- "pretty",
+ "pretty 0.10.0",
  "rand 0.8.4",
  "serde",
  "serde_json",
@@ -6653,6 +6653,18 @@ checksum = "ad9940b913ee56ddd94aec2d3cd179dd47068236f42a1a6415ccf9d880ce2a61"
 dependencies = [
  "arrayvec 0.5.2",
  "typed-arena",
+]
+
+[[package]]
+name = "pretty"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73a4b252933306dc53486fa81ab3358588af32fb78f26244b6c4a4c9d58e1804"
+dependencies = [
+ "arrayvec 0.5.2",
+ "log 0.4.14",
+ "typed-arena",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -9317,7 +9329,7 @@ dependencies = [
  "move-prover-test-utils",
  "num",
  "once_cell",
- "pretty",
+ "pretty 0.11.1",
  "rand 0.8.4",
  "regex",
  "serde",
