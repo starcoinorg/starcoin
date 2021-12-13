@@ -46,7 +46,7 @@ impl InnerStore for CacheStorage {
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        // remove record_metrics for performance, reduce %5 cost
+        // remove record_metrics for performance, reduce %3 cost
         // record_metrics add in write_batch to reduce Instant::now system call
         let mut cache = self.cache.lock();
         cache.put(
@@ -68,7 +68,7 @@ impl InnerStore for CacheStorage {
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        // remove record_metrics for performance, reduce %5 cost
+        // remove record_metrics for performance, reduce %3 cost
         // record_metrics add in write_batch to reduce Instant::now system call
         let mut cache = self.cache.lock();
         cache.pop(&compose_key(prefix_name.to_string(), key));
