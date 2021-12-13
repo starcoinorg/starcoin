@@ -53,6 +53,31 @@ spec:
                 secretKeyRef:
                   name: node-keys
                   key: node-keys
+        livenessProbe:
+          tcpSocket:
+            port: 9840
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          exec:
+            command:
+              - /starcoin/starcoin
+              - -n
+              - main
+              - -d
+              - /sc-data
+              - node
+              - sync
+              - status|grep
+              - Synchronized
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+          successThreshold: 1
   volumeClaimTemplates:
     - metadata:
         name: starcoin-volume
