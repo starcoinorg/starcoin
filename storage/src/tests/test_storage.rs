@@ -185,7 +185,7 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info5, None);
     // verify cache storage is null
     let value6 = cache_storage
-        .get_obj(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
         .unwrap();
     assert!(value6.is_none());
     let value7 = db_storage
@@ -258,7 +258,7 @@ fn test_missing_key_handle() -> Result<()> {
     let key = HashValue::random();
     let result = storage.get_transaction_info(key)?;
     assert!(result.is_none());
-    let value2 = cache_storage.get_obj(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
+    let value2 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value2.is_none());
     let value3 = db_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value3.is_none());
