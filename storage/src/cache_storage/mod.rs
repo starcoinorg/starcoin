@@ -3,13 +3,13 @@
 
 use crate::batch::WriteBatch;
 use crate::metrics::{record_metrics, StorageMetrics};
-use crate::storage::{CacheObject, InnerStore, WriteOp};
+use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
 use parking_lot::Mutex;
 use starcoin_config::DEFAULT_CACHE_SIZE;
 pub struct CacheStorage {
-    cache: Mutex<LruCache<Vec<u8>, CacheObject>>,
+    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
     metrics: Option<StorageMetrics>,
 }
 
@@ -26,45 +26,6 @@ impl CacheStorage {
             metrics,
         }
     }
-    pub fn get_obj(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<CacheObject>> {
-        record_metrics("cache", prefix_name, "get", self.metrics.as_ref()).call(|| {
-            Ok(self
-                .cache
-                .lock()
-                .get(&compose_key(prefix_name.to_string(), key))
-                .cloned())
-        })
-    }
-
-    pub fn put_obj(&self, prefix_name: &str, key: Vec<u8>, obj: CacheObject) -> Result<()> {
-        record_metrics("cache", prefix_name, "put", self.metrics.as_ref()).call(|| {
-            let mut cache = self.cache.lock();
-            cache.put(compose_key(prefix_name.to_string(), key), obj);
-            if let Some(metrics) = self.metrics.as_ref() {
-                metrics.cache_items.set(cache.len() as u64);
-            }
-            Ok(())
-        })
-    }
-
-    pub fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
-        // <CacheStorage as InnerStore>::contains_key(self, prefix_name, key)
-        InnerStore::contains_key(self, prefix_name, key)
-    }
-
-    pub fn write_batch_obj(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
-        record_metrics("cache", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
-            for (key, write_op) in &batch.rows {
-                match write_op {
-                    WriteOp::Value(value) => {
-                        self.put_obj(prefix_name, key.to_vec(), CacheObject::Value(value.clone()))?
-                    }
-                    WriteOp::Deletion => self.remove(prefix_name, key.to_vec())?,
-                };
-            }
-            Ok(())
-        })
-    }
 }
 
 impl Default for CacheStorage {
@@ -80,22 +41,19 @@ impl InnerStore for CacheStorage {
                 .cache
                 .lock()
                 .get(&compose_key(prefix_name.to_string(), key))
-                .and_then(|v| v.into()))
+                .cloned())
         })
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        record_metrics("cache", prefix_name, "put", self.metrics.as_ref()).call(|| {
-            let mut cache = self.cache.lock();
-            cache.put(
-                compose_key(prefix_name.to_string(), key),
-                CacheObject::Value(value),
-            );
-            if let Some(metrics) = self.metrics.as_ref() {
-                metrics.cache_items.set(cache.len() as u64);
-            }
-            Ok(())
-        })
+        // remove record_metrics for performance
+        // record_metrics add in write_batch to reduce Instant::now system call
+        let mut cache = self.cache.lock();
+        cache.put(compose_key(prefix_name.to_string(), key), value);
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics.cache_items.set(cache.len() as u64);
+        }
+        Ok(())
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
@@ -107,14 +65,14 @@ impl InnerStore for CacheStorage {
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        record_metrics("cache", prefix_name, "remove", self.metrics.as_ref()).call(|| {
-            let mut cache = self.cache.lock();
-            cache.pop(&compose_key(prefix_name.to_string(), key));
-            if let Some(metrics) = self.metrics.as_ref() {
-                metrics.cache_items.set(cache.len() as u64);
-            }
-            Ok(())
-        })
+        // remove record_metrics for performance
+        // record_metrics add in write_batch to reduce Instant::now system call
+        let mut cache = self.cache.lock();
+        cache.pop(&compose_key(prefix_name.to_string(), key));
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics.cache_items.set(cache.len() as u64);
+        }
+        Ok(())
     }
 
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {

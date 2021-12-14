@@ -6,7 +6,8 @@ use starcoin_metrics::{
     self, register, HistogramOpts, HistogramVec, Opts, PrometheusError, Registry, UIntCounterVec,
     UIntGauge,
 };
-use std::time::Instant;
+// use std::time::Instant;
+use coarsetime::Instant;
 
 #[derive(Clone)]
 pub struct StorageMetrics {
@@ -157,7 +158,7 @@ impl<'a> MetricsRecord<'a> {
             metrics
                 .storage_time
                 .with_label_values(&[self.storage_type, self.key_type, self.method])
-                .observe(self.timer.elapsed().as_secs_f64());
+                .observe(self.timer.elapsed().as_f64());
         }
         result
     }
