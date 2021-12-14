@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::transaction_info::OldTransactionInfoStorage;
-use crate::{CodecKVStore, RichTransactionInfo, Storage, StorageVersion};
-use anyhow::{bail, format_err, Result};
+use crate::{CodecKVStore, RichTransactionInfo, Storage, StorageVersion, TransactionStore};
+use anyhow::{bail, ensure, format_err, Result};
 use logger::prelude::{debug, info};
+use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;
@@ -66,18 +67,39 @@ impl DBUpgrade {
                         .enumerate()
                         .find_map(|(idx, txn)| {
                             if txn.id() == old_transaction_info.txn_info.transaction_hash {
-                                Some(idx)
+                                //use transaction start from 1, 0 is block metadata transaction.
+                                Some(idx + 1)
                             } else {
                                 None
                             }
                         })
                         .unwrap_or(0) as u32;
+                    let transaction = storage
+                        .transaction_storage
+                        .get_transaction(old_transaction_info.txn_info.transaction_hash)?
+                        .ok_or_else(|| {
+                            format_err!(
+                                "Can not find transaction by {}",
+                                old_transaction_info.txn_info.transaction_hash
+                            )
+                        })?;
+                    if transaction_index == 0 {
+                        ensure!(
+                            matches!(transaction, Transaction::BlockMetadata(_)),
+                            "transaction_index 0 must been BlockMetadata transaction, but got txn: {:?}, block:{:?}", transaction, block 
+                        );
+                    } else {
+                        ensure!(
+                            matches!(transaction, Transaction::UserTransaction(_)),
+                            "transaction_index > 0 must been UserTransaction transaction, but got txn: {:?}, block:{:?}", transaction, block 
+                        );
+                    }
                     let block_info =
                         storage.block_info_storage.get(block_id)?.ok_or_else(|| {
                             format_err!("Can not find block info by id: {}", block_id)
                         })?;
                     let transaction_global_index =
-                        block_info.txn_accumulator_info.num_leaves + transaction_index as u64;
+                        (block_info.txn_accumulator_info.num_leaves - 1) + transaction_index as u64;
                     let rich_transaction_info = RichTransactionInfo::new(
                         block_id,
                         block_number,
