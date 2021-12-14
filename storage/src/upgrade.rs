@@ -80,26 +80,28 @@ impl DBUpgrade {
                             })
                             .unwrap_or(0) as u32
                     };
-
-                    let transaction = storage
-                        .transaction_storage
-                        .get_transaction(old_transaction_info.txn_info.transaction_hash)?
-                        .ok_or_else(|| {
-                            format_err!(
-                                "Can not find transaction by {}",
-                                old_transaction_info.txn_info.transaction_hash
-                            )
-                        })?;
-                    if transaction_index == 0 {
-                        ensure!(
+                    //check the transaction.
+                    if block_number != 0 {
+                        let transaction = storage
+                            .transaction_storage
+                            .get_transaction(old_transaction_info.txn_info.transaction_hash)?
+                            .ok_or_else(|| {
+                                format_err!(
+                                    "Can not find transaction by {}",
+                                    old_transaction_info.txn_info.transaction_hash
+                                )
+                            })?;
+                        if transaction_index == 0 {
+                            ensure!(
                             matches!(transaction, Transaction::BlockMetadata(_)),
                             "transaction_index 0 must been BlockMetadata transaction, but got txn: {:?}, block:{:?}", transaction, block 
                         );
-                    } else {
-                        ensure!(
+                        } else {
+                            ensure!(
                             matches!(transaction, Transaction::UserTransaction(_)),
                             "transaction_index > 0 must been UserTransaction transaction, but got txn: {:?}, block:{:?}", transaction, block 
                         );
+                        }
                     }
                     let block_info =
                         storage.block_info_storage.get(block_id)?.ok_or_else(|| {
