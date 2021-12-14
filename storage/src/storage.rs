@@ -7,8 +7,6 @@ use crate::db_storage::{DBStorage, SchemaIterator};
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -44,23 +42,6 @@ pub trait InnerStore: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
-}
-
-pub static CACHE_NONE_OBJECT: Lazy<CacheObject> = Lazy::new(|| CacheObject::None);
-/// Define cache object distinguish between normal objects and missing
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum CacheObject {
-    Value(Vec<u8>),
-    None,
-}
-
-impl From<&CacheObject> for Option<Vec<u8>> {
-    fn from(cache_obj: &CacheObject) -> Option<Vec<u8>> {
-        match cache_obj.clone() {
-            CacheObject::Value(v) => Some(v),
-            CacheObject::None => None,
-        }
-    }
 }
 
 ///Storage instance type define

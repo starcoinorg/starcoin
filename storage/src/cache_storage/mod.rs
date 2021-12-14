@@ -3,13 +3,13 @@
 
 use crate::batch::WriteBatch;
 use crate::metrics::{record_metrics, StorageMetrics};
-use crate::storage::{CacheObject, InnerStore, WriteOp};
+use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
 use lru::LruCache;
 use parking_lot::Mutex;
 use starcoin_config::DEFAULT_CACHE_SIZE;
 pub struct CacheStorage {
-    cache: Mutex<LruCache<Vec<u8>, CacheObject>>,
+    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
     metrics: Option<StorageMetrics>,
 }
 
@@ -41,7 +41,7 @@ impl InnerStore for CacheStorage {
                 .cache
                 .lock()
                 .get(&compose_key(prefix_name.to_string(), key))
-                .and_then(|v| v.into()))
+                .cloned())
         })
     }
 
@@ -49,10 +49,7 @@ impl InnerStore for CacheStorage {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
         let mut cache = self.cache.lock();
-        cache.put(
-            compose_key(prefix_name.to_string(), key),
-            CacheObject::Value(value),
-        );
+        cache.put(compose_key(prefix_name.to_string(), key), value);
         if let Some(metrics) = self.metrics.as_ref() {
             metrics.cache_items.set(cache.len() as u64);
         }
