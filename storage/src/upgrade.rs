@@ -59,21 +59,28 @@ impl DBUpgrade {
                         .get(block_id)?
                         .ok_or_else(|| format_err!("Can not find block by id: {}", block_id))?;
                     let block_number = block.header().number();
+
+                    //user transaction start from 1, 0 is block metadata transaction, but the genesis transaction is user transaction, and transaction_index is 0.
+                    //genesis block s no block metadata transaction.
                     //if txn hash not find in block, the txn should be a block metadata transaction.
-                    let transaction_index = block
-                        .body
-                        .transactions
-                        .iter()
-                        .enumerate()
-                        .find_map(|(idx, txn)| {
-                            if txn.id() == old_transaction_info.txn_info.transaction_hash {
-                                //use transaction start from 1, 0 is block metadata transaction.
-                                Some(idx + 1)
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or(0) as u32;
+                    let transaction_index = if block_number == 0 {
+                        0
+                    } else {
+                        block
+                            .body
+                            .transactions
+                            .iter()
+                            .enumerate()
+                            .find_map(|(idx, txn)| {
+                                if txn.id() == old_transaction_info.txn_info.transaction_hash {
+                                    Some(idx + 1)
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap_or(0) as u32
+                    };
+
                     let transaction = storage
                         .transaction_storage
                         .get_transaction(old_transaction_info.txn_info.transaction_hash)?
