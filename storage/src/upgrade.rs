@@ -109,9 +109,12 @@ impl DBUpgrade {
                         storage.block_info_storage.get(block_id)?.ok_or_else(|| {
                             format_err!("Can not find block info by id: {}", block_id)
                         })?;
-                    let transaction_global_index = (block_info.txn_accumulator_info.num_leaves
-                        - txn_len as u64)
-                        + transaction_index as u64;
+                    let transaction_global_index = if block_number == 0 {
+                        0
+                    } else {
+                        (block_info.txn_accumulator_info.num_leaves - txn_len as u64)
+                            + transaction_index as u64
+                    };
                     let rich_transaction_info = RichTransactionInfo::new(
                         block_id,
                         block_number,
