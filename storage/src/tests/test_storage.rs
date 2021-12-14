@@ -9,14 +9,17 @@ use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
     BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
-    DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2,
+    TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME_V2,
 };
 use anyhow::Result;
 use crypto::HashValue;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
-use starcoin_types::transaction::{RichTransactionInfo, SignedUserTransaction, TransactionInfo};
+use starcoin_types::transaction::{
+    RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
+};
 use starcoin_types::vm_error::KeptVMStatus;
 use std::path::Path;
 
@@ -287,13 +290,17 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         BlockBody::new(vec![txn.clone()], None),
     );
     let mut txn_inf_ids = vec![];
+    let block_metadata = block.to_metadata(0);
     let txn_info_0 = TransactionInfo::new(
-        block.to_metadata(0).id(),
+        block_metadata.id(),
         HashValue::random(),
         vec![].as_slice(),
         0,
         KeptVMStatus::Executed,
     );
+    storage
+        .transaction_storage
+        .save_transaction(Transaction::BlockMetadata(block_metadata))?;
     txn_inf_ids.push(txn_info_0.id());
     let txn_info_1 = TransactionInfo::new(
         txn.id(),
@@ -309,6 +316,9 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
         AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
     );
+    storage
+        .transaction_storage
+        .save_transaction(Transaction::UserTransaction(txn))?;
     storage.commit_block(block)?;
     storage.save_block_info(block_info)?;
 
