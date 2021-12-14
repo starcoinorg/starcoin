@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{format_err, Result};
+use anyhow::{ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_chain_api::TransactionInfoWithProof;
 use starcoin_crypto::HashValue;
@@ -57,6 +57,9 @@ impl CommandAction for GetTransactionProofCommand {
                     opt.transaction_global_index
                 )
             })?;
+        ensure!(txn_proof_view.transaction_info.transaction_global_index.0 == opt.transaction_global_index,
+            "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
+            opt.transaction_global_index, txn_proof_view.transaction_info.transaction_global_index.0);
         let txn_proof: TransactionInfoWithProof = txn_proof_view.clone().try_into()?;
         txn_proof.verify(
             block.header.txn_accumulator_root,
