@@ -4,7 +4,7 @@
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::{CodecKVStore, RichTransactionInfo, Storage, StorageVersion, TransactionStore};
 use anyhow::{bail, ensure, format_err, Result};
-use logger::prelude::{debug, info};
+use logger::prelude::{debug, info, warn};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
 
@@ -54,10 +54,16 @@ impl DBUpgrade {
                 for item in iter {
                     let (id, old_transaction_info) = item?;
                     let block_id = old_transaction_info.block_id;
-                    let block = storage
-                        .block_storage
-                        .get(block_id)?
-                        .ok_or_else(|| format_err!("Can not find block by id: {}", block_id))?;
+                    let (block, block_info) = match (
+                        storage.block_storage.get(block_id)?,
+                        storage.block_info_storage.get(block_id)?,
+                    ) {
+                        (Some(block), Some(block_info)) => (block, block_info),
+                        (_, _) => {
+                            warn!("Can not find block or block_info by id: {}, skip this record: {:?}, maybe this transaction info is invalid record. You can use the command `node manager re-execute-block {}` to re execute the block.", block_id, old_transaction_info, block_id);
+                            continue;
+                        }
+                    };
                     let block_number = block.header().number();
 
                     //user transaction start from 1, 0 is block metadata transaction, but the genesis transaction is user transaction, and transaction_index is 0.
@@ -105,10 +111,6 @@ impl DBUpgrade {
                     }
                     let txn_len = block.body.transactions.len() + 1;
 
-                    let block_info =
-                        storage.block_info_storage.get(block_id)?.ok_or_else(|| {
-                            format_err!("Can not find block info by id: {}", block_id)
-                        })?;
                     let transaction_global_index = if block_number == 0 {
                         0
                     } else {
