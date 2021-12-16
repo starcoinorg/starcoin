@@ -74,16 +74,11 @@ spec:
         readinessProbe:
           exec:
             command:
-              - /starcoin/starcoin
-              - -n
-              - halley
-              - -d
-              - /sc-data
-              - node
-              - sync
-              - status|grep
-              - Synchronized
-          initialDelaySeconds: 10
+             - sh
+              - -c
+              - >-
+                 /starcoin/starcoin -n halley -d /sc-data node sync status|grep Synchronized
+           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 3
