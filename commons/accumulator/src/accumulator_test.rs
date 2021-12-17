@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::proof::AccumulatorProof;
 use crate::{
     node_index::NodeIndex, tree_store::mock::MockAccumulatorStore, Accumulator, AccumulatorNode,
     AccumulatorTreeStore, LeafCount, MerkleAccumulator,
@@ -128,6 +129,98 @@ fn test_multiple_chain() {
             accumulator2.get_node_by_position(i).unwrap().unwrap()
         );
     }
+}
+
+#[test]
+fn test_acc_proof() {
+    let siblings = vec![
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x5e9ef122f7f51479a3383f13301ad065ba1da4a2746ccec29527e81cf909e197",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x795a33fb6327e2a07249975fb2b712fd242545ed1ff4aec6442aaabc9f14b844",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x295fe28e3363cc6203b3537a17e3c9c4d1fe842a3ccedde809f68a9b29a099a4",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0xf475b977f927ca0c487f9afaeac3e37cd9998c61cc686585e68d61f68cbf5202",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x30fe3ea6eb484e75084640e6cde700dd26550219eabd8447cc7e70c4285c04ea",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0xf6afb2287bd40fbc8057c567e04c9cfc48afd1250acf04a4a61edbe23667e0ea",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x044289f44c7a8f4e08e44a32bbe494bed1daa1fce79008921acbed97bf14d265",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0xb113cdabab3d7dbe3dc61cc7f76e6effc9da4f056225520fd72cc81229bee02c",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x71c20f978f598a01425d24cf74a907de329e0762e690656eeded1c0dcd099520",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+        )
+        .unwrap(),
+        HashValue::from_hex_literal(
+            "0x85dc2fe854246326b7af19488cd939150967b222127f0b39397f69c2b7e666e7",
+        )
+        .unwrap(),
+    ];
+    let proof = AccumulatorProof::new(siblings);
+    let except = HashValue::from_hex_literal(
+        "0xb44a27b6f98fa9b04471e83bd40675381712a451299518cebab7f4ba9f137bd4",
+    )
+    .unwrap();
+    let init = HashValue::from_hex_literal(
+        "0xd328475d67b5e3b7fef2fc4c3fb694a8904ddf90d91de80796280f5187cc66f0",
+    )
+    .unwrap();
+    assert!(proof.verify(except, init, 324294).is_ok());
 }
 
 #[test]
