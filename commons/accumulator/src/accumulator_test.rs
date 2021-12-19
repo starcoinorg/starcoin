@@ -217,7 +217,7 @@ fn test_acc_proof() {
     )
     .unwrap();
     let init = HashValue::from_hex_literal(
-        "0xd328475d67b5e3b7fef2fc4c3fb694a8904ddf90d91de80796280f5187cc66f0",
+        "0xffa4b4afdfa1c90dd202d9dbc7741a3dcd1e3879e664e5532962906fba59cf95",
     )
     .unwrap();
     assert!(proof.verify(except, init, 324294).is_ok());
