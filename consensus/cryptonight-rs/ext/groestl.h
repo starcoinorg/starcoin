@@ -25,59 +25,64 @@
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
-#pragma once
+#ifndef __hash_h
+#define __hash_h
+/*
+#include "crypto_uint8.h"
+#include "crypto_uint32.h"
+#include "crypto_uint64.h"
+#include "crypto_hash.h" 
 
-#if !defined(__cplusplus)
-
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
+typedef crypto_uint8 uint8_t; 
+typedef crypto_uint32 uint32_t; 
+typedef crypto_uint64 uint64_t;
+*/
 #include <stdint.h>
 
-#include "int-util.h"
+/* some sizes (number of bytes) */
+#define ROWS 8
+#define LENGTHFIELDLEN ROWS
+#define COLS512 8
 
-static inline void *padd(void *p, size_t i) {
-  return (char *) p + i;
-}
+#define SIZE512 (ROWS*COLS512)
 
-static inline const void *cpadd(const void *p, size_t i) {
-  return (const char *) p + i;
-}
+#define ROUNDS512 10
+#define HASH_BIT_LEN 256
 
+#define ROTL32(v, n) ((((v)<<(n))|((v)>>(32-(n))))&li_32(ffffffff))
 
 
-static inline void place_length(uint8_t *buffer, size_t bufsize, size_t length) {
-  if (sizeof(size_t) == 4) {
-    *(uint32_t *) padd(buffer, bufsize - 4) = swap32be(length);
-  } else {
-    *(uint64_t *) padd(buffer, bufsize - 8) = swap64be(length);
-  }
-}
+#define li_32(h) 0x##h##u
+#define EXT_BYTE(var,n) ((uint8_t)((uint32_t)(var) >> (8*n)))
+#define u32BIG(a)				\
+  ((ROTL32(a,8) & li_32(00FF00FF)) |		\
+   (ROTL32(a,24) & li_32(FF00FF00)))
 
-#pragma pack(push, 1)
-union hash_state {
-  uint8_t b[200];
-  uint64_t w[25];
-};
-#pragma pack(pop)
 
-void hash_permutation(union hash_state *state);
-void hash_process(union hash_state *state, const uint8_t *buf, size_t count);
+/* NIST API begin */
+typedef unsigned char BitSequence;
+typedef unsigned long long DataLength;
+typedef struct {
+  uint32_t chaining[SIZE512/sizeof(uint32_t)];            /* actual state */
+  uint32_t block_counter1,
+  block_counter2;         /* message block counter(s) */
+  BitSequence buffer[SIZE512];      /* data buffer */
+  int buf_ptr;              /* data buffer pointer */
+  int bits_in_last_byte;    /* no. of message bits in last byte of
+			       data buffer */
+} hashState;
 
-#endif
+/*void Init(hashState*);
+void Update(hashState*, const BitSequence*, DataLength);
+void Final(hashState*, BitSequence*); */
+void groestl(const BitSequence*, DataLength, BitSequence*);
+/* NIST API end   */
 
-enum {
-  HASH_SIZE = 32,
-  HASH_DATA_AREA = 136
-};
+/*
+int crypto_hash(unsigned char *out,
+		const unsigned char *in,
+		unsigned long long len);
+*/
 
-void cn_fast_hash(const void *data, size_t length, char *hash);
-void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int prehashed, uint64_t height);
-
-void hash_extra_blake(const void *data, size_t length, char *hash);
-void hash_extra_groestl(const void *data, size_t length, char *hash);
-void hash_extra_jh(const void *data, size_t length, char *hash);
-void hash_extra_skein(const void *data, size_t length, char *hash);
+#endif /* __hash_h */

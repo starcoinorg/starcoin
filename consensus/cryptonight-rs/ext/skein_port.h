@@ -1,3 +1,31 @@
+// Copyright (c) 2014-2020, The Monero Project
+// 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without modification, are
+// permitted provided that the following conditions are met:
+// 
+// 1. Redistributions of source code must retain the above copyright notice, this list of
+//    conditions and the following disclaimer.
+// 
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list
+//    of conditions and the following disclaimer in the documentation and/or other
+//    materials provided with the distribution.
+// 
+// 3. Neither the name of the copyright holder nor the names of its contributors may be
+//    used to endorse or promote products derived from this software without specific
+//    prior written permission.
+// 
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 #ifndef _SKEIN_PORT_H_
 #define _SKEIN_PORT_H_
 
@@ -39,15 +67,15 @@
     faster operations on longer variables to be used.  In all these
     defines 'size' must be a power of 2 and >= 8
 
-    dec_unit_type(size,x)       declares a variable 'x' of length
+    dec_unit_type(size,x)       declares a variable 'x' of length 
                                 'size' bits
 
-    dec_bufr_type(size,bsize,x) declares a buffer 'x' of length 'bsize'
+    dec_bufr_type(size,bsize,x) declares a buffer 'x' of length 'bsize' 
                                 bytes defined as an array of variables
-                                each of 'size' bits (bsize must be a
+                                each of 'size' bits (bsize must be a 
                                 multiple of size / 8)
 
-    ptr_cast(x,size)            casts a pointer to a pointer to a
+    ptr_cast(x,size)            casts a pointer to a pointer to a 
                                 varaiable of length 'size' bits
 */
 
@@ -75,7 +103,7 @@ typedef uint64_t        u64b_t;             /* 64-bit unsigned integer */
  *    Skein_Swap64
  *
  * If SKEIN_NEED_SWAP is defined at compile time, it is used here
- * along with the portable versions of Put64/Get64/Swap64, which
+ * along with the portable versions of Put64/Get64/Swap64, which 
  * are slow in general.
  *
  * Otherwise, an "auto-detect" of endianness is attempted below.

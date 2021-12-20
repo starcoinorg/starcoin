@@ -1,8 +1,5 @@
 #ifndef VARIANT4_RANDOM_MATH_H
 #define VARIANT4_RANDOM_MATH_H
-#include <stdbool.h>
-#include "c_blake256.h"
-#include "int-util.h"
 
 // Register size can be configured to either 32 bit (uint32_t) or 64 bit (uint64_t)
 typedef uint32_t v4_reg;
@@ -175,7 +172,7 @@ static FORCEINLINE void check_data(size_t* data_index, const size_t bytes_needed
 {
 	if (*data_index + bytes_needed > data_size)
 	{
-        	blake256_hash((uint8_t*)data, (uint8_t *)data, data_size);
+		hash_extra_blake(data, data_size, (char*) data);
 		*data_index = 0;
 	}
 }
@@ -203,7 +200,7 @@ static inline int v4_random_math_init(struct V4_Instruction* code, const uint64_
 	memset(data, 0, sizeof(data));
 	uint64_t tmp = SWAP64LE(height);
 	memcpy(data, &tmp, sizeof(uint64_t));
-	data[20] = 0xda; // change seed
+	data[20] = -38; // change seed
 
 	// Set data_index past the last byte in data
 	// to trigger full data update with blake hash
