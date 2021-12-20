@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020, The Monero Project
+// Copyright (c) 2018-2021, StarCoin Project
 //
 // All rights reserved.
 //
@@ -729,7 +729,7 @@ void cn_slow_hash_free_state(void)
 }
 
 /**
- * @brief the hash function implementing CryptoNight, used for the Monero proof-of-work
+ * @brief the hash function implementing CryptoNight, used for StarCoin proof-of-work
  *
  * Computes the hash of <data> (which consists of <length> bytes), returning the
  * hash in <hash>.  The CryptoNight hash operates by first using Keccak 1600,
