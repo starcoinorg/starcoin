@@ -86,16 +86,16 @@ net=$1
 to_dir=$2
 case $net in
   "main")
-    import_net_block $net 5 block_2500001_2890710.csv $to_dir
+    import_net_block $net 6 block_3000001_3305032.csv $to_dir
   ;;
   "barnard")
-    import_net_block $net 4 block_2000001_2034454.csv $to_dir
+    import_net_block $net 4 block_2000001_2472245.csv $to_dir
     ;;
   *"proxima")
-    import_net_block $net 0 block_1_430578.csv $to_dir
+    import_net_block $net 0 block_1_130318.csv $to_dir
     ;;
   *"halley")
-    import_net_block $net 0 block_1_13180.csv $to_dir
+    import_net_block $net 0 block_1_358084.csv $to_dir
     ;;
   *)
     echo "$net not supported"
