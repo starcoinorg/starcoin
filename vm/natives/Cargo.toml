@@ -24,7 +24,7 @@ tiny-keccak={version="2", features = ["keccak"]}
 libsecp256k1 = "0.7.0"
 arrayref = "0.3"
 ripemd160 = "0.9.1"
-num_enum = "0.5.4"
+num_enum = "0.5.5"
 starcoin-uint = {path = "../../types/uint"}
 starcoin-vm-types=  {path = "../types"}
 
