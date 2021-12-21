@@ -4902,9 +4902,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c748cfe47cb8da225c37595b3108bea1c198c84aaae8ea0ba76d01dda9fc803"
+checksum = "469898e909a1774d844793b347135a0cd344ca2f69d082013ecb8061a2229a3a"
 dependencies = [
  "hashbrown 0.11.2",
 ]
@@ -5722,7 +5722,7 @@ dependencies = [
  "linked-hash-map",
  "linked_hash_set",
  "log 0.4.14",
- "lru 0.7.0",
+ "lru 0.7.1",
  "network-p2p-types",
  "once_cell",
  "parking_lot 0.11.2",
@@ -6026,9 +6026,9 @@ dependencies = [
 
 [[package]]
 name = "num_cpus"
-version = "1.13.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
+checksum = "19e64526ebdee182341572e50e9ad03965aa510cd94427a4549448f285e957a1"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -8596,7 +8596,7 @@ dependencies = [
  "bcs-ext",
  "byteorder 1.4.3",
  "itertools 0.10.3",
- "lru 0.7.0",
+ "lru 0.7.1",
  "mirai-annotations",
  "once_cell",
  "parking_lot 0.11.2",
@@ -9385,7 +9385,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "log 0.4.14",
- "lru 0.7.0",
+ "lru 0.7.1",
  "network-api",
  "network-p2p",
  "network-p2p-types",
@@ -9881,7 +9881,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "forkable-jellyfish-merkle",
- "lru 0.7.0",
+ "lru 0.7.1",
  "parking_lot 0.11.2",
  "serde",
  "starcoin-crypto",
@@ -9903,7 +9903,7 @@ dependencies = [
  "chrono",
  "coarsetime",
  "forkable-jellyfish-merkle",
- "lru 0.7.0",
+ "lru 0.7.1",
  "num_enum",
  "once_cell",
  "parking_lot 0.11.2",
