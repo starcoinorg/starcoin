@@ -28,8 +28,8 @@ use starcoin_rpc_api::state::{
 };
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockView, ChainId,
-    ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
+    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
+    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
     SignedUserTransactionView, StateWithProofView, StrView, StructTagView,
@@ -48,7 +48,7 @@ use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{BlockInfo, BlockNumber};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
@@ -693,7 +693,7 @@ impl RpcClient {
     pub fn chain_get_block_info_by_number(
         &self,
         number: BlockNumber,
-    ) -> anyhow::Result<Option<BlockInfo>> {
+    ) -> anyhow::Result<Option<BlockInfoView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_number(number))
             .map_err(map_err)
     }

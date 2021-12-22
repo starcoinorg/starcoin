@@ -1043,6 +1043,7 @@ impl TransactionEventView {
 
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
@@ -1613,6 +1614,52 @@ pub struct ConnectLocal;
 
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
+}
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct AccumulatorInfoView {
+    /// Accumulator root hash
+    pub accumulator_root: HashValue,
+    /// Frozen subtree roots of this accumulator.
+    pub frozen_subtree_roots: Vec<HashValue>,
+    /// The total number of leaves in this accumulator.
+    pub num_leaves: StrView<u64>,
+    /// The total number of nodes in this accumulator.
+    pub num_nodes: StrView<u64>,
+}
+
+impl From<AccumulatorInfo> for AccumulatorInfoView {
+    fn from(info: AccumulatorInfo) -> Self {
+        AccumulatorInfoView {
+            accumulator_root: info.accumulator_root,
+            frozen_subtree_roots: info.frozen_subtree_roots.clone(),
+            num_leaves: info.num_leaves.into(),
+            num_nodes: info.num_nodes.into(),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct BlockInfoView {
+    /// Block hash
+    pub block_hash: HashValue,
+    /// The total difficulty.
+    #[schemars(with = "String")]
+    pub total_difficulty: U256,
+    /// The transaction accumulator info
+    pub txn_accumulator_info: AccumulatorInfoView,
+    /// The block accumulator info.
+    pub block_accumulator_info: AccumulatorInfoView,
+}
+
+impl From<BlockInfo> for BlockInfoView {
+    fn from(block_info: BlockInfo) -> Self {
+        BlockInfoView {
+            block_hash: block_info.block_id,
+            total_difficulty: block_info.total_difficulty,
+            txn_accumulator_info: block_info.txn_accumulator_info.into(),
+            block_accumulator_info: block_info.block_accumulator_info.into(),
+        }
+    }
 }
 
 #[cfg(test)]
