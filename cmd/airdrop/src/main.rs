@@ -23,7 +23,6 @@ use starcoin_vm_types::value::MoveValue;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
-
 #[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {

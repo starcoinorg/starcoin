@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use move_command_line_common;
-pub use move_lang::compiled_unit::{verify_units, CompiledUnit};
-pub use move_lang::diagnostics;
-pub use move_lang::Compiler;
+pub use move_compiler::compiled_unit::{verify_units, CompiledUnit};
+pub use move_compiler::diagnostics;
+pub use move_compiler::Compiler;
 
 use crate::diagnostics::report_diagnostics_to_color_buffer;
 /// A wrap to move-lang compiler
 use anyhow::{bail, ensure, Result};
-use move_lang::compiled_unit::AnnotatedCompiledUnit;
-use move_lang::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
-use move_lang::shared::Flags;
+use move_compiler::compiled_unit::AnnotatedCompiledUnit;
+use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
+use move_compiler::shared::Flags;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -38,11 +38,11 @@ pub mod command_line {
 }
 
 pub mod compiled_unit {
-    pub use move_lang::compiled_unit::*;
+    pub use move_compiler::compiled_unit::*;
 }
 
 pub mod shared {
-    pub use move_lang::shared::*;
+    pub use move_compiler::shared::*;
 }
 
 // pub mod test_utils {
@@ -152,7 +152,7 @@ pub fn compile_source_string_no_report(
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    let compiler = move_lang::Compiler::new(&targets, deps)
+    let compiler = move_compiler::Compiler::new(&targets, deps)
         .set_flags(Flags::empty().set_sources_shadow_deps(true));
     compiler.build()
 }

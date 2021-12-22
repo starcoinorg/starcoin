@@ -15,6 +15,7 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
+use std::result::Result::Ok;
 
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";

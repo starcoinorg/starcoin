@@ -3,6 +3,8 @@ use crate::remote_state::{RemoteStateView, SelectableStateView};
 use anyhow::{bail, Result};
 use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
+use move_compiler::compiled_unit::CompiledUnitEnum;
+use move_compiler::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_core_types::{
     account_address::AccountAddress,
     gas_schedule::GasAlgebra,
@@ -10,8 +12,6 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     transaction_argument::TransactionArgument,
 };
-use move_lang::compiled_unit::CompiledUnitEnum;
-use move_lang::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_transactional_test_runner::{
     framework,
     framework::{CompiledState, MoveTestAdapter},
@@ -351,7 +351,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         )?;
 
         let move_resolver = RemoteStorage::new(&self.storage);
-        let annotator = resource_viewer::MoveValueAnnotator::new(&move_resolver);
+        let annotator = move_resource_viewer::MoveValueAnnotator::new(&move_resolver);
         let rets = rets
             .into_iter()
             .map(|(ty, v)| annotator.view_value(&ty, &v))
@@ -461,6 +461,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn init(
+        _test_path: &Path,
         default_syntax: SyntaxChoice,
         pre_compiled_deps: Option<&'a FullyCompiledProgram>,
         task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
@@ -615,7 +616,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<TransactionArgument>,
         gas_budget: Option<u64>,
         extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<String>> {
         assert!(!signers.is_empty());
         if signers.len() != 1 {
             panic!("Expected 1 signer, got {}.", signers.len());
@@ -650,7 +651,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         self.run_transaction(txn, public_key.into())?;
 
-        Ok(())
+        Ok(None)
     }
 
     fn call_function(
@@ -662,7 +663,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<TransactionArgument>,
         gas_budget: Option<u64>,
         extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<String>> {
         {
             assert!(!signers.is_empty());
             if signers.len() != 1 {
@@ -701,7 +702,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         self.run_transaction(txn, public_key.into())?;
 
-        Ok(())
+        Ok(None)
     }
 
     fn view_data(

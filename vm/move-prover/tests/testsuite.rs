@@ -153,8 +153,8 @@ fn test_runner_for_feature(path: &Path, feature: &Feature) -> datatest_stable::R
     let mut options = Options::create_from_args(&args)?;
     options.setup_logging_for_test();
     let no_tools = read_env_var("BOOGIE_EXE").is_empty()
-        || !options.backend.use_cvc4 && read_env_var("Z3_EXE").is_empty()
-        || options.backend.use_cvc4 && read_env_var("CVC4_EXE").is_empty();
+        || !options.backend.use_cvc5 && read_env_var("Z3_EXE").is_empty()
+        || options.backend.use_cvc5 && read_env_var("CVC4_EXE").is_empty();
     let baseline_valid =
         !no_tools || !extract_test_directives(path, "// no-boogie-test")?.is_empty();
 

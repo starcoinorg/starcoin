@@ -6,13 +6,13 @@
 use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
 use log::{info, LevelFilter};
+use move_bytecode_verifier::{dependencies, verify_module};
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
-use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
@@ -25,8 +25,8 @@ use std::{
 };
 mod compat;
 pub use compat::*;
-use move_lang::shared::NumericalAddress;
-use move_lang::{construct_pre_compiled_lib, FullyCompiledProgram};
+use move_compiler::shared::NumericalAddress;
+use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use starcoin_move_compiler::diagnostics::{
     report_diagnostics_to_color_buffer, unwrap_or_report_diagnostics,
 };
@@ -132,7 +132,7 @@ pub static PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::ne
         Ok(df) => df,
         Err((files, errors)) => {
             eprintln!("!!!Starcoin Framework failed to compile!!!");
-            move_lang::diagnostics::report_diagnostics(&files, errors)
+            move_compiler::diagnostics::report_diagnostics(&files, errors)
         }
     }
 });

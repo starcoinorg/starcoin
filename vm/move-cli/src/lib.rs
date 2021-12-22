@@ -1,10 +1,12 @@
 use anyhow::Result;
 use move_cli::Move;
 use move_command_line_common::testing::UPDATE_BASELINE;
-use move_lang::command_line::compiler::construct_pre_compiled_lib_from_compiler;
-use move_lang::diagnostics::report_diagnostics;
-use move_lang::shared::unique_map::UniqueMap;
-use move_lang::{cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram};
+use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
+use move_compiler::diagnostics::report_diagnostics;
+use move_compiler::shared::unique_map::UniqueMap;
+use move_compiler::{
+    cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
+};
 use move_package::compilation::build_plan::BuildPlan;
 use move_package::source_package::layout::SourcePackageLayout;
 use once_cell::sync::Lazy;
@@ -159,7 +161,7 @@ pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> 
     //             .iter()
     //             .map(|(ident, addr)| {
     //                 let parsed_addr =
-    //                     NumericalAddress::new(addr.into_bytes(), move_lang::shared::NumberFormat::Hex);
+    //                     NumericalAddress::new(addr.into_bytes(), move_compiler::shared::NumberFormat::Hex);
     //                 (ident.to_string(), parsed_addr)
     //             })
     //             .collect::<BTreeMap<_, _>>();

@@ -18,21 +18,21 @@ use tokio::runtime;
 #[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
-    #[clap(long, about = "es url", default_value = "http://localhost:9200")]
+    #[clap(long, help = "es url", default_value = "http://localhost:9200")]
     es_url: Url,
-    #[clap(long, about = "es user used to call api", requires = "es-password")]
+    #[clap(long, help = "es user used to call api", requires = "es-password")]
     es_user: Option<String>,
-    #[clap(long, about = "es user password")]
+    #[clap(long, help = "es user password")]
     es_password: Option<String>,
-    #[clap(long, about = "es index prefix", default_value = "starcoin")]
+    #[clap(long, help = "es index prefix", default_value = "starcoin")]
     es_index_prefix: String,
     #[clap(
         long,
-        about = "starcoin node rpc url",
+        help = "starcoin node rpc url",
         default_value = "http://localhost:9850"
     )]
     node_url: String,
-    #[clap(long, about = "es bulk size", default_value = "50")]
+    #[clap(long, help = "es bulk size", default_value = "50")]
     bulk_size: u64,
 
     #[clap(subcommand)]
