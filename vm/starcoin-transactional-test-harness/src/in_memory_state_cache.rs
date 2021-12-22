@@ -6,7 +6,6 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 
-
 pub struct InMemoryStateCache<V> {
     data_map: DashMap<AccessPath, Option<Vec<u8>>>,
     data_view: V,
