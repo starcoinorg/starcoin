@@ -1122,7 +1122,7 @@ pub struct ChainInfoView {
     pub genesis_hash: HashValue,
     pub head: BlockHeaderView,
     //TODO should define block info view?
-    pub block_info: BlockInfo,
+    pub block_info: BlockInfoView,
 }
 
 impl From<ChainInfo> for ChainInfoView {
@@ -1133,7 +1133,7 @@ impl From<ChainInfo> for ChainInfoView {
             chain_id: chain_id.into(),
             genesis_hash,
             head: head.into(),
-            block_info,
+            block_info: block_info.into(),
         }
     }
 }
@@ -1615,7 +1615,7 @@ pub struct ConnectLocal;
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
 }
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct AccumulatorInfoView {
     /// Accumulator root hash
     pub accumulator_root: HashValue,
@@ -1638,7 +1638,7 @@ impl From<AccumulatorInfo> for AccumulatorInfoView {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct BlockInfoView {
     /// Block hash
     pub block_hash: HashValue,
