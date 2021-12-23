@@ -10,7 +10,6 @@ typedef crypto_uint32 uint32_t;
 typedef crypto_uint64 uint64_t;
 */
 #include <stdint.h>
-#include "hash.h"
 
 /* some sizes (number of bytes) */
 #define ROWS 8
@@ -33,6 +32,8 @@ typedef crypto_uint64 uint64_t;
 
 
 /* NIST API begin */
+typedef unsigned char BitSequence;
+typedef unsigned long long DataLength;
 typedef struct {
   uint32_t chaining[SIZE512/sizeof(uint32_t)];            /* actual state */
   uint32_t block_counter1,
