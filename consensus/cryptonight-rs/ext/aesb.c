@@ -40,26 +40,26 @@ extern "C"
 #define LOCAL_ALIGN
 #endif
 
-#define rf1(r,c) (r)
-#define word_in(x,c) (*((uint32_t*)(x)+(c)))
-#define word_out(x,c,v) (*((uint32_t*)(x)+(c)) = (v))
+#define rf1(r, c) (r)
+#define word_in(x, c) (*((uint32_t*)(x)+(c)))
+#define word_out(x, c, v) (*((uint32_t*)(x)+(c)) = (v))
 
-#define s(x,c) x[c]
-#define si(y,x,c) (s(y,c) = word_in(x, c))
-#define so(y,x,c) word_out(y, c, s(x,c))
-#define state_in(y,x) si(y,x,0); si(y,x,1); si(y,x,2); si(y,x,3)
-#define state_out(y,x)  so(y,x,0); so(y,x,1); so(y,x,2); so(y,x,3)
-#define round(rm,y,x,k) rm(y,x,k,0); rm(y,x,k,1); rm(y,x,k,2); rm(y,x,k,3)
+#define s(x, c) x[c]
+#define si(y, x, c) (s(y,c) = word_in(x, c))
+#define so(y, x, c) word_out(y, c, s(x,c))
+#define state_in(y, x) si(y,x,0); si(y,x,1); si(y,x,2); si(y,x,3)
+#define state_out(y, x)  so(y,x,0); so(y,x,1); so(y,x,2); so(y,x,3)
+#define round(rm, y, x, k) rm(y,x,k,0); rm(y,x,k,1); rm(y,x,k,2); rm(y,x,k,3)
 #define to_byte(x) ((x) & 0xff)
-#define bval(x,n) to_byte(SWAP32LE(x) >> (8 * (n)))
+#define bval(x, n) to_byte(SWAP32LE(x) >> (8 * (n)))
 
-#define fwd_var(x,r,c)\
+#define fwd_var(x, r, c)\
  ( r == 0 ? ( c == 0 ? s(x,0) : c == 1 ? s(x,1) : c == 2 ? s(x,2) : s(x,3))\
  : r == 1 ? ( c == 0 ? s(x,1) : c == 1 ? s(x,2) : c == 2 ? s(x,3) : s(x,0))\
  : r == 2 ? ( c == 0 ? s(x,2) : c == 1 ? s(x,3) : c == 2 ? s(x,0) : s(x,1))\
  :          ( c == 0 ? s(x,3) : c == 1 ? s(x,0) : c == 2 ? s(x,1) : s(x,2)))
 
-#define fwd_rnd(y,x,k,c)  (s(y,c) = (k)[c] ^ SWAP32LE(four_tables(x,t_use(f,n),fwd_var,rf1,c)))
+#define fwd_rnd(y, x, k, c)  (s(y,c) = (k)[c] ^ SWAP32LE(four_tables(x,t_use(f,n),fwd_var,rf1,c)))
 
 #define sb_data(w) {\
   w(0x63), w(0x7c), w(0x77), w(0x7b), w(0xf2), w(0x6b), w(0x6f), w(0xc5),\
@@ -127,19 +127,19 @@ extern "C"
 #define fd(x)   (f8(x) ^ f4(x) ^ x)
 #define fe(x)   (f8(x) ^ f4(x) ^ f2(x))
 
-#define t_dec(m,n) t_##m##n
-#define t_set(m,n) t_##m##n
-#define t_use(m,n) t_##m##n
+#define t_dec(m, n) t_##m##n
+#define t_set(m, n) t_##m##n
+#define t_use(m, n) t_##m##n
 
-#define d_4(t,n,b,e,f,g,h) LOCAL_ALIGN const t n[4][256] = { b(e), b(f), b(g), b(h) }
+#define d_4(t, n, b, e, f, g, h) LOCAL_ALIGN const t n[4][256] = { b(e), b(f), b(g), b(h) }
 
-#define four_tables(x,tab,vf,rf,c) \
+#define four_tables(x, tab, vf, rf, c) \
   (tab[0][bval(vf(x,0,c),rf(0,c))] \
    ^ tab[1][bval(vf(x,1,c),rf(1,c))] \
    ^ tab[2][bval(vf(x,2,c),rf(2,c))] \
    ^ tab[3][bval(vf(x,3,c),rf(3,c))])
 
-d_4(uint32_t, t_dec(f,n), sb_data, u0, u1, u2, u3);
+d_4(uint32_t, t_dec(f, n), sb_data, u0, u1, u2, u3);
 
 #if !defined(STATIC)
 #define STATIC
@@ -149,35 +149,34 @@ d_4(uint32_t, t_dec(f,n), sb_data, u0, u1, u2, u3);
 #define INLINE
 #endif
 
-STATIC INLINE void aesb_single_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey)
-{
-  uint32_t b0[4], b1[4];
-  const uint32_t  *kp = (uint32_t *) expandedKey;
-  state_in(b0, in);
+STATIC INLINE void aesb_single_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey) {
+    uint32_t b0[4], b1[4];
+    const uint32_t *kp = (uint32_t * )
+    expandedKey;
+    state_in(b0, in);
 
-  round(fwd_rnd,  b1, b0, kp);
+    round(fwd_rnd, b1, b0, kp);
 
-  state_out(out, b1);
+    state_out(out, b1);
 }
 
-STATIC INLINE void aesb_pseudo_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey)
-{
-  uint32_t b0[4], b1[4];
-  const uint32_t  *kp = (uint32_t *) expandedKey;
-  state_in(b0, in);
+STATIC INLINE void aesb_pseudo_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey) {
+    uint32_t b0[4], b1[4];
+    const uint32_t *kp = (uint32_t * )expandedKey;
+    state_in(b0, in);
 
-  round(fwd_rnd,  b1, b0, kp);
-  round(fwd_rnd,  b0, b1, kp + 1 * N_COLS);
-  round(fwd_rnd,  b1, b0, kp + 2 * N_COLS);
-  round(fwd_rnd,  b0, b1, kp + 3 * N_COLS);
-  round(fwd_rnd,  b1, b0, kp + 4 * N_COLS);
-  round(fwd_rnd,  b0, b1, kp + 5 * N_COLS);
-  round(fwd_rnd,  b1, b0, kp + 6 * N_COLS);
-  round(fwd_rnd,  b0, b1, kp + 7 * N_COLS);
-  round(fwd_rnd,  b1, b0, kp + 8 * N_COLS);
-  round(fwd_rnd,  b0, b1, kp + 9 * N_COLS);
+    round(fwd_rnd, b1, b0, kp);
+    round(fwd_rnd, b0, b1, kp + 1 * N_COLS);
+    round(fwd_rnd, b1, b0, kp + 2 * N_COLS);
+    round(fwd_rnd, b0, b1, kp + 3 * N_COLS);
+    round(fwd_rnd, b1, b0, kp + 4 * N_COLS);
+    round(fwd_rnd, b0, b1, kp + 5 * N_COLS);
+    round(fwd_rnd, b1, b0, kp + 6 * N_COLS);
+    round(fwd_rnd, b0, b1, kp + 7 * N_COLS);
+    round(fwd_rnd, b1, b0, kp + 8 * N_COLS);
+    round(fwd_rnd, b0, b1, kp + 9 * N_COLS);
 
-  state_out(out, b0);
+    state_out(out, b0);
 }
 
 

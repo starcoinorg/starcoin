@@ -60,7 +60,6 @@
 #define GETPID() getpid()
 #endif
 
-#include "oaes_config.h"
 #include "oaes_lib.h"
 
 #ifdef OAES_HAVE_ISAAC
