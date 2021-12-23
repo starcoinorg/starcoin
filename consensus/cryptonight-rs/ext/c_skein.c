@@ -12,7 +12,7 @@
 
 #include <stddef.h>                          /* get size_t definition */
 #include <string.h>      /* get the memcpy/memset functions */
-#include "skein.h"       /* get the Skein API definitions   */
+#include "c_skein.h"       /* get the Skein API definitions   */
 
 #define DISABLE_UNUSED 0
 

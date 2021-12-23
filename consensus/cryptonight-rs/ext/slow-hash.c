@@ -33,8 +33,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <unistd.h>
-
+#endif
 #include "int-util.h"
 #include "hash-ops.h"
 #include "oaes_lib.h"
@@ -51,7 +52,11 @@
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
 
+#if defined(_WIN32)
+#define THREADV __declspec(thread)
+#else
 #define THREADV __thread
+#endif
 
 extern void aesb_single_round(const uint8_t *in, uint8_t *out, const uint8_t *expandedKey);
 extern void aesb_pseudo_round(const uint8_t *in, uint8_t *out, const uint8_t *expandedKey);
@@ -961,8 +966,6 @@ void cn_slow_hash_free_state(void)
 
 #define U64(x) ((uint64_t *) (x))
 
-#define hp_jitfunc ((v4_random_math_JIT_func)NULL)
-
 STATIC INLINE void xor64(uint64_t *a, const uint64_t b)
 {
     *a ^= b;
@@ -1574,8 +1577,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int 
 #else
 // Portable implementation as a fallback
 
-#define hp_jitfunc ((v4_random_math_JIT_func)NULL)
-
 void cn_slow_hash_allocate_state(void)
 {
   // Do nothing, this is just to maintain compatibility with the upgraded slow-hash.c
@@ -1659,6 +1660,7 @@ union cn_slow_hash_state {
 };
 #pragma pack(pop)
 
+#define FORCE_USE_HEAP
 void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int prehashed, uint64_t height) {
 #ifndef FORCE_USE_HEAP
   uint8_t long_state[MEMORY];

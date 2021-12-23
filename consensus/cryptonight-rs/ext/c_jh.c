@@ -13,7 +13,7 @@
    Last Modified: January 16, 2011
 */
 
-#include "jh.h"
+#include "c_jh.h"
 
 #include <stdint.h>
 #include <string.h>

@@ -26,8 +26,7 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef __hash_h
-#define __hash_h
+#pragma once
 /*
 #include "crypto_uint8.h"
 #include "crypto_uint32.h"
@@ -84,5 +83,3 @@ int crypto_hash(unsigned char *out,
 		const unsigned char *in,
 		unsigned long long len);
 */
-
-#endif /* __hash_h */

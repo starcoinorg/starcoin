@@ -9,7 +9,7 @@
  */
 
 #include <stddef.h>
-#include "groestl.h"
+#include "c_groestl.h"
 #include "groestl_tables.h"
 
 #define P_TYPE 0

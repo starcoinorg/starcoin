@@ -33,7 +33,7 @@
 #include <string.h>
 
 #include "hash-ops.h"
-#include "keccak.h"
+#include "c_keccak.h"
 
 void hash_permutation(union hash_state *state) {
 #if BYTE_ORDER == LITTLE_ENDIAN

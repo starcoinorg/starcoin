@@ -4,11 +4,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <assert.h>
 #include "int-util.h"
 #include "hash-ops.h"
-#include "keccak.h"
+#include "c_keccak.h"
 
 static void local_abort(const char *msg)
 {
