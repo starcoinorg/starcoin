@@ -219,7 +219,7 @@ impl WsConfiguration {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct IpcConfiguration {
     #[serde(skip)]
     #[structopt(name = "disable-ipc-rpc", long, help = "disable ipc jsonrpc endpoint")]
@@ -228,15 +228,6 @@ pub struct IpcConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[structopt(name = "ipc-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
-}
-
-impl Default for IpcConfiguration {
-    fn default() -> Self {
-        Self {
-            disable: false,
-            apis: None,
-        }
-    }
 }
 
 impl IpcConfiguration {

@@ -36,7 +36,7 @@ pub use crate::on_chain_resource::GlobalTimeOnChain;
 /// 1. Implement the `OnChainConfig` trait for the Rust representation of the config
 /// 2. Add the config's `ConfigID` to `ON_CHAIN_CONFIG_REGISTRY`
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-#[allow(clippy::box_vec)]
+#[allow(clippy::box_collection)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct ConfigID(&'static str, &'static str, &'static str, Vec<TypeTag>);
 

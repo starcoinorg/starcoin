@@ -5,7 +5,7 @@ authors = ["Diem Association <opensource@diem.org>", "Starcoin Core Dev <dev@sta
 description = "Diem jellyfish merkle"
 license = "Apache-2.0"
 publish = false
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 anyhow = "1.0.41"

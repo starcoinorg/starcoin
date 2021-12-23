@@ -105,7 +105,7 @@ pub fn run(mut args: Args, xctx: XContext) -> Result<()> {
         cargo_config: xctx.config().cargo_config(),
         direct_args: direct_args.as_slice(),
         args: &args.args,
-        env: &env_vars,
+        env: env_vars,
         skip_sccache: generate_coverage,
     };
 
@@ -119,14 +119,14 @@ pub fn run(mut args: Args, xctx: XContext) -> Result<()> {
         create_dir_all(&html_cov_dir)?;
         let html_cov_path = &html_cov_dir.canonicalize()?;
         info!("created {}", &html_cov_path.to_string_lossy());
-        exec_grcov(&html_cov_path)?;
+        exec_grcov(html_cov_path)?;
     }
     if let Some(html_lcov_dir) = &args.html_lcov_dir {
         create_dir_all(&html_lcov_dir)?;
         let html_lcov_path = &html_lcov_dir.canonicalize()?;
         info!("created {}", &html_lcov_path.to_string_lossy());
-        exec_lcov(&html_lcov_path)?;
-        exec_lcov_genhtml(&html_lcov_path)?;
+        exec_lcov(html_lcov_path)?;
+        exec_lcov_genhtml(html_lcov_path)?;
     }
     cmd_result
 }

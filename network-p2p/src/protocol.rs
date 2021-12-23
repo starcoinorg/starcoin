@@ -90,6 +90,7 @@ pub enum CustomMessageOutcome {
 /// Peer information
 #[derive(Debug, Clone)]
 struct Peer {
+    #[allow(unused)]
     info: ChainInfo,
 }
 

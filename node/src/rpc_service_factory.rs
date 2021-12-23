@@ -60,7 +60,6 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             .service_ref_opt::<ChainStateService>()?
             .map(|service_ref| StateRpcImpl::new(service_ref.clone(), storage.clone()));
         let chain_state_service = ctx.service_ref::<ChainStateService>()?.clone();
-        let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
         let account_service = ctx.service_ref_opt::<AccountService>()?.cloned();
         let account_api = account_service.clone().map(|service_ref| {
             AccountRpcImpl::new(
@@ -68,7 +67,6 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
                 service_ref,
                 txpool_service.clone(),
                 chain_state_service.clone(),
-                chain_service.clone(),
             )
         });
         let pubsub_service = ctx.service_ref::<PubSubService>()?.clone();

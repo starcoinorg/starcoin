@@ -87,6 +87,7 @@ impl<T> ExHashT for T where T: std::hash::Hash + Eq + std::fmt::Debug + Clone + 
 /// A cloneable handle for reporting cost/benefits of peers.
 #[derive(Clone)]
 pub struct ReportHandle {
+    #[allow(unused)]
     inner: PeersetHandle, // wraps it so we don't have to worry about breaking API.
 }
 

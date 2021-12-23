@@ -17,8 +17,6 @@ pub struct ApiLimiter<User>
 where
     User: Clone + Hash + Eq,
 {
-    global_quota: Quota,
-    user_quota: Quota,
     global_limiter: DirectRateLimiter,
     user_limiter: KeyedRateLimiter<User>,
 }
@@ -31,8 +29,6 @@ where
         Self {
             global_limiter: DirectRateLimiter::direct(global_quota),
             user_limiter: KeyedRateLimiter::keyed(user_quota),
-            global_quota,
-            user_quota,
         }
     }
 
