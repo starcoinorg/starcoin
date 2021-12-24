@@ -97,7 +97,9 @@ pub struct AccountInfo {
     address: AccountAddress,
     key_pair: KeyPairHolder,
     sequence_number: u64,
+    #[allow(unused)]
     sent_event_handle: EventHandle,
+    #[allow(unused)]
     received_event_handle: EventHandle,
 }
 
@@ -144,6 +146,7 @@ impl AccountInfo {
 #[derive(Clone, Debug)]
 pub struct AccountInfoUniverse {
     accounts: Vec<AccountInfo>,
+    #[allow(unused)]
     epoch: u64,
     chain_id: ChainId,
     time_service: Arc<dyn TimeService>,
@@ -226,9 +229,13 @@ impl Arbitrary for AccountInfoUniverse {
 #[derive(Arbitrary, Debug)]
 pub struct RawUserTransactionGen {
     payload: TransactionPayload,
+    #[allow(unused)]
     max_gas_amount: u64,
+    #[allow(unused)]
     gas_unit_price: u64,
+    #[allow(unused)]
     gas_currency_code: String,
+    #[allow(unused)]
     expiration_time_secs: u64,
 }
 

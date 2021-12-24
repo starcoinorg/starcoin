@@ -16,22 +16,12 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use types::transaction;
 
 /// Verification options.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Options {
     /// Skip checks for early rejection, to make sure that local transactions are always imported.
     pub no_early_reject: bool,
     /// reject txn whose gas_price is lower than this.
     pub min_gas_price: u64,
-}
-
-#[cfg(test)]
-impl Default for Options {
-    fn default() -> Self {
-        Options {
-            no_early_reject: false,
-            min_gas_price: 0,
-        }
-    }
 }
 
 /// Transaction verifier.

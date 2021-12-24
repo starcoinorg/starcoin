@@ -4,7 +4,7 @@ version = "1.9.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
-edition = "2018"
+edition = "2021"
 
 [lib]
 proc-macro = true

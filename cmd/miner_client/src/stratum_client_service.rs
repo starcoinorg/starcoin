@@ -62,6 +62,7 @@ pub struct JobNotification {
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum OutputResponse {
     StratumJob(StratumJobResponse),
     Status(Status),

@@ -6,7 +6,7 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
-use starcoin_chain_service::ChainAsyncService;
+
 use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::{SignedMessageView, StrView, TransactionRequest};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
@@ -20,39 +20,34 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Clone)]
-pub struct AccountRpcImpl<Account, Pool, State, Chain>
+pub struct AccountRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService + 'static,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
-    Chain: ChainAsyncService + 'static,
 {
     account: Account,
     pool: Pool,
     chain_state: State,
-    chain: Chain,
     node_config: Arc<NodeConfig>,
 }
 
-impl<Account, Pool, State, Chain> AccountRpcImpl<Account, Pool, State, Chain>
+impl<Account, Pool, State> AccountRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
-    Chain: ChainAsyncService + 'static,
 {
     pub fn new(
         node_config: Arc<NodeConfig>,
         account: Account,
         pool: Pool,
         chain_state: State,
-        chain: Chain,
     ) -> Self {
         Self {
             account,
             pool,
             chain_state,
-            chain,
             node_config,
         }
     }
@@ -66,12 +61,11 @@ where
     }
 }
 
-impl<S, Pool, State, Chain> AccountApi for AccountRpcImpl<S, Pool, State, Chain>
+impl<S, Pool, State> AccountApi for AccountRpcImpl<S, Pool, State>
 where
     S: AccountAsyncService,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
-    Chain: ChainAsyncService + 'static,
 {
     fn default(&self) -> FutureResult<Option<AccountInfo>> {
         let service = self.account.clone();

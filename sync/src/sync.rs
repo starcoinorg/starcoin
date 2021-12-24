@@ -336,7 +336,7 @@ impl SyncService {
                         }
                     }
                 };
-                if let Err(e) = self_ref.notify(SyncDoneEvent { cancel }) {
+                if let Err(e) = self_ref.notify(SyncDoneEvent{ cancel }) {
                     error!("[sync] Broadcast SyncDone event error: {:?}", e);
                 }
             },
@@ -539,6 +539,7 @@ impl EventHandler<Self, SystemStarted> for SyncService {
 
 #[derive(Clone, Debug)]
 pub struct SyncDoneEvent {
+    #[allow(unused)]
     cancel: bool,
 }
 

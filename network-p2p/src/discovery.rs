@@ -773,7 +773,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
 
                                     DiscoveryOut::ValueFound(
                                         results,
-                                        stats.duration().unwrap_or_else(Default::default),
+                                        stats.duration().unwrap_or_default(),
                                     )
                                 }
                                 Err(e @ libp2p::kad::GetRecordError::NotFound { .. }) => {
@@ -781,7 +781,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                            "Libp2p => Failed to get record: {:?}", e);
                                     DiscoveryOut::ValueNotFound(
                                         e.into_key(),
-                                        stats.duration().unwrap_or_else(Default::default),
+                                        stats.duration().unwrap_or_default(),
                                     )
                                 }
                                 Err(e) => {
@@ -789,7 +789,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                            "Libp2p => Failed to get record: {:?}", e);
                                     DiscoveryOut::ValueNotFound(
                                         e.into_key(),
-                                        stats.duration().unwrap_or_else(Default::default),
+                                        stats.duration().unwrap_or_default(),
                                     )
                                 }
                             };
@@ -803,14 +803,14 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             let ev = match res {
                                 Ok(ok) => DiscoveryOut::ValuePut(
                                     ok.key,
-                                    stats.duration().unwrap_or_else(Default::default),
+                                    stats.duration().unwrap_or_default(),
                                 ),
                                 Err(e) => {
                                     debug!(target: "sub-libp2p",
                                            "Libp2p => Failed to put record: {:?}", e);
                                     DiscoveryOut::ValuePutFailed(
                                         e.into_key(),
-                                        stats.duration().unwrap_or_else(Default::default),
+                                        stats.duration().unwrap_or_default(),
                                     )
                                 }
                             };

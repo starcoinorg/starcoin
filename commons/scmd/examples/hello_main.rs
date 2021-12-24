@@ -17,6 +17,7 @@ struct GlobalOpts {
     #[structopt(short = "c", default_value = "0")]
     counter: usize,
     #[structopt(short = "r")]
+    #[allow(unused)]
     required: String,
 }
 
@@ -114,6 +115,7 @@ impl CommandAction for ShowCommand {
 #[structopt(name = "alpha")]
 struct AlphaOpts {
     #[structopt(short = "n", default_value = "alpha_default")]
+    #[allow(unused)]
     name: String,
 }
 
@@ -121,6 +123,7 @@ struct AlphaOpts {
 #[structopt(name = "alpha_sub1")]
 struct AlphaSub1Opts {
     #[structopt(short = "n", default_value = "alpha_sub1_default")]
+    #[allow(unused)]
     name: String,
 }
 
@@ -144,6 +147,7 @@ impl Counter {
 #[structopt(name = "beta")]
 struct BetaOpts {
     #[structopt(short = "n", default_value = "beta_default")]
+    #[allow(unused)]
     name: String,
 }
 
@@ -170,6 +174,7 @@ impl CommandAction for BetaCommand {
 #[structopt(name = "beta_sub1")]
 struct BetaSub1Opts {
     #[structopt(short = "n", default_value = "beta_default")]
+    #[allow(unused)]
     name: String,
 }
 
@@ -197,6 +202,7 @@ impl CommandAction for BetaSub1Command {
 #[structopt(name = "test")]
 struct TestOpts {
     #[structopt(short = "d")]
+    #[allow(unused)]
     debug: bool,
 }
 

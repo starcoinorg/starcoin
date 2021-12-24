@@ -135,12 +135,6 @@ pub enum BehaviourOut {
     BannedRequest(PeerId),
 }
 
-#[derive(Debug, Clone)]
-pub struct RpcRequest {
-    remote: PeerId,
-    data: Vec<u8>,
-}
-
 impl Behaviour {
     /// Builds a new `Behaviour`.
     pub fn new(

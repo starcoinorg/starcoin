@@ -3,7 +3,7 @@ name = "starcoin-decrypt"
 version = "1.9.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 pbkdf2="0.3"

@@ -145,7 +145,7 @@ impl FromStr for Seeds {
         let seeds = s
             .split(',')
             .filter(|s| !s.is_empty())
-            .map(|s| MultiaddrWithPeerId::from_str(s))
+            .map(MultiaddrWithPeerId::from_str)
             .collect::<Result<Vec<MultiaddrWithPeerId>, network_p2p_types::ParseErr>>()?;
         Ok(Seeds(seeds))
     }
