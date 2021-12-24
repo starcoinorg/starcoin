@@ -12,7 +12,7 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    BlockHeaderView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+    BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
     SignedUserTransactionView, StrView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionView,
 };
@@ -21,7 +21,7 @@ use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_types::access_path::AccessPath;
-use starcoin_types::block::{BlockInfo, BlockNumber};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use std::convert::TryInto;
@@ -161,11 +161,14 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfo>> {
+    fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfoView>> {
         let service = self.service.clone();
 
         let fut = async move {
-            let result = service.get_block_info_by_number(number).await?;
+            let result = service
+                .get_block_info_by_number(number)
+                .await?
+                .map(Into::into);
             Ok(result)
         }
         .map_err(map_err);

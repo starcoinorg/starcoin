@@ -177,11 +177,10 @@
                   ],
                   "properties": {
                     "block_info": {
-                      "description": "`BlockInfo` is the object we store in the storage. It consists of the block as well as the execution result of this block.",
                       "type": "object",
                       "required": [
                         "block_accumulator_info",
-                        "block_id",
+                        "block_hash",
                         "total_difficulty",
                         "txn_accumulator_info"
                       ],
@@ -211,20 +210,16 @@
                             },
                             "num_leaves": {
                               "description": "The total number of leaves in this accumulator.",
-                              "type": "integer",
-                              "format": "uint64",
-                              "minimum": 0.0
+                              "type": "string"
                             },
                             "num_nodes": {
                               "description": "The total number of nodes in this accumulator.",
-                              "type": "integer",
-                              "format": "uint64",
-                              "minimum": 0.0
+                              "type": "string"
                             }
                           }
                         },
-                        "block_id": {
-                          "description": "Block id",
+                        "block_hash": {
+                          "description": "Block hash",
                           "type": "string",
                           "format": "HashValue"
                         },
@@ -257,15 +252,11 @@
                             },
                             "num_leaves": {
                               "description": "The total number of leaves in this accumulator.",
-                              "type": "integer",
-                              "format": "uint64",
-                              "minimum": 0.0
+                              "type": "string"
                             },
                             "num_nodes": {
                               "description": "The total number of nodes in this accumulator.",
-                              "type": "integer",
-                              "format": "uint64",
-                              "minimum": 0.0
+                              "type": "string"
                             }
                           }
                         }
@@ -422,11 +413,10 @@
                 ],
                 "properties": {
                   "block_info": {
-                    "description": "`BlockInfo` is the object we store in the storage. It consists of the block as well as the execution result of this block.",
                     "type": "object",
                     "required": [
                       "block_accumulator_info",
-                      "block_id",
+                      "block_hash",
                       "total_difficulty",
                       "txn_accumulator_info"
                     ],
@@ -456,20 +446,16 @@
                           },
                           "num_leaves": {
                             "description": "The total number of leaves in this accumulator.",
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
+                            "type": "string"
                           },
                           "num_nodes": {
                             "description": "The total number of nodes in this accumulator.",
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
+                            "type": "string"
                           }
                         }
                       },
-                      "block_id": {
-                        "description": "Block id",
+                      "block_hash": {
+                        "description": "Block hash",
                         "type": "string",
                         "format": "HashValue"
                       },
@@ -502,15 +488,11 @@
                           },
                           "num_leaves": {
                             "description": "The total number of leaves in this accumulator.",
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
+                            "type": "string"
                           },
                           "num_nodes": {
                             "description": "The total number of nodes in this accumulator.",
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
+                            "type": "string"
                           }
                         }
                       }

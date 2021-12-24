@@ -3,6 +3,7 @@
 
 mod epoch_info;
 mod get_block_cmd;
+mod get_block_info_cmd;
 mod get_events_cmd;
 mod get_txn_cmd;
 mod get_txn_info_cmd;
@@ -14,6 +15,7 @@ mod list_block_cmd;
 
 pub use epoch_info::*;
 pub use get_block_cmd::*;
+pub use get_block_info_cmd::*;
 pub use get_events_cmd::*;
 pub use get_txn_cmd::*;
 pub use get_txn_info_cmd::*;

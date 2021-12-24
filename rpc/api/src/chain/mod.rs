@@ -4,8 +4,8 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
-    BlockHeaderView, BlockView, ChainId, ChainInfoView, StrView, TransactionEventResponse,
-    TransactionInfoView, TransactionInfoWithProofView, TransactionView,
+    BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
+    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -13,7 +13,7 @@ use jsonrpc_derive::rpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{BlockInfo, BlockNumber};
+use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
 
 #[rpc(client, server, schema)]
@@ -47,7 +47,7 @@ pub trait ChainApi {
         count: u64,
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
-    fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfo>>;
+    fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
     fn get_transaction(
