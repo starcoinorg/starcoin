@@ -1,33 +1,3 @@
-// Copyright (c) 2018-2021, StarCoin Project
-//
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-// 1. Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright notice, this list
-//    of conditions and the following disclaimer in the documentation and/or other
-//    materials provided with the distribution.
-//
-// 3. Neither the name of the copyright holder nor the names of its contributors may be
-//    used to endorse or promote products derived from this software without specific
-//    prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-// THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
-
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -324,7 +294,7 @@ static inline int force_software_aes(void)
   } while (0)
 
 
-#if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
+#if !defined NO_AES && (defined(__x86_64__) && (!defined(_MSC_VER)))
 
 
 // Optimised code below, uses x86-specific intrinsics, SSE2, AES-NI
@@ -765,6 +735,7 @@ void cn_slow_hash_free_state(void)
  */
 void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int prehashed, uint64_t height)
 {
+   // printf("this intel function\n");
     RDATA_ALIGN16 uint8_t expandedKey[240];  /* These buffers are aligned to use later with SSE functions */
 
     uint8_t text[INIT_SIZE_BYTE];
@@ -1198,6 +1169,7 @@ STATIC INLINE void xor_blocks(uint8_t* a, const uint8_t* b)
 
 void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int prehashed, uint64_t height)
 {
+    //printf("this arm function\n");
     RDATA_ALIGN16 uint8_t expandedKey[240];
 
     uint8_t *local_hp_state;
@@ -1662,6 +1634,7 @@ union cn_slow_hash_state {
 
 #define FORCE_USE_HEAP
 void cn_slow_hash(const void *data, size_t length, char *hash, int variant, int prehashed, uint64_t height) {
+    //printf("this windows function\n");
 #ifndef FORCE_USE_HEAP
   uint8_t long_state[MEMORY];
 #else
