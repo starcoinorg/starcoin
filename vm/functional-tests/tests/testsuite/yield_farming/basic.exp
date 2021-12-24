@@ -1,0 +1,648 @@
+processed 17 tasks
+
+task 1 'create_account'. lines 3-3:
+{
+  "status": "Executed",
+  "gas_used": "277396",
+  "write_set": [
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x209889fcf34113121da598787fa760cd1dba995e71204ea751dba23c2aceae446f010000000000000000000000000a550c18010000000000000000000000000a550c1801000000000000001800000000000000000000000000000000000000000a550c1801000000000000001801000000000000000000000000000000000000000a550c1801000000000000001802000000000000000000000000000000000000000a550c180100000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00c086e2be85d2000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x15d0b101053497f9a2354d63f744d5d0/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x2000000000000000000000000000000000000000000000000000000000000000000115d0b101053497f9a2354d63f744d5d00115d0b101053497f9a2354d63f744d5d0000000000000000018000000000000000015d0b101053497f9a2354d63f744d5d0010000000000000018010000000000000015d0b101053497f9a2354d63f744d5d0010000000000000018020000000000000015d0b101053497f9a2354d63f744d5d00000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x15d0b101053497f9a2354d63f744d5d0/1/0x00000000000000000000000000000001::Account::AutoAcceptToken",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x01"
+        }
+      }
+    },
+    {
+      "access_path": "0x15d0b101053497f9a2354d63f744d5d0/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00008a5d784563010000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x15d0b101053497f9a2354d63f744d5d0/1/0x00000000000000000000000000000001::Event::EventHandleGenerator",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x030000000000000015d0b101053497f9a2354d63f744d5d0"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "data": "0x000000000000000000000000000000010353544303535443",
+      "type_tag": "0x00000000000000000000000000000001::Account::AcceptTokenEvent",
+      "event_key": "0x020000000000000015d0b101053497f9a2354d63f744d5d0",
+      "event_seq_number": "0"
+    },
+    {
+      "data": "0x00008a5d78456301000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::WithdrawEvent",
+      "event_key": "0x00000000000000000000000000000000000000000a550c18",
+      "event_seq_number": "0"
+    },
+    {
+      "data": "0x00008a5d78456301000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::DepositEvent",
+      "event_key": "0x010000000000000015d0b101053497f9a2354d63f744d5d0",
+      "event_seq_number": "0"
+    }
+  ]
+}
+
+task 2 'create_account'. lines 5-5:
+{
+  "status": "Executed",
+  "gas_used": "277396",
+  "write_set": [
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x209889fcf34113121da598787fa760cd1dba995e71204ea751dba23c2aceae446f010000000000000000000000000a550c18010000000000000000000000000a550c1802000000000000001800000000000000000000000000000000000000000a550c1801000000000000001801000000000000000000000000000000000000000a550c1801000000000000001802000000000000000000000000000000000000000a550c180200000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00d80f9aa785d2000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x49ea513f9cec55eaa43da082702e7a04/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x2000000000000000000000000000000000000000000000000000000000000000000149ea513f9cec55eaa43da082702e7a040149ea513f9cec55eaa43da082702e7a04000000000000000018000000000000000049ea513f9cec55eaa43da082702e7a04010000000000000018010000000000000049ea513f9cec55eaa43da082702e7a04010000000000000018020000000000000049ea513f9cec55eaa43da082702e7a040000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x49ea513f9cec55eaa43da082702e7a04/1/0x00000000000000000000000000000001::Account::AutoAcceptToken",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x01"
+        }
+      }
+    },
+    {
+      "access_path": "0x49ea513f9cec55eaa43da082702e7a04/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00e87648170000000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x49ea513f9cec55eaa43da082702e7a04/1/0x00000000000000000000000000000001::Event::EventHandleGenerator",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x030000000000000049ea513f9cec55eaa43da082702e7a04"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "data": "0x000000000000000000000000000000010353544303535443",
+      "type_tag": "0x00000000000000000000000000000001::Account::AcceptTokenEvent",
+      "event_key": "0x020000000000000049ea513f9cec55eaa43da082702e7a04",
+      "event_seq_number": "0"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::WithdrawEvent",
+      "event_key": "0x00000000000000000000000000000000000000000a550c18",
+      "event_seq_number": "1"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::DepositEvent",
+      "event_key": "0x010000000000000049ea513f9cec55eaa43da082702e7a04",
+      "event_seq_number": "0"
+    }
+  ]
+}
+
+task 3 'create_account'. lines 7-7:
+{
+  "status": "Executed",
+  "gas_used": "277396",
+  "write_set": [
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x209889fcf34113121da598787fa760cd1dba995e71204ea751dba23c2aceae446f010000000000000000000000000a550c18010000000000000000000000000a550c1803000000000000001800000000000000000000000000000000000000000a550c1801000000000000001801000000000000000000000000000000000000000a550c1801000000000000001802000000000000000000000000000000000000000a550c180300000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00f098519085d2000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0xe35af2f41470de1fa36be7b6fd388c85/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x20000000000000000000000000000000000000000000000000000000000000000001e35af2f41470de1fa36be7b6fd388c8501e35af2f41470de1fa36be7b6fd388c850000000000000000180000000000000000e35af2f41470de1fa36be7b6fd388c850100000000000000180100000000000000e35af2f41470de1fa36be7b6fd388c850100000000000000180200000000000000e35af2f41470de1fa36be7b6fd388c850000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0xe35af2f41470de1fa36be7b6fd388c85/1/0x00000000000000000000000000000001::Account::AutoAcceptToken",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x01"
+        }
+      }
+    },
+    {
+      "access_path": "0xe35af2f41470de1fa36be7b6fd388c85/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00e87648170000000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0xe35af2f41470de1fa36be7b6fd388c85/1/0x00000000000000000000000000000001::Event::EventHandleGenerator",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x0300000000000000e35af2f41470de1fa36be7b6fd388c85"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "data": "0x000000000000000000000000000000010353544303535443",
+      "type_tag": "0x00000000000000000000000000000001::Account::AcceptTokenEvent",
+      "event_key": "0x0200000000000000e35af2f41470de1fa36be7b6fd388c85",
+      "event_seq_number": "0"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::WithdrawEvent",
+      "event_key": "0x00000000000000000000000000000000000000000a550c18",
+      "event_seq_number": "2"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::DepositEvent",
+      "event_key": "0x0100000000000000e35af2f41470de1fa36be7b6fd388c85",
+      "event_seq_number": "0"
+    }
+  ]
+}
+
+task 4 'create_account'. lines 9-9:
+{
+  "status": "Executed",
+  "gas_used": "277396",
+  "write_set": [
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x209889fcf34113121da598787fa760cd1dba995e71204ea751dba23c2aceae446f010000000000000000000000000a550c18010000000000000000000000000a550c1804000000000000001800000000000000000000000000000000000000000a550c1801000000000000001801000000000000000000000000000000000000000a550c1801000000000000001802000000000000000000000000000000000000000a550c180400000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x000822097985d2000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0xdf3be0fc3bdd7a5585542ffd0adc2f01/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x20000000000000000000000000000000000000000000000000000000000000000001df3be0fc3bdd7a5585542ffd0adc2f0101df3be0fc3bdd7a5585542ffd0adc2f010000000000000000180000000000000000df3be0fc3bdd7a5585542ffd0adc2f010100000000000000180100000000000000df3be0fc3bdd7a5585542ffd0adc2f010100000000000000180200000000000000df3be0fc3bdd7a5585542ffd0adc2f010000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0xdf3be0fc3bdd7a5585542ffd0adc2f01/1/0x00000000000000000000000000000001::Account::AutoAcceptToken",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x01"
+        }
+      }
+    },
+    {
+      "access_path": "0xdf3be0fc3bdd7a5585542ffd0adc2f01/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00e87648170000000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0xdf3be0fc3bdd7a5585542ffd0adc2f01/1/0x00000000000000000000000000000001::Event::EventHandleGenerator",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x0300000000000000df3be0fc3bdd7a5585542ffd0adc2f01"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "data": "0x000000000000000000000000000000010353544303535443",
+      "type_tag": "0x00000000000000000000000000000001::Account::AcceptTokenEvent",
+      "event_key": "0x0200000000000000df3be0fc3bdd7a5585542ffd0adc2f01",
+      "event_seq_number": "0"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::WithdrawEvent",
+      "event_key": "0x00000000000000000000000000000000000000000a550c18",
+      "event_seq_number": "3"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::DepositEvent",
+      "event_key": "0x0100000000000000df3be0fc3bdd7a5585542ffd0adc2f01",
+      "event_seq_number": "0"
+    }
+  ]
+}
+
+task 5 'create_account'. lines 11-72:
+{
+  "status": "Executed",
+  "gas_used": "277396",
+  "write_set": [
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x209889fcf34113121da598787fa760cd1dba995e71204ea751dba23c2aceae446f010000000000000000000000000a550c18010000000000000000000000000a550c1805000000000000001800000000000000000000000000000000000000000a550c1801000000000000001801000000000000000000000000000000000000000a550c1801000000000000001802000000000000000000000000000000000000000a550c180500000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x0000000000000000000000000a550c18/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x0020abc06185d2000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x2c320be1aff973a3a007485e51b1412c/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x200000000000000000000000000000000000000000000000000000000000000000012c320be1aff973a3a007485e51b1412c012c320be1aff973a3a007485e51b1412c00000000000000001800000000000000002c320be1aff973a3a007485e51b1412c01000000000000001801000000000000002c320be1aff973a3a007485e51b1412c01000000000000001802000000000000002c320be1aff973a3a007485e51b1412c0000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x2c320be1aff973a3a007485e51b1412c/1/0x00000000000000000000000000000001::Account::AutoAcceptToken",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x01"
+        }
+      }
+    },
+    {
+      "access_path": "0x2c320be1aff973a3a007485e51b1412c/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x00e87648170000000000000000000000"
+        }
+      }
+    },
+    {
+      "access_path": "0x2c320be1aff973a3a007485e51b1412c/1/0x00000000000000000000000000000001::Event::EventHandleGenerator",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x03000000000000002c320be1aff973a3a007485e51b1412c"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "data": "0x000000000000000000000000000000010353544303535443",
+      "type_tag": "0x00000000000000000000000000000001::Account::AcceptTokenEvent",
+      "event_key": "0x02000000000000002c320be1aff973a3a007485e51b1412c",
+      "event_seq_number": "0"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::WithdrawEvent",
+      "event_key": "0x00000000000000000000000000000000000000000a550c18",
+      "event_seq_number": "4"
+    },
+    {
+      "data": "0x00e8764817000000000000000000000000000000000000000000000000000001035354430353544300",
+      "type_tag": "0x00000000000000000000000000000001::Account::DepositEvent",
+      "event_key": "0x01000000000000002c320be1aff973a3a007485e51b1412c",
+      "event_seq_number": "0"
+    }
+  ]
+}
+
+task 7 'run'. lines 77-107:
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpu8ruIW:93:9
+   │
+93 │         assert((2000000000 * 5) == withdraw_1, 1001);
+   │         ^^^^^^
+   │         │
+   │         'assert' function syntax has been deprecated and will be removed
+   │         Replace with 'assert!'. 'assert' has been replaced with a 'assert!' built-in macro so that arguments are no longer eagerly evaluated
+
+warning[W00001]: DEPRECATED. will be removed
+   ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpu8ruIW:99:9
+   │
+99 │         assert(index_2 > 0, 1002);
+   │         ^^^^^^
+   │         │
+   │         'assert' function syntax has been deprecated and will be removed
+   │         Replace with 'assert!'. 'assert' has been replaced with a 'assert!' built-in macro so that arguments are no longer eagerly evaluated
+
+warning[W00001]: DEPRECATED. will be removed
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpu8ruIW:100:9
+    │
+100 │         assert(amount_2 > 0, 1003);
+    │         ^^^^^^
+    │         │
+    │         'assert' function syntax has been deprecated and will be removed
+    │         Replace with 'assert!'. 'assert' has been replaced with a 'assert!' built-in macro so that arguments are no longer eagerly evaluated
+
+{
+  "status": "Executed",
+  "gas_used": "92598",
+  "write_set": [
+    {
+      "access_path": "0x15d0b101053497f9a2354d63f744d5d0/1/0x00000000000000000000000000000001::Account::Account",
+      "action": "Value",
+      "value": {
+        "Resource": {
+          "raw": "0x2057290c46d313dfcd9cfe8bd0a05592e915d0b101053497f9a2354d63f744d5d00115d0b101053497f9a2354d63f744d5d00115d0b101053497f9a2354d63f744d5d0000000000000000018000000000000000015d0b101053497f9a2354d63f744d5d0010000000000000018010000000000000015d0b101053497f9a2354d63f744d5d0010000000000000018020000000000000015d0b101053497f9a2354d63f744d5d00100000000000000"
+        }
+      }
+    }
+  ],
+  "events": []
+}
+
+task 8 'run'. lines 110-129:
+Error: error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpRAci6P:115:9
+    │
+115 │     use alice::YieldFarmingWarpper::{Usdx};
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'alice::YieldFarmingWarpper'
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpRAci6P:122:31
+    │
+122 │         Token::register_token<Usdx>(&account, precision);
+    │                               ^^^^ Unbound type 'Usdx' in current scope
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpRAci6P:123:34
+    │
+123 │         Account::do_accept_token<Usdx>(&account);
+    │                                  ^^^^ Unbound type 'Usdx' in current scope
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpRAci6P:124:38
+    │
+124 │         let usdx_token = Token::mint<Usdx>(&account, usdx_amount);
+    │                                      ^^^^ Unbound type 'Usdx' in current scope
+
+
+
+task 9 'run'. lines 134-149:
+Error: error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmp2eZMmW:138:9
+    │
+138 │     use alice::YieldFarmingWarpper;
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'alice::YieldFarmingWarpper'
+
+error[E04010]: cannot infer type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmp2eZMmW:144:23
+    │
+144 │         let tresury = Account::withdraw(&account, usdx_amount);
+    │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not infer this type. Try adding an annotation
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmp2eZMmW:145:9
+    │
+145 │         YieldFarmingWarpper::initialize(&account, tresury);
+    │         ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+
+
+task 10 'run'. lines 152-171:
+Error: error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpJvhL4m:154:9
+    │
+154 │     use alice::YieldFarmingWarpper::{Usdx, Self};
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'alice::YieldFarmingWarpper'
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpJvhL4m:161:34
+    │
+161 │         Account::do_accept_token<Usdx>(&account);
+    │                                  ^^^^ Unbound type 'Usdx' in current scope
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpJvhL4m:162:9
+    │
+162 │         YieldFarmingWarpper::stake(&account, 100000000);
+    │         ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpJvhL4m:163:21
+    │
+163 │         let token = YieldFarmingWarpper::harvest(&account);
+    │                     ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpJvhL4m:164:36
+    │
+164 │         let _amount = Token::value<Usdx>(&token);
+    │                                    ^^^^ Unbound type 'Usdx' in current scope
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpJvhL4m:167:26
+    │
+167 │         Account::deposit<Usdx>(Signer::address_of(&account), token);
+    │                          ^^^^ Unbound type 'Usdx' in current scope
+
+
+
+task 12 'run'. lines 175-185:
+Error: error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpUBwTtX:177:9
+    │
+177 │     use alice::YieldFarmingWarpper::{Usdx, Self};
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'alice::YieldFarmingWarpper'
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpUBwTtX:181:34
+    │
+181 │         Account::do_accept_token<Usdx>(&account);
+    │                                  ^^^^ Unbound type 'Usdx' in current scope
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpUBwTtX:182:9
+    │
+182 │         YieldFarmingWarpper::stake(&account, 100000000);
+    │         ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+
+
+task 14 'run'. lines 189-202:
+Error: error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpwmweaM:191:9
+    │
+191 │     use alice::YieldFarmingWarpper;
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'alice::YieldFarmingWarpper'
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpwmweaM:196:24
+    │
+196 │         let amount00 = YieldFarmingWarpper::query_gov_token_amount(Signer::address_of(&account));
+    │                        ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+warning[W00001]: DEPRECATED. will be removed
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpwmweaM:199:9
+    │
+199 │         assert(amount00 > 0, 10004);
+    │         ^^^^^^
+    │         │
+    │         'assert' function syntax has been deprecated and will be removed
+    │         Replace with 'assert!'. 'assert' has been replaced with a 'assert!' built-in macro so that arguments are no longer eagerly evaluated
+
+error[E04003]: built-in operation not supported
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpwmweaM:199:16
+    │
+196 │         let amount00 = YieldFarmingWarpper::query_gov_token_amount(Signer::address_of(&account));
+    │                        ------------------------------------------------------------------------- Found: '_'. But expected: 'u8', 'u64', 'u128'
+    ·
+199 │         assert(amount00 > 0, 10004);
+    │                ^^^^^^^^ Invalid argument to '>'
+
+error[E04003]: built-in operation not supported
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpwmweaM:199:27
+    │
+196 │         let amount00 = YieldFarmingWarpper::query_gov_token_amount(Signer::address_of(&account));
+    │                        ------------------------------------------------------------------------- Found: '_'. But expected: 'u8', 'u64', 'u128'
+    ·
+199 │         assert(amount00 > 0, 10004);
+    │                           ^ Invalid argument to '>'
+
+
+
+task 16 'run'. lines 206-226:
+Error: error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpuvAByO:208:9
+    │
+208 │     use alice::YieldFarmingWarpper::{Usdx, Self};
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid 'use'. Unbound module: 'alice::YieldFarmingWarpper'
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpuvAByO:215:24
+    │
+215 │         let amount00 = YieldFarmingWarpper::query_gov_token_amount(Signer::address_of(&account));
+    │                        ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+error[E03002]: unbound module
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpuvAByO:217:21
+    │
+217 │         let token = YieldFarmingWarpper::harvest(&account);
+    │                     ^^^^^^^^^^^^^^^^^^^ Unbound module alias 'YieldFarmingWarpper'
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpuvAByO:218:36
+    │
+218 │         let amount1 = Token::value<Usdx>(&token);
+    │                                    ^^^^ Unbound type 'Usdx' in current scope
+
+warning[W00001]: DEPRECATED. will be removed
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpuvAByO:220:9
+    │
+220 │         assert(amount1 > 0, 10005);
+    │         ^^^^^^
+    │         │
+    │         'assert' function syntax has been deprecated and will be removed
+    │         Replace with 'assert!'. 'assert' has been replaced with a 'assert!' built-in macro so that arguments are no longer eagerly evaluated
+
+error[E03004]: unbound type
+    ┌─ /var/folders/22/7lqd5m154xq7vwps6d2r6hwm0000gn/T/.tmpuvAByO:222:26
+    │
+222 │         Account::deposit<Usdx>(Signer::address_of(&account), token);
+    │                          ^^^^ Unbound type 'Usdx' in current scope
+
+

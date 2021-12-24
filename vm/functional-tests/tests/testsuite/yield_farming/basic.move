@@ -1,16 +1,21 @@
-//! account: alice, 100000000000000000 0x1::STC::STC
-//! account: bob
-//! account: cindy
-//! account: davied
-//! account: joe
+//# init
 
-//! sender: alice
-address alice = {{alice}};
+//# create_account --addr alice --amount 100000000000000000
+
+//# create_account --addr bob
+
+//# create_account --addr cindy
+
+//# create_account --addr davied
+
+//# create_account --addr joe
+
+//! publish
 module alice::YieldFarmingWarpper {
-    use 0x1::Token;
-    use 0x1::Account;
-    use 0x1::Signer;
-    use 0x1::YieldFarmingV2;
+    use Std::Token;
+    use Std::Account;
+    use Std::Signer;
+    use Std::YieldFarmingV2;
 
     struct Usdx has copy, drop, store {}
 
@@ -65,19 +70,15 @@ module alice::YieldFarmingWarpper {
         YieldFarmingV2::query_gov_token_amount<PoolType_A, Usdx, AssetType_A>(account, @alice)
     }
 }
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 86400000
 
-//! new-transaction
-//! sender: alice
+//# block --author 0x1 --number 1 --timestamp 86400000
+
+//# run --signers alice
 script {
-    use 0x1::YieldFarmingV2;
-    use 0x1::Timestamp;
-    use 0x1::Debug;
+    use Std::YieldFarmingV2;
+    use Std::Timestamp;
+    use Std::Debug;
 
     /// Index test
     fun main(_account: signer) {
@@ -104,16 +105,13 @@ script {
         //assert((2000000000 * 5) == withdraw_1, 10001);
     }
 }
-// check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
-    use 0x1::Account;
-    use 0x1::Token;
-    use 0x1::Math;
+    use Std::Account;
+    use Std::Token;
+    use Std::Math;
     use alice::YieldFarmingWarpper::{Usdx};
 
     /// Initial reward token, registered and mint it
@@ -129,15 +127,14 @@ script {
         Account::deposit_to_self(&account, usdx_token);
     }
 }
-// check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+
+//# run --signers alice
 script {
-    use 0x1::Account;
-    use 0x1::Math;
+    use Std::Account;
+    use Std::Math;
     use alice::YieldFarmingWarpper;
 
     /// Inital a treasury into yield farming
@@ -150,18 +147,15 @@ script {
         YieldFarmingWarpper::initialize(&account, tresury);
     }
 }
-// check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+
+//# run --signers bob
 script {
     use alice::YieldFarmingWarpper::{Usdx, Self};
-    use 0x1::Account;
-    use 0x1::Token;
-    use 0x1::Signer;
-    use 0x1::Debug;
+    use Std::Account;
+    use Std::Token;
+    use Std::Signer;
+    use Std::Debug;
 
     /// 1. First stake, check whether first rewards has been executed.
     fun main(account: signer) {
@@ -175,21 +169,13 @@ script {
         Account::deposit<Usdx>(Signer::address_of(&account), token);
     }
 }
-// check: EXECUTED
 
+//# block --author 0x1 --number 2 --timestamp 86420000
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 86420000
-
-//! new-transaction
-//! sender: cindy
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers cindy
 script {
     use alice::YieldFarmingWarpper::{Usdx, Self};
-    use 0x1::Account;
+    use Std::Account;
 
     /// 2. Cindy joined and staking some asset
     fun init(account: signer) {
@@ -197,21 +183,14 @@ script {
         YieldFarmingWarpper::stake(&account, 100000000);
     }
 }
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 3
-//! block-time: 86430000
+//# block --author 0x1 --number 3 --timestamp 86430000
 
-//! new-transaction
-//! sender: cindy
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers cindy
 script {
     use alice::YieldFarmingWarpper;
-    use 0x1::Debug;
-    use 0x1::Signer;
+    use Std::Debug;
+    use Std::Signer;
 
     /// 3. Cindy harvest after 20 seconds, checking whether has rewards.
     fun init(account: signer) {
@@ -221,23 +200,16 @@ script {
         assert(amount00 > 0, 10004);
     }
 }
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 4
-//! block-time: 86440000
+//# block --author 0x1 --number 4 --timestamp 86440000
 
-//! new-transaction
-//! sender: cindy
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers cindy
 script {
     use alice::YieldFarmingWarpper::{Usdx, Self};
-    use 0x1::Account;
-    use 0x1::Token;
-    use 0x1::Signer;
-    use 0x1::Debug;
+    use Std::Account;
+    use Std::Token;
+    use Std::Signer;
+    use Std::Debug;
 
     /// 4. Cindy harvest after 40 seconds, checking whether has rewards.
     fun init(account: signer) {
@@ -252,4 +224,3 @@ script {
         Account::deposit<Usdx>(Signer::address_of(&account), token);
     }
 }
-// check: EXECUTED

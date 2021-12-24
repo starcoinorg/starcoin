@@ -4,6 +4,7 @@ use anyhow::{bail, Result};
 use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_compiler::compiled_unit::CompiledUnitEnum;
+use move_compiler::shared::{NumberFormat, NumericalAddress};
 use move_compiler::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_core_types::{
     account_address::AccountAddress,
@@ -19,12 +20,16 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{
-    ed25519::Ed25519PublicKey, HashValue, ValidCryptoMaterial, ValidCryptoMaterialStringExt,
+    ed25519::Ed25519PublicKey, HashValue, PrivateKey, Uniform, ValidCryptoMaterial,
+    ValidCryptoMaterialStringExt,
 };
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
-use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView};
+use starcoin_rpc_api::types::{
+    ContractCall, FunctionIdView, TransactionArgumentView, TransactionOutputView, TypeTagView,
+};
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::{
@@ -35,7 +40,7 @@ use starcoin_types::{
 use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::account_config::{association_address, core_code_address};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::transaction::DryRunTransaction;
+use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
     account_config::BalanceResource,
@@ -52,7 +57,7 @@ use starcoin_vm_types::{
 };
 use std::convert::TryFrom;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::PRECOMPILED_STARCOIN_FRAMEWORK;
+use stdlib::{starcoin_framework_named_addresses, PRECOMPILED_STARCOIN_FRAMEWORK};
 use structopt::StructOpt;
 
 mod in_memory_state_cache;
@@ -138,15 +143,20 @@ pub enum StarcoinSubcommands {
     CreateAccount {
         #[structopt(long="addr", parse(try_from_str=RawAddress::parse))]
         address: RawAddress,
-        #[structopt(long = "amount")]
-        initial_balance: u64,
+        #[structopt(long = "amount", default_value = "100000000000")]
+        initial_balance: u128,
+        #[structopt(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+        public_key: Option<Ed25519PublicKey>,
     },
     #[structopt(name = "block")]
     NewBlock {
         #[structopt(long, parse(try_from_str=RawAddress::parse))]
         author: Option<RawAddress>,
+        #[structopt(long)]
         timestamp: Option<u64>,
+        #[structopt(long)]
         number: Option<u64>,
+        #[structopt(long)]
         uncles: Option<u64>,
     },
     #[structopt(name = "call")]
@@ -309,7 +319,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         &mut self,
         txn: RawUserTransaction,
         public_key: AccountPublicKey,
-    ) -> Result<()> {
+    ) -> Result<TransactionOutput> {
         let mut vm = StarcoinVM::new(None);
         let (status, output) = vm.dry_run_transaction(
             &self.storage,
@@ -321,7 +331,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.storage.apply_write_set(output.into_inner().0)?;
+                    self.storage
+                        .apply_write_set(output.clone().into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -331,8 +342,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 bail!("Transaction discarded. VMStatus: {}", status)
             }
         }
-
-        Ok(())
+        Ok(output)
     }
 
     fn handle_contract_call(&self, call: ContractCall) -> Result<Option<String>> {
@@ -366,10 +376,52 @@ impl<'a> StarcoinTestAdapter<'a> {
         &mut self,
         addr: RawAddress,
         initial_balance: u128,
+        public_key: Option<Ed25519PublicKey>,
     ) -> Result<Option<String>> {
         let sender = association_address();
 
         let params = self.fetch_default_transaction_parameters(&sender)?;
+
+        match &addr {
+            RawAddress::Named(name) => {
+                if !self.compiled_state.contain_name_address(name.as_str()) {
+                    // make it deterministic.
+                    let key = Ed25519PrivateKey::try_from(
+                        HashValue::sha3_256_of(name.as_bytes()).as_slice(),
+                    )
+                    .unwrap()
+                    .public_key();
+
+                    let addr = AccountPublicKey::Single(key.clone()).derived_address();
+                    self.compiled_state
+                        .add_named_addresses({
+                            let mut addrs = BTreeMap::default();
+                            addrs.insert(
+                                name.as_str(),
+                                NumericalAddress::new(addr.into_bytes(), NumberFormat::Hex),
+                            );
+                            addrs
+                        })
+                        .unwrap();
+                    self.public_key_mapping.insert(name.clone(), key);
+                } else if let Some(_) = public_key {
+                    bail!(
+                        "name address {} = {} already exists, should not provide public key",
+                        name,
+                        self.compiled_state.resolve_address(&addr)
+                    );
+                }
+            }
+            RawAddress::Anonymous(addr) => {
+                if let Some(_public_key) = public_key {
+                    bail!(
+                        "create anonymous address {} cannot provide public key",
+                        addr
+                    );
+                }
+            }
+        }
+
         let addr = self.compiled_state.resolve_address(&addr);
         let txn = RawUserTransaction::new_script_function(
             sender,
@@ -388,8 +440,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             params.expiration_timestamp_secs,
             params.chainid,
         );
-        self.run_transaction(txn, self.association_public_key.clone())?;
-        Ok(None)
+        let output = self.run_transaction(txn, self.association_public_key.clone())?;
+
+        Ok(Some(serde_json::to_string_pretty(
+            &TransactionOutputView::from(output),
+        )?))
     }
     fn handle_new_block(
         &mut self,
@@ -475,7 +530,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         };
 
         // TODO: replace it with pacakge's named address mapping.
-        let mut named_address_mapping = BTreeMap::default();
+
+        let mut named_address_mapping = starcoin_framework_named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
@@ -649,9 +705,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             ChainId::test(),
         );
 
-        self.run_transaction(txn, public_key.into())?;
+        let output = self.run_transaction(txn, public_key.into())?;
 
-        Ok(None)
+        Ok(Some(serde_json::to_string_pretty(
+            &TransactionOutputView::from(output),
+        )?))
     }
 
     fn call_function(
@@ -700,9 +758,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             ChainId::test(),
         );
 
-        self.run_transaction(txn, public_key.into())?;
+        let output = self.run_transaction(txn, public_key.into())?;
 
-        Ok(None)
+        Ok(Some(serde_json::to_string_pretty(
+            &TransactionOutputView::from(output),
+        )?))
     }
 
     fn view_data(
@@ -724,7 +784,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             StarcoinSubcommands::CreateAccount {
                 address,
                 initial_balance,
-            } => self.handle_create_account(address, initial_balance as u128),
+                public_key,
+            } => self.handle_create_account(address, initial_balance, public_key),
             StarcoinSubcommands::NewBlock {
                 author,
                 timestamp,
