@@ -99,7 +99,7 @@ pub fn get_uses(move_files: &[String]) -> Result<Vec<(Address, String)>> {
         .into_iter()
         .flat_map(|d| match d {
             Definition::Module(m) => get_module_uses(&m),
-            Definition::Address(ad) => ad.modules.iter().flat_map(|m| get_module_uses(m)).collect(),
+            Definition::Address(ad) => ad.modules.iter().flat_map(get_module_uses).collect(),
             Definition::Script(s) => s
                 .uses
                 .iter()
