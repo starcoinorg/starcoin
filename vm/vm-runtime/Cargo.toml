@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.41"
-once_cell = "1.8.0"
+once_cell = "1.9.0"
 
 starcoin-types = { path = "../../types"}
 move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
