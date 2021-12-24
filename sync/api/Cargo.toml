@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-sync-api"
-version = "1.9.0"
+version = "1.9.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
