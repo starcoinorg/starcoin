@@ -1,15 +1,13 @@
-//! account: alice
+//# init -n dev
 
-//! sender: alice
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-    use 0x1::Account;
-    use 0x1::DummyToken::DummyToken;
+    use Std::Account;
+    use Std::DummyToken::DummyToken;
 
     fun main(account: signer) {
         Account::accept_token<DummyToken>(account);
     }
 }
-
-// check: gas_used
-// check: 37198
-// check: EXECUTED

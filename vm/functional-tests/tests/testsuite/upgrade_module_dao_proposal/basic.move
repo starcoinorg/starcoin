@@ -1,13 +1,13 @@
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# faucet --addr alice --amount 100000000000000000
 
+//# faucet --addr bob
+
+//# publish
 module alice::MyToken {
-    use 0x1::Token;
-    use 0x1::Dao;
+    use Std::Token;
+    use Std::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -20,61 +20,45 @@ module alice::MyToken {
     }
 }
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 1000
+//# block --author 0x1
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
     use alice::MyToken::{MyToken, Self};
-    use 0x1::Account;
-    use 0x1::Token;
+    use Std::Account;
+    use Std::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
 
         let market_cap = Token::market_cap<MyToken>();
-        assert(market_cap == 0, 8001);
-        assert(Token::is_registered_in<MyToken>(@alice), 8002);
+        assert!(market_cap == 0, 8001);
+        assert!(Token::is_registered_in<MyToken>(@alice), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
         Account::do_accept_token<MyToken>(&account);
     }
 }
 
-// check: EXECUTED
-
-
-// issuer mint
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::Account;
-    use 0x1::Token;
+    use Std::Account;
+    use Std::Token;
     use alice::MyToken::{MyToken};
     fun main(account: signer) {
         // mint 100 coins and check that the market cap increases appropriately
         let old_market_cap = Token::market_cap<MyToken>();
         let coin = Token::mint<MyToken>(&account, 10000);
-        assert(Token::value<MyToken>(&coin) == 10000, 8002);
-        assert(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
+        assert!(Token::value<MyToken>(&coin) == 10000, 8002);
+        assert!(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
         Account::deposit_to_self<MyToken>(&account, coin)
     }
 }
 
 // default upgrade strategy is arbitrary
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::PackageTxnManager;
-    use 0x1::Signer;
+    use Std::PackageTxnManager;
+    use Std::Signer;
     fun main(account: signer) {
         let hash = x"1111111111111111";
         PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
@@ -83,28 +67,23 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::Config;
-    use 0x1::Version;
-    use 0x1::PackageTxnManager;
-    use 0x1::Option;
+    use Std::Config;
+    use Std::Version;
+    use Std::PackageTxnManager;
+    use Std::Option;
     fun main(account: signer) {
         Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
         PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(0));
     }
 }
-// check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::PackageTxnManager;
-    use 0x1::STC::STC;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::PackageTxnManager;
+    use Std::STC::STC;
 
     fun test_plugin_fail(account: signer) {
         let upgrade_plan_cap = PackageTxnManager::extract_submit_upgrade_plan_cap(&account);
@@ -112,15 +91,11 @@ script {
     }
 }
 
-// check: "Keep(ABORTED { code: 102658"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::PackageTxnManager;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::PackageTxnManager;
     use alice::MyToken::MyToken;
 
 
@@ -132,13 +107,10 @@ fun test_plugin(account: signer) {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::STC::STC;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::STC::STC;
 
     fun test_propose_fail(account: signer) {
         let module_address = @alice;
@@ -155,14 +127,10 @@ script {
         );
     }
 }
-// check: "Keep(ABORTED { code: 102916"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
+    use Std::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
 
     fun test_propose(account: signer) {
@@ -180,84 +148,60 @@ script {
         );
     }
 }
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 3601000
 
-//! new-transaction
-//! sender: alice
+//# block --author 0x1 --timestamp 3601000
 
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::Dao;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Account;
-    use 0x1::Signer;
+    use Std::Account;
+    use Std::Signer;
 
     fun vote_proposal(signer: signer) {
         let proposal_id = 0;
         let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(@alice, proposal_id);
-        assert(state == 2, (state as u64));
+        assert!(state == 2, (state as u64));
         let balance = Account::balance<MyToken>(Signer::address_of(&signer));
         let balance = Account::withdraw<MyToken>(&signer, balance / 2);
         Dao::cast_vote<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(&signer, @alice, proposal_id, balance, true);
     }
 }
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 3
-//! block-time: 3662000
+//# block --author 0x1 --timestamp 7262000
 
-//! new-transaction
-//! sender: alice
-
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::Dao;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun queue_proposal(_signer: signer) {
         let proposal_id = 0;
         let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(@alice, proposal_id);
-        assert(state == 4, (state as u64));
+        assert!(state == 4, (state as u64));
         Dao::queue_proposal_action<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(@alice, proposal_id);
         let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(@alice, proposal_id);
-        assert(state == 5, (state as u64));
+        assert!(state == 5, (state as u64));
     }
 }
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 4
-//! block-time: 7262000
+//# block --author 0x1 --timestamp 14262000
 
-
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
+    use Std::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
-    use 0x1::Dao;
+    use Std::Dao;
 
     fun test_submit_plan(_account: signer) {
         let proposal_id = 0;
         let proposer_address = @alice;
         let state = Dao::proposal_state<MyToken, UpgradeModuleDaoProposal::UpgradeModuleV2>(proposer_address, proposal_id);
-        assert(state == 6, (state as u64));
+        assert!(state == 6, (state as u64));
         UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);
     }
 }
-// check: EXECUTED
 

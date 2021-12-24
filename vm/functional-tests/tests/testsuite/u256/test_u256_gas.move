@@ -1,18 +1,18 @@
+//# init -n dev
 
+//# faucet --addr alice --amount 100000000000000000
+
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let _ = U256::from_u64(10);
     }
 }
 
-// check: gas_used
-// check: 31743
-
-//! new-transaction
-
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let _ = U256::zero();
     }
@@ -20,36 +20,25 @@ script {
 }
 
 
-//check: gas_used
-// check: 31709
-
-//! new-transaction
-
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let _ = U256::from_u128(10u128);
     }
 
 }
-// check: gas_used
-// check: 28804
-
-//! new-transaction
-
+//# run --signers alice
 script {
-    use 0x1::U256;
-    use 0x1::Vector;
+    use Std::U256;
+    use Std::Vector;
     fun main() {
         let _ = U256::from_little_endian(Vector::singleton(1u8));
     }
 }
-// check: gas_used
-// check: 31329
-
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let a = U256::zero();
         let b = U256::one();
@@ -57,14 +46,9 @@ script {
         let _ = U256::add(a, b);
     }
 }
-// check: gas_used
-// check: 62764
-
-
-
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let a = U256::zero();
         let b = U256::one();
@@ -72,15 +56,9 @@ script {
         let _ = U256::sub(b, a);
     }
 }
-// check: gas_used
-// check: 62764
-
-
-
-
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let a = U256::zero();
         let b = U256::one();
@@ -88,13 +66,9 @@ script {
         let _ = U256::mul(b, a);
     }
 }
-// check: gas_used
-// check: 62764
-
-
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::U256;
+    use Std::U256;
     fun main() {
         let a = U256::one();
         let b = U256::one();
@@ -102,7 +76,4 @@ script {
         let _ = U256::div(a, b);
     }
 }
-// check: gas_used
-// check: 62770
-
 

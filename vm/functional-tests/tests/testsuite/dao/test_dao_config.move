@@ -1,11 +1,14 @@
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# publish
+
 module alice::MyToken {
-    use 0x1::Token;
-    use 0x1::Dao;
+    use Std::Token;
+    use Std::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -18,20 +21,20 @@ module alice::MyToken {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
     use alice::MyToken::{MyToken, Self};
-    use 0x1::Account;
-    use 0x1::Token;
+    use Std::Account;
+    use Std::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
 
         let market_cap = Token::market_cap<MyToken>();
-        assert(market_cap == 0, 8001);
-        assert(Token::is_registered_in<MyToken>(@alice), 8002);
+        assert!(market_cap == 0, 8001);
+        assert!(Token::is_registered_in<MyToken>(@alice), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
         Account::do_accept_token<MyToken>(&account);
     }
@@ -39,13 +42,13 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
 
     fun set_dao_config(signer: signer) {
@@ -63,13 +66,13 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -81,13 +84,13 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -99,13 +102,13 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -117,13 +120,13 @@ script {
 }
 // check: "Keep(ABORTED { code: 359943"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -135,12 +138,12 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
     use alice::MyToken::MyToken;
-    use 0x1::ModifyDaoConfigProposal;
+    use Std::ModifyDaoConfigProposal;
 
     fun test_plugin(signer: signer) {
         ModifyDaoConfigProposal::plugin<MyToken>(&signer); //ERR_NOT_AUTHORIZED
@@ -148,13 +151,13 @@ script {
 }
 // check: "Keep(ABORTED { code: 102658"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
     fun modify_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -192,13 +195,13 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
-    use 0x1::Config;
+    use Std::Config;
 
     fun modify_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -222,11 +225,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 359943"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -245,11 +248,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -268,11 +271,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -291,11 +294,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -314,11 +317,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 360199"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Dao;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {

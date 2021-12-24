@@ -1,8 +1,14 @@
-//! account: bob, 10000 0x1::STC::STC
-//! account: alice, 0 0x1::STC::STC
-address default={{default}};
+//# init -n dev
+
+//# faucet --addr bob
+
+//# faucet --addr alice --amount 0
+
+//# faucet --addr default
+
+//# publish
 module default::Holder {
-    use 0x1::Signer;
+    use Std::Signer;
 
     struct Hold<T> has key, store {
         x: T
@@ -20,12 +26,12 @@ module default::Holder {
 }
 
 
-//! new-transaction
-//! sender: bob
-address bob = {{bob}};
+
+//# run --signers bob
+
 script {
-    use 0x1::STC::STC;
-    use 0x1::Account;
+    use Std::STC::STC;
+    use Std::Account;
     fun main(account: signer) {
         let with_cap = Account::extract_withdraw_capability(&account);
         Account::pay_from_capability<STC>(&with_cap, @bob, 10, x"");
@@ -34,10 +40,10 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
+
+//# run --signers bob
 script {
-    use 0x1::Account;
+    use Std::Account;
     fun main(account: signer) {
         let rot_cap = Account::extract_key_rotation_capability(&account);
         Account::rotate_authentication_key_with_capability(&rot_cap, x"123abc");
@@ -48,10 +54,10 @@ script {
 // check: ABORTED
 // check: 26119
 
-//! new-transaction
-address default={{default}};
+
+//# run --signers default
 script {
-    use 0x1::Account;
+    use Std::Account;
     use default::Holder;
     fun main(account: signer) {
         Holder::hold(
@@ -67,19 +73,19 @@ script {
 // check: ABORTED
 // check: 26369
 
-//! new-transaction
+//# run --signers default
 script {
-    use 0x1::Account;
-    use 0x1::Signer;
+    use Std::Account;
+    use Std::Signer;
     fun main(sender: signer) {
         let cap = Account::extract_key_rotation_capability(&sender);
-        assert(
+        assert!(
             *Account::key_rotation_capability_address(&cap) == Signer::address_of(&sender), 0
         );
         Account::restore_key_rotation_capability(cap);
         let with_cap = Account::extract_withdraw_capability(&sender);
 
-        assert(
+        assert!(
             *Account::withdraw_capability_address(&with_cap) == Signer::address_of(&sender),
             0
         );
@@ -88,63 +94,64 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
-    use 0x1::Account;
-    use 0x1::STC::STC;
+    use Std::Account;
+    use Std::STC::STC;
     fun main(account: signer) {
         let with_cap = Account::extract_withdraw_capability(&account);
         Account::pay_from_capability<STC>(&with_cap, @alice, 10000, x"");
         Account::restore_withdraw_capability(with_cap);
-        assert(Account::balance<STC>(@alice) == 10000, 60)
+        assert!(Account::balance<STC>(@alice) == 10000, 60)
     }
 }
 // check: EXECUTED
 
+//# run --signers default
 // test core address
-//! new-transaction
+
 script {
-    use 0x1::CoreAddresses;
+    use Std::CoreAddresses;
     fun main() {
-       assert(CoreAddresses::VM_RESERVED_ADDRESS() == @0x0, 100);
+       assert!(CoreAddresses::VM_RESERVED_ADDRESS() == @0x0, 100);
     }
 }
 // check: EXECUTED
 
-//! new-transaction
+//# run --signers default
 script {
-use 0x1::Account;
-use 0x1::STC::STC;
-use 0x1::Authenticator;
+use Std::Account;
+use Std::STC::STC;
+use Std::Authenticator;
 fun main() {
     let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
     let expected_address = Authenticator::derived_address(dummy_auth_key);
     Account::create_account_with_address<STC>(expected_address);
-    assert(Account::exists_at(expected_address), 1000);
+    assert!(Account::exists_at(expected_address), 1000);
 }
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
+
+//# run --signers bob
 script {
-use 0x1::Account;
-use 0x1::Signer;
+use Std::Account;
+use Std::Signer;
 fun main(account: signer) {
     let seq = Account::sequence_number(Signer::address_of(&account));
-    assert(seq == 3, seq);
+    assert!(seq == 3, seq);
 }
 }
 // check: EXECUTE
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
-use 0x1::Account;
-use 0x1::STC::STC;
+use Std::Account;
+use Std::STC::STC;
 fun main(account: signer) {
     Account::pay_from<STC>(&account, @alice, 0u128);
 }

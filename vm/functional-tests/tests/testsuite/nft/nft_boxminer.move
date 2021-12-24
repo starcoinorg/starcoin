@@ -1,14 +1,16 @@
-//! account: creator
-//! account: alice, 0x07fa08a855753f0ff7292fdcbe871216, 100 0x1::STC::STC
+//# init -n dev
 
-//! sender: creator
-address creator = {{creator}};
+//# faucet --addr creator --amount 100000000000
+
+//# faucet --addr alice
+
+//# publish
 module creator::BoxMiner {
-    use 0x1::NFT::{Self, NFT, MintCapability};
-    use 0x1::Account;
-    use 0x1::NFTGallery;
-    use 0x1::STC::STC;
-    use 0x1::Signer;
+    use Std::NFT::{Self, NFT, MintCapability};
+    use Std::Account;
+    use Std::NFTGallery;
+    use Std::STC::STC;
+    use Std::Signer;
 
     struct BoxMiner has copy, store, drop{
         price: u128,
@@ -25,7 +27,7 @@ module creator::BoxMiner {
     }
 
     public fun init(sender: &signer, total_supply:u64, price: u128){
-        assert(Signer::address_of(sender) == @creator, 1000);
+        assert!(Signer::address_of(sender) == @creator, 1000);
         let meta = NFT::new_meta_with_image(b"stc_box_miner_nft", b"ipfs:://xxx", b"This is the starcoin boxminer nft");
         NFT::register_v2<BoxMiner>(sender, meta);
         move_to(sender, NFTInfo{total_supply, price});
@@ -42,7 +44,7 @@ module creator::BoxMiner {
         let counter = NFT::nft_type_info_counter_v2<BoxMiner>();
         let total_supply = ex_info.total_supply;
         let price = ex_info.price;
-        assert(total_supply >= counter, 1000);
+        assert!(total_supply >= counter, 1000);
         let tokens = Account::withdraw<STC>(sender, price);
         Account::deposit<STC>(@creator, tokens);
         let cap = borrow_global_mut<BoxMinerMintCapability>(@creator);
@@ -54,9 +56,7 @@ module creator::BoxMiner {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
     use creator::BoxMiner;
     fun main(sender: signer) {
@@ -66,12 +66,10 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address creator = {{creator}};
+//# run --signers alice
 script {
     use creator::BoxMiner;
-    use 0x1::NFTGallery;
+    use Std::NFTGallery;
     fun main(sender: signer) {
         let nft = BoxMiner::mint(&sender);
         NFTGallery::deposit(&sender, nft);

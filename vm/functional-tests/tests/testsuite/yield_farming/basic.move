@@ -1,16 +1,16 @@
-//# init
+//# init -n dev
 
-//# create_account --addr alice --amount 100000000000000000
+//# faucet --addr alice --amount 100000000000000000
 
-//# create_account --addr bob
+//# faucet --addr bob
 
-//# create_account --addr cindy
+//# faucet --addr cindy
 
-//# create_account --addr davied
+//# faucet --addr davied
 
-//# create_account --addr joe
+//# faucet --addr joe
 
-//! publish
+//# publish
 module alice::YieldFarmingWarpper {
     use Std::Token;
     use Std::Account;
@@ -72,7 +72,7 @@ module alice::YieldFarmingWarpper {
 }
 
 
-//# block --author 0x1 --number 1 --timestamp 86400000
+//# block --author 0x1 --timestamp 86400000
 
 //# run --signers alice
 script {
@@ -92,17 +92,17 @@ script {
             last_update_timestamp,
             Timestamp::now_seconds(), 2000000000);
         let withdraw_1 = YieldFarmingV2::calculate_withdraw_amount(index_1, harvest_index, _asset_total_weight);
-        assert((2000000000 * 5) == withdraw_1, 1001);
+        assert!((2000000000 * 5) == withdraw_1, 1001);
 
         // Denominator bigger than numberator
         let index_2 = YieldFarmingV2::calculate_harvest_index(0, 100000000000000, 0, 5, 10000000);
         let amount_2 = YieldFarmingV2::calculate_withdraw_amount(index_2, 0, 40000000000);
         Debug::print(&index_2);
         Debug::print(&amount_2);
-        assert(index_2 > 0, 1002);
-        assert(amount_2 > 0, 1003);
+        assert!(index_2 > 0, 1002);
+        assert!(amount_2 > 0, 1003);
         //let withdraw_1 = YieldFarmingV2::calculate_withdraw_amount(index_1, harvest_index, _asset_total_weight);
-        //assert((2000000000 * 5) == withdraw_1, 10001);
+        //assert!((2000000000 * 5) == withdraw_1, 10001);
     }
 }
 
@@ -165,12 +165,12 @@ script {
         let token = YieldFarmingWarpper::harvest(&account);
         let _amount = Token::value<Usdx>(&token);
         Debug::print(&_amount);
-        // assert(amount == 10000000000, 10002);
+        // assert!(amount == 10000000000, 10002);
         Account::deposit<Usdx>(Signer::address_of(&account), token);
     }
 }
 
-//# block --author 0x1 --number 2 --timestamp 86420000
+//# block --author 0x1 --timestamp 86420000
 
 //# run --signers cindy
 script {
@@ -184,7 +184,7 @@ script {
     }
 }
 
-//# block --author 0x1 --number 3 --timestamp 86430000
+//# block --author 0x1 --timestamp 86430000
 
 //# run --signers cindy
 script {
@@ -196,12 +196,12 @@ script {
     fun init(account: signer) {
         let amount00 = YieldFarmingWarpper::query_gov_token_amount(Signer::address_of(&account));
         Debug::print(&amount00);
-        // assert(amount00 == 0, 10004);
-        assert(amount00 > 0, 10004);
+        // assert!(amount00 == 0, 10004);
+        assert!(amount00 > 0, 10004);
     }
 }
 
-//# block --author 0x1 --number 4 --timestamp 86440000
+//# block --author 0x1 --timestamp 86440000
 
 //# run --signers cindy
 script {
@@ -219,8 +219,8 @@ script {
         let token = YieldFarmingWarpper::harvest(&account);
         let amount1 = Token::value<Usdx>(&token);
         Debug::print(&amount1);
-        assert(amount1 > 0, 10005);
-        // assert(amount1 == 20000000000, 10004);
+        assert!(amount1 > 0, 10005);
+        // assert!(amount1 == 20000000000, 10004);
         Account::deposit<Usdx>(Signer::address_of(&account), token);
     }
 }

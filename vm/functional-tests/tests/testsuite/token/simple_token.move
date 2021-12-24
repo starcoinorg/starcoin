@@ -1,9 +1,11 @@
-// Test user-defined token
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+
+//# publish
 module alice::Token {
 
     struct Coin<AssetType: copy + drop + store> has key, store {
@@ -26,7 +28,7 @@ module alice::Token {
     }
 
     public fun withdraw<ATy: copy + drop + store>(coin: &mut Coin<ATy>, amount: u64): Coin<ATy> {
-        assert(coin.value >= amount, 10);
+        assert!(coin.value >= amount, 10);
         coin.value = coin.value - amount;
         Coin { type: *&coin.type, value: amount }
     }
@@ -38,25 +40,21 @@ module alice::Token {
 
     public fun deposit<ATy: copy + drop + store>(coin: &mut Coin<ATy>, check: Coin<ATy>) {
         let Coin { value, type } = check;
-        assert(&coin.type == &type, 42);
+        assert!(&coin.type == &type, 42);
         coin.value = coin.value + value;
     }
 
     public fun destroy_zero<ATy: copy + drop + store>(coin: Coin<ATy>) {
         let Coin { value, type: _ } = coin;
-        assert(value == 0, 11)
+        assert!(value == 0, 11)
     }
 
 }
 
-//! new-transaction
-//! sender: bob
-
-address bob = {{bob}};
-address alice = {{alice}};
+//# publish
 module bob::ToddNickles {
     use alice::Token;
-    use 0x1::Signer;
+    use Std::Signer;
 
     struct T has copy, drop, store {}
 
@@ -65,12 +63,12 @@ module bob::ToddNickles {
     }
 
     public fun init(account: signer) {
-        assert(Signer::address_of(&account) == @bob, 42);
+        assert!(Signer::address_of(&account) == @bob, 42);
         move_to(&account, Wallet { nickles: Token::create(T{}, 0) })
     }
 
     public fun mint(account: signer): Token::Coin<T> {
-        assert(Signer::address_of(&account) == @bob, 42);
+        assert!(Signer::address_of(&account) == @bob, 42);
         Token::create(T{}, 5)
     }
 

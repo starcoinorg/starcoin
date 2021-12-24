@@ -1,10 +1,12 @@
-//! account: alice, 90000 0x1::STC::STC
-//! account: bob, 90000 0x1::STC::STC
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice --amount 90000
+
+//# faucet --addr bob --amount 90000
+
+//# publish
 module alice::M {
-    use 0x1::Signer;
+    use Std::Signer;
 
     struct M has key, store {
         value: u64,
@@ -37,9 +39,7 @@ module alice::M {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::M;
 
@@ -51,30 +51,26 @@ fun main(account: signer) {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::M;
 
 fun main(account: signer) {
     let v = M::get_value(&account);
-    assert(v == 1, 80001);
+    assert!(v == 1, 80001);
 }
 }
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::M;
 
 fun main(account: signer) {
     let m = M::get(&account);
     let v = M::destroy(m);
-    assert(v == 1, 80001);
+    assert!(v == 1, 80001);
 }
 }
 

@@ -1,14 +1,16 @@
-address default = {{default}};
+//# init -n dev
+
+//# faucet --addr default --amount 100000000000000000
+
+//# publish
 module default::Nop{
     public fun nop() { }
 }
 
-//! new-transaction
-//! max-gas: 700
-address default = {{default}};
+//# run --signers default --gas-budget 700
 script {
 use default::Nop;
-use 0x1::Vector;
+use Std::Vector;
 fun main() {
     Nop::nop();
     let v = Vector::empty();

@@ -1,9 +1,8 @@
-//! account: alice
+//# init -n dev
 
-//! sender: alice
+//# faucet --addr alice
+
+//# run --signers alice
 script {
 fun empty_script() { }
 }
-// check: gas_used
-// check: 8439
-// check: "Keep(EXECUTED)"

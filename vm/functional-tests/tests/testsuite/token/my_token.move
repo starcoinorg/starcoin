@@ -1,17 +1,19 @@
-// Test user-defined token
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+
+//# publish
 module alice::MyToken {
-    use 0x1::Token;
-    use 0x1::Signer;
+    use Std::Token;
+    use Std::Signer;
 
     struct MyToken has copy, drop, store { }
 
     public fun init(account: &signer) {
-        assert(Signer::address_of(account) == @alice, 8000);
+        assert!(Signer::address_of(account) == @alice, 8000);
 
         Token::register_token<MyToken>(
                     account,
@@ -22,12 +24,10 @@ module alice::MyToken {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address bob = {{bob}};
+//# publish
 module bob::HideToken {
     use alice::MyToken::MyToken;
-    use 0x1::Token::Token;
+    use Std::Token::Token;
 
     struct Collection has key, store { t: Token<MyToken>,}
 
@@ -38,20 +38,18 @@ module bob::HideToken {
 }
 
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::MyToken::{MyToken, Self};
-use 0x1::Account;
-use 0x1::Token;
+use Std::Account;
+use Std::Token;
 
 fun main(account: signer) {
     MyToken::init(&account);
 
     let market_cap = Token::market_cap<MyToken>();
-    assert(market_cap == 0, 8001);
-    assert(Token::is_registered_in<MyToken>(@alice), 8002);
+    assert!(market_cap == 0, 8001);
+    assert!(Token::is_registered_in<MyToken>(@alice), 8002);
     // Create 'Balance<TokenType>' resource under sender account, and init with zero
     Account::do_accept_token<MyToken>(&account);
 }
@@ -60,29 +58,26 @@ fun main(account: signer) {
 // check: EXECUTED
 
 
-// issuer mint
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-use 0x1::Account;
-use 0x1::Token;
+use Std::Account;
+use Std::Token;
 use alice::MyToken::{MyToken};
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
     let old_market_cap = Token::market_cap<MyToken>();
     let coin = Token::mint<MyToken>(&account, 10000);
-    assert(Token::value<MyToken>(&coin) == 10000, 8002);
-    assert(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
+    assert!(Token::value<MyToken>(&coin) == 10000, 8002);
+    assert!(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
     Account::deposit_to_self<MyToken>(&account, coin);
 }
 }
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
+//# run --signers bob
 script {
-    use 0x1::Account;
+    use Std::Account;
     use alice::MyToken::MyToken;
 
     fun main(account: signer) {
@@ -91,12 +86,9 @@ script {
 }
 
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-    use 0x1::Account;
+    use Std::Account;
     use alice::MyToken::MyToken;
 
     fun main(account: signer) {
@@ -104,12 +96,9 @@ script {
     }
 }
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers bob
 script {
-    use 0x1::Account;
+    use Std::Account;
     use alice::MyToken::MyToken;
     use bob::HideToken;
 

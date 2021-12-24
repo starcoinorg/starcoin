@@ -1,12 +1,15 @@
-//! account: alice, 90000 0x1::STC::STC
-//! account: bob, 90000 0x1::STC::STC
+//# init -n dev
 
-//! new-transaction
+//# faucet --addr alice --amount 900000
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr bob --amount 900000
+
+
+
+//# publish
+
 module alice::M {
-    use 0x1::Signer;
+    use Std::Signer;
 
     struct Cup has key, store {
         a: u64,
@@ -38,9 +41,9 @@ module alice::M {
 }
 
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
 use alice::M;
 fun main(account: signer) {
@@ -53,14 +56,14 @@ fun main(account: signer) {
 //// check: delta_size 8
 
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
 use alice::M;
 fun main(account: signer) {
   let y = M::destroy(&account);
-  assert(y == 1, 41)
+  assert!(y == 1, 41)
 }
 }
 
@@ -68,25 +71,25 @@ fun main(account: signer) {
 //// check: delta_size -8
 
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
 use alice::M;
 fun main(account: signer) {
     let cup = M::new();
     M::publish(cup, &account);
     let y = M::destroy(&account);
-    assert(y == 1, 41);
+    assert!(y == 1, 41);
 }
 }
 
 // check: EXECUTED
 //// check: delta_size 0
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
 use alice::M;
 fun main(account: signer) {

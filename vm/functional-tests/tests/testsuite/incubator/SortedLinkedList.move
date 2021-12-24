@@ -1,19 +1,25 @@
-//! account: nameservice, 100000000
-//! account: alice
-//! account: bob
-//! account: carol
-//! account: david
-//! account: vivian, 1000000, 0
+//# init -n dev
 
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
+//# faucet --addr default
+
+//# faucet --addr nameservice --amount 100000000
+
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# faucet --addr carol
+
+//# faucet --addr david
+
+//# faucet --addr vivian --amount 1000000
+
+//# publish
 module default::SortedLinkedList {
-    use 0x1::Compare;
-    use 0x1::BCS;
-    use 0x1::Signer;
-    use 0x1::Vector;
+    use Std::Compare;
+    use Std::BCS;
+    use Std::Signer;
+    use Std::Vector;
 
     struct EntryHandle has copy, drop, store {
         //address where the Node is stored
@@ -56,7 +62,7 @@ module default::SortedLinkedList {
 
     public fun get_data<T: copy + drop + store>(entry: EntryHandle): T acquires NodeVector {
         //make sure a node exists in entry
-        assert(node_exists<T>(copy entry), 1);
+        assert!(node_exists<T>(copy entry), 1);
         let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
         let node = Vector::borrow<Node<T>>(nodes, entry.index);
         *&node.data
@@ -64,7 +70,7 @@ module default::SortedLinkedList {
 
     public fun get_prev_node_addr<T: copy + drop + store>(entry: EntryHandle): address acquires NodeVector {
         //make sure a node exists in entry
-        assert(node_exists<T>(copy entry), 2);
+        assert!(node_exists<T>(copy entry), 2);
         let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
         let node = Vector::borrow<Node<T>>(nodes, entry.index);
         *&node.prev.addr
@@ -73,7 +79,7 @@ module default::SortedLinkedList {
     //checks whether this entry is the head of a list
     public fun is_head_node<T: copy + drop + store>(entry: &EntryHandle): bool acquires NodeVector {
 		//check that a node exists
-        assert(node_exists<T>(*entry), 3);
+        assert!(node_exists<T>(*entry), 3);
         let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
         //find the head node
         let node = Vector::borrow<Node<T>>(nodes, entry.index);
@@ -87,7 +93,7 @@ module default::SortedLinkedList {
         let sender = Signer::address_of(account);
 
         //make sure no node/list is already stored in this account
-        assert(!exists<NodeVector<T>>(sender), 3);
+        assert!(!exists<NodeVector<T>>(sender), 3);
         let head_handle = entry_handle(sender, 0);
         let head = Self::Node<T> {
             prev: copy head_handle,
@@ -105,7 +111,7 @@ module default::SortedLinkedList {
         let sender_address = Signer::address_of(account);
 
         //make sure a node exists in prev_entry
-        assert(node_exists<T>(copy prev_entry), 1);
+        assert!(node_exists<T>(copy prev_entry), 1);
         let prev_nodes = &borrow_global<NodeVector<T>>(prev_entry.addr).nodes;
 
         //get a reference to prev_node and find the address and reference to next_node, head
@@ -126,8 +132,8 @@ module default::SortedLinkedList {
         let next_is_head = Self::is_head_node<T>(&next_entry);
 
         //check the order -- the list must be sorted
-        assert(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || data > prev_data
-        assert(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || data < next_data
+        assert!(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || data > prev_data
+        assert!(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || data < next_data
 
         //create the new node
         let node = Self::Node<T> {
@@ -162,7 +168,7 @@ module default::SortedLinkedList {
     //private function used for removing a non-head node -- does not check permissions
     fun remove_node<T: copy + drop + store>(entry: EntryHandle) acquires NodeVector {
         //check that a node exists
-        assert(node_exists<T>(copy entry), 1);
+        assert!(node_exists<T>(copy entry), 1);
         let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
 
         //find prev and next
@@ -189,15 +195,15 @@ module default::SortedLinkedList {
 
     public fun remove_node_by_list_owner<T: copy + drop + store>(account: &signer, entry: EntryHandle) acquires NodeVector {
         //check that a node exists
-        assert(node_exists<T>(copy entry), 1);
+        assert!(node_exists<T>(copy entry), 1);
         //make sure it is not a head node
-        assert(!Self::is_head_node<T>(&copy entry), 10);
+        assert!(!Self::is_head_node<T>(&copy entry), 10);
         //make sure the caller owns the list
 
         let nodes = &borrow_global<NodeVector<T>>(entry.addr).nodes;
         let current_node = Vector::borrow(nodes, entry.index);
         let list_owner = current_node.head.addr;
-        assert(list_owner == Signer::address_of(account), 11);
+        assert!(list_owner == Signer::address_of(account), 11);
 
         //remove it
         Self::remove_node<T>(entry);
@@ -206,11 +212,11 @@ module default::SortedLinkedList {
     //removes the current non-head node -- fails if the passed node is the head of a list
     public fun remove_node_by_node_owner<T: copy + drop + store>(account: &signer, entry: EntryHandle) acquires NodeVector {
         //check that a node exists
-        assert(node_exists<T>(copy entry), 1);
+        assert!(node_exists<T>(copy entry), 1);
         //make sure it is not a head node
-        assert(!Self::is_head_node<T>(&copy entry), 10);
+        assert!(!Self::is_head_node<T>(&copy entry), 10);
         //make sure the caller owns the node
-        assert(entry.addr == Signer::address_of(account), 11);
+        assert!(entry.addr == Signer::address_of(account), 11);
 
         //remove it
         Self::remove_node<T>(entry);
@@ -222,16 +228,16 @@ module default::SortedLinkedList {
         let sender_address = Signer::address_of(account);
 
         //fail if the caller does not own a list
-        assert(Self::is_head_node<T>(&Self::entry_handle(sender_address, 0)), 14);
+        assert!(Self::is_head_node<T>(&Self::entry_handle(sender_address, 0)), 14);
 
         let node_vector = &borrow_global<NodeVector<T>>(sender_address).nodes;
         let current_node = Vector::borrow(node_vector, 0);
 
         //check that the list is empty
-        assert(current_node.next.addr == sender_address, 15);
-        assert(current_node.next.index == 0, 16);
-        assert(current_node.prev.addr == sender_address, 17);
-        assert(current_node.prev.index == 0, 18);
+        assert!(current_node.next.addr == sender_address, 15);
+        assert!(current_node.next.index == 0, 16);
+        assert!(current_node.prev.addr == sender_address, 17);
+        assert!(current_node.prev.index == 0, 18);
 
         //destroy the Node
         let NodeVector { nodes: nodes } = move_from<NodeVector<T>>(sender_address);
@@ -240,7 +246,7 @@ module default::SortedLinkedList {
     }
 
     public fun find_position_and_insert<T: copy + drop + store>(account: &signer, data: T, head: EntryHandle): bool acquires NodeVector {
-        assert(Self::is_head_node<T>(&copy head), 18);
+        assert!(Self::is_head_node<T>(&copy head), 18);
 
         let data_bcs_bytes = BCS::to_bytes(&data);
         let nodes = &borrow_global<NodeVector<T>>(head.addr).nodes;
@@ -274,13 +280,8 @@ module default::SortedLinkedList {
 }
 
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 //creating a new list _@alice
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -289,13 +290,9 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 //attempting to create another list with the same head
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
+
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -305,13 +302,9 @@ script {
 // check: ABORTED
 // check: 1
 
-//! new-transaction
-//! sender: bob
+//# run --signers bob
 //adding a new element to Alice's list _@alice -> 10@bob
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
+
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -323,13 +316,9 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: carol
+//# run --signers carol
 //adding a new element to Alice's list _@alice -> 10@bob -> 12@carol
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
+
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -341,13 +330,9 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: carol
+//# run --signers carol
 //adding a new element to Alice's list _@alice -> 10@bob -> 11@carol -> 12@carol
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
+
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -357,40 +342,31 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 //check the list _@alice -> 10@bob -> 11@carol -> 12@carol
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
-address carol = {{carol}};
+
 script {
     use default::SortedLinkedList;
     fun main() {
         let entry0 = SortedLinkedList::entry_handle(@alice, 0);
-        assert(SortedLinkedList::get_data(copy entry0) == 0, 29);
-        assert(SortedLinkedList::get_prev_node_addr<u64>(entry0) == @carol, 30);
+        assert!(SortedLinkedList::get_data(copy entry0) == 0, 29);
+        assert!(SortedLinkedList::get_prev_node_addr<u64>(entry0) == @carol, 30);
         let entry1 = SortedLinkedList::entry_handle(@bob, 0);
-        assert(SortedLinkedList::get_data(copy entry1) == 10, 31);
-        assert(SortedLinkedList::get_prev_node_addr<u64>(entry1) == @alice, 34);
+        assert!(SortedLinkedList::get_data(copy entry1) == 10, 31);
+        assert!(SortedLinkedList::get_prev_node_addr<u64>(entry1) == @alice, 34);
         let entry2 = SortedLinkedList::entry_handle(@carol, 1);
-        assert(SortedLinkedList::get_data(copy entry2) == 11, 32);
-        assert(SortedLinkedList::get_prev_node_addr<u64>(entry2) == @bob, 35);
+        assert!(SortedLinkedList::get_data(copy entry2) == 11, 32);
+        assert!(SortedLinkedList::get_prev_node_addr<u64>(entry2) == @bob, 35);
         let entry3 = SortedLinkedList::entry_handle(@carol, 0);
-        assert(SortedLinkedList::get_data(copy entry3) == 12, 33);
-        assert(SortedLinkedList::get_prev_node_addr<u64>(entry3) == @carol, 36);
+        assert!(SortedLinkedList::get_data(copy entry3) == 12, 33);
+        assert!(SortedLinkedList::get_prev_node_addr<u64>(entry3) == @carol, 36);
     }
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 //Alice removes Bob's node _@alice -> 11@carol -> 12@carol
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
+
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -400,14 +376,9 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: carol
+//# run --signers carol
 //David removes his node _@alice -> 12@carol
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
-address carol = {{carol}};
+
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -417,14 +388,8 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 //Alice empties her list and removes it
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
-address carol = {{carol}};
 script {
     use default::SortedLinkedList;
     fun main(account: signer) {
@@ -437,19 +402,18 @@ script {
 
 
 
-//! new-transaction
-//! sender: nameservice
+//# publish
 
 // a distributed key-value map is used to store name entry (name, address, expiration_date)
 // key is the name(:vector<u8>), stored in a sorted linked list
 // value is a struct 'Expiration', contains the expiration date of the name
 // the account address of each list node is actually the address bound to the key(name)
-address nameservice = {{nameservice}};
+
 module nameservice::NameService {
     use default::SortedLinkedList::{Self, EntryHandle};
-    use 0x1::Block;
-    use 0x1::Signer;
-    use 0x1::Vector;
+    use Std::Block;
+    use Std::Signer;
+    use Std::Vector;
 
     //TODO use constants when Move support constants, '5' is used for example
     const EXPIRE_AFTER: u64 = 5;
@@ -464,7 +428,7 @@ module nameservice::NameService {
 
     public fun initialize(account: &signer) {
         let sender = Signer::address_of(account);
-        assert(sender == @nameservice, 8000);
+        assert!(sender == @nameservice, 8000);
 
         SortedLinkedList::create_new_list<vector<u8>>(account, Vector::empty());
         move_to<Expiration>(account, Expiration { expire_on_block_number: Vector::singleton(0u64)});
@@ -537,13 +501,8 @@ module nameservice::NameService {
 
 }
 
-//! new-transaction
-//! sender: nameservice
+//# run --signers nameservice
 //initialize the nameservice list
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
@@ -552,13 +511,8 @@ fun main(account: signer) {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 //adding a new name to NameService's list _@nameservice -> b"alice"@alice
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
@@ -568,13 +522,8 @@ fun main(account: signer) {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
+//# run --signers bob
 //adding a new name to NameService's list _@nameservice -> b"bob"@bob -> b"alice"@alice
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
@@ -584,14 +533,8 @@ fun main(account: signer) {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: carol
+//# run --signers carol
 //adding a new name to NameService's list _@nameservice -> b"bob"@bob -> b"alice"@alice -> b"carol"@carol
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
-address carol = {{carol}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
@@ -601,31 +544,20 @@ fun main(account: signer) {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: david
+//# run --signers david
 //ensure the entry under alice holds the name b"alice"
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
 use nameservice::NameService;
 fun main() {
     let entry = NameService::entry_handle(@alice, 0);
     let name = NameService::get_name_for(entry);
-    assert(name == b"alice", 26);
+    assert!(name == b"alice", 26);
 }
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: carol
+//# run --signers carol
 //removes her entry _@nameservice -> b"bob"@bob -> b"alice"@alice
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
-address carol = {{carol}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
@@ -635,66 +567,38 @@ fun main(account: signer) {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: nameservice
+//# run --signers nameservice
 //removes bob's entry _@nameservice -> b"alice"@alice
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
     let entry = NameService::entry_handle(@bob, 0);
-    assert(NameService::is_expired(copy entry), 27);
+    assert!(NameService::is_expired(copy entry), 27);
     NameService::remove_entry_by_service_owner(&account, entry);
 }
 }
 // check: ABORTED
 
 
-//! block-prologue
-//! author: vivian
-//! block-time: 1001000
-//! block-number: 1
+//# block --author vivian --timestamp 1001000
 
-//! block-prologue
-//! author: vivian
-//! block-time: 1002000
-//! block-number: 2
+//# block --author vivian --timestamp 1002000
 
-//! block-prologue
-//! author: vivian
-//! block-time: 1003000
-//! block-number: 3
+//# block --author vivian --timestamp 1003000
 
-//! block-prologue
-//! author: vivian
-//! block-time: 1004000
-//! block-number: 4
+//# block --author vivian --timestamp 1004000
 
-//! block-prologue
-//! author: vivian
-//! block-time: 1005000
-//! block-number: 5
+//# block --author vivian --timestamp 1005000
 
-//! block-prologue
-//! author: vivian
-//! block-time: 1006000
-//! block-number: 6
+//# block --author vivian --timestamp 1006000
 
-//! new-transaction
-//! sender: nameservice
+//# run --signers nameservice
 //removes her entry _@nameservice -> b"alice"@alice
-address default={{default}};
-address alice = {{alice}};
-address bob = {{bob}};
-address nameservice = {{nameservice}};
 script {
 use nameservice::NameService;
 fun main(account: signer) {
     let entry = NameService::entry_handle(@bob, 0);
-    assert(NameService::is_expired(copy entry), 27);
+    assert!(NameService::is_expired(copy entry), 27);
     NameService::remove_entry_by_service_owner(&account, entry);
 }
 }

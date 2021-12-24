@@ -1,14 +1,14 @@
-// Test Config
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# faucet --addr alice
 
+//# faucet --addr bob
+
+
+//# publish
 module alice::MyConfig{
-    use 0x1::Config;
-    use 0x1::Signer;
+    use Std::Config;
+    use Std::Signer;
 
     struct MyConfig has copy, drop, store {
         version: u64,
@@ -25,20 +25,20 @@ module alice::MyConfig{
     }
 
     public fun init(account: &signer){
-        assert(Signer::address_of(account) == @alice, 1000);
+        assert!(Signer::address_of(account) == @alice, 1000);
         Config::publish_new_config<MyConfig>(account, MyConfig{
             version: 0,
         });
     }
 
     public fun publish_new_config_with_capability(account: &signer, myconfig: MyConfig){
-        assert(Signer::address_of(account) == @bob, 1000);
+        assert!(Signer::address_of(account) == @bob, 1000);
         let cap = Config::publish_new_config_with_capability<MyConfig>(account, myconfig);
         move_to(account, CapHolder{cap: cap});
     }
 
     public fun extract_modify_config_capability(account: &signer){
-        assert(Signer::address_of(account) == @alice, 1000);
+        assert!(Signer::address_of(account) == @alice, 1000);
         let cap = Config::extract_modify_config_capability<MyConfig>(account);
         move_to(account, CapHolder{cap: cap});
     }
@@ -63,13 +63,8 @@ module alice::MyConfig{
 
 }
 
-// check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
-
+//# run --signers alice
 script {
 use alice::MyConfig;
 
@@ -78,12 +73,8 @@ fun main(account: signer) {
 }
 }
 
-// check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers bob
 script {
 use alice::MyConfig;
 
@@ -92,31 +83,20 @@ fun main(account: signer) {
 }
 }
 
-// check: EXECUTED
-
-// update config by Config module
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-use 0x1::Config;
+use Std::Config;
 use alice::MyConfig;
 
 fun main(account: signer) {
     Config::set(&account, MyConfig::new_config(2));
-    assert(MyConfig::get_my_config() == 2, 1001);
-     assert(MyConfig::get() == 2, 1002);
+    assert!(MyConfig::get_my_config() == 2, 1001);
+     assert!(MyConfig::get() == 2, 1002);
 }
 }
 
-// check: EXECUTED
 
-// extract modify capability
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
 use alice::MyConfig;
 
@@ -125,50 +105,31 @@ fun main(account: signer) {
 }
 }
 
-// check: EXECUTED
-
-// update config by Config module fail, no capability.
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-use 0x1::Config;
+use Std::Config;
 use alice::MyConfig;
 
 fun main(account: signer) {
     Config::set(&account, MyConfig::new_config(3));
-    assert(MyConfig::get_my_config() == 3, 1002);
-//    assert(MyConfig::get() == 3, 1003);
+    assert!(MyConfig::get_my_config() == 3, 1002);
+//    assert!(MyConfig::get() == 3, 1003);
 }
 }
 
-// check: ABORTED
-// check: 25860
-
-
-// Any one can update config by MyConfig module.
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers bob
 script {
 use alice::MyConfig;
 
 fun main() {
     MyConfig::update_my_config(4);
-    assert(MyConfig::get_my_config() == 4, 1003);
-    assert(MyConfig::get() == 4, 1004);
+    assert!(MyConfig::get_my_config() == 4, 1003);
+    assert!(MyConfig::get() == 4, 1004);
 }
 }
 
-// check: EXECUTED
 
-// restore modify capability
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers bob
 script {
 use alice::MyConfig;
 
@@ -177,22 +138,15 @@ fun main() {
 }
 }
 
-// check: EXECUTED
 
-// alice can update config by Config module after restore capability.
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
-use 0x1::Config;
+use Std::Config;
 use alice::MyConfig;
 
 fun main(account: signer) {
     Config::set(&account, MyConfig::new_config(5));
-    assert(MyConfig::get_my_config() == 5, 1004);
-    assert(MyConfig::get() == 5, 1005);
+    assert!(MyConfig::get_my_config() == 5, 1004);
+    assert!(MyConfig::get() == 5, 1005);
 }
 }
-
-// check: EXECUTED

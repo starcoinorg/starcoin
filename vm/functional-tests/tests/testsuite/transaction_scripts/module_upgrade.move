@@ -1,11 +1,15 @@
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+
+//# publish
 module alice::MyToken {
-    use 0x1::Token;
-    use 0x1::Dao;
+    use Std::Token;
+    use Std::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -17,23 +21,14 @@ module alice::MyToken {
         Dao::plugin<MyToken>(account, 60 * 1000, 60 * 60 * 1000, 4, 60 * 60 * 1000);
     }
 }
-// check: gas_used
-// check: 7800
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 1000
-// check: EXECUTED
+//# block --author 0x1 --timestamp 2601000
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
     use alice::MyToken::{MyToken, Self};
-    use 0x1::Account;
-    use 0x1::Token;
+    use Std::Account;
+    use Std::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -43,17 +38,12 @@ script {
     }
 }
 
-// check: gas_used
-// check: 417412
-// check: EXECUTED
-
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-    use 0x1::Config;
-    use 0x1::Version;
-    use 0x1::PackageTxnManager;
-    use 0x1::Option;
+    use Std::Config;
+    use Std::Version;
+    use Std::PackageTxnManager;
+    use Std::Option;
 
     fun update_module_upgrade_strategy(account: signer) {
         Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
@@ -61,16 +51,10 @@ script {
     }
 }
 
-// check: gas_used
-// check: 204475
-// check: EXECUTED
-
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::PackageTxnManager;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::PackageTxnManager;
     use alice::MyToken::MyToken;
 
     fun plugin(account: signer) {
@@ -80,15 +64,9 @@ script {
 }
 
 
-// check: gas_used
-// check: 58927
-// check: EXECUTED
-
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
-    use 0x1::UpgradeModuleDaoProposal;
+    use Std::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
 
     fun propose_module_upgrade(account: signer) {
@@ -107,24 +85,15 @@ script {
     }
 }
 
-// check: gas_used
-// check: 207001
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 3601000
-// check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-//! args: {{alice}}, 0, true, 500u128
-address alice = {{alice}};
+//# block --author 0x1 --timestamp 3601000
+
+//# run --signers alice --args @alice --args 0 --args true --args 500u128
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::Dao;
-    use 0x1::Account;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::Dao;
+    use Std::Account;
     use alice::MyToken::MyToken;
 
     fun cast_vote(
@@ -139,23 +108,13 @@ script {
     }
 }
 
-// check: gas_used
-// check: 156894
-// check: EXECUTED
+//# block --author 0x1 --timestamp 7662000
 
-//! block-prologue
-//! author: genesis
-//! block-number: 3
-//! block-time: 3662000
-// check: EXECUTED
+//# run --signers alice --args @alice --args 0
 
-//! new-transaction
-//! sender: alice
-//! args: {{alice}}, 0
-address alice = {{alice}};
 script {
-    use 0x1::UpgradeModuleDaoProposal;
-    use 0x1::Dao;
+    use Std::UpgradeModuleDaoProposal;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun queue_proposal_action(_signer: signer,
@@ -166,29 +125,16 @@ script {
     }
 }
 
-// check: gas_used
-// check: 47257
-// check: EXECUTED
+//# block --author 0x1 --timestamp 12262000
 
-//! block-prologue
-//! author: genesis
-//! block-number: 4
-//! block-time: 7262000
-// check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-//! args: {{alice}}, 0
-address alice = {{alice}};
+//# run --signers alice --args @alice --args 0
+
 script {
-    use 0x1::UpgradeModuleDaoProposal;
+    use Std::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
 
     fun submit_module_upgrade_plan(_account: signer, proposer_address: address, proposal_id: u64) {
         UpgradeModuleDaoProposal::submit_module_upgrade_plan<MyToken>(proposer_address, proposal_id);
     }
 }
-
-// check: gas_used
-// check: 123307
-// check: EXECUTED

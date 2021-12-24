@@ -1,18 +1,21 @@
-//! account: alice
+//# init -n dev
 
+//# faucet --addr alice
+
+//# faucet --addr Genesis
+
+//# run --signers alice
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(_signer: signer) {
-    assert(!Timestamp::is_genesis(), 1000);
+    assert!(!Timestamp::is_genesis(), 1000);
 }
 }
 
-//! new-transaction
-//! sender: alice
-
+//# run --signers alice
 script {
-    use 0x1::Timestamp;
+    use Std::Timestamp;
 
     fun main(_signer: signer) {
         Timestamp::assert_genesis();
@@ -20,11 +23,9 @@ script {
 }
 // check: "Keep(ABORTED { code: 3073"
 
-//! new-transaction
-//! sender: alice
-
+//# run --signers alice
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::initialize(&signer, 0);
@@ -34,11 +35,10 @@ fun main(signer: signer) {
 // check: ABORTED
 
 
-//! new-transaction
-//! sender: genesis
 
+//# run --signers Genesis
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::initialize(&signer, 0);
@@ -48,11 +48,10 @@ fun main(signer: signer) {
 // check: RESOURCE_ALREADY_EXISTS 
 
 
-//! new-transaction
-//! sender: alice
 
+//# run --signers alice
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::update_global_time(&signer, 10);
@@ -61,25 +60,24 @@ fun main(signer: signer) {
 
 // check: ABORTED
 
-//! new-transaction
-//! sender: genesis
 
+//# run --signers Genesis
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(signer: signer) {
-    Timestamp::update_global_time(&signer, 20);
+    Timestamp::update_global_time(&signer, 200000);
 }
 }
 
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: genesis
 
+
+//# run --signers Genesis
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(signer: signer) {
     let now = Timestamp::now_seconds();
@@ -88,11 +86,10 @@ fun main(signer: signer) {
 }
 // check: ABORTED
 
-//! new-transaction
-//! sender: genesis
 
+//# run --signers Genesis
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main(signer: signer) {
     let now = Timestamp::now_seconds();

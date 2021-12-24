@@ -1,95 +1,83 @@
-// Test the treasury withdraw.
-//! account: alice, 0 0x1::STC::STC
+//# init -n dev
 
-//! sender: association
+//# faucet --addr alice --amount 0
+
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    //use 0x1::Debug;
+    use Std::STC::STC;
+    use Std::Treasury;
+    //use Std::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        assert(Treasury::get_linear_withdraw_capability_total(&cap) == 477770400000000000, 1000);
-        assert(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
-        assert(Treasury::get_linear_withdraw_capability_start_time(&cap) == 0, 1002);
-        assert(Treasury::get_linear_withdraw_capability_period(&cap) ==94608000, 1003);
+        assert!(Treasury::get_linear_withdraw_capability_total(&cap) == 477770400000000000, 1000);
+        assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
+        assert!(Treasury::get_linear_withdraw_capability_start_time(&cap) == 0, 1002);
+        Std::Debug::print(&Treasury::get_linear_withdraw_capability_period(&cap));
+        assert!(Treasury::get_linear_withdraw_capability_period(&cap) ==86400, 1003);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }
 }
 
-//! block-prologue
-//! author: alice
-//! block-time: 3600000
-//! block-number: 1
+//# block --author alice --timestamp 3600000
 
-//! new-transaction
-//! sender: association
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::Account;
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    use 0x1::Token;
-    use 0x1::Debug;
+    use Std::Account;
+    use Std::STC::STC;
+    use Std::Treasury;
+    use Std::Token;
+    use Std::Debug;
 
     fun mint(account: signer) {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
         Debug::print(&Token::value(&token));
-        assert(Token::value(&token) == 18180000000000, 1004);
+        assert!(Token::value(&token) == 19907100000000000, 1004);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
         Account::deposit_to_self(&account, token);
     }
 }
 
-// check: EXECUTED
 
-//! block-prologue
-//! author: alice
-//! block-time: 7200000
-//! block-number: 2
+//# block --author alice --timestamp 7200000
 
-//! new-transaction
-//! sender: association
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::Account;
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    use 0x1::Token;
-    //use 0x1::Debug;
+    use Std::Account;
+    use Std::STC::STC;
+    use Std::Treasury;
+    use Std::Token;
+    //use Std::Debug;
 
     fun mint(account: signer) {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
-        //Debug::print(&Token::value(&token));
-        assert(Token::value(&token) == 18180000000000, 1005);
+        Std::Debug::print(&Token::value(&token));
+        assert!(Token::value(&token) == 19907100000000000, 1005);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
         Account::deposit_to_self(&account, token);
     }
 }
 
-// check: EXECUTED
 
-//! block-prologue
-//! author: alice
-//! block-time: 94608000000
-//! block-number: 3
+//# block --author alice --timestamp 94608000000
 
-//! new-transaction
-//! sender: association
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::Account;
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    use 0x1::Token;
-    //use 0x1::Debug;
+    use Std::Account;
+    use Std::STC::STC;
+    use Std::Treasury;
+    use Std::Token;
+    //use Std::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut cap);
-        //Debug::print(&Token::value(&token));
-        assert(Token::value(&token) == (477770400000000000 - 18180000000000*2), 1006);
+        Std::Debug::print(&Token::value(&token));
+        assert!(Token::value(&token) == (477770400000000000 - 19907100000000000*2), 1006);
         Account::deposit_to_self(&account, token);
-        assert(Treasury::get_linear_withdraw_capability_withdraw(&cap) == Treasury::get_linear_withdraw_capability_total(&cap), 1007);
+        assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == Treasury::get_linear_withdraw_capability_total(&cap), 1007);
         Treasury::destroy_linear_withdraw_capability(cap);
     }
 }

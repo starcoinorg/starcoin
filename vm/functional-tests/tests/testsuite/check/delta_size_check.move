@@ -1,10 +1,10 @@
-//! account: alice, 90000 0x1::STC::STC
-//! account: bob, 90000 0x1::STC::STC
+//# init -n dev
 
-//! sender: alice
+//# faucet --addr alice
 
-address alice = {{alice}};
-address bob = {{bob}};
+//# faucet --addr bob
+
+//# publish
 module alice::A {
     struct Coin has key, store {
         u: u64,
@@ -25,11 +25,8 @@ module alice::A {
     }
 }
 
-//! new-transaction
-//! sender: bob
 
-address alice = {{alice}};
-address bob = {{bob}};
+//# publish
 module bob::Tester {
     use alice::A;
 
@@ -41,11 +38,11 @@ module bob::Tester {
 
 }
 
-//! new-transaction
-//! sender: bob
 
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers bob
+
+
+
 script {
 use bob::Tester;
 
@@ -57,10 +54,10 @@ fun main(account: signer) {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+
+//# run --signers alice
+
+
 script {
 use alice::A;
 
@@ -68,9 +65,9 @@ fun main() {
     let x = A::new();
     let x_ref = &x;
     let y = A::value(x_ref);
-    assert(y == 1, 42);
+    assert!(y == 1, 42);
    let z = A::destroy(x);
-   assert(z == 1, 43);
+   assert!(z == 1, 43);
 }
 }
 

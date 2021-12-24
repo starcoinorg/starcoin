@@ -1,20 +1,21 @@
-// Test the mint flow
+//# init -n dev
 
-//! account: alice, 0 0x1::STC::STC
+//# faucet --addr alice --amount 0
 
+//# faucet --addr Genesis
+
+//# run --signers Genesis
 // Minting by genesis
-//! sender: genesis
-address alice = {{alice}};
 script {
-use 0x1::STC::{STC};
-use 0x1::Token;
-use 0x1::Account;
+use Std::STC::{STC};
+use Std::Token;
+use Std::Account;
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
     let old_market_cap = Token::market_cap<STC>();
     let coin = Token::mint<STC>(&account, 100);
-    assert(Token::value<STC>(&coin) == 100, 8000);
-    assert(Token::market_cap<STC>() == old_market_cap + 100, 8001);
+    assert!(Token::value<STC>(&coin) == 100, 8000);
+    assert!(Token::market_cap<STC>() == old_market_cap + 100, 8001);
 
     // get rid of the coin
     Account::deposit(@alice, coin);
@@ -26,22 +27,22 @@ fun main(account: signer) {
 // check: Keep
 
 
-//! new-transaction
-//! sender: association
+
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::STC::{Self, STC};
-    use 0x1::Token;
-    use 0x1::Account;
+    use Std::STC::{Self, STC};
+    use Std::Token;
+    use Std::Account;
     fun test_burn(account: signer) {
 
         let market_cap = Token::market_cap<STC>();
         let coin = Account::withdraw<STC>(&account, 100);
-        assert(Token::value<STC>(&coin) == 100, 8000);
+        assert!(Token::value<STC>(&coin) == 100, 8000);
 
         // burn 100 coins and check that the market cap decreases appropriately
         // burn the coin
         STC::burn(coin);
-        assert(Token::market_cap<STC>() == market_cap - 100, 8002);
+        assert!(Token::market_cap<STC>() == market_cap - 100, 8002);
     }
 }
 

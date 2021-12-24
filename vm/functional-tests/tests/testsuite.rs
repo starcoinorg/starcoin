@@ -13,11 +13,10 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::{fmt, io::Write, path::Path};
 use tempfile::NamedTempFile;
 
-pub const STD_LIB_DIR: &str = "../stdlib/modules";
 pub const FUNCTIONAL_TEST_DIR: &str = "tests";
 
 fn transactional_testsuite(path: &Path) -> datatest_stable::Result<()> {
-    let _log = starcoin_logger::init_for_test();
+    let _log = starcoin_logger::init();
 
     run_test(path)
 }

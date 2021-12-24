@@ -1,7 +1,11 @@
-address DEFAULT={{default}};
-module DEFAULT::TestHash {
+//# init -n dev
 
-    use 0x1::Hash;
+//# faucet --addr alice
+
+//# publish
+module alice::TestHash {
+
+    use Std::Hash;
 
     spec module {
         pragma verify = true;

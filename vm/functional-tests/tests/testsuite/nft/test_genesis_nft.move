@@ -1,19 +1,21 @@
-//! account: alice
+//# init -n dev
 
-//! new-transaction
-//! sender: alice
+
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-    use 0x1::Vector;
-    use 0x1::Signer;
-    use 0x1::Option;
-    use 0x1::NFT;
-    use 0x1::GenesisNFT::{Self, GenesisNFTMeta};
+    use Std::Vector;
+    use Std::Signer;
+    use Std::Option;
+    use Std::NFT;
+    use Std::GenesisNFT::{Self, GenesisNFTMeta};
     //TODO: generate the real root and proof
     fun main(sender: signer) {
         let proof = Vector::empty<vector<u8>>();
         GenesisNFT::mint(&sender, 1, proof);
         let info = GenesisNFT::get_info(Signer::address_of(&sender));
-        assert(Option::is_some<NFT::NFTInfo<GenesisNFTMeta>>(&info), 1000);
+        assert!(Option::is_some<NFT::NFTInfo<GenesisNFTMeta>>(&info), 1000);
     }
 }
 

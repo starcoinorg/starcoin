@@ -1,11 +1,15 @@
-//! account: alice
-//! account: bob
-//! account: carol
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# faucet --addr carol
+
+//# publish
+
 module alice::SillyColdWallet {
-    use 0x1::Account;
+    use Std::Account;
 
     struct T has key, store {
         cap: Account::WithdrawCapability,
@@ -17,13 +21,13 @@ module alice::SillyColdWallet {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+
+//# run --signers alice
+
+
 script {
 use alice::SillyColdWallet;
-use 0x1::Account;
+use Std::Account;
 
 // create a cold wallet for Bob that withdraws from Alice's account
 fun main(sender: signer) {
@@ -33,12 +37,12 @@ fun main(sender: signer) {
 }
 // check: "Keep(EXECUTED)"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-use 0x1::STC::STC;
-use 0x1::Account;
+use Std::STC::STC;
+use Std::Account;
 
 // check that Alice can no longer withdraw from her account
 fun main(account: signer) {
@@ -50,12 +54,12 @@ fun main(account: signer) {
 }
 // check: "Keep(ABORTED { code: 25857,"
 
-//! new-transaction
-//! sender: alice
+
+//# run --signers alice
 script {
-use 0x1::STC::STC;
-use 0x1::Account;
-use 0x1::Signer;
+use Std::STC::STC;
+use Std::Account;
+use Std::Signer;
 
 // check that Alice can no longer withdraw from her account
 fun main(account: signer) {
@@ -68,12 +72,12 @@ fun main(account: signer) {
 }
 // check: "Keep(ABORTED { code: 25857,"
 
-//! new-transaction
-//! sender: bob
-address bob = {{bob}};
+
+//# run --signers bob
+
 script {
-use 0x1::STC::STC;
-use 0x1::Account;
+use Std::STC::STC;
+use Std::Account;
 
 // check that Bob can still pay from his normal account
 fun main(account: signer) {
@@ -83,11 +87,11 @@ fun main(account: signer) {
 }
 }
 
-//! new-transaction
-//! sender: bob
+
+//# run --signers bob
 script {
-use 0x1::STC::STC;
-use 0x1::Account;
+use Std::STC::STC;
+use Std::Account;
 
 // check that Bob can still withdraw from his normal account
 fun main(account: signer) {
@@ -98,12 +102,12 @@ fun main(account: signer) {
 }
 }
 
-//! new-transaction
-//! sender: bob
+
+//# run --signers bob
 script {
-use 0x1::STC::STC;
-use 0x1::Account;
-use 0x1::Signer;
+use Std::STC::STC;
+use Std::Account;
+use Std::Signer;
 
     // check that Bob can still withdraw from his normal account
     fun main(account: signer) {
@@ -112,12 +116,12 @@ use 0x1::Signer;
     }
 }
 
-//! new-transaction
-//! sender: carol
-address alice = {{alice}};
+
+//# run --signers carol
+
 script {
-use 0x1::STC::STC;
-use 0x1::Account;
+use Std::STC::STC;
+use Std::Account;
 
 // check that other users can still pay into Alice's account in the normal way
 fun main(account: signer) {

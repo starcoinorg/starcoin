@@ -1,12 +1,15 @@
-// Test upgrade manager
-//! account: alice
-//! account: bob
+//# init -n dev
 
+//# faucet --addr alice --amount 100000000000000000
+
+//# faucet --addr bob
+
+
+//# run --signers alice
 // default upgrade strategy is arbitrary
-//! sender: alice
 script {
-use 0x1::PackageTxnManager;
-use 0x1::Signer;
+use Std::PackageTxnManager;
+use Std::Signer;
 fun main(account: signer) {
     let hash = x"1111111111111111";
     PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
@@ -15,13 +18,12 @@ fun main(account: signer) {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-use 0x1::Config;
-use 0x1::Version;
-use 0x1::PackageTxnManager;
-use 0x1::Option;
+use Std::Config;
+use Std::Version;
+use Std::PackageTxnManager;
+use Std::Option;
 fun main(account: signer) {
     Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
     PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(2));
@@ -31,11 +33,10 @@ fun main(account: signer) {
 // check: EXECUTED
 
 // two phase upgrade need to submit upgrade plan first.
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-use 0x1::PackageTxnManager;
-use 0x1::Signer;
+use Std::PackageTxnManager;
+use Std::Signer;
 fun main(account: signer) {
     let hash = x"1111111111111111";
     PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
@@ -44,10 +45,9 @@ fun main(account: signer) {
 
 // check: ABORTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-use 0x1::PackageTxnManager;
+use Std::PackageTxnManager;
 fun main(account: signer) {
     let hash = x"1111111111111111";
     PackageTxnManager::submit_upgrade_plan_v2(&account, copy hash, 1, false);
@@ -57,11 +57,10 @@ fun main(account: signer) {
 // check: EXECUTED
 
 // package txn must wait after plan's active_after_number
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-use 0x1::PackageTxnManager;
-use 0x1::Signer;
+use Std::PackageTxnManager;
+use Std::Signer;
 fun main(account: signer) {
     let hash = x"1111111111111111";
     PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
@@ -70,16 +69,12 @@ fun main(account: signer) {
 
 // check: ABORTED
 
-//! block-prologue
-//! author: bob
-//! block-time: 100000000000
-//! block-number: 1
+//# block --author bob --timestamp 100000000000
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-use 0x1::PackageTxnManager;
-use 0x1::Signer;
+use Std::PackageTxnManager;
+use Std::Signer;
 fun main(account: signer) {
     let hash = x"1111111111111111";
     PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
@@ -89,10 +84,9 @@ fun main(account: signer) {
 // check: EXECUTED
 
 // cancel the upgrade plan
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-    use 0x1::PackageTxnManager;
+    use Std::PackageTxnManager;
     fun main(account: signer) {
         PackageTxnManager::cancel_upgrade_plan(&account);
     }
@@ -101,10 +95,9 @@ script {
 // check: EXECUTED
 
 // cancel a none plan will report EUPGRADE_PLAN_IS_NONE
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-    use 0x1::PackageTxnManager;
+    use Std::PackageTxnManager;
     fun main(account: signer) {
         PackageTxnManager::cancel_upgrade_plan(&account);
     }
@@ -112,11 +105,10 @@ script {
 
 // check: "Keep(ABORTED { code: 26113"
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-    use 0x1::PackageTxnManager;
-    use 0x1::Option;
+    use Std::PackageTxnManager;
+    use Std::Option;
     fun main(account: signer) {
         PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_arbitrary(), Option::some<u64>(0));
     }
@@ -124,11 +116,10 @@ script {
 
 // check: "Keep(ABORTED { code: 27143"
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script {
-    use 0x1::PackageTxnManager;
-    use 0x1::Option;
+    use Std::PackageTxnManager;
+    use Std::Option;
     fun main(account: signer) {
         PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_new_module(), Option::some<u64>(0));
     }
@@ -137,11 +128,11 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
+
+//# run --signers alice
 script {
-    use 0x1::PackageTxnManager;
-    use 0x1::Option;
+    use Std::PackageTxnManager;
+    use Std::Option;
     fun main(account: signer) {
         PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_freeze(), Option::some<u64>(0));
     }

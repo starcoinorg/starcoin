@@ -1,6 +1,6 @@
-//# init
+//# init -n dev
 
-//# create_account --addr alice --amount 10000000000000
+//# faucet --addr alice --amount 10000000000000
 
 //# run --signers alice
 script {

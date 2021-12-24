@@ -3,9 +3,10 @@ use crate::remote_state::{RemoteStateView, SelectableStateView};
 use anyhow::{bail, Result};
 use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
-use move_compiler::compiled_unit::CompiledUnitEnum;
+use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use move_compiler::shared::{NumberFormat, NumericalAddress};
 use move_compiler::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
+use move_core_types::language_storage::StructTag;
 use move_core_types::{
     account_address::AccountAddress,
     gas_schedule::GasAlgebra,
@@ -19,6 +20,8 @@ use move_transactional_test_runner::{
     tasks::{InitCommand, RawAddress, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
 };
+use serde::Deserialize;
+use serde::Serialize;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{
@@ -28,20 +31,25 @@ use starcoin_crypto::{
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
-    ContractCall, FunctionIdView, TransactionArgumentView, TransactionOutputView, TypeTagView,
+    ContractCall, FunctionIdView, TransactionArgumentView, TransactionEventView,
+    TransactionOutputAction, TransactionOutputView, TypeTagView,
 };
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::account::{Account, AccountData};
 use starcoin_types::{
     access_path::AccessPath,
     account_config::{genesis_address, AccountResource},
     transaction::RawUserTransaction,
 };
 use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
-use starcoin_vm_types::account_config::{association_address, core_code_address};
+use starcoin_vm_types::account_config::{
+    association_address, core_code_address, STC_TOKEN_CODE_STR,
+};
+use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
-use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
+use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_vm_types::{
     account_config::BalanceResource,
     block_metadata::BlockMetadata,
@@ -117,6 +125,10 @@ pub struct ExtraInitArgs {
     /// block number to read state from. default to latest block number.
     block_number: Option<u64>,
 
+    #[structopt(long = "network", short, conflicts_with("rpc"))]
+    /// genesis with the network
+    network: Option<BuiltinNetworkID>,
+
     #[structopt(long = "public-keys", parse(try_from_str = parse_named_key))]
     public_keys: Option<Vec<(Identifier, Ed25519PublicKey)>>,
     // #[structopt(long = "private-keys", parse(try_from_str = parse_named_private_key))]
@@ -135,12 +147,16 @@ pub struct StarcoinPublishArgs {
 pub struct StarcoinRunArgs {
     #[structopt(short = "k", long = "public-key")]
     public_key: Option<RawPublicKey>,
+
+    #[structopt(short, long)]
+    /// print detailed outputs
+    verbose: bool,
 }
 
 #[derive(StructOpt, Debug)]
 pub enum StarcoinSubcommands {
-    #[structopt(name = "create_account")]
-    CreateAccount {
+    #[structopt(name = "faucet")]
+    Faucet {
         #[structopt(long="addr", parse(try_from_str=RawAddress::parse))]
         address: RawAddress,
         #[structopt(long = "amount", default_value = "100000000000")]
@@ -148,6 +164,7 @@ pub enum StarcoinSubcommands {
         #[structopt(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
         public_key: Option<Ed25519PublicKey>,
     },
+
     #[structopt(name = "block")]
     NewBlock {
         #[structopt(long, parse(try_from_str=RawAddress::parse))]
@@ -170,11 +187,21 @@ pub enum StarcoinSubcommands {
     },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TransactionResult {
+    gas_used: u64,
+    status: TransactionStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    write_set: Option<Vec<TransactionOutputAction>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    events: Option<Vec<TransactionEventView>>,
+}
+
 pub struct StarcoinTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
     storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteStateView>>,
     default_syntax: SyntaxChoice,
-    public_key_mapping: BTreeMap<Identifier, Ed25519PublicKey>,
+    public_key_mapping: BTreeMap<Identifier, AccountPublicKey>,
     association_public_key: AccountPublicKey,
 }
 
@@ -189,7 +216,7 @@ struct TransactionParameters {
 
 impl<'a> StarcoinTestAdapter<'a> {
     /// Look up the named private key in the mapping.
-    fn resolve_named_public_key(&self, s: &IdentStr) -> Ed25519PublicKey {
+    fn resolve_named_public_key(&self, s: &IdentStr) -> AccountPublicKey {
         if let Some(private_key) = self.public_key_mapping.get(s) {
             return private_key.clone();
         }
@@ -197,9 +224,9 @@ impl<'a> StarcoinTestAdapter<'a> {
     }
 
     /// Resolve a raw public key into a numeric one.
-    fn resolve_public_key(&self, private_key: &RawPublicKey) -> Ed25519PublicKey {
+    fn resolve_public_key(&self, private_key: &RawPublicKey) -> AccountPublicKey {
         match private_key {
-            RawPublicKey::Anonymous(private_key) => private_key.clone(),
+            RawPublicKey::Anonymous(public_key) => public_key.clone().into(),
             RawPublicKey::Named(name) => self.resolve_named_public_key(name),
         }
     }
@@ -240,6 +267,43 @@ impl<'a> StarcoinTestAdapter<'a> {
         Ok(bcs::from_bytes(&balance_blob).unwrap())
     }
 
+    fn hack_genesis_account(&self) -> Result<()> {
+        let genesis_account = self.fetch_account_resource(&genesis_address())?;
+
+        let balance =
+            self.fetch_balance_resource(&genesis_address(), STC_TOKEN_CODE_STR.to_string())?;
+        let genesis_account_data = AccountData::with_account_and_event_counts(
+            Account::new_genesis_account(genesis_address()),
+            balance.token(),
+            STC_TOKEN_CODE_STR,
+            genesis_account.sequence_number(),
+            genesis_account.withdraw_events().count(),
+            genesis_account.deposit_events().count(),
+            genesis_account.accept_token_events().count(),
+            genesis_account.has_delegated_key_rotation_capability(),
+            genesis_account.has_delegated_withdrawal_capability(),
+        );
+        self.storage
+            .apply_write_set(genesis_account_data.to_writeset())?;
+
+        {
+            let mut writes = WriteSetMut::default();
+            writes.push((
+                AccessPath::resource_access_path(
+                    genesis_address(),
+                    StructTag {
+                        address: genesis_address(),
+                        module: Identifier::new("Account")?,
+                        name: Identifier::new("SignerDelegated")?,
+                        type_params: vec![],
+                    },
+                ),
+                WriteOp::Deletion,
+            ));
+            self.storage.apply_write_set(writes.freeze().unwrap())?;
+        }
+        Ok(())
+    }
     /// Derive the default transaction parameters from the account and balance resources fetched
     /// from storage. In the future, we are planning to allow the user to override these using
     /// command arguments.
@@ -259,7 +323,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             .gas_schedule
             .gas_constants
             .maximum_number_of_gas_units;
-        let gas_unit_price = 0;
+        let gas_unit_price = 1;
         let max_gas_amount = if gas_unit_price == 0 {
             max_number_of_gas_units.get()
         } else {
@@ -321,7 +385,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         public_key: AccountPublicKey,
     ) -> Result<TransactionOutput> {
         let mut vm = StarcoinVM::new(None);
-        let (status, output) = vm.dry_run_transaction(
+        let (_status, output) = vm.dry_run_transaction(
             &self.storage,
             DryRunTransaction {
                 raw_txn: txn,
@@ -329,18 +393,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             },
         )?;
         match output.status() {
-            TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
-                KeptVMStatus::Executed => {
-                    self.storage
-                        .apply_write_set(output.clone().into_inner().0)?;
-                }
-                _ => {
-                    bail!("Failed to execute transaction. VMStatus: {}", status)
-                }
-            },
-            TransactionStatus::Discard(_) => {
-                bail!("Transaction discarded. VMStatus: {}", status)
+            TransactionStatus::Keep(_kept_vm_status) => {
+                self.storage
+                    .apply_write_set(output.clone().into_inner().0)?;
             }
+            TransactionStatus::Discard(_) => {}
         }
         Ok(output)
     }
@@ -372,7 +429,8 @@ impl<'a> StarcoinTestAdapter<'a> {
             Ok(Some(rets.iter().map(|t| format!("{}", t)).join("\n")))
         }
     }
-    fn handle_create_account(
+
+    fn handle_faucet(
         &mut self,
         addr: RawAddress,
         initial_balance: u128,
@@ -403,7 +461,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                             addrs
                         })
                         .unwrap();
-                    self.public_key_mapping.insert(name.clone(), key);
+                    self.public_key_mapping.insert(name.clone(), key.into());
                 } else if let Some(_) = public_key {
                     bail!(
                         "name address {} = {} already exists, should not provide public key",
@@ -427,8 +485,11 @@ impl<'a> StarcoinTestAdapter<'a> {
             sender,
             params.sequence_number,
             ScriptFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
-                Identifier::new("create_account_with_initial_amount_v2").unwrap(),
+                ModuleId::new(
+                    core_code_address(),
+                    Identifier::new("TransferScripts").unwrap(),
+                ),
+                Identifier::new("peer_to_peer_v2").unwrap(),
                 vec![stc_type_tag()],
                 vec![
                     bcs_ext::to_bytes(&addr).unwrap(),
@@ -442,9 +503,18 @@ impl<'a> StarcoinTestAdapter<'a> {
         );
         let output = self.run_transaction(txn, self.association_public_key.clone())?;
 
-        Ok(Some(serde_json::to_string_pretty(
-            &TransactionOutputView::from(output),
-        )?))
+        match output.status().status() {
+            Ok(kept) if kept.is_success() => Ok(None),
+            _ => {
+                let result = TransactionResult {
+                    gas_used: output.gas_used(),
+                    status: output.status().clone(),
+                    write_set: None,
+                    events: None,
+                };
+                Ok(Some(serde_json::to_string_pretty(&result)?))
+            }
+        }
     }
     fn handle_new_block(
         &mut self,
@@ -543,6 +613,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         }
 
         let mut public_key_mapping = BTreeMap::default();
+
         let init_args = extra_arg.unwrap_or_default();
         {
             // Private key mapping
@@ -554,7 +625,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                             name
                         )
                     }
-                    public_key_mapping.insert(name, private_key);
+                    public_key_mapping.insert(name, private_key.into());
                 }
             }
         }
@@ -562,20 +633,28 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             let remote_view = RemoteStateView::from_url(&rpc, init_args.block_number).unwrap();
             SelectableStateView::B(InMemoryStateCache::new(remote_view))
         } else {
-            let net = ChainNetwork::new_test();
+            let net = ChainNetwork::new_builtin(init_args.network.unwrap());
+            if let Some(k) = &net.genesis_config().genesis_key_pair {
+                public_key_mapping.insert(Identifier::new("Genesis").unwrap(), k.1.clone().into());
+            }
             let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
             let data_store = ChainStateDB::mock();
             Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
             SelectableStateView::A(data_store)
         };
 
-        let association_public_key = BuiltinNetworkID::try_from(store.get_chain_id().unwrap())
-            .unwrap()
-            .genesis_config()
-            .association_key_pair
-            .1
-            .clone()
-            .into();
+        let association_public_key: AccountPublicKey =
+            BuiltinNetworkID::try_from(store.get_chain_id().unwrap())
+                .unwrap()
+                .genesis_config()
+                .association_key_pair
+                .1
+                .clone()
+                .into();
+        public_key_mapping.insert(
+            Identifier::new("StarcoinAssociation").unwrap(),
+            association_public_key.clone(),
+        );
 
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps {
@@ -617,13 +696,19 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             store.apply_write_set(writes.freeze().unwrap()).unwrap();
         }
 
-        Self {
+        let mut me = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps),
             default_syntax,
             public_key_mapping,
             storage: store,
             association_public_key,
-        }
+        };
+        me.hack_genesis_account()
+            .expect("hack genesis account failure");
+        // auto start from a new block based on existed state.
+        me.handle_new_block(None, None, None, None)
+            .expect("init test adapter failed");
+        me
     }
 
     fn publish_module(
@@ -656,12 +741,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             gas_budget.unwrap_or(params.max_gas_amount),
             params.gas_unit_price,
             params.expiration_timestamp_secs,
-            ChainId::test(),
+            params.chainid,
         );
 
-        self.run_transaction(txn, public_key.into())?;
-
-        Ok(())
+        let output = self.run_transaction(txn, public_key)?;
+        match output.status().status() {
+            Ok(k) if k.is_success() => Ok(()),
+            _ => bail!("Publish failure: {:?}", output.status()),
+        }
     }
 
     fn execute_script(
@@ -702,14 +789,35 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             gas_budget.unwrap_or(params.max_gas_amount),
             params.gas_unit_price,
             params.expiration_timestamp_secs,
-            ChainId::test(),
+            params.chainid,
         );
 
-        let output = self.run_transaction(txn, public_key.into())?;
-
-        Ok(Some(serde_json::to_string_pretty(
-            &TransactionOutputView::from(output),
-        )?))
+        let output = self.run_transaction(txn, public_key)?;
+        let mut result = TransactionResult {
+            gas_used: output.gas_used(),
+            status: output.status().clone(),
+            write_set: None,
+            events: None,
+        };
+        if extra_args.verbose {
+            result.write_set = Some(
+                output
+                    .write_set()
+                    .clone()
+                    .into_iter()
+                    .map(TransactionOutputAction::from)
+                    .collect(),
+            );
+            result.events = Some(
+                output
+                    .events()
+                    .iter()
+                    .cloned()
+                    .map(TransactionEventView::from)
+                    .collect(),
+            );
+        }
+        Ok(Some(serde_json::to_string_pretty(&result)?))
     }
 
     fn call_function(
@@ -755,14 +863,36 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             gas_budget.unwrap_or(params.max_gas_amount),
             params.gas_unit_price,
             params.expiration_timestamp_secs,
-            ChainId::test(),
+            params.chainid,
         );
 
         let output = self.run_transaction(txn, public_key.into())?;
 
-        Ok(Some(serde_json::to_string_pretty(
-            &TransactionOutputView::from(output),
-        )?))
+        let mut result = TransactionResult {
+            gas_used: output.gas_used(),
+            status: output.status().clone(),
+            write_set: None,
+            events: None,
+        };
+        if extra_args.verbose {
+            result.write_set = Some(
+                output
+                    .write_set()
+                    .clone()
+                    .into_iter()
+                    .map(TransactionOutputAction::from)
+                    .collect(),
+            );
+            result.events = Some(
+                output
+                    .events()
+                    .iter()
+                    .cloned()
+                    .map(TransactionEventView::from)
+                    .collect(),
+            );
+        }
+        Ok(Some(serde_json::to_string_pretty(&result)?))
     }
 
     fn view_data(
@@ -781,11 +911,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         subcommand: TaskInput<Self::Subcommand>,
     ) -> anyhow::Result<Option<String>> {
         match subcommand.command {
-            StarcoinSubcommands::CreateAccount {
+            StarcoinSubcommands::Faucet {
                 address,
                 initial_balance,
                 public_key,
-            } => self.handle_create_account(address, initial_balance, public_key),
+            } => self.handle_faucet(address, initial_balance, public_key),
             StarcoinSubcommands::NewBlock {
                 author,
                 timestamp,

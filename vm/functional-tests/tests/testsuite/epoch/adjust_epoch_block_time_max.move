@@ -1,10 +1,12 @@
-// test adjust epoch full uncle.
+//# init -n dev
 
-//! sender: genesis
+//# faucet --addr Genesis
+
+//# run --signers Genesis
 script {
-use 0x1::ConsensusConfig;
-use 0x1::Epoch;
-//use 0x1::Debug;
+use Std::ConsensusConfig;
+use Std::Epoch;
+//use Std::Debug;
 
     fun adjust_epoch_block_time(genesis_account: signer) {
         let block_number = 1;
@@ -24,9 +26,9 @@ use 0x1::Epoch;
 
             let block_time_target = Epoch::block_time_target();
             //Debug::print(&block_time_target);
-            assert(pre_block_time_target <= block_time_target, 101);
-            assert(block_time_target >= base_block_time_target, 102);
-            assert(block_time_target <= max_block_time_target, 103);
+            assert!(pre_block_time_target <= block_time_target, 101);
+            assert!(block_time_target >= base_block_time_target, 102);
+            assert!(block_time_target <= max_block_time_target, 103);
             times = times + 1;
             block_number = block_number + 1;
             block_time_milliseonds = block_time_milliseonds + block_time_target;

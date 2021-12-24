@@ -1,13 +1,15 @@
-//! account: alice, 10000 0x1::STC::STC
-//! account: bob, 10000 0x1::STC::STC
+//# init -n dev
 
-//! sender: alice
-address bob = {{bob}};
+//# faucet --addr alice --amount 1000000
+
+//# faucet --addr bob --amount 1000000
+
+//# run --signers alice
 script {
-    use 0x1::Account;
+    use Std::Account;
 
     fun main(account: signer) {
-        Account::pay_from<0x1::STC::STC>(&account, @bob, 10);
+        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
         abort 41
     }
 }
@@ -15,15 +17,13 @@ script {
 // check: ABORTED
 // check: 41
 
-//! new-transaction
-//! sender: bob
-address bob = {{bob}};
+//# run --signers bob
 script {
-    use 0x1::Account;
+    use Std::Account;
 
     fun main() {
         // check the state is unchanged
-        assert(Account::balance<0x1::STC::STC>(@bob) == 10000, 42);
+        assert!(Account::balance<Std::STC::STC>(@bob) == 1000000, 42);
     }
 }
 

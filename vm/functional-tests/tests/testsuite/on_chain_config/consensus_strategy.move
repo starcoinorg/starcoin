@@ -1,7 +1,12 @@
+//# init -n dev
+
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-use 0x1::ConsensusStrategy;
+use Std::ConsensusStrategy;
 
 fun main() {
-    assert(ConsensusStrategy::get() == 0, 1);
+    assert!(ConsensusStrategy::get() == 0, 1);
 }
 }

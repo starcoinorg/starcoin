@@ -1,7 +1,13 @@
+//# init -n dev
+
+//# faucet --addr alice
+
+
+//# run --signers alice
 script {
-use 0x1::Timestamp;
+use Std::Timestamp;
 
 fun main() {
-    assert(!Timestamp::is_genesis(), 10)
+    assert!(!Timestamp::is_genesis(), 10);
 }
 }

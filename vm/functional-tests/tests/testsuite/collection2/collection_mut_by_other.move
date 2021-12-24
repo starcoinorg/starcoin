@@ -1,7 +1,14 @@
-// Test Collection
-//! account: alice, 100000 0x1::STC::STC
-//! account: bob, 100000 0x1::STC::STC
-address default={{default}};
+
+//# init -n dev
+
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# faucet --addr default
+
+//# publish
+
 module default::TestR {
     struct TestR has key, store {id: u64}
 
@@ -24,11 +31,11 @@ module default::TestR {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{TestR};
 
     fun test_single(signer: signer) {
@@ -36,12 +43,12 @@ script {
     }
 }
 
-//! new-transaction
-//! sender: bob
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers bob
+
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_add_by_other(signer: signer) {
@@ -55,12 +62,12 @@ script {
 //add by other at here failed.
 // check: "Keep(ABORTED { code: 26114"
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{Self,TestR};
 
     fun add_by_owner(signer: signer) {
@@ -71,12 +78,12 @@ script {
     }
 }
 
-//! new-transaction
-//! sender: bob
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers bob
+
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_mut_by_other(signer: signer) {
@@ -87,18 +94,18 @@ script {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{Self,TestR};
 
     fun check(signer: signer) {
        let c = Collection2::borrow_collection<TestR>(&signer, @alice);
        let r1 = Collection2::borrow(&c, 0);
-       assert(TestR::id_of(r1) == 2, 1001);
+       assert!(TestR::id_of(r1) == 2, 1001);
        Collection2::return_collection(c);
     }
 }

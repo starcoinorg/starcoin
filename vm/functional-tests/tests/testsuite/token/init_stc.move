@@ -1,7 +1,12 @@
-//! account: alice
+//# init -n dev
 
+//# faucet --addr alice
+
+//# faucet --addr Genesis
+
+//# run --signers alice
 script {
-use 0x1::STC;
+use Std::STC;
 
 fun main(signer: signer) {
     STC::initialize(&signer, 500, 5000, 10, 600);
@@ -11,11 +16,11 @@ fun main(signer: signer) {
 // check: ABORTED
 
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 
 script {
-use 0x1::STC;
+use Std::STC;
 
 fun main(signer: signer) {
     STC::initialize(&signer, 500, 5000, 10, 600);

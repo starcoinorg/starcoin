@@ -1,12 +1,15 @@
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# publish
+
 module alice::MyToken {
-    use 0x1::Token;
-    use 0x1::MintDaoProposal;
-    use 0x1::Dao;
+    use Std::Token;
+    use Std::MintDaoProposal;
+    use Std::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -23,25 +26,22 @@ module alice::MyToken {
     }
 }
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 86400000
+//# block --author 0x1 --timestamp 86400000
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
     use alice::MyToken::{MyToken, Self};
-    use 0x1::Account;
-    use 0x1::Token;
+    use Std::Account;
+    use Std::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
 
         let market_cap = Token::market_cap<MyToken>();
-        assert(market_cap == 0, 8001);
-        assert(Token::is_registered_in<MyToken>(@alice), 8002);
+        assert!(market_cap == 0, 8001);
+        assert!(Token::is_registered_in<MyToken>(@alice), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
         Account::do_accept_token<MyToken>(&account);
     }
@@ -50,29 +50,29 @@ script {
 // check: EXECUTED
 
 // issuer mint
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::Account;
-    use 0x1::Token;
+    use Std::Account;
+    use Std::Token;
     use alice::MyToken::{MyToken};
     fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
         let old_market_cap = Token::market_cap<MyToken>();
         let coin = Token::mint<MyToken>(&account, 10000);
-        assert(Token::value<MyToken>(&coin) == 10000, 8002);
-        assert(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
+        assert!(Token::value<MyToken>(&coin) == 10000, 8002);
+        assert!(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
         Account::deposit_to_self<MyToken>(&account, coin)
     }
 }
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
     use alice::MyToken::MyToken;
-    use 0x1::Account;
+    use Std::Account;
 
     fun accept_token(account: signer) {
         Account::do_accept_token<MyToken>(&account);
@@ -81,14 +81,14 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Account;
+    use Std::Account;
     use alice::MyToken::MyToken;
-    use 0x1::Signer;
+    use Std::Signer;
 
     fun transfer_some_token_to_bob(signer: signer) {
         let balance = Account::balance<MyToken>(Signer::address_of(&signer));
@@ -97,9 +97,9 @@ script {
 }
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
     use alice::MyToken;
 
@@ -109,12 +109,12 @@ script {
 }
 // check: "Keep(ABORTED { code: 358658"
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
+
+//# run --signers bob
+
 script {
     use alice::MyToken::MyToken;
-    use 0x1::MintDaoProposal;
+    use Std::MintDaoProposal;
 
     fun test_plugin_fail(account: signer) {
         MintDaoProposal::plugin<MyToken>(&account); //ERR_NOT_AUTHORIZED
@@ -123,9 +123,9 @@ script {
 
 // check: "Keep(ABORTED { code: 102658"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
     use alice::MyToken;
 
@@ -136,11 +136,11 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+
+//# run --signers alice
+
 script {
-    use 0x1::MintDaoProposal;
+    use Std::MintDaoProposal;
     use alice::MyToken::MyToken;
 
     fun propose(signer: signer) {
@@ -149,22 +149,19 @@ script {
 }
 // check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 87000000
+//# block --author 0x1 --timestamp 87000000
 
 
-//! new-transaction
-//! sender: bob
 
-address alice = {{alice}};
+//# run --signers bob
+
+
 script {
-    use 0x1::MintDaoProposal;
+    use Std::MintDaoProposal;
     use alice::MyToken::MyToken;
-    use 0x1::Account;
-    use 0x1::Signer;
-    use 0x1::Dao;
+    use Std::Account;
+    use Std::Signer;
+    use Std::Dao;
 
     fun vote(signer: signer) {
         let balance = Account::balance<MyToken>(Signer::address_of(&signer));
@@ -174,58 +171,52 @@ script {
 }
 // check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 3
-//! block-time: 180000000
 
-//! new-transaction
-//! sender: bob
+//! block --author 0x1 --timestamp 250000000
 
-address alice = {{alice}};
+//# run --signers bob
+
+
 script {
-    use 0x1::MintDaoProposal;
-    use 0x1::Account;
-    use 0x1::Dao;
+    use Std::MintDaoProposal;
+    use Std::Account;
+    use Std::Dao;
     use alice::MyToken::MyToken;
 
     fun queue_proposal(signer: signer) {
         let state = Dao::proposal_state<MyToken, MintDaoProposal::MintToken>(@alice, 0);
-        assert(state == 4, (state as u64));
+        assert!(state == 4, (state as u64));
         {
             let token = Dao::unstake_votes<MyToken, MintDaoProposal::MintToken>(&signer, @alice, 0);
             Account::deposit_to_self(&signer, token);
         };
         Dao::queue_proposal_action<MyToken, MintDaoProposal::MintToken>(@alice, 0);
         let state = Dao::proposal_state<MyToken, MintDaoProposal::MintToken>(@alice, 0);
-        assert(state == 5, (state as u64));
+        assert!(state == 5, (state as u64));
     }
 }
 // check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 4
-//! block-time: 250000000
+//# block --author 0x1 --timestamp 350000000
 
 
-//! new-transaction
-//! sender: bob
 
-address alice = {{alice}};
+//# run --signers bob
+
+
 script {
-    use 0x1::MintDaoProposal;
-    use 0x1::Dao;
-    use 0x1::Account;
+    use Std::MintDaoProposal;
+    use Std::Dao;
+    use Std::Account;
     use alice::MyToken::MyToken;
 
     fun execute_proposal_action(_signer: signer) {
         let old_balance = Account::balance<MyToken>(@alice);
         let state = Dao::proposal_state<MyToken, MintDaoProposal::MintToken>(@alice, 0);
-        assert(state == 6, (state as u64));
+        assert!(state == 6, (state as u64));
         MintDaoProposal::execute_mint_proposal<MyToken>(@alice, 0);
         let balance = Account::balance<MyToken>(@alice);
-        assert(balance ==  old_balance + 1000000, 1001);
+        assert!(balance ==  old_balance + 1000000, 1001);
     }
 }
 // check: EXECUTED

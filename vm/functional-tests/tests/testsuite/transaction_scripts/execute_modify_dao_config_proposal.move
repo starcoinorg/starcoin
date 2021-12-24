@@ -1,17 +1,17 @@
-//! account: alice, 159256800000000000 0x1::STC::STC
-//! account: bob, 159256800000000000 0x1::STC::STC
+//# init -n dev
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 86400000
 
-//! new-transaction
-//! sender: alice
-//! args: 86400000, 0, 50u8, 0, 0
+//# faucet --addr alice --amount 159256800000
+
+//# faucet --addr bob --amount 49814200010000000
+
+//# block --author 0x1 --timestamp 86400000
+
+
+//# run --signers alice --args 86400000 --args 0 --args 50u8 --args 0 --args 0
 script {
-    use 0x1::ModifyDaoConfigProposal;
-    use 0x1::STC::STC;
+    use Std::ModifyDaoConfigProposal;
+    use Std::STC::STC;
 
     fun main(signer: signer,
             voting_delay: u64,
@@ -22,22 +22,14 @@ script {
         ModifyDaoConfigProposal::propose<STC>(signer, voting_delay, voting_period, voting_quorum_rate, min_action_delay, exec_delay);
     }
 }
-// check: gas_used
-// check: 198227
-// check: "Keep(EXECUTED)"
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 87000000
+//# block --author 0x1 --timestamp 87000000
 
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0, true, 39814200010000000u128
+//# run --signers bob --args @alice --args 0 --args true --args 39814200010000000u128
 script {
-    use 0x1::DaoVoteScripts;
-    use 0x1::STC::STC;
-    use 0x1::ModifyDaoConfigProposal::DaoConfigUpdate;
+    use Std::DaoVoteScripts;
+    use Std::STC::STC;
+    use Std::ModifyDaoConfigProposal::DaoConfigUpdate;
 
     fun main(account: signer,
             proposer_address: address,
@@ -53,23 +45,15 @@ script {
             votes);
     }
 }
-// check: gas_used
-// check: 189040
-// check: "Keep(EXECUTED)"
 
+//# block --author 0x1 --timestamp 110000000
 
-//! block-prologue
-//! author: genesis
-//! block-number: 3
-//! block-time: 110000000
+//# run --signers bob --args @alice --args 0
 
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0
 script {
-    use 0x1::Dao;
-    use 0x1::STC::STC;
-    use 0x1::ModifyDaoConfigProposal::DaoConfigUpdate;
+    use Std::Dao;
+    use Std::STC::STC;
+    use Std::ModifyDaoConfigProposal::DaoConfigUpdate;
 
     fun main(_account: signer,
             proposer_address: address,
@@ -81,17 +65,13 @@ script {
         );
     }
 }
-// check: gas_used
-// check: 54457
-// check: "Keep(EXECUTED)"
 
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0
+
+//# run --signers bob --args @alice --args 0
 script {
-    use 0x1::DaoVoteScripts;
-    use 0x1::STC::STC;
-    use 0x1::ModifyDaoConfigProposal::DaoConfigUpdate;
+    use Std::DaoVoteScripts;
+    use Std::STC::STC;
+    use Std::ModifyDaoConfigProposal::DaoConfigUpdate;
 
     fun main(account: signer,
              proposer_address: address,
@@ -104,21 +84,13 @@ script {
         );
     }
 }
-// check: gas_used
-// check: 114409
-// check: "Keep(EXECUTED)"
+//# block --author 0x1 --timestamp 250000000
 
-//! block-prologue
-//! author: genesis
-//! block-number: 4
-//! block-time: 250000000
+//# run --signers bob --args @alice --args 0
 
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0
 script {
-    use 0x1::ModifyDaoConfigProposal;
-    use 0x1::STC::STC;
+    use Std::ModifyDaoConfigProposal;
+    use Std::STC::STC;
 
     fun main(proposer_address: address, proposal_id: u64) {
         ModifyDaoConfigProposal::execute<STC>(
@@ -127,6 +99,3 @@ script {
         );
     }
 }
-// check: gas_used
-// check: 163472
-// check: "Keep(EXECUTED)"

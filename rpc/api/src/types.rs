@@ -1079,29 +1079,32 @@ impl From<TransactionOutput> for TransactionOutputView {
             status: status.into(),
             write_set: write_set
                 .into_iter()
-                .map(|(p, w)| {
-                    let (action, value) = match w {
-                        WriteOp::Deletion => (WriteOpView::Deletion, None),
-                        WriteOp::Value(v) => (
-                            WriteOpView::Value,
-                            Some(if p.path.is_resource() {
-                                WriteOpValueView::Resource(v.into())
-                            } else {
-                                WriteOpValueView::Code(v.into())
-                            }),
-                        ),
-                    };
-                    TransactionOutputAction {
-                        access_path: p,
-                        action,
-                        value,
-                    }
-                })
+                .map(TransactionOutputAction::from)
                 .collect(),
         }
     }
 }
+impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
+    fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
+        let (action, value) = match op {
+            WriteOp::Deletion => (WriteOpView::Deletion, None),
+            WriteOp::Value(v) => (
+                WriteOpView::Value,
+                Some(if access_path.path.is_resource() {
+                    WriteOpValueView::Resource(v.into())
+                } else {
+                    WriteOpValueView::Code(v.into())
+                }),
+            ),
+        };
 
+        TransactionOutputAction {
+            access_path,
+            action,
+            value,
+        }
+    }
+}
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
     pub access_path: AccessPath,

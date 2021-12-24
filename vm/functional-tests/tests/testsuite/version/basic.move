@@ -1,27 +1,24 @@
-//! account: alice
+//# init -n dev
 
-//! new-transaction
-//! sender: alice
+//# faucet --addr alice
+
+//# run --signers alice
 script{
-use 0x1::Version;
-use 0x1::Config;
+use Std::Version;
+use Std::Config;
 fun main(account: signer) {
     Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
 }
 }
-// check: EXECUTED
 
-//! new-transaction
-//! sender: alice
+//# run --signers alice
 script{
-use 0x1::Version;
-use 0x1::Signer;
+use Std::Version;
+use Std::Signer;
 fun main(account: signer) {
     let version = Version::get(Signer::address_of(&account));
-    assert(version == 1, 100);
+    assert!(version == 1, 100);
     let _ = version;
 }
 }
-
-// check: EXECUTED
 

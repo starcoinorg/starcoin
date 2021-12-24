@@ -1,75 +1,60 @@
-//! account: alice, 0 0x1::STC::STC
+//# init -n dev
 
-//! sender: association
+//# faucet --addr alice --amount 0
+
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    //use 0x1::Debug;
+    use Std::STC::STC;
+    use Std::Treasury;
+    //use Std::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        assert(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
+        assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }
 }
 
-//! block-prologue
-//! author: alice
-//! block-time: 10000
-//! block-number: 1
+//# block --author alice
 
-//! new-transaction
-//! sender: association
-address alice = {{alice}};
+
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::TreasuryScripts;
-    use 0x1::STC::STC;
+    use Std::TreasuryScripts;
+    use Std::STC::STC;
 
     fun main(account: signer) {
         TreasuryScripts::withdraw_and_split_lt_withdraw_cap<STC>(account, @alice, 100000000000000, 0);
     }
 }
 
-// check: gas_used
-// check: 215494
-// check: "Keep(EXECUTED)"
 
-//! block-prologue
-//! author: alice
-//! block-time: 20000
-//! block-number: 2
+//# block --author alice
 
 
-//! new-transaction
-//! sender: alice
-address ASSOCIATION = {{association}};
+//# run --signers alice
 script {
-    use 0x1::Offer;
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
+    use Std::Offer;
+    use Std::STC::STC;
+    use Std::Treasury;
 
     fun redeem_offer(account: signer) {
-        let cap = Offer::redeem<Treasury::LinearWithdrawCapability<STC>>(&account, @ASSOCIATION);
+        let cap = Offer::redeem<Treasury::LinearWithdrawCapability<STC>>(&account, @StarcoinAssociation);
         Treasury::add_linear_withdraw_capability(&account,cap);
     }
 }
 
 
-//! block-prologue
-//! author: alice
-//! block-time: 60000
-//! block-number: 3
+//# block --author alice
 
-//! new-transaction
-//! sender: alice
+
+//# run --signers alice
+
 script {
-    use 0x1::TreasuryScripts;
-    use 0x1::STC::STC;
+    use Std::TreasuryScripts;
+    use Std::STC::STC;
 
     fun main(account: signer) {
         TreasuryScripts::withdraw_token_with_linear_withdraw_capability<STC>(account);
     }
 }
-// check: gas_used
-// check: 173349
-// check: "Keep(EXECUTED)"

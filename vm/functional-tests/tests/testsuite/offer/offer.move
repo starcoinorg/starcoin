@@ -1,25 +1,26 @@
-// Test offer
-//! account: alice, 100000 0x1::STC::STC
-//! account: bob, 0 0x1::STC::STC
-//! account: carol, 0 0x1::STC::STC
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# faucet --addr carol
+
+//# run --signers alice
 script {
-    use 0x1::Account;
-    use 0x1::Offer;
-    use 0x1::STC::STC;
-    use 0x1::Signer;
-    use 0x1::Token::Token;
+    use Std::Account;
+    use Std::Offer;
+    use Std::STC::STC;
+    use Std::Signer;
+    use Std::Token::Token;
 
     fun create_offer(account: signer) {
         let token = Account::withdraw<STC>(&account, 10000);
         Offer::create(&account, token, @bob, 5);
         // test Offer::exists_at
-        assert(Offer::exists_at<Token<STC>>(Signer::address_of(&account)), 1001);
+        assert!(Offer::exists_at<Token<STC>>(Signer::address_of(&account)), 1001);
         // test Offer::address_of
-        assert(Offer::address_of<Token<STC>>(Signer::address_of(&account)) == @bob, 1002);
+        assert!(Offer::address_of<Token<STC>>(Signer::address_of(&account)) == @bob, 1002);
     }
 }
 
@@ -30,15 +31,14 @@ script {
 //! block-time: 1000
 //! block-number: 1
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+
+
+//# run --signers bob
 script {
-    use 0x1::Account;
-    use 0x1::Offer;
-    use 0x1::Token::Token;
-    use 0x1::STC::STC;
+    use Std::Account;
+    use Std::Offer;
+    use Std::Token::Token;
+    use Std::STC::STC;
 
     fun redeem_offer(account: signer) {
         let token = Offer::redeem<Token<STC>>(&account, @alice);
@@ -48,20 +48,14 @@ script {
 
 // check: "Keep(ABORTED { code: 26117"
 
-//! block-prologue
-//! author: alice
-//! block-time: 5000
-//! block-number: 2
+//# block --author alice
 
-//! new-transaction
-//! sender: carol
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers carol
 script {
-    use 0x1::Account;
-    use 0x1::Offer;
-    use 0x1::Token::Token;
-    use 0x1::STC::STC;
+    use Std::Account;
+    use Std::Offer;
+    use Std::Token::Token;
+    use Std::STC::STC;
 
     fun redeem_offer(account: signer) {
         let token = Offer::redeem<Token<STC>>(&account, @alice);
@@ -70,15 +64,14 @@ script {
 }
 // check: "Keep(ABORTED { code: 25863"
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//# block --author alice
+
+//# run --signers bob
 script {
-    use 0x1::Account;
-    use 0x1::Offer;
-    use 0x1::Token::Token;
-    use 0x1::STC::STC;
+    use Std::Account;
+    use Std::Offer;
+    use Std::Token::Token;
+    use Std::STC::STC;
 
     fun redeem_offer(account: signer) {
         let token = Offer::redeem<Token<STC>>(&account, @alice);

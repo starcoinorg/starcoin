@@ -1,8 +1,12 @@
-//! account: alice
+//# init -n dev
 
-//! sender: alice
+//# faucet --addr Genesis
+
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-use 0x1::Epoch;
+use Std::Epoch;
     //ENOT_GENESIS_ACCOUNT
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
@@ -14,10 +18,10 @@ use 0x1::Epoch;
 
 // check: "Keep(ABORTED { code: 2818"
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 script {
-    use 0x1::Epoch;
+    use Std::Epoch;
     //block_number < epoch_ref.end_block_number, do nothing
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
@@ -29,11 +33,11 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 script {
-    use 0x1::Epoch;
-    use 0x1::ConsensusConfig;
+    use Std::Epoch;
+    use Std::ConsensusConfig;
     //EINVALID_UNCLES_COUNT
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
@@ -46,11 +50,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 25863"
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 script {
-    use 0x1::Epoch;
-    use 0x1::ConsensusConfig;
+    use Std::Epoch;
+    use Std::ConsensusConfig;
     //EUNREACHABLE, block_number > epoch_ref.end_block_number
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
@@ -62,11 +66,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 19"
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 script {
-    use 0x1::Epoch;
-    use 0x1::ConsensusConfig;
+    use Std::Epoch;
+    use Std::ConsensusConfig;
     //EINVALID_UNCLES_COUNT. If block_number == epoch_ref.end_block_number, uncles should be 0
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
@@ -78,11 +82,11 @@ script {
 }
 // check: "Keep(ABORTED { code: 25863"
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 script {
-    use 0x1::Epoch;
-    use 0x1::ConsensusConfig;
+    use Std::Epoch;
+    use Std::ConsensusConfig;
     //block_number == epoch_ref.end_block_number
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;

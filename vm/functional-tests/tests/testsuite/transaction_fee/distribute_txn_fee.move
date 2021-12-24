@@ -1,44 +1,47 @@
-//! account: bob, 10000 0x1::STC::STC
-//! account: alice, 10000 0x1::STC::STC
+//# init -n dev
 
-//! new-transaction
-//! sender: bob
+//# faucet --addr Genesis
+
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# run --signers bob
 script {
-use 0x1::Account;
-use 0x1::Token;
-use 0x1::STC::{STC};
-use 0x1::TransactionFee;
+use Std::Account;
+use Std::Token;
+use Std::STC::{STC};
+use Std::TransactionFee;
 fun pay_fees(account: signer) {
     let coin = Account::withdraw<STC>(&account, 200);
-    assert(Token::value<STC>(&coin) == 200, 8001);
+    assert!(Token::value<STC>(&coin) == 200, 8001);
     TransactionFee::pay_fee<STC>(coin);
  }
 }
-// check: EXECUTED
 
-//! new-transaction
-//! sender: genesis
+
+//# run --signers Genesis
 script {
-use 0x1::Account;
-use 0x1::Token;
-use 0x1::STC::{STC};
-use 0x1::TransactionFee;
+use Std::Account;
+use Std::Token;
+use Std::STC::{STC};
+use Std::TransactionFee;
 fun distribute_fees(account: signer) {
     let coin = TransactionFee::distribute_transaction_fees<STC>(&account);
     let value = Token::value<STC>(&coin);
-    assert( value == 200, 10000);
+    assert!( value >= 200, 10000);
     Account::deposit_to_self(&account, coin);
 }
 }
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
+
+//# run --signers alice
 script {
-use 0x1::Account;
-use 0x1::STC::{STC};
-use 0x1::TransactionFee;
+use Std::Account;
+use Std::STC::{STC};
+use Std::TransactionFee;
 
 fun main(account: signer) {
    let coin = TransactionFee::distribute_transaction_fees<STC>(&account);

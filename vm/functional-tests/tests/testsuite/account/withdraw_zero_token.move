@@ -1,11 +1,13 @@
-//! account: alice, 0 0x1::STC::STC
+//# init -n dev
 
-//! new-transaction
-//! sender: alice
+//# faucet --addr alice
+
+
+//# run --signers alice
 script {
-use 0x1::STC::{STC};
-use 0x1::Token;
-use 0x1::Account;
+use Std::STC::{STC};
+use Std::Token;
+use Std::Account;
 fun main(account: signer) {
     let coin = Account::withdraw<STC>(&account, 0);
     Token::destroy_zero(coin);

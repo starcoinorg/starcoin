@@ -1,9 +1,12 @@
-// Test Collection
-//! account: alice, 100000 0x1::STC::STC
-//! account: bob, 100000 0x1::STC::STC
+//# init -n dev
 
-address default={{default}};
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//# faucet --addr default
+
+//# publish
 module default::TestR {
     struct TestR has key, store {id: u64}
 
@@ -22,13 +25,13 @@ module default::TestR {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
-    use 0x1::Signer;
+    use Std::Collection2;
+    use Std::Signer;
     use default::TestR::{Self,TestR};
 
     fun test_single(signer: signer) {
@@ -38,32 +41,32 @@ script {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
-    use 0x1::Signer;
+    use Std::Collection2;
+    use Std::Signer;
     use default::TestR::{Self, TestR};
 
     fun test_single(signer: signer) {
         let addr = Signer::address_of(&signer);
         let c = Collection2::borrow_collection<TestR>(&signer,addr);
         let r = Collection2::pop_back(&mut c);
-        assert(TestR::id_of(&r) == 1, 1001);
+        assert!(TestR::id_of(&r) == 1, 1001);
         Collection2::append(&mut c, r);
         Collection2::return_collection(c);
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
-    use 0x1::Signer;
+    use Std::Collection2;
+    use Std::Signer;
     use default::TestR::{Self,TestR};
 
     fun test_multi(signer: signer) {
@@ -77,55 +80,55 @@ script {
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
-    use 0x1::Signer;
+    use Std::Collection2;
+    use Std::Signer;
     use default::TestR::{Self, TestR};
 
     fun test_borrow_by_owner(signer: signer) {
         let addr = Signer::address_of(&signer);
         let c = Collection2::borrow_collection<TestR>(&signer, addr);
         let c_len = Collection2::length<TestR>(&c);
-        assert(c_len == 3, 1004);
+        assert!(c_len == 3, 1004);
         let i = 0;
 
         while (i < c_len) {
             let r = Collection2::borrow(&c, i);
             let id = TestR::id_of(r);
-            assert(id == i + 1, 1005);
+            assert!(id == i + 1, 1005);
             i = i + 1;
         };
         Collection2::return_collection(c);
     }
 }
 
-//! new-transaction
-//! sender: bob
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers bob
+
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_borrow_by_other(signer: signer) {
         let c = Collection2::borrow_collection<TestR>(&signer, @alice);
         let r = Collection2::borrow(&c, 0);
         let id = TestR::id_of(r);
-        assert(id == 1, 1006);
+        assert!(id == 1, 1006);
         Collection2::return_collection(c);
     }
 }
 
-//! new-transaction
-//! sender: bob
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers bob
+
+
 script {
-    use 0x1::Collection2;
+    use Std::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_remove_by_other(signer: signer) {
@@ -139,13 +142,13 @@ script {
 // check: "Keep(ABORTED { code: 26626"
 
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
-    use 0x1::Signer;
+    use Std::Collection2;
+    use Std::Signer;
     use default::TestR::{Self, TestR};
 
     fun test_remove_by_owner(signer: signer) {
@@ -162,17 +165,17 @@ script {
         };
         Collection2::return_collection(c);
         Collection2::destroy_collection<TestR>(&signer);
-        assert(!Collection2::exists_at<TestR>(addr), 1007)
+        assert!(!Collection2::exists_at<TestR>(addr), 1007)
     }
 }
 
-//! new-transaction
-//! sender: alice
-address default={{default}};
-address alice = {{alice}};
+
+//# run --signers alice
+
+
 script {
-    use 0x1::Collection2;
-    use 0x1::Signer;
+    use Std::Collection2;
+    use Std::Signer;
     use default::TestR::{TestR};
 
     fun test_remove_by_owner(signer: signer) {

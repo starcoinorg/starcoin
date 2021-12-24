@@ -1,12 +1,14 @@
-//! account: creator
-//! account: bob
+//# init -n dev
 
-//! sender: creator
-address creator = {{creator}};
+//# faucet --addr creator
+
+//# faucet --addr bob
+
+//# publish
 module creator::Card {
-    use 0x1::Timestamp;
-    use 0x1::NFT::{Self, NFT, Metadata, MintCapability, BurnCapability, UpdateCapability};
-    use 0x1::Signer;
+    use Std::Timestamp;
+    use Std::NFT::{Self, NFT, Metadata, MintCapability, BurnCapability, UpdateCapability};
+    use Std::Signer;
 
     struct Card has copy, store, drop{
         upgrade_time: u64,
@@ -37,7 +39,7 @@ module creator::Card {
     }
 
     public fun init(sender: &signer){
-        assert(Signer::address_of(sender) == @creator, 1000);
+        assert!(Signer::address_of(sender) == @creator, 1000);
         NFT::register_v2<Card>(sender, NFT::empty_meta());
         let cap = NFT::remove_mint_capability<Card>(sender);
         move_to(sender, CardMintCapability{ cap});
@@ -78,7 +80,7 @@ module creator::Card {
     }
 
     public fun update_type_info_meta(sender: &signer, meta: Metadata) acquires CardUpdateCapability{
-        assert(Signer::address_of(sender) == @creator, 1000);
+        assert!(Signer::address_of(sender) == @creator, 1000);
         let update_cap = borrow_global_mut<CardUpdateCapability>(@creator);
         NFT::update_nft_type_info_meta_with_cap(&mut update_cap.cap, meta);
     }
@@ -86,9 +88,7 @@ module creator::Card {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
     use creator::Card;
     fun main(sender: signer) {
@@ -98,11 +98,9 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-    use 0x1::NFTGallery;
+    use Std::NFTGallery;
     use creator::Card;
     fun main(sender: signer) {
         let first = Card::mint(&sender);
@@ -115,16 +113,11 @@ script {
 // check: EXECUTED
 
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 10000
+//# block --author 0x1
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-    use 0x1::NFTGallery;
+    use Std::NFTGallery;
     use creator::Card::{Self, Card, CardBody};
     fun main(sender: signer) {
         let first = NFTGallery::withdraw_one<Card, CardBody>(&sender);
@@ -136,24 +129,22 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
     use creator::Card::{Self, Card, CardBody};
-    use 0x1::NFTGallery;
-    use 0x1::Signer;
-    use 0x1::NFT;
+    use Std::NFTGallery;
+    use Std::Signer;
+    use Std::NFT;
 
     fun main(sender: signer) {
-        assert(NFTGallery::count_of<Card, CardBody>(Signer::address_of(&sender)) == 1, 1001);
+        assert!(NFTGallery::count_of<Card, CardBody>(Signer::address_of(&sender)) == 1, 1001);
         let card = NFTGallery::withdraw_one<Card, CardBody>(&sender);
         let card_meta = NFT::get_type_meta(&card);
         let upgrade_time = Card::get_upgrade_time(card_meta);
-        assert(upgrade_time == 10000, 1002);
+        assert!(upgrade_time == 10000, 1002);
         let body = NFT::borrow_body(&card);
         let level = Card::get_level(body);
-        assert(level == 2, 1003);
+        assert!(level == 2, 1003);
         NFTGallery::deposit(&sender, card);
     }
 }
@@ -161,18 +152,16 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
     use creator::Card::{Self, Card};
-    use 0x1::NFT;
+    use Std::NFT;
 
     fun main(sender: signer) {
         let type_meta = NFT::nft_type_info_meta<Card>();
-        assert(NFT::meta_name(&type_meta) == b"", 1004);
-        assert(NFT::meta_image(&type_meta) == b"", 1005);
-        assert(NFT::meta_description(&type_meta) == b"", 1006);
+        assert!(NFT::meta_name(&type_meta) == b"", 1004);
+        assert!(NFT::meta_image(&type_meta) == b"", 1005);
+        assert!(NFT::meta_description(&type_meta) == b"", 1006);
 
         let name = b"card";
         let image = b"ipfs://image_hash";
@@ -182,9 +171,9 @@ script {
         Card::update_type_info_meta(&sender, new_meta);
 
         let type_meta = NFT::nft_type_info_meta<Card>();
-        assert(NFT::meta_name(&type_meta) == name, 1007);
-        assert(NFT::meta_image(&type_meta) == image, 1008);
-        assert(NFT::meta_description(&type_meta) == description, 1009);
+        assert!(NFT::meta_name(&type_meta) == name, 1007);
+        assert!(NFT::meta_image(&type_meta) == image, 1008);
+        assert!(NFT::meta_description(&type_meta) == description, 1009);
     }
 }
 

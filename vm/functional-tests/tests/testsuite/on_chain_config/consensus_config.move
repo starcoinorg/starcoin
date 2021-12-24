@@ -1,5 +1,10 @@
+//# init -n dev
+
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     // test do_compute_reward_per_block()
     fun compute_reward_per_block() {
@@ -28,29 +33,29 @@ script {
             base_block_gas_limit,
             strategy);
 
-        assert(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target * 2) == base_reward_per_block * 2, 101);
-        assert(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / 2) == base_reward_per_block / 2, 102);
-        assert(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / 5) == base_reward_per_block / 5, 103);
-        assert(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / base_block_time_target) == base_reward_per_block / (base_block_time_target as u128), 104);
+        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target * 2) == base_reward_per_block * 2, 101);
+        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / 2) == base_reward_per_block / 2, 102);
+        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / 5) == base_reward_per_block / 5, 103);
+        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / base_block_time_target) == base_reward_per_block / (base_block_time_target as u128), 104);
     }
 }
 
-//! new-transaction
+//# run --signers alice
 // test compute_reward_per_block
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun compute_reward_per_block() {
         let block_time_target = 10000; // equal to default block_time_target
         let default_reward_per_block = 10000000000; // should be consistent with genesis config
         let reward_per_block = ConsensusConfig::compute_reward_per_block(block_time_target);
-        assert(reward_per_block == default_reward_per_block, 102);
+        assert!(reward_per_block == default_reward_per_block, 102);
     }
 }
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 0; // should large than 0
@@ -80,11 +85,10 @@ script {
 
     }
 }
-// check: "Keep(ABORTED { code: 4615"
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -114,11 +118,10 @@ script {
 
     }
 }
-// check: "Keep(ABORTED { code: 4615"
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -148,11 +151,10 @@ script {
 
     }
 }
-// check: "Keep(ABORTED { code: 4615"
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -184,9 +186,9 @@ script {
 }
 // check: "Keep(ABORTED { code: 4615"
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -218,9 +220,9 @@ script {
 }
 // check: "Keep(ABORTED { code: 4615"
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -252,9 +254,9 @@ script {
 }
 // check: "Keep(ABORTED { code: 4615"
 
-//! new-transaction
+//# run --signers alice
 script {
-    use 0x1::ConsensusConfig;
+    use Std::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;

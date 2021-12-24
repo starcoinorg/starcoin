@@ -1,24 +1,23 @@
-//! account: creator
-//! account: bob
+//# init -n dev
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 10000
+//# faucet --addr creator
 
+//# faucet --addr bob
+
+
+//# block --author 0x1
+
+//# publish
 //this is a x service's membership nft example
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
 module creator::XMembership {
-    use 0x1::NFT::{Self, MintCapability, BurnCapability, UpdateCapability};
-    use 0x1::IdentifierNFT;
-    use 0x1::Token::{Self, Token};
-    use 0x1::STC::STC;
-    use 0x1::Account;
-    use 0x1::Timestamp;
-    use 0x1::Signer;
-    use 0x1::Option;
+    use Std::NFT::{Self, MintCapability, BurnCapability, UpdateCapability};
+    use Std::IdentifierNFT;
+    use Std::Token::{Self, Token};
+    use Std::STC::STC;
+    use Std::Account;
+    use Std::Timestamp;
+    use Std::Signer;
+    use Std::Option;
 
     struct XMembershipInfo has copy, store, drop, key{
         price_per_millis: u128,
@@ -46,7 +45,7 @@ module creator::XMembership {
     }
 
     public fun init(sender: &signer){
-        assert(Signer::address_of(sender) == @creator, 1000);
+        assert!(Signer::address_of(sender) == @creator, 1000);
 
         NFT::register_v2<XMembership>(sender, NFT::empty_meta());
         move_to(sender, XMembershipInfo{ price_per_millis:2 });
@@ -94,7 +93,7 @@ module creator::XMembership {
     // check memebership in special method.
     public fun do_membership_action(sender: &signer) acquires XMembershipBurnCapability{
         let addr = Signer::address_of(sender);
-        assert(IdentifierNFT::is_owns<XMembership, XMembershipBody>(addr), 1001);
+        assert!(IdentifierNFT::is_owns<XMembership, XMembershipBody>(addr), 1001);
         let nft_info = Option::destroy_some(IdentifierNFT::get_nft_info<XMembership, XMembershipBody>(addr));
         let now = Timestamp::now_milliseconds();
         let (_id,_creator,_metadata,membership) = NFT::unpack_info(nft_info);
@@ -108,9 +107,7 @@ module creator::XMembership {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
     use creator::XMembership;
     fun main(sender: signer) {
@@ -120,9 +117,7 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
     use creator::XMembership;
     fun main(sender: signer) {
@@ -133,9 +128,8 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+
+//# run --signers bob
 script {
     use creator::XMembership;
     fun main(sender: signer) {
@@ -146,14 +140,9 @@ script {
 // check: EXECUTED
 
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 20000
+//# block --author 0x1
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
     use creator::XMembership;
     fun main(sender: signer) {

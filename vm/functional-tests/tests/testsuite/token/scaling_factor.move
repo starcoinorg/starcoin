@@ -1,17 +1,19 @@
-// Test user-defined token
-//! account: alice
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+
+//# publish
 module alice::MyToken {
-    use 0x1::Token;
-    use 0x1::Signer;
+    use Std::Token;
+    use Std::Signer;
 
     struct MyToken has copy, drop, store { }
 
     public fun init(account: &signer, precision: u8) {
-        assert(Signer::address_of(account) == @alice, 8000);
+        assert!(Signer::address_of(account) == @alice, 8000);
 
         Token::register_token<MyToken>(
                     account,
@@ -22,9 +24,7 @@ module alice::MyToken {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::MyToken;
 
@@ -35,9 +35,7 @@ fun main(account: signer) {
 
 // check: "Keep(ABORTED { code: 26887"
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::MyToken;
 
@@ -48,16 +46,14 @@ MyToken::init(&account, 3);
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
+//# run --signers alice
 script {
 use alice::MyToken::MyToken;
-use 0x1::Token;
+use Std::Token;
 
 fun main(_account: signer) {
     let sf = Token::scaling_factor<MyToken>();
-    assert(sf == 1000, 101);
+    assert!(sf == 1000, 101);
 }
 }
 

@@ -1,12 +1,15 @@
-//! account: creator
-//! account: bob
+//# init -n dev
 
-//! sender: creator
-address creator = {{creator}};
+//# faucet --addr creator
+
+//# faucet --addr bob
+
+
+//# publish
 module creator::AnyNFT {
-    use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
-    use 0x1::NFTGallery;
-    use 0x1::Signer;
+    use Std::NFT::{Self, NFT, MintCapability, BurnCapability};
+    use Std::NFTGallery;
+    use Std::Signer;
     struct AnyNFT has copy, store, drop{}
     struct AnyNFTBody has store{
     }
@@ -64,9 +67,7 @@ module creator::AnyNFT {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
     use creator::AnyNFT;
     fun main(sender: signer) {
@@ -76,9 +77,7 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
     use creator::AnyNFT;
     fun main(account: signer) {
@@ -89,27 +88,23 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-use 0x1::Option;
+use Std::Option;
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
-use 0x1::Vector;
+use Std::NFTGallery;
+use Std::Signer;
+use Std::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft_info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, 1);
-    assert(Option::is_none(&nft_info), 1000);
+    assert!(Option::is_none(&nft_info), 1000);
     let nft_infos = NFTGallery::get_nft_infos<AnyNFT, AnyNFTBody>(sender_addr);
-    assert(Vector::is_empty(&nft_infos), 1001);
+    assert!(Vector::is_empty(&nft_infos), 1001);
 }
 }
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
 use creator::AnyNFT;
 fun main(sender: signer) {
@@ -119,30 +114,25 @@ fun main(sender: signer) {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-use 0x1::Option;
+use Std::Option;
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
-use 0x1::Vector;
+use Std::NFTGallery;
+use Std::Signer;
+use Std::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft_info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, 1);
-    assert(Option::is_some(&nft_info), 1002);
+    assert!(Option::is_some(&nft_info), 1002);
     let nft_infos = NFTGallery::get_nft_infos<AnyNFT, AnyNFTBody>(sender_addr);
-    assert(Vector::length(&nft_infos) == 1, 1003);
+    assert!(Vector::length(&nft_infos) == 1, 1003);
 }
 }
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-//! max-gas: 40000000
-address creator = {{creator}};
+//# run --signers bob --gas-budget 40000000
 script {
 use creator::AnyNFT;
 fun main(sender: signer) {
@@ -153,40 +143,36 @@ fun main(sender: signer) {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+
+//# run --signers bob
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
-use 0x1::Vector;
+use Std::NFTGallery;
+use Std::Signer;
+use Std::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft_infos = NFTGallery::get_nft_infos<AnyNFT, AnyNFTBody>(sender_addr);
-    assert(Vector::length(&nft_infos) == 201, 1004);
+    assert!(Vector::length(&nft_infos) == 201, 1004);
 }
 }
 
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: bob
-//! max-gas: 40000000
-address creator = {{creator}};
+//# run --signers bob --gas-budget 40000000
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
-use 0x1::Option;
+use Std::NFTGallery;
+use Std::Signer;
+use Std::Option;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let id = 1;
     loop {
         //loop by id use more gas
         let info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, id);
-        assert(Option::is_some(&info), 1008);
+        assert!(Option::is_some(&info), 1008);
         id = id + 1;
         if(id > 20){
             break
@@ -197,14 +183,11 @@ fun main(sender: signer) {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-//! max-gas: 40000000
-address creator = {{creator}};
+//# run --signers bob --gas-budget 40000000
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
+use Std::NFTGallery;
+use Std::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let idx = 0;
@@ -221,17 +204,15 @@ fun main(sender: signer) {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
+use Std::NFTGallery;
+use Std::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let count = NFTGallery::count_of<AnyNFT, AnyNFTBody>(sender_addr);
-    assert(count == 201, 1005);
+    assert!(count == 201, 1005);
 }
 }
 
@@ -239,12 +220,10 @@ fun main(sender: signer) {
 
 
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
 use creator::AnyNFT::{Self, AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
+use Std::NFTGallery;
 fun main(sender: signer) {
     let nft = NFTGallery::withdraw_one<AnyNFT, AnyNFTBody>(&sender);
     AnyNFT::burn(nft);
@@ -254,17 +233,15 @@ fun main(sender: signer) {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
 use creator::AnyNFT::{Self, AnyNFT, AnyNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Option;
+use Std::NFTGallery;
+use Std::Option;
 fun main(sender: signer) {
     //withdraw by id  use more gas than withdraw one
     let nft = NFTGallery::withdraw<AnyNFT, AnyNFTBody>(&sender, 1);
-    assert(Option::is_some(&nft), 1007);
+    assert!(Option::is_some(&nft), 1007);
     let nft = Option::destroy_some(nft);
     AnyNFT::burn(nft);
 }

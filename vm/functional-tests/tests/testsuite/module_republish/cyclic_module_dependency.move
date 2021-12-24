@@ -1,17 +1,15 @@
-//! account: alice, 90000 0x1::STC::STC
-//! account: bob, 90000 0x1::STC::STC
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# faucet --addr alice
+
+//# faucet --addr bob
+
+//#publish
 module alice::N {
     public fun bar() {}
 }
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//#publish
 module bob::M {
     use alice::N;
     public fun foo() {
@@ -21,10 +19,7 @@ module bob::M {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# publish
 module alice::N {
     use bob::M;
     public fun bar() {

@@ -1,15 +1,18 @@
-// Test split linear mint key
-//! account: alice, 0 0x1::STC::STC
+//# init -n dev
 
-//! sender: association
+//# faucet --addr alice --amount 0
+
+// Test split linear mint key
+
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    //use 0x1::Debug;
+    use Std::STC::STC;
+    use Std::Treasury;
+    //use Std::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        assert(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
+        assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }
 }
@@ -18,15 +21,14 @@ script {
 //! author: alice
 //! block-time: 1000
 //! block-number: 1
+//# block --author alice
 
-//! new-transaction
-//! sender: association
-address alice = {{alice}};
+//# run --signers StarcoinAssociation
 script {
-    use 0x1::Offer;
-    use 0x1::STC::STC;
-    use 0x1::Treasury;
-    use 0x1::Account;
+    use Std::Offer;
+    use Std::STC::STC;
+    use Std::Treasury;
+    use Std::Account;
 
     fun bob_take_linear_key_from_offer(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
@@ -41,18 +43,17 @@ script {
 //! author: alice
 //! block-time: 2000
 //! block-number: 2
+//# block --author alice
 
-//! new-transaction
-//! sender: alice
-address ASSOCIATION = {{association}};
+//# run --signers alice
 script {
-    use 0x1::Offer;
-    use 0x1::STC::STC;
-    use 0x1::Treasury::{Self, LinearWithdrawCapability};
+    use Std::Offer;
+    use Std::STC::STC;
+    use Std::Treasury::{Self, LinearWithdrawCapability};
 
     fun alice_take_linear_key_from_offer(account: signer) {
-        let cap = Offer::redeem<LinearWithdrawCapability<STC>>(&account, @ASSOCIATION);
-        assert(Treasury::get_linear_withdraw_capability_total(&cap)==47777040000000000/2, 1002);
+        let cap = Offer::redeem<LinearWithdrawCapability<STC>>(&account, @StarcoinAssociation);
+        assert!(Treasury::get_linear_withdraw_capability_total(&cap)==47777040000000000/2, 1002);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }
 }

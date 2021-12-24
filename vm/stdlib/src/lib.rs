@@ -25,6 +25,7 @@ use std::{
 };
 mod compat;
 pub use compat::*;
+use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::shared::NumericalAddress;
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use starcoin_move_compiler::diagnostics::{
@@ -111,6 +112,7 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
     let mapping = [
         ("VMReserved", "0x0"),
         ("Std", "0x1"),
+        ("Genesis", "0x1"),
         ("StarcoinFramework", "0x1"),
         ("StarcoinAssociation", "0xA550C18"),
     ];
@@ -121,15 +123,25 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
 }
 
 pub static PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
-    let program_res = construct_pre_compiled_lib(
-        &stdlib_files(),
-        None,
-        Flags::empty().set_sources_shadow_deps(false),
-        starcoin_framework_named_addresses(),
-    )
-    .unwrap();
+    let sources = stdlib_files();
+    let compiler = Compiler::new(&sources, &[])
+        .set_flags(Flags::empty().set_sources_shadow_deps(false))
+        .set_named_address_values(starcoin_framework_named_addresses());
+    let program_res = construct_pre_compiled_lib_from_compiler(compiler).unwrap();
     match program_res {
-        Ok(df) => df,
+        Ok(df) => {
+            let compiled = df.compiled;
+            {
+                let compiler = Compiler::new(&[], &sources)
+                    .set_flags(Flags::empty().set_sources_shadow_deps(false))
+                    .set_named_address_values(starcoin_framework_named_addresses());
+                let mut program_as_lib = construct_pre_compiled_lib_from_compiler(compiler)
+                    .unwrap()
+                    .unwrap();
+                program_as_lib.compiled = compiled;
+                program_as_lib
+            }
+        }
         Err((files, errors)) => {
             eprintln!("!!!Starcoin Framework failed to compile!!!");
             move_compiler::diagnostics::report_diagnostics(&files, errors)

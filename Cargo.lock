@@ -10595,6 +10595,7 @@ dependencies = [
  "itertools 0.10.3",
  "jsonrpc-client-transports 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.14",
  "move-binary-format",
  "move-command-line-common",
  "move-compiler",

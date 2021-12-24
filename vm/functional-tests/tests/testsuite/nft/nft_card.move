@@ -1,11 +1,13 @@
-//! account: creator
-//! account: bob
+//# init -n dev
 
-//! sender: creator
-address creator = {{creator}};
+//# faucet --addr creator
+
+//# faucet --addr bob
+
+//# publish
 module creator::Card {
-    use 0x1::NFT::{Self, NFT, MintCapability, BurnCapability};
-    use 0x1::Timestamp;
+    use Std::NFT::{Self, NFT, MintCapability, BurnCapability};
+    use Std::Timestamp;
 
     struct L1CardMeta has copy, store, drop{
         gene: u64,
@@ -79,9 +81,7 @@ module creator::Card {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
     use creator::Card;
     fun main(sender: signer) {
@@ -91,11 +91,9 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-    use 0x1::NFTGallery;
+    use Std::NFTGallery;
     use creator::Card;
     fun main(sender: signer) {
         let first_l1 = Card::mint_l1(&sender);
@@ -105,29 +103,25 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-    use 0x1::NFTGallery;
+    use Std::NFTGallery;
     use creator::Card::{Self, L1CardMeta, L1Card};
-    use 0x1::Signer;
+    use Std::Signer;
 
     fun main(sender: signer) {
         let second_l1 = Card::mint_l1(&sender);
         NFTGallery::deposit(&sender, second_l1);
-        assert(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 2, 1000);
+        assert!(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 2, 1000);
     }
 }
 
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-    use 0x1::NFTGallery;
+    use Std::NFTGallery;
     use creator::Card::{Self, L1CardMeta, L1Card};
     fun main(sender: signer) {
         let first_l1 = NFTGallery::withdraw_one<L1CardMeta, L1Card>(&sender);
@@ -139,17 +133,15 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
     use creator::Card::{L1CardMeta, L2CardMeta, L1Card, L2Card};
-    use 0x1::NFTGallery;
-    use 0x1::Signer;
+    use Std::NFTGallery;
+    use Std::Signer;
 
     fun main(sender: signer) {
-        assert(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 0, 1001);
-        assert(NFTGallery::count_of<L2CardMeta, L2Card>(Signer::address_of(&sender)) == 1, 1002);
+        assert!(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 0, 1001);
+        assert!(NFTGallery::count_of<L2CardMeta, L2Card>(Signer::address_of(&sender)) == 1, 1002);
     }
 }
 

@@ -1,9 +1,11 @@
-//! debug
+//# init -n dev
 
-address default = {{default}};
+//# faucet --addr default --amount 100000000000000000
+
+//# publish
 module default::M {
-    use 0x1::Debug;
-    use 0x1::Vector;
+    use Std::Debug;
+    use Std::Vector;
 
     struct Foo has copy, drop, store { x: bool }
     struct Bar has copy, drop, store { x: u128, y: Foo, z: bool }
@@ -37,8 +39,7 @@ module default::M {
 }
 // check: EXECUTED
 
-//! new-transaction
-address default = {{default}};
+//# run --signers default
 script {
 use default::M;
 

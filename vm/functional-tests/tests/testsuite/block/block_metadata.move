@@ -1,9 +1,11 @@
-//! account: alice
+//# init -n dev
 
-//! sender: alice
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-    use 0x1::Block;
-    use 0x1::Debug;
+    use Std::Block;
+    use Std::Debug;
 
     fun get_parent_hash(_account: signer) {
         let hash = Block::get_parent_hash();

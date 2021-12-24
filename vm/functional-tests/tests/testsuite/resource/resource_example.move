@@ -1,11 +1,13 @@
-//! account: alice, 9000000 0x1::STC::STC
-//! account: bob
+//# init -n dev
 
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# faucet --addr alice --amount 9000000
+
+//# faucet --addr bob
+
+
+//# publish
 module alice::Example {
-    use 0x1::Signer;
+    use Std::Signer;
     public fun new(): R {
         R { x: true }
     }
@@ -22,16 +24,13 @@ module alice::Example {
 
     public fun get_x(account: &signer): bool acquires R {
         let sender = Signer::address_of(account);
-        assert(exists<R>(sender), 1);
+        assert!(exists<R>(sender), 1);
         let r = borrow_global<R>(sender);
         r.x
     }
 }
 
-//! new-transaction
-//! sender: alice
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers alice
 script {
 use alice::Example;
 fun main() {
@@ -40,15 +39,12 @@ fun main() {
 }
 }
 
-//! new-transaction
-//! sender: bob
-address alice = {{alice}};
-address bob = {{bob}};
+//# run --signers bob
 script {
 use alice::Example;
 fun main(account: signer) {
     let r = Example::new();
     Example::save(&account, r);
-    assert(Example::get_x(&account), 1);
+    assert!(Example::get_x(&account), 1);
 }
 }

@@ -1,11 +1,14 @@
-//! account: creator
-//! account: bob
+//# init -n dev
 
-//! sender: creator
-address creator = {{creator}};
+//# faucet --addr creator
+
+//# faucet --addr bob
+
+
+//#publish
 module creator::TestNFT {
-    use 0x1::NFT;
-    use 0x1::NFTGallery;
+    use Std::NFT;
+    use Std::NFTGallery;
     struct TestNFT has copy, store, drop{}
     struct TestNFTBody has store{
     }
@@ -35,27 +38,23 @@ module creator::TestNFT {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-address creator = {{creator}};
+//# run --signers creator
 script {
-    use 0x1::NFT;
+    use Std::NFT;
     use creator::TestNFT::{Self, TestNFT};
     fun main(sender: signer) {
         TestNFT::init(&sender);
-        assert(NFT::is_register<TestNFT>(), 1001);
+        assert!(NFT::is_register<TestNFT>(), 1001);
         TestNFT::mint(&sender);
     }
 }
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
     use creator::TestNFT::{TestNFT,TestNFTBody};
-    use 0x1::NFTGalleryScripts;
+    use Std::NFTGalleryScripts;
     fun main(sender: signer) {
         NFTGalleryScripts::accept<TestNFT,TestNFTBody>(sender);
     }
@@ -65,13 +64,10 @@ script {
 // check: 97398
 // check: EXECUTED
 
-//! new-transaction
-//! sender: creator
-//! args: {{bob}}
-address creator = {{creator}};
+//# run --signers creator --args @bob
 script {
     use creator::TestNFT::{TestNFT,TestNFTBody};
-    use 0x1::NFTGalleryScripts;
+    use Std::NFTGalleryScripts;
     fun main(sender: signer, receiver: address) {
         NFTGalleryScripts::transfer<TestNFT,TestNFTBody>(sender, 1, receiver);
     }
@@ -81,17 +77,15 @@ script {
 // check: 219220
 // check: EXECUTED
 
-//! new-transaction
-//! sender: bob
-address creator = {{creator}};
+//# run --signers bob
 script {
-use 0x1::Option;
+use Std::Option;
 use creator::TestNFT::{TestNFT, TestNFTBody};
-use 0x1::NFTGallery;
-use 0x1::Signer;
+use Std::NFTGallery;
+use Std::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft = NFTGallery::get_nft_info_by_id<TestNFT, TestNFTBody>(sender_addr, 1);
-    assert(Option::is_some(&nft), 1000);
+    assert!(Option::is_some(&nft), 1000);
 }
 }

@@ -624,11 +624,6 @@ pub fn eval_with_executor<TComp: Compiler>(
     }
     for genesis in config.genesis_accounts.values() {
         let genesis_account = exec.read_account_resource(genesis);
-        println!(
-            "addr: {}, account: {:?}",
-            genesis.address(),
-            genesis_account
-        );
         if let Some(genesis_account) = genesis_account {
             let balance = exec.read_balance_resource(genesis);
             let genesis_account_data = AccountData::with_account_and_event_counts(

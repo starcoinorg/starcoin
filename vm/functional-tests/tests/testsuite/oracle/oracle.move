@@ -1,15 +1,19 @@
-//! account: ds1
-//! account: ds2
-//! account: alice
+//# init -n dev
 
-// check: EXECUTED
+//# faucet --addr alice
 
-//! new-transaction
-//! sender: ds1
-address default = {{default}};
+//# faucet --addr bob
+
+//# faucet --addr ds1
+
+//# faucet --addr ds2
+
+
+
+//# run --signers ds1
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::STCUSD;
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::STCUSD;
     fun main(signer: signer) {
         PriceOracle::init_data_source<STCUSD>(&signer, 100000);
     }
@@ -17,12 +21,10 @@ script {
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: ds2
-address default = {{default}};
+//# run --signers ds2
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::STCUSD;
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::STCUSD;
     fun main(signer: signer) {
         PriceOracle::init_data_source<STCUSD>(&signer, 110000);
     }
@@ -31,111 +33,81 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
-address ds1 = {{ds1}};
-address ds2 = {{ds2}};
-address alice = {{alice}};
+//# run --signers alice
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::{STCUSD};
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::{STCUSD};
     fun test_is_data_source_initiailzed(_signer: signer) {
-        assert(!PriceOracle::is_data_source_initialized<STCUSD>(@alice), 997);
-        assert(PriceOracle::is_data_source_initialized<STCUSD>(@ds1), 998);
-        assert(PriceOracle::is_data_source_initialized<STCUSD>(@ds2), 999);
+        assert!(!PriceOracle::is_data_source_initialized<STCUSD>(@alice), 997);
+        assert!(PriceOracle::is_data_source_initialized<STCUSD>(@ds1), 998);
+        assert!(PriceOracle::is_data_source_initialized<STCUSD>(@ds2), 999);
     }
 }
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
-address ds1 = {{ds1}};
-address ds2 = {{ds2}};
+//# run --signers alice
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::{Self,STCUSD};
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::{Self,STCUSD};
     fun test_read_price(_signer: signer) {
-        assert(PriceOracle::read<STCUSD>(@ds1) == 100000, 1000);
-        assert(STCUSDOracle::read(@ds1) == 100000, 2000);
-        assert(PriceOracle::read<STCUSD>(@ds2) == 110000, 1001);
-        assert(STCUSDOracle::read(@ds2) == 110000, 2001);
+        assert!(PriceOracle::read<STCUSD>(@ds1) == 100000, 1000);
+        assert!(STCUSDOracle::read(@ds1) == 100000, 2000);
+        assert!(PriceOracle::read<STCUSD>(@ds2) == 110000, 1001);
+        assert!(STCUSDOracle::read(@ds2) == 110000, 2001);
 }
 }
 
 // check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 1000
 
-//! new-transaction
-//! sender: ds1
-address default = {{default}};
+//# block --author 0x1
+
+//# run --signers ds1
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::STCUSD;
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::STCUSD;
     fun update_price(signer: signer) {
         PriceOracle::update<STCUSD>(&signer, 200000);
     }
 }
 
-// check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
-address ds1 = {{ds1}};
-address ds2 = {{ds2}};
+//# run --signers alice
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::STCUSD;
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::STCUSD;
     fun test_read_price(_signer: signer) {
-        assert(PriceOracle::read<STCUSD>(@ds1) == 200000, 1002);
-        assert(PriceOracle::read<STCUSD>(@ds2) == 110000, 1003);
+        assert!(PriceOracle::read<STCUSD>(@ds1) == 200000, 1002);
+        assert!(PriceOracle::read<STCUSD>(@ds2) == 110000, 1003);
     }
 }
 
-// check: EXECUTED
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 2000
+//# block --author 0x1
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
-address ds1 = {{ds1}};
-address ds2 = {{ds2}};
+//# run --signers alice
 script {
-    use 0x1::PriceOracleAggregator;
-    use 0x1::STCUSDOracle::STCUSD;
-    use 0x1::Vector;
+    use Std::PriceOracleAggregator;
+    use Std::STCUSDOracle::STCUSD;
+    use Std::Vector;
     fun test_aggregator_price(_signer: signer) {
         let ds = Vector::empty();
         Vector::push_back(&mut ds, @ds1);
         Vector::push_back(&mut ds, @ds2);
-        assert(PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 2000) == ((200000+110000)/2), 1004);
-        assert(PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 1000) == 200000, 1005);
+        assert!(PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 2000) == ((200000+110000)/2), 1004);
+        assert!(PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 1000) == 200000, 1005);
     }
 }
 
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
-address ds1 = {{ds1}};
-address ds2 = {{ds2}};
+//# run --signers alice
 script {
-    use 0x1::PriceOracleAggregator;
-    use 0x1::STCUSDOracle::STCUSD;
-    use 0x1::Vector;
+    use Std::PriceOracleAggregator;
+    use Std::STCUSDOracle::STCUSD;
+    use Std::Vector;
     fun test_aggregator_price(_signer: signer) {
         let ds = Vector::empty();
         Vector::push_back(&mut ds, @ds1);
@@ -147,14 +119,12 @@ script {
 // abort OracleAggregator::ERR_NO_PRICE_DATA_AVIABLE
 // check: "Keep(ABORTED { code: 25857"
 
-//! new-transaction
-//! sender: default
-address default = {{default}};
-module default::DelegateOracleDS{
-    use 0x1::Oracle::{Self,UpdateCapability};
-    use 0x1::PriceOracle;
+//# publish
+module bob::DelegateOracleDS{
+    use Std::Oracle::{Self,UpdateCapability};
+    use Std::PriceOracle;
 
-    struct DelegateUpdateOracleCapability<OracleT: copy+store+drop> has key{
+    struct DelegateUpdateOracleCapability<phantom OracleT: copy+store+drop> has key{
         cap: UpdateCapability<OracleT>,
     }
 
@@ -173,12 +143,10 @@ module default::DelegateOracleDS{
 
 // check: EXECUTED
 
-//! new-transaction
-//! sender: ds2
-address default = {{default}};
+//# run --signers ds2
 script {
-    use default::DelegateOracleDS;
-    use 0x1::STCUSDOracle::STCUSD;
+    use bob::DelegateOracleDS;
+    use Std::STCUSDOracle::STCUSD;
     fun main(signer: signer) {
         DelegateOracleDS::delegate<STCUSD>(&signer);
     }
@@ -187,12 +155,10 @@ script {
 // check: EXECUTED
 
 
-//! new-transaction
-//! sender: ds2
-address default = {{default}};
+//# run --signers ds2
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::STCUSD;
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::STCUSD;
     fun update_price(signer: signer) {
         PriceOracle::update<STCUSD>(&signer, 0);
     }
@@ -200,28 +166,23 @@ script {
 // ds2 can not update ds2 datasource price
 // check: ABORTED
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
+//# run --signers alice
 script {
-    use 0x1::STCUSDOracle::STCUSD;
-    use default::DelegateOracleDS;
+    use Std::STCUSDOracle::STCUSD;
+    use bob::DelegateOracleDS;
     fun update_price(_signer: signer) {
-        DelegateOracleDS::update_price_any<STCUSD>(@{{ds2}}, 0);
+        DelegateOracleDS::update_price_any<STCUSD>(@ds2, 0);
     }
 }
 // alice can update ds2 datasource price by DelegateOracleDS
 // check: EXECUTED
 
-//! new-transaction
-//! sender: alice
-address default = {{default}};
-address ds2 = {{ds2}};
+//# run --signers alice
 script {
-    use 0x1::PriceOracle;
-    use 0x1::STCUSDOracle::STCUSD;
+    use Std::PriceOracle;
+    use Std::STCUSDOracle::STCUSD;
     fun test_read_price(_signer: signer) {
-        assert(PriceOracle::read<STCUSD>(@ds2) == 0, 1004);
+        assert!(PriceOracle::read<STCUSD>(@ds2) == 0, 1004);
     }
 }
 

@@ -1,6 +1,10 @@
-//! new-transaction
+//# init -n dev
+
+//# faucet --addr alice
+
+//# run --signers alice
 script {
-    use 0x1::Account;
+    use Std::Account;
     fun main(signer: signer) {
         let cap = Account::remove_signer_capability(&signer);
         Account::destroy_signer_cap(cap);
@@ -9,7 +13,7 @@ script {
 
 // check: EXECUTED
 
-////! new-transaction
+//
 //script {
 //    fun main(_signer: signer) {
 //    }

@@ -1,10 +1,8 @@
-// Test the gas check flow
-//! account: alice, 50000000 0x1::STC::STC
+//# init -n dev
 
-//! sender: alice
-//! gas-price: 1
-//! max-gas: 1000
+//# faucet --addr alice --amount 50000000
 
+//# run --signers alice --gas-budget 1000
 script {
 fun main() {
     while (true) {}
@@ -15,10 +13,8 @@ fun main() {
 // check: gas_used
 // check: 1000
 
-//! new-transaction
-//! sender: alice
-//! gas-price: 1
-//! max-gas: 599
+
+//# run --signers alice --gas-budget 599
 
 script {
     fun main() {
@@ -29,10 +25,8 @@ script {
 // check: Discard
 // check: MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS
 
-//! new-transaction
-//! sender: alice
-//! gas-price: 1
-//! max-gas: 400000001
+
+//# run --signers alice --gas-budget 400000001
 
 script {
     fun main() {

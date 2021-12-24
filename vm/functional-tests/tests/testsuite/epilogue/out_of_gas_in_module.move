@@ -1,6 +1,10 @@
-address default = {{default}};
+//# init -n dev
+
+//# faucet --addr default --amount 100000000000000000
+
+//# publish
 module default::Swapper {
-    use 0x1::Vector;
+    use Std::Vector;
     public fun swap_it_up(vec_len: u64) {
         let v = Vector::empty();
 
@@ -19,9 +23,7 @@ module default::Swapper {
     }
 }
 
-//! new-transaction
-//! max-gas: 620000
-address default = {{default}};
+//# run --signers default --gas-budget 620000
 script {
 use default::Swapper;
 fun main() {

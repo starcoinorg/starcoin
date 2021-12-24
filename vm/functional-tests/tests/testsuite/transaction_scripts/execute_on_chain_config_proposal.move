@@ -1,16 +1,15 @@
-//! account: alice, 159256800000000000 0x1::STC::STC
-//! account: bob, 159256800000000000 0x1::STC::STC
+//# init -n dev
 
-//! block-prologue
-//! author: genesis
-//! block-number: 1
-//! block-time: 86400000
+//# faucet --addr alice --amount 159256800000
 
-//! new-transaction
-//! sender: alice
-//! args: false, false, 0
+//# faucet --addr bob --amount 49814200010000000
+
+//# block --author 0x1 --timestamp 86400000
+
+
+//# run --signers alice --args false --args false --args 0
 script {
-    use 0x1::OnChainConfigScripts;
+    use Std::OnChainConfigScripts;
 
     fun main(account: signer,
              script_allowed: bool,
@@ -19,23 +18,14 @@ script {
         OnChainConfigScripts::propose_update_txn_publish_option(account, script_allowed, module_publishing_allowed, exec_delay);
     }
 }
-// check: gas_used
-// check: 197129
-// check: "Keep(EXECUTED)"
+//# block --author 0x1 --timestamp 87000000
 
-//! block-prologue
-//! author: genesis
-//! block-number: 2
-//! block-time: 87000000
-
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0, true, 39814200010000000u128
+//# run --signers bob --args @alice --args 0 --args true --args 39814200010000000u128
 script {
-    use 0x1::DaoVoteScripts;
-    use 0x1::STC::STC;
-    use 0x1::OnChainConfigDao::OnChainConfigUpdate;
-    use 0x1::TransactionPublishOption::TransactionPublishOption;
+    use Std::DaoVoteScripts;
+    use Std::STC::STC;
+    use Std::OnChainConfigDao::OnChainConfigUpdate;
+    use Std::TransactionPublishOption::TransactionPublishOption;
 
     fun main(account: signer,
             proposer_address: address,
@@ -51,24 +41,16 @@ script {
             votes);
     }
 }
-// check: gas_used
-// check: 189040
-// check: "Keep(EXECUTED)"
 
 
-//! block-prologue
-//! author: genesis
-//! block-number: 3
-//! block-time: 110000000
+//# block --author 0x1 --timestamp 110000000
 
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0
+//# run --signers bob --args @alice --args 0
 script {
-    use 0x1::Dao;
-    use 0x1::STC::STC;
-    use 0x1::OnChainConfigDao::OnChainConfigUpdate;
-    use 0x1::TransactionPublishOption::TransactionPublishOption;
+    use Std::Dao;
+    use Std::STC::STC;
+    use Std::OnChainConfigDao::OnChainConfigUpdate;
+    use Std::TransactionPublishOption::TransactionPublishOption;
 
     fun main(_account: signer,
             proposer_address: address,
@@ -80,18 +62,13 @@ script {
         );
     }
 }
-// check: gas_used
-// check: 54457
-// check: "Keep(EXECUTED)"
 
-//! new-transaction
-//! sender: bob
-//! args: {{alice}}, 0
+//# run --signers bob --args @alice --args 0
 script {
-    use 0x1::DaoVoteScripts;
-    use 0x1::STC::STC;
-    use 0x1::OnChainConfigDao::OnChainConfigUpdate;
-    use 0x1::TransactionPublishOption::TransactionPublishOption;
+    use Std::DaoVoteScripts;
+    use Std::STC::STC;
+    use Std::OnChainConfigDao::OnChainConfigUpdate;
+    use Std::TransactionPublishOption::TransactionPublishOption;
 
     fun main(account: signer,
             proposer_address: address,
@@ -104,21 +81,14 @@ script {
         );
     }
 }
-// check: gas_used
-// check: 114409
-// check: "Keep(EXECUTED)"
 
-//! block-prologue
-//! author: genesis
-//! block-number: 4
-//! block-time: 130000000
+//# block --author 0x1 --timestamp 250000000
 
-//! new-transaction
-//! sender: alice
-//! args: 0
+//# run --signers alice  --args 0
+
 script {
-    use 0x1::OnChainConfigScripts;
-    use 0x1::TransactionPublishOption::TransactionPublishOption;
+    use Std::OnChainConfigScripts;
+    use Std::TransactionPublishOption::TransactionPublishOption;
 
     fun main(account: signer, proposal_id: u64) {
         OnChainConfigScripts::execute_on_chain_config_proposal<TransactionPublishOption>(
@@ -127,6 +97,3 @@ script {
         );
     }
 }
-// check: gas_used
-// check: 115781
-// check: "Keep(EXECUTED)"

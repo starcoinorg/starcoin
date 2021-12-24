@@ -1,7 +1,12 @@
+//# init -n test
+
+//# faucet --addr alice --amount 50000000
+
+//# run --signers alice
 script {
-use 0x1::ChainId;
+use Std::ChainId;
 
 fun main() {
-    assert(ChainId::get() == 255, 1000);
+    assert!(ChainId::get() == 255, 1000);
 }
 }

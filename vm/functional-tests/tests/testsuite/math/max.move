@@ -1,6 +1,11 @@
+//# init -n dev
+
+//# faucet --addr creator
+
+//# run --signers creator
 script {
-    use 0x1::Math;
-    use 0x1::Debug;
+    use Std::Math;
+    use Std::Debug;
     fun main(_signer: signer) {
         Debug::print(&Math::u64_max());
         Debug::print(&Math::u128_max());

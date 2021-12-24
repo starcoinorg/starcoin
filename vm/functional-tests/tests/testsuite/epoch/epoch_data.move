@@ -1,5 +1,10 @@
+//# init -n dev
+
+//# faucet --addr alice --amount 100000000000000000
+
+//# run --signers alice
 script {
-    use 0x1::Epoch;
+    use Std::Epoch;
 
     fun epoch_data() {
         // default value should be consistent with genesis config
@@ -21,13 +26,13 @@ script {
         let total_gas = Epoch::total_gas();
         let uncles = Epoch::uncles();
 
-        assert(block_gas_limit == default_block_gas_limit, 101);
-        assert(block_time_target == default_block_time_target, 102);
-        assert(number == default_number, 103);
-        assert(start_block_number == default_start_block_number, 104);
-        assert(end_block_number == default_end_block_number, 105);
-        assert(start_time == default_start_time, 106);
-        assert(total_gas == default_total_gas, 107);
-        assert(uncles == default_uncles, 108);
+        assert!(block_gas_limit == default_block_gas_limit, 101);
+        assert!(block_time_target == default_block_time_target, 102);
+        assert!(number == default_number, 103);
+        assert!(start_block_number == default_start_block_number, 104);
+        assert!(end_block_number == default_end_block_number, 105);
+        assert!(start_time == default_start_time, 106);
+        assert!(total_gas == default_total_gas, 107);
+        assert!(uncles == default_uncles, 108);
     }
 }
