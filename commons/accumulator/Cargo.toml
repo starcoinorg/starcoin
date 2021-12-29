@@ -17,7 +17,7 @@ logger = {path = "../../commons/logger", package="starcoin-logger"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0.130" }
-lru = "0.7.0"
+lru = "0.7.2"
 parking_lot = "0.11.2"
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="3f8ecc27f02b27d56c716de58d7880ae7816390c"}
 
