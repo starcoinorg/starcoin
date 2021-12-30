@@ -33,6 +33,7 @@ use std::time::SystemTime;
 use structopt::StructOpt;
 
 const BLOCK_GAP: u64 = 1000;
+const BACK_SIZE: u64 = 10000;
 
 pub fn export<W: std::io::Write>(
     db: &str,
@@ -187,6 +188,7 @@ enum Cmd {
     Checkkey(CheckKeyOptions),
     ExportBlockRange(ExportBlockRangeOptions),
     ApplyBlock(ApplyBlockOptions),
+    StartupInfoBack(StartupInfoBackOptions),
 }
 
 #[derive(Debug, Clone, StructOpt)]
@@ -253,6 +255,20 @@ pub struct ApplyBlockOptions {
     #[structopt(long, short = "w")]
     /// Watch metrics logs.
     pub watch: bool,
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "startup_info_back", about = "startup info back")]
+pub struct StartupInfoBackOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    /// startupinfo BlockNumber back off size
+    #[structopt(long, short = "b")]
+    pub back_size: Option<u64>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -353,6 +369,10 @@ fn main() -> anyhow::Result<()> {
             let file = File::create("/tmp/flamegraph.svg").unwrap();
             report.flamegraph(file).unwrap();
         }
+        return result;
+    }
+    if let Cmd::StartupInfoBack(option) = cmd {
+        let result = startup_info_back(option.to_path, option.back_size, option.net);
         return result;
     }
     Ok(())
@@ -516,5 +536,54 @@ pub fn apply_block(
     bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply block use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+pub fn startup_info_back(
+    to_dir: PathBuf,
+    back_size: Option<u64>,
+    network: BuiltinNetworkID,
+) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+
+    let cur_num = chain.status().head().number();
+    let back_size = back_size.unwrap_or(BACK_SIZE);
+    let back_size = if back_size < BACK_SIZE {
+        BACK_SIZE
+    } else {
+        back_size
+    };
+
+    if cur_num <= back_size {
+        println!(
+            "startup_info block number {} <= back_size {}",
+            cur_num, back_size
+        );
+        return Ok(());
+    }
+    let block_number = cur_num - back_size;
+    let block = chain
+        .get_block_by_number(block_number)?
+        .ok_or_else(|| format_err!("{} get block error", block_number))?;
+    let block_hash = block.header().id();
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    println!(
+        "startup_info block number origin {} now  {}",
+        cur_num, block_number
+    );
     Ok(())
 }
