@@ -96,7 +96,7 @@ script {
     use Std::Dao;
     fun vote(signer: signer) {
         let balance = Account::balance<STC>(Signer::address_of(&signer));
-        let balance = Account::withdraw<STC>(&signer, balance);
+        let balance = Account::withdraw<STC>(&signer, balance/2);
         Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @alice, 0, balance, true);
     }
 }

@@ -1,0 +1,152 @@
+processed 33 tasks
+
+task 9 'run'. lines 283-291:
+{
+  "gas_used": 43829,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 10 'run'. lines 293-303:
+{
+  "gas_used": 8895,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x7846b2d468dea552692dd6c57e131670",
+            "name": "SortedLinkedList"
+          }
+        },
+        3
+      ]
+    }
+  }
+}
+
+task 11 'run'. lines 305-317:
+{
+  "gas_used": 359425,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 12 'run'. lines 319-331:
+{
+  "gas_used": 495218,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 13 'run'. lines 333-343:
+{
+  "gas_used": 595306,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 14 'run'. lines 345-365:
+{
+  "gas_used": 116679,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 15 'run'. lines 367-377:
+{
+  "gas_used": 84083,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 16 'run'. lines 379-389:
+{
+  "gas_used": 74125,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 17 'run'. lines 391-401:
+{
+  "gas_used": 117689,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 19 'run'. lines 504-512:
+{
+  "gas_used": 60359,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 20 'run'. lines 514-523:
+{
+  "gas_used": 221094,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 21 'run'. lines 525-534:
+{
+  "gas_used": 259964,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 22 'run'. lines 536-545:
+{
+  "gas_used": 315232,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 23 'run'. lines 547-557:
+{
+  "gas_used": 31145,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 24 'run'. lines 559-568:
+{
+  "gas_used": 112570,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 25 'run'. lines 570-580:
+{
+  "gas_used": 31135,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        "Script",
+        27
+      ]
+    }
+  }
+}
+
+task 32 'run'. lines 595-605:
+{
+  "gas_used": 138684,
+  "status": {
+    "Keep": "Executed"
+  }
+}

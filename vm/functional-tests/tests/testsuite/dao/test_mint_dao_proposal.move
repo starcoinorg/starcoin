@@ -172,7 +172,7 @@ script {
 // check: EXECUTED
 
 
-//! block --author 0x1 --timestamp 250000000
+//# block --author 0x1 --timestamp 750000000
 
 //# run --signers bob
 
@@ -197,7 +197,7 @@ script {
 }
 // check: EXECUTED
 
-//# block --author 0x1 --timestamp 350000000
+//# block --author 0x1 --timestamp 850000000
 
 
 

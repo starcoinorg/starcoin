@@ -1,32 +1,6 @@
-processed 21 tasks
+processed 19 tasks
 
-task 7 'view'. lines 64-64:
-key 0x00000000000000000000000000000001::BlockReward::RewardQueue {
-    reward_number: 0
-    infos: [
-        store 0x00000000000000000000000000000001::BlockReward::RewardInfo {
-            number: 1
-            reward: 10000000000u128
-            miner: 1
-            gas_fees: store 0x00000000000000000000000000000001::Token::Token<0x00000000000000000000000000000001::STC::STC> {
-                value: 0u128
-            }
-        },
-    ]
-    reward_events: store 0x00000000000000000000000000000001::Event::EventHandle<0x00000000000000000000000000000001::BlockReward::BlockRewardEvent> {
-        counter: 0
-        guid: 0d0000000000000000000000000000000000000000000001
-    }
-}
-
-task 8 'view'. lines 66-66:
-key 0x00000000000000000000000000000001::TransactionFee::TransactionFee<0x00000000000000000000000000000001::STC::STC> {
-    fee: store 0x00000000000000000000000000000001::Token::Token<0x00000000000000000000000000000001::STC::STC> {
-        value: 1433519u128
-    }
-}
-
-task 10 'run'. lines 70-100:
+task 8 'run'. lines 67-97:
 {
   "gas_used": 91918,
   "status": {
@@ -34,7 +8,7 @@ task 10 'run'. lines 70-100:
   }
 }
 
-task 11 'run'. lines 104-123:
+task 9 'run'. lines 101-120:
 {
   "gas_used": 204230,
   "status": {
@@ -42,7 +16,7 @@ task 11 'run'. lines 104-123:
   }
 }
 
-task 12 'run'. lines 125-140:
+task 10 'run'. lines 122-137:
 {
   "gas_used": 127098,
   "status": {
@@ -50,7 +24,7 @@ task 12 'run'. lines 125-140:
   }
 }
 
-task 13 'run'. lines 142-161:
+task 11 'run'. lines 139-158:
 {
   "gas_used": 179174,
   "status": {
@@ -58,7 +32,7 @@ task 13 'run'. lines 142-161:
   }
 }
 
-task 15 'run'. lines 167-177:
+task 13 'run'. lines 164-174:
 {
   "gas_used": 111323,
   "status": {
@@ -66,7 +40,7 @@ task 15 'run'. lines 167-177:
   }
 }
 
-task 17 'run'. lines 180-193:
+task 15 'run'. lines 177-190:
 {
   "gas_used": 71846,
   "status": {
@@ -74,7 +48,7 @@ task 17 'run'. lines 180-193:
   }
 }
 
-task 19 'run'. lines 197-217:
+task 17 'run'. lines 194-214:
 {
   "gas_used": 198765,
   "status": {
@@ -82,7 +56,7 @@ task 19 'run'. lines 197-217:
   }
 }
 
-task 20 'run'. lines 219-227:
+task 18 'run'. lines 216-224:
 {
   "gas_used": 54189,
   "status": {
