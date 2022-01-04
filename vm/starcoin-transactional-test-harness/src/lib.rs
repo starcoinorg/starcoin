@@ -3,7 +3,7 @@ use crate::remote_state::{RemoteStateView, SelectableStateView};
 use anyhow::{bail, Result};
 use itertools::Itertools;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
-use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use move_compiler::compiled_unit::{CompiledUnitEnum};
 use move_compiler::shared::{NumberFormat, NumericalAddress};
 use move_compiler::{shared::verify_and_create_named_address_mapping, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
@@ -25,14 +25,14 @@ use serde::Serialize;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{
-    ed25519::Ed25519PublicKey, HashValue, PrivateKey, Uniform, ValidCryptoMaterial,
+    ed25519::Ed25519PublicKey, HashValue, PrivateKey, ValidCryptoMaterial,
     ValidCryptoMaterialStringExt,
 };
 use starcoin_dev::playground::call_contract;
 use starcoin_genesis::Genesis;
 use starcoin_rpc_api::types::{
     ContractCall, FunctionIdView, TransactionArgumentView, TransactionEventView,
-    TransactionOutputAction, TransactionOutputView, TypeTagView,
+    TransactionOutputAction, TypeTagView,
 };
 use starcoin_state_api::{ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
@@ -46,10 +46,10 @@ use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
-use starcoin_vm_types::contract_event::ContractEvent;
+
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
-use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
     account_config::BalanceResource,
     block_metadata::BlockMetadata,
@@ -462,7 +462,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                         })
                         .unwrap();
                     self.public_key_mapping.insert(name.clone(), key.into());
-                } else if let Some(_) = public_key {
+                } else if public_key.is_some() {
                     bail!(
                         "name address {} = {} already exists, should not provide public key",
                         name,
@@ -866,7 +866,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             params.chainid,
         );
 
-        let output = self.run_transaction(txn, public_key.into())?;
+        let output = self.run_transaction(txn, public_key)?;
 
         let mut result = TransactionResult {
             gas_used: output.gas_used(),

@@ -5630,7 +5630,7 @@ dependencies = [
 
 [[package]]
 name = "move-package-manager"
-version = "1.9.0-alpha"
+version = "1.9.1"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5658,7 +5658,6 @@ dependencies = [
  "once_cell",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-functional-tests",
  "starcoin-logger",
  "starcoin-move-compiler",
  "starcoin-resource-viewer",
@@ -9194,7 +9193,6 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
- "starcoin-functional-tests",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-open-block",
@@ -9577,39 +9575,6 @@ dependencies = [
  "tiny_http",
  "tokio 0.2.25",
  "tokio-executor 0.2.0-alpha.6",
-]
-
-[[package]]
-name = "starcoin-functional-tests"
-version = "1.9.1"
-dependencies = [
- "aho-corasick",
- "anyhow",
- "bcs-ext",
- "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "mirai-annotations",
- "move-command-line-common",
- "move-compiler",
- "once_cell",
- "regex",
- "starcoin-account-api",
- "starcoin-config",
- "starcoin-consensus",
- "starcoin-crypto",
- "starcoin-executor",
- "starcoin-genesis",
- "starcoin-logger",
- "starcoin-move-compiler",
- "starcoin-statedb",
- "starcoin-transactional-test-harness",
- "starcoin-types",
- "starcoin-vm-runtime",
- "starcoin-vm-types",
- "stdlib",
- "tempfile",
- "termcolor",
- "thiserror",
- "vm-status-translator",
 ]
 
 [[package]]
@@ -10619,6 +10584,16 @@ dependencies = [
  "stdlib",
  "structopt 0.3.25",
  "tokio 0.2.25",
+]
+
+[[package]]
+name = "starcoin-transactional-tests"
+version = "1.9.1"
+dependencies = [
+ "anyhow",
+ "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starcoin-logger",
+ "starcoin-transactional-test-harness",
 ]
 
 [[package]]

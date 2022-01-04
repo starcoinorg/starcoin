@@ -49,7 +49,6 @@ starcoin-config ={path = "../../config"}
 stdlib = {path = "../stdlib"}
 starcoin-vm-runtime = {path = "../vm-runtime"}
 starcoin-move-compiler = {path = "../compiler"}
-starcoin-functional-tests = {path = "../functional-tests"}
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}

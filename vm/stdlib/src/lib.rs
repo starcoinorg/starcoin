@@ -7,12 +7,20 @@ use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
 use log::{info, LevelFilter};
 use move_bytecode_verifier::{dependencies, verify_module};
+use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
+use move_compiler::shared::NumericalAddress;
+use move_compiler::FullyCompiledProgram;
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
+use starcoin_move_compiler::diagnostics::{
+    report_diagnostics_to_color_buffer, unwrap_or_report_diagnostics,
+};
+use starcoin_move_compiler::shared::Flags;
+use starcoin_move_compiler::Compiler;
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
@@ -23,17 +31,10 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
 };
+
 mod compat;
 pub use compat::*;
-use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
-use move_compiler::shared::NumericalAddress;
-use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
-use starcoin_move_compiler::diagnostics::{
-    report_diagnostics_to_color_buffer, unwrap_or_report_diagnostics,
-};
-use starcoin_move_compiler::shared::Flags;
 pub use starcoin_move_compiler::utils::iterate_directory;
-use starcoin_move_compiler::Compiler;
 
 pub const STD_LIB_DIR: &str = "sources";
 

@@ -4,7 +4,7 @@ use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
-use starcoin_rpc_api::chain::ChainApiClient;
+
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_rpc_api::types::{BlockView, StateWithProofView};
 use starcoin_state_api::ChainStateWriter;
@@ -191,7 +191,6 @@ where
 #[derive(Clone)]
 pub struct RemoteStateAsyncView {
     state_client: StateApiClient,
-    chain_client: ChainApiClient,
     state_root: HashValue,
 }
 
@@ -221,7 +220,6 @@ impl RemoteStateAsyncView {
         let state_client: starcoin_rpc_api::state::StateApiClient = rpc_channel.clone().into();
         Ok(Self {
             state_client,
-            chain_client,
             state_root,
         })
     }
