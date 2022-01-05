@@ -69,9 +69,7 @@ fn substitute_variable<S: ::std::hash::BuildHasher>(
 
 /// check a string contains any Windows style line ending (CRLF)
 /// and perform the conversion to Unix stype (LF) if yes
-fn windows_line_ending_to_unix(
-    text: &str
-) -> String {
+fn windows_line_ending_to_unix(text: &str) -> String {
     let mut converted = String::new();
     for c in text.chars() {
         if c != '\r' {
@@ -82,9 +80,7 @@ fn windows_line_ending_to_unix(
 }
 
 /// perform Windows style line ending (CRLF) to Unix stype (LF) conversion in given file
-fn windows_line_ending_to_unix_in_file(
-    file_path: &str
-) -> Result<&str> {
+fn windows_line_ending_to_unix_in_file(file_path: &str) -> Result<&str> {
     let content = std::fs::read_to_string(file_path)?;
     let converted = windows_line_ending_to_unix(content.as_str());
     // only write back when conversion actually takes place
@@ -153,7 +149,11 @@ pub fn compile_source_string_no_report(
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
     let sender = AddressBytes::new(sender.into());
-    let processed_source = process_source_tpl(windows_line_ending_to_unix(source).as_str(), sender, HashMap::new());
+    let processed_source = process_source_tpl(
+        windows_line_ending_to_unix(source).as_str(),
+        sender,
+        HashMap::new(),
+    );
     std::fs::write(temp_file.as_path(), processed_source.as_bytes())?;
     let targets = vec![temp_file
         .to_str()
@@ -268,11 +268,13 @@ mod tests {
         windows\r\n
         line\r\n
         ending\r\n";
-        let expect = String::from("string\n
+        let expect = String::from(
+            "string\n
         with\n
         windows\n
         line\n
-        ending\n");
+        ending\n",
+        );
         let converted = windows_line_ending_to_unix(s);
         assert_eq!(converted, expect);
     }
