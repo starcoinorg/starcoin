@@ -24,6 +24,8 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+pub mod bytecode_transpose;
+
 pub mod utils;
 pub mod command_line {
     use crate::shared::NumericalAddress;
