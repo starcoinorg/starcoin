@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_transactional_test_harness::run_test;
-use std::{path::Path};
+use std::path::Path;
 
 pub const FUNCTIONAL_TEST_DIR: &str = "tests";
 
