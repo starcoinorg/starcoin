@@ -9,12 +9,15 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_path, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
-use starcoin_genesis::Genesis;
+use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
+use starcoin_executor::{Account, DEFAULT_EXPIRATION_TIME};
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::transaction::Transaction;
+use starcoin_genesis::Genesis;
 use std::sync::Arc;
 
 /// Benchmarking support for chain.
@@ -24,6 +27,8 @@ pub struct ChainBencher {
     block_num: u64,
     account: AccountInfo,
     temp_path: DataDirPath,
+    sequence: u64,
+    transaction_num: u64,
 }
 
 impl ChainBencher {
@@ -56,6 +61,8 @@ impl ChainBencher {
             block_num: num.unwrap_or(100),
             account: miner_account,
             temp_path,
+            sequence: 0,
+            transaction_num: 20,
         }
     }
 
@@ -99,6 +106,117 @@ impl ChainBencher {
     pub fn bench(&self, b: &mut Bencher) {
         b.iter_batched(|| self, |bench| bench.execute(), BatchSize::LargeInput)
     }
+
+    pub fn execute_transaction_with_create_account(&mut self) {
+        for _i in 0..self.block_num {
+            let mut txns = Vec::with_capacity(20);
+            let minter_account = Account::new();
+            let mut send_sequence = 0u64;
+            let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &minter_account,
+                self.sequence,
+                50_000_000,
+                self.net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                &self.net,
+            ));
+            txns.push(txn.as_signed_user_txn().unwrap().clone());
+            self.sequence += 1;
+            for _j in 0..self.transaction_num/2 {
+                let receiver = Account::new();
+                let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                    &receiver,
+                    self.sequence,
+                    10_000,
+                    self.net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                    &self.net,
+                ));
+                txns.push(txn.as_signed_user_txn().unwrap().clone());
+                self.sequence += 1;
+                let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                    &minter_account,
+                    &receiver,
+                    send_sequence,
+                    20_000,
+                    &self.net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                    self.net.chain_id(),
+                ));
+                txns.push(txn1.as_signed_user_txn().unwrap().clone());
+                send_sequence += 1;
+            }
+            let (block_template, _) = self
+                .chain
+                .read()
+                .create_block_template(*self.account.address(), None, txns, vec![], None)
+                .unwrap();
+            let block = ConsensusStrategy::Dummy
+                .create_block(block_template, self.net.time_service().as_ref())
+                .unwrap();
+            self.chain.write().apply(block).unwrap();
+        }
+    }
+
+    pub fn execute_transaction_with_fixed_account(&mut self) {
+        let mut txns = Vec::with_capacity(20);
+        let mut accounts = vec![];
+        for _i in 0..self.transaction_num/2 {
+            let account = Account::new();
+            let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &account,
+                self.sequence,
+                10_000,
+                self.net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                &self.net,
+            ));
+            txns.push(txn.as_signed_user_txn().unwrap().clone());
+            self.sequence += 1;
+            accounts.push(account);
+        }
+        let (block_template, _) = self
+            .chain
+            .read()
+            .create_block_template(*self.account.address(), None, txns, vec![], None)
+            .unwrap();
+        let block = ConsensusStrategy::Dummy
+            .create_block(block_template, self.net.time_service().as_ref())
+            .unwrap();
+        self.chain.write().apply(block).unwrap();
+
+        for _i in 0..self.block_num {
+            let mut txns = Vec::with_capacity(20);
+            let minter_account = Account::new();
+            let mut send_sequence = 0u64;
+            let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &minter_account,
+                self.sequence,
+                50_000_000,
+                self.net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                &self.net,
+            ));
+            txns.push(txn.as_signed_user_txn().unwrap().clone());
+            self.sequence += 1;
+            for j in 0..self.transaction_num {
+                let txn = Transaction::UserTransaction(peer_to_peer_txn(
+                    &minter_account,
+                    accounts.get(j as usize).unwrap(),
+                    send_sequence,
+                    20_000,
+                    &self.net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                    self.net.chain_id(),
+                ));
+                txns.push(txn.as_signed_user_txn().unwrap().clone());
+                send_sequence += 1;
+            }
+            let (block_template, _) = self
+                .chain
+                .read()
+                .create_block_template(*self.account.address(), None, txns, vec![], None)
+                .unwrap();
+            let block = ConsensusStrategy::Dummy
+                .create_block(block_template, self.net.time_service().as_ref())
+                .unwrap();
+            self.chain.write().apply(block).unwrap();
+        }
+    }
 }
 
 impl Clone for ChainBencher {
@@ -109,6 +227,8 @@ impl Clone for ChainBencher {
             block_num: self.block_num,
             account: self.account.clone(),
             temp_path: self.temp_path.clone(),
+            sequence: self.sequence,
+            transaction_num: self.transaction_num,
         }
     }
 }
