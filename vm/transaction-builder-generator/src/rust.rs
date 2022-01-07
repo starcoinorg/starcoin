@@ -25,6 +25,9 @@ use std::{
 /// If `local_types` is true, we generate a file suitable for the Diem codebase itself
 /// rather than using serde-generated, standalone definitions.
 pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Result<()> {
+    if abis.is_empty() {
+        return Ok(());
+    }
     let mut emitter = RustEmitter {
         out: IndentedWriter::new(out, IndentConfig::Space(4)),
         local_types,
@@ -33,8 +36,15 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Res
     emitter.output_preamble()?;
     emitter.output_script_call_enum_with_imports(abis)?;
 
-    emitter.output_transaction_script_impl(&common::transaction_script_abis(abis))?;
-    emitter.output_script_function_impl(&common::script_function_abis(abis))?;
+    let tx_script_abis = common::transaction_script_abis(abis);
+    let script_function_abis = common::script_function_abis(abis);
+
+    if !tx_script_abis.is_empty() {
+        emitter.output_transaction_script_impl(&tx_script_abis)?;
+    }
+    if !script_function_abis.is_empty() {
+        emitter.output_script_function_impl(&script_function_abis)?;
+    }
 
     for abi in abis {
         emitter.output_script_encoder_function(abi)?;
@@ -44,11 +54,15 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Res
         emitter.output_script_decoder_function(abi)?;
     }
 
-    emitter.output_transaction_script_decoder_map(&common::transaction_script_abis(abis))?;
-    emitter.output_script_function_decoder_map(&common::script_function_abis(abis))?;
-    emitter.output_decoding_helpers(abis)?;
+    if !tx_script_abis.is_empty() {
+        emitter.output_transaction_script_decoder_map(&tx_script_abis)?;
+    }
+    if !script_function_abis.is_empty() {
+        emitter.output_script_function_decoder_map(&script_function_abis)?;
+    }
+    emitter.output_decoding_helpers(&common::filter_transaction_scripts(abis))?;
 
-    for abi in &common::transaction_script_abis(abis) {
+    for abi in &tx_script_abis {
         emitter.output_code_constant(abi)?;
     }
     Ok(())
@@ -74,6 +88,7 @@ where
         self.out.indent();
         self.output_transaction_script_encode_method(transaction_script_abis)?;
         self.output_transaction_script_decode_method()?;
+        self.output_transaction_script_name_method(transaction_script_abis)?;
         self.out.unindent();
         writeln!(self.out, "\n}}")
     }
@@ -205,7 +220,7 @@ impl ScriptFunctionCall {
                     "starcoin_types::language_storage",
                     vec!["TypeTag", "ModuleId"],
                 ),
-                ("starcoin_types::identifier", vec!["Identifier"]),
+                ("starcoin_types::identifier", vec!["ident_str"]),
                 (
                     "starcoin_types::transaction",
                     vec![
@@ -213,6 +228,7 @@ impl ScriptFunctionCall {
                         "TransactionArgument",
                         "TransactionPayload",
                         "ScriptFunction",
+                        "VecBytes",
                     ],
                 ),
                 ("starcoin_types::account_address", vec!["AccountAddress"]),
@@ -226,6 +242,7 @@ impl ScriptFunctionCall {
                     "Script",
                     "ScriptFunction",
                     "TransactionArgument",
+                    "VecBytes",
                     "TransactionPayload",
                     "ModuleId",
                     "Identifier",
@@ -347,6 +364,33 @@ pub fn decode(payload: &TransactionPayload) -> Option<ScriptFunctionCall> {{
         )
     }
 
+    fn output_transaction_script_name_method(
+        &mut self,
+        abis: &[TransactionScriptABI],
+    ) -> Result<()> {
+        writeln!(
+            self.out,
+            r#"
+/// Return the name of a Diem `Script` from a structured object `ScriptCall`.
+pub fn name(&self) -> &'static str {{"#
+        )?;
+        self.out.indent();
+        writeln!(self.out, "use ScriptCall::*;\nmatch self {{")?;
+        self.out.indent();
+        for abi in abis {
+            writeln!(
+                self.out,
+                "{} {{ .. }} => \"{}\",",
+                abi.name().to_camel_case(),
+                abi.name(),
+            )?;
+        }
+        self.out.unindent();
+        writeln!(self.out, "}}")?;
+        self.out.unindent();
+        writeln!(self.out, "}}\n")
+    }
+
     fn output_comment(&mut self, indentation: usize, doc: &str) -> std::io::Result<()> {
         let prefix = " ".repeat(indentation) + "/// ";
         let empty_line = "\n".to_string() + &" ".repeat(indentation) + "///\n";
@@ -381,7 +425,7 @@ Script::new(
 )"#,
                 abi.name().to_shouty_snake_case(),
                 Self::quote_type_arguments(abi.ty_args()),
-                Self::quote_arguments(abi.args()),
+                Self::quote_arguments_for_script(abi.args()),
             )?;
         } else {
             writeln!(
@@ -394,7 +438,7 @@ Script {{
 }}"#,
                 abi.name().to_shouty_snake_case(),
                 Self::quote_type_arguments(abi.ty_args()),
-                Self::quote_arguments(abi.args()),
+                Self::quote_arguments_for_script(abi.args()),
             )?;
         }
         self.out.unindent();
@@ -428,7 +472,7 @@ TransactionPayload::ScriptFunction(ScriptFunction::new(
                 self.quote_module_id(abi.module_name()),
                 self.quote_identifier(abi.name()),
                 Self::quote_type_arguments(abi.ty_args()),
-                Self::quote_arguments(abi.args()),
+                Self::quote_arguments(abi.args(), /* local_types */ true),
             )?;
         } else {
             writeln!(
@@ -443,7 +487,7 @@ TransactionPayload::ScriptFunction(ScriptFunction {{
                 self.quote_module_id(abi.module_name()),
                 self.quote_identifier(abi.name()),
                 Self::quote_type_arguments(abi.ty_args()),
-                Self::quote_arguments(abi.args()),
+                Self::quote_arguments(abi.args(), /* local_types */ false),
             )?;
         }
         self.out.unindent();
@@ -503,9 +547,8 @@ TransactionPayload::ScriptFunction(ScriptFunction {{
         for (index, arg) in abi.args().iter().enumerate() {
             writeln!(
                 self.out,
-                "{} : decode_{}_argument(script.args{}.get({})?.clone())?,",
+                "{} : bcs::from_bytes(script.args{}.get({})?).ok()?,",
                 arg.name(),
-                common::mangle_type(arg.type_tag()),
                 if self.local_types { "()" } else { "" },
                 index,
             )?;
@@ -584,7 +627,7 @@ static TRANSACTION_SCRIPT_DECODER_MAP: once_cell::sync::Lazy<TransactionScriptDe
         self.out.indent();
         writeln!(
             self.out,
-            "let map : TransactionScriptDecoderMap = std::collections::HashMap::new();"
+            "let mut map : TransactionScriptDecoderMap = std::collections::HashMap::new();"
         )?;
         for abi in abis {
             writeln!(
@@ -627,7 +670,7 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<ScriptFunctionDecoderM
     }
 
     fn output_decoding_helpers(&mut self, abis: &[ScriptABI]) -> Result<()> {
-        let required_types = common::get_required_decoding_helper_types(abis);
+        let required_types = common::get_required_helper_types(abis);
         for required_type in required_types {
             self.output_decoding_helper(required_type)?;
         }
@@ -681,7 +724,7 @@ fn decode_{}_argument(arg: TransactionArgument) -> Option<{}> {{
 
     fn quote_identifier(&self, ident: &str) -> String {
         if self.local_types {
-            format!("Identifier::new(\"{}\").unwrap()", ident)
+            format!("ident_str!(\"{}\").to_owned()", ident)
         } else {
             format!("Identifier(\"{}\".to_string())", ident)
         }
@@ -753,9 +796,16 @@ fn decode_{}_argument(arg: TransactionArgument) -> Option<{}> {{
             .join(", ")
     }
 
-    fn quote_arguments(args: &[ArgumentABI]) -> String {
+    fn quote_arguments(args: &[ArgumentABI], local_types: bool) -> String {
         args.iter()
-            .map(|arg| Self::quote_transaction_argument(arg.type_tag(), arg.name()))
+            .map(|arg| Self::quote_transaction_argument(arg.type_tag(), arg.name(), local_types))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    fn quote_arguments_for_script(args: &[ArgumentABI]) -> String {
+        args.iter()
+            .map(|arg| Self::quote_transaction_argument_for_script(arg.type_tag(), arg.name()))
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -776,6 +826,7 @@ fn decode_{}_argument(arg: TransactionArgument) -> Option<{}> {{
                         "Bytes".into()
                     }
                 }
+                Vector(type_tag) if type_tag.as_ref() == &U8 => "VecBytes".into(),
                 _ => common::type_not_allowed(type_tag),
             },
 
@@ -783,7 +834,34 @@ fn decode_{}_argument(arg: TransactionArgument) -> Option<{}> {{
         }
     }
 
-    fn quote_transaction_argument(type_tag: &TypeTag, name: &str) -> String {
+    fn quote_transaction_argument(type_tag: &TypeTag, name: &str, local_types: bool) -> String {
+        // NOTE: this check is not necessary as with BCS-encoding, argument of
+        // any valid Move type is possible, including Struct and Vector of types
+        // other than U8. However, to be consistent with the restrictions on
+        // transaction script arguments, we still check the TypeTag here.
+        use TypeTag::*;
+        match type_tag {
+            Bool | U8 | U64 | U128 | Address => {}
+            Vector(type_tag) => match type_tag.as_ref() {
+                U8 => {}
+                Vector(type_tag) => {
+                    if type_tag.as_ref() != &U8 {
+                        common::type_not_allowed(type_tag)
+                    }
+                }
+                _ => common::type_not_allowed(type_tag),
+            },
+            Struct(_) | Signer => common::type_not_allowed(type_tag),
+        }
+        let conversion = format!("bcs::to_bytes(&{}).unwrap()", name);
+        if local_types {
+            conversion
+        } else {
+            format!("serde_bytes::ByteBuf::from({})", conversion)
+        }
+    }
+
+    fn quote_transaction_argument_for_script(type_tag: &TypeTag, name: &str) -> String {
         use TypeTag::*;
         match type_tag {
             Bool => format!("TransactionArgument::Bool({})", name),

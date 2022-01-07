@@ -8,14 +8,20 @@ use std::{ffi::OsStr, fs, io::Read, path::Path};
 
 /// Support for code-generation in C++17.
 pub mod cpp;
+/// Support for code-generation in C#
+pub mod csharp;
 /// Support for code-generation in Dart.
-pub mod dart;
+// pub mod dart;
+/// Support for code-generation in Go >= 1.13.
+pub mod golang;
 /// Support for code-generation in Java 8.
 pub mod java;
 /// Support for code-generation in Python 3.
 pub mod python3;
 /// Support for code-generation in Rust.
 pub mod rust;
+/// Support for code-generation in TypeScript.
+pub mod typescript;
 
 /// Internals shared between languages.
 mod common;
@@ -36,14 +42,16 @@ fn get_abi_paths(dir: &Path) -> std::io::Result<Vec<String>> {
     Ok(abi_paths)
 }
 
-/// Read all ABI files in a directory. This supports both new and old `ScriptABI`s.
-pub fn read_abis(dir_path: &Path) -> anyhow::Result<Vec<ScriptABI>> {
+/// Read all ABI files the specified directories. This supports both new and old `ScriptABI`s.
+pub fn read_abis(dir_paths: &[impl AsRef<Path>]) -> anyhow::Result<Vec<ScriptABI>> {
     let mut abis = Vec::<ScriptABI>::new();
-    for path in get_abi_paths(dir_path)? {
-        let mut buffer = Vec::new();
-        let mut f = std::fs::File::open(path)?;
-        f.read_to_end(&mut buffer)?;
-        abis.push(bcs::from_bytes(&buffer)?);
+    for dir in dir_paths.iter() {
+        for path in get_abi_paths(dir.as_ref())? {
+            let mut buffer = Vec::new();
+            let mut f = std::fs::File::open(path)?;
+            f.read_to_end(&mut buffer)?;
+            abis.push(bcs::from_bytes(&buffer)?);
+        }
     }
     // Sort scripts by alphabetical order.
     #[allow(clippy::unnecessary_sort_by)]
@@ -97,7 +105,7 @@ pub fn is_supported_abi(abi: &ScriptABI) -> bool {
     for arg in abi.args() {
         if let TypeTag::Vector(type_tag) = arg.type_tag() {
             match type_tag.as_ref() {
-                TypeTag::U8 => continue,
+                TypeTag::U8 | TypeTag::Address | TypeTag::Vector(_) | TypeTag::U128 => continue,
                 _ => {
                     eprintln!(
                         "{} function's argument {:?}, the generator do not support, skip it.",

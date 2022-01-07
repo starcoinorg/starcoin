@@ -21,7 +21,10 @@ enum Language {
     Rust,
     Cpp,
     Java,
-    Dart,
+    Csharp,
+    Go,
+    TypeScript,
+    // Dart
 }
 }
 
@@ -32,7 +35,7 @@ enum Language {
 )]
 struct Options {
     /// Path to the directory containing ABI files in BCS encoding.
-    abi_directory: PathBuf,
+    abi_directories: Vec<PathBuf>,
 
     /// Language for code generation.
     #[structopt(long, possible_values = &Language::variants(), case_insensitive = true, default_value = "Python3")]
@@ -76,7 +79,7 @@ struct Options {
 fn main() {
     let options = Options::from_args();
     let abis =
-        buildgen::read_abis(&options.abi_directory).expect("Failed to read ABI in directory");
+        buildgen::read_abis(&options.abi_directories).expect("Failed to read ABI in directory");
     let abis = abis
         .into_iter()
         .filter(is_supported_abi)
@@ -103,17 +106,32 @@ fn main() {
                 Language::Java => {
                     panic!("Code generation in Java requires --target_source_dir");
                 }
-                Language::Dart => {
-                    // let module_name = options.module_name.as_deref().unwrap_or("Helpers");
-                    // let parts = module_name.rsplitn(2, '.').collect::<Vec<_>>();
-                    // let (_, class_name) = if parts.len() > 1 {
-                    //     (Some(parts[1]), parts[0])
-                    // } else {
-                    //     (None, parts[0])
-                    // };
-                    // buildgen::dart::output(&mut out, &abis, class_name).unwrap()
-                    panic!("Code generation in dart requires --target_source_dir");
+                Language::Go => {
+                    buildgen::golang::output(
+                        &mut out,
+                        options.serde_package_name.clone(),
+                        options.diem_package_name.clone(),
+                        options.module_name.as_deref().unwrap_or("main").to_string(),
+                        &abis,
+                    )
+                    .unwrap();
                 }
+                Language::TypeScript => {
+                    buildgen::typescript::output(&mut out, &abis).unwrap();
+                }
+                Language::Csharp => {
+                    panic!("Code generation in C# requires --target_source_dir");
+                } // Language::Dart => {
+                  //     // let module_name = options.module_name.as_deref().unwrap_or("Helpers");
+                  //     // let parts = module_name.rsplitn(2, '.').collect::<Vec<_>>();
+                  //     // let (_, class_name) = if parts.len() > 1 {
+                  //     //     (Some(parts[1]), parts[0])
+                  //     // } else {
+                  //     //     (None, parts[0])
+                  //     // };
+                  //     // buildgen::dart::output(&mut out, &abis, class_name).unwrap()
+                  //     panic!("Code generation in dart requires --target_source_dir");
+                  // }
             }
             return;
         }
@@ -131,11 +149,20 @@ fn main() {
                 Language::Rust => Box::new(serdegen::rust::Installer::new(install_dir.clone())),
                 Language::Cpp => Box::new(serdegen::cpp::Installer::new(install_dir.clone())),
                 Language::Java => Box::new(serdegen::java::Installer::new(install_dir.clone())),
-                Language::Dart => Box::new(serdegen::dart::Installer::new(install_dir.clone())),
+                Language::Csharp => Box::new(serdegen::csharp::Installer::new(install_dir.clone())),
+                Language::TypeScript => {
+                    Box::new(serdegen::typescript::Installer::new(install_dir.clone()))
+                }
+                Language::Go => Box::new(serdegen::golang::Installer::new(
+                    install_dir.clone(),
+                    options.serde_package_name.clone(),
+                )),
+                // Language::Dart => Box::new(serdegen::dart::Installer::new(install_dir.clone())),
             };
 
         match options.language {
-            Language::Rust => (), // In Rust, runtimes are deployed as crates.
+            // In Rust and Go, runtimes are deployed using a global package manager.
+            Language::Rust | Language::Go => (),
             _ => {
                 installer.install_serde_runtime().unwrap();
                 installer.install_bcs_runtime().unwrap();
@@ -143,7 +170,10 @@ fn main() {
         }
         let content =
             std::fs::read_to_string(registry_file).expect("registry file must be readable");
-        let registry = serde_yaml::from_str::<Registry>(content.as_str()).unwrap();
+        let mut registry = serde_yaml::from_str::<Registry>(content.as_str()).unwrap();
+        if let Language::TypeScript = options.language {
+            buildgen::typescript::replace_keywords(&mut registry);
+        };
         let (diem_package_name, diem_package_path) = match options.language {
             Language::Rust => (
                 if options.diem_version_number == "0.1.0" {
@@ -157,6 +187,9 @@ fn main() {
                 "org.starcoin.types".to_string(),
                 vec!["org", "starcoin", "types"],
             ),
+            Language::Csharp => ("Starcoin.Types".to_string(), vec!["Starcoin", "Types"]),
+            Language::Go => ("types".to_string(), vec!["types"]),
+            Language::TypeScript => ("starcoinTypes".to_string(), vec!["starcoinTypes"]),
             _ => ("starcoin_types".to_string(), vec!["starcoin_types"]),
         };
         let custom_diem_code = buildgen::read_custom_code_from_paths(
@@ -177,13 +210,20 @@ fn main() {
                 options.serde_package_name,
                 options.diem_package_name,
             )),
+            Language::TypeScript => Box::new(buildgen::typescript::Installer::new(install_dir)),
             Language::Rust => Box::new(buildgen::rust::Installer::new(
                 install_dir,
                 options.diem_version_number,
             )),
             Language::Cpp => Box::new(buildgen::cpp::Installer::new(install_dir)),
             Language::Java => Box::new(buildgen::java::Installer::new(install_dir)),
-            Language::Dart => Box::new(buildgen::dart::Installer::new(install_dir)),
+            Language::Csharp => Box::new(buildgen::csharp::Installer::new(install_dir)),
+            Language::Go => Box::new(buildgen::golang::Installer::new(
+                install_dir,
+                options.serde_package_name,
+                options.diem_package_name,
+            )),
+            // Language::Dart => Box::new(buildgen::dart::Installer::new(install_dir)),
         };
 
     if let Some(name) = options.module_name {

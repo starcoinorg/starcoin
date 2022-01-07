@@ -32,6 +32,40 @@ ArgumentABI:
         TYPENAME: TypeTag
 AuthenticationKey:
   NEWTYPESTRUCT: BYTES
+BlockHeader:
+  STRUCT:
+    - parent_hash:
+        TYPENAME: HashValue
+    - timestamp: U64
+    - number: U64
+    - author:
+        TYPENAME: AccountAddress
+    - author_auth_key:
+        OPTION:
+          TYPENAME: AuthenticationKey
+    - txn_accumulator_root:
+        TYPENAME: HashValue
+    - block_accumulator_root:
+        TYPENAME: HashValue
+    - state_root:
+        TYPENAME: HashValue
+    - gas_used: U64
+    - difficulty:
+        TUPLEARRAY:
+          CONTENT: U8
+          SIZE: 32
+    - body_hash:
+        TYPENAME: HashValue
+    - chain_id:
+        TYPENAME: ChainId
+    - nonce: U32
+    - extra:
+        TYPENAME: BlockHeaderExtra
+BlockHeaderExtra:
+  NEWTYPESTRUCT:
+    TUPLEARRAY:
+      CONTENT: U8
+      SIZE: 4
 BlockMetadata:
   STRUCT:
     - parent_hash:
@@ -241,6 +275,18 @@ TransactionArgument:
     5:
       Bool:
         NEWTYPE: BOOL
+    6:
+      VecU128:
+        NEWTYPE:
+          TYPENAME: VecU128
+    7:
+      VecAccountAddress:
+        NEWTYPE:
+          TYPENAME: VecAccountAddress
+    8:
+      VecBytes:
+        NEWTYPE:
+          TYPENAME: VecBytes
 TransactionAuthenticator:
   ENUM:
     0:
@@ -311,6 +357,16 @@ WithdrawCapabilityResource:
   STRUCT:
     - account_address:
         TYPENAME: AccountAddress
+VecBytes:
+  NEWTYPESTRUCT:
+    SEQ: BYTES
+VecAccountAddress:
+  NEWTYPESTRUCT:
+    SEQ:
+      TYPENAME: AccountAddress
+VecU128:
+   NEWTYPESTRUCT:
+     SEQ: U128
 WriteOp:
   ENUM:
     0:
