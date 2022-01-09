@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// Helper module to do u64 arith.
 module Arith {
     /// split u64 to (high, low)
@@ -38,8 +38,8 @@ module Arith {
 /// Implementation u256.
 module U256 {
 
-    use Std::Vector;
-    use Std::Errors;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Errors;
 
     const WORD: u8 = 4;
 
@@ -260,7 +260,7 @@ module U256 {
         while (idx < len) {
             let a_bit = Vector::borrow_mut(&mut a.bits, idx);
             let b_bit = Vector::borrow(&b.bits, idx);
-            *a_bit = Std::Arith::adc(*a_bit, *b_bit, &mut carry);
+            *a_bit = StarcoinFramework::Arith::adc(*a_bit, *b_bit, &mut carry);
             idx = idx + 1;
         };
 
@@ -276,7 +276,7 @@ module U256 {
         while (idx < len) {
             let a_bit = Vector::borrow_mut(&mut a.bits, idx);
             let b_bit = Vector::borrow(&b.bits, idx);
-            *a_bit = Std::Arith::sbb(*a_bit, *b_bit, &mut borrow);
+            *a_bit = StarcoinFramework::Arith::sbb(*a_bit, *b_bit, &mut borrow);
             idx = idx + 1;
         };
 

@@ -1,24 +1,24 @@
-address Std {
+address StarcoinFramework {
 /// `TransactionManager` manages:
 /// 1. prologue and epilogue of transactions.
 /// 2. prologue of blocks.
 module TransactionManager {
-    use Std::TransactionTimeout;
-    use Std::Signer;
-    use Std::CoreAddresses;
-    use Std::Account;
-    use Std::PackageTxnManager;
-    use Std::BlockReward;
-    use Std::Block;
-    use Std::STC::STC;
-    use Std::TransactionFee;
-    use Std::Timestamp;
-    use Std::ChainId;
-    use Std::Errors;
-    use Std::TransactionPublishOption;
-    use Std::Epoch;
-    use Std::Hash;
-    use Std::Vector;
+    use StarcoinFramework::TransactionTimeout;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::BlockReward;
+    use StarcoinFramework::Block;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::TransactionFee;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::ChainId;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::Epoch;
+    use StarcoinFramework::Hash;
+    use StarcoinFramework::Vector;
 
     spec module {
         pragma verify = false;
@@ -109,7 +109,7 @@ module TransactionManager {
         include Timestamp::AbortsIfTimestampNotExists;
         include Block::AbortsIfBlockMetadataNotExist;
         aborts_if txn_gas_price * txn_max_gas_units > 0 && !exists<Account::Balance<TokenType>>(txn_sender);
-        aborts_if txn_gas_price * txn_max_gas_units > 0 && Std::Token::spec_token_code<TokenType>() != Std::Token::spec_token_code<STC>();
+        aborts_if txn_gas_price * txn_max_gas_units > 0 && StarcoinFramework::Token::spec_token_code<TokenType>() != StarcoinFramework::Token::spec_token_code<STC>();
         aborts_if txn_gas_price * txn_max_gas_units > 0 && global<Account::Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
         aborts_if txn_gas_price * txn_max_gas_units > 0 && txn_sequence_number >= max_u64();
         aborts_if txn_sequence_number < global<Account::Account>(txn_sender).sequence_number;

@@ -1,13 +1,13 @@
-address Std {
+address StarcoinFramework {
 /// A proposal module which is used to modify Token's DAO configuration.
 module ModifyDaoConfigProposal {
-    // use Std::Config;
-    use Std::Token;
-    use Std::Signer;
-    use Std::Config;
-    use Std::Dao;
-    use Std::Errors;
-    use Std::Option;
+    // use StarcoinFramework::Config;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Option;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -80,8 +80,8 @@ module ModifyDaoConfigProposal {
         Dao::propose<TokenT, DaoConfigUpdate>(&signer, action, exec_delay);
     }
     spec propose {
-        use Std::Timestamp;
-        use Std::CoreAddresses;
+        use StarcoinFramework::Timestamp;
+        use StarcoinFramework::CoreAddresses;
         pragma aborts_if_is_partial = false;
         aborts_if voting_quorum_rate > 100;
 

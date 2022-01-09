@@ -1,10 +1,10 @@
-address Std {
+address StarcoinFramework {
 /// The module provides a general implmentation of configuration for onchain contracts.    
 module Config {
-    use Std::Event;
-    use Std::Signer;
-    use Std::Option::{Self, Option};
-    use Std::Errors;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Option::{Self, Option};
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify = false;

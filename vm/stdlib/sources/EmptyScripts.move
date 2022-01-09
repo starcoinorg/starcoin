@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
     // A empty scripts module for call a script but do nothing.
     module EmptyScripts {
 

@@ -1,9 +1,9 @@
-address Std {
+address StarcoinFramework {
 
 module TransferScripts {
-    use Std::Account;
-    use Std::Errors;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Vector;
     const EADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 101;
     const ELENGTH_MISMATCH: u64 = 102;
     const EDEPRECATED_FUNCTION: u64 = 19;

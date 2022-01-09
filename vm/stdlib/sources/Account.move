@@ -1,19 +1,19 @@
-address Std {
+address StarcoinFramework {
 
 /// The module for the account resource that governs every account
 module Account {
-    use Std::Authenticator;
-    use Std::Event;
-    use Std::Hash;
-    use Std::Token::{Self, Token};
-    use Std::Vector;
-    use Std::Signer;
-    use Std::Timestamp;
-    use Std::Option::{Self, Option};
-    use Std::TransactionFee;
-    use Std::CoreAddresses;
-    use Std::Errors;
-    use Std::STC::{Self, STC};
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Hash;
+    use StarcoinFramework::Token::{Self, Token};
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Option::{Self, Option};
+    use StarcoinFramework::TransactionFee;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::STC::{Self, STC};
 
     spec module {
         pragma verify = false;
@@ -201,7 +201,7 @@ module Account {
     }
 
     /// Creates a new account at `fresh_address` with a balance of zero and empty auth key, the address as init auth key for check transaction.
-    /// Creating an account at address Std will cause runtime failure as it is a
+    /// Creating an account at address StarcoinFramework will cause runtime failure as it is a
     /// reserved address for the MoveVM.
     public fun create_account_with_address<TokenType: store>(fresh_address: address) acquires Account {
         let new_account = create_signer(fresh_address);

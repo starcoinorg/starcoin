@@ -1,13 +1,13 @@
-address Std {
+address StarcoinFramework {
 /// Each address that holds a `SharedEd25519PublicKey` resource can rotate the public key stored in
 /// this resource, but the account's authentication key will be updated in lockstep. This ensures
 /// that the two keys always stay in sync.
 module SharedEd25519PublicKey {
-    use Std::Authenticator;
-    use Std::Account;
-    use Std::Signature;
-    use Std::Signer;
-    use Std::Errors;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signature;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify;
@@ -41,9 +41,9 @@ module SharedEd25519PublicKey {
 
     spec publish {
         aborts_if !exists<Account::Account>(Signer::address_of(account));
-        aborts_if Std::Option::is_none(global<Account::Account>(Signer::address_of(account)).key_rotation_capability);
+        aborts_if StarcoinFramework::Option::is_none(global<Account::Account>(Signer::address_of(account)).key_rotation_capability);
         aborts_if !exists<Account::Account>(
-                  Std::Option::borrow<Account::KeyRotationCapability>(
+                  StarcoinFramework::Option::borrow<Account::KeyRotationCapability>(
                       global<Account::Account>(Signer::address_of(account))
                       .key_rotation_capability
                   ).account_address);

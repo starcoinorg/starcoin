@@ -1,12 +1,12 @@
-address Std {
+address StarcoinFramework {
 /// Provide a account based vector for save resource item.
 /// The resource in CollectionStore can borrowed by anyone, anyone can get immutable ref of item.
 /// and the owner of Collection can allow others to add item to Collection or get mut ref from Collection.git
 module Collection2 {
-    use Std::Signer;
-    use Std::Errors;
-    use Std::Vector;
-    use Std::Option::{Self, Option};
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Option::{Self, Option};
 
     spec module {
         pragma verify = false;

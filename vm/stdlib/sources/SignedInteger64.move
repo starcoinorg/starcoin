@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// Implementation of i64.
 module SignedInteger64 {
 

@@ -1,12 +1,12 @@
-module Std::GenesisSignerCapability {
-    use Std::Account;
-    use Std::CoreAddresses;
-    use Std::Errors;
+module StarcoinFramework::GenesisSignerCapability {
+    use StarcoinFramework::Account;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Errors;
 
-    friend Std::NFT;
-    friend Std::Oracle;
-    friend Std::Genesis;
-    friend Std::StdlibUpgradeScripts;
+    friend StarcoinFramework::NFT;
+    friend StarcoinFramework::Oracle;
+    friend StarcoinFramework::Genesis;
+    friend StarcoinFramework::StdlibUpgradeScripts;
 
 
     const ENOT_GENESIS_ACCOUNT: u64 = 11;

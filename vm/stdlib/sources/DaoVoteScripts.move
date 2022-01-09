@@ -1,8 +1,8 @@
-address Std {
+address StarcoinFramework {
 module DaoVoteScripts {
-    use Std::Dao;
-    use Std::Account;
-    use Std::Signer;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

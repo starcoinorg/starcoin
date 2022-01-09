@@ -1,24 +1,24 @@
-address Std {
+address StarcoinFramework {
 /// The module for StdlibUpgrade init scripts
 module StdlibUpgradeScripts {
 
-        use Std::CoreAddresses;
-        use Std::STC::{Self, STC};
-        use Std::Token::{Self, LinearTimeMintKey};
-        use Std::TreasuryWithdrawDaoProposal;
-        use Std::Treasury::{Self, LinearWithdrawCapability};
-        use Std::Offer;
-        use Std::Timestamp;
-        use Std::Collection;
-        use Std::Oracle;
-        use Std::STCUSDOracle;
-        use Std::NFT;
-        use Std::GenesisNFT;
-        use Std::LanguageVersion;
-        use Std::OnChainConfigDao;
-        use Std::Config;
-        use Std::GenesisSignerCapability;
-        use Std::Account;
+        use StarcoinFramework::CoreAddresses;
+        use StarcoinFramework::STC::{Self, STC};
+        use StarcoinFramework::Token::{Self, LinearTimeMintKey};
+        use StarcoinFramework::TreasuryWithdrawDaoProposal;
+        use StarcoinFramework::Treasury::{Self, LinearWithdrawCapability};
+        use StarcoinFramework::Offer;
+        use StarcoinFramework::Timestamp;
+        use StarcoinFramework::Collection;
+        use StarcoinFramework::Oracle;
+        use StarcoinFramework::STCUSDOracle;
+        use StarcoinFramework::NFT;
+        use StarcoinFramework::GenesisNFT;
+        use StarcoinFramework::LanguageVersion;
+        use StarcoinFramework::OnChainConfigDao;
+        use StarcoinFramework::Config;
+        use StarcoinFramework::GenesisSignerCapability;
+        use StarcoinFramework::Account;
 
         spec module {
             pragma verify = false;

@@ -1,9 +1,9 @@
-address Std {
+address StarcoinFramework {
 module TreasuryScripts {
-    use Std::Treasury;
-    use Std::Account;
-    use Std::Offer;
-    use Std::TreasuryWithdrawDaoProposal;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::TreasuryWithdrawDaoProposal;
 
     public(script) fun withdraw_and_split_lt_withdraw_cap<TokenT: store>(
         signer: signer,

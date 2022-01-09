@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 module ModuleUpgradeScripts {
-    use Std::PackageTxnManager;
-    use Std::Config;
-    use Std::Signer;
-    use Std::Version;
-    use Std::Option;
-    use Std::UpgradeModuleDaoProposal;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Version;
+    use StarcoinFramework::Option;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

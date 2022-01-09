@@ -1,8 +1,8 @@
-address Std {
+address StarcoinFramework {
 /// The module provide addresses used in stdlib.    
 module CoreAddresses {
-    use Std::Signer;
-    use Std::Errors;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify;

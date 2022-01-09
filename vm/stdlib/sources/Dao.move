@@ -1,13 +1,13 @@
-address Std {
+address StarcoinFramework {
 module Dao {
-    use Std::Token;
-    use Std::Signer;
-    use Std::Timestamp;
-    use Std::Option;
-    use Std::Config;
-    use Std::Event;
-    use Std::Errors;
-    use Std::Treasury;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Option;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Treasury;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -179,7 +179,7 @@ module Dao {
         aborts_if !exists<Config::Config<DaoConfig<TokenT>>>(token_addr);
     }
     spec schema AbortIfTimestampNotExist {
-        use Std::CoreAddresses;
+        use StarcoinFramework::CoreAddresses;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
@@ -260,7 +260,7 @@ module Dao {
     }
 
     spec propose {
-        use Std::CoreAddresses;
+        use StarcoinFramework::CoreAddresses;
         pragma addition_overflow_unchecked;
         include AbortIfDaoConfigNotExist<TokenT>;
         include AbortIfDaoInfoNotExist<TokenT>;
@@ -764,7 +764,7 @@ module Dao {
     }
 
     spec proposal_state {
-        use Std::CoreAddresses;
+        use StarcoinFramework::CoreAddresses;
         include AbortIfTimestampNotExist;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);

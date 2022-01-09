@@ -18,11 +18,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use walkdir::WalkDir;
 
 const ENV_FLAGS: &str = "MVP_TEST_FLAGS";
-const ENV_TEST_INCONSISTENCY: &str = "MVP_TEST_INCONSISTENCY";
 const ENV_TEST_FEATURE: &str = "MVP_TEST_FEATURE";
 const ENV_TEST_ON_CI: &str = "MVP_TEST_ON_CI";
-const INCONSISTENCY_TEST_FLAGS: &[&str] =
-    &["--dependency=../stdlib/sources", "--check-inconsistency"];
 const REGULAR_TEST_FLAGS: &[&str] = &["--dependency=../stdlib/sources"];
 
 static NOT_CONFIGURED_WARNED: AtomicBool = AtomicBool::new(false);
@@ -64,8 +61,8 @@ enum InclusionMode {
 fn get_features() -> &'static [Feature] {
     static TESTED_FEATURES: OnceCell<Vec<Feature>> = OnceCell::new();
     TESTED_FEATURES.get_or_init(|| {
-        // Tests the default configuration.
         vec![
+            // Tests the default configuration.
             Feature {
                 name: "default",
                 flags: &[],
@@ -76,16 +73,31 @@ fn get_features() -> &'static [Feature] {
                 runner: |p| test_runner_for_feature(p, get_feature_by_name("default")),
                 enabling_condition: |_, _| true,
             },
-            // Tests with cvc4 as a backend for boogie.
+            // Tests with spec simplification pipeline enabled
             Feature {
-                name: "cvc4",
-                flags: &["--use-cvc4"],
+                name: "simplify",
+                flags: &[
+                    "--ignore-pragma-opaque-internal-only",
+                    "--simplify",
+                    "inline",
+                ],
+                inclusion_mode: InclusionMode::Implicit,
+                enable_in_ci: true,
+                only_if_requested: false,
+                separate_baseline: false,
+                runner: |p| test_runner_for_feature(p, get_feature_by_name("simplify")),
+                enabling_condition: |_, _| true,
+            },
+            // Tests with cvc5 as a backend for boogie.
+            Feature {
+                name: "cvc5",
+                flags: &["--use-cvc5"],
                 inclusion_mode: InclusionMode::Implicit,
                 enable_in_ci: false, // Do not enable in CI until we have more data about stability
                 only_if_requested: false,
                 separate_baseline: false,
-                runner: |p| test_runner_for_feature(p, get_feature_by_name("cvc4")),
-                enabling_condition: |group, path| group == "unit" && !cvc4_deny_listed(path),
+                runner: |p| test_runner_for_feature(p, get_feature_by_name("cvc5")),
+                enabling_condition: |group, p| group == "unit" || cvc4_deny_listed(p),
             },
         ]
     })
@@ -114,7 +126,6 @@ fn cvc4_deny_listed(path_str: &str) -> bool {
     }
     false
 }
-
 fn get_feature_by_name(name: &str) -> &'static Feature {
     for feature in get_features() {
         if feature.name == name {
@@ -154,7 +165,7 @@ fn test_runner_for_feature(path: &Path, feature: &Feature) -> datatest_stable::R
     options.setup_logging_for_test();
     let no_tools = read_env_var("BOOGIE_EXE").is_empty()
         || !options.backend.use_cvc5 && read_env_var("Z3_EXE").is_empty()
-        || options.backend.use_cvc5 && read_env_var("CVC4_EXE").is_empty();
+        || options.backend.use_cvc5 && read_env_var("CVC5_EXE").is_empty();
     let baseline_valid =
         !no_tools || !extract_test_directives(path, "// no-boogie-test")?.is_empty();
 
@@ -166,7 +177,7 @@ fn test_runner_for_feature(path: &Path, feature: &Feature) -> datatest_stable::R
         {
             warn!(
                 "Prover tools are not configured, verification tests will be skipped. \
-        See https://github.com/starcoin/diem/tree/main/language/move-prover/doc/user/install.md \
+        See https://github.com/diem/diem/tree/main/language/move-prover/doc/user/install.md \
         for instructions."
             );
         }
@@ -181,16 +192,11 @@ fn test_runner_for_feature(path: &Path, feature: &Feature) -> datatest_stable::R
         Err(err) => format!("Move prover returns: {}\n", err),
     };
     if baseline_valid {
+        diags += &String::from_utf8_lossy(&error_writer.into_inner()).to_string();
         if let Some(ref path) = baseline_path {
-            diags += &String::from_utf8_lossy(&error_writer.into_inner()).to_string();
             verify_or_update_baseline(path.as_path(), &diags)?
         } else if !diags.is_empty() {
-            return Err(anyhow!(
-                "Unexpected prover output (expected none): {}{}",
-                diags,
-                String::from_utf8_lossy(&error_writer.into_inner())
-            )
-            .into());
+            return Err(anyhow!("Unexpected prover output (expected none): {}", diags).into());
         }
     }
 
@@ -206,14 +212,8 @@ fn get_flags_and_baseline(
     // Determine the way how to configure tests based on directory of the path.
     let path_str = path.to_string_lossy();
 
-    let stdlib_test_flags = if read_env_var(ENV_TEST_INCONSISTENCY).is_empty() {
-        REGULAR_TEST_FLAGS
-    } else {
-        INCONSISTENCY_TEST_FLAGS
-    };
-
-    let (base_flags, baseline_path) = if path_str.contains("../stdlib/") {
-        (stdlib_test_flags, None)
+    let (base_flags, baseline_path) = if path_str.contains("stdlib/") {
+        (REGULAR_TEST_FLAGS, None)
     } else {
         let feature_name = feature.name.to_string();
         let separate_baseline = feature.separate_baseline
@@ -228,6 +228,9 @@ fn get_flags_and_baseline(
         )
     };
     let mut flags = base_flags.iter().map(|s| (*s).to_string()).collect_vec();
+
+    // Add flag assigning an address to the stdlib.
+    flags.push("--named-addresses=StarcoinFramework=0x1".to_string());
 
     // Add flags specific to the feature.
     flags.extend(feature.flags.iter().map(|f| f.to_string()));
@@ -255,10 +258,16 @@ fn get_flags_and_baseline(
 fn collect_enabled_tests(reqs: &mut Vec<Requirements>, group: &str, feature: &Feature, path: &str) {
     let mut p = PathBuf::new();
     p.push(path);
-    for entry in WalkDir::new(p.clone()).min_depth(1).into_iter().flatten() {
+    for entry in WalkDir::new(p.clone())
+        .follow_links(false)
+        .min_depth(1)
+        .into_iter()
+        .flatten()
+    {
         if !entry.file_name().to_string_lossy().ends_with(".move") {
             continue;
         }
+
         let path = entry.path();
         let mut included = match feature.inclusion_mode {
             InclusionMode::Implicit => !extract_test_directives(path, "// exclude_for: ")

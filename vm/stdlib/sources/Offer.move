@@ -1,9 +1,9 @@
-address Std {
+address StarcoinFramework {
 module Offer {
-    use Std::Timestamp;
-    use Std::Signer;
-    use Std::Errors;
-    use Std::Collection2;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Collection2;
 
     spec module {
         pragma verify = true;

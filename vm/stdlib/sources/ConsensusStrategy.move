@@ -1,10 +1,10 @@
-address Std {
+address StarcoinFramework {
 /// The module provides the information of current consensus strategy.    
 module ConsensusStrategy {
-    use Std::CoreAddresses;
-    use Std::Timestamp;
-    use Std::Signer;
-    use Std::Config;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Config;
 
     /// ConsensusStrategy data.
     struct ConsensusStrategy has copy, drop, store {

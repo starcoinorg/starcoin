@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// The module provide debug print for Move.
 module Debug {
     spec module {

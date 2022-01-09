@@ -112,7 +112,6 @@ pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress> {
     let mapping = [
         ("VMReserved", "0x0"),
-        ("Std", "0x1"),
         ("Genesis", "0x1"),
         ("StarcoinFramework", "0x1"),
         ("StarcoinAssociation", "0xA550C18"),

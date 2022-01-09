@@ -382,7 +382,7 @@ The runtime always runs this before executing the transactions in a block.
 <b>include</b> <a href="Timestamp.md#0x1_Timestamp_AbortsIfTimestampNotExists">Timestamp::AbortsIfTimestampNotExists</a>;
 <b>include</b> <a href="Block.md#0x1_Block_AbortsIfBlockMetadataNotExist">Block::AbortsIfBlockMetadataNotExist</a>;
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
-<b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && Std::Token::spec_token_code&lt;TokenType&gt;() != Std::Token::spec_token_code&lt;<a href="STC.md#0x1_STC">STC</a>&gt;();
+<b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && StarcoinFramework::Token::spec_token_code&lt;TokenType&gt;() != StarcoinFramework::Token::spec_token_code&lt;<a href="STC.md#0x1_STC">STC</a>&gt;();
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;&gt;(txn_sender).token.value &lt; txn_gas_price * txn_max_gas_units;
 <b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; 0 && txn_sequence_number &gt;= max_u64();
 <b>aborts_if</b> txn_sequence_number &lt; <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender).sequence_number;

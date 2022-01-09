@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 
 /// Module defining error codes used in Move aborts throughout the framework.
 ///

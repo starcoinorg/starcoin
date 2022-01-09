@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// Functions for bit operations.
 module BitOperators {
 

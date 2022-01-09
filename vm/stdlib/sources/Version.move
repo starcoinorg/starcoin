@@ -1,7 +1,7 @@
-address Std {
+address StarcoinFramework {
 /// `Version` tracks version of something, like current VM version.
 module Version {
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     const EMAJOR_TO_OLD: u64 = 101;
 

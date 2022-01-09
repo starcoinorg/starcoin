@@ -1,10 +1,10 @@
-address Std {
+address StarcoinFramework {
 /// The module implements onchain timestamp oracle.
 /// Timestamp is updated on each block. It always steps forward, and never come backward.
 module Timestamp {
-    use Std::CoreAddresses;
-    use Std::Signer;
-    use Std::Errors;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify;

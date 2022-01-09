@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// Utility for converting a Move value to its binary representation in BCS (Diem Canonical
 /// Serialization). BCS is the binary encoding for Move resources and other non-module values
 /// published on-chain.

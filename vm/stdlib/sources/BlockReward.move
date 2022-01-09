@@ -1,19 +1,19 @@
-address Std {
+address StarcoinFramework {
 /// The module provide block rewarding calculation logic.
 module BlockReward {
-    use Std::Timestamp;
-    use Std::Token;
-    use Std::STC::{STC};
-    use Std::Vector;
-    use Std::Account;
-    use Std::CoreAddresses;
-    use Std::Signer;
-    use Std::Errors;
-    use Std::RewardConfig;
-    use Std::Config;
-    use Std::Event;
-    use Std::Treasury;
-    use Std::TreasuryWithdrawDaoProposal;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::STC::{STC};
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::RewardConfig;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::TreasuryWithdrawDaoProposal;
 
     spec module {
         pragma verify = false;

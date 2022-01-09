@@ -1,14 +1,14 @@
-address Std {
+address StarcoinFramework {
 module OnChainConfigScripts {
-    use Std::ConsensusConfig;
-    use Std::OnChainConfigDao;
-    use Std::STC;
-    use Std::RewardConfig;
-    use Std::TransactionPublishOption;
-    use Std::TransactionTimeoutConfig;
-    use Std::VMConfig;
-    use Std::Signer;
-    use Std::LanguageVersion;
+    use StarcoinFramework::ConsensusConfig;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::STC;
+    use StarcoinFramework::RewardConfig;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::TransactionTimeoutConfig;
+    use StarcoinFramework::VMConfig;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::LanguageVersion;
 
     public ( script ) fun propose_update_consensus_config(account: signer,
                                                           uncle_rate_target: u64,

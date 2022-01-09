@@ -1,10 +1,10 @@
-address Std {
+address StarcoinFramework {
 /// The module provide configuration for block reward.
 module RewardConfig {
-    use Std::Timestamp;
-    use Std::Signer;
-    use Std::CoreAddresses;
-    use Std::Config;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Config;
 
     spec module {
         pragma verify = false;

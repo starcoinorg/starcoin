@@ -1,6 +1,6 @@
-address Std {
+address StarcoinFramework {
 module Compare {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
 
     spec module {
         pragma verify;

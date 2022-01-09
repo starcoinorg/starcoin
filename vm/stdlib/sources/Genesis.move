@@ -1,36 +1,36 @@
-address Std {
+address StarcoinFramework {
 /// The module for init Genesis
 module Genesis {
 
-    use Std::CoreAddresses;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Timestamp;
-    use Std::Token;
-    use Std::STC::{Self, STC};
-    use Std::DummyToken;
-    use Std::PackageTxnManager;
-    use Std::ConsensusConfig;
-    use Std::VMConfig;
-    use Std::Vector;
-    use Std::Block;
-    use Std::TransactionFee;
-    use Std::BlockReward;
-    use Std::ChainId;
-    use Std::ConsensusStrategy;
-    use Std::TransactionPublishOption;
-    use Std::Collection;
-    use Std::TransactionTimeoutConfig;
-    use Std::Epoch;
-    use Std::Version;
-    use Std::Config;
-    use Std::Option;
-    use Std::Treasury;
-    use Std::TreasuryWithdrawDaoProposal;
-    use Std::StdlibUpgradeScripts;
-    use Std::GenesisSignerCapability;
-    use Std::STCUSDOracle;
-    use Std::GenesisNFT;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::STC::{Self, STC};
+    use StarcoinFramework::DummyToken;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::ConsensusConfig;
+    use StarcoinFramework::VMConfig;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Block;
+    use StarcoinFramework::TransactionFee;
+    use StarcoinFramework::BlockReward;
+    use StarcoinFramework::ChainId;
+    use StarcoinFramework::ConsensusStrategy;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::Collection;
+    use StarcoinFramework::TransactionTimeoutConfig;
+    use StarcoinFramework::Epoch;
+    use StarcoinFramework::Version;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Option;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::TreasuryWithdrawDaoProposal;
+    use StarcoinFramework::StdlibUpgradeScripts;
+    use StarcoinFramework::GenesisSignerCapability;
+    use StarcoinFramework::STCUSDOracle;
+    use StarcoinFramework::GenesisNFT;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

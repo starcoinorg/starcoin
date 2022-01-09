@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-address Std {
+address StarcoinFramework {
 module YieldFarmingV2 {
-    use Std::Token;
-    use Std::Signer;
-    use Std::Timestamp;
-    use Std::Errors;
-    use Std::Math;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Math;
 
     const ERR_FARMING_INIT_REPEATE: u64 = 101;
     const ERR_FARMING_NOT_STILL_FREEZE: u64 = 102;

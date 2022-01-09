@@ -1,12 +1,12 @@
-address Std {
+address StarcoinFramework {
 /// UpgradeModuleDaoProposal is a proposal moudle used to upgrade contract codes under a token.
 module UpgradeModuleDaoProposal {
-    use Std::PackageTxnManager;
-    use Std::Token;
-    use Std::Signer;
-    use Std::Option;
-    use Std::Dao;
-    use Std::Errors;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Option;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

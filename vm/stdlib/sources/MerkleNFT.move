@@ -1,7 +1,7 @@
-module Std::MerkleProof {
-    use Std::Hash;
-    use Std::Vector;
-    use Std::Compare;
+module StarcoinFramework::MerkleProof {
+    use StarcoinFramework::Hash;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Compare;
 
     /// verify leaf node with hash of `leaf` with `proof` againest merkle `root`.
     public fun verify(proof: &vector<vector<u8>>, root: &vector<u8>, leaf: vector<u8>): bool {
@@ -30,14 +30,14 @@ module Std::MerkleProof {
     }
 }
 
-module Std::MerkleNFTDistributor {
-    use Std::Vector;
-    use Std::NFT::{Self, NFT, Metadata, MintCapability};
-    use Std::Hash;
-    use Std::BCS;
-    use Std::Signer;
-    use Std::Errors;
-    use Std::MerkleProof;
+module StarcoinFramework::MerkleNFTDistributor {
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::NFT::{Self, NFT, Metadata, MintCapability};
+    use StarcoinFramework::Hash;
+    use StarcoinFramework::BCS;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::MerkleProof;
     const ALREADY_MINTED: u64 = 1000;
     const INVALID_PROOF: u64 = 1001;
     const ERR_NO_MINT_CAPABILITY: u64 = 1002;

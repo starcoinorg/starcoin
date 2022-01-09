@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// Provide access methods for Signer.
 module Signer {
     spec module {

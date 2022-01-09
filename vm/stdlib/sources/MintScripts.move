@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 module MintScripts {
 }
 }

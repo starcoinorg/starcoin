@@ -901,7 +901,7 @@ Deprecated since @v5
 ## Function `create_account_with_address`
 
 Creates a new account at <code>fresh_address</code> with a balance of zero and empty auth key, the address as init auth key for check transaction.
-Creating an account at address Std will cause runtime failure as it is a
+Creating an account at address StarcoinFramework will cause runtime failure as it is a
 reserved address for the MoveVM.
 
 

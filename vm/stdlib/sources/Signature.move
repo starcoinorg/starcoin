@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 
 /// Contains functions for [ed25519](https://en.wikipedia.org/wiki/EdDSA) digital signatures.
 module Signature {
 
-    use Std::Vector;
-    use Std::Option::{Self, Option};
-    use Std::EVMAddress::{Self, EVMAddress};
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Option::{Self, Option};
+    use StarcoinFramework::EVMAddress::{Self, EVMAddress};
 
     native public fun ed25519_validate_pubkey(public_key: vector<u8>): bool;
     native public fun ed25519_verify(signature: vector<u8>, public_key: vector<u8>, message: vector<u8>): bool;
@@ -35,7 +35,7 @@ module EVMAddress{
         pragma aborts_if_is_strict;
     }
 
-    use Std::Vector;
+    use StarcoinFramework::Vector;
 
     const EVM_ADDR_LENGTH:u64 = 20;
 

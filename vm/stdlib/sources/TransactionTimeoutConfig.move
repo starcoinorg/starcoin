@@ -1,10 +1,10 @@
-address Std {
+address StarcoinFramework {
 /// Onchain configuration for timeout setting of transaction.
 module TransactionTimeoutConfig {
-    use Std::Timestamp;
-    use Std::CoreAddresses;
-    use Std::Config;
-    use Std::Signer;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Signer;
 
     spec module {
         pragma verify = false;

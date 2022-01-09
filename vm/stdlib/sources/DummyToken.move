@@ -1,8 +1,8 @@
-address Std{
+address StarcoinFramework{
 /// The module provide a dummy token implementation.
 module DummyToken {
-    use Std::Token::{Self, Token};
-    use Std::Errors;
+    use StarcoinFramework::Token::{Self, Token};
+    use StarcoinFramework::Errors;
 
     /// The DummyToken type.
     struct DummyToken has copy, drop, store { }
@@ -61,9 +61,9 @@ module DummyToken {
 }
 
 module DummyTokenScripts{
-    use Std::DummyToken::{Self,DummyToken};
-    use Std::Account;
-    use Std::Signer;
+    use StarcoinFramework::DummyToken::{Self,DummyToken};
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
 
     public(script) fun mint(sender: signer, amount: u128){
         let token = DummyToken::mint(&sender, amount);

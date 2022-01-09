@@ -1,13 +1,13 @@
-address Std {
+address StarcoinFramework {
 ///Non-fungible token standard and implements.
 module NFT {
-    use Std::Signer;
-    use Std::Errors;
-    use Std::CoreAddresses;
-    use Std::Account;
-    use Std::Vector;
-    use Std::Event;
-    use Std::GenesisSignerCapability;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::GenesisSignerCapability;
 
     const ERR_NO_MINT_CAPABILITY: u64 = 101;
     const ERR_NO_BURN_CAPABILITY: u64 = 102;
@@ -254,7 +254,7 @@ module NFT {
     public fun initialize(_signer: &signer) {
     }
 
-    /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `Std::GenesisSignerCapability`.
+    /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `StarcoinFramework::GenesisSignerCapability`.
     public fun extract_signer_cap(signer: &signer): Account::SignerCapability acquires GenesisSignerCapability{
         CoreAddresses::assert_genesis_address(signer);
         let cap = move_from<GenesisSignerCapability>(Signer::address_of(signer));
@@ -472,10 +472,10 @@ module NFT {
 /// IdentifierNFT using NFT as identifier for an on chain account
 /// The NFT can not been transfer by owner.
 module IdentifierNFT {
-    use Std::Option::{Self, Option};
-    use Std::NFT::{Self, NFT, MintCapability, BurnCapability};
-    use Std::Signer;
-    use Std::Errors;
+    use StarcoinFramework::Option::{Self, Option};
+    use StarcoinFramework::NFT::{Self, NFT, MintCapability, BurnCapability};
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
 
     const ERR_NFT_EXISTS: u64 = 101;
     const ERR_NFT_NOT_EXISTS: u64 = 102;
@@ -563,7 +563,7 @@ module IdentifierNFT {
 }
 
 module IdentifierNFTScripts {
-    use Std::IdentifierNFT;
+    use StarcoinFramework::IdentifierNFT;
     spec module {
         pragma verify = false;
     }
@@ -580,12 +580,12 @@ module IdentifierNFTScripts {
 
 /// NFTGallery is user collection of NFT.
 module NFTGallery {
-    use Std::Signer;
-    use Std::NFT::{Self, NFT};
-    use Std::Option::{Self, Option};
-    use Std::Event;
-    use Std::Errors;
-    use Std::Vector;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::NFT::{Self, NFT};
+    use StarcoinFramework::Option::{Self, Option};
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Vector;
 
     const ERR_NFT_NOT_EXISTS: u64 = 101;
 
@@ -750,7 +750,7 @@ module NFTGallery {
 }
 
 module NFTGalleryScripts {
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
 
     spec module {
         pragma verify = false;

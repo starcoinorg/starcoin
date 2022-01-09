@@ -1,8 +1,8 @@
-address Std {
+address StarcoinFramework {
 /// The module provide operations for FixedPoint32.
 module FixedPoint32 {
 
-    use Std::Errors;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify;

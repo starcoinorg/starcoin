@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// The modules define SIP.
 /// Only the SIP that needs to do hard forked needs to be defined here, every SIP as a module, and can be a feature flag.
 

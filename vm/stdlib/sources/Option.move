@@ -1,9 +1,9 @@
-address Std {
+address StarcoinFramework {
 
 /// This module defines the Option type and its methods to represent and handle an optional value.
 module Option {
-    use Std::Errors;
-    use Std::Vector;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Vector;
 
     /// Abstraction of a value that may or may not be present. Implemented with a vector of size
     /// zero or one because Move bytecode does not have ADTs.

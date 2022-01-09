@@ -1,14 +1,14 @@
-address Std {
+address StarcoinFramework {
     /// The module provides strategies for module upgrading.
     module PackageTxnManager {
-        use Std::Option::{Self,Option};
-        use Std::Signer;
-        use Std::CoreAddresses;
-        use Std::Errors;
-        use Std::Version;
-        use Std::Event;
-        use Std::Config;
-        use Std::Timestamp;
+        use StarcoinFramework::Option::{Self,Option};
+        use StarcoinFramework::Signer;
+        use StarcoinFramework::CoreAddresses;
+        use StarcoinFramework::Errors;
+        use StarcoinFramework::Version;
+        use StarcoinFramework::Event;
+        use StarcoinFramework::Config;
+        use StarcoinFramework::Timestamp;
 
         spec module {
             pragma verify = false;

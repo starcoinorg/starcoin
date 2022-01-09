@@ -1,6 +1,6 @@
-address Std {
+address StarcoinFramework {
 module AccountScripts {
-    use Std::Account;
+    use StarcoinFramework::Account;
     /// Enable account's auto-accept-token feature.
     /// The script function is reenterable.
     public(script) fun enable_auto_accept_token(account: signer) {

@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 /// Block module provide metadata for generated blocks.
 module Block {
-    use Std::Event;
-    use Std::Timestamp;
-    use Std::Signer;
-    use Std::CoreAddresses;
-    use Std::Errors;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify;

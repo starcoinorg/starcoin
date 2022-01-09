@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 module LanguageVersion {
     struct LanguageVersion has copy, drop, store {
         major: u64,

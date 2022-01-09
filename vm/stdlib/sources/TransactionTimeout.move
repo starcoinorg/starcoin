@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 /// A module used to check expiration time of transactions.
 module TransactionTimeout {
-  use Std::CoreAddresses;
-  use Std::Timestamp;
-  use Std::Block;
-  use Std::TransactionTimeoutConfig;
-  use Std::Config;
+  use StarcoinFramework::CoreAddresses;
+  use StarcoinFramework::Timestamp;
+  use StarcoinFramework::Block;
+  use StarcoinFramework::TransactionTimeoutConfig;
+  use StarcoinFramework::Config;
 
   spec module {
       pragma verify;

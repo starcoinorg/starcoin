@@ -1,12 +1,12 @@
-address Std {
+address StarcoinFramework {
 /// The module provide configuration of consensus parameters.
 module ConsensusConfig {
-    use Std::Config;
-    use Std::Signer;
-    use Std::CoreAddresses;
-    use Std::Errors;
-    use Std::Timestamp;
-    use Std::Math;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Math;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

@@ -1,9 +1,9 @@
-module Std::GenesisNFT {
-    use Std::IdentifierNFT;
-    use Std::Option::Option;
-    use Std::NFT::{Self, MintCapability};
-    use Std::MerkleNFTDistributor;
-    use Std::CoreAddresses;
+module StarcoinFramework::GenesisNFT {
+    use StarcoinFramework::IdentifierNFT;
+    use StarcoinFramework::Option::Option;
+    use StarcoinFramework::NFT::{Self, MintCapability};
+    use StarcoinFramework::MerkleNFTDistributor;
+    use StarcoinFramework::CoreAddresses;
 
     spec module {
         pragma verify = false;
@@ -63,8 +63,8 @@ module Std::GenesisNFT {
     }
 }
 
-module Std::GenesisNFTScripts {
-    use Std::GenesisNFT;
+module StarcoinFramework::GenesisNFTScripts {
+    use StarcoinFramework::GenesisNFT;
 
     spec module {
         pragma verify = false;

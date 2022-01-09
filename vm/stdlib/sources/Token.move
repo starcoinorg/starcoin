@@ -1,10 +1,10 @@
-address Std {
+address StarcoinFramework {
 /// Token implementation of Starcoin.
 module Token {
-    use Std::Event;
-    use Std::Signer;
-    use Std::Errors;
-    use Std::Math;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Math;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

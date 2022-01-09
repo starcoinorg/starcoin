@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 /// Deprecated since @v3 please use Collection2
 /// Provide a account based vector for save resource.
 module Collection {
-    use Std::Signer;
-    use Std::Errors;
-    use Std::Vector;
-    use Std::Option::{Self, Option};
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Option::{Self, Option};
 
     spec module {
         pragma verify = false;

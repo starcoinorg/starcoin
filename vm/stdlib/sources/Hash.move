@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 /// The module provide sha-hash functionality for Move.
 module Hash {
     spec module {

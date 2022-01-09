@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-address Std {
+address StarcoinFramework {
 module YieldFarming {
-    use Std::Token;
-    use Std::Errors;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Errors;
 
     const EDEPRECATED_FUNCTION: u64 = 19;
     const ERR_FARMING_INIT_REPEATE: u64 = 101;

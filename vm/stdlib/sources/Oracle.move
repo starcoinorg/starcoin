@@ -1,13 +1,13 @@
-address Std {
+address StarcoinFramework {
 module Oracle {
-    use Std::Event;
-    use Std::Timestamp;
-    use Std::Signer;
-    use Std::Vector;
-    use Std::CoreAddresses;
-    use Std::Errors;
-    use Std::Account;
-    use Std::GenesisSignerCapability;
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::GenesisSignerCapability;
 
     struct OracleInfo<phantom OracleT: copy+store+drop, Info: copy+store+drop> has key {
         ///The datasource counter
@@ -61,7 +61,7 @@ module Oracle {
     public fun initialize(_sender: &signer) {
     }
 
-    /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `Std::GenesisSignerCapability`.
+    /// Used in v7->v8 upgrade. struct `GenesisSignerCapability` is deprecated, in favor of module `StarcoinFramework::GenesisSignerCapability`.
     public fun extract_signer_cap(signer: &signer): Account::SignerCapability acquires GenesisSignerCapability{
         CoreAddresses::assert_genesis_address(signer);
         let cap = move_from<GenesisSignerCapability>(Signer::address_of(signer));
@@ -186,8 +186,8 @@ module Oracle {
     }
 }
 module PriceOracle{
-    use Std::Math;
-    use Std::Oracle::{Self, DataRecord, UpdateCapability};
+    use StarcoinFramework::Math;
+    use StarcoinFramework::Oracle::{Self, DataRecord, UpdateCapability};
 
     struct PriceOracleInfo has copy,store,drop{
         scaling_factor: u128,
@@ -236,8 +236,8 @@ module PriceOracle{
 }
 
 module STCUSDOracle{
-    use Std::Oracle::{DataRecord};
-    use Std::PriceOracle::{Self};
+    use StarcoinFramework::Oracle::{DataRecord};
+    use StarcoinFramework::PriceOracle::{Self};
 
     /// The STC to USD price oracle
     struct STCUSD has copy,store,drop {}
@@ -260,7 +260,7 @@ module STCUSDOracle{
 }
 
 module PriceOracleScripts{
-    use Std::PriceOracle;
+    use StarcoinFramework::PriceOracle;
 
     public(script) fun register_oracle<OracleT: copy+store+drop>(sender: signer, precision: u8){
         PriceOracle::register_oracle<OracleT>(&sender, precision)
@@ -276,12 +276,12 @@ module PriceOracleScripts{
 }
 
 module PriceOracleAggregator{
-    use Std::Vector;
-    use Std::Oracle;
-    use Std::PriceOracle;
-    use Std::Math;
-    use Std::Timestamp;
-    use Std::Errors;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Oracle;
+    use StarcoinFramework::PriceOracle;
+    use StarcoinFramework::Math;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Errors;
 
     /// No price data match requirement condition.
     const ERR_NO_PRICE_DATA_AVIABLE:u64 = 101;

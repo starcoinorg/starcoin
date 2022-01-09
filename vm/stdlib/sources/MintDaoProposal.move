@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 /// MintDaoProposal is a dao proposal for mint extra tokens.
 module MintDaoProposal {
-    use Std::Token;
-    use Std::Signer;
-    use Std::Dao;
-    use Std::Account;
-    use Std::Errors;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -57,8 +57,8 @@ module MintDaoProposal {
         );
     }
     spec propose_mint_to {
-        use Std::Timestamp;
-        use Std::CoreAddresses;
+        use StarcoinFramework::Timestamp;
+        use StarcoinFramework::CoreAddresses;
         pragma aborts_if_is_partial = false;
 
         // copy from Dao::propose spec.
@@ -86,7 +86,7 @@ module MintDaoProposal {
     }
 
     spec execute_mint_proposal {
-        use Std::Option;
+        use StarcoinFramework::Option;
         pragma aborts_if_is_partial = true;
         let expected_states = vec<u8>(6);
         include Dao::CheckProposalStates<TokenT, MintToken>{expected_states};

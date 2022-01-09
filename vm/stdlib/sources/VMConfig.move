@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 /// `VMConfig` keep track of VM related configuration, like gas schedule.
 module VMConfig {
-    use Std::Config;
-    use Std::Signer;
-    use Std::CoreAddresses;
-    use Std::Vector;
-    use Std::ChainId;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::ChainId;
     spec module {
         pragma verify = false;
         pragma aborts_if_is_strict;

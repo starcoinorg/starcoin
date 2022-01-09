@@ -1,20 +1,20 @@
-address Std {
+address StarcoinFramework {
 /// STC is the token of Starcoin blockchain.
 /// It uses apis defined in the `Token` module.
 module STC {
-    use Std::Token::{Self, Token};
-    use Std::Dao;
-    use Std::ModifyDaoConfigProposal;
-    use Std::UpgradeModuleDaoProposal;
-    use Std::PackageTxnManager;
-    use Std::OnChainConfigDao;
-    use Std::TransactionPublishOption;
-    use Std::VMConfig;
-    use Std::ConsensusConfig;
-    use Std::RewardConfig;
-    use Std::TransactionTimeoutConfig;
-    use Std::Treasury;
-    use Std::CoreAddresses;
+    use StarcoinFramework::Token::{Self, Token};
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::VMConfig;
+    use StarcoinFramework::ConsensusConfig;
+    use StarcoinFramework::RewardConfig;
+    use StarcoinFramework::TransactionTimeoutConfig;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::CoreAddresses;
 
     spec module {
         pragma verify = false;

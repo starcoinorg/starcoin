@@ -32,7 +32,7 @@ use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
 
-/// Details about a Diem account.
+/// Details about a Starcoin account.
 ///
 /// Tests will typically create a set of `Account` instances to run transactions on. This type
 /// encodes the logic to operate on and verify operations on any Diem account.

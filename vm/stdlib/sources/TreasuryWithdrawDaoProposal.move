@@ -1,12 +1,12 @@
-address Std {
+address StarcoinFramework {
 /// TreasuryWithdrawDaoProposal is a dao proposal for withdraw Token from Treasury.
 module TreasuryWithdrawDaoProposal {
-    use Std::Token::{Self,Token};
-    use Std::Signer;
-    use Std::Dao;
-    use Std::Errors;
-    use Std::Treasury;
-    use Std::CoreAddresses;
+    use StarcoinFramework::Token::{Self,Token};
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::CoreAddresses;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -66,8 +66,8 @@ module TreasuryWithdrawDaoProposal {
         );
     }
     spec propose_withdraw {
-        use Std::Timestamp;
-        use Std::CoreAddresses;
+        use StarcoinFramework::Timestamp;
+        use StarcoinFramework::CoreAddresses;
         pragma aborts_if_is_partial = false;
         let quorum_votes = Dao::spec_quorum_votes<TokenT>();
         aborts_if amount > quorum_votes;
@@ -98,7 +98,7 @@ module TreasuryWithdrawDaoProposal {
     }
 
     spec execute_withdraw_proposal {
-        use Std::Option;
+        use StarcoinFramework::Option;
         pragma aborts_if_is_partial = true;
         let expected_states = vec<u8>(6);
         include Dao::CheckProposalStates<TokenT, WithdrawToken>{expected_states};

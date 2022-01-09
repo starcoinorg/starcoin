@@ -1,16 +1,16 @@
-address Std {
+address StarcoinFramework {
 /// The module provide epoch functionality for starcoin.
 module Epoch {
-    use Std::Config;
-    use Std::Signer;
-    use Std::CoreAddresses;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::CoreAddresses;
 
-    use Std::Event;
-    use Std::Errors;
-    use Std::Timestamp;
-    use Std::Math;
-    use Std::Option;
-    use Std::ConsensusConfig::{Self, ConsensusConfig};
+    use StarcoinFramework::Event;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Math;
+    use StarcoinFramework::Option;
+    use StarcoinFramework::ConsensusConfig::{Self, ConsensusConfig};
 
     spec module {
         pragma verify;

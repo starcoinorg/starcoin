@@ -1069,7 +1069,7 @@ Get LinearWithdrawCapability start_time in seconds
 
 <pre><code><b>aborts_if</b> period == 0;
 <b>aborts_if</b> amount == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(Std::CoreAddresses::SPEC_GENESIS_ADDRESS());
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(StarcoinFramework::CoreAddresses::SPEC_GENESIS_ADDRESS());
 </code></pre>
 
 
@@ -1118,7 +1118,7 @@ Get LinearWithdrawCapability start_time in seconds
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(Std::CoreAddresses::SPEC_GENESIS_ADDRESS());
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(StarcoinFramework::CoreAddresses::SPEC_GENESIS_ADDRESS());
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &lt; cap.start_time;
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - cap.start_time &gt;= cap.period && cap.total &lt; cap.withdraw;
 <b>aborts_if</b> [abstract] <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - cap.start_time &lt; cap.period && <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>() &lt; cap.withdraw;

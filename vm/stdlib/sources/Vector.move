@@ -1,4 +1,4 @@
-address Std {
+address StarcoinFramework {
 
 /// A variable-sized container that can hold any type. Indexing is 0-based, and
 /// vectors are growable. This module has many native functions.

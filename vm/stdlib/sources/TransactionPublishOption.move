@@ -1,12 +1,12 @@
-address Std {
+address StarcoinFramework {
 /// `TransactionPublishOption` provide an option to limit:
 /// - whether user can use script or publish custom modules on chain.
 module TransactionPublishOption {
-    use Std::Config;
-    use Std::Timestamp;
-    use Std::CoreAddresses;
-    use Std::Errors;
-    use Std::Signer;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Signer;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme

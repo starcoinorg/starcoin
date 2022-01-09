@@ -1,11 +1,11 @@
-address Std {
+address StarcoinFramework {
 /// OnChainConfigDao is a DAO proposal for modify onchain configuration.
 module OnChainConfigDao {
-    use Std::Token;
-    use Std::Signer;
-    use Std::Config;
-    use Std::Dao;
-    use Std::Errors;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -57,8 +57,8 @@ module OnChainConfigDao {
     }
 
     spec propose_update {
-        use Std::Timestamp;
-        use Std::CoreAddresses;
+        use StarcoinFramework::Timestamp;
+        use StarcoinFramework::CoreAddresses;
         pragma aborts_if_is_partial = false;
 
         // copy from Dao::propose spec.

@@ -1,12 +1,12 @@
-address Std {
+address StarcoinFramework {
 /// `TransactionFee` collect gas fees used by transactions in blocks temporarily.
 /// Then they are distributed in `TransactionManager`.
 module TransactionFee {
-    use Std::Token::{Self, Token};
-    use Std::CoreAddresses;
-    use Std::Signer;
-    use Std::STC::{STC};
-    use Std::Timestamp;
+    use StarcoinFramework::Token::{Self, Token};
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::STC::{STC};
+    use StarcoinFramework::Timestamp;
 
     spec module {
         pragma verify;

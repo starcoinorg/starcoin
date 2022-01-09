@@ -1,9 +1,9 @@
-address Std {
+address StarcoinFramework {
 /// The module provides chain id information.
 module ChainId {
-    use Std::CoreAddresses;
-    use Std::Timestamp;
-    use Std::Signer;
+    use StarcoinFramework::CoreAddresses;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
 
     spec module {
         pragma verify;

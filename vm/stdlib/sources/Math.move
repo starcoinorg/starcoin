@@ -1,7 +1,7 @@
-address Std {
+address StarcoinFramework {
 /// The module provide some improved math calculations.
 module Math {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
 
     // TODO: verify the module.
     spec module {

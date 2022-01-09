@@ -1,13 +1,13 @@
 
-address Std {
+address StarcoinFramework {
 /// Move representation of the authenticator types
 /// - Ed25519 (single-sig)
 /// - MultiEd25519 (K-of-N multisig)
 module Authenticator {
-    use Std::Hash;
-    use Std::BCS;
-    use Std::Vector;
-    use Std::Errors;
+    use StarcoinFramework::Hash;
+    use StarcoinFramework::BCS;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Errors;
 
     spec module {
         pragma verify;
