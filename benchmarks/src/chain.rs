@@ -151,6 +151,7 @@ impl ChainBencher {
             let block = ConsensusStrategy::Dummy
                 .create_block(block_template, self.net.time_service().as_ref())
                 .unwrap();
+            println!("trans len {}", block.transactions().len());
             self.chain.write().apply(block).unwrap();
         }
     }
