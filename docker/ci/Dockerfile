@@ -10,6 +10,7 @@ RUN /starcoin/scripts/dev_setup.sh -b -t -y -o -p && \
 
 ENV DOTNET_ROOT "${HOME}/.dotnet"
 ENV Z3_EXE "${HOME}/bin/z3"
-ENV CVC4_EXE "${HOME}/bin/cvc4"
+#ENV CVC4_EXE "${HOME}/bin/cvc4"
+ENV CVC5_EXE "${HOME}/bin/cvc5"
 ENV BOOGIE_EXE "${DOTNET_ROOT}/tools/boogie"
 ENV PATH "${HOME}/.cargo/bin:/usr/lib/golang/bin:${HOME}/bin:${DOTNET_ROOT}:${DOTNET_ROOT}/tools:$PATH"
