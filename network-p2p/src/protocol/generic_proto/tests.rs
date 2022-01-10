@@ -26,7 +26,10 @@ use libp2p::core::{
     transport::MemoryTransport,
     upgrade, ConnectedPoint,
 };
-use libp2p::swarm::{DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters, ProtocolsHandler, Swarm, SwarmEvent};
+use libp2p::swarm::{
+    DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
+    ProtocolsHandler, Swarm, SwarmEvent,
+};
 use libp2p::{identity, noise, yamux};
 use libp2p::{Multiaddr, PeerId, Transport};
 use std::{
@@ -101,11 +104,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
                 .collect(),
         };
 
-        let mut swarm = Swarm::new(
-            transport,
-            behaviour,
-            keypairs[index].public().to_peer_id(),
-        );
+        let mut swarm = Swarm::new(transport, behaviour, keypairs[index].public().to_peer_id());
         Swarm::listen_on(&mut swarm, addrs[index].clone()).unwrap();
         out.push(swarm);
     }
@@ -181,7 +180,8 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         endpoint: &ConnectedPoint,
         handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
-        self.inner.inject_connection_closed(peer_id, conn, endpoint, handler)
+        self.inner
+            .inject_connection_closed(peer_id, conn, endpoint, handler)
     }
 
     fn inject_event(
@@ -201,7 +201,12 @@ impl NetworkBehaviour for CustomProtoWithAddr {
         self.inner.poll(cx, params)
     }
 
-    fn inject_dial_failure(&mut self, peer_id: Option<PeerId>, handler: Self::ProtocolsHandler, error: &DialError) {
+    fn inject_dial_failure(
+        &mut self,
+        peer_id: Option<PeerId>,
+        handler: Self::ProtocolsHandler,
+        error: &DialError,
+    ) {
         self.inner.inject_dial_failure(peer_id, handler, error)
     }
 
@@ -259,8 +264,8 @@ fn reconnect_after_disconnect() {
 
             match event {
                 future::Either::Left(SwarmEvent::Behaviour(
-                                         GenericProtoOut::CustomProtocolOpen { .. },
-                                     )) => match service1_state {
+                    GenericProtoOut::CustomProtocolOpen { .. },
+                )) => match service1_state {
                     ServiceState::NotConnected => {
                         service1_state = ServiceState::FirstConnec;
                         if service2_state == ServiceState::FirstConnec {
@@ -274,16 +279,16 @@ fn reconnect_after_disconnect() {
                     ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
                 },
                 future::Either::Left(SwarmEvent::Behaviour(
-                                         GenericProtoOut::CustomProtocolClosed { .. },
-                                     )) => match service1_state {
+                    GenericProtoOut::CustomProtocolClosed { .. },
+                )) => match service1_state {
                     ServiceState::FirstConnec => service1_state = ServiceState::Disconnected,
                     ServiceState::ConnectedAgain
                     | ServiceState::NotConnected
                     | ServiceState::Disconnected => panic!(),
                 },
                 future::Either::Right(SwarmEvent::Behaviour(
-                                          GenericProtoOut::CustomProtocolOpen { .. },
-                                      )) => match service2_state {
+                    GenericProtoOut::CustomProtocolOpen { .. },
+                )) => match service2_state {
                     ServiceState::NotConnected => {
                         service2_state = ServiceState::FirstConnec;
                         if service1_state == ServiceState::FirstConnec {
@@ -297,8 +302,8 @@ fn reconnect_after_disconnect() {
                     ServiceState::FirstConnec | ServiceState::ConnectedAgain => panic!(),
                 },
                 future::Either::Right(SwarmEvent::Behaviour(
-                                          GenericProtoOut::CustomProtocolClosed { .. },
-                                      )) => match service2_state {
+                    GenericProtoOut::CustomProtocolClosed { .. },
+                )) => match service2_state {
                     ServiceState::FirstConnec => service2_state = ServiceState::Disconnected,
                     ServiceState::ConnectedAgain
                     | ServiceState::NotConnected
