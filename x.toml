@@ -49,7 +49,7 @@ warn = [
 [hakari]
 version = "v2"
 hakari-package = "diem-workspace-hack"
-unify-target-host = "replicate-target-as-host"
+unify-target-host = "replicate-target-on-host"
 
 [[hakari.platforms]]
 triple = "x86_64-unknown-linux-gnu"
