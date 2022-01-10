@@ -872,7 +872,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_grcov
   install_pkg git "$PACKAGE_MANAGER"
   install_lcov "$PACKAGE_MANAGER"
-  install_nodejs "$PACKAGE_MANAGER"
+  #install_nodejs "$PACKAGE_MANAGER"
 fi
 
 if [[ "$OPERATIONS" == "true" ]]; then
