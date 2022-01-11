@@ -4,7 +4,7 @@
 //! Test infrastructure for modeling Diem accounts.
 
 use crate::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_account_api::{AccountPrivateKey, AccountPublicKey};
+use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey};
 use starcoin_config::genesis_key_pair;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::ed25519::*;
@@ -124,6 +124,10 @@ impl Account {
     /// The address does not change if the account's [keys are rotated][Account::rotate_key].
     pub fn address(&self) -> &AccountAddress {
         &self.addr
+    }
+
+    pub fn info(&self) -> AccountInfo {
+        AccountInfo::new(self.addr, self.public_key().clone(), false, false)
     }
 
     /// Returns the AccessPath that describes the Account resource instance.

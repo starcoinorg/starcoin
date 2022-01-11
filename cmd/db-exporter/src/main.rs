@@ -5,7 +5,6 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
 use indicatif::{ProgressBar, ProgressStyle};
-use starcoin_account_api::AccountInfo;
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -647,7 +646,8 @@ pub fn gen_block_transactions(
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
     if !create_account {
-        execute_transaction_with_create_account(storage.clone(), &mut chain, &net, block_num);
+        //execute_transaction_with_create_account(storage.clone(), &mut chain, &net, block_num);
+        execute_transaction_with_miner_create_account(storage.clone(), &mut chain, &net, block_num);
     } else {
         execute_transaction_with_fixed_account(storage.clone(), &mut chain, &net, block_num);
     }
@@ -661,21 +661,20 @@ pub fn execute_transaction_with_create_account(
     block_num: u64,
 ) {
     let mut sequence = 0u64;
-    let accout = AccountInfo::random();
     for _i in 0..block_num {
         let mut txns = Vec::with_capacity(20);
-        let minter_account = Account::new();
+        let miner_account = Account::new();
+        let miner_info = miner_account.info();
         let mut send_sequence = 0u64;
         let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
-            &minter_account,
+            &miner_account,
             sequence,
             50_000_000,
-            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME / 100,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net,
         ));
         txns.push(txn.as_signed_user_txn().unwrap().clone());
         sequence += 1;
-        //let max_txns = (block_gas_limit / 200) * 2;
         let max_txns = 200;
         for _j in 0..max_txns / 2 {
             let receiver = Account::new();
@@ -683,17 +682,17 @@ pub fn execute_transaction_with_create_account(
                 &receiver,
                 sequence,
                 1000,
-                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME / 100,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net,
             ));
             txns.push(txn1.as_signed_user_txn().unwrap().clone());
             sequence += 1;
             let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
-                &minter_account,
+                &miner_account,
                 &receiver,
                 send_sequence,
-                1000,
-                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME / 100,
+                1,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
             txns.push(txn1.as_signed_user_txn().unwrap().clone());
@@ -701,16 +700,71 @@ pub fn execute_transaction_with_create_account(
         }
 
         let (block_template, _) = chain
-            .create_block_template(*accout.address(), None, txns, vec![], None)
+            .create_block_template(*miner_info.address(), None, txns, vec![], None)
             .unwrap();
         let block = ConsensusStrategy::Dummy
             .create_block(block_template, net.time_service().as_ref())
             .unwrap();
-        if block.transactions().len() >= max_txns {
+        if block.transactions().len() <= max_txns {
             println!("trans {}", block.transactions().len());
         }
         let block_hash = block.header.id();
-        chain.apply_with_verifier::<NoneVerifier>(block).unwrap();
+        chain.apply_with_verifier::<BasicVerifier>(block).unwrap();
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info).unwrap();
+    }
+}
+
+pub fn execute_transaction_with_miner_create_account(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+) {
+    let miner_account = Account::new();
+    let miner_info = miner_account.info();
+    let mut send_sequence = 0u64;
+    let (block_template, _) = chain
+        .create_block_template(*miner_info.address(), None, vec![], vec![], None)
+        .unwrap();
+    let block = ConsensusStrategy::Dummy
+        .create_block(block_template, net.time_service().as_ref())
+        .unwrap();
+    let block_hash = block.header.id();
+    chain.apply_with_verifier::<BasicVerifier>(block).unwrap();
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info).unwrap();
+    for _i in 0..block_num {
+        let mut sequence = send_sequence;
+        let mut txns = vec![];
+        let max_txns = 1500;
+        for _j in 0..max_txns {
+            let receiver = Account::new();
+            let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                &miner_account,
+                &receiver,
+                sequence,
+                1,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ));
+            txns.push(txn1.as_signed_user_txn().unwrap().clone());
+            sequence += 1;
+        }
+
+        let (block_template, _) = chain
+            .create_block_template(*miner_info.address(), None, txns, vec![], None)
+            .unwrap();
+        let block = ConsensusStrategy::Dummy
+            .create_block(block_template, net.time_service().as_ref())
+            .unwrap();
+        if block.transactions().len() <= max_txns {
+            println!("trans {}", block.transactions().len());
+        }
+        send_sequence += block.transactions().len() as u64;
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block).unwrap();
 
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info).unwrap();
@@ -732,7 +786,7 @@ pub fn execute_transaction_with_fixed_account(
             &minter_account,
             sequence,
             50_000_000,
-            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME / 100,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net,
         ));
         txns.push(txn.as_signed_user_txn().unwrap().clone());
@@ -746,7 +800,7 @@ pub fn execute_transaction_with_fixed_account(
                 &receiver,
                 sequence,
                 10_000,
-                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME / 100,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net,
             )); */
             txns.push(txn.as_signed_user_txn().unwrap().clone());
@@ -756,7 +810,7 @@ pub fn execute_transaction_with_fixed_account(
                 &receiver,
                 send_sequence,
                 10,
-                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME / 100,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
             txns.push(txn1.as_signed_user_txn().unwrap().clone());
@@ -768,6 +822,6 @@ pub fn execute_transaction_with_fixed_account(
         let block = ConsensusStrategy::Dummy
             .create_block(block_template, net.time_service().as_ref())
             .unwrap();
-        chain.apply_with_verifier::<FullVerifier>(block).unwrap();
+        chain.apply_with_verifier::<BasicVerifier>(block).unwrap();
     }
 }
