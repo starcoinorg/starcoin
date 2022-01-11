@@ -8,7 +8,6 @@ use include_dir::{include_dir, Dir};
 use log::{info, LevelFilter};
 use move_bytecode_verifier::{dependencies, verify_module};
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
-use move_compiler::shared::NumericalAddress;
 use move_compiler::FullyCompiledProgram;
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
@@ -20,7 +19,7 @@ use starcoin_move_compiler::diagnostics::{
     report_diagnostics_to_color_buffer, unwrap_or_report_diagnostics,
 };
 use starcoin_move_compiler::shared::Flags;
-use starcoin_move_compiler::Compiler;
+pub use starcoin_move_compiler::{starcoin_framework_named_addresses, Compiler};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
@@ -108,19 +107,6 @@ static COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy::new(|
 });
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
-
-pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress> {
-    let mapping = [
-        ("VMReserved", "0x0"),
-        ("Genesis", "0x1"),
-        ("StarcoinFramework", "0x1"),
-        ("StarcoinAssociation", "0xA550C18"),
-    ];
-    mapping
-        .iter()
-        .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap()))
-        .collect()
-}
 
 pub static PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
     let sources = stdlib_files();

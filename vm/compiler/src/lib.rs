@@ -11,7 +11,7 @@ use crate::diagnostics::report_diagnostics_to_color_buffer;
 use anyhow::{bail, ensure, Result};
 use move_compiler::compiled_unit::AnnotatedCompiledUnit;
 use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
-use move_compiler::shared::Flags;
+use move_compiler::shared::{Flags, NumericalAddress};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -19,7 +19,7 @@ use starcoin_vm_types::compatibility::Compatibility;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::normalized::Module;
 use starcoin_vm_types::{errors::Location, errors::VMResult};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -45,6 +45,19 @@ pub mod compiled_unit {
 
 pub mod shared {
     pub use move_compiler::shared::*;
+}
+
+pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress> {
+    let mapping = [
+        ("VMReserved", "0x0"),
+        ("Genesis", "0x1"),
+        ("StarcoinFramework", "0x1"),
+        ("StarcoinAssociation", "0xA550C18"),
+    ];
+    mapping
+        .iter()
+        .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap()))
+        .collect()
 }
 
 // pub mod test_utils {
@@ -155,6 +168,7 @@ pub fn compile_source_string_no_report(
         .expect("temp file path must is str.")
         .to_string()];
     let compiler = move_compiler::Compiler::new(&targets, deps)
+        .set_named_address_values(starcoin_framework_named_addresses())
         .set_flags(Flags::empty().set_sources_shadow_deps(true));
     compiler.build()
 }

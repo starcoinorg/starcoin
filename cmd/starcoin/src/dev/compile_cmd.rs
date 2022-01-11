@@ -10,7 +10,9 @@ use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
 use starcoin_move_compiler::shared::Flags;
-use starcoin_move_compiler::{compile_source_string_no_report, Compiler};
+use starcoin_move_compiler::{
+    compile_source_string_no_report, starcoin_framework_named_addresses, Compiler,
+};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
@@ -99,6 +101,7 @@ impl CommandAction for CompileCommand {
         } else {
             let targets = vec![source_file_or_dir.to_string_lossy().to_string()];
             Compiler::new(&targets, &deps)
+                .set_named_address_values(starcoin_framework_named_addresses())
                 .set_flags(Flags::empty().set_sources_shadow_deps(true))
                 .build()?
         };
