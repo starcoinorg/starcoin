@@ -5,6 +5,7 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
 use indicatif::{ProgressBar, ProgressStyle};
+use starcoin_account_api::AccountInfo;
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -36,7 +37,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::SystemTime;
 use structopt::StructOpt;
-use starcoin_account_api::AccountInfo;
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
@@ -568,7 +568,9 @@ pub fn apply_block(
     bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply block use time: {:?}", use_time.as_secs());
-    let chain_info = storage.get_chain_info()?.ok_or_else(|| format_err!( "{}", "get chain_info error"))?;
+    let chain_info = storage
+        .get_chain_info()?
+        .ok_or_else(|| format_err!("{}", "get chain_info error"))?;
     println!("chain_info {}", chain_info);
     Ok(())
 }

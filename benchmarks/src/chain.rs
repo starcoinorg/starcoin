@@ -11,13 +11,13 @@ use starcoin_config::{temp_path, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_executor::{Account, DEFAULT_EXPIRATION_TIME};
+use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::transaction::Transaction;
-use starcoin_genesis::Genesis;
 use std::sync::Arc;
 
 /// Benchmarking support for chain.
@@ -121,7 +121,7 @@ impl ChainBencher {
             ));
             txns.push(txn.as_signed_user_txn().unwrap().clone());
             self.sequence += 1;
-            for _j in 0..self.transaction_num/2 {
+            for _j in 0..self.transaction_num / 2 {
                 let receiver = Account::new();
                 let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
                     &receiver,
@@ -159,7 +159,7 @@ impl ChainBencher {
     pub fn execute_transaction_with_fixed_account(&mut self) {
         let mut txns = Vec::with_capacity(20);
         let mut accounts = vec![];
-        for _i in 0..self.transaction_num/2 {
+        for _i in 0..self.transaction_num / 2 {
             let account = Account::new();
             let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
                 &account,
