@@ -6,9 +6,9 @@
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::STC::STC;
-    use Std::Treasury;
-    //use Std::Debug;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury;
+    //use StarcoinFramework::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
@@ -25,10 +25,10 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::Offer;
-    use Std::STC::STC;
-    use Std::Treasury;
-    use Std::Account;
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::Account;
 
     fun bob_take_linear_key_from_offer(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
@@ -47,9 +47,9 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Offer;
-    use Std::STC::STC;
-    use Std::Treasury::{Self, LinearWithdrawCapability};
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury::{Self, LinearWithdrawCapability};
 
     fun alice_take_linear_key_from_offer(account: signer) {
         let cap = Offer::redeem<LinearWithdrawCapability<STC>>(&account, @StarcoinAssociation);

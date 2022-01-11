@@ -11,16 +11,16 @@
 // when gas used out, the txn is kept, the state is unchanged except balance is set to 0.
 
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
 
     fun main(account: signer) {
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
-        Account::pay_from<Std::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
+        Account::pay_from<StarcoinFramework::STC::STC>(&account, @bob, 10);
         // gas used out
     }
 }
@@ -32,12 +32,12 @@ script {
 
 //# run --signers default
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
 
     fun main() {
         // check the state is unchanged
-        assert!(Account::balance<Std::STC::STC>(@bob) == 1000, 42);
-        assert!(Account::balance<Std::STC::STC>(@alice) == 300, 43);
+        assert!(Account::balance<StarcoinFramework::STC::STC>(@bob) == 1000, 42);
+        assert!(Account::balance<StarcoinFramework::STC::STC>(@alice) == 300, 43);
     }
 }
 

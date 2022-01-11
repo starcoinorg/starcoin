@@ -16,10 +16,10 @@
 
 //# publish
 module default::SortedLinkedList {
-    use Std::Compare;
-    use Std::BCS;
-    use Std::Signer;
-    use Std::Vector;
+    use StarcoinFramework::Compare;
+    use StarcoinFramework::BCS;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Vector;
 
     struct EntryHandle has copy, drop, store {
         //address where the Node is stored
@@ -411,9 +411,9 @@ script {
 
 module nameservice::NameService {
     use default::SortedLinkedList::{Self, EntryHandle};
-    use Std::Block;
-    use Std::Signer;
-    use Std::Vector;
+    use StarcoinFramework::Block;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Vector;
 
     //TODO use constants when Move support constants, '5' is used for example
     const EXPIRE_AFTER: u64 = 5;

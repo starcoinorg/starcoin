@@ -6,7 +6,7 @@
 // Test fot public key validation
 
 script {
-use Std::Signature;
+use StarcoinFramework::Signature;
 
 fun main() {
 
@@ -28,9 +28,9 @@ fun main() {
 
 // test ecrecover
 script {
-    use Std::Signature;
-    use Std::EVMAddress::{Self, EVMAddress};
-    use Std::Option::{Self, Option};
+    use StarcoinFramework::Signature;
+    use StarcoinFramework::EVMAddress::{Self, EVMAddress};
+    use StarcoinFramework::Option::{Self, Option};
 
     fun main() {
         //test success

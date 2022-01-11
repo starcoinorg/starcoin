@@ -6,11 +6,11 @@
 
 //# publish
 module creator::BoxMiner {
-    use Std::NFT::{Self, NFT, MintCapability};
-    use Std::Account;
-    use Std::NFTGallery;
-    use Std::STC::STC;
-    use Std::Signer;
+    use StarcoinFramework::NFT::{Self, NFT, MintCapability};
+    use StarcoinFramework::Account;
+    use StarcoinFramework::NFTGallery;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Signer;
 
     struct BoxMiner has copy, store, drop{
         price: u128,
@@ -69,7 +69,7 @@ script {
 //# run --signers alice
 script {
     use creator::BoxMiner;
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
     fun main(sender: signer) {
         let nft = BoxMiner::mint(&sender);
         NFTGallery::deposit(&sender, nft);

@@ -7,9 +7,9 @@
 
 //# publish
 module creator::AnyNFT {
-    use Std::NFT::{Self, NFT, MintCapability, BurnCapability};
-    use Std::NFTGallery;
-    use Std::Signer;
+    use StarcoinFramework::NFT::{Self, NFT, MintCapability, BurnCapability};
+    use StarcoinFramework::NFTGallery;
+    use StarcoinFramework::Signer;
     struct AnyNFT has copy, store, drop{}
     struct AnyNFTBody has store{
     }
@@ -90,11 +90,11 @@ script {
 
 //# run --signers bob
 script {
-use Std::Option;
+use StarcoinFramework::Option;
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
-use Std::Vector;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
+use StarcoinFramework::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft_info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, 1);
@@ -116,11 +116,11 @@ fun main(sender: signer) {
 
 //# run --signers bob
 script {
-use Std::Option;
+use StarcoinFramework::Option;
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
-use Std::Vector;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
+use StarcoinFramework::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft_info = NFTGallery::get_nft_info_by_id<AnyNFT, AnyNFTBody>(sender_addr, 1);
@@ -147,9 +147,9 @@ fun main(sender: signer) {
 //# run --signers bob
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
-use Std::Vector;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
+use StarcoinFramework::Vector;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft_infos = NFTGallery::get_nft_infos<AnyNFT, AnyNFTBody>(sender_addr);
@@ -163,9 +163,9 @@ fun main(sender: signer) {
 //# run --signers bob --gas-budget 40000000
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
-use Std::Option;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
+use StarcoinFramework::Option;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let id = 1;
@@ -186,8 +186,8 @@ fun main(sender: signer) {
 //# run --signers bob --gas-budget 40000000
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let idx = 0;
@@ -207,8 +207,8 @@ fun main(sender: signer) {
 //# run --signers bob
 script {
 use creator::AnyNFT::{AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let count = NFTGallery::count_of<AnyNFT, AnyNFTBody>(sender_addr);
@@ -223,7 +223,7 @@ fun main(sender: signer) {
 //# run --signers bob
 script {
 use creator::AnyNFT::{Self, AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
+use StarcoinFramework::NFTGallery;
 fun main(sender: signer) {
     let nft = NFTGallery::withdraw_one<AnyNFT, AnyNFTBody>(&sender);
     AnyNFT::burn(nft);
@@ -236,8 +236,8 @@ fun main(sender: signer) {
 //# run --signers bob
 script {
 use creator::AnyNFT::{Self, AnyNFT, AnyNFTBody};
-use Std::NFTGallery;
-use Std::Option;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Option;
 fun main(sender: signer) {
     //withdraw by id  use more gas than withdraw one
     let nft = NFTGallery::withdraw<AnyNFT, AnyNFTBody>(&sender, 1);

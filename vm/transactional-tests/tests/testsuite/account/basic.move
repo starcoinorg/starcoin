@@ -8,7 +8,7 @@
 
 //# publish
 module default::Holder {
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     struct Hold<T> has key, store {
         x: T
@@ -30,8 +30,8 @@ module default::Holder {
 //# run --signers bob
 
 script {
-    use Std::STC::STC;
-    use Std::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
     fun main(account: signer) {
         let with_cap = Account::extract_withdraw_capability(&account);
         Account::pay_from_capability<STC>(&with_cap, @bob, 10, x"");
@@ -43,7 +43,7 @@ script {
 
 //# run --signers bob
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     fun main(account: signer) {
         let rot_cap = Account::extract_key_rotation_capability(&account);
         Account::rotate_authentication_key_with_capability(&rot_cap, x"123abc");
@@ -57,7 +57,7 @@ script {
 
 //# run --signers default
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     use default::Holder;
     fun main(account: signer) {
         Holder::hold(
@@ -75,8 +75,8 @@ script {
 
 //# run --signers default
 script {
-    use Std::Account;
-    use Std::Signer;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
     fun main(sender: signer) {
         let cap = Account::extract_key_rotation_capability(&sender);
         assert!(
@@ -98,8 +98,8 @@ script {
 //# run --signers bob
 
 script {
-    use Std::Account;
-    use Std::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
     fun main(account: signer) {
         let with_cap = Account::extract_withdraw_capability(&account);
         Account::pay_from_capability<STC>(&with_cap, @alice, 10000, x"");
@@ -113,7 +113,7 @@ script {
 // test core address
 
 script {
-    use Std::CoreAddresses;
+    use StarcoinFramework::CoreAddresses;
     fun main() {
        assert!(CoreAddresses::VM_RESERVED_ADDRESS() == @0x0, 100);
     }
@@ -122,9 +122,9 @@ script {
 
 //# run --signers default
 script {
-use Std::Account;
-use Std::STC::STC;
-use Std::Authenticator;
+use StarcoinFramework::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Authenticator;
 fun main() {
     let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
     let expected_address = Authenticator::derived_address(dummy_auth_key);
@@ -137,8 +137,8 @@ fun main() {
 
 //# run --signers bob
 script {
-use Std::Account;
-use Std::Signer;
+use StarcoinFramework::Account;
+use StarcoinFramework::Signer;
 fun main(account: signer) {
     let seq = Account::sequence_number(Signer::address_of(&account));
     assert!(seq == 3, seq);
@@ -150,8 +150,8 @@ fun main(account: signer) {
 //# run --signers bob
 
 script {
-use Std::Account;
-use Std::STC::STC;
+use StarcoinFramework::Account;
+use StarcoinFramework::STC::STC;
 fun main(account: signer) {
     Account::pay_from<STC>(&account, @alice, 0u128);
 }

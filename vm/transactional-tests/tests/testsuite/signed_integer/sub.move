@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::SignedInteger64;
+use StarcoinFramework::SignedInteger64;
 
 fun main() {
     let i1 = SignedInteger64::create_from_raw_value(100, false);

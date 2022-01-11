@@ -4,7 +4,7 @@
 
 //# publish
 module default::Swapper {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
     public fun call(x: u64) {
         swap_it_up(x)
     }

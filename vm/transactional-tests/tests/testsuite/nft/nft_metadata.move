@@ -6,9 +6,9 @@
 
 //# publish
 module creator::Card {
-    use Std::Timestamp;
-    use Std::NFT::{Self, NFT, Metadata, MintCapability, BurnCapability, UpdateCapability};
-    use Std::Signer;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::NFT::{Self, NFT, Metadata, MintCapability, BurnCapability, UpdateCapability};
+    use StarcoinFramework::Signer;
 
     struct Card has copy, store, drop{
         upgrade_time: u64,
@@ -100,7 +100,7 @@ script {
 
 //# run --signers bob
 script {
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
     use creator::Card;
     fun main(sender: signer) {
         let first = Card::mint(&sender);
@@ -117,7 +117,7 @@ script {
 
 //# run --signers bob
 script {
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
     use creator::Card::{Self, Card, CardBody};
     fun main(sender: signer) {
         let first = NFTGallery::withdraw_one<Card, CardBody>(&sender);
@@ -132,9 +132,9 @@ script {
 //# run --signers bob
 script {
     use creator::Card::{Self, Card, CardBody};
-    use Std::NFTGallery;
-    use Std::Signer;
-    use Std::NFT;
+    use StarcoinFramework::NFTGallery;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::NFT;
 
     fun main(sender: signer) {
         assert!(NFTGallery::count_of<Card, CardBody>(Signer::address_of(&sender)) == 1, 1001);
@@ -155,7 +155,7 @@ script {
 //# run --signers creator
 script {
     use creator::Card::{Self, Card};
-    use Std::NFT;
+    use StarcoinFramework::NFT;
 
     fun main(sender: signer) {
         let type_meta = NFT::nft_type_info_meta<Card>();

@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::FixedPoint32;
+use StarcoinFramework::FixedPoint32;
 
 fun main() {
     // The maximum value is 2^32 - 1. Check that anything larger aborts

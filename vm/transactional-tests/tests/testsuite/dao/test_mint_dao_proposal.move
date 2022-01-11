@@ -7,9 +7,9 @@
 //# publish
 
 module alice::MyToken {
-    use Std::Token;
-    use Std::MintDaoProposal;
-    use Std::Dao;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::MintDaoProposal;
+    use StarcoinFramework::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -33,8 +33,8 @@ module alice::MyToken {
 
 script {
     use alice::MyToken::{MyToken, Self};
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -54,8 +54,8 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
     use alice::MyToken::{MyToken};
     fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
@@ -72,7 +72,7 @@ script {
 
 script {
     use alice::MyToken::MyToken;
-    use Std::Account;
+    use StarcoinFramework::Account;
 
     fun accept_token(account: signer) {
         Account::do_accept_token<MyToken>(&account);
@@ -86,9 +86,9 @@ script {
 
 
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     use alice::MyToken::MyToken;
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     fun transfer_some_token_to_bob(signer: signer) {
         let balance = Account::balance<MyToken>(Signer::address_of(&signer));
@@ -114,7 +114,7 @@ script {
 
 script {
     use alice::MyToken::MyToken;
-    use Std::MintDaoProposal;
+    use StarcoinFramework::MintDaoProposal;
 
     fun test_plugin_fail(account: signer) {
         MintDaoProposal::plugin<MyToken>(&account); //ERR_NOT_AUTHORIZED
@@ -140,7 +140,7 @@ script {
 //# run --signers alice
 
 script {
-    use Std::MintDaoProposal;
+    use StarcoinFramework::MintDaoProposal;
     use alice::MyToken::MyToken;
 
     fun propose(signer: signer) {
@@ -157,11 +157,11 @@ script {
 
 
 script {
-    use Std::MintDaoProposal;
+    use StarcoinFramework::MintDaoProposal;
     use alice::MyToken::MyToken;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Dao;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
 
     fun vote(signer: signer) {
         let balance = Account::balance<MyToken>(Signer::address_of(&signer));
@@ -178,9 +178,9 @@ script {
 
 
 script {
-    use Std::MintDaoProposal;
-    use Std::Account;
-    use Std::Dao;
+    use StarcoinFramework::MintDaoProposal;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun queue_proposal(signer: signer) {
@@ -205,9 +205,9 @@ script {
 
 
 script {
-    use Std::MintDaoProposal;
-    use Std::Dao;
-    use Std::Account;
+    use StarcoinFramework::MintDaoProposal;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
     use alice::MyToken::MyToken;
 
     fun execute_proposal_action(_signer: signer) {

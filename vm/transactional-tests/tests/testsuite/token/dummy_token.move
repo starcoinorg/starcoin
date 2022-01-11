@@ -7,10 +7,10 @@
 
 //# run --signers alice
 script {
-use Std::DummyToken::{Self, DummyToken};
-use Std::Token;
-use Std::Account;
-use Std::Signer;
+use StarcoinFramework::DummyToken::{Self, DummyToken};
+use StarcoinFramework::Token;
+use StarcoinFramework::Account;
+use StarcoinFramework::Signer;
 fun main(account: signer) {
     let account_address = Signer::address_of(&account);
     let old_market_cap = Token::market_cap<DummyToken>();
@@ -27,10 +27,10 @@ fun main(account: signer) {
 
 //# run --signers alice
 script {
-    use Std::DummyToken::{Self, DummyToken};
-    use Std::Token;
-    use Std::Account;
-    use Std::Signer;
+    use StarcoinFramework::DummyToken::{Self, DummyToken};
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
     fun test_burn(account: signer) {
         let account_address = Signer::address_of(&account);
         let old_market_cap = Token::market_cap<DummyToken>();
@@ -47,10 +47,10 @@ script {
 
 //# run --signers alice
 script {
-    use Std::DummyToken::{Self, DummyToken};
-    use Std::Token;
-    use Std::Account;
-    use Std::Signer;
+    use StarcoinFramework::DummyToken::{Self, DummyToken};
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
     fun amount_exceed_limit(account: signer) {
         let account_address = Signer::address_of(&account);
         let old_market_cap = Token::market_cap<DummyToken>();

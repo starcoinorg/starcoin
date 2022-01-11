@@ -5,7 +5,7 @@
 //# run --signers creator
 
 script {
-    use Std::Math::sqrt;
+    use StarcoinFramework::Math::sqrt;
     fun main(_signer: signer) {
          assert!(sqrt(0) == 0, 0);
          assert!(sqrt(1) == 1, 1);

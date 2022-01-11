@@ -4,16 +4,16 @@
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::STC::STC;
-    use Std::Treasury;
-    //use Std::Debug;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury;
+    //use StarcoinFramework::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         assert!(Treasury::get_linear_withdraw_capability_total(&cap) == 477770400000000000, 1000);
         assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
         assert!(Treasury::get_linear_withdraw_capability_start_time(&cap) == 0, 1002);
-        Std::Debug::print(&Treasury::get_linear_withdraw_capability_period(&cap));
+        StarcoinFramework::Debug::print(&Treasury::get_linear_withdraw_capability_period(&cap));
         assert!(Treasury::get_linear_withdraw_capability_period(&cap) ==86400, 1003);
         Treasury::add_linear_withdraw_capability(&account, cap);
     }
@@ -23,11 +23,11 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Treasury;
-    use Std::Token;
-    use Std::Debug;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Debug;
 
     fun mint(account: signer) {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
@@ -44,16 +44,16 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Treasury;
-    use Std::Token;
-    //use Std::Debug;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::Token;
+    //use StarcoinFramework::Debug;
 
     fun mint(account: signer) {
         let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
-        Std::Debug::print(&Token::value(&token));
+        StarcoinFramework::Debug::print(&Token::value(&token));
         assert!(Token::value(&token) == 19907100000000000, 1005);
         Treasury::add_linear_withdraw_capability(&account, linear_cap);
         Account::deposit_to_self(&account, token);
@@ -65,16 +65,16 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Treasury;
-    use Std::Token;
-    //use Std::Debug;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Treasury;
+    use StarcoinFramework::Token;
+    //use StarcoinFramework::Debug;
 
     fun mint(account: signer) {
         let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
         let token = Treasury::withdraw_with_linear_capability(&mut cap);
-        Std::Debug::print(&Token::value(&token));
+        StarcoinFramework::Debug::print(&Token::value(&token));
         assert!(Token::value(&token) == (477770400000000000 - 19907100000000000*2), 1006);
         Account::deposit_to_self(&account, token);
         assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == Treasury::get_linear_withdraw_capability_total(&cap), 1007);

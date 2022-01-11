@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::ConsensusStrategy;
+use StarcoinFramework::ConsensusStrategy;
 
 fun main() {
     assert!(ConsensusStrategy::get() == 0, 1);

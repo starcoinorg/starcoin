@@ -10,14 +10,14 @@
 //# publish
 //this is a x service's membership nft example
 module creator::XMembership {
-    use Std::NFT::{Self, MintCapability, BurnCapability, UpdateCapability};
-    use Std::IdentifierNFT;
-    use Std::Token::{Self, Token};
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Timestamp;
-    use Std::Signer;
-    use Std::Option;
+    use StarcoinFramework::NFT::{Self, MintCapability, BurnCapability, UpdateCapability};
+    use StarcoinFramework::IdentifierNFT;
+    use StarcoinFramework::Token::{Self, Token};
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Option;
 
     struct XMembershipInfo has copy, store, drop, key{
         price_per_millis: u128,

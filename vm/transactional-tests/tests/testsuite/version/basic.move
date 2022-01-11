@@ -4,8 +4,8 @@
 
 //# run --signers alice
 script{
-use Std::Version;
-use Std::Config;
+use StarcoinFramework::Version;
+use StarcoinFramework::Config;
 fun main(account: signer) {
     Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
 }
@@ -13,8 +13,8 @@ fun main(account: signer) {
 
 //# run --signers alice
 script{
-use Std::Version;
-use Std::Signer;
+use StarcoinFramework::Version;
+use StarcoinFramework::Signer;
 fun main(account: signer) {
     let version = Version::get(Signer::address_of(&account));
     assert!(version == 1, 100);

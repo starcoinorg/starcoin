@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::Epoch;
+    use StarcoinFramework::Epoch;
 
     fun epoch_data() {
         // default value should be consistent with genesis config

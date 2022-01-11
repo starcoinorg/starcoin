@@ -6,8 +6,8 @@
 
 //# publish
 module alice::MyToken {
-    use Std::Token;
-    use Std::Dao;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -25,8 +25,8 @@ module alice::MyToken {
 //# run --signers alice
 script {
     use alice::MyToken::{MyToken, Self};
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -41,8 +41,8 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
     use alice::MyToken::{MyToken};
     fun main(account: signer) {
         // mint 100 coins and check that the market cap increases appropriately
@@ -57,8 +57,8 @@ script {
 // default upgrade strategy is arbitrary
 //# run --signers alice
 script {
-    use Std::PackageTxnManager;
-    use Std::Signer;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::Signer;
     fun main(account: signer) {
         let hash = x"1111111111111111";
         PackageTxnManager::check_package_txn(Signer::address_of(&account), hash);
@@ -69,10 +69,10 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Config;
-    use Std::Version;
-    use Std::PackageTxnManager;
-    use Std::Option;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Version;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::Option;
     fun main(account: signer) {
         Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
         PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(0));
@@ -81,9 +81,9 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::PackageTxnManager;
-    use Std::STC::STC;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::STC::STC;
 
     fun test_plugin_fail(account: signer) {
         let upgrade_plan_cap = PackageTxnManager::extract_submit_upgrade_plan_cap(&account);
@@ -94,8 +94,8 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::PackageTxnManager;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::PackageTxnManager;
     use alice::MyToken::MyToken;
 
 
@@ -109,8 +109,8 @@ fun test_plugin(account: signer) {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::STC::STC;
 
     fun test_propose_fail(account: signer) {
         let module_address = @alice;
@@ -130,7 +130,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
 
     fun test_propose(account: signer) {
@@ -154,11 +154,11 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::Dao;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Account;
-    use Std::Signer;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
 
     fun vote_proposal(signer: signer) {
         let proposal_id = 0;
@@ -174,8 +174,8 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::Dao;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun queue_proposal(_signer: signer) {
@@ -192,9 +192,9 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
-    use Std::Dao;
+    use StarcoinFramework::Dao;
 
     fun test_submit_plan(_account: signer) {
         let proposal_id = 0;

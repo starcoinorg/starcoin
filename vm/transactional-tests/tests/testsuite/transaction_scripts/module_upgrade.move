@@ -8,8 +8,8 @@
 
 //# publish
 module alice::MyToken {
-    use Std::Token;
-    use Std::Dao;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -27,8 +27,8 @@ module alice::MyToken {
 //# run --signers alice
 script {
     use alice::MyToken::{MyToken, Self};
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -40,10 +40,10 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Config;
-    use Std::Version;
-    use Std::PackageTxnManager;
-    use Std::Option;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Version;
+    use StarcoinFramework::PackageTxnManager;
+    use StarcoinFramework::Option;
 
     fun update_module_upgrade_strategy(account: signer) {
         Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
@@ -53,8 +53,8 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::PackageTxnManager;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::PackageTxnManager;
     use alice::MyToken::MyToken;
 
     fun plugin(account: signer) {
@@ -66,7 +66,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::UpgradeModuleDaoProposal;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
 
     fun propose_module_upgrade(account: signer) {
@@ -91,9 +91,9 @@ script {
 
 //# run --signers alice --args @alice --args 0 --args true --args 500u128
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::Dao;
-    use Std::Account;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
     use alice::MyToken::MyToken;
 
     fun cast_vote(
@@ -113,8 +113,8 @@ script {
 //# run --signers alice --args @alice --args 0
 
 script {
-    use Std::UpgradeModuleDaoProposal;
-    use Std::Dao;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun queue_proposal_action(_signer: signer,
@@ -131,7 +131,7 @@ script {
 //# run --signers alice --args @alice --args 0
 
 script {
-    use Std::UpgradeModuleDaoProposal;
+    use StarcoinFramework::UpgradeModuleDaoProposal;
     use alice::MyToken::MyToken;
 
     fun submit_module_upgrade_plan(_account: signer, proposer_address: address, proposal_id: u64) {

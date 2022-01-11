@@ -7,9 +7,9 @@
 //# run --signers Genesis
 // Minting by genesis
 script {
-use Std::STC::{STC};
-use Std::Token;
-use Std::Account;
+use StarcoinFramework::STC::{STC};
+use StarcoinFramework::Token;
+use StarcoinFramework::Account;
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
     let old_market_cap = Token::market_cap<STC>();
@@ -30,9 +30,9 @@ fun main(account: signer) {
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::STC::{Self, STC};
-    use Std::Token;
-    use Std::Account;
+    use StarcoinFramework::STC::{Self, STC};
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Account;
     fun test_burn(account: signer) {
 
         let market_cap = Token::market_cap<STC>();

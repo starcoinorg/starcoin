@@ -11,9 +11,9 @@
 
 //# publish
 module sys::SortedLinkedList {
-    use Std::Compare;
-    use Std::BCS;
-    use Std::Signer;
+    use StarcoinFramework::Compare;
+    use StarcoinFramework::BCS;
+    use StarcoinFramework::Signer;
 
     struct Node<T> has key, store {
         prev: address, //account address where the previous node is stored (head if no previous node exists)
@@ -260,9 +260,9 @@ module sys::SortedLinkedList {
 // the account address of each list node is actually the owner of the token
 module nftservice::NonFungibleToken {
     use sys::SortedLinkedList;
-    use Std::Option::{Self, Option};
-    use Std::Signer;
-    use Std::Vector;
+    use StarcoinFramework::Option::{Self, Option};
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Vector;
 
     struct LimitedMeta has key, store {
         limited: bool,
@@ -364,7 +364,7 @@ module nftservice::TestNft {
 module alice::MoveNft {
     use nftservice::NonFungibleToken::{Self, NonFungibleToken};
     use nftservice::TestNft::TestNft;
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     struct MoveNft has key, store {
         nft: NonFungibleToken<TestNft>
@@ -398,7 +398,7 @@ fun main(account: signer) {
 script {
 use nftservice::NonFungibleToken;
 use nftservice::TestNft::{Self, TestNft};
-use Std::Hash;
+use StarcoinFramework::Hash;
 fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
@@ -434,7 +434,7 @@ fun main(account: signer) {
 script {
 use nftservice::NonFungibleToken;
 use nftservice::TestNft::TestNft;
-use Std::Hash;
+use StarcoinFramework::Hash;
 fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);
@@ -458,7 +458,7 @@ fun main(account: signer) {
 script {
 use nftservice::NonFungibleToken;
 use nftservice::TestNft::TestNft;
-use Std::Hash;
+use StarcoinFramework::Hash;
 fun main(account: signer) {
     let input = b"input";
     let token_id = Hash::sha2_256(input);

@@ -4,8 +4,8 @@
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
-    use Std::Epoch;
+    use StarcoinFramework::ConsensusConfig;
+    use StarcoinFramework::Epoch;
 
     fun compute_next_block_time_target() {
         let uncle_rate_target = 80;

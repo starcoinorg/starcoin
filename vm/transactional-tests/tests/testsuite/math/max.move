@@ -4,8 +4,8 @@
 
 //# run --signers creator
 script {
-    use Std::Math;
-    use Std::Debug;
+    use StarcoinFramework::Math;
+    use StarcoinFramework::Debug;
     fun main(_signer: signer) {
         Debug::print(&Math::u64_max());
         Debug::print(&Math::u128_max());

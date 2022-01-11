@@ -54,7 +54,7 @@ module alice::Token {
 //# publish
 module bob::ToddNickles {
     use alice::Token;
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     struct T has copy, drop, store {}
 

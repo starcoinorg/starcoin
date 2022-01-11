@@ -4,9 +4,9 @@
 
 //# run --signers Genesis
 script {
-use Std::ConsensusConfig;
-use Std::Epoch;
-//use Std::Debug;
+use StarcoinFramework::ConsensusConfig;
+use StarcoinFramework::Epoch;
+//use StarcoinFramework::Debug;
 
     fun adjust_epoch_block_time(genesis_account: signer) {
         let block_number = 1;

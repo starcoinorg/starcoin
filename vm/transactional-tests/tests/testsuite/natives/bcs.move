@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::BCS;
+    use StarcoinFramework::BCS;
     fun main() {
         let data = b"ff";
         let _addr = BCS::to_address(data);
@@ -17,7 +17,7 @@ script {
 // Test for BCS serialization in Move
 
 script {
-    use Std::BCS;
+    use StarcoinFramework::BCS;
 
     fun main() {
         // address

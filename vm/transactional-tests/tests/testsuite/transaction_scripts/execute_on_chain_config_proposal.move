@@ -9,7 +9,7 @@
 
 //# run --signers alice --args false --args false --args 0
 script {
-    use Std::OnChainConfigScripts;
+    use StarcoinFramework::OnChainConfigScripts;
 
     fun main(account: signer,
              script_allowed: bool,
@@ -22,10 +22,10 @@ script {
 
 //# run --signers bob --args @alice --args 0 --args true --args 39814200010000000u128
 script {
-    use Std::DaoVoteScripts;
-    use Std::STC::STC;
-    use Std::OnChainConfigDao::OnChainConfigUpdate;
-    use Std::TransactionPublishOption::TransactionPublishOption;
+    use StarcoinFramework::DaoVoteScripts;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::OnChainConfigDao::OnChainConfigUpdate;
+    use StarcoinFramework::TransactionPublishOption::TransactionPublishOption;
 
     fun main(account: signer,
             proposer_address: address,
@@ -47,10 +47,10 @@ script {
 
 //# run --signers bob --args @alice --args 0
 script {
-    use Std::Dao;
-    use Std::STC::STC;
-    use Std::OnChainConfigDao::OnChainConfigUpdate;
-    use Std::TransactionPublishOption::TransactionPublishOption;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::OnChainConfigDao::OnChainConfigUpdate;
+    use StarcoinFramework::TransactionPublishOption::TransactionPublishOption;
 
     fun main(_account: signer,
             proposer_address: address,
@@ -65,10 +65,10 @@ script {
 
 //# run --signers bob --args @alice --args 0
 script {
-    use Std::DaoVoteScripts;
-    use Std::STC::STC;
-    use Std::OnChainConfigDao::OnChainConfigUpdate;
-    use Std::TransactionPublishOption::TransactionPublishOption;
+    use StarcoinFramework::DaoVoteScripts;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::OnChainConfigDao::OnChainConfigUpdate;
+    use StarcoinFramework::TransactionPublishOption::TransactionPublishOption;
 
     fun main(account: signer,
             proposer_address: address,
@@ -87,8 +87,8 @@ script {
 //# run --signers alice  --args 0
 
 script {
-    use Std::OnChainConfigScripts;
-    use Std::TransactionPublishOption::TransactionPublishOption;
+    use StarcoinFramework::OnChainConfigScripts;
+    use StarcoinFramework::TransactionPublishOption::TransactionPublishOption;
 
     fun main(account: signer, proposal_id: u64) {
         OnChainConfigScripts::execute_on_chain_config_proposal<TransactionPublishOption>(

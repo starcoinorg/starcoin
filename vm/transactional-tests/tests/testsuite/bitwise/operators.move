@@ -6,7 +6,7 @@
 //# run --signers alice
 // test bitwise operator
 script {
-    use Std::BitOperators::{and, or, xor, not, lshift, rshift};
+    use StarcoinFramework::BitOperators::{and, or, xor, not, lshift, rshift};
 fun main() {
     assert!(and(0u64, 0u64) == 0u64, 2000);
     assert!(or(0u64, 0u64) == 0u64, 2001);
@@ -30,7 +30,7 @@ fun main() {
 // test bit operator overflow
 
 script {
-    use Std::BitOperators::{and, or, xor, lshift, rshift};
+    use StarcoinFramework::BitOperators::{and, or, xor, lshift, rshift};
 fun main() {
     assert!(and(18446744073709551615u64, 18446744073709551615u64) == 18446744073709551615u64, 1101);
     assert!(or(18446744073709551615u64, 18446744073709551615u64) == 18446744073709551615u64, 1102);

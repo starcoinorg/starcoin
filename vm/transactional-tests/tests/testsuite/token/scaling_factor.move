@@ -7,8 +7,8 @@
 
 //# publish
 module alice::MyToken {
-    use Std::Token;
-    use Std::Signer;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
 
     struct MyToken has copy, drop, store { }
 
@@ -49,7 +49,7 @@ MyToken::init(&account, 3);
 //# run --signers alice
 script {
 use alice::MyToken::MyToken;
-use Std::Token;
+use StarcoinFramework::Token;
 
 fun main(_account: signer) {
     let sf = Token::scaling_factor<MyToken>();

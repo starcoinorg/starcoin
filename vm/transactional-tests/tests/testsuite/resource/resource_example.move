@@ -7,7 +7,7 @@
 
 //# publish
 module alice::Example {
-    use Std::Signer;
+    use StarcoinFramework::Signer;
     public fun new(): R {
         R { x: true }
     }

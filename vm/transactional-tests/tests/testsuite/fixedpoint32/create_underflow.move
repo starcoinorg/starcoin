@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::FixedPoint32;
+use StarcoinFramework::FixedPoint32;
 
 fun main() {
     // The minimum non-zero value is 2^-32. Check that anything smaller

@@ -5,11 +5,11 @@
 
 //# run --signers alice
 script {
-    use Std::Vector;
-    use Std::Signer;
-    use Std::Option;
-    use Std::NFT;
-    use Std::GenesisNFT::{Self, GenesisNFTMeta};
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Option;
+    use StarcoinFramework::NFT;
+    use StarcoinFramework::GenesisNFT::{Self, GenesisNFTMeta};
     //TODO: generate the real root and proof
     fun main(sender: signer) {
         let proof = Vector::empty<vector<u8>>();

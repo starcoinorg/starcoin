@@ -5,8 +5,8 @@
 //# run --signers alice
 // Tests for polymorphic comparison in Move
 script {
-    use Std::Compare;
-    use Std::BCS;
+    use StarcoinFramework::Compare;
+    use StarcoinFramework::BCS;
 
     const EQUAL: u8 = 0;
     const LESS_THAN: u8 = 1;

@@ -30,8 +30,8 @@ module default::TestR {
 
 
 script {
-    use Std::Collection2;
-    use Std::Signer;
+    use StarcoinFramework::Collection2;
+    use StarcoinFramework::Signer;
     use default::TestR::{Self,TestR};
 
     fun test_single(signer: signer) {
@@ -46,8 +46,8 @@ script {
 
 
 script {
-    use Std::Collection2;
-    use Std::Signer;
+    use StarcoinFramework::Collection2;
+    use StarcoinFramework::Signer;
     use default::TestR::{Self, TestR};
 
     fun test_single(signer: signer) {
@@ -65,8 +65,8 @@ script {
 
 
 script {
-    use Std::Collection2;
-    use Std::Signer;
+    use StarcoinFramework::Collection2;
+    use StarcoinFramework::Signer;
     use default::TestR::{Self,TestR};
 
     fun test_multi(signer: signer) {
@@ -85,8 +85,8 @@ script {
 
 
 script {
-    use Std::Collection2;
-    use Std::Signer;
+    use StarcoinFramework::Collection2;
+    use StarcoinFramework::Signer;
     use default::TestR::{Self, TestR};
 
     fun test_borrow_by_owner(signer: signer) {
@@ -111,7 +111,7 @@ script {
 
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_borrow_by_other(signer: signer) {
@@ -128,7 +128,7 @@ script {
 
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_remove_by_other(signer: signer) {
@@ -147,8 +147,8 @@ script {
 
 
 script {
-    use Std::Collection2;
-    use Std::Signer;
+    use StarcoinFramework::Collection2;
+    use StarcoinFramework::Signer;
     use default::TestR::{Self, TestR};
 
     fun test_remove_by_owner(signer: signer) {
@@ -174,8 +174,8 @@ script {
 
 
 script {
-    use Std::Collection2;
-    use Std::Signer;
+    use StarcoinFramework::Collection2;
+    use StarcoinFramework::Signer;
     use default::TestR::{TestR};
 
     fun test_remove_by_owner(signer: signer) {

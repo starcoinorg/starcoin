@@ -7,8 +7,8 @@
 
 //# publish
 module alice::MyToken {
-    use Std::Token;
-    use Std::Signer;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
 
     struct MyToken has copy, drop, store { }
 
@@ -25,8 +25,8 @@ module alice::MyToken {
 //# run --signers alice
 script {
     use alice::MyToken::{MyToken, Self};
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -41,8 +41,8 @@ script {
 
 //# run --signers alice
 script {
-use Std::Account;
-use Std::Token;
+use StarcoinFramework::Account;
+use StarcoinFramework::Token;
 use alice::MyToken::{MyToken};
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
@@ -56,7 +56,7 @@ fun main(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Token;
+use StarcoinFramework::Token;
 use alice::MyToken::{MyToken};
 fun test_withdraw_and_burn(account: signer) {
     let cap = Token::remove_burn_capability<MyToken>(&account);
@@ -66,9 +66,9 @@ fun test_withdraw_and_burn(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Token;
+use StarcoinFramework::Token;
 use alice::MyToken::{MyToken};
-use Std::Account;
+use StarcoinFramework::Account;
 fun test_withdraw_and_burn(account: signer) {
     let market_cap = Token::market_cap<MyToken>();
     assert!(market_cap == 10000, 8004);
@@ -83,7 +83,7 @@ fun test_withdraw_and_burn(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Token;
+use StarcoinFramework::Token;
 use alice::MyToken::MyToken;
 fun test_mint_and_burn(account: signer) {
     let old_market_cap = Token::market_cap<MyToken>();
@@ -97,9 +97,9 @@ fun test_mint_and_burn(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Token;
+use StarcoinFramework::Token;
 use alice::MyToken::{MyToken};
-use Std::Account;
+use StarcoinFramework::Account;
 fun test_withdraw_and_burn(account: signer) {
     let zero = Account::withdraw<MyToken>(&account, 0);
     Token::destroy_zero<MyToken>(zero);
@@ -110,7 +110,7 @@ fun test_withdraw_and_burn(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Token;
+use StarcoinFramework::Token;
 use alice::MyToken::{MyToken};
 fun test_withdraw_and_burn(account: signer) {
     let burn_cap = Token::remove_burn_capability<MyToken>(&account);

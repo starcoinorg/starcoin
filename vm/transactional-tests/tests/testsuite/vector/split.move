@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
     fun split() {
 
         let vec = Vector::empty<u64>();
@@ -29,7 +29,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
     fun split() {
 
         let vec = Vector::empty<u64>();

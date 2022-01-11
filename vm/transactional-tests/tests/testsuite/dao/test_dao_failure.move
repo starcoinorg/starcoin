@@ -14,9 +14,9 @@
 
 
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Signer;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Signer;
 
     fun transfer_some_token_to_alice_and_bob(signer: signer) {
         let balance = Account::balance<STC>(Signer::address_of(&signer));
@@ -32,8 +32,8 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
     fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 101, 0, 0);
     }
@@ -45,8 +45,8 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
     fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
@@ -59,8 +59,8 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
     fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
@@ -72,8 +72,8 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
     fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
@@ -88,10 +88,10 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
     fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@bob, 1);
         assert!(state == 2, (state as u64));
@@ -109,11 +109,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
     fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 2, (state as u64));
@@ -133,11 +133,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
     fun vote(signer: signer) {
         // flip
         Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @alice, 0, false);
@@ -160,11 +160,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun cast(signer: signer) {
         {
             let balance = Account::balance<STC>(Signer::address_of(&signer));
@@ -181,11 +181,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun cast(signer: signer) {
         {
             let balance = Account::balance<STC>(Signer::address_of(&signer));
@@ -202,11 +202,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 2, (state as u64));
@@ -223,11 +223,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 2, (state as u64));
@@ -244,9 +244,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun flip_vote(signer: signer) {
         // flip
         Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @bob, 1, false);
@@ -260,9 +260,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun flip_vote(signer: signer) {
         // flip
         Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @alice, 0, true);
@@ -276,9 +276,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun flip_vote(signer: signer) {
         // flip
         Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @alice, 1, false);
@@ -292,10 +292,10 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
     fun unstake_votes(signer: signer) {
         let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @bob, 1);
         Account::deposit_to_self(&signer, coin);
@@ -311,9 +311,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun check_state_and_revoke(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
@@ -329,10 +329,10 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
     fun unstake_votes(signer: signer) {
         let coin = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @bob, 1);
         Account::deposit_to_self(&signer, coin);
@@ -346,11 +346,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
@@ -369,9 +369,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
@@ -386,11 +386,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
@@ -408,9 +408,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun queue_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
@@ -432,9 +432,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun execute_proposal_action(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 6, (state as u64));
@@ -458,9 +458,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun cleanup_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 7, (state as u64));
@@ -475,9 +475,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun cleanup_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@bob, 1);
         assert!(state == 3, (state as u64));
@@ -493,9 +493,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun cleanup_proposal(_signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@bob, 1);
         assert!(state == 3, (state as u64));
@@ -510,8 +510,8 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
     fun propose(signer: signer) {
         ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
@@ -527,11 +527,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
     fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 2);
         assert!(state == 2, (state as u64));
@@ -550,11 +550,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Signer;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Account;
     fun check_state_and_revoke(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 2);
         assert!(state == 2, (state as u64));
@@ -572,9 +572,9 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun flip_vote(signer: signer) {
         // flip
         Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(&signer, @alice, 2, false);
@@ -588,11 +588,11 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Dao;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
     fun vote(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 2);
         assert!(state == 2, (state as u64));
@@ -614,10 +614,10 @@ script {
 
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
-    use Std::Dao;
-    use Std::Account;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::Account;
     fun unstake_votes(signer: signer) {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(@alice, 2);
         assert!(state == 3, (state as u64));

@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::Vector;
+use StarcoinFramework::Vector;
 fun main() {
     let vec = Vector::empty<u64>();
 
@@ -26,7 +26,7 @@ fun main() {
 
 //# run --signers alice
 script {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
     fun main() {
         let vec = Vector::empty<u64>();
         Vector::reverse<u64>(&mut vec);

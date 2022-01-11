@@ -6,8 +6,8 @@
 //# run --signers alice
 // Create some valid multisig policies and compute their auth keys
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let pubkey1 = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
     let pubkey2 = x"4b2a60883383be0ba24ed79aa5a6c9379728099a7b0c57edcec193a14ea5fce2";
@@ -53,8 +53,8 @@ fun main() {
 // empty policy should  be rejected
 
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let keys = Vector::empty<vector<u8>>();
     Authenticator::create_multi_ed25519(keys, 0);
@@ -70,8 +70,8 @@ fun main() {
 // bad threshold should be rejected (threshold 1 for empty keys)
 
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let keys = Vector::empty<vector<u8>>();
     Authenticator::create_multi_ed25519(keys, 1);
@@ -85,8 +85,8 @@ fun main() {
 
 //# run --signers alice
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let pubkey = x"";
 
@@ -110,8 +110,8 @@ fun main() {
 // bad threshold should be rejected (threshold 2 for 1 key)
 
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let keys = Vector::empty<vector<u8>>();
     Vector::push_back(
@@ -132,8 +132,8 @@ fun main() {
 // bad threshold should be rejected (threshold 0 for 1 address)
 
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let keys = Vector::empty<vector<u8>>();
     Vector::push_back(
@@ -154,8 +154,8 @@ fun main() {
 // 1-of-1 multi-ed25519 should have a different auth key than ed25519 with the same public key
 
 script {
-use Std::Authenticator;
-use Std::Vector;
+use StarcoinFramework::Authenticator;
+use StarcoinFramework::Vector;
 fun main() {
     let pubkey = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
     let keys = Vector::empty<vector<u8>>();
@@ -183,9 +183,9 @@ fun main() {
 
 //# run --signers alice
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
     fun main() {
         let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
         let expected_address = Authenticator::derived_address(dummy_auth_key);
@@ -197,7 +197,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Authenticator;
+    use StarcoinFramework::Authenticator;
     fun main() {
         let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a"; // wrong length
         let _address = Authenticator::derived_address(dummy_auth_key);

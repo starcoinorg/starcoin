@@ -8,9 +8,9 @@
 //# run --signers alice
 // create txn sender account
 script {
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Authenticator;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Authenticator;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
@@ -27,10 +27,10 @@ script {
 //# run --signers alice
 // prologue sender is not genesis
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -63,10 +63,10 @@ script {
 //# run --signers Genesis
 // gas is not enough
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -94,10 +94,10 @@ script {
 //# run --signers Genesis
 // invalid pub key
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -126,10 +126,10 @@ script {
 //# run --signers Genesis
 // sequence number too new
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -160,10 +160,10 @@ script {
 //# run --signers Genesis
 // successfully executed
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -209,10 +209,10 @@ script {
 //# run --signers Genesis
 // sequence number too old
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -243,10 +243,10 @@ script {
 //# run --signers Genesis
 // epilouge insufficient balance
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
@@ -278,10 +278,10 @@ script {
 //# run --signers alice
 // epilogue sender is not genesis
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Authenticator;
-    use Std::Vector;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Authenticator;
+    use StarcoinFramework::Vector;
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);

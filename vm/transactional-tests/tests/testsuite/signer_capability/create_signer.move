@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     fun main(signer: signer) {
         let cap = Account::remove_signer_capability(&signer);
         let created_signer = Account::create_signer_with_cap(&cap);

@@ -4,7 +4,7 @@
 
 //# publish
 module default::Swapper {
-    use Std::Vector;
+    use StarcoinFramework::Vector;
     public fun swap_it_up(vec_len: u64) {
         let v = Vector::empty();
 

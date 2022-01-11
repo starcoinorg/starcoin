@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::FixedPoint32;
+use StarcoinFramework::FixedPoint32;
 
 fun main() {
     // Dividing by zero should cause an arithmetic error.

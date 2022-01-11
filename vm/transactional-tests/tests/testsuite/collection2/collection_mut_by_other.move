@@ -35,7 +35,7 @@ module default::TestR {
 //# run --signers alice
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{TestR};
 
     fun test_single(signer: signer) {
@@ -48,7 +48,7 @@ script {
 
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_add_by_other(signer: signer) {
@@ -67,7 +67,7 @@ script {
 
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{Self,TestR};
 
     fun add_by_owner(signer: signer) {
@@ -83,7 +83,7 @@ script {
 
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{Self, TestR};
 
     fun test_mut_by_other(signer: signer) {
@@ -99,7 +99,7 @@ script {
 
 
 script {
-    use Std::Collection2;
+    use StarcoinFramework::Collection2;
     use default::TestR::{Self,TestR};
 
     fun check(signer: signer) {

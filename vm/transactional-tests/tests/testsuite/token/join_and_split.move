@@ -8,8 +8,8 @@
 //# publish
 
 module alice::MyToken {
-    use Std::Token;
-    use Std::Signer;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
 
     struct MyToken has copy, drop, store { }
 
@@ -28,8 +28,8 @@ module alice::MyToken {
 //# run --signers alice
 script {
     use alice::MyToken::{MyToken, Self};
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -47,8 +47,8 @@ script {
 // split and join
 //# run --signers alice
 script {
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
     use alice::MyToken::{MyToken};
     fun main(account: signer) {
         let coin = Token::mint<MyToken>(&account, 10000);

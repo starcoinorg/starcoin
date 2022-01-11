@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::Errors;
+    use StarcoinFramework::Errors;
     fun main() {
         assert!(Errors::invalid_state(0) == 1, 0);
         assert!(Errors::requires_address(0) == 2, 1);

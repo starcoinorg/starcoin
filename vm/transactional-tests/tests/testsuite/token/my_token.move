@@ -7,8 +7,8 @@
 
 //# publish
 module alice::MyToken {
-    use Std::Token;
-    use Std::Signer;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
 
     struct MyToken has copy, drop, store { }
 
@@ -27,7 +27,7 @@ module alice::MyToken {
 //# publish
 module bob::HideToken {
     use alice::MyToken::MyToken;
-    use Std::Token::Token;
+    use StarcoinFramework::Token::Token;
 
     struct Collection has key, store { t: Token<MyToken>,}
 
@@ -41,8 +41,8 @@ module bob::HideToken {
 //# run --signers alice
 script {
 use alice::MyToken::{MyToken, Self};
-use Std::Account;
-use Std::Token;
+use StarcoinFramework::Account;
+use StarcoinFramework::Token;
 
 fun main(account: signer) {
     MyToken::init(&account);
@@ -60,8 +60,8 @@ fun main(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Account;
-use Std::Token;
+use StarcoinFramework::Account;
+use StarcoinFramework::Token;
 use alice::MyToken::{MyToken};
 fun main(account: signer) {
     // mint 100 coins and check that the market cap increases appropriately
@@ -77,7 +77,7 @@ fun main(account: signer) {
 
 //# run --signers bob
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     use alice::MyToken::MyToken;
 
     fun main(account: signer) {
@@ -88,7 +88,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     use alice::MyToken::MyToken;
 
     fun main(account: signer) {
@@ -98,7 +98,7 @@ script {
 
 //# run --signers bob
 script {
-    use Std::Account;
+    use StarcoinFramework::Account;
     use alice::MyToken::MyToken;
     use bob::HideToken;
 

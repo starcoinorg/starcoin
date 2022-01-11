@@ -5,7 +5,7 @@
 
 //# run --signers alice
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main() {
     assert!(!Timestamp::is_genesis(), 10);

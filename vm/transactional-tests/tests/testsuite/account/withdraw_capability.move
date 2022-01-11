@@ -9,7 +9,7 @@
 //# publish
 
 module alice::SillyColdWallet {
-    use Std::Account;
+    use StarcoinFramework::Account;
 
     struct T has key, store {
         cap: Account::WithdrawCapability,
@@ -27,7 +27,7 @@ module alice::SillyColdWallet {
 
 script {
 use alice::SillyColdWallet;
-use Std::Account;
+use StarcoinFramework::Account;
 
 // create a cold wallet for Bob that withdraws from Alice's account
 fun main(sender: signer) {
@@ -41,8 +41,8 @@ fun main(sender: signer) {
 //# run --signers alice
 
 script {
-use Std::STC::STC;
-use Std::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Account;
 
 // check that Alice can no longer withdraw from her account
 fun main(account: signer) {
@@ -57,9 +57,9 @@ fun main(account: signer) {
 
 //# run --signers alice
 script {
-use Std::STC::STC;
-use Std::Account;
-use Std::Signer;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Account;
+use StarcoinFramework::Signer;
 
 // check that Alice can no longer withdraw from her account
 fun main(account: signer) {
@@ -76,8 +76,8 @@ fun main(account: signer) {
 //# run --signers bob
 
 script {
-use Std::STC::STC;
-use Std::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Account;
 
 // check that Bob can still pay from his normal account
 fun main(account: signer) {
@@ -90,8 +90,8 @@ fun main(account: signer) {
 
 //# run --signers bob
 script {
-use Std::STC::STC;
-use Std::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Account;
 
 // check that Bob can still withdraw from his normal account
 fun main(account: signer) {
@@ -105,9 +105,9 @@ fun main(account: signer) {
 
 //# run --signers bob
 script {
-use Std::STC::STC;
-use Std::Account;
-use Std::Signer;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Account;
+use StarcoinFramework::Signer;
 
     // check that Bob can still withdraw from his normal account
     fun main(account: signer) {
@@ -120,8 +120,8 @@ use Std::Signer;
 //# run --signers carol
 
 script {
-use Std::STC::STC;
-use Std::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::Account;
 
 // check that other users can still pay into Alice's account in the normal way
 fun main(account: signer) {

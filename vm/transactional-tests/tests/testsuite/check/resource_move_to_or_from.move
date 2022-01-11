@@ -9,7 +9,7 @@
 //# publish
 
 module alice::M {
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     struct Cup has key, store {
         a: u64,

@@ -5,7 +5,7 @@
 //# publish
 module alice::TestHash {
 
-    use Std::Hash;
+    use StarcoinFramework::Hash;
 
     spec module {
         pragma verify = true;

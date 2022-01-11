@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::Vector;
+use StarcoinFramework::Vector;
 fun main() {
     let vec = Vector::empty();
     let (has, index) = Vector::index_of(&vec, &true);

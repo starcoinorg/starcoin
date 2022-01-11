@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::FixedPoint32;
+use StarcoinFramework::FixedPoint32;
 
 fun main() {
     let f1 = FixedPoint32::create_from_rational(1, 2); // 0.5

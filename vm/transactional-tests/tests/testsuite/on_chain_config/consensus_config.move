@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     // test do_compute_reward_per_block()
     fun compute_reward_per_block() {
@@ -43,7 +43,7 @@ script {
 //# run --signers alice
 // test compute_reward_per_block
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun compute_reward_per_block() {
         let block_time_target = 10000; // equal to default block_time_target
@@ -55,7 +55,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 0; // should large than 0
@@ -88,7 +88,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -121,7 +121,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -154,7 +154,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -188,7 +188,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -222,7 +222,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -256,7 +256,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::ConsensusConfig;
+    use StarcoinFramework::ConsensusConfig;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;

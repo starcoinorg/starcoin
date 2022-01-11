@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let _ = U256::from_u64(10);
     }
@@ -12,7 +12,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let _ = U256::zero();
     }
@@ -22,7 +22,7 @@ script {
 
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let _ = U256::from_u128(10u128);
     }
@@ -30,15 +30,15 @@ script {
 }
 //# run --signers alice
 script {
-    use Std::U256;
-    use Std::Vector;
+    use StarcoinFramework::U256;
+    use StarcoinFramework::Vector;
     fun main() {
         let _ = U256::from_little_endian(Vector::singleton(1u8));
     }
 }
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let a = U256::zero();
         let b = U256::one();
@@ -48,7 +48,7 @@ script {
 }
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let a = U256::zero();
         let b = U256::one();
@@ -58,7 +58,7 @@ script {
 }
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let a = U256::zero();
         let b = U256::one();
@@ -68,7 +68,7 @@ script {
 }
 //# run --signers alice
 script {
-    use Std::U256;
+    use StarcoinFramework::U256;
     fun main() {
         let a = U256::one();
         let b = U256::one();

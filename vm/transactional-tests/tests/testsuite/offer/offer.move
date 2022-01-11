@@ -8,11 +8,11 @@
 
 //# run --signers alice
 script {
-    use Std::Account;
-    use Std::Offer;
-    use Std::STC::STC;
-    use Std::Signer;
-    use Std::Token::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Token::Token;
 
     fun create_offer(account: signer) {
         let token = Account::withdraw<STC>(&account, 10000);
@@ -35,10 +35,10 @@ script {
 
 //# run --signers bob
 script {
-    use Std::Account;
-    use Std::Offer;
-    use Std::Token::Token;
-    use Std::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::Token::Token;
+    use StarcoinFramework::STC::STC;
 
     fun redeem_offer(account: signer) {
         let token = Offer::redeem<Token<STC>>(&account, @alice);
@@ -52,10 +52,10 @@ script {
 
 //# run --signers carol
 script {
-    use Std::Account;
-    use Std::Offer;
-    use Std::Token::Token;
-    use Std::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::Token::Token;
+    use StarcoinFramework::STC::STC;
 
     fun redeem_offer(account: signer) {
         let token = Offer::redeem<Token<STC>>(&account, @alice);
@@ -68,10 +68,10 @@ script {
 
 //# run --signers bob
 script {
-    use Std::Account;
-    use Std::Offer;
-    use Std::Token::Token;
-    use Std::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Offer;
+    use StarcoinFramework::Token::Token;
+    use StarcoinFramework::STC::STC;
 
     fun redeem_offer(account: signer) {
         let token = Offer::redeem<Token<STC>>(&account, @alice);

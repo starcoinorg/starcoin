@@ -4,10 +4,10 @@
 
 //# run --signers alice
 script {
-use Std::Account;
-use Std::STC::STC;
-use Std::DummyToken::DummyToken;
-use Std::Authenticator;
+use StarcoinFramework::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::DummyToken::DummyToken;
+use StarcoinFramework::Authenticator;
 
 fun main() {
     let dummy_auth_key = x"fb51f08c8e63ed9f4eac340b25d1b01d75995fa86f8ebc0b0819ebf80abc0ee6";
@@ -22,10 +22,10 @@ fun main() {
 
 //# run --signers alice
 script {
-use Std::Account;
-use Std::STC::STC;
-use Std::DummyToken::DummyToken;
-use Std::Authenticator;
+use StarcoinFramework::Account;
+use StarcoinFramework::STC::STC;
+use StarcoinFramework::DummyToken::DummyToken;
+use StarcoinFramework::Authenticator;
 
 fun main() {
     let dummy_auth_key = x"9028e2757e3e57339af4b3df1d818cddac6e527363459f072d70484599956c8a";

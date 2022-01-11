@@ -6,7 +6,7 @@
 
 //# publish
 module alice::M {
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     struct M has key, store {
         value: u64,

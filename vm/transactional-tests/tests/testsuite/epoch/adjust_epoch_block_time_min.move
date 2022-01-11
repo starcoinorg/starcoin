@@ -5,9 +5,9 @@
 
 //# run --signers Genesis
 script {
-use Std::ConsensusConfig;
-//use Std::Debug;
-use Std::Epoch;
+use StarcoinFramework::ConsensusConfig;
+//use StarcoinFramework::Debug;
+use StarcoinFramework::Epoch;
 
 fun main(genesis_account: signer) {
     let block_number = 1;

@@ -6,7 +6,7 @@
 
 //# run --signers alice
 script {
-use Std::STC;
+use StarcoinFramework::STC;
 
 fun main(signer: signer) {
     STC::initialize(&signer, 500, 5000, 10, 600);
@@ -20,7 +20,7 @@ fun main(signer: signer) {
 //# run --signers Genesis
 
 script {
-use Std::STC;
+use StarcoinFramework::STC;
 
 fun main(signer: signer) {
     STC::initialize(&signer, 500, 5000, 10, 600);

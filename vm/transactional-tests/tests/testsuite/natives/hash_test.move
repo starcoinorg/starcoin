@@ -5,7 +5,7 @@
 //# run --signers creator
 // Test for Hash function in Move
 script {
-    use Std::Hash;
+    use StarcoinFramework::Hash;
 
     fun test_sha2_256() {
         let input = x"616263";
@@ -20,7 +20,7 @@ script {
 
 //# run --signers creator
 script {
-    use Std::Hash;
+    use StarcoinFramework::Hash;
 
     fun test_sha3_256() {
         let input = x"616263";
@@ -33,7 +33,7 @@ script {
 
 //# run --signers creator
 script {
-    use Std::Hash;
+    use StarcoinFramework::Hash;
 
     fun test_keccak_256() {
         let input = x"616263";
@@ -46,7 +46,7 @@ script {
 
 //# run --signers creator
 script {
-    use Std::Hash;
+    use StarcoinFramework::Hash;
 
     fun test_ripemd160() {
         let input = x"616263";

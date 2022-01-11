@@ -5,7 +5,7 @@
 //# run --signers alice
 
 script {
-use Std::Vector;
+use StarcoinFramework::Vector;
 fun main() {
     let vec = Vector::empty<u64>();
 

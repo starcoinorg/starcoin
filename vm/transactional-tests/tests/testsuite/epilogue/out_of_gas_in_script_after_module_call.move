@@ -10,7 +10,7 @@ module default::Nop{
 //# run --signers default --gas-budget 700
 script {
 use default::Nop;
-use Std::Vector;
+use StarcoinFramework::Vector;
 fun main() {
     Nop::nop();
     let v = Vector::empty();

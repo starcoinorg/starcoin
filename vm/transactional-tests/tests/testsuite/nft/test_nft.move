@@ -7,8 +7,8 @@
 
 //#publish
 module creator::TestNFT {
-    use Std::NFT;
-    use Std::NFTGallery;
+    use StarcoinFramework::NFT;
+    use StarcoinFramework::NFTGallery;
     struct TestNFT has copy, store, drop{}
     struct TestNFTBody has store{
     }
@@ -40,7 +40,7 @@ module creator::TestNFT {
 
 //# run --signers creator
 script {
-    use Std::NFT;
+    use StarcoinFramework::NFT;
     use creator::TestNFT::{Self, TestNFT};
     fun main(sender: signer) {
         TestNFT::init(&sender);
@@ -54,7 +54,7 @@ script {
 //# run --signers bob
 script {
     use creator::TestNFT::{TestNFT,TestNFTBody};
-    use Std::NFTGalleryScripts;
+    use StarcoinFramework::NFTGalleryScripts;
     fun main(sender: signer) {
         NFTGalleryScripts::accept<TestNFT,TestNFTBody>(sender);
     }
@@ -67,7 +67,7 @@ script {
 //# run --signers creator --args @bob
 script {
     use creator::TestNFT::{TestNFT,TestNFTBody};
-    use Std::NFTGalleryScripts;
+    use StarcoinFramework::NFTGalleryScripts;
     fun main(sender: signer, receiver: address) {
         NFTGalleryScripts::transfer<TestNFT,TestNFTBody>(sender, 1, receiver);
     }
@@ -79,10 +79,10 @@ script {
 
 //# run --signers bob
 script {
-use Std::Option;
+use StarcoinFramework::Option;
 use creator::TestNFT::{TestNFT, TestNFTBody};
-use Std::NFTGallery;
-use Std::Signer;
+use StarcoinFramework::NFTGallery;
+use StarcoinFramework::Signer;
 fun main(sender: signer) {
     let sender_addr = Signer::address_of(&sender);
     let nft = NFTGallery::get_nft_info_by_id<TestNFT, TestNFTBody>(sender_addr, 1);

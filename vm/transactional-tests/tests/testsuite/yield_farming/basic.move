@@ -12,10 +12,10 @@
 
 //# publish
 module alice::YieldFarmingWarpper {
-    use Std::Token;
-    use Std::Account;
-    use Std::Signer;
-    use Std::YieldFarmingV2;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::YieldFarmingV2;
 
     struct Usdx has copy, drop, store {}
 
@@ -76,9 +76,9 @@ module alice::YieldFarmingWarpper {
 
 //# run --signers alice
 script {
-    use Std::YieldFarmingV2;
-    use Std::Timestamp;
-    use Std::Debug;
+    use StarcoinFramework::YieldFarmingV2;
+    use StarcoinFramework::Timestamp;
+    use StarcoinFramework::Debug;
 
     /// Index test
     fun main(_account: signer) {
@@ -109,9 +109,9 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Account;
-    use Std::Token;
-    use Std::Math;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Math;
     use alice::YieldFarmingWarpper::{Usdx};
 
     /// Initial reward token, registered and mint it
@@ -133,8 +133,8 @@ script {
 
 //# run --signers alice
 script {
-    use Std::Account;
-    use Std::Math;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Math;
     use alice::YieldFarmingWarpper;
 
     /// Inital a treasury into yield farming
@@ -152,10 +152,10 @@ script {
 //# run --signers bob
 script {
     use alice::YieldFarmingWarpper::{Usdx, Self};
-    use Std::Account;
-    use Std::Token;
-    use Std::Signer;
-    use Std::Debug;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Debug;
 
     /// 1. First stake, check whether first rewards has been executed.
     fun main(account: signer) {
@@ -175,7 +175,7 @@ script {
 //# run --signers cindy
 script {
     use alice::YieldFarmingWarpper::{Usdx, Self};
-    use Std::Account;
+    use StarcoinFramework::Account;
 
     /// 2. Cindy joined and staking some asset
     fun init(account: signer) {
@@ -189,8 +189,8 @@ script {
 //# run --signers cindy
 script {
     use alice::YieldFarmingWarpper;
-    use Std::Debug;
-    use Std::Signer;
+    use StarcoinFramework::Debug;
+    use StarcoinFramework::Signer;
 
     /// 3. Cindy harvest after 20 seconds, checking whether has rewards.
     fun init(account: signer) {
@@ -206,10 +206,10 @@ script {
 //# run --signers cindy
 script {
     use alice::YieldFarmingWarpper::{Usdx, Self};
-    use Std::Account;
-    use Std::Token;
-    use Std::Signer;
-    use Std::Debug;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Debug;
 
     /// 4. Cindy harvest after 40 seconds, checking whether has rewards.
     fun init(account: signer) {

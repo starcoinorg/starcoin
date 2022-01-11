@@ -5,10 +5,10 @@
 //# run --signers Genesis
 // test adjust epoch zero uncle.
 script {
-use Std::ConsensusConfig;
-use Std::Epoch;
-use Std::Option;
-    use Std::Debug;
+use StarcoinFramework::ConsensusConfig;
+use StarcoinFramework::Epoch;
+use StarcoinFramework::Option;
+    use StarcoinFramework::Debug;
 
 fun main() {
     let config = ConsensusConfig::get_config();

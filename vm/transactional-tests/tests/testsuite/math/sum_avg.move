@@ -5,8 +5,8 @@
 //# run --signers creator --gas-budget 2000000
 
 script {
-    use Std::Vector;
-    use Std::Math::{sum,avg};
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Math::{sum,avg};
     fun main(_signer: signer) {
         let nums = Vector::empty();
         let i = 1;

@@ -10,8 +10,8 @@
 
 //# run --signers alice --args 86400000 --args 0 --args 50u8 --args 0 --args 0
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
 
     fun main(signer: signer,
             voting_delay: u64,
@@ -27,9 +27,9 @@ script {
 
 //# run --signers bob --args @alice --args 0 --args true --args 39814200010000000u128
 script {
-    use Std::DaoVoteScripts;
-    use Std::STC::STC;
-    use Std::ModifyDaoConfigProposal::DaoConfigUpdate;
+    use StarcoinFramework::DaoVoteScripts;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal::DaoConfigUpdate;
 
     fun main(account: signer,
             proposer_address: address,
@@ -51,9 +51,9 @@ script {
 //# run --signers bob --args @alice --args 0
 
 script {
-    use Std::Dao;
-    use Std::STC::STC;
-    use Std::ModifyDaoConfigProposal::DaoConfigUpdate;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal::DaoConfigUpdate;
 
     fun main(_account: signer,
             proposer_address: address,
@@ -69,9 +69,9 @@ script {
 
 //# run --signers bob --args @alice --args 0
 script {
-    use Std::DaoVoteScripts;
-    use Std::STC::STC;
-    use Std::ModifyDaoConfigProposal::DaoConfigUpdate;
+    use StarcoinFramework::DaoVoteScripts;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal::DaoConfigUpdate;
 
     fun main(account: signer,
              proposer_address: address,
@@ -89,8 +89,8 @@ script {
 //# run --signers bob --args @alice --args 0
 
 script {
-    use Std::ModifyDaoConfigProposal;
-    use Std::STC::STC;
+    use StarcoinFramework::ModifyDaoConfigProposal;
+    use StarcoinFramework::STC::STC;
 
     fun main(proposer_address: address, proposal_id: u64) {
         ModifyDaoConfigProposal::execute<STC>(

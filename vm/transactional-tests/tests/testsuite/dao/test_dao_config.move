@@ -7,8 +7,8 @@
 //# publish
 
 module alice::MyToken {
-    use Std::Token;
-    use Std::Dao;
+    use StarcoinFramework::Token;
+    use StarcoinFramework::Dao;
 
     struct MyToken has copy, drop, store { }
 
@@ -26,8 +26,8 @@ module alice::MyToken {
 
 script {
     use alice::MyToken::{MyToken, Self};
-    use Std::Account;
-    use Std::Token;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Token;
 
     fun main(account: signer) {
         MyToken::init(&account);
@@ -46,9 +46,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
 
     fun set_dao_config(signer: signer) {
@@ -70,9 +70,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -88,9 +88,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -106,9 +106,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -124,9 +124,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     fun set_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -143,7 +143,7 @@ script {
 
 script {
     use alice::MyToken::MyToken;
-    use Std::ModifyDaoConfigProposal;
+    use StarcoinFramework::ModifyDaoConfigProposal;
 
     fun test_plugin(signer: signer) {
         ModifyDaoConfigProposal::plugin<MyToken>(&signer); //ERR_NOT_AUTHORIZED
@@ -155,9 +155,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     fun modify_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -199,9 +199,9 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
-    use Std::Config;
+    use StarcoinFramework::Config;
 
     fun modify_dao_config(signer: signer) {
         let cap = Config::extract_modify_config_capability<Dao::DaoConfig<MyToken>>(
@@ -229,7 +229,7 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -252,7 +252,7 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -275,7 +275,7 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -298,7 +298,7 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {
@@ -321,7 +321,7 @@ script {
 //# run --signers alice
 
 script {
-    use Std::Dao;
+    use StarcoinFramework::Dao;
     use alice::MyToken::MyToken;
 
     fun new_dao_config_failed(_signer: signer) {

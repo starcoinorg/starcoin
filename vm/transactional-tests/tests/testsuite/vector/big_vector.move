@@ -6,8 +6,8 @@
 
 //# publish
 module alice::BigVectorTest {
-    use Std::Vector;
-    use Std::Signer;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Signer;
 
     struct Element<T> has key, store {
         addr: address,

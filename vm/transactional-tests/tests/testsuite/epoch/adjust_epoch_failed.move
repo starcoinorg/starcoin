@@ -6,7 +6,7 @@
 
 //# run --signers alice
 script {
-use Std::Epoch;
+use StarcoinFramework::Epoch;
     //ENOT_GENESIS_ACCOUNT
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
@@ -21,7 +21,7 @@ use Std::Epoch;
 
 //# run --signers Genesis
 script {
-    use Std::Epoch;
+    use StarcoinFramework::Epoch;
     //block_number < epoch_ref.end_block_number, do nothing
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
@@ -36,8 +36,8 @@ script {
 
 //# run --signers Genesis
 script {
-    use Std::Epoch;
-    use Std::ConsensusConfig;
+    use StarcoinFramework::Epoch;
+    use StarcoinFramework::ConsensusConfig;
     //EINVALID_UNCLES_COUNT
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
@@ -53,8 +53,8 @@ script {
 
 //# run --signers Genesis
 script {
-    use Std::Epoch;
-    use Std::ConsensusConfig;
+    use StarcoinFramework::Epoch;
+    use StarcoinFramework::ConsensusConfig;
     //EUNREACHABLE, block_number > epoch_ref.end_block_number
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
@@ -69,8 +69,8 @@ script {
 
 //# run --signers Genesis
 script {
-    use Std::Epoch;
-    use Std::ConsensusConfig;
+    use StarcoinFramework::Epoch;
+    use StarcoinFramework::ConsensusConfig;
     //EINVALID_UNCLES_COUNT. If block_number == epoch_ref.end_block_number, uncles should be 0
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
@@ -85,8 +85,8 @@ script {
 
 //# run --signers Genesis
 script {
-    use Std::Epoch;
-    use Std::ConsensusConfig;
+    use StarcoinFramework::Epoch;
+    use StarcoinFramework::ConsensusConfig;
     //block_number == epoch_ref.end_block_number
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;

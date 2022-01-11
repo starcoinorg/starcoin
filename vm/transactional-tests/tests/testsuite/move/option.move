@@ -5,7 +5,7 @@
 //# run --signers creator
 // Tests for the non-aborting behavior of Option functions
 script {
-use Std::Option;
+use StarcoinFramework::Option;
 
 fun main() {
     let some = Option::some(5);

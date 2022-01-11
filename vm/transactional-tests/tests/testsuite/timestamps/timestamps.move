@@ -6,7 +6,7 @@
 
 //# run --signers alice
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(_signer: signer) {
     assert!(!Timestamp::is_genesis(), 1000);
@@ -15,7 +15,7 @@ fun main(_signer: signer) {
 
 //# run --signers alice
 script {
-    use Std::Timestamp;
+    use StarcoinFramework::Timestamp;
 
     fun main(_signer: signer) {
         Timestamp::assert_genesis();
@@ -25,7 +25,7 @@ script {
 
 //# run --signers alice
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::initialize(&signer, 0);
@@ -38,7 +38,7 @@ fun main(signer: signer) {
 
 //# run --signers Genesis
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::initialize(&signer, 0);
@@ -51,7 +51,7 @@ fun main(signer: signer) {
 
 //# run --signers alice
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::update_global_time(&signer, 10);
@@ -63,7 +63,7 @@ fun main(signer: signer) {
 
 //# run --signers Genesis
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(signer: signer) {
     Timestamp::update_global_time(&signer, 200000);
@@ -77,7 +77,7 @@ fun main(signer: signer) {
 
 //# run --signers Genesis
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(signer: signer) {
     let now = Timestamp::now_seconds();
@@ -89,7 +89,7 @@ fun main(signer: signer) {
 
 //# run --signers Genesis
 script {
-use Std::Timestamp;
+use StarcoinFramework::Timestamp;
 
 fun main(signer: signer) {
     let now = Timestamp::now_seconds();

@@ -4,7 +4,7 @@
 
 //# run --signers creator
 script {
-    use Std::Math::pow;
+    use StarcoinFramework::Math::pow;
     fun main(_signer: signer) {
         assert!(pow(1, 2) == 1, 0);
         assert!(pow(2, 1) == 2, 1);
@@ -17,7 +17,7 @@ script {
 
 //# run --signers creator
 script {
-    use Std::Math::pow;
+    use StarcoinFramework::Math::pow;
     fun main()  {
         // test overflow
         assert!(pow(18446744073709551614, 2) == 0, 3);

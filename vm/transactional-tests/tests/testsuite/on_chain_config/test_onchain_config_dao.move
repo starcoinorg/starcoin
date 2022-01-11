@@ -9,9 +9,9 @@
 
 //# run --signers StarcoinAssociation
 script {
-    use Std::Account;
-    use Std::STC::STC;
-    use Std::Signer;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Signer;
 
     fun transfer_some_token_to_alice_and_bob(signer: signer) {
         let balance = Account::balance<STC>(Signer::address_of(&signer));
@@ -21,9 +21,9 @@ script {
 }
 //# run --signers alice
 script {
-    use Std::STC::STC;
-    use Std::OnChainConfigDao;
-    use Std::TransactionPublishOption;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::TransactionPublishOption;
 
     fun test_plugin_fail(account: signer) {
         OnChainConfigDao::plugin<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(&account); //ERR_NOT_AUTHORIZED
@@ -31,9 +31,9 @@ script {
 }
 //# run --signers alice
 script {
-    use Std::OnChainConfigDao;
-    use Std::TransactionPublishOption;
-    use Std::STC::STC;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::STC::STC;
     fun propose(signer: signer) {
         let new_config = TransactionPublishOption::new_transaction_publish_option(true, false);
         OnChainConfigDao::propose_update<STC, TransactionPublishOption::TransactionPublishOption>(&signer, new_config, 0);
@@ -46,12 +46,12 @@ script {
 
 //# run --signers bob
 script {
-    use Std::OnChainConfigDao;
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Signer;
-    use Std::Dao;
-    use Std::TransactionPublishOption;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Dao;
+    use StarcoinFramework::TransactionPublishOption;
     fun vote(signer: signer) {
         let balance = Account::balance<STC>(Signer::address_of(&signer));
         let balance = Account::withdraw<STC>(&signer, balance/2);
@@ -66,11 +66,11 @@ script {
 
 //# run --signers bob
 script {
-    use Std::OnChainConfigDao;
-    use Std::TransactionPublishOption;
-    use Std::STC::STC;
-    use Std::Account;
-    use Std::Dao;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Dao;
     fun queue_proposal(signer: signer) {
         let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(@alice, 0);
         assert!(state == 4, (state as u64));
@@ -91,16 +91,16 @@ script {
 
 //# run --signers bob
 script {
-    use Std::OnChainConfigDao;
-    use Std::TransactionPublishOption;
-    use Std::STC::STC;
-    use Std::Dao;
+    use StarcoinFramework::OnChainConfigDao;
+    use StarcoinFramework::TransactionPublishOption;
+    use StarcoinFramework::STC::STC;
+    use StarcoinFramework::Dao;
     fun execute_proposal_action(_signer: signer) {
         let state = Dao::proposal_state<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(@alice, 0);
         assert!(state == 6, (state as u64));
         OnChainConfigDao::execute<STC, TransactionPublishOption::TransactionPublishOption>(@alice, 0);
-        assert!(!TransactionPublishOption::is_module_allowed(@Std), 401);
-        assert!(TransactionPublishOption::is_script_allowed(@Std), 402);
+        assert!(!TransactionPublishOption::is_module_allowed(@StarcoinFramework), 401);
+        assert!(TransactionPublishOption::is_script_allowed(@StarcoinFramework), 402);
     }
 }
 // check: EXECUTED

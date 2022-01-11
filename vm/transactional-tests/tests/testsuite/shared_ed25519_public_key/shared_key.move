@@ -8,8 +8,8 @@
 // It is tricky to test that a transaction can still be sent after key rotation in a functional
 // test, so that case is covered in an e2e test.
 script {
-use Std::Account;
-use Std::SharedEd25519PublicKey;
+use StarcoinFramework::Account;
+use StarcoinFramework::SharedEd25519PublicKey;
 fun main(account: signer) {
     let old_auth_key = Account::authentication_key(@alice);
     // from RFC 8032
@@ -40,7 +40,7 @@ fun main(account: signer) {
 //# run --signers alice
 // publishing a key with a bad length should fail
 script {
-use Std::SharedEd25519PublicKey;
+use StarcoinFramework::SharedEd25519PublicKey;
 fun main(account: signer) {
     let invalid_pubkey = x"0000";
     SharedEd25519PublicKey::publish(&account, invalid_pubkey)
@@ -54,7 +54,7 @@ fun main(account: signer) {
 //# run --signers alice
 // publishing a key with a bad length should fail
 script {
-use Std::SharedEd25519PublicKey;
+use StarcoinFramework::SharedEd25519PublicKey;
 fun main(account: signer) {
     let invalid_pubkey = x"10003d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c";
     SharedEd25519PublicKey::publish(&account, invalid_pubkey)
@@ -69,7 +69,7 @@ fun main(account: signer) {
 // rotating to a key with a bad length should fail
 //# run --signers alice
 script {
-use Std::SharedEd25519PublicKey;
+use StarcoinFramework::SharedEd25519PublicKey;
 fun main(account: signer) {
     // from RFC 8032
     let valid_pubkey =  x"3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c";
@@ -87,7 +87,7 @@ fun main(account: signer) {
 // rotating to a key with a good length but bad contents should fail
 //# run --signers alice
 script {
-use Std::SharedEd25519PublicKey;
+use StarcoinFramework::SharedEd25519PublicKey;
 fun main(account: signer) {
     let valid_pubkey =  x"3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c";
     SharedEd25519PublicKey::publish(&account, valid_pubkey);

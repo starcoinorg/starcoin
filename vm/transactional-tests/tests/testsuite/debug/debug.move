@@ -4,8 +4,8 @@
 
 //# publish
 module default::M {
-    use Std::Debug;
-    use Std::Vector;
+    use StarcoinFramework::Debug;
+    use StarcoinFramework::Vector;
 
     struct Foo has copy, drop, store { x: bool }
     struct Bar has copy, drop, store { x: u128, y: Foo, z: bool }

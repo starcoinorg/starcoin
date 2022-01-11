@@ -6,8 +6,8 @@
 
 //# publish
 module creator::Card {
-    use Std::NFT::{Self, NFT, MintCapability, BurnCapability};
-    use Std::Timestamp;
+    use StarcoinFramework::NFT::{Self, NFT, MintCapability, BurnCapability};
+    use StarcoinFramework::Timestamp;
 
     struct L1CardMeta has copy, store, drop{
         gene: u64,
@@ -93,7 +93,7 @@ script {
 
 //# run --signers bob
 script {
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
     use creator::Card;
     fun main(sender: signer) {
         let first_l1 = Card::mint_l1(&sender);
@@ -105,9 +105,9 @@ script {
 
 //# run --signers bob
 script {
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
     use creator::Card::{Self, L1CardMeta, L1Card};
-    use Std::Signer;
+    use StarcoinFramework::Signer;
 
     fun main(sender: signer) {
         let second_l1 = Card::mint_l1(&sender);
@@ -121,7 +121,7 @@ script {
 
 //# run --signers bob
 script {
-    use Std::NFTGallery;
+    use StarcoinFramework::NFTGallery;
     use creator::Card::{Self, L1CardMeta, L1Card};
     fun main(sender: signer) {
         let first_l1 = NFTGallery::withdraw_one<L1CardMeta, L1Card>(&sender);
@@ -136,8 +136,8 @@ script {
 //# run --signers bob
 script {
     use creator::Card::{L1CardMeta, L2CardMeta, L1Card, L2Card};
-    use Std::NFTGallery;
-    use Std::Signer;
+    use StarcoinFramework::NFTGallery;
+    use StarcoinFramework::Signer;
 
     fun main(sender: signer) {
         assert!(NFTGallery::count_of<L1CardMeta, L1Card>(Signer::address_of(&sender)) == 0, 1001);

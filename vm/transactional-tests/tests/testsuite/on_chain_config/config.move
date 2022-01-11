@@ -7,8 +7,8 @@
 
 //# publish
 module alice::MyConfig{
-    use Std::Config;
-    use Std::Signer;
+    use StarcoinFramework::Config;
+    use StarcoinFramework::Signer;
 
     struct MyConfig has copy, drop, store {
         version: u64,
@@ -85,7 +85,7 @@ fun main(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Config;
+use StarcoinFramework::Config;
 use alice::MyConfig;
 
 fun main(account: signer) {
@@ -107,7 +107,7 @@ fun main(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Config;
+use StarcoinFramework::Config;
 use alice::MyConfig;
 
 fun main(account: signer) {
@@ -141,7 +141,7 @@ fun main() {
 
 //# run --signers alice
 script {
-use Std::Config;
+use StarcoinFramework::Config;
 use alice::MyConfig;
 
 fun main(account: signer) {

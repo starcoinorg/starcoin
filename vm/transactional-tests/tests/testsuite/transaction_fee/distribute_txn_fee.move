@@ -8,10 +8,10 @@
 
 //# run --signers bob
 script {
-use Std::Account;
-use Std::Token;
-use Std::STC::{STC};
-use Std::TransactionFee;
+use StarcoinFramework::Account;
+use StarcoinFramework::Token;
+use StarcoinFramework::STC::{STC};
+use StarcoinFramework::TransactionFee;
 fun pay_fees(account: signer) {
     let coin = Account::withdraw<STC>(&account, 200);
     assert!(Token::value<STC>(&coin) == 200, 8001);
@@ -22,10 +22,10 @@ fun pay_fees(account: signer) {
 
 //# run --signers Genesis
 script {
-use Std::Account;
-use Std::Token;
-use Std::STC::{STC};
-use Std::TransactionFee;
+use StarcoinFramework::Account;
+use StarcoinFramework::Token;
+use StarcoinFramework::STC::{STC};
+use StarcoinFramework::TransactionFee;
 fun distribute_fees(account: signer) {
     let coin = TransactionFee::distribute_transaction_fees<STC>(&account);
     let value = Token::value<STC>(&coin);
@@ -39,9 +39,9 @@ fun distribute_fees(account: signer) {
 
 //# run --signers alice
 script {
-use Std::Account;
-use Std::STC::{STC};
-use Std::TransactionFee;
+use StarcoinFramework::Account;
+use StarcoinFramework::STC::{STC};
+use StarcoinFramework::TransactionFee;
 
 fun main(account: signer) {
    let coin = TransactionFee::distribute_transaction_fees<STC>(&account);

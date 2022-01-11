@@ -4,8 +4,8 @@
 
 //# run --signers alice
 script {
-use Std::STC::{Self, STC};
-use Std::DummyToken::{Self, DummyToken};
+use StarcoinFramework::STC::{Self, STC};
+use StarcoinFramework::DummyToken::{Self, DummyToken};
 fun main() {
     assert!(STC::is_stc<STC>(), 1);
     //TODO support check any type.

@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-use Std::ChainId;
+use StarcoinFramework::ChainId;
 
 fun main() {
     assert!(ChainId::get() == 255, 1000);

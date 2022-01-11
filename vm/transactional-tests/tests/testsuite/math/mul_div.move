@@ -4,7 +4,7 @@
 
 //# run --signers creator
 script {
-    use Std::Math::{Self,mul_div};
+    use StarcoinFramework::Math::{Self,mul_div};
     fun main(_signer: signer) {
         assert!(mul_div(1, 1, 2) == 0, 1000);
         assert!(mul_div(2, 1, 2) == 1, 1001);
