@@ -45,7 +45,7 @@ pub struct GenerateMultisigTxnOpt {
         name = "script-function",
         required_unless = "multisig-file"
     )]
-    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
+    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer_v2
     script_function: Option<FunctionIdView>,
 
     #[structopt(

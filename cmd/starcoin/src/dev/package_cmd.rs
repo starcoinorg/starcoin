@@ -37,7 +37,7 @@ pub struct PackageOpt {
     #[structopt(
         long = "function",
         name = "script-function",
-        help = "init script function to execute, example: 0x1::TransferScripts::peer_to_peer"
+        help = "init script function to execute, example: 0x123::MyScripts::init_script"
     )]
     init_script: Option<FunctionIdView>,
 
