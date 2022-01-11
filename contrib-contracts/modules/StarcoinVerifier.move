@@ -1,15 +1,15 @@
-address 0xA550C18 {
+address StarcoinAssociation {
     module StarcoinVerifierScripts {
-        use 0xA550C18::StarcoinVerifier;
+        use StarcoinAssociation::StarcoinVerifier;
         public(script) fun create(signer: signer, merkle_root: vector<u8>) {
             StarcoinVerifier::create(&signer, merkle_root);
         }
     }
     module StarcoinVerifier {
-        use 0x1::Vector;
-        use 0xA550C18::Bit;
-        use 0xA550C18::StructuredHash;
-        use 0x1::Hash;
+        use StarcoinFramework::Vector;
+        use StarcoinAssociation::Bit;
+        use StarcoinAssociation::StructuredHash;
+        use StarcoinFramework::Hash;
 
         struct StarcoinMerkle has key {
             merkle_root: vector<u8>,
@@ -59,9 +59,9 @@ address 0xA550C18 {
     }
 
     module StructuredHash {
-        use 0x1::Hash;
-        use 0x1::Vector;
-        use 0x1::BCS;
+        use StarcoinFramework::Hash;
+        use StarcoinFramework::Vector;
+        use StarcoinFramework::BCS;
         const STARCOIN_HASH_PREFIX: vector<u8> = b"STARCOIN::";
         public fun hash<MoveValue: store>(structure: vector<u8>, data: &MoveValue): vector<u8> {
             let prefix_hash = Hash::sha3_256(concat(&STARCOIN_HASH_PREFIX, structure));
@@ -77,7 +77,7 @@ address 0xA550C18 {
 
     }
     module Bit {
-        use 0x1::Vector;
+        use StarcoinFramework::Vector;
         public fun get_bit(data: &vector<u8>, index: u64): bool {
             let pos = index / 8;
             let bit = (7 - index % 8);
