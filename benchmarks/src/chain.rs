@@ -9,15 +9,12 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_path, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
-use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use starcoin_executor::{Account, DEFAULT_EXPIRATION_TIME};
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::transaction::Transaction;
 use std::sync::Arc;
 
 /// Benchmarking support for chain.
@@ -27,7 +24,6 @@ pub struct ChainBencher {
     block_num: u64,
     account: AccountInfo,
     temp_path: DataDirPath,
-    sequence: u64,
 }
 
 impl ChainBencher {
@@ -60,7 +56,6 @@ impl ChainBencher {
             block_num: num.unwrap_or(100),
             account: miner_account,
             temp_path,
-            sequence: 0,
         }
     }
 
@@ -114,7 +109,6 @@ impl Clone for ChainBencher {
             block_num: self.block_num,
             account: self.account.clone(),
             temp_path: self.temp_path.clone(),
-            sequence: self.sequence,
         }
     }
 }

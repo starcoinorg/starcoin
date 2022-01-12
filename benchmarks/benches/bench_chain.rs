@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use benchmarks::chain::ChainBencher;
-use criterion::BenchmarkId;
 #[allow(deprecated)]
 use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
 #[cfg(target_os = "linux")]
@@ -40,7 +39,6 @@ fn query_block(c: &mut Criterion) {
         }
     }
 }
-
 #[cfg(target_os = "linux")]
 criterion_group!(
     name=starcoin_chain_benches;
