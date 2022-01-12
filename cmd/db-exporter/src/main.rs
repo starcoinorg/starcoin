@@ -310,7 +310,7 @@ pub struct GenBlockTransactionsOptions {
     pub block_num: Option<u64>,
     #[structopt(long, short = "t")]
     pub trans_num: Option<u64>,
-    #[structopt(long, short = "p")]
+    #[structopt(long, short = "p", possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
