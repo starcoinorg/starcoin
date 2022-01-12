@@ -1,6 +1,6 @@
 module {{sender}}::MyToken {
-     use 0x1::Token;
-     use 0x1::Account;
+     use StarcoinFramework::Token;
+     use StarcoinFramework::Account;
 
      struct MyToken has copy, drop, store { }
 
