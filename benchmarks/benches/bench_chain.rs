@@ -41,44 +41,12 @@ fn query_block(c: &mut Criterion) {
     }
 }
 
-fn block_apply_with_create_account(c: &mut Criterion) {
-    ::logger::init();
-    let mut group = c.benchmark_group("block_apply_with_create_account");
-    group.sample_size(10);
-    let bench_id = "block_apply_with_create_account";
-    for i in &[10u64, 1000] {
-        let mut bencher = ChainBencher::new(Some(*i));
-        group.bench_function(BenchmarkId::new(bench_id, i), move |b| {
-            b.iter(|| bencher.execute_transaction_with_create_account())
-        });
-    }
-}
-
-fn block_apply_with_fixed_account(c: &mut Criterion) {
-    ::logger::init();
-    let mut group = c.benchmark_group("block_apply_with_fixed_account");
-    group.sample_size(10);
-    let bench_id = "block_apply_with_fixed_account";
-    for i in &[10u64, 1000] {
-        let mut bencher = ChainBencher::new(Some(*i));
-        group.bench_function(BenchmarkId::new(bench_id, i), move |b| {
-            b.iter(|| bencher.execute_transaction_with_fixed_account())
-        });
-    }
-}
 #[cfg(target_os = "linux")]
 criterion_group!(
     name=starcoin_chain_benches;
     config = Criterion::default()
     .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-    targets=block_apply,query_block, block_apply_with_create_account,block_apply_with_fixed_account);
+    targets=block_apply,query_block);
 #[cfg(not(target_os = "linux"))]
-criterion_group!(
-    starcoin_chain_benches,
-    block_apply,
-    query_block,
-    block_apply_with_create_account,
-    block_apply_with_fixed_account
-);
-
+criterion_group!(starcoin_chain_benches, block_apply, query_block);
 criterion_main!(starcoin_chain_benches);
