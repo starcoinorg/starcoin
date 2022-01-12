@@ -72,4 +72,26 @@ $STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_1_10
 
 aws s3api put-object --bucket flamegraph.starcoin.org --key "$PR_NUMBER"/"apply_block.svg" --body /tmp/flamegraph.svg
 
+mkdir -p /tmp/$PR_NUMBER/halley
+rm -f block_txn_1_202.csv
+wget https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/block_txn_1_202.csv
+rm -rf /tmp/$PR_NUMBER/halley/*
+$STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_txn_1_202.csv -n halley -o /tmp/$PR_NUMBER/halley
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$PR_NUMBER"/"apply_block_txn.svg" --body /tmp/flamegraph.svg
+rm -rf /tmp/$PR_NUMBER/halley/*
+
+rm -f block_empty_1_202.csv
+wget https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/block_empty_1_202.csv
+rm -rf /tmp/$PR_NUMBER/halley/*
+$STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_empty_1_202.csv -n halley -o /tmp/$PR_NUMBER/halley
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$PR_NUMBER"/"apply_block_empty.svg" --body /tmp/flamegraph.svg
+rm -rf /tmp/$PR_NUMBER/halley/*
+
+rm -f block_fixed_1_60.csv
+wget https://s3.ap-northeast-1.amazonaws.com/main.starcoin.org/block_fixed_1_60.csv
+rm -rf /tmp/$PR_NUMBER/halley/*
+$STARCOIN_DIR/target/release/starcoin_db_exporter apply-block -i /tmp/block_fixed_1_60.csv -n halley -o /tmp/$PR_NUMBER/halley
+aws s3api put-object --bucket flamegraph.starcoin.org --key "$PR_NUMBER"/"apply_block_fixed.svg" --body /tmp/flamegraph.svg
+rm -rf /tmp/$PR_NUMBER/halley/*
+
 rm -rf /tmp/$PR_NUMBER/
