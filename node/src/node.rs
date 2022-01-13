@@ -16,7 +16,7 @@ use starcoin_account_service::{AccountEventService, AccountService, AccountStora
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::NodeConfig;
+use starcoin_config::{check_open_fds_limit, NodeConfig};
 use starcoin_executor::VMMetrics;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
@@ -273,7 +273,11 @@ impl NodeService {
             .metrics
             .registry()
             .and_then(|registry| StorageMetrics::register(registry).ok());
-
+        info!(
+            "rocksdb max open files {}",
+            config.storage.rocksdb_config().max_open_files
+        );
+        check_open_fds_limit(config.storage.rocksdb_config().max_open_files as u64)?;
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
             DBStorage::new(

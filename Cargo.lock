@@ -8835,6 +8835,7 @@ dependencies = [
  "dirs-next",
  "git-version",
  "hex",
+ "libc",
  "names",
  "network-api",
  "network-p2p-types",
