@@ -38,8 +38,8 @@ serde-helpers = {path = "../../commons/serde-helpers"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}
 jsonrpc-derive = {git = "https://github.com/fikgol/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="3f8ecc27f02b27d56c716de58d7880ae7816390c"}
-openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="2e402a834e5d7d9733c5ff5267088162a097f394"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="fa9abf1ea670677f0d628112c83d08937c743bad"}
+openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="b720a2bd6fbaee5994d02e68453959fae3069cfb"}
 structopt = "0.3.25"
 starcoin-accumulator = {path = "../../commons/accumulator"}
 [[bin]]

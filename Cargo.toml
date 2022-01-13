@@ -236,35 +236,35 @@ starcoin-vm-runtime.debug = 1
 [profile.release.package."*"]
 debug = false
 
-[patch."https://github.com/starcoinorg/diem"]
-move-bytecode-source-map = {git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-bytecode-verifier = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-diem-crypto = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-diem-crypto-derive = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-diem-proptest-helpers = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-diem-temppath = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-diem-workspace-hack = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-disassembler = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-docgen = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-errmapgen = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-binary-format = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-command-line-common = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-transactional-test-runner= { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-core-types={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-coverage={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-ir-types={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-compiler={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-model={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-prover={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-prover-test-utils={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-stdlib={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-unit-test={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-vm-runtime={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-vm-types={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-short-hex-str={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-x = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
-x-core={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-x-lint={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-resource-viewer={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
-move-cli = { git = "https://github.com/lerencao/libra", branch="merge-main" }
-move-package = { git = "https://github.com/lerencao/libra", branch="merge-main" }
+#[patch."https://github.com/starcoinorg/diem"]
+#move-bytecode-source-map = {git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-bytecode-verifier = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#diem-crypto = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#diem-crypto-derive = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#diem-proptest-helpers = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#diem-temppath = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#diem-workspace-hack = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-disassembler = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-docgen = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-errmapgen = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-binary-format = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-command-line-common = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-transactional-test-runner= { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-core-types={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-coverage={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-ir-types={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-compiler={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-model={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-prover={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-prover-test-utils={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-stdlib={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-unit-test={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-vm-runtime={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-vm-types={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#short-hex-str={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#x = { git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#x-core={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#x-lint={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-resource-viewer={ git = "https://github.com/lerencao/libra", branch="merge-main"  }
+#move-cli = { git = "https://github.com/lerencao/libra", branch="merge-main" }
+#move-package = { git = "https://github.com/lerencao/libra", branch="merge-main" }
