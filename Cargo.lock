@@ -10560,7 +10560,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "bcs-ext",
- "dashmap",
+ "dashmap 4.0.2",
  "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "either",
  "itertools 0.10.3",
