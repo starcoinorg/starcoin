@@ -319,6 +319,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
+name = "arrayvec"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
+
+[[package]]
 name = "ascii"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -776,6 +782,17 @@ checksum = "afa748e348ad3be8263be728124b24a24f268266f6f5d58af9d75f6a40b5c587"
 dependencies = [
  "arrayref",
  "arrayvec 0.5.2",
+ "constant_time_eq",
+]
+
+[[package]]
+name = "blake2b_simd"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72936ee4afc7f8f736d1c38383b56480b5497b4617b4a77bdbf1d2ababc76127"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.2",
  "constant_time_eq",
 ]
 
@@ -7811,7 +7828,7 @@ checksum = "de0737333e7a9502c789a36d7c7fa6092a49895d4faa31ca5df163857ded2e9d"
 dependencies = [
  "getrandom 0.1.16",
  "redox_syscall 0.1.57",
- "rust-argon2",
+ "rust-argon2 0.8.3",
 ]
 
 [[package]]
@@ -8066,7 +8083,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b18820d944b33caa75a71378964ac46f58517c92b6ae5f762636247c09e78fb"
 dependencies = [
  "base64 0.13.0",
- "blake2b_simd",
+ "blake2b_simd 0.5.11",
+ "constant_time_eq",
+ "crossbeam-utils 0.8.6",
+]
+
+[[package]]
+name = "rust-argon2"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b50162d19404029c1ceca6f6980fe40d45c8b369f6f44446fa14bb39573b5bb9"
+dependencies = [
+ "base64 0.13.0",
+ "blake2b_simd 1.0.0",
  "constant_time_eq",
  "crossbeam-utils 0.8.6",
 ]
@@ -9400,7 +9429,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "rust-argon2",
+ "rust-argon2 1.0.0",
  "sha3 0.10.0",
  "starcoin-chain-api",
  "starcoin-crypto",
@@ -9743,7 +9772,7 @@ dependencies = [
  "parking_lot 0.11.2",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "rust-argon2",
+ "rust-argon2 1.0.0",
  "serde 1.0.133",
  "serde_json",
  "starcoin-config",
