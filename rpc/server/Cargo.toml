@@ -67,7 +67,7 @@ starcoin-sync-api = { path = "../../sync/api"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-rpc-core = {path = "../../network-rpc/core"}
 api-limiter = {path = "../../commons/api-limiter"}
-governor = {version="0.3.1", features=["dashmap"]}
+governor = {version="0.4.0", features=["dashmap"]}
 
 [dev-dependencies]
 stest = { path = "../../commons/stest"}
