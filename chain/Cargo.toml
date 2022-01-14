@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.41"
 thiserror = "1.0"
-clap = "2.33.3"
+clap = "3.0.7"
 starcoin-types = { path = "../types", package = "starcoin-types" }
 starcoin-config = { path = "../config" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }

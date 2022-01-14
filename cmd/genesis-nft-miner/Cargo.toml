@@ -13,7 +13,7 @@ starcoin-crypto = {path = "../../commons/crypto" }
 starcoin-vm-types = {path = "../../vm/types"}
 bcs-ext = {path = "../../commons/bcs_ext"}
 anyhow = "~1"
-clap = { version = "3.0.0-rc.7", features=["derive"] }
+clap = { version = "3.0.7", features=["derive"] }
 serde = "1.0.130"
 serde_json = "~1"
 hex = "0.4"

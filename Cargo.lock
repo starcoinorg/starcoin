@@ -8369,7 +8369,7 @@ name = "scmd"
 version = "1.9.1"
 dependencies = [
  "anyhow",
- "clap 2.34.0",
+ "clap 3.0.7",
  "cli-table",
  "ctrlc",
  "once_cell",
@@ -9183,7 +9183,7 @@ version = "1.9.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 2.34.0",
+ "clap 3.0.7",
  "once_cell",
  "proptest",
  "proptest-derive",
@@ -9367,7 +9367,7 @@ name = "starcoin-config"
 version = "1.9.1"
 dependencies = [
  "anyhow",
- "clap 2.34.0",
+ "clap 3.0.7",
  "diem-temppath",
  "dirs-next",
  "git-version",
@@ -9821,7 +9821,7 @@ version = "1.9.1"
 dependencies = [
  "anyhow",
  "atty",
- "clap 2.34.0",
+ "clap 3.0.7",
  "codespan-reporting",
  "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diem-temppath",
@@ -10559,7 +10559,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "bcs-ext",
- "dashmap",
+ "dashmap 4.0.2",
  "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "either",
  "itertools 0.10.3",
@@ -10827,7 +10827,7 @@ version = "1.9.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 2.34.0",
+ "clap 3.0.7",
  "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra",
  "include_dir",
@@ -11314,7 +11314,7 @@ name = "testsuite"
 version = "1.9.1"
 dependencies = [
  "anyhow",
- "clap 2.34.0",
+ "clap 3.0.7",
  "cucumber_rust",
  "jsonpath",
  "lazy_static 1.4.0",
