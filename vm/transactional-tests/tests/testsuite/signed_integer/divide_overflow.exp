@@ -1,0 +1,20 @@
+processed 3 tasks
+
+task 2 'run'. lines 5-16:
+{
+  "gas_used": 8417,
+  "status": {
+    "Keep": {
+      "ExecutionFailure": {
+        "location": {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "SignedInteger64"
+          }
+        },
+        "function": 2,
+        "code_offset": 4
+      }
+    }
+  }
+}

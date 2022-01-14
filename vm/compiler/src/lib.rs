@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use move_command_line_common;
-pub use move_lang::compiled_unit::{verify_units, CompiledUnit};
-pub use move_lang::diagnostics;
-pub use move_lang::Compiler;
+pub use move_compiler::compiled_unit::{verify_units, CompiledUnit};
+pub use move_compiler::diagnostics;
+pub use move_compiler::Compiler;
 
-use crate::shared::AddressBytes;
+use crate::diagnostics::report_diagnostics_to_color_buffer;
 /// A wrap to move-lang compiler
 use anyhow::{bail, ensure, Result};
-use move_lang::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
-use move_lang::shared::Flags;
+use move_compiler::compiled_unit::AnnotatedCompiledUnit;
+use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
+use move_compiler::shared::{Flags, NumericalAddress};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
@@ -18,36 +19,50 @@ use starcoin_vm_types::compatibility::Compatibility;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::normalized::Module;
 use starcoin_vm_types::{errors::Location, errors::VMResult};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+pub mod bytecode_transpose;
+
 pub mod utils;
 pub mod command_line {
-    use crate::shared::AddressBytes;
-
-    pub fn parse_address(s: &str) -> Result<AddressBytes, String> {
+    use crate::shared::NumericalAddress;
+    pub fn parse_address(s: &str) -> Result<NumericalAddress, String> {
         let s = if !s.starts_with("0x") {
             format!("0x{}", s)
         } else {
             s.to_owned()
         };
-        AddressBytes::parse_str(s.as_str())
+        NumericalAddress::parse_str(&s)
     }
 }
 
 pub mod compiled_unit {
-    pub use move_lang::compiled_unit::*;
+    pub use move_compiler::compiled_unit::*;
 }
 
 pub mod shared {
-    pub use move_lang::shared::*;
+    pub use move_compiler::shared::*;
 }
 
-pub mod test_utils {
-    pub use move_lang_test_utils::*;
+pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress> {
+    let mapping = [
+        ("VMReserved", "0x0"),
+        ("Genesis", "0x1"),
+        ("StarcoinFramework", "0x1"),
+        ("StarcoinAssociation", "0xA550C18"),
+    ];
+    mapping
+        .iter()
+        .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap()))
+        .collect()
 }
+
+// pub mod test_utils {
+//     pub use move_lang_test_utils::*;
+// }
 
 pub mod dependency_order;
 
@@ -71,7 +86,7 @@ fn substitute_variable<S: ::std::hash::BuildHasher>(
 /// Replace {{variable}} placeholders in source file, default variable is `sender`.
 pub fn process_source_tpl<S: ::std::hash::BuildHasher>(
     source: &str,
-    sender: AddressBytes,
+    sender: AccountAddress,
     ext_vars: HashMap<&str, String, S>,
 ) -> String {
     let mut vars = ext_vars;
@@ -82,7 +97,7 @@ pub fn process_source_tpl<S: ::std::hash::BuildHasher>(
 pub fn process_source_tpl_file<P>(
     temp_dir: P,
     source_file: P,
-    sender: AddressBytes,
+    sender: AccountAddress,
 ) -> Result<PathBuf>
 where
     P: AsRef<Path>,
@@ -114,7 +129,25 @@ pub fn compile_source_string(
     let (source_text, compiled_result) = compile_source_string_no_report(source, deps, sender)?;
 
     let compiled_units = unwrap_or_report_diagnostics(&source_text, compiled_result);
-    Ok((source_text, compiled_units))
+
+    println!(
+        "{}",
+        String::from_utf8_lossy(&report_diagnostics_to_color_buffer(
+            &source_text,
+            compiled_units.1
+        ))
+    );
+
+    // report_warnings(&source_text, compiled_units.1);
+
+    Ok((
+        source_text,
+        compiled_units
+            .0
+            .into_iter()
+            .map(|c| c.into_compiled_unit())
+            .collect(),
+    ))
 }
 
 /// Compile source, and return compile error.
@@ -122,17 +155,20 @@ pub fn compile_source_string_no_report(
     source: &str,
     deps: &[String],
     sender: AccountAddress,
-) -> Result<(FilesSourceText, Result<Vec<CompiledUnit>, Diagnostics>)> {
+) -> Result<(
+    FilesSourceText,
+    Result<(Vec<AnnotatedCompiledUnit>, Diagnostics), Diagnostics>,
+)> {
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
-    let sender = AddressBytes::new(sender.into());
     let processed_source = process_source_tpl(source, sender, HashMap::new());
     std::fs::write(temp_file.as_path(), processed_source.as_bytes())?;
     let targets = vec![temp_file
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    let compiler = move_lang::Compiler::new(&targets, deps)
+    let compiler = move_compiler::Compiler::new(&targets, deps)
+        .set_named_address_values(starcoin_framework_named_addresses())
         .set_flags(Flags::empty().set_sources_shadow_deps(true));
     compiler.build()
 }
@@ -201,7 +237,7 @@ mod tests {
         let sender = parse_address("0x1dcd9f05cc902e4f342a404ade878efa").unwrap();
         let mut vars = HashMap::new();
         vars.insert("counter", format!("{}", 1));
-        let source = process_source_tpl(source_tpl, sender, vars);
+        let source = process_source_tpl(source_tpl, sender.into_inner(), vars);
         //replace fail.
         assert!(source.contains("{{alice}}"));
         assert_eq!(
@@ -227,7 +263,7 @@ mod tests {
         let sender = parse_address("0x1dcd9f05cc902e4f342a404ade878efa").unwrap();
         let mut vars = HashMap::new();
         vars.insert("counter", format!("{}", 1));
-        let source = process_source_tpl(source_tpl, sender, vars);
+        let source = process_source_tpl(source_tpl, sender.into_inner(), vars);
         assert!(!source.contains("sender"))
     }
 
@@ -293,15 +329,19 @@ mod tests {
             .unwrap()
             .1
             .unwrap()
+            .0
             .pop()
             .unwrap()
+            .into_compiled_unit()
             .serialize();
         let new_code = compile_source_string_no_report(new_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()
             .1
             .unwrap()
+            .0
             .pop()
             .unwrap()
+            .into_compiled_unit()
             .serialize();
         let compatible = check_module_compat(pre_code.as_slice(), new_code.as_slice()).unwrap();
         assert_eq!(compatible, expect);

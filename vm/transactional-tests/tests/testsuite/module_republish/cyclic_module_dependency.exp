@@ -1,0 +1,4 @@
+processed 6 tasks
+
+task 5 'publish'. lines 22-30:
+Error: Publish failure: Keep(MISCELLANEOUS_ERROR)

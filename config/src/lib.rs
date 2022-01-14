@@ -52,8 +52,8 @@ pub use diem_temppath::TempPath;
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
-    GenesisConfig, DEV_CONFIG, GAS_CONSTANTS_V1, HALLEY_CONFIG, LATEST_GAS_SCHEDULE, MAIN_CONFIG,
-    PROXIMA_CONFIG, TEST_CONFIG,
+    GenesisConfig, DEV_CONFIG, HALLEY_CONFIG, LATEST_GAS_SCHEDULE, MAIN_CONFIG, PROXIMA_CONFIG,
+    TEST_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;

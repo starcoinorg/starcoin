@@ -1,0 +1,28 @@
+processed 5 tasks
+
+task 3 'run'. lines 7-27:
+{
+  "gas_used": 17379,
+  "status": {
+    "Keep": {
+      "ExecutionFailure": {
+        "location": {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Token"
+          }
+        },
+        "function": 16,
+        "code_offset": 2
+      }
+    }
+  }
+}
+
+task 4 'run'. lines 31-49:
+{
+  "gas_used": 114188,
+  "status": {
+    "Keep": "Executed"
+  }
+}

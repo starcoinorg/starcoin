@@ -1,0 +1,17 @@
+processed 6 tasks
+
+task 4 'run'. lines 33-40:
+{
+  "gas_used": 14463,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 5 'run'. lines 42-50:
+{
+  "gas_used": 24987,
+  "status": {
+    "Keep": "Executed"
+  }
+}

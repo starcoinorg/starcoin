@@ -1,0 +1,43 @@
+processed 9 tasks
+
+task 5 'run'. lines 33-42:
+{
+  "gas_used": 24244,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 6 'run'. lines 45-58:
+{
+  "gas_used": 76259,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 7 'run'. lines 61-73:
+{
+  "gas_used": 64099,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 8 'run'. lines 76-93:
+{
+  "gas_used": 40545,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Collection2"
+          }
+        },
+        26370
+      ]
+    }
+  }
+}

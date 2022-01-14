@@ -1,0 +1,22 @@
+processed 5 tasks
+
+task 3 'run'. lines 7-18:
+{
+  "gas_used": 87171,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        "Script",
+        41
+      ]
+    }
+  }
+}
+
+task 4 'run'. lines 20-30:
+{
+  "gas_used": 16311,
+  "status": {
+    "Keep": "Executed"
+  }
+}

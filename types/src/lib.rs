@@ -17,6 +17,8 @@ pub mod account_config {
     pub use starcoin_vm_types::account_config::*;
 }
 
+pub mod account;
+
 pub mod account_state;
 
 #[allow(clippy::too_many_arguments)]
