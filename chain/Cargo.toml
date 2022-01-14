@@ -44,7 +44,6 @@ proptest-derive = { version = "0.3.0" }
 test-helper = { path = "../test-helper" }
 starcoin-chain-mock = { path = "./mock" }
 starcoin-types = { path = "../types", package = "starcoin-types", features = ["fuzzing"]}
-starcoin-functional-tests = { path = "../vm/functional-tests"}
 starcoin-resource-viewer = {path = "../vm/resource-viewer"}
 starcoin-transaction-builder = { path = "../vm/transaction-builder"}
 

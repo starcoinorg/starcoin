@@ -1,0 +1,93 @@
+processed 14 tasks
+
+task 5 'run'. lines 30-41:
+{
+  "gas_used": 119542,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 6 'run'. lines 44-55:
+{
+  "gas_used": 43065,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Account"
+          }
+        },
+        26119
+      ]
+    }
+  }
+}
+
+task 7 'run'. lines 58-74:
+{
+  "gas_used": 58850,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Account"
+          }
+        },
+        26369
+      ]
+    }
+  }
+}
+
+task 8 'run'. lines 76-95:
+{
+  "gas_used": 113099,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 9 'run'. lines 98-110:
+{
+  "gas_used": 134614,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 10 'run'. lines 112-121:
+{
+  "gas_used": 11474,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 11 'run'. lines 123-135:
+{
+  "gas_used": 317307,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 12 'run'. lines 138-147:
+{
+  "gas_used": 20214,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 13 'run'. lines 150-159:
+{
+  "gas_used": 49638,
+  "status": {
+    "Keep": "Executed"
+  }
+}

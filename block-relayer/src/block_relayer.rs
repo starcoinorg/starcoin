@@ -219,10 +219,12 @@ impl BlockRelayer {
                     warn!("Block is failed block : {:?}", block_id);
                 }
             } else {
-                let peer = network
-                    .get_peer(peer_id.clone())
-                    .await?
-                    .ok_or_else(|| format_err!("CompatBlockMessage's peer {} is not connected"))?;
+                let peer = network.get_peer(peer_id.clone()).await?.ok_or_else(|| {
+                    format_err!(
+                        "CompatBlockMessage's peer {} is not connected",
+                        peer_id.clone()
+                    )
+                })?;
                 let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default(), None);
                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
                 let _timer = metrics

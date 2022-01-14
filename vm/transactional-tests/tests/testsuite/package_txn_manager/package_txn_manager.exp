@@ -1,0 +1,129 @@
+processed 15 tasks
+
+task 3 'run'. lines 8-19:
+{
+  "gas_used": 25443,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 4 'run'. lines 21-35:
+{
+  "gas_used": 161503,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 5 'run'. lines 36-46:
+{
+  "gas_used": 30790,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "PackageTxnManager"
+          }
+        },
+        26119
+      ]
+    }
+  }
+}
+
+task 6 'run'. lines 48-59:
+{
+  "gas_used": 50189,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 7 'run'. lines 60-70:
+{
+  "gas_used": 50282,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "PackageTxnManager"
+          }
+        },
+        26631
+      ]
+    }
+  }
+}
+
+task 9 'run'. lines 74-86:
+{
+  "gas_used": 51694,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 10 'run'. lines 87-97:
+{
+  "gas_used": 35104,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 11 'run'. lines 98-106:
+{
+  "gas_used": 28816,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "PackageTxnManager"
+          }
+        },
+        26113
+      ]
+    }
+  }
+}
+
+task 12 'run'. lines 108-117:
+{
+  "gas_used": 34693,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "PackageTxnManager"
+          }
+        },
+        27143
+      ]
+    }
+  }
+}
+
+task 13 'run'. lines 119-128:
+{
+  "gas_used": 120851,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 14 'run'. lines 132-140:
+{
+  "gas_used": 37241,
+  "status": {
+    "Keep": "Executed"
+  }
+}

@@ -1,6 +1,6 @@
-address 0xa550c18 {
+address StarcoinAssociation {
 module Bytes {
-    use 0x1::Vector;
+    use StarcoinFramework::Vector;
 
     public fun slice(data: &vector<u8>, start: u64, end: u64): vector<u8> {
         let i = start;
@@ -19,8 +19,8 @@ module Bytes {
     }
 }
 module RLP {
-    use 0x1::Vector;
-    use 0xa550c18::Bytes;
+    use StarcoinFramework::Vector;
+    use StarcoinAssociation::Bytes;
     const INVALID_RLP_DATA: u64 = 100;
     const DATA_TOO_SHORT: u64 = 101;
 
@@ -90,10 +90,10 @@ module RLP {
 
 }
 module EthStateVerifier {
-    use 0xa550c18::RLP;
-    use 0x1::Vector;
-    use 0x1::Hash;
-    use 0xa550c18::Bytes;
+    use StarcoinAssociation::RLP;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Hash;
+    use StarcoinAssociation::Bytes;
 
     const INVALID_PROOF: u64 = 400;
 
