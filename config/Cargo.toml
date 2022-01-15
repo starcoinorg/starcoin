@@ -36,3 +36,4 @@ network-api = {path = "../network/api", package="network-api"}
 stdlib = { path = "../vm/stdlib"}
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="fa9abf1ea670677f0d628112c83d08937c743bad"}
 starcoin-metrics = { path = "../commons/metrics" }
+libc = "^0.2"
