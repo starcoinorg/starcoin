@@ -19,6 +19,7 @@ starcoin-types = {path = "../../types"}
 starcoin-executor = {path = "../../executor"}
 starcoin-consensus = { path = "../../consensus" }
 starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
+starcoin-account-api = { path = "../../account/api"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 structopt = "~0.3"
 csv = "~1"

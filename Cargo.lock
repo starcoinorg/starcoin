@@ -2004,6 +2004,7 @@ dependencies = [
  "pprof",
  "serde 1.0.133",
  "serde_json",
+ "starcoin-account-api",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-consensus",

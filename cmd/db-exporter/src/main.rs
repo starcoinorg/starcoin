@@ -5,6 +5,7 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
 use indicatif::{ProgressBar, ProgressStyle};
+use starcoin_account_api::AccountInfo;
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -13,7 +14,7 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
-use starcoin_executor::{Account, DEFAULT_EXPIRATION_TIME};
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
 use starcoin_storage::block::FailedBlock;
 use starcoin_storage::cache_storage::CacheStorage;
@@ -25,6 +26,7 @@ use starcoin_storage::{
     FAILED_BLOCK_PREFIX_NAME,
 };
 use starcoin_transaction_builder::build_signed_empty_txn;
+use starcoin_types::account::Account;
 use starcoin_types::block::{Block, BlockHeader, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::Transaction;
@@ -706,7 +708,7 @@ pub fn execute_transaction_with_create_account(
     for _i in 0..block_num {
         let mut txns = Vec::with_capacity(20);
         let miner_account = Account::new();
-        let miner_info = miner_account.info();
+        let miner_info = AccountInfo::from(&miner_account);
         let mut send_sequence = 0u64;
         let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
             &miner_account,
@@ -764,7 +766,7 @@ pub fn execute_transaction_with_miner_create_account(
     trans_num: u64,
 ) -> anyhow::Result<()> {
     let miner_account = Account::new();
-    let miner_info = miner_account.info();
+    let miner_info = AccountInfo::from(&miner_account);
     let mut send_sequence = 0u64;
     let (block_template, _) =
         chain.create_block_template(*miner_info.address(), None, vec![], vec![], None)?;
@@ -816,7 +818,7 @@ pub fn execute_empty_transaction_with_miner(
     trans_num: u64,
 ) -> anyhow::Result<()> {
     let miner_account = Account::new();
-    let miner_info = miner_account.info();
+    let miner_info = AccountInfo::from(&miner_account);
     let mut send_sequence = 0u64;
     let (block_template, _) =
         chain.create_block_template(*miner_info.address(), None, vec![], vec![], None)?;
@@ -866,7 +868,7 @@ pub fn execute_transaction_with_fixed_account(
     trans_num: u64,
 ) -> anyhow::Result<()> {
     let miner_account = Account::new();
-    let miner_info = miner_account.info();
+    let miner_info = AccountInfo::from(&miner_account);
     let mut send_sequence = 0u64;
     let receiver = Account::new();
     let (block_template, _) =
