@@ -94,7 +94,7 @@ pub fn starcoin_natives() -> NativeFunctionTable {
         (
             "Event",
             "write_to_event_store",
-            move_stdlib::natives::event::native_write_to_event_store,
+            move_stdlib::natives::event::write_to_event_store,
         ),
         ("Account", "create_signer", account::native_create_signer),
         ("Account", "destroy_signer", account::native_destroy_signer),

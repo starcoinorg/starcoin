@@ -1,5 +1,5 @@
 module {{sender}}::MyCounter {
-     use 0x1::Signer;
+     use StarcoinFramework::Signer;
 
      struct Counter has key, store {
         value:u64,

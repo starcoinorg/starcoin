@@ -42,6 +42,5 @@ examples/*.mv
 *.mvcov
 
 # Move Build Output
-move_build_output/
-
+build/
 *.bak

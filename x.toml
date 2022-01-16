@@ -47,25 +47,38 @@ warn = [
 ]
 
 [hakari]
-version = "v2"
-hakari-package = "diem-workspace-hack"
-unify-target-host = "replicate-target-as-host"
+resolver = "2"
+# temp hack to work arounf on hakari. We need to revisit the hakari part.
+hakari-package = "starcoin-x"
+#exact-versions = true
+platforms = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+]
 
-[[hakari.platforms]]
-triple = "x86_64-unknown-linux-gnu"
-target-features = "unknown"
+# Ideally we'd have powerpc-unknown-linux-gnu here as well, but unification causes openssl-sys to be included,
+# and openssl can't be cross-compiled without extra work. This may need to be fixed in hakari through being able
+# to say "consider only these packages for these target platforms".
 
-# Also exclude the devtools packages since they get compiled with a different set of options.
-[[hakari.omitted-packages]]
-name = "x"
-version = "0.1.0"
-workspace-path = "devtools/x"
+[hakari.traversal-excludes]
+workspace-members = [
+
+    # Also exclude the devtools packages since they get compiled with a different set of options.
+    "starcoin-x",
+]
+
+[hakari.final-excludes]
+third-party = [
+    # Exclude the fail crate because the failpoints feature should only be enabled
+    # for certain builds.
+    { name = "fail" },
+]
 
 # This follows the same syntax as CargoOptionsSummary in guppy.
 [summaries.default]
-version = "v2"
+resolver = "2"
 include-dev = false
-proc-macros-on-target = false
+initials-platform = "standard"
 
 [summaries.default.target-platform]
 triple = "x86_64-unknown-linux-gnu"
@@ -78,7 +91,7 @@ target-features = "all"
 [summaries.full]
 version = "v2"
 include-dev = true
-proc-macros-on-target = false
+initials-platform = "standard"
 # Don't set target or host platforms, or omitted packages, for the full set.
 
 [workspace]
