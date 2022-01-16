@@ -64,7 +64,7 @@ impl AccountInfo {
 
 impl From<&Account> for AccountInfo {
     fn from(account: &Account) -> Self {
-        AccountInfo::new(account.addr, account.public_key().clone(), false, false)
+        AccountInfo::new(account.addr, account.public_key(), false, false)
     }
 }
 
