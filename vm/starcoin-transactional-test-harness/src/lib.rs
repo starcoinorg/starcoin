@@ -611,7 +611,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             }
             named_address_mapping.insert(name, addr);
         }
-
+        named_address_mapping.insert(
+            "Std".to_string(),
+            NumericalAddress::parse_str("0x1").unwrap(),
+        );
         let mut public_key_mapping = BTreeMap::default();
 
         let init_args = extra_arg.unwrap_or_default();
