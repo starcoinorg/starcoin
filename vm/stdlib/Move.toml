@@ -7,5 +7,5 @@ StarcoinFramework = "0x1"
 StarcoinAssociation = "0xA550C18"
 VMReserved = "0x0"
 
-[dev-dependencies]
+[dependencies]
 UnitTest = {local = "./unit-test"}
