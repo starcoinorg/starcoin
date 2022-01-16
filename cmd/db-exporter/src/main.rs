@@ -670,30 +670,17 @@ pub fn gen_block_transactions(
     .expect("create block chain should success.");
     let block_num = block_num.unwrap_or(1000);
     let trans_num = trans_num.unwrap_or(200);
-    let result = match txn_type {
+    match txn_type {
         Txntype::CreateAccount => execute_transaction_with_miner_create_account(
-            storage.clone(),
-            &mut chain,
-            &net,
-            block_num,
-            trans_num,
+            storage, &mut chain, &net, block_num, trans_num,
         ),
-        Txntype::FixAccount => execute_transaction_with_fixed_account(
-            storage.clone(),
-            &mut chain,
-            &net,
-            block_num,
-            trans_num,
-        ),
-        Txntype::EmptyTxn => execute_empty_transaction_with_miner(
-            storage.clone(),
-            &mut chain,
-            &net,
-            block_num,
-            trans_num,
-        ),
-    };
-    result
+        Txntype::FixAccount => {
+            execute_transaction_with_fixed_account(storage, &mut chain, &net, block_num, trans_num)
+        }
+        Txntype::EmptyTxn => {
+            execute_empty_transaction_with_miner(storage, &mut chain, &net, block_num, trans_num)
+        }
+    }
 }
 
 // This use in test net create account then transfer faster then transfer non exist account
@@ -709,7 +696,6 @@ pub fn execute_transaction_with_create_account(
         let mut txns = Vec::with_capacity(20);
         let miner_account = Account::new();
         let miner_info = AccountInfo::from(&miner_account);
-        let mut send_sequence = 0u64;
         let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
             &miner_account,
             sequence,
@@ -719,7 +705,7 @@ pub fn execute_transaction_with_create_account(
         ));
         txns.push(txn.as_signed_user_txn()?.clone());
         sequence += 1;
-        for _j in 0..trans_num {
+        for (send_sequence, _j) in (0..trans_num).enumerate() {
             let receiver = Account::new();
             let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
                 &receiver,
@@ -733,13 +719,12 @@ pub fn execute_transaction_with_create_account(
             let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
                 &miner_account,
                 &receiver,
-                send_sequence,
+                send_sequence as u64,
                 1,
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
             txns.push(txn1.as_signed_user_txn()?.clone());
-            send_sequence += 1;
         }
 
         let (block_template, _) =
