@@ -19,7 +19,7 @@ use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
 use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
     TransactionPayload,
@@ -862,4 +862,28 @@ pub fn build_empty_script() -> ScriptFunction {
         vec![],
         vec![],
     )
+}
+
+fn empty_txn_payload() -> TransactionPayload {
+    TransactionPayload::ScriptFunction(build_empty_script())
+}
+
+pub fn build_signed_empty_txn(
+    user_address: AccountAddress,
+    prikey: &AccountPrivateKey,
+    seq_num: u64,
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+) -> SignedUserTransaction {
+    let txn = RawUserTransaction::new_with_default_gas_token(
+        user_address,
+        seq_num,
+        empty_txn_payload(),
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        expiration_timestamp_secs,
+        chain_id,
+    );
+    let signature = prikey.sign(&txn);
+    SignedUserTransaction::new(txn, signature)
 }

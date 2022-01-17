@@ -38,7 +38,7 @@ use std::sync::Arc;
 /// encodes the logic to operate on and verify operations on any Diem account.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Account {
-    addr: AccountAddress,
+    pub addr: AccountAddress,
     private_key: Arc<AccountPrivateKey>,
 }
 

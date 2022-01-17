@@ -16,6 +16,10 @@ starcoin-storage = {path = "../../storage"}
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-types = {path = "../../types"}
+starcoin-executor = {path = "../../executor"}
+starcoin-consensus = { path = "../../consensus" }
+starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
+starcoin-account-api = { path = "../../account/api"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 structopt = "~0.3"
 csv = "~1"
@@ -24,8 +28,10 @@ serde_json = {version="~1", features=["arbitrary_precision"]}
 anyhow="~1"
 hex="~0.4"
 indicatif = "0.15.0"
+logger = {path = "../../commons/logger",package="starcoin-logger"}
 [target."cfg(target_os=\"linux\")".dependencies]
 pprof = { version = "0.6", features = ["flamegraph"] }
+
 
 [[bin]]
 name = "starcoin_db_exporter"
