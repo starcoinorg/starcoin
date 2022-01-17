@@ -30,10 +30,10 @@ starcoin-vm-types = { path = "../vm/types" }
 starcoin-uint = { path = "../types/uint" }
 network-p2p-types = { path = "../network-p2p/types"}
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
-diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="bdb6f73f3a196f9f80ea8ae09a859c6a3579d702"  }
+diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="eda7f1d40ff76b003f0635658ad11eb974a760ee"  }
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
 stdlib = { path = "../vm/stdlib"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="fa9abf1ea670677f0d628112c83d08937c743bad"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="463aa92b0bdb20304906759f43fd5803f0ab2ff6"}
 starcoin-metrics = { path = "../commons/metrics" }
 libc = "^0.2"
