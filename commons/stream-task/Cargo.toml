@@ -16,7 +16,7 @@ pin-project = "0.4.8"
 log = "0.4.14"
 serde = { version = "1.0.130", features = ["derive"] }
 parking_lot = "0.11.2"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="fa9abf1ea670677f0d628112c83d08937c743bad"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="463aa92b0bdb20304906759f43fd5803f0ab2ff6"}
 
 [dev-dependencies]
 stest = { path = "../stest" }

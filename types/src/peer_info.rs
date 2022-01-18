@@ -29,7 +29,7 @@ impl PeerId {
 
     /// Builds a `PeerId` from a public key.
     pub fn from_public_key(key: PublicKey) -> PeerId {
-        Self::new(network_p2p_types::PeerId::from_public_key(key))
+        Self::new(network_p2p_types::PeerId::from_public_key(&key))
     }
 
     pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> PeerId {

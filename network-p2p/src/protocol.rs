@@ -156,9 +156,10 @@ impl NetworkBehaviour for Protocol {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        failed_addresses: Option<&Vec<Multiaddr>>,
     ) {
         self.behaviour
-            .inject_connection_established(peer_id, conn, endpoint)
+            .inject_connection_established(peer_id, conn, endpoint, failed_addresses)
     }
 
     fn inject_connection_closed(
@@ -166,9 +167,10 @@ impl NetworkBehaviour for Protocol {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
         self.behaviour
-            .inject_connection_closed(peer_id, conn, endpoint)
+            .inject_connection_closed(peer_id, conn, endpoint, handler)
     }
 
     fn inject_event(
@@ -180,18 +182,13 @@ impl NetworkBehaviour for Protocol {
         self.behaviour.inject_event(peer_id, connection, event)
     }
 
-    fn inject_addr_reach_failure(
+    fn inject_dial_failure(
         &mut self,
-        peer_id: Option<&PeerId>,
-        addr: &Multiaddr,
-        error: &dyn std::error::Error,
+        peer_id: Option<PeerId>,
+        handler: Self::ProtocolsHandler,
+        error: &libp2p::swarm::DialError,
     ) {
-        self.behaviour
-            .inject_addr_reach_failure(peer_id, addr, error)
-    }
-
-    fn inject_dial_failure(&mut self, peer_id: &PeerId) {
-        self.behaviour.inject_dial_failure(peer_id)
+        self.behaviour.inject_dial_failure(peer_id, handler, error);
     }
 
     fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
@@ -218,12 +215,7 @@ impl NetworkBehaviour for Protocol {
         &mut self,
         cx: &mut std::task::Context,
         params: &mut impl PollParameters,
-    ) -> Poll<
-        NetworkBehaviourAction<
-            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
-            Self::OutEvent
-        >
-    >{
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         while let Poll::Ready(Some(())) = self.tick_timeout.poll_next_unpin(cx) {
             self.tick();
         }
@@ -231,11 +223,8 @@ impl NetworkBehaviour for Protocol {
         let event = match self.behaviour.poll(cx, params) {
             Poll::Pending => return Poll::Pending,
             Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev)) => ev,
-            Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
-                return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
-            }
-            Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
-                return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
+            Poll::Ready(NetworkBehaviourAction::Dial { opts, handler }) => {
+                return Poll::Ready(NetworkBehaviourAction::Dial { opts, handler });
             }
             Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                 peer_id,
