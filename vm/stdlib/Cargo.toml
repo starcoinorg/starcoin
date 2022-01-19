@@ -26,7 +26,7 @@ clap = "2.33.3"
 serde = { version = "1.0.130", default-features = false }
 rayon = "1.5.1"
 itertools = "0.10.3"
-
+tempdir = { version = "0.3" }
 
 [dev-dependencies]
 move-unit-test = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
