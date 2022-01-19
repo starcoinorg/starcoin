@@ -8,6 +8,8 @@ use move_cli::sandbox::utils::PackageContext;
 use move_cli::{experimental, package, sandbox, Move, DEFAULT_STORAGE_DIR};
 use move_core_types::errmap::ErrorMapping;
 
+use move_binary_format::CompiledModule;
+use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use move_package_manager::{run_transactional_test, TransactionalTestCommand};
 use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowgrader;
 use starcoin_vm_runtime::natives::starcoin_natives;
@@ -37,7 +39,7 @@ pub enum Commands {
     /// Release the package.
     #[structopt(name = "release")]
     Release {
-        #[structopt(name = "move-version", long = "move-version")]
+        #[structopt(name = "move-version", long = "move-version", default_value="3", possible_values=&["3", "4"])]
         /// specify the move lang version for the release.
         /// currently, only v3, v4 are supported.
         language_version: u8,
@@ -112,7 +114,10 @@ fn main() -> Result<()> {
                 .package
                 .version;
             let pkg_name = pkg.compiled_package_info.package_name.as_str();
-            for m in pkg.compiled_modules().get_map().values() {
+            println!("Packaging Modules:");
+            for m in pkg.modules()? {
+                let m = module(&m.unit)?;
+                println!("\t {}", m.self_id());
                 let code = if language_version as u32 == VERSION_3 {
                     ModuleBytecodeDowgrader::to_v3(m)?
                 } else {
@@ -133,7 +138,14 @@ fn main() -> Result<()> {
                 release_dir
             };
             std::fs::write(&release_path, package_bytes)?;
+            println!("Release done: {}", release_path.display());
             Ok(())
         }
+    }
+}
+fn module(unit: &CompiledUnit) -> Result<&CompiledModule> {
+    match unit {
+        CompiledUnit::Module(NamedCompiledModule { module, .. }) => Ok(module),
+        _ => anyhow::bail!("Found script in modules -- this shouldn't happen"),
     }
 }
