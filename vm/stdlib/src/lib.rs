@@ -16,7 +16,7 @@ use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
-use std::env::temp_dir;
+
 use std::str::FromStr;
 use std::{
     collections::{BTreeMap, HashMap},
