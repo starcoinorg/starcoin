@@ -10288,6 +10288,7 @@ dependencies = [
  "starcoin-move-compiler",
  "starcoin-natives",
  "starcoin-vm-types",
+ "tempdir",
  "walkdir",
 ]
 

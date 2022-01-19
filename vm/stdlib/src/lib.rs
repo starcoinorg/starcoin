@@ -16,6 +16,7 @@ use starcoin_vm_types::bytecode_verifier::{dependencies, verify_module};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
+use std::env::temp_dir;
 use std::str::FromStr;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -23,6 +24,7 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
 };
+
 mod compat;
 pub use compat::*;
 pub use starcoin_move_compiler::utils::iterate_directory;
@@ -160,16 +162,18 @@ pub fn restore_stdlib_in_dir(dir: &Path) -> anyhow::Result<Vec<String>> {
     Ok(deps)
 }
 
-pub(crate) fn stdlib_files() -> Vec<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(STD_LIB_DIR);
-
-    let dirfiles = starcoin_move_compiler::utils::iterate_directory(&path);
-    starcoin_move_compiler::utils::filter_move_files(dirfiles).collect::<Vec<_>>()
-}
+// fn stdlib_files() -> Vec<String> {
+//     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+//     path.push(STD_LIB_DIR);
+//
+//     let dirfiles = starcoin_move_compiler::utils::iterate_directory(&path);
+//     starcoin_move_compiler::utils::filter_move_files(dirfiles).collect::<Vec<_>>()
+// }
 
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
-    let (_, compiled_units) = Compiler::new(&stdlib_files(), &[])
+    let temp_path = tempdir::TempDir::new("stdlib").unwrap();
+    let stdlib_files = restore_stdlib_in_dir(temp_path.path()).unwrap();
+    let (_, compiled_units) = Compiler::new(&stdlib_files, &[])
         .build_and_report()
         .unwrap();
     let mut modules = BTreeMap::new();
@@ -203,11 +207,15 @@ pub fn save_binary(path: &Path, binary: &[u8]) {
 }
 
 pub fn build_stdlib_doc() {
-    build_doc(STD_LIB_DOC_DIR, "", stdlib_files().as_slice(), "")
+    let temp_path = tempdir::TempDir::new("stdlib").unwrap();
+    let stdlib_files = restore_stdlib_in_dir(temp_path.path()).unwrap();
+    build_doc(STD_LIB_DOC_DIR, "", &stdlib_files, "")
 }
 
 pub fn build_script_abis() {
-    stdlib_files().par_iter().for_each(|file| {
+    let temp_path = tempdir::TempDir::new("stdlib").unwrap();
+    let stdlib_files = restore_stdlib_in_dir(temp_path.path()).unwrap();
+    stdlib_files.par_iter().for_each(|file| {
         build_abi(
             COMPILED_SCRIPTS_ABI_DIR,
             &[file.clone()],
@@ -258,7 +266,9 @@ pub fn build_stdlib_error_code_map() {
     fs::create_dir_all(&path).unwrap();
     path.push(ERROR_DESC_FILENAME);
     path.set_extension(ERROR_DESC_EXTENSION);
-    build_error_code_map(path.to_str().unwrap(), stdlib_files().as_slice(), "")
+    let temp_path = tempdir::TempDir::new("stdlib").unwrap();
+    let stdlib_files = restore_stdlib_in_dir(temp_path.path()).unwrap();
+    build_error_code_map(path.to_str().unwrap(), &stdlib_files, "")
 }
 
 #[allow(clippy::field_reassign_with_default)]
