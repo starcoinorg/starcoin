@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.41"
-structopt = "0.3.25"
+structopt = "0.3.26"
 ctrlc = { version = "3.2.1", features = ["termination"] }
 futures = "0.3.12"
 tokio = { version = "0.2", features = ["full"] }
