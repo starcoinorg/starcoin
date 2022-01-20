@@ -1,4 +1,4 @@
-name: Release asset bot
+name: Release mpm asset
 
 on:
   workflow_dispatch:
@@ -31,20 +31,22 @@ jobs:
       - name: Set LIBCLANG_PATH
         run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
         if: matrix.platform == 'windows-latest'
+
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release
+          args: --release --bin mpm
+
       - name: build release asset
-        run: bash ./scripts/release.sh ${{ matrix.platform }}
+        run: bash ./scripts/release_mpm.sh ${{ matrix.platform }}
 
       - name: upload artifact asset
         uses: actions/upload-artifact@v2
         if: ${{ github.event_name != 'release'}}
         with:
-          name: starcoin-${{ matrix.platform }}.zip
-          path: ./starcoin-${{ matrix.platform }}.zip
+          name: mpm-${{ matrix.platform }}.zip
+          path: ./mpm-${{ matrix.platform }}.zip
 
       - name: upload release asset
         if: ${{ github.event_name == 'release'}}
@@ -54,26 +56,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./starcoin-${{ matrix.platform }}.zip
-          asset_name: starcoin-${{ matrix.platform }}.zip
+          asset_path: ./mpm-${{ matrix.platform }}.zip
+          asset_name: mpm-${{ matrix.platform }}.zip
           asset_content_type: application/zip
-      - name: upload move-cli release asset
-        if: ${{ github.event_name == 'release'}}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./target/release/mpm
-          asset_name: mpm-${{ matrix.platform }}
-          asset_content_type: application/octet-stream
-      - name: upload genesis-nft release asset
-        if: ${{ github.event_name == 'release'}}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./target/release/genesis-nft-miner
-          asset_name: genesis-nft-miner-${{ matrix.platform }}
-          asset_content_type: application/octet-stream
