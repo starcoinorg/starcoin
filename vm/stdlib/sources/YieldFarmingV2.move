@@ -446,8 +446,8 @@ module YieldFarmingV2 {
                                                    release_per_second: u128): u128 {
         assert!(last_update_timestamp <= now_seconds, Errors::invalid_argument(ERR_FARMING_TIMESTAMP_INVALID));
         let time_period = now_seconds - last_update_timestamp;
-        let addtion_index = release_per_second * ((time_period as u128));
-        harvest_index + mantissa(exp_direct_expand(addtion_index))
+        let addition_index = release_per_second * ((time_period as u128));
+        harvest_index + mantissa(exp_direct_expand(addition_index))
     }
 
     /// There is calculating from harvest index and global parameters

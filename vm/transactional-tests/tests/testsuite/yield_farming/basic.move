@@ -137,7 +137,7 @@ script {
     use StarcoinFramework::Math;
     use alice::YieldFarmingWarpper;
 
-    /// Inital a treasury into yield farming
+    /// Initial a treasury into yield farming
     fun init(account: signer) {
         let precision: u8 = 9; //Usdx precision is also 9.
         let scaling_factor = Math::pow(10, (precision as u64));

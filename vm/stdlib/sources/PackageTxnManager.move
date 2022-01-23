@@ -32,7 +32,7 @@ address StarcoinFramework {
         const STRATEGY_FREEZE: u8 = 3;
         const DEFAULT_MIN_TIME_LIMIT: u64 = 86400000;// one day
 
-        /// arbitary stragegy
+        /// arbitrary stragegy
         public fun get_strategy_arbitrary(): u8 { STRATEGY_ARBITRARY }
         /// two phase stragegy
         public fun get_strategy_two_phase(): u8 { STRATEGY_TWO_PHASE }

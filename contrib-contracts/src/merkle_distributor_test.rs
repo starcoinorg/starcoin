@@ -24,8 +24,8 @@ struct DataProof {
 
 #[stest::test]
 fn test_merkle_distributor() -> Result<()> {
-    let assocation = Account::new_association();
-    println!("{}", assocation.address());
+    let association = Account::new_association();
+    println!("{}", association.address());
     let (chain_state, net) = prepare_genesis();
     let merkle_data = include_str!("merkle-test.json");
     let merkle_data: serde_json::Value = serde_json::from_str(merkle_data)?;

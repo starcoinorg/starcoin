@@ -229,7 +229,7 @@ module VMConfig {
         Vector::push_back(&mut table, new_gas_cost(64, 1));
         //Signature::ed25519_verify 2
         Vector::push_back(&mut table, new_gas_cost(61, 1));
-        //ED25519_THRESHOLD_VERIFY 3 this native funciton is deprecated
+        //ED25519_THRESHOLD_VERIFY 3 this native function is deprecated
         Vector::push_back(&mut table, new_gas_cost(3351, 1));
         //BSC::to_bytes 4
         Vector::push_back(&mut table, new_gas_cost(181, 1));

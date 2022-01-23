@@ -48,7 +48,7 @@ pub struct Behaviour {
     peer_info: peer_info::PeerInfoBehaviour,
     /// Discovers nodes of the network.
     discovery: DiscoveryBehaviour,
-    /// Generic request-reponse protocols.
+    /// Generic request-response protocols.
     request_responses: request_responses::RequestResponsesBehaviour,
     /// Queue of events to produce for the outside.
     #[behaviour(ignore)]
