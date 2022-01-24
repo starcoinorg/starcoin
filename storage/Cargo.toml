@@ -33,9 +33,10 @@ starcoin-uint = { path = "../types/uint"}
 coarsetime = "0.1.20"
 
 [dependencies.rocksdb]
+git = "https://github.com/starcoinorg/rust-rocksdb.git"
 version = "0.17"
 default-features = false
-features = ["lz4"]
+features = ["lz4", "sse"]
 
 
 [dev-dependencies]
