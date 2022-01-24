@@ -34,8 +34,7 @@ coarsetime = "0.1.20"
 
 [dependencies.rocksdb]
 git = "https://github.com/starcoinorg/rust-rocksdb.git"
-version = "0.17"
-default-features = false
+package = "rocksdb"
 features = ["lz4", "sse"]
 
 
