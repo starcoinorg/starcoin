@@ -31,7 +31,7 @@ starcoin-metrics = { path = "../commons/metrics"}
 starcoin-config = { path = "../config"}
 starcoin-uint = { path = "../types/uint"}
 coarsetime = "0.1.20"
-rocksdb = {git="https://github.com/starcoinorg/rust-rocksdb", rev="a58f3a5a8fa21fe637d2de5708da238346c7c06f", features= ["sse"]}
+rocksdb = {git="https://github.com/starcoinorg/rust-rocksdb", rev="a0068fdef1adbbdfcb36a7b57f75c1509fd4d044", features= ["sse"]}
 
 [dev-dependencies]
 proptest = "1.0.0"
