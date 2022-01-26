@@ -292,5 +292,66 @@ module U256 {
     native fun native_div(a: &mut U256, b: &U256);
     native fun native_rem(a: &mut U256, b: &U256);
     native fun native_pow(a: &mut U256, b: &U256);
+
+    spec fun value_of_U256(a: U256): num {
+        ( a.bits[0]             // 0 * 64
+          + a.bits[1] << 64     // 1 * 64
+          + a.bits[2] << 128    // 2 * 64
+          + a.bits[3] << 192    // 3 * 64
+        )
+    }
+
+    spec from_u128 {
+        pragma opaque;
+        ensures value_of_U256(result) == v;
+    }
+
+    spec to_u128 {
+        pragma opaque;
+        aborts_if value_of_U256(v) >= (1 << 128);
+        ensures value_of_U256(v) == result;
+    }
+
+    spec add {
+        pragma opaque;
+        // TODO: mvp doesn't seem to be using these specs
+        aborts_if value_of_U256(a) + value_of_U256(b) >= (1 << 256);
+        ensures value_of_U256(result) == value_of_U256(a) + value_of_U256(b);
+    }
+
+    spec sub {
+        pragma opaque;
+        // TODO: mvp doesn't seem to be using these specs
+        aborts_if value_of_U256(a) > value_of_U256(b);
+        ensures value_of_U256(result) == value_of_U256(a) - value_of_U256(b);
+    }
+
+    spec mul {
+        pragma opaque;
+        // TODO: mvp doesn't seem to be using these specs
+        aborts_if value_of_U256(a) * value_of_U256(b) >= (1 << 256);
+        ensures value_of_U256(result) == value_of_U256(a) * value_of_U256(b);
+    }
+
+    spec div {
+        pragma opaque;
+        // TODO: mvp doesn't seem to be using these specs
+        aborts_if value_of_U256(b) == 0;
+        ensures value_of_U256(result) == value_of_U256(a) / value_of_U256(b);
+    }
+
+    spec rem {
+        pragma opaque;
+        // TODO: mvp doesn't seem to be using these specs
+        aborts_if value_of_U256(b) == 0;
+        ensures value_of_U256(result) == value_of_U256(a) % value_of_U256(b);
+    }
+
+    spec pow {
+        pragma opaque;
+        // TODO: mvp doesn't seem to be using these specs
+        // aborts_if value_of_U256(a) * value_of_U256(b) >= (1 << 256);
+        // ensures value_of_U256(result) == value_of_U256(a) / value_of_U256(b);
+    }
 }
 }
