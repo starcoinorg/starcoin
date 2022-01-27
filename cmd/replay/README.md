@@ -7,14 +7,14 @@ A tools for replay data from a network to a new chain.
 
 
 ```bash
-$ .target/release/starcoin_replay  -n proxima -f $source -t $target -c 10000
+$ .target/release/starcoin-replay  -n proxima -f $source -t $target -c 10000
 ```
 
 
 ```
 
 USAGE:
-    starcoin_replay [OPTIONS] --from <from> --to <to>
+    starcoin-replay [OPTIONS] --from <from> --to <to>
 
 FLAGS:
     -h, --help       Prints help information
