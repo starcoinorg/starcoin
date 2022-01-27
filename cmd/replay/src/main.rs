@@ -109,20 +109,17 @@ fn main() -> anyhow::Result<()> {
 
     {
         let b = chain2.get_block_by_number(end_block)?;
-        match b {
-            Some(h) => {
-                if h.id() == chain.current_header().id() {
-                    println!("target chain already synced with source chain");
-                } else {
-                    println!("target chain have different block with source chain at latest block: {}, target: {}, source: {}",
+        if let Some(h) = b {
+            if h.id() == chain.current_header().id() {
+                println!("target chain already synced with source chain");
+            } else {
+                println!("target chain have different block with source chain at latest block: {}, target: {}, source: {}",
                              end_block,
                              h.id(),
                              chain.current_header().id(),
                     );
-                }
-                return Ok(());
             }
-            None => {}
+            return Ok(());
         }
     }
     let start_block = chain2.current_header().number() + 1;
