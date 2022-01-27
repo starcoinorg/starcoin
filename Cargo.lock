@@ -4789,7 +4789,7 @@ dependencies = [
 [[package]]
 name = "librocksdb-sys"
 version = "6.20.3"
-source = "git+https://github.com/starcoinorg/rust-rocksdb?rev=9248dae6941862dc3fc711f9a8980e71accc55d6#9248dae6941862dc3fc711f9a8980e71accc55d6"
+source = "git+https://github.com/starcoinorg/rust-rocksdb?rev=22c7ab1159e4e9207423f8104571ea81ef083dd7#22c7ab1159e4e9207423f8104571ea81ef083dd7"
 dependencies = [
  "bindgen",
  "bzip2-sys",
@@ -8099,7 +8099,7 @@ dependencies = [
 [[package]]
 name = "rocksdb"
 version = "0.17.0"
-source = "git+https://github.com/starcoinorg/rust-rocksdb?rev=9248dae6941862dc3fc711f9a8980e71accc55d6#9248dae6941862dc3fc711f9a8980e71accc55d6"
+source = "git+https://github.com/starcoinorg/rust-rocksdb?rev=22c7ab1159e4e9207423f8104571ea81ef083dd7#22c7ab1159e4e9207423f8104571ea81ef083dd7"
 dependencies = [
  "libc",
  "librocksdb-sys",
