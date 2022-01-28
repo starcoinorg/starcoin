@@ -78,7 +78,7 @@ spec:
               - -c
               - >-
                  /starcoin/starcoin -n halley -d /sc-data node sync status|grep Synchronized
-           initialDelaySeconds: 10
+          initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 3
