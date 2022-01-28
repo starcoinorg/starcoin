@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-natives"
-version = "1.10.0-alpha"
+version = "1.10.0-beta"
 authors = ["caojiafeng <funfriendcjf@gmail.com>"]
 edition = "2021"
 
