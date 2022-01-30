@@ -16,7 +16,7 @@ actix = "0.10.0"
 actix-rt = "1.1"
 tokio = "0.2"
 log = "0.4.14"
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
 jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "17.0.0"
 jsonrpc-server-utils = "17.1.0"
