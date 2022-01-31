@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-accumulator"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -18,8 +18,8 @@ starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0.130" }
 lru = "0.7.0"
-parking_lot = "0.11.2"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="3f8ecc27f02b27d56c716de58d7880ae7816390c"}
+parking_lot = "0.12.0"
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
 
 [dev-dependencies]
 rand = "0.8.4"

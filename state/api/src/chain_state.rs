@@ -218,9 +218,9 @@ impl<'a, T: 'a + StateView> IntoSuper<dyn StateView + 'a> for T {
     }
 }
 
-impl<T: ?Sized> StateReaderExt for T where T: ChainStateReader {}
+impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
-pub trait StateReaderExt: ChainStateReader {
+pub trait StateReaderExt: StateView {
     /// Get AccountResource by address
     fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
         self.get_resource::<AccountResource>(address)

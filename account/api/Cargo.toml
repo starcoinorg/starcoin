@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-account-api"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -21,7 +21,7 @@ rand = "0.8.4"
 rand_core = { version = "0.6.3", default-features = false }
 futures = "0.3.12"
 starcoin-service-registry = { path = "../../commons/service-registry" }
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="3f8ecc27f02b27d56c716de58d7880ae7816390c"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
 
 [dev-dependencies]
 

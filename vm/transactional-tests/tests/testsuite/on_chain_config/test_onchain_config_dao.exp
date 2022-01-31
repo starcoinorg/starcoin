@@ -1,0 +1,59 @@
+processed 14 tasks
+
+task 4 'run'. lines 10-21:
+{
+  "gas_used": 209424,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 5 'run'. lines 22-31:
+{
+  "gas_used": 21947,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "OnChainConfigDao"
+          }
+        },
+        102658
+      ]
+    }
+  }
+}
+
+task 6 'run'. lines 32-42:
+{
+  "gas_used": 161955,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 8 'run'. lines 47-60:
+{
+  "gas_used": 148289,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 11 'run'. lines 67-87:
+{
+  "gas_used": 153954,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 13 'run'. lines 92-106:
+{
+  "gas_used": 119263,
+  "status": {
+    "Keep": "Executed"
+  }
+}

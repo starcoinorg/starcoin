@@ -190,11 +190,12 @@ impl NetworkBehaviour for PeerInfoBehaviour {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        failed_addresses: Option<&Vec<Multiaddr>>,
     ) {
         self.ping
-            .inject_connection_established(peer_id, conn, endpoint);
+            .inject_connection_established(peer_id, conn, endpoint, failed_addresses);
         self.identify
-            .inject_connection_established(peer_id, conn, endpoint);
+            .inject_connection_established(peer_id, conn, endpoint, failed_addresses);
         match self.nodes_info.entry(*peer_id) {
             Entry::Vacant(e) => {
                 e.insert(NodeInfo::new(endpoint.clone()));
@@ -220,10 +221,14 @@ impl NetworkBehaviour for PeerInfoBehaviour {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
-        self.ping.inject_connection_closed(peer_id, conn, endpoint);
+        let (ping_handler, identity_handler) = handler.into_inner();
+
+        self.ping
+            .inject_connection_closed(peer_id, conn, endpoint, ping_handler);
         self.identify
-            .inject_connection_closed(peer_id, conn, endpoint);
+            .inject_connection_closed(peer_id, conn, endpoint, identity_handler);
 
         if let Some(entry) = self.nodes_info.get_mut(peer_id) {
             entry.endpoints.retain(|ep| ep != endpoint)
@@ -257,25 +262,39 @@ impl NetworkBehaviour for PeerInfoBehaviour {
         }
     }
 
-    fn inject_addr_reach_failure(
+    fn inject_dial_failure(
         &mut self,
-        peer_id: Option<&PeerId>,
-        addr: &Multiaddr,
-        error: &dyn std::error::Error,
+        peer_id: Option<PeerId>,
+        handler: Self::ProtocolsHandler,
+        error: &libp2p::swarm::DialError,
     ) {
-        self.ping.inject_addr_reach_failure(peer_id, addr, error);
+        let (ping_handler, identity_handler) = handler.into_inner();
         self.identify
-            .inject_addr_reach_failure(peer_id, addr, error);
+            .inject_dial_failure(peer_id, identity_handler, error);
+        self.ping.inject_dial_failure(peer_id, ping_handler, error);
     }
 
-    fn inject_dial_failure(&mut self, peer_id: &PeerId) {
-        self.ping.inject_dial_failure(peer_id);
-        self.identify.inject_dial_failure(peer_id);
+    fn inject_new_listener(&mut self, id: ListenerId) {
+        self.ping.inject_new_listener(id);
+        self.identify.inject_new_listener(id);
     }
 
     fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
         self.ping.inject_new_listen_addr(id, addr);
         self.identify.inject_new_listen_addr(id, addr);
+    }
+
+    fn inject_listen_failure(
+        &mut self,
+        local_addr: &Multiaddr,
+        send_back_addr: &Multiaddr,
+        handler: Self::ProtocolsHandler,
+    ) {
+        let (ping_handler, identity_handler) = handler.into_inner();
+        self.identify
+            .inject_listen_failure(local_addr, send_back_addr, identity_handler);
+        self.ping
+            .inject_listen_failure(local_addr, send_back_addr, ping_handler);
     }
 
     fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
@@ -302,12 +321,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
         &mut self,
         cx: &mut Context,
         params: &mut impl PollParameters,
-    ) -> Poll<
-        NetworkBehaviourAction<
-            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
-            Self::OutEvent
-        >
-    >{
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         loop {
             match self.ping.poll(cx, params) {
                 Poll::Pending => break,
@@ -320,11 +334,10 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                         self.handle_ping_report(&peer, rtt)
                     }
                 }
-                Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
-                }
-                Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
+                Poll::Ready(NetworkBehaviourAction::Dial { opts, handler }) => {
+                    let handler =
+                        IntoProtocolsHandler::select(handler, self.identify.new_handler());
+                    return Poll::Ready(NetworkBehaviourAction::Dial { opts, handler });
                 }
                 Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                     peer_id,
@@ -372,12 +385,11 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                         //Todo::process it
                     }
                 },
-                Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
+                Poll::Ready(NetworkBehaviourAction::Dial { opts, handler }) => {
+                    let handler = IntoProtocolsHandler::select(self.ping.new_handler(), handler);
+                    return Poll::Ready(NetworkBehaviourAction::Dial { opts, handler });
                 }
-                Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
-                }
+
                 #[allow(clippy::unit_arg)]
                 Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                     peer_id,

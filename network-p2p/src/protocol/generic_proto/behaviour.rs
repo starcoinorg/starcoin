@@ -23,13 +23,16 @@ use bytes::BytesMut;
 use fnv::FnvHashMap;
 use futures::prelude::*;
 use libp2p::core::{connection::ConnectionId, ConnectedPoint, Multiaddr, PeerId};
+use libp2p::swarm::dial_opts::DialOpts;
 use libp2p::swarm::{
-    DialPeerCondition, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters,
+    dial_opts::PeerCondition, DialError, IntoProtocolsHandler, NetworkBehaviour,
+    NetworkBehaviourAction, NotifyHandler, PollParameters,
 };
 use log::{debug, error, trace, warn};
 use parking_lot::RwLock;
 use rand::distributions::{Distribution as _, Uniform};
 use sc_peerset::peersstate::PeersState;
+use sc_peerset::DropReason;
 use smallvec::SmallVec;
 use std::task::{Context, Poll};
 use std::{
@@ -37,7 +40,7 @@ use std::{
     cmp,
     collections::{hash_map::Entry, VecDeque},
 };
-use std::{error, mem, pin::Pin, str, sync::Arc, time::Duration};
+use std::{mem, pin::Pin, str, sync::Arc, time::Duration};
 use wasm_timer::Instant;
 
 /// Network behaviour that handles opening substreams for custom protocols with other peers.
@@ -129,7 +132,7 @@ pub struct GenericProto {
     next_incoming_index: sc_peerset::IncomingIndex,
 
     /// Events to produce from `poll()`.
-    events: VecDeque<NetworkBehaviourAction<NotifsHandlerIn, GenericProtoOut>>,
+    events: VecDeque<NetworkBehaviourAction<GenericProtoOut, NotifsHandlerProto>>,
 }
 
 /// Identifier for a delay firing.
@@ -649,6 +652,7 @@ impl GenericProto {
     }
     /// Function that is called when the peerset wants us to connect to a peer.
     fn peerset_report_connect(&mut self, peer_id: PeerId, set_id: sc_peerset::SetId) {
+        let handler = self.new_handler();
         // If `PeerId` is unknown to us, insert an entry, start dialing, and return early.
         let mut occ_entry = match self.peers.entry((peer_id, set_id)) {
             Entry::Occupied(entry) => entry,
@@ -658,9 +662,11 @@ impl GenericProto {
                        entry.key().0, set_id);
                 debug!(target: "sub-libp2p", "Libp2p <= Dial {}", entry.key().0);
                 // The `DialPeerCondition` ensures that dial attempts are de-duplicated
-                self.events.push_back(NetworkBehaviourAction::DialPeer {
-                    peer_id: entry.key().0,
-                    condition: DialPeerCondition::Disconnected,
+                self.events.push_back(NetworkBehaviourAction::Dial {
+                    opts: DialOpts::peer_id(entry.key().0)
+                        .condition(PeerCondition::Disconnected)
+                        .build(),
+                    handler,
                 });
                 entry.insert(PeerState::Requested);
                 return;
@@ -690,9 +696,11 @@ impl GenericProto {
                        occ_entry.key().0, set_id);
                 debug!(target: "sub-libp2p", "Libp2p <= Dial {:?}", occ_entry.key());
                 // The `DialPeerCondition` ensures that dial attempts are de-duplicated
-                self.events.push_back(NetworkBehaviourAction::DialPeer {
-                    peer_id: occ_entry.key().0,
-                    condition: DialPeerCondition::Disconnected,
+                self.events.push_back(NetworkBehaviourAction::Dial {
+                    opts: DialOpts::peer_id(occ_entry.key().0)
+                        .condition(PeerCondition::Disconnected)
+                        .build(),
+                    handler,
                 });
                 *occ_entry.into_mut() = PeerState::Requested;
             }
@@ -1162,6 +1170,7 @@ impl NetworkBehaviour for GenericProto {
         peer_id: &PeerId,
         conn: &ConnectionId,
         endpoint: &ConnectedPoint,
+        _failed_addresses: Option<&Vec<Multiaddr>>,
     ) {
         for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
             match self
@@ -1230,6 +1239,7 @@ impl NetworkBehaviour for GenericProto {
         peer_id: &PeerId,
         conn: &ConnectionId,
         _endpoint: &ConnectedPoint,
+        _handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
         for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
             let mut entry = if let Entry::Occupied(entry) = self.peers.entry((*peer_id, set_id)) {
@@ -1526,72 +1536,75 @@ impl NetworkBehaviour for GenericProto {
 
     fn inject_disconnected(&mut self, _peer_id: &PeerId) {}
 
-    fn inject_addr_reach_failure(
+    fn inject_dial_failure(
         &mut self,
-        peer_id: Option<&PeerId>,
-        addr: &Multiaddr,
-        error: &dyn error::Error,
+        peer_id: Option<PeerId>,
+        _: Self::ProtocolsHandler,
+        error: &DialError,
     ) {
-        trace!(target: "sub-libp2p", "Libp2p => Reach failure for {:?} through {:?}: {:?}", peer_id, addr, error);
-    }
+        if let DialError::Transport(errors) = error {
+            for (addr, error) in errors.iter() {
+                trace!(target: "sub-libp2p", "Libp2p => Reach failure for {:?} through {:?}: {:?}", peer_id, addr, error);
+            }
+        }
 
-    fn inject_dial_failure(&mut self, peer_id: &PeerId) {
-        debug!(target: "sub-libp2p", "Libp2p => Dial failure for {:?}", peer_id);
+        if let Some(peer_id) = peer_id {
+            trace!(target: "sub-libp2p", "Libp2p => Dial failure for {:?}", peer_id);
 
-        for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
-            if let Entry::Occupied(mut entry) = self.peers.entry((*peer_id, set_id)) {
-                match mem::replace(entry.get_mut(), PeerState::Poisoned) {
-                    // The peer is not in our list.
-                    st @ PeerState::Backoff { .. } => {
-                        *entry.into_mut() = st;
-                    }
+            for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
+                if let Entry::Occupied(mut entry) = self.peers.entry((peer_id, set_id)) {
+                    match mem::replace(entry.get_mut(), PeerState::Poisoned) {
+                        // The peer is not in our list.
+                        st @ PeerState::Backoff { .. } => {
+                            *entry.into_mut() = st;
+                        }
 
-                    // "Basic" situation: we failed to reach a peer that the peerset requested.
-                    st @ PeerState::Requested | st @ PeerState::PendingRequest { .. } => {
-                        debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
-                        self.peerset
-                            .dropped(set_id, *peer_id, sc_peerset::DropReason::Unknown);
+                        // "Basic" situation: we failed to reach a peer that the peerset requested.
+                        st @ PeerState::Requested | st @ PeerState::PendingRequest { .. } => {
+                            trace!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", peer_id, set_id);
+                            self.peerset.dropped(set_id, peer_id, DropReason::Unknown);
 
-                        let now = Instant::now();
-                        let ban_duration = match st {
-                            PeerState::PendingRequest { timer_deadline, .. }
-                                if timer_deadline > now =>
-                            {
-                                cmp::max(timer_deadline - now, Duration::from_secs(5))
-                            }
-                            _ => Duration::from_secs(5),
-                        };
+                            let now = Instant::now();
+                            let ban_duration = match st {
+                                PeerState::PendingRequest { timer_deadline, .. }
+                                    if timer_deadline > now =>
+                                {
+                                    cmp::max(timer_deadline - now, Duration::from_secs(5))
+                                }
+                                _ => Duration::from_secs(5),
+                            };
 
-                        let delay_id = self.next_delay_id;
-                        self.next_delay_id.0 += 1;
-                        let delay = futures_timer::Delay::new(ban_duration);
-                        let peer_id = *peer_id;
-                        self.delays.push(
-                            async move {
-                                delay.await;
-                                (delay_id, peer_id, set_id)
-                            }
-                            .boxed(),
-                        );
+                            let delay_id = self.next_delay_id;
+                            self.next_delay_id.0 += 1;
+                            let delay = futures_timer::Delay::new(ban_duration);
+                            let peer_id = peer_id;
+                            self.delays.push(
+                                async move {
+                                    delay.await;
+                                    (delay_id, peer_id, set_id)
+                                }
+                                .boxed(),
+                            );
 
-                        *entry.into_mut() = PeerState::Backoff {
-                            timer: delay_id,
-                            timer_deadline: now + ban_duration,
-                        };
-                    }
+                            *entry.into_mut() = PeerState::Backoff {
+                                timer: delay_id,
+                                timer_deadline: now + ban_duration,
+                            };
+                        }
 
-                    // We can still get dial failures even if we are already connected to the peer,
-                    // as an extra diagnostic for an earlier attempt.
-                    st @ PeerState::Disabled { .. }
-                    | st @ PeerState::Enabled { .. }
-                    | st @ PeerState::DisabledPendingEnable { .. }
-                    | st @ PeerState::Incoming { .. } => {
-                        *entry.into_mut() = st;
-                    }
+                        // We can still get dial failures even if we are already connected to the
+                        // peer, as an extra diagnostic for an earlier attempt.
+                        st @ PeerState::Disabled { .. }
+                        | st @ PeerState::Enabled { .. }
+                        | st @ PeerState::DisabledPendingEnable { .. }
+                        | st @ PeerState::Incoming { .. } => {
+                            *entry.into_mut() = st;
+                        }
 
-                    PeerState::Poisoned => {
-                        error!(target: "sub-libp2p", "State of {:?} is poisoned", peer_id);
-                        debug_assert!(false);
+                        PeerState::Poisoned => {
+                            error!(target: "sub-libp2p", "State of {:?} is poisoned", peer_id);
+                            debug_assert!(false);
+                        }
                     }
                 }
             }
@@ -2159,7 +2172,7 @@ impl NetworkBehaviour for GenericProto {
         &mut self,
         cx: &mut Context,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<NotifsHandlerIn, Self::OutEvent>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         if let Some(event) = self.events.pop_front() {
             return Poll::Ready(event);
         }
@@ -2198,6 +2211,7 @@ impl NetworkBehaviour for GenericProto {
         while let Poll::Ready(Some((delay_id, peer_id, set_id))) =
             Pin::new(&mut self.delays).poll_next(cx)
         {
+            let handler = self.new_handler();
             let peer_state = match self.peers.get_mut(&(peer_id, set_id)) {
                 Some(s) => s,
                 // We intentionally never remove elements from `delays`, and it may
@@ -2214,9 +2228,11 @@ impl NetworkBehaviour for GenericProto {
                 PeerState::PendingRequest { timer, .. } if *timer == delay_id => {
                     debug!(target: "sub-libp2p", "Libp2p <= Dial {:?} now that ban has expired", peer_id);
                     // The `DialPeerCondition` ensures that dial attempts are de-duplicated
-                    self.events.push_back(NetworkBehaviourAction::DialPeer {
-                        peer_id,
-                        condition: DialPeerCondition::Disconnected,
+                    self.events.push_back(NetworkBehaviourAction::Dial {
+                        opts: DialOpts::peer_id(peer_id)
+                            .condition(PeerCondition::Disconnected)
+                            .build(),
+                        handler,
                     });
                     *peer_state = PeerState::Requested;
                 }

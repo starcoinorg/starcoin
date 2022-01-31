@@ -1,0 +1,35 @@
+processed 6 tasks
+
+task 3 'run'. lines 8-26:
+{
+  "gas_used": 175531,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 4 'run'. lines 28-46:
+{
+  "gas_used": 116316,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 5 'run'. lines 48-66:
+{
+  "gas_used": 25635,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "DummyToken"
+          }
+        },
+        25863
+      ]
+    }
+  }
+}

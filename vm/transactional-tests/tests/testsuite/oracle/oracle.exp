@@ -1,0 +1,127 @@
+processed 20 tasks
+
+task 5 'run'. lines 13-22:
+{
+  "gas_used": 71562,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 6 'run'. lines 24-33:
+{
+  "gas_used": 71562,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 7 'run'. lines 36-47:
+{
+  "gas_used": 28872,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 8 'run'. lines 49-61:
+{
+  "gas_used": 37189,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 10 'run'. lines 66-73:
+{
+  "gas_used": 42267,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 11 'run'. lines 76-84:
+{
+  "gas_used": 19877,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 13 'run'. lines 89-103:
+{
+  "gas_used": 77033,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "PriceOracleAggregator"
+          }
+        },
+        25857
+      ]
+    }
+  }
+}
+
+task 14 'run'. lines 106-120:
+{
+  "gas_used": 77033,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "PriceOracleAggregator"
+          }
+        },
+        25857
+      ]
+    }
+  }
+}
+
+task 16 'run'. lines 146-155:
+{
+  "gas_used": 20157,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 17 'run'. lines 158-167:
+{
+  "gas_used": 22122,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Oracle"
+          }
+        },
+        26116
+      ]
+    }
+  }
+}
+
+task 18 'run'. lines 169-178:
+{
+  "gas_used": 42981,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 19 'run'. lines 180-189:
+{
+  "gas_used": 14158,
+  "status": {
+    "Keep": "Executed"
+  }
+}

@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-executor-benchmark"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -11,7 +11,7 @@ anyhow = "1.0.41"
 itertools = { version = "0.10.3", default-features = false }
 rand = "0.8.4"
 rayon = "1"
-structopt = "0.3.25"
+structopt = "0.3.26"
 executor = {path = "../../executor", package="starcoin-executor" }
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 logger = {path = "../../commons/logger", package="starcoin-logger"}

@@ -1,30 +1,30 @@
 [package]
 name = "starcoin-natives"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["caojiafeng <funfriendcjf@gmail.com>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-docgen = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-prover = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
+move-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-docgen = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-prover = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
 starcoin-crypto={path = "../../commons/crypto"}
 log = "0.4.14"
 walkdir = "2.3.1"
-smallvec = "1.7.0"
+smallvec = "1.8.0"
 tiny-keccak={version="2", features = ["keccak"]}
 libsecp256k1 = "0.7.0"
 arrayref = "0.3"
 ripemd160 = "0.9.1"
-num_enum = "0.5.5"
+num_enum = "0.5.6"
 starcoin-uint = {path = "../../types/uint"}
 starcoin-vm-types=  {path = "../types"}
 

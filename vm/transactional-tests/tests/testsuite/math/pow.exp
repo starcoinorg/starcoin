@@ -1,0 +1,28 @@
+processed 4 tasks
+
+task 2 'run'. lines 5-16:
+{
+  "gas_used": 28743,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 3 'run'. lines 18-27:
+{
+  "gas_used": 4791,
+  "status": {
+    "Keep": {
+      "ExecutionFailure": {
+        "location": {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Math"
+          }
+        },
+        "function": 2,
+        "code_offset": 26
+      }
+    }
+  }
+}

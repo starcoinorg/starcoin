@@ -1,6 +1,6 @@
 [package]
 name = "benchmarks"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -23,7 +23,7 @@ starcoin-genesis = {path = "../genesis"}
 starcoin-executor = {path = "../executor", package="starcoin-executor" }
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-account-api = { path = "../account/api"}
-parking_lot = "0.11"
+parking_lot = "0.12"
 forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}

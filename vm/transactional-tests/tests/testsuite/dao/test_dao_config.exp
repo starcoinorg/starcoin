@@ -1,0 +1,223 @@
+processed 18 tasks
+
+task 4 'run'. lines 25-43:
+{
+  "gas_used": 254270,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 5 'run'. lines 46-67:
+{
+  "gas_used": 212057,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 6 'run'. lines 70-85:
+{
+  "gas_used": 38559,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 7 'run'. lines 88-103:
+{
+  "gas_used": 38559,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 8 'run'. lines 106-121:
+{
+  "gas_used": 38664,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        359943
+      ]
+    }
+  }
+}
+
+task 9 'run'. lines 124-139:
+{
+  "gas_used": 38559,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 10 'run'. lines 142-152:
+{
+  "gas_used": 21364,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "ModifyDaoConfigProposal"
+          }
+        },
+        102658
+      ]
+    }
+  }
+}
+
+task 11 'run'. lines 155-195:
+{
+  "gas_used": 131941,
+  "status": {
+    "Keep": "Executed"
+  }
+}
+
+task 12 'run'. lines 199-226:
+{
+  "gas_used": 52355,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        359943
+      ]
+    }
+  }
+}
+
+task 13 'run'. lines 229-249:
+{
+  "gas_used": 11212,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 14 'run'. lines 252-272:
+{
+  "gas_used": 11250,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 15 'run'. lines 275-295:
+{
+  "gas_used": 11358,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 16 'run'. lines 298-318:
+{
+  "gas_used": 11393,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}
+
+task 17 'run'. lines 321-341:
+{
+  "gas_used": 11431,
+  "status": {
+    "Keep": {
+      "MoveAbort": [
+        {
+          "Module": {
+            "address": "0x00000000000000000000000000000001",
+            "name": "Dao"
+          }
+        },
+        360199
+      ]
+    }
+  }
+}

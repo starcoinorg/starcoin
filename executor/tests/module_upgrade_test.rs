@@ -374,6 +374,19 @@ fn test_stdlib_upgrade() -> Result<()> {
             )?;
             proposal_id += 1;
         }
+        // if upgrade from 10 to later, we need to update language version to 4.
+        if let StdlibVersion::Version(10) = current_version {
+            dao_vote_test(
+                &alice,
+                &chain_state,
+                &net,
+                vote_language_version(&net, 4),
+                on_chain_config_type_tag(MoveLanguageVersion::type_tag()),
+                execute_script_on_chain_config(&net, MoveLanguageVersion::type_tag(), proposal_id),
+                proposal_id,
+            )?;
+            proposal_id += 1;
+        }
         verify_version_state(current_version, &chain_state)?;
 
         let dao_action_type_tag = new_version.upgrade_module_type_tag();

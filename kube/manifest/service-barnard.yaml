@@ -63,6 +63,11 @@ spec:
     name: metrics
     protocol: TCP
     targetPort: 9101
+  - port: 9880
+    name: stratum
+    protocol: TCP
+    targetPort: 9880
+    
   selector:
     app: starcoin
     network: barnard

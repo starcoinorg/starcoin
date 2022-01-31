@@ -42,6 +42,8 @@ mod sync_config;
 mod tests;
 mod txpool_config;
 
+use thiserror::Error;
+
 use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
@@ -52,8 +54,8 @@ pub use diem_temppath::TempPath;
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
-    GenesisConfig, DEV_CONFIG, GAS_CONSTANTS_V1, HALLEY_CONFIG, LATEST_GAS_SCHEDULE, MAIN_CONFIG,
-    PROXIMA_CONFIG, TEST_CONFIG,
+    GenesisConfig, DEV_CONFIG, HALLEY_CONFIG, LATEST_GAS_SCHEDULE, MAIN_CONFIG, PROXIMA_CONFIG,
+    TEST_CONFIG,
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -500,4 +502,47 @@ impl NodeConfig {
         self.stratum.merge_with_opt(opt, base)?;
         Ok(())
     }
+}
+
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("file limit {0}")]
+    Limit(String),
+}
+
+#[cfg(unix)]
+pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
+    use std::mem;
+
+    unsafe {
+        let mut fd_limit = mem::zeroed();
+        let mut err = libc::getrlimit(libc::RLIMIT_NOFILE, &mut fd_limit);
+        if err != 0 {
+            return Err(ConfigError::Limit("check_open_fds_limit failed".to_owned()));
+        }
+        if fd_limit.rlim_cur >= max_files {
+            return Ok(());
+        }
+
+        let prev_limit = fd_limit.rlim_cur;
+        fd_limit.rlim_cur = max_files;
+        if fd_limit.rlim_max < max_files {
+            // If the process is not started by privileged user, this will fail.
+            fd_limit.rlim_max = max_files;
+        }
+        err = libc::setrlimit(libc::RLIMIT_NOFILE, &fd_limit);
+        info!("set max open fds {}", max_files);
+        if err == 0 {
+            return Ok(());
+        }
+        Err(ConfigError::Limit(format!(
+            "the maximum number of open file descriptors is too \
+             small, got {}, expect greater or equal to {}",
+            prev_limit, max_files
+        )))
+    }
+}
+#[cfg(not(unix))]
+pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
+    Ok(())
 }

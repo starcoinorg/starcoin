@@ -1,2 +1,0 @@
-Command `publish src/modules --mode bare`:
-Command `run src/scripts/test.move --mode bare --dry-run`:

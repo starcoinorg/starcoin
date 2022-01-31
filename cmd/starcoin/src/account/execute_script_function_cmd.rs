@@ -34,7 +34,7 @@ pub struct ExecuteScriptFunctionOpt {
     transaction_opts: TransactionOptions,
 
     #[structopt(long = "function", name = "script-function")]
-    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer
+    /// script function to execute, example: 0x1::TransferScripts::peer_to_peer_v2
     script_function: FunctionIdView,
 }
 

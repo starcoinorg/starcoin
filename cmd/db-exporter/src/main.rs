@@ -5,12 +5,16 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
 use indicatif::{ProgressBar, ProgressStyle};
+use starcoin_account_api::AccountInfo;
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
 use starcoin_storage::block::FailedBlock;
 use starcoin_storage::cache_storage::CacheStorage;
@@ -21,8 +25,12 @@ use starcoin_storage::{
     BlockStore, Storage, StorageVersion, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
     FAILED_BLOCK_PREFIX_NAME,
 };
+use starcoin_transaction_builder::build_signed_empty_txn;
+use starcoin_types::account::Account;
 use starcoin_types::block::{Block, BlockHeader, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
+use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
@@ -189,6 +197,7 @@ enum Cmd {
     ExportBlockRange(ExportBlockRangeOptions),
     ApplyBlock(ApplyBlockOptions),
     StartupInfoBack(StartupInfoBackOptions),
+    GenBlockTransactions(GenBlockTransactionsOptions),
 }
 
 #[derive(Debug, Clone, StructOpt)]
@@ -269,6 +278,43 @@ pub struct StartupInfoBackOptions {
     /// startupinfo BlockNumber back off size
     #[structopt(long, short = "b")]
     pub back_size: Option<u64>,
+}
+#[derive(Debug, Copy, Clone)]
+pub enum Txntype {
+    CreateAccount,
+    FixAccount,
+    EmptyTxn,
+}
+
+impl FromStr for Txntype {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let txn_type = match s {
+            "CreateAccount" => Txntype::CreateAccount,
+            "FixAccount" => Txntype::FixAccount,
+            "EmptyTxn" => Txntype::EmptyTxn,
+            _ => {
+                bail!("Unsupported TxnType: {}", s)
+            }
+        };
+        Ok(txn_type)
+    }
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "gen_block_transactions", about = "gen block transactions")]
+pub struct GenBlockTransactionsOptions {
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/halley
+    pub to_path: PathBuf,
+    #[structopt(long, short = "b")]
+    pub block_num: Option<u64>,
+    #[structopt(long, short = "t")]
+    pub trans_num: Option<u64>,
+    #[structopt(long, short = "p", possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    /// txn type
+    pub txn_type: Txntype,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -373,6 +419,15 @@ fn main() -> anyhow::Result<()> {
     }
     if let Cmd::StartupInfoBack(option) = cmd {
         let result = startup_info_back(option.to_path, option.back_size, option.net);
+        return result;
+    }
+    if let Cmd::GenBlockTransactions(option) = cmd {
+        let result = gen_block_transactions(
+            option.to_path,
+            option.block_num,
+            option.trans_num,
+            option.txn_type,
+        );
         return result;
     }
     Ok(())
@@ -536,6 +591,10 @@ pub fn apply_block(
     bar.finish();
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply block use time: {:?}", use_time.as_secs());
+    let chain_info = storage
+        .get_chain_info()?
+        .ok_or_else(|| format_err!("{}", "get chain_info error"))?;
+    println!("chain_info {}", chain_info);
     Ok(())
 }
 
@@ -585,5 +644,255 @@ pub fn startup_info_back(
         "startup_info block number origin {} now  {}",
         cur_num, block_number
     );
+    Ok(())
+}
+
+pub fn gen_block_transactions(
+    to_dir: PathBuf,
+    block_num: Option<u64>,
+    trans_num: Option<u64>,
+    txn_type: Txntype,
+) -> anyhow::Result<()> {
+    ::logger::init();
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block_num = block_num.unwrap_or(1000);
+    let trans_num = trans_num.unwrap_or(200);
+    match txn_type {
+        Txntype::CreateAccount => execute_transaction_with_miner_create_account(
+            storage, &mut chain, &net, block_num, trans_num,
+        ),
+        Txntype::FixAccount => {
+            execute_transaction_with_fixed_account(storage, &mut chain, &net, block_num, trans_num)
+        }
+        Txntype::EmptyTxn => {
+            execute_empty_transaction_with_miner(storage, &mut chain, &net, block_num, trans_num)
+        }
+    }
+}
+
+// This use in test net create account then transfer faster then transfer non exist account
+pub fn execute_transaction_with_create_account(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+    trans_num: u64,
+) -> anyhow::Result<()> {
+    let mut sequence = 0u64;
+    for _i in 0..block_num {
+        let mut txns = Vec::with_capacity(20);
+        let miner_account = Account::new();
+        let miner_info = AccountInfo::from(&miner_account);
+        let txn = Transaction::UserTransaction(create_account_txn_sent_as_association(
+            &miner_account,
+            sequence,
+            50_000_000,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
+        ));
+        txns.push(txn.as_signed_user_txn()?.clone());
+        sequence += 1;
+        for (send_sequence, _j) in (0..trans_num).enumerate() {
+            let receiver = Account::new();
+            let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+                &receiver,
+                sequence,
+                1000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net,
+            ));
+            txns.push(txn1.as_signed_user_txn()?.clone());
+            sequence += 1;
+            let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                &miner_account,
+                &receiver,
+                send_sequence as u64,
+                1,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ));
+            txns.push(txn1.as_signed_user_txn()?.clone());
+        }
+
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        if block.transactions().len() as u64 <= trans_num {
+            println!("trans {}", block.transactions().len());
+        }
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
+    Ok(())
+}
+
+pub fn execute_transaction_with_miner_create_account(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+    trans_num: u64,
+) -> anyhow::Result<()> {
+    let miner_account = Account::new();
+    let miner_info = AccountInfo::from(&miner_account);
+    let mut send_sequence = 0u64;
+    let (block_template, _) =
+        chain.create_block_template(*miner_info.address(), None, vec![], vec![], None)?;
+    let block =
+        ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+    let block_hash = block.header.id();
+    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    for _i in 0..block_num {
+        let mut sequence = send_sequence;
+        let mut txns = vec![];
+        for _j in 0..trans_num {
+            let receiver = Account::new();
+            let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                &miner_account,
+                &receiver,
+                sequence,
+                1,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ));
+            txns.push(txn1.as_signed_user_txn()?.clone());
+            sequence += 1;
+        }
+
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        if block.transactions().len() as u64 <= trans_num {
+            println!("trans {}", block.transactions().len());
+        }
+        send_sequence += block.transactions().len() as u64;
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
+    Ok(())
+}
+
+pub fn execute_empty_transaction_with_miner(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+    trans_num: u64,
+) -> anyhow::Result<()> {
+    let miner_account = Account::new();
+    let miner_info = AccountInfo::from(&miner_account);
+    let mut send_sequence = 0u64;
+    let (block_template, _) =
+        chain.create_block_template(*miner_info.address(), None, vec![], vec![], None)?;
+    let block =
+        ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+    let block_hash = block.header.id();
+    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    for _i in 0..block_num {
+        let mut sequence = send_sequence;
+        let mut txns = vec![];
+        for _j in 0..trans_num {
+            let txn = build_signed_empty_txn(
+                *miner_account.address(),
+                miner_account.private_key(),
+                sequence,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            );
+            txns.push(txn);
+            sequence += 1;
+        }
+
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        if block.transactions().len() as u64 <= trans_num {
+            println!("trans {}", block.transactions().len());
+        }
+        send_sequence += block.transactions().len() as u64;
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
+    Ok(())
+}
+
+pub fn execute_transaction_with_fixed_account(
+    storage: Arc<Storage>,
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    block_num: u64,
+    trans_num: u64,
+) -> anyhow::Result<()> {
+    let miner_account = Account::new();
+    let miner_info = AccountInfo::from(&miner_account);
+    let mut send_sequence = 0u64;
+    let receiver = Account::new();
+    let (block_template, _) =
+        chain.create_block_template(*miner_info.address(), None, vec![], vec![], None)?;
+    let block =
+        ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+    let block_hash = block.header.id();
+    chain.apply_with_verifier::<BasicVerifier>(block)?;
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    for _i in 0..block_num {
+        let mut sequence = send_sequence;
+        let mut txns = vec![];
+        for _j in 0..trans_num {
+            let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
+                &miner_account,
+                &receiver,
+                sequence,
+                1,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ));
+            txns.push(txn1.as_signed_user_txn()?.clone());
+            sequence += 1;
+        }
+
+        let (block_template, _) =
+            chain.create_block_template(*miner_info.address(), None, txns, vec![], None)?;
+        let block =
+            ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
+        if block.transactions().len() as u64 <= trans_num {
+            println!("trans {}", block.transactions().len());
+        }
+        send_sequence += block.transactions().len() as u64;
+        let block_hash = block.header.id();
+        chain.apply_with_verifier::<BasicVerifier>(block)?;
+
+        let startup_info = StartupInfo::new(block_hash);
+        storage.save_startup_info(startup_info)?;
+    }
     Ok(())
 }

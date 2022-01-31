@@ -44,7 +44,10 @@ impl CommandAction for ExportCommand {
         let encoded = private_key.to_encoded_string()?;
         if let Some(output_file) = &opt.output_file {
             if output_file.exists() {
-                bail!("the output_file {} is already exists, please change a name");
+                bail!(
+                    "the output_file {} is already exists, please change a name",
+                    output_file.display()
+                );
             }
             std::fs::write(output_file, encoded.clone())?;
             eprintln!("private key saved to {}", output_file.as_path().display());
