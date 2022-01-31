@@ -18,7 +18,7 @@ starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 serde = { version = "1.0.130" }
 lru = "0.7.0"
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
 
 [dev-dependencies]
