@@ -969,14 +969,20 @@ pub struct TransactionEventResponse {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, JsonSchema)]
 pub struct TransactionEventView {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub block_hash: Option<HashValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub block_number: Option<StrView<BlockNumber>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_hash: Option<HashValue>,
     // txn index in block
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_index: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
     pub type_tag: TypeTagView,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
     pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
@@ -1058,10 +1064,10 @@ pub struct DryRunOutputView {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputView {
-    pub events: Vec<TransactionEventView>,
-    pub gas_used: StrView<u64>,
     pub status: TransactionStatusView,
+    pub gas_used: StrView<u64>,
     pub write_set: Vec<TransactionOutputAction>,
+    pub events: Vec<TransactionEventView>,
 }
 
 impl From<TransactionOutput> for TransactionOutputView {
@@ -1073,29 +1079,32 @@ impl From<TransactionOutput> for TransactionOutputView {
             status: status.into(),
             write_set: write_set
                 .into_iter()
-                .map(|(p, w)| {
-                    let (action, value) = match w {
-                        WriteOp::Deletion => (WriteOpView::Deletion, None),
-                        WriteOp::Value(v) => (
-                            WriteOpView::Value,
-                            Some(if p.path.is_resource() {
-                                WriteOpValueView::Resource(v.into())
-                            } else {
-                                WriteOpValueView::Code(v.into())
-                            }),
-                        ),
-                    };
-                    TransactionOutputAction {
-                        access_path: p,
-                        action,
-                        value,
-                    }
-                })
+                .map(TransactionOutputAction::from)
                 .collect(),
         }
     }
 }
+impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
+    fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
+        let (action, value) = match op {
+            WriteOp::Deletion => (WriteOpView::Deletion, None),
+            WriteOp::Value(v) => (
+                WriteOpView::Value,
+                Some(if access_path.path.is_resource() {
+                    WriteOpValueView::Resource(v.into())
+                } else {
+                    WriteOpValueView::Code(v.into())
+                }),
+            ),
+        };
 
+        TransactionOutputAction {
+            access_path,
+            action,
+            value,
+        }
+    }
+}
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
     pub access_path: AccessPath,

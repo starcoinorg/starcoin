@@ -68,7 +68,7 @@ members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
-    "vm/functional-tests",
+
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
@@ -80,8 +80,10 @@ members = [
     "vm/resource-viewer",
     "vm/dev",
     "vm/move-explain",
-    "vm/move-cli",
+    "vm/move-package-manager",
     "vm/vm-status-translator",
+    "vm/starcoin-transactional-test-harness",
+    "vm/transactional-tests",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -97,6 +99,7 @@ members = [
     "cmd/merkle-generator",
     "cmd/peer-watcher",
     "cmd/airdrop",
+    "cmd/replay",
     "stratum",
     "cmd/miner_client/api",
     "cmd/db-exporter",
@@ -170,7 +173,7 @@ default-members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
-    "vm/functional-tests",
+    "vm/transactional-tests",
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
@@ -182,8 +185,9 @@ default-members = [
     "vm/resource-viewer",
     "vm/dev",
     "vm/move-explain",
-    "vm/move-cli",
+    "vm/move-package-manager",
     "vm/vm-status-translator",
+    "vm/starcoin-transactional-test-harness",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -199,6 +203,7 @@ default-members = [
     "cmd/merkle-generator",
     "cmd/peer-watcher",
     "cmd/airdrop",
+    "cmd/replay",
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
@@ -232,3 +237,36 @@ starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
+
+#[patch."https://github.com/starcoinorg/diem"]
+#move-bytecode-source-map = {git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-bytecode-verifier = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#diem-crypto = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#diem-crypto-derive = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#diem-proptest-helpers = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#diem-temppath = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#diem-workspace-hack = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-disassembler = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-docgen = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-errmapgen = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-binary-format = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-command-line-common = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-transactional-test-runner= { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-core-types={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-coverage={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-ir-types={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-compiler={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-model={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-prover={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-prover-test-utils={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-stdlib={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-unit-test={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-vm-runtime={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-vm-types={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#short-hex-str={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#x = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#x-core={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#x-lint={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-resource-viewer={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
+#move-cli = { git = "https://github.com/lerencao/libra", branch="debug/temp" }
+#move-package = { git = "https://github.com/lerencao/libra", branch="debug/temp" }

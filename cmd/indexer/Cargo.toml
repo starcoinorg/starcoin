@@ -4,14 +4,14 @@ edition = "2021"
 license = "Apache-2.0"
 name = "starcoin-indexer"
 publish = false
-version = "1.9.1"
+version = "1.10.0-beta"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "~1"
 async-trait = "~0.1"
-clap = "3.0.0-beta.2"
+clap = { version = "3.0.0-rc.7", features=["derive"] }
 elasticsearch = "7.10.0-alpha.1"
 serde = "1.0.130"
 serde_json = "~1"

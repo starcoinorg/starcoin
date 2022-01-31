@@ -1,7 +1,7 @@
-address 0xA550C18 {
+address StarcoinAssociation {
 module MerkleDistributorScripts {
-    use 0xA550C18::MerkleDistributor;
-    use 0x1::Account;
+    use StarcoinAssociation::MerkleDistributor;
+    use StarcoinFramework::Account;
     public(script) fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leafs: u64) {
         let tokens = Account::withdraw<T>(&signer, token_amounts);
         MerkleDistributor::create<T>(&signer, merkle_root, tokens, leafs);
@@ -17,9 +17,9 @@ module MerkleDistributorScripts {
 }
 
 module MerkleProof {
-    use 0x1::Hash;
-    use 0x1::Vector;
-    use 0x1::Compare;
+    use StarcoinFramework::Hash;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::Compare;
 
     /// verify leaf node with hash of `leaf` with `proof` againest merkle `root`.
     public fun verify(proof: &vector<vector<u8>>, root: &vector<u8>, leaf: vector<u8>): bool {
@@ -53,15 +53,15 @@ module MerkleProof {
 
 
 module MerkleDistributor {
-    use 0x1::Token::{Token, Self};
-    use 0xA550C18::MerkleProof;
-    use 0x1::Vector;
-    use 0x1::BCS;
-    // use 0x1::BitOperators;
-    use 0x1::Account;
-    use 0x1::Signer;
-    use 0x1::Errors;
-    use 0x1::Hash;
+    use StarcoinFramework::Token::{Token, Self};
+    use StarcoinAssociation::MerkleProof;
+    use StarcoinFramework::Vector;
+    use StarcoinFramework::BCS;
+    // use StarcoinFramework::BitOperators;
+    use StarcoinFramework::Account;
+    use StarcoinFramework::Signer;
+    use StarcoinFramework::Errors;
+    use StarcoinFramework::Hash;
 
     struct MerkleDistribution<T: store> has key {
         merkle_root: vector<u8>,

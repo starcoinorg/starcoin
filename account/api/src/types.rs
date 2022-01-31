@@ -4,6 +4,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 pub use starcoin_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use starcoin_types::{
@@ -58,6 +59,12 @@ impl AccountInfo {
             public_key: account_public_key,
             receipt_identifier: address.to_bech32(),
         }
+    }
+}
+
+impl From<&Account> for AccountInfo {
+    fn from(account: &Account) -> Self {
+        AccountInfo::new(account.addr, account.public_key(), false, false)
     }
 }
 

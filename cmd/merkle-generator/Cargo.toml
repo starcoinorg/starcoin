@@ -1,6 +1,6 @@
 [package]
 name = "merkle-generator"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["caojiafeng <funfriendcjf@gmail.com>"]
 edition = "2021"
 

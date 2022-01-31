@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-cmd"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -15,7 +15,7 @@ crossbeam-channel = "0.5.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
-structopt = "0.3.25"
+structopt = "0.3.26"
 itertools = "0.10.3"
 
 starcoin-logger = { path = "../../commons/logger" }
@@ -48,13 +48,13 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 vm-status-translator = {path = "../../vm/vm-status-translator"}
-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
+move-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
 network-api = {path = "../../network/api", package="network-api"}
 starcoin-network-rpc-api = {path = "../../network-rpc/api"}
-short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955"  }
+short-hex-str = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
 starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-abi-types = {path = "../../abi/types"}
-move-command-line-common = {git = "https://github.com/starcoinorg/diem", rev="6b1533f22b3075cc15ff68db21b5b84e6baa2955" }
+move-command-line-common = {git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}

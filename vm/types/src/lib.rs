@@ -161,7 +161,9 @@ pub mod effects {
     pub use move_core_types::effects::*;
 }
 pub mod bytecode_verifier {
-    pub use bytecode_verifier::{dependencies, script_signature, verify_module, verify_script};
+    pub use move_bytecode_verifier::{
+        dependencies, script_signature, verify_module, verify_script,
+    };
 }
 
 pub mod access_path;

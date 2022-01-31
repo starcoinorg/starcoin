@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-peer-watcher"
-version = "1.9.1"
+version = "1.10.0-beta"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.41"
-structopt = "0.3.25"
+structopt = "0.3.26"
 async-std = "1.10"
 futures = "0.3.12"
 starcoin-crypto = { path = "../../commons/crypto"}

@@ -64,8 +64,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./target/release/move
-          asset_name: move-${{ matrix.platform }}
+          asset_path: ./target/release/mpm
+          asset_name: mpm-${{ matrix.platform }}
           asset_content_type: application/octet-stream
       - name: upload genesis-nft release asset
         if: ${{ github.event_name == 'release'}}

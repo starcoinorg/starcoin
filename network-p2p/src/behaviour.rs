@@ -40,7 +40,7 @@ use std::{iter, task::Context, task::Poll};
 
 /// General behaviour of the network. Combines all protocols together.
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "BehaviourOut", poll_method = "poll")]
+#[behaviour(out_event = "BehaviourOut", poll_method = "poll", event_process = true)]
 pub struct Behaviour {
     protocol: Protocol,
     /// Periodically pings and identifies the nodes we are connected to, and store information in a
@@ -402,11 +402,12 @@ impl NetworkBehaviourEventProcess<DiscoveryOut> for Behaviour {
 }
 
 impl Behaviour {
-    fn poll<TEv>(
+    fn poll(
         &mut self,
         _: &mut Context,
         _: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<TEv, BehaviourOut>> {
+    ) -> Poll<NetworkBehaviourAction<BehaviourOut, <Self as NetworkBehaviour>::ProtocolsHandler>>
+    {
         if let Some(event) = self.events.pop_front() {
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(event));
         }

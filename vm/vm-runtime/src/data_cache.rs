@@ -3,7 +3,7 @@
 //! Scratchpad for on chain values during the execution.
 
 use crate::create_access_path;
-pub use move_vm_runtime::data_cache::MoveStorage;
+use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::{
@@ -88,16 +88,16 @@ impl<'block> StateView for StateViewCache<'block> {
     }
 }
 
-impl<'block> MoveStorage for StateViewCache<'block> {
+impl<'block> ModuleResolver for StateViewCache<'block> {
+    type Error = VMError;
+
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_module(module_id)
     }
-
-    fn get_resource(
-        &self,
-        address: &AccountAddress,
-        tag: &StructTag,
-    ) -> PartialVMResult<Option<Vec<u8>>> {
+}
+impl<'block> ResourceResolver for StateViewCache<'block> {
+    type Error = VMError;
+    fn get_resource(&self, address: &AccountAddress, tag: &StructTag) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_resource(address, tag)
     }
 }
@@ -117,20 +117,23 @@ impl<'a> RemoteStorage<'a> {
     }
 }
 
-impl<'a> MoveStorage for RemoteStorage<'a> {
+impl<'a> ModuleResolver for RemoteStorage<'a> {
+    type Error = VMError;
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         // REVIEW: cache this?
         let ap = AccessPath::from(module_id);
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
-
+}
+impl<'a> ResourceResolver for RemoteStorage<'a> {
+    type Error = VMError;
     fn get_resource(
         &self,
         address: &AccountAddress,
         struct_tag: &StructTag,
-    ) -> PartialVMResult<Option<Vec<u8>>> {
+    ) -> VMResult<Option<Vec<u8>>> {
         let ap = create_access_path(*address, struct_tag.clone());
-        self.get(&ap)
+        self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
 }
 
