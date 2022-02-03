@@ -30,7 +30,7 @@ logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-metrics = { path = "../commons/metrics"}
 starcoin-config = { path = "../config"}
 starcoin-uint = { path = "../types/uint"}
-coarsetime = "0.1.20"
+coarsetime = "0.1.21"
 
 [dependencies.rocksdb]
 version = "0.17"
