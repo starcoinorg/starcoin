@@ -26,5 +26,5 @@ anyhow = "~1"
 hex="0.4"
 rlp = "0.4"
 rlp-derive = "0.1"
-ethereum-types  ="0.9"
+ethereum-types  ="0.13"
 bcs-ext = {path = "../commons/bcs_ext"}
