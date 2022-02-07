@@ -110,7 +110,17 @@ impl DBStorage {
             path,
             column_families.iter().map(|cf_name| {
                 let mut cf_opts = rocksdb::Options::default();
-                cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+                // cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+                cf_opts.set_compression_per_level(&[
+                    rocksdb::DBCompressionType::None,
+                    rocksdb::DBCompressionType::None,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                ]);
+
                 rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;
