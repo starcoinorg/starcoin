@@ -7,7 +7,7 @@ use crate::metrics::{record_metrics, StorageMetrics};
 use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp};
 use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB, Cache};
 use starcoin_config::RocksdbConfig;
 use std::collections::HashSet;
 use std::marker::PhantomData;
@@ -180,7 +180,11 @@ impl DBStorage {
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
         db_opts.set_wal_bytes_per_sync(config.wal_bytes_per_sync);
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
-        db_opts.enable_statistics();
+       // db_opts.enable_statistics();
+        db_opts.set_max_write_buffer_number(5);
+        db_opts.set_write_buffer_size(128*1024*1024);
+        let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
+        db_opts.set_row_cache(&cache.unwrap());
         db_opts
     }
     fn iter_with_direction<K, V>(
