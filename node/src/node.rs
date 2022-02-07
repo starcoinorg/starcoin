@@ -222,6 +222,8 @@ impl NodeService {
             logger_handle.enable_stderr();
         }
 
+       // let path = config.data_dir().clone().join("starcoindb");
+    //    println!("ysg path {:?}", path);
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let mut system = System::builder().stop_on_panic(true).name("main").build();
@@ -232,7 +234,20 @@ impl NodeService {
                             Ok(e) => NodeStartError::GenesisError(e),
                             Err(e) => match e.downcast::<StorageInitError>() {
                                 Ok(e) => NodeStartError::StorageInitError(e),
-                                Err(e) => NodeStartError::Other(e),
+                                Err(e) => { let msg = e.to_string();
+                                    if msg.contains("Corruption: SST file") {
+                                        error!("rename Corruption: SST file");
+                                   //     let path = config.clone().data_dir().join("starcoindb");
+                                        let path = "/";
+                                        //find . -name "*log" -exec mv {} {}.bak \;
+                                        println!("path {:?}", path);
+                                        let shell_cmd = "ls -l" ;
+                                        std::process::Command::new("sh").arg("-c")
+                                            .arg(shell_cmd)
+                                            .output()
+                                            .expect("failed to execute process");
+                                    };
+                                    NodeStartError::Other(e) },
                             },
                         };
                         if start_sender.send(Err(node_start_err)).is_err() {
