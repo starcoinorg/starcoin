@@ -181,10 +181,14 @@ impl DBStorage {
         db_opts.set_wal_bytes_per_sync(config.wal_bytes_per_sync);
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
        // db_opts.enable_statistics();
+        // write buffer size
         db_opts.set_max_write_buffer_number(5);
         db_opts.set_write_buffer_size(128*1024*1024);
-        let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
-        db_opts.set_row_cache(&cache.unwrap());
+        db_opts.set_max_background_jobs(4);
+        // cache
+       // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
+        // db_opts.set_row_cache(&cache.unwrap());
+        // compress
         db_opts
     }
     fn iter_with_direction<K, V>(
