@@ -193,7 +193,6 @@ impl DBStorage {
        // db_opts.enable_statistics();
         // write buffer size
         db_opts.set_max_write_buffer_number(5);
-        db_opts.set_write_buffer_size(128*1024*1024);
         db_opts.set_max_background_jobs(5);
         // cache
        // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
