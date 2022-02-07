@@ -75,8 +75,8 @@ spec:
           exec:
             command:
              - sh
-              - -c
-              - >-
+             - -c
+             - >-
                  /starcoin/starcoin -n halley -d /sc-data node sync status|grep Synchronized
           initialDelaySeconds: 10
           periodSeconds: 5
