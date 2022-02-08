@@ -1,3 +1,4 @@
+pub mod releasement;
 use anyhow::Result;
 use move_cli::Move;
 use move_command_line_common::testing::UPDATE_BASELINE;
@@ -13,6 +14,7 @@ use once_cell::sync::Lazy;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use structopt::StructOpt;
+
 #[derive(StructOpt, Debug)]
 pub struct TransactionalTestCommand {
     #[structopt(flatten)]
