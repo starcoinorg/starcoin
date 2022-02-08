@@ -222,32 +222,34 @@ impl NodeService {
             logger_handle.enable_stderr();
         }
 
-       // let path = config.data_dir().clone().join("starcoindb");
-    //    println!("ysg path {:?}", path);
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
             let mut system = System::builder().stop_on_panic(true).name("main").build();
             system.block_on(async {
+                let path = config.storage.dir().join("starcoindb");
                 match Self::init_system(config, logger_handle).await {
                     Err(e) => {
                         let node_start_err = match e.downcast::<GenesisError>() {
                             Ok(e) => NodeStartError::GenesisError(e),
                             Err(e) => match e.downcast::<StorageInitError>() {
                                 Ok(e) => NodeStartError::StorageInitError(e),
-                                Err(e) => { let msg = e.to_string();
-                                    if msg.contains("Corruption: SST file") {
-                                        error!("rename Corruption: SST file");
-                                   //     let path = config.clone().data_dir().join("starcoindb");
-                                        let path = "/";
-                                        //find . -name "*log" -exec mv {} {}.bak \;
-                                        println!("path {:?}", path);
-                                        let shell_cmd = "ls -l" ;
-                                        std::process::Command::new("sh").arg("-c")
+                                Err(e) => {
+                                    let msg = e.to_string();
+                                    if msg.contains("Corruption: SST file is ahead of WALs") {
+                                        error!("mv Corruption: SST file log path {:?}", path);
+                                        // find . -name "*log" -exec mv {} {}.bak \;
+                                        let shell_cmd = format!(
+                                            "find {:?} -name \"*log\" -exec mv {} {} \\;",
+                                            path, "{}", "{}.bak"
+                                        );
+                                        std::process::Command::new("sh")
+                                            .arg("-c")
                                             .arg(shell_cmd)
                                             .output()
                                             .expect("failed to execute process");
-                                    };
-                                    NodeStartError::Other(e) },
+                                    }
+                                    NodeStartError::Other(e)
+                                }
                             },
                         };
                         if start_sender.send(Err(node_start_err)).is_err() {

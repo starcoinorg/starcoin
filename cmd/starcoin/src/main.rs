@@ -115,7 +115,6 @@ fn run() -> Result<()> {
 
 fn main() {
     match run() {
-       // let path = config.storage.dir()
         Ok(()) => {}
         Err(e) => {
             match e.downcast::<NodeStartError>() {
