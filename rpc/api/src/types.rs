@@ -37,7 +37,7 @@ use starcoin_types::U256;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{FunctionId, ModuleId, StructTag};
+use starcoin_vm_types::language_storage::{parse_module_id, FunctionId, ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
@@ -1403,16 +1403,7 @@ impl std::fmt::Display for FunctionIdView {
 impl FromStr for FunctionIdView {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let splits: Vec<&str> = s.rsplitn(2, "::").collect();
-        if splits.len() != 2 {
-            anyhow::bail!("invalid script function id");
-        }
-        let module_id = ModuleIdView::from_str(splits[1])?;
-        let function = Identifier::new(splits[0])?;
-        Ok(StrView(FunctionId {
-            module: module_id.0,
-            function,
-        }))
+        Ok(Self(FunctionId::from_str(s)?))
     }
 }
 
@@ -1426,13 +1417,7 @@ impl FromStr for StrView<ModuleId> {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<_> = s.split("::").collect();
-        if parts.len() != 2 {
-            anyhow::bail!("invalid module id");
-        }
-        let module_addr = parts[0].parse::<AccountAddress>()?;
-        let module_name = Identifier::new(parts[1])?;
-        Ok(Self(ModuleId::new(module_addr, module_name)))
+        Ok(Self(parse_module_id(s)?))
     }
 }
 
