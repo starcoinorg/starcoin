@@ -78,6 +78,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use starcoin_crypto::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
+use starcoin_logger::prelude::*;
 use std::{
     collections::{hash_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
     convert::Into,
@@ -223,12 +224,14 @@ where
         // If node cache doesn't have this node, it means the node is in the previous version of
         // the tree on the disk.
         if self.node_cache.remove(old_node_key).is_none() {
+            debug!("delete_node stale {}", old_node_key);
             let is_new_entry = self.stale_node_index_cache.insert(*old_node_key);
             assert!(is_new_entry, "Node gets stale twice unexpectedly.");
             if is_leaf {
                 self.num_stale_leaves += 1;
             }
         } else if is_leaf {
+            debug!("delete_node leaves {}", old_node_key);
             self.num_new_leaves -= 1;
         }
     }

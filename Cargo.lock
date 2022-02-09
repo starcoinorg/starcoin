@@ -2718,6 +2718,7 @@ dependencies = [
  "serde 1.0.133",
  "serde_bytes",
  "starcoin-crypto",
+ "starcoin-logger",
  "thiserror",
 ]
 
