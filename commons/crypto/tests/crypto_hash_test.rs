@@ -27,6 +27,10 @@ fn test_crypto_hash() {
     let hash1 = o.crypto_hash();
     let hash2 = o2.crypto_hash();
     assert_eq!(hash1, hash2);
+    assert_eq!(
+        hash1.to_hex(),
+        "ac47f304a8319c6bc8f87aecdff30d7ade4cebb30a8151dad32c10275d5e73e5"
+    );
 
     let o3 = TestStruct2 {
         str_field: "hello".to_string(),
