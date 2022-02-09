@@ -525,6 +525,9 @@ pub fn apply_block(
     network: BuiltinNetworkID,
     verifier: Verifier,
 ) -> anyhow::Result<()> {
+    let logger_handler = ::logger::init_for_test();
+    logger_handler.enable_file(PathBuf::from("./apply.log"), 1024* 1024 * 10, 7);
+    logger_handler.disable_stderr();
     let net = ChainNetwork::new_builtin(network);
     let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(

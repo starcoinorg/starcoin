@@ -43,6 +43,7 @@ fn do_execute_block_transactions(
             output
         })
         .collect();
+    debug!("ysg output finish");
     Ok(result)
 }
 

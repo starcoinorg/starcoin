@@ -122,6 +122,7 @@ impl AccountStateObject {
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
         match data_path {
             DataPath::Code(module_name) => {
+                debug!("Code {}", module_name);
                 if self.code_tree.lock().is_none() {
                     *self.code_tree.lock() =
                         Some(StateTree::<ModuleName>::new(self.store.clone(), None));
@@ -507,6 +508,7 @@ impl ChainStateWriter for ChainStateDB {
                     account_state_object.set(data_path, value);
                 }
                 WriteOp::Deletion => {
+                    debug!("ysg WriteOp::Deletion");
                     let account_state_object =
                         self.get_account_state_object(&account_address, false)?;
                     account_state_object.remove(&data_path)?;
