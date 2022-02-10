@@ -6225,7 +6225,7 @@ dependencies = [
  "network-p2p-types",
  "parking_lot 0.12.0",
  "rand 0.8.4",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "starcoin-crypto",
  "starcoin-logger",
@@ -6290,7 +6290,7 @@ dependencies = [
  "libp2p",
  "rand 0.8.4",
  "sc-peerset",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde_json",
 ]
@@ -6669,7 +6669,7 @@ name = "openrpc-rs"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/openrpc-rs?rev=e15b2812079cd81cc461d9bff0d43b765bf34fd1#e15b2812079cd81cc461d9bff0d43b765bf34fd1"
 dependencies = [
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=fd4e39f69bf331464a7520676bd67d202a14a6db)",
  "serde 1.0.133",
  "serde_json",
 ]
@@ -8491,13 +8491,27 @@ dependencies = [
 [[package]]
 name = "schemars"
 version = "0.8.3"
+source = "git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037#d89e25ac045f485e5f4bfcb5527720df5ebbc037"
+dependencies = [
+ "diem-crypto 0.0.3 (git+https://github.com/starcoinorg/diem?rev=4548c98145fe212e61200e1c74fbceab53ece0f0)",
+ "dyn-clone",
+ "move-core-types 0.0.3 (git+https://github.com/starcoinorg/diem?rev=4548c98145fe212e61200e1c74fbceab53ece0f0)",
+ "multiaddr",
+ "schemars_derive 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
+ "serde 1.0.133",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars"
+version = "0.8.3"
 source = "git+https://github.com/starcoinorg/schemars?rev=fd4e39f69bf331464a7520676bd67d202a14a6db#fd4e39f69bf331464a7520676bd67d202a14a6db"
 dependencies = [
  "diem-crypto 0.0.3 (git+https://github.com/starcoinorg/diem?rev=94cad072661257a7d55713d6a6df81638a9580ae)",
  "dyn-clone",
  "move-core-types 0.0.3 (git+https://github.com/starcoinorg/diem?rev=94cad072661257a7d55713d6a6df81638a9580ae)",
  "multiaddr",
- "schemars_derive 0.8.3",
+ "schemars_derive 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=fd4e39f69bf331464a7520676bd67d202a14a6db)",
  "serde 1.0.133",
  "serde_json",
 ]
@@ -8512,6 +8526,17 @@ dependencies = [
  "schemars_derive 0.8.8",
  "serde 1.0.133",
  "serde_json",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "0.8.3"
+source = "git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037#d89e25ac045f485e5f4bfcb5527720df5ebbc037"
+dependencies = [
+ "proc-macro2 1.0.36",
+ "quote 1.0.15",
+ "serde_derive_internals",
+ "syn 1.0.85",
 ]
 
 [[package]]
@@ -9207,7 +9232,7 @@ dependencies = [
  "hex",
  "move-binary-format",
  "once_cell",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde_bytes",
  "serde_json",
@@ -9237,7 +9262,7 @@ version = "1.10.0-beta"
 dependencies = [
  "anyhow",
  "hex",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde_bytes",
  "serde_json",
@@ -9279,7 +9304,7 @@ dependencies = [
  "hex",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde_bytes",
  "serde_json",
@@ -9325,7 +9350,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "starcoin-crypto",
  "starcoin-logger",
@@ -9565,7 +9590,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde_json",
  "starcoin-crypto",
@@ -9850,7 +9875,7 @@ dependencies = [
  "log4rs",
  "once_cell",
  "parking_lot 0.12.0",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "slog",
  "slog-async",
@@ -10341,7 +10366,7 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=e15b2812079cd81cc461d9bff0d43b765bf34fd1)",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde-helpers",
  "serde_json",
@@ -10514,7 +10539,7 @@ dependencies = [
  "futures-timer",
  "log 0.4.14",
  "once_cell",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "stest",
  "thiserror",
@@ -10720,7 +10745,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "network-api",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "starcoin-accumulator",
  "starcoin-crypto",
@@ -10870,7 +10895,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures-channel",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "starcoin-crypto",
  "starcoin-types",
@@ -10908,7 +10933,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde_json",
  "starcoin-accumulator",
@@ -10978,7 +11003,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.8.4",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "serde-helpers",
  "serde_bytes",
@@ -11098,7 +11123,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "pin-project 0.4.29",
  "pin-utils",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "starcoin-logger",
  "stest",
@@ -12616,7 +12641,7 @@ name = "vm-status-translator"
 version = "1.10.0-beta"
 dependencies = [
  "anyhow",
- "schemars 0.8.3",
+ "schemars 0.8.3 (git+https://github.com/starcoinorg/schemars?rev=d89e25ac045f485e5f4bfcb5527720df5ebbc037)",
  "serde 1.0.133",
  "starcoin-move-explain",
  "starcoin-vm-types",

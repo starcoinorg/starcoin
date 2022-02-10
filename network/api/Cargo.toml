@@ -20,5 +20,5 @@ starcoin-crypto = { path = "../../commons/crypto" }
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-p2p-types = {path = "../../network-p2p/types"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="d89e25ac045f485e5f4bfcb5527720df5ebbc037"}
 starcoin-metrics = {path = "../../commons/metrics"}
