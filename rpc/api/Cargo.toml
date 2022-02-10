@@ -39,7 +39,7 @@ network-p2p-types = {path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}
 jsonrpc-derive = {git = "https://github.com/fikgol/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="d89e25ac045f485e5f4bfcb5527720df5ebbc037"}
-openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="e15b2812079cd81cc461d9bff0d43b765bf34fd1"}
+openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="73eea3b4044c7ab896840dd6e045d5fd0259003a"}
 structopt = "0.3.26"
 starcoin-accumulator = {path = "../../commons/accumulator"}
 [[bin]]
