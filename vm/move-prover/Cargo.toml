@@ -8,8 +8,8 @@ license = "Apache-2.0"
 
 [dependencies]
 ## diem dependencies
-diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
-move-prover = { git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
+diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="4991bcd6526de95145784d7b0032149b92711325"  }
+move-prover = { git = "https://github.com/starcoinorg/diem", rev="4991bcd6526de95145784d7b0032149b92711325"  }
 
 # external dependencies
 codespan-reporting = "0.11"
@@ -18,8 +18,8 @@ anyhow = "1.0.41"
 
 [dev-dependencies]
 datatest-stable = "0.1"
-move-prover-test-utils = {git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
-move-command-line-common= {git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae" }
+move-prover-test-utils = {git = "https://github.com/starcoinorg/diem", rev="4991bcd6526de95145784d7b0032149b92711325"  }
+move-command-line-common= {git = "https://github.com/starcoinorg/diem", rev="4991bcd6526de95145784d7b0032149b92711325" }
 shell-words = "1.0.0"
 walkdir = "2.3"
 once_cell = "1.7.2"
