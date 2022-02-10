@@ -82,6 +82,17 @@ fn substitute_variable<S: ::std::hash::BuildHasher>(
     .to_string()
 }
 
+/// perform Windows style line ending (CRLF) to Unix stype (LF) conversion in given file
+fn windows_line_ending_to_unix_in_file(file_path: &str) -> Result<&str> {
+    let content = std::fs::read_to_string(file_path)?;
+    let converted = content.replace("\r\n", "\n");
+    // only write back when conversion actually takes place
+    if converted != content {
+        std::fs::write(file_path, converted)?;
+    }
+    Ok(file_path)
+}
+
 //TODO find a graceful method to do source file pre process and replace placeholders.
 /// Replace {{variable}} placeholders in source file, default variable is `sender`.
 pub fn process_source_tpl<S: ::std::hash::BuildHasher>(
@@ -161,12 +172,19 @@ pub fn compile_source_string_no_report(
 )> {
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
-    let processed_source = process_source_tpl(source, sender, HashMap::new());
+    let processed_source = process_source_tpl(
+        source.replace("\r\n", "\n").as_str(),
+        sender,
+        HashMap::new(),
+    );
     std::fs::write(temp_file.as_path(), processed_source.as_bytes())?;
     let targets = vec![temp_file
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
+    for dep in deps {
+        windows_line_ending_to_unix_in_file(dep)?;
+    }
     let compiler = move_compiler::Compiler::new(&targets, deps)
         .set_named_address_values(starcoin_framework_named_addresses())
         .set_flags(Flags::empty().set_sources_shadow_deps(true));
