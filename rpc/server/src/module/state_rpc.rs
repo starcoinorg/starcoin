@@ -243,10 +243,9 @@ where
                         .map(|(k, v)| {
                             let struct_tag = StructTag::decode(k.as_slice())?;
                             let decoded = if option.decode {
-                                Some(
-                                    view_resource(&statedb, struct_tag.clone(), v.as_slice())?
-                                        .into(),
-                                )
+                                view_resource(&statedb, struct_tag.clone(), v.as_slice())
+                                    .ok()
+                                    .map(Into::into)
                             } else {
                                 None
                             };
@@ -296,7 +295,8 @@ where
                             let identifier = Identifier::decode(k.as_slice())?;
                             let module_id = ModuleId::new(addr, identifier.clone());
                             let abi = if option.resolve {
-                                Some(ABIResolver::new(&statedb).resolve_module(&module_id)?)
+                                //ignore the resolve error
+                                ABIResolver::new(&statedb).resolve_module(&module_id).ok()
                             } else {
                                 None
                             };
