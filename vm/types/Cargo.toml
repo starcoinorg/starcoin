@@ -23,22 +23,22 @@ bech32 = "0.8"
 
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "c0e5d58a471389b6af76ab0e5858b68707fd09af" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "c0e5d58a471389b6af76ab0e5858b68707fd09af" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "c0e5d58a471389b6af76ab0e5858b68707fd09af" }
-vm = { git = "https://github.com/starcoinorg/diem", package = "move-binary-format", rev = "c0e5d58a471389b6af76ab0e5858b68707fd09af"}
-move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev = "c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4" }
+vm = { git = "https://github.com/starcoinorg/diem", package = "move-binary-format", rev = "c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4"}
+move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4" }
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-accumulator = { path = "../../commons/accumulator"}
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="941a68f8dcf8cf16652c7ba511042125223b6fa5"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="b0a22134939d732e649ad54d04598abe22286ea0"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
-vm = { git = "https://github.com/starcoinorg/diem",package = "move-binary-format", rev = "c0e5d58a471389b6af76ab0e5858b68707fd09af", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/diem",package = "move-binary-format", rev = "c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 

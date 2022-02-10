@@ -11,4 +11,4 @@ serde = "~1"
 anyhow = "~1"
 starcoin-vm-types = {path = "../types"}
 starcoin-move-explain = {path = "../move-explain"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="941a68f8dcf8cf16652c7ba511042125223b6fa5"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="b0a22134939d732e649ad54d04598abe22286ea0"}

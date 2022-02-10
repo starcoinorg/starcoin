@@ -9,15 +9,15 @@ edition = "2021"
 [dependencies]
 walkdir = "2.3"
 anyhow = "1.0.41"
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem",rev="c0e5d58a471389b6af76ab0e5858b68707fd09af"  }
-#datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af"  }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem",rev="c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4"  }
+#datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4"  }
 datatest-stable = "0.1.1"
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-move-compiler = { path = "../../vm/compiler"}
-move-prover = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af"  }
-move-compiler = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af"  }
+move-prover = { git = "https://github.com/starcoinorg/diem", rev="c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4"  }
+move-compiler = { git = "https://github.com/starcoinorg/diem", rev="c2f236c7e44a4dcaa1b3162e4f4e455db62cc2c4"  }
 once_cell = "1.8.0"
 include_dir = "0.6.2"
 sha2 = "0.9.1"
