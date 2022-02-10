@@ -7,15 +7,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-move-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-docgen = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-prover = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev="4548c98145fe212e61200e1c74fbceab53ece0f0" }
+move-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-docgen = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-prover = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-vm-types = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev="c0e5d58a471389b6af76ab0e5858b68707fd09af" }
 starcoin-crypto={path = "../../commons/crypto"}
 log = "0.4.14"
 walkdir = "2.3.1"
