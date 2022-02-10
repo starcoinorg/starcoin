@@ -56,9 +56,10 @@ pub enum Commands {
         cmd: experimental::cli::ExperimentalCommand,
     },
 
-    // extra commands available can be added below
+    /// Run transaction tests in spectests dir.
     #[structopt(name = "spectest")]
     TransactionalTest(TransactionalTestCommand),
+    /// Check compatibility of modules comparing with remote chain chate.
     #[structopt(name = "check-compatibility")]
     CompatibilityCheck(CompatibilityCheckCommand),
 }
