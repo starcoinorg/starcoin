@@ -109,7 +109,7 @@ pub fn handle_release(
     Ok(())
 }
 
-fn module(unit: &CompiledUnit) -> anyhow::Result<&CompiledModule> {
+pub fn module(unit: &CompiledUnit) -> anyhow::Result<&CompiledModule> {
     match unit {
         CompiledUnit::Module(NamedCompiledModule { module, .. }) => Ok(module),
         _ => anyhow::bail!("Found script in modules -- this shouldn't happen"),

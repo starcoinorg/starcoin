@@ -1,3 +1,4 @@
+pub mod compatibility_check_cmd;
 pub mod releasement;
 use anyhow::Result;
 use move_cli::Move;
