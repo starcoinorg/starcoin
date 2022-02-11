@@ -243,6 +243,7 @@ where
                         .map(|(k, v)| {
                             let struct_tag = StructTag::decode(k.as_slice())?;
                             let decoded = if option.decode {
+                                //ignore the resource decode error
                                 view_resource(&statedb, struct_tag.clone(), v.as_slice())
                                     .ok()
                                     .map(Into::into)
