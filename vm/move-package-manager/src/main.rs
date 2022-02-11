@@ -5,6 +5,9 @@ use anyhow::Result;
 use move_cli::package::cli::handle_package_commands;
 use move_cli::{experimental, package, sandbox, Move, DEFAULT_STORAGE_DIR};
 use move_core_types::errmap::ErrorMapping;
+use move_package_manager::compatibility_check_cmd::{
+    handle_compatibility_check, CompatibilityCheckCommand,
+};
 use move_package_manager::releasement::{handle_release, Releasement};
 use move_package_manager::{run_transactional_test, TransactionalTestCommand};
 use starcoin_vm_runtime::natives::starcoin_natives;
@@ -53,9 +56,12 @@ pub enum Commands {
         cmd: experimental::cli::ExperimentalCommand,
     },
 
-    // extra commands available can be added below
+    /// Run transaction tests in spectests dir.
     #[structopt(name = "spectest")]
     TransactionalTest(TransactionalTestCommand),
+    /// Check compatibility of modules comparing with remote chain chate.
+    #[structopt(name = "check-compatibility")]
+    CompatibilityCheck(CompatibilityCheckCommand),
 }
 
 fn main() -> Result<()> {
@@ -77,5 +83,6 @@ fn main() -> Result<()> {
         }
         Commands::Experimental { storage_dir, cmd } => cmd.handle_command(move_args, &storage_dir),
         Commands::Release(releasement) => handle_release(move_args, releasement),
+        Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),
     }
 }
