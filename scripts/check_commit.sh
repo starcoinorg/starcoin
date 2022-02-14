@@ -14,6 +14,8 @@ cargo clippy --all-targets -- -D warnings
 cargo run -p stdlib
 # generate genesis
 cargo run -p starcoin-genesis
+# generate rpc schema document
+cargo run -p starcoin-rpc-api
 # test config file
 cargo test -p starcoin-config  test_example_config_compact
 # check changed files
