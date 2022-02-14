@@ -28,5 +28,5 @@ fn main() {
     if target_os.contains("linux") || target_os.contains("macos") {
         config.flag("-Ofast").flag("-fexceptions");
     }
-    config.compile("cryptonight")
+    config.compile("cryptonight");
 }
