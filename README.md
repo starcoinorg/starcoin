@@ -1,10 +1,27 @@
-# Starcoin
+<h1 align="center">
+  <a href="https://starcoin.org">
+    <img src="https://starcoin.org/img/stc.svg" alt="Logo" width="125" height="125">
+  </a>
+</h1>
+
+<div align="center">
+  Starcoin - a smart contract blockchain network that scales by layering
+  <br />
+  <br />
+  <a href="https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
+  ·
+  <a href="https://github.com/starcoinorg/starcoin/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
+  .
+  <a href="https://github.com/starcoinorg/starcoin/discussions">Ask a Question</a>
+<br />
+<br />
+</div>
+
 
 [![Build and Test](https://github.com/starcoinorg/starcoin/workflows/Build%20and%20Test/badge.svg)](https://github.com/starcoinorg/starcoin/actions?query=workflow%3A%22Build+and+Test%22+branch%3Amaster)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/starcoinorg/starcoin/branch/master/graph/badge.svg)](https://codecov.io/gh/starcoinorg/starcoin)
 
-A Layered Cryptocurrency and Decentralized Blockchain System.
 
 ## Build from source
 
@@ -51,9 +68,35 @@ starcoin --connect ws://main.seed.starcoin.org:9870 console
 
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
 
-## Contribution
-Thank you for considering to help out with the source code! Feel free to submit an issue or pull request.
-Starcoin Move stdlib contribution document at [Starcoin Move standard library and framework](vm/stdlib/README.md).
+
+## Roadmap
+
+See the [open issues](https://github.com/starcoinorg/starcoin/issues) for a list of proposed features (and known issues).
+
+- [Top Feature Requests](https://github.com/starcoinorg/starcoin/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Top Bugs](https://github.com/starcoinorg/starcoin/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Newest Bugs](https://github.com/starcoinorg/starcoin/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+- [Help Wanted](https://github.com/starcoinorg/starcoin/issues?q=label%3A"help+wanted"+is%3Aissue+is%3Aopen)
+
+## Contributing
+
+First off, thanks for taking the time to contribute! Contributions are what makes the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
+
+Please try to create bug reports that are:
+
+- _Reproducible._ Include steps to reproduce the problem.
+- _Specific._ Include as much detail as possible: which version, what environment, etc.
+- _Unique._ Do not duplicate existing opened issues.
+- _Scoped to a Single Bug._ One bug per report.
+
+You can learn more about contributing to the Starcoin project by reading our [Contribution Guide](./CONTRIBUTING.md) and by viewing our [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+## Support
+
+Reach out to the maintainer at one of the following places:
+
+- [GitHub discussions](https://github.com/starcoinorg/starcoin/discussions)
+- [Starcoin Discord](https://discord.gg/starcoin)
 
 ## License
 
