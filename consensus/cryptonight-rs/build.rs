@@ -21,5 +21,5 @@ fn main() {
         .flag("-msse2")
         .flag("-Ofast")
         .flag("-fexceptions")
-        .compile("cryptonight")
+        .compile("cryptonight");
 }
