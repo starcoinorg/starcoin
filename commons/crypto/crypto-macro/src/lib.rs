@@ -104,7 +104,7 @@ pub fn hasher_dispatch(input: TokenStream) -> TokenStream {
                 self.0.update(bytes);
             }
 
-            fn finish(self) -> starcoin_crypto::hash::HashValue {
+            fn finish(mut self) -> starcoin_crypto::hash::HashValue {
                 self.0.finish()
             }
         }
