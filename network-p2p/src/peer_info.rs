@@ -232,21 +232,14 @@ impl NetworkBehaviour for PeerInfoBehaviour {
 
         if let Some(entry) = self.nodes_info.get_mut(peer_id) {
             entry.endpoints.retain(|ep| ep != endpoint)
-        } else {
-            error!(target: "sub-libp2p",
-                   "Unknown connection to {:?} closed: {:?}", peer_id, endpoint);
         }
     }
 
     fn inject_disconnected(&mut self, peer_id: &PeerId) {
         self.ping.inject_disconnected(peer_id);
         self.identify.inject_disconnected(peer_id);
-
         if let Some(entry) = self.nodes_info.get_mut(peer_id) {
             entry.info_expire = Some(Instant::now() + CACHE_EXPIRE);
-        } else {
-            error!(target: "sub-libp2p",
-                   "Disconnected from node we were not connected to {:?}", peer_id);
         }
     }
 
