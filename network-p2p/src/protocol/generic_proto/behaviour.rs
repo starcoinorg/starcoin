@@ -357,7 +357,7 @@ pub enum GenericProtoOut {
         /// Message that has been received.
         message: BytesMut,
     },
-    Banned(PeerId),
+    Banned(PeerId, Duration),
 }
 
 impl GenericProto {
@@ -2197,9 +2197,11 @@ impl NetworkBehaviour for GenericProto {
                 })) => {
                     self.peerset_report_disconnect(peer_id, set_id);
                 }
-                Poll::Ready(Some(sc_peerset::Message::Banned(peer_id))) => self.events.push_back(
-                    NetworkBehaviourAction::GenerateEvent(GenericProtoOut::Banned(peer_id)),
-                ),
+                Poll::Ready(Some(sc_peerset::Message::Banned(peer_id, duration))) => {
+                    self.events.push_back(NetworkBehaviourAction::GenerateEvent(
+                        GenericProtoOut::Banned(peer_id, duration),
+                    ))
+                }
                 Poll::Ready(None) => {
                     error!(target: "sub-libp2p", "Peerset receiver stream has returned None");
                     break;

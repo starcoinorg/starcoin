@@ -337,6 +337,7 @@ impl NetworkWorker {
             from_worker,
             event_streams: out_events::OutChannels::new(params.metrics_registry.as_ref())?,
             metrics,
+            unbans: Default::default(),
             boot_node_ids,
             peers_notifications_sinks,
         })
@@ -1010,6 +1011,7 @@ pub struct NetworkWorker {
     event_streams: out_events::OutChannels,
     /// Prometheus network metrics.
     metrics: Option<Metrics>,
+    unbans: stream::FuturesUnordered<Pin<Box<dyn Future<Output = PeerId> + Send>>>,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
     /// For each peer, an object that allows sending notifications to
@@ -1115,8 +1117,24 @@ impl Future for NetworkWorker {
 
             match poll_value {
                 Poll::Pending => break,
-                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(peer_id))) => {
+                Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::BannedRequest(
+                    peer_id,
+                    duration,
+                ))) => {
+                    info!(
+                        "network banned peer {} for {} secs",
+                        peer_id,
+                        duration.as_secs()
+                    );
                     this.network_service.ban_peer_id(peer_id);
+                    this.unbans.push(
+                        async move {
+                            let delay = futures_timer::Delay::new(duration);
+                            delay.await;
+                            peer_id
+                        }
+                        .boxed(),
+                    );
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::InboundRequest {
                     protocol,
@@ -1526,7 +1544,9 @@ impl Future for NetworkWorker {
                     .set(node_count as u64)
             }
         }
-
+        while let Poll::Ready(Some(peer_id)) = Pin::new(&mut this.unbans).poll_next(cx) {
+            this.network_service.unban_peer_id(peer_id);
+        }
         Poll::Pending
     }
 }

@@ -54,6 +54,8 @@ pub use libp2p::PeerId;
 
 /// We don't accept nodes whose reputation is under this value.
 pub const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
+/// unbanned peer after seconds
+pub const UNBANNED_AFTER: Duration = Duration::from_secs(60 * 5);
 /// Reputation change for a node when we get disconnected from it.
 const DISCONNECT_REPUTATION_CHANGE: i32 = -256;
 /// Amount of time between the moment we disconnect from a node and the moment we remove it from
@@ -222,7 +224,7 @@ pub enum Message {
     /// Equivalent to `Drop` for the peer corresponding to this incoming index.
     Reject(IncomingIndex),
 
-    Banned(PeerId),
+    Banned(PeerId, Duration),
 }
 
 /// Opaque identifier for an incoming connection. Allocated by the network.
@@ -531,7 +533,8 @@ impl Peerset {
                             if peer.last_connected_or_discovered() + FORGET_AFTER < now {
                                 peer.forget_peer();
                                 if after < BANNED_THRESHOLD {
-                                    self.message_queue.push_back(Message::Banned(peer_id))
+                                    self.message_queue
+                                        .push_back(Message::Banned(peer_id, UNBANNED_AFTER))
                                 }
                             }
                         }
