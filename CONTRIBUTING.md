@@ -10,6 +10,7 @@ linting, testing, and building the documentation, run the following:
 git clone https://github.com/starcoinorg/starcoin.git
 cd starcoin
 ./scripts/dev_setup.sh
+source $HOME/.cargo/env
 cargo build
 ```
 
