@@ -11,8 +11,8 @@ serde = { version = "1.0.130" }
 serde_bytes = "0.11.5"
 hex = "0.4.3"
 anyhow = "1.0"
-diem-crypto = { package="diem-crypto",  git = "https://github.com/starcoinorg/diem", rev="20e29385654bc685aeb2b07fedb40373edd6b039" , features = ["fuzzing"] }
-diem-crypto-derive = { package="diem-crypto-derive",  git = "https://github.com/starcoinorg/diem", rev="20e29385654bc685aeb2b07fedb40373edd6b039"  }
+diem-crypto = { package="diem-crypto",  git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7" , features = ["fuzzing"] }
+diem-crypto-derive = { package="diem-crypto-derive",  git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7"  }
 bcs-ext = { package="bcs-ext", path = "../bcs_ext" }
 crypto-macro = { package="starcoin-crypto-macro", path = "./crypto-macro"}
 rand = "0.8.4"
@@ -23,3 +23,5 @@ serde-name = "0.2"
 [features]
 default = []
 fuzzing = ["diem-crypto/fuzzing"]
+#cargo build --release --features=avx512f
+avx512f = ["diem-crypto/avx512f"]
