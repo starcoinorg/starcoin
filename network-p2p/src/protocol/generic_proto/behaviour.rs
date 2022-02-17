@@ -357,7 +357,7 @@ pub enum GenericProtoOut {
         /// Message that has been received.
         message: BytesMut,
     },
-    Banned(PeerId),
+    Banned(PeerId, Duration),
 }
 
 impl GenericProto {
@@ -433,19 +433,18 @@ impl GenericProto {
         set_id: sc_peerset::SetId,
         ban: Option<Duration>,
     ) {
+        let handler = self.new_handler();
         let mut entry = if let Entry::Occupied(entry) = self.peers.entry((*peer_id, set_id)) {
             entry
         } else {
             return;
         };
-
         match mem::replace(entry.get_mut(), PeerState::Poisoned) {
             // We're not connected anyway.
             st @ PeerState::Disabled { .. } => *entry.into_mut() = st,
             st @ PeerState::Requested => *entry.into_mut() = st,
             st @ PeerState::PendingRequest { .. } => *entry.into_mut() = st,
             st @ PeerState::Backoff { .. } => *entry.into_mut() = st,
-
             // DisabledPendingEnable => Disabled.
             PeerState::DisabledPendingEnable {
                 connections,
@@ -586,7 +585,14 @@ impl GenericProto {
             }
 
             PeerState::Poisoned => {
-                error!(target: "sub-libp2p", "State of {:?} is poisoned", peer_id)
+                warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
+                self.events.push_back(NetworkBehaviourAction::Dial {
+                    opts: DialOpts::peer_id(entry.key().0)
+                        .condition(PeerCondition::Disconnected)
+                        .build(),
+                    handler,
+                });
+                *entry.into_mut() = PeerState::Requested;
             }
         }
     }
@@ -867,14 +873,21 @@ impl GenericProto {
             }
 
             PeerState::Poisoned => {
-                error!(target: "sub-libp2p", "State of {:?} is poisoned", occ_entry.key());
-                debug_assert!(false);
+                warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", occ_entry.key());
+                self.events.push_back(NetworkBehaviourAction::Dial {
+                    opts: DialOpts::peer_id(occ_entry.key().0)
+                        .condition(PeerCondition::Disconnected)
+                        .build(),
+                    handler,
+                });
+                *occ_entry.into_mut() = PeerState::Requested;
             }
         }
     }
 
     /// Function that is called when the peerset wants us to disconnect from a peer.
     fn peerset_report_disconnect(&mut self, peer_id: PeerId, set_id: sc_peerset::SetId) {
+        let handler = self.new_handler();
         let mut entry = match self.peers.entry((peer_id, set_id)) {
             Entry::Occupied(entry) => entry,
             Entry::Vacant(entry) => {
@@ -1001,8 +1014,14 @@ impl GenericProto {
                 debug_assert!(false);
             }
             PeerState::Poisoned => {
-                error!(target: "sub-libp2p", "State of {:?} is poisoned", entry.key());
-                debug_assert!(false);
+                warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
+                self.events.push_back(NetworkBehaviourAction::Dial {
+                    opts: DialOpts::peer_id(entry.key().0)
+                        .condition(PeerCondition::Disconnected)
+                        .build(),
+                    handler,
+                });
+                *entry.into_mut() = PeerState::Requested;
             }
         }
     }
@@ -1241,6 +1260,7 @@ impl NetworkBehaviour for GenericProto {
         _endpoint: &ConnectedPoint,
         _handler: <Self::ProtocolsHandler as IntoProtocolsHandler>::Handler,
     ) {
+        let handler = self.new_handler();
         for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
             let mut entry = if let Entry::Occupied(entry) = self.peers.entry((*peer_id, set_id)) {
                 entry
@@ -1527,8 +1547,14 @@ impl NetworkBehaviour for GenericProto {
                     debug_assert!(false);
                 }
                 PeerState::Poisoned => {
-                    error!(target: "sub-libp2p", "State of peer {} is poisoned", peer_id);
-                    debug_assert!(false);
+                    warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
+                    self.events.push_back(NetworkBehaviourAction::Dial {
+                        opts: DialOpts::peer_id(entry.key().0)
+                            .condition(PeerCondition::Disconnected)
+                            .build(),
+                        handler: handler.clone(),
+                    });
+                    *entry.into_mut() = PeerState::Requested;
                 }
             }
         }
@@ -1547,10 +1573,9 @@ impl NetworkBehaviour for GenericProto {
                 trace!(target: "sub-libp2p", "Libp2p => Reach failure for {:?} through {:?}: {:?}", peer_id, addr, error);
             }
         }
-
+        let handler = self.new_handler();
         if let Some(peer_id) = peer_id {
             trace!(target: "sub-libp2p", "Libp2p => Dial failure for {:?}", peer_id);
-
             for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
                 if let Entry::Occupied(mut entry) = self.peers.entry((peer_id, set_id)) {
                     match mem::replace(entry.get_mut(), PeerState::Poisoned) {
@@ -1602,8 +1627,14 @@ impl NetworkBehaviour for GenericProto {
                         }
 
                         PeerState::Poisoned => {
-                            error!(target: "sub-libp2p", "State of {:?} is poisoned", peer_id);
-                            debug_assert!(false);
+                            warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
+                            self.events.push_back(NetworkBehaviourAction::Dial {
+                                opts: DialOpts::peer_id(entry.key().0)
+                                    .condition(PeerCondition::Disconnected)
+                                    .build(),
+                                handler: handler.clone(),
+                            });
+                            *entry.into_mut() = PeerState::Requested;
                         }
                     }
                 }
@@ -2197,9 +2228,11 @@ impl NetworkBehaviour for GenericProto {
                 })) => {
                     self.peerset_report_disconnect(peer_id, set_id);
                 }
-                Poll::Ready(Some(sc_peerset::Message::Banned(peer_id))) => self.events.push_back(
-                    NetworkBehaviourAction::GenerateEvent(GenericProtoOut::Banned(peer_id)),
-                ),
+                Poll::Ready(Some(sc_peerset::Message::Banned(peer_id, duration))) => {
+                    self.events.push_back(NetworkBehaviourAction::GenerateEvent(
+                        GenericProtoOut::Banned(peer_id, duration),
+                    ))
+                }
                 Poll::Ready(None) => {
                     error!(target: "sub-libp2p", "Peerset receiver stream has returned None");
                     break;

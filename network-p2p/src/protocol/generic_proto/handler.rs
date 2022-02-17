@@ -113,6 +113,7 @@ const INITIAL_KEEPALIVE_TIME: Duration = Duration::from_secs(5);
 /// it is turned into a [`NotifsHandler`].
 ///
 /// See the documentation at the module level for more information.
+#[derive(Clone)]
 pub struct NotifsHandlerProto {
     /// Name of protocols, prototypes for upgrades for inbound substreams, and the message we
     /// send or respond with in the handshake.

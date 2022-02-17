@@ -132,7 +132,7 @@ pub enum BehaviourOut {
     /// request duration.
     Dht(DhtEvent, Duration),
 
-    BannedRequest(PeerId),
+    BannedRequest(PeerId, Duration),
 }
 
 impl Behaviour {
@@ -288,9 +288,9 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
                         notifications_sink,
                     });
             }
-            CustomMessageOutcome::Banned(peer_id) => {
-                self.events.push_back(BehaviourOut::BannedRequest(peer_id))
-            }
+            CustomMessageOutcome::Banned(peer_id, duration) => self
+                .events
+                .push_back(BehaviourOut::BannedRequest(peer_id, duration)),
         }
     }
 }
