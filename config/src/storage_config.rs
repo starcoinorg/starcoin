@@ -37,12 +37,7 @@ pub struct RocksdbConfig {
 }
 
 impl RocksdbConfig {
-    #[cfg(any(target_os = "macos"))]
-    fn default_max_open_files() -> i32 {
-        40960
-    }
-
-    #[cfg(any(target_os = "linux"))]
+    #[cfg(unix)]
     fn default_max_open_files() -> i32 {
         40960
     }
