@@ -1410,7 +1410,7 @@ impl Future for NetworkWorker {
                         error);
 
                         if this.boot_node_ids.contains(&peer_id) {
-                            if let DialError::InvalidPeerId = error {
+                            if let DialError::InvalidPeerId(_) = error {
                                 error!(
                                 "💔 The bootnode you want to connect to provided a different peer ID than the one you expect: `{}`.",
                                 peer_id,
@@ -1425,7 +1425,7 @@ impl Future for NetworkWorker {
                                 .pending_connections_errors_total
                                 .with_label_values(&["limit-reached"])
                                 .inc(),
-                            DialError::InvalidPeerId => metrics
+                            DialError::InvalidPeerId(_) => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["invalid-peer-id"])
                                 .inc(),
@@ -1438,6 +1438,7 @@ impl Future for NetworkWorker {
                             DialError::NoAddresses => {}
                             DialError::DialPeerConditionFalse(_) => {}
                             DialError::Aborted => {}
+                            DialError::WrongPeerId { .. } => {}
                         }
                     }
                 }

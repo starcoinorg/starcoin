@@ -37,9 +37,9 @@ vm-status-translator = {path = "../../vm/vm-status-translator"}
 serde-helpers = {path = "../../commons/serde-helpers"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}
-jsonrpc-derive = {git = "https://github.com/fikgol/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
-openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="e15b2812079cd81cc461d9bff0d43b765bf34fd1"}
+jsonrpc-derive = {git = "https://github.com/starcoinorg/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="08416753ea9fdb9ba27d255b37e036425b7c55a3"}
+openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="0138f18c54b51f18d5d7b06794190b05dcd2e0c3"}
 structopt = "0.3.26"
 starcoin-accumulator = {path = "../../commons/accumulator"}
 [[bin]]
