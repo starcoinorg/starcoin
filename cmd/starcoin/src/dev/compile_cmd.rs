@@ -63,6 +63,7 @@ impl CommandAction for CompileCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
+        eprintln!("WARNING: the command is deprecated in favor of move-package-manager, will be removed in next release.");
         let sender = if let Some(sender) = ctx.opt().sender {
             sender
         } else {

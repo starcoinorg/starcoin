@@ -57,6 +57,8 @@ use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+const RES_FDS: u64 = 4096;
+
 pub struct NodeService {
     registry: ServiceRef<RegistryService>,
 }
@@ -277,7 +279,7 @@ impl NodeService {
             "rocksdb max open files {}",
             config.storage.rocksdb_config().max_open_files
         );
-        check_open_fds_limit(config.storage.rocksdb_config().max_open_files as u64)?;
+        check_open_fds_limit(config.storage.rocksdb_config().max_open_files as u64 + RES_FDS)?;
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
             DBStorage::new(

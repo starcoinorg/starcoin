@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-consensus"
-version = "1.10.0-beta"
+version = "1.10.0-rc.2"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -22,7 +22,7 @@ hex = { version = "0.4.3", default-features = false }
 starcoin-logger = { path = "../commons/logger"}
 starcoin-state-api = { path = "../state/api" }
 starcoin-vm-types = { path = "../vm/types" }
-sha3 = { version = "0.10.0" }
+sha3 = { version = "0.10.1" }
 cryptonight-rs = { path = "cryptonight-rs" }
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }

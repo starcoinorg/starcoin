@@ -1,6 +1,6 @@
 [package]
 name = "vm-status-translator"
-version = "1.10.0-beta"
+version = "1.10.0-rc.2"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
@@ -11,4 +11,4 @@ serde = "~1"
 anyhow = "~1"
 starcoin-vm-types = {path = "../types"}
 starcoin-move-explain = {path = "../move-explain"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="08416753ea9fdb9ba27d255b37e036425b7c55a3"}

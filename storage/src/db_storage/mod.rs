@@ -111,6 +111,17 @@ impl DBStorage {
             column_families.iter().map(|cf_name| {
                 let mut cf_opts = rocksdb::Options::default();
                 cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+                /*
+                cf_opts.set_compression_per_level(&[
+                    rocksdb::DBCompressionType::None,
+                    rocksdb::DBCompressionType::None,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                    rocksdb::DBCompressionType::Lz4,
+                ]);
+                */
                 rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;
@@ -180,6 +191,13 @@ impl DBStorage {
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
         db_opts.set_wal_bytes_per_sync(config.wal_bytes_per_sync);
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
+        // db_opts.enable_statistics();
+        // write buffer size
+        db_opts.set_max_write_buffer_number(5);
+        db_opts.set_max_background_jobs(5);
+        // cache
+        // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
+        // db_opts.set_row_cache(&cache.unwrap());
         db_opts
     }
     fn iter_with_direction<K, V>(

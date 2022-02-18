@@ -37,6 +37,17 @@ spec:
               node_key_flag="--node-key ${node_key}";
             fi;
             /starcoin/starcoin -n barnard --discover-local true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data $node_key_flag;
+            ret=$?;
+            db_corruption="SST file is ahead of WALs";
+            if [ $ret -ne 0 ]; then
+              error_message=$(tail -n 10 /sc-data/barnard/starcoin.log);
+              echo "Try to handle error.";
+              if [[ "$error_message" =~ .*"$db_corruption".* ]]; then
+                echo "the db is corruption, try to remove rocksdb log file.";
+                find /sc-data/barnard/starcoindb/db/starcoindb/ -name "*.log" -type f -exec mv '{}' '{}.bak' \;;
+              fi;
+            fi;
+
         ports:
           - containerPort: 9840
             hostPort: 9840

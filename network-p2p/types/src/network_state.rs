@@ -27,6 +27,7 @@ use std::{
     collections::{HashMap, HashSet},
     time::Duration,
 };
+
 /// Returns general information about the networking.
 ///
 /// Meant for general diagnostic purposes.
@@ -93,7 +94,10 @@ pub enum PeerEndpoint {
 impl From<ConnectedPoint> for PeerEndpoint {
     fn from(endpoint: ConnectedPoint) -> Self {
         match endpoint {
-            ConnectedPoint::Dialer { address } => PeerEndpoint::Dialing(address),
+            ConnectedPoint::Dialer {
+                address,
+                role_override: _,
+            } => PeerEndpoint::Dialing(address),
             ConnectedPoint::Listener {
                 local_addr,
                 send_back_addr,

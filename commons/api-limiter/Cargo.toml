@@ -1,6 +1,6 @@
 [package]
 name = "api-limiter"
-version = "1.10.0-beta"
+version = "1.10.0-rc.2"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 edition = "2021"
@@ -11,5 +11,5 @@ edition = "2021"
 
 anyhow = "~1"
 governor = {version="~0.3", features=["dashmap"]}
-dashmap = "~5.0"
+dashmap = "~5.1"
 

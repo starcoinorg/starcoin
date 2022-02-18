@@ -27,6 +27,7 @@ use std::str;
 use std::sync::Arc;
 use std::task::Poll;
 use std::time;
+use std::time::Duration;
 
 //const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
@@ -84,7 +85,7 @@ pub enum CustomMessageOutcome {
         messages: Vec<(Cow<'static, str>, Bytes)>,
     },
     None,
-    Banned(PeerId),
+    Banned(PeerId, Duration),
 }
 
 /// Peer information
@@ -314,7 +315,9 @@ impl NetworkBehaviour for Protocol {
                 let protocol_name = self.notif_protocols[usize::from(set_id)].clone();
                 self.on_notify(peer_id, vec![(protocol_name, message.freeze())])
             }
-            GenericProtoOut::Banned(peer_id) => CustomMessageOutcome::Banned(peer_id),
+            GenericProtoOut::Banned(peer_id, duration) => {
+                CustomMessageOutcome::Banned(peer_id, duration)
+            }
         };
 
         if !matches!(outcome, CustomMessageOutcome::None) {

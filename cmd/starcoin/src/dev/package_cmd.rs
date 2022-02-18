@@ -78,6 +78,7 @@ impl CommandAction for PackageCmd {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
+        eprintln!("WARNING: the command is deprecated in favor of move-package-manager, will be removed in next release.");
         let opt = ctx.opt();
         let mv_file_or_dir = opt.mv_file_or_dir.as_path();
         ensure!(

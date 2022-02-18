@@ -64,3 +64,9 @@
 - Make `append`, `remove`, `reverse` native in Vector. (#3055)
 - Add `U256` implementation. (#3032)
 - improve account balance function.(#3058)
+
+### Version 11
+
+- Upgrade bytecode to v4.(#3109)
+- Use move pacakge system to organize stdlib source files.(#3109)
+- Add `phantom` modifier to NFT and Token Module. (#3109)
