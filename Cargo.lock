@@ -9690,7 +9690,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.8.4",
  "rand_core 0.6.3",
- "sha2 0.8.2",
+ "sha2 0.10.1",
 ]
 
 [[package]]
@@ -11071,7 +11071,7 @@ dependencies = [
  "once_cell",
  "rayon",
  "serde 1.0.136",
- "sha2 0.9.9",
+ "sha2 0.10.1",
  "starcoin-crypto",
  "starcoin-move-compiler",
  "starcoin-vm-types",
