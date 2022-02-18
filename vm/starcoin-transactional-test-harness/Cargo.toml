@@ -22,11 +22,11 @@ dashmap = "~5"
 serde = { version = "1" }
 serde_json = { version = "1" }
 log = { version = "0.4.14" }
-move-transactional-test-runner = { git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7" }
-move-compiler = { git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7" }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7" }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7" }
+move-transactional-test-runner = { git = "https://github.com/starcoinorg/diem", rev="6068425d87709c8ee9f22ab20eac7be6a3de17f7" }
+move-compiler = { git = "https://github.com/starcoinorg/diem", rev="6068425d87709c8ee9f22ab20eac7be6a3de17f7" }
+move-binary-format = { git = "https://github.com/starcoinorg/diem", rev="6068425d87709c8ee9f22ab20eac7be6a3de17f7" }
+move-core-types = { git = "https://github.com/starcoinorg/diem", rev="6068425d87709c8ee9f22ab20eac7be6a3de17f7" }
+move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev="6068425d87709c8ee9f22ab20eac7be6a3de17f7" }
 
 bcs-ext = {path = "../../commons/bcs_ext"}
 starcoin-crypto = {path = "../../commons/crypto"}
@@ -41,7 +41,7 @@ starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-vm-runtime = {path = "../../vm/vm-runtime"}
 starcoin-dev = {path = "../dev"}
 starcoin-resource-viewer = {path = "../resource-viewer"}
-move-resource-viewer = {git = "https://github.com/starcoinorg/diem", rev="4993b33a557d6cfad4df8c29a1ed961dfff918e7"}
+move-resource-viewer = {git = "https://github.com/starcoinorg/diem", rev="6068425d87709c8ee9f22ab20eac7be6a3de17f7"}
 [dev-dependencies]
 datatest-stable = "0.1"
 
