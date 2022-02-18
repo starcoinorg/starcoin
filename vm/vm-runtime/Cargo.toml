@@ -14,7 +14,7 @@ starcoin-types = { path = "../../types"}
 move-core-types = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
 move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
 move-stdlib = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
-tracing = "0.1.30"
+tracing = "0.1.31"
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}
 num_enum = "0.5.6"
