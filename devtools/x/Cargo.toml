@@ -24,7 +24,7 @@ regex = "1.4.3"
 rayon = "1.5.1"
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
-diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
-diem-x = { package="x", git = "https://github.com/starcoinorg/diem", rev="94cad072661257a7d55713d6a6df81638a9580ae"  }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
+diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
+diem-x = { package="x", git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }

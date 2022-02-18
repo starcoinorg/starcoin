@@ -18,7 +18,7 @@ futures-timer = "3.0"
 serde = { version = "1.0.130", features = ["derive"] }
 once_cell = "1.8.0"
 log = "0.4.14"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="fd4e39f69bf331464a7520676bd67d202a14a6db"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="08416753ea9fdb9ba27d255b37e036425b7c55a3"}
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
