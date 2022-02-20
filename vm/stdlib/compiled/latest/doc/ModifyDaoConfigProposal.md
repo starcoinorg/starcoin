@@ -244,7 +244,7 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>true</b>;
 <b>pragma</b> aborts_if_is_strict;
 <b>pragma</b> aborts_if_is_partial;
 </code></pre>

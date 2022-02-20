@@ -1405,7 +1405,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>true</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
@@ -1612,6 +1612,11 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 
+<pre><code><b>aborts_if</b> <b>true</b>;
+</code></pre>
+
+
+
 <a name="@Specification_1_issue_linear_mint_key"></a>
 
 ### Function `issue_linear_mint_key`
@@ -1620,6 +1625,11 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType: store&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, _amount: u128, _period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
+
+
+
+<pre><code><b>aborts_if</b> <b>true</b>;
+</code></pre>
 
 
 
@@ -1697,7 +1707,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 <pre><code><b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; value;
-<b>ensures</b> <b>old</b>(token.value) == result_1.value + result_2.value;
+<b>ensures</b> token.value == result_1.value + result_2.value;
 </code></pre>
 
 
@@ -1732,7 +1742,6 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 <pre><code><b>aborts_if</b> token1.value + token2.value &gt; max_u128();
-<b>ensures</b> <b>old</b>(token1).value + <b>old</b>(token2).value == result.value;
 <b>ensures</b> token1.value + token2.value == result.value;
 </code></pre>
 

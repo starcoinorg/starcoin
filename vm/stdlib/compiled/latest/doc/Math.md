@@ -18,6 +18,7 @@ The module provide some improved math calculations.
     -  [Function `sqrt`](#@Specification_1_sqrt)
     -  [Function `pow`](#@Specification_1_pow)
     -  [Function `mul_div`](#@Specification_1_mul_div)
+    -  [Function `avg`](#@Specification_1_avg)
 
 
 <pre><code><b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
@@ -261,7 +262,7 @@ calculate average of nums
 <pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_avg">avg</a>(nums: &vector&lt;u128&gt;): u128{
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(nums);
     <b>let</b> sum = <a href="Math.md#0x1_Math_sum">sum</a>(nums);
-    sum/(len <b>as</b> u128)
+    sum / (len <b>as</b> u128)
 }
 </code></pre>
 
@@ -390,4 +391,21 @@ does not matter for the verification of callers.
 
 
 <pre><code><b>fun</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(): u128;
+</code></pre>
+
+
+
+<a name="@Specification_1_avg"></a>
+
+### Function `avg`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_avg">avg</a>(nums: &vector&lt;u128&gt;): u128
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> len(nums) == 0;
 </code></pre>

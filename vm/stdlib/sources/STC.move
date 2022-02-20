@@ -17,7 +17,7 @@ module STC {
     use StarcoinFramework::CoreAddresses;
 
     spec module {
-        pragma verify = false;
+        pragma verify = true;
         pragma aborts_if_is_strict = true;
     }
 

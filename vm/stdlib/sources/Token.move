@@ -7,7 +7,7 @@ module Token {
     use StarcoinFramework::Math;
 
     spec module {
-        pragma verify = false; // break after enabling v2 compilation scheme
+        pragma verify = true; // break after enabling v2 compilation scheme
         pragma aborts_if_is_strict = true;
     }
 
@@ -255,6 +255,7 @@ module Token {
     }
 
     spec issue_fixed_mint_key {
+        aborts_if true;
     }
 
     /// Deprecated since @v3
@@ -265,6 +266,7 @@ module Token {
     }
 
     spec issue_linear_mint_key {
+        aborts_if true;
     }
 
     /// Destroy `LinearTimeMintKey`, for deprecated
@@ -344,7 +346,7 @@ module Token {
 
     spec split {
         aborts_if token.value < value;
-        ensures old(token.value) == result_1.value + result_2.value;
+        ensures token.value == result_1.value + result_2.value;
     }
 
     /// "Divides" the given token into two, where the original token is modified in place.
@@ -379,7 +381,7 @@ module Token {
 
     spec join {
         aborts_if token1.value + token2.value > max_u128();
-        ensures old(token1).value + old(token2).value == result.value;
+        // ensures old(token1).value + old(token2).value == result.value;
         ensures token1.value + token2.value == result.value;
     }
 

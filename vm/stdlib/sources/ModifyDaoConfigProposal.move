@@ -10,7 +10,7 @@ module ModifyDaoConfigProposal {
     use StarcoinFramework::Option;
 
     spec module {
-        pragma verify = false; // break after enabling v2 compilation scheme
+        pragma verify = true; // break after enabling v2 compilation scheme
         pragma aborts_if_is_strict;
         pragma aborts_if_is_partial;
     }

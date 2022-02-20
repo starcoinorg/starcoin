@@ -9,8 +9,8 @@ module Math {
         pragma aborts_if_is_strict;
     }
 
-    const U64_MAX:u64 = 18446744073709551615;
-    const U128_MAX:u128 = 340282366920938463463374607431768211455;
+    const U64_MAX: u64 = 0xffffffffffffffff;
+    const U128_MAX: u128 = 0xffffffffffffffffffffffffffffffff;
 
     /// u64::MAX
     public fun u64_max(): u64 {
@@ -149,7 +149,14 @@ module Math {
     public fun avg(nums: &vector<u128>): u128{
         let len = Vector::length(nums);
         let sum = sum(nums);
-        sum/(len as u128)
+        sum / (len as u128)
+    }
+
+    spec avg {
+        pragma verify = false;
+        aborts_if len(nums) == 0;
+        // TODO: Find a way to specify the abort condition when sum overflows
+        // Something like sum(nums) > U128_MAX ?
     }
 }
 }
