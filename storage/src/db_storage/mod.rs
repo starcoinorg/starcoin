@@ -150,6 +150,16 @@ impl DBStorage {
         Ok(())
     }
 
+    pub fn drop_one_cf(&mut self, name: &str) -> Result<(), Error> {
+        for cf in &self.cfs {
+            if cf == &name {
+                self.db.drop_cf(name)?;
+                break;
+            }
+        }
+        Ok(())
+    }
+
     /// Flushes all memtable data. This is only used for testing `get_approximate_sizes_cf` in unit
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
