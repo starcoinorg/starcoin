@@ -49,7 +49,7 @@ starcoin-config ={path = "../../config"}
 stdlib = {path = "../stdlib"}
 starcoin-vm-runtime = {path = "../vm-runtime", features=["testing"]}
 starcoin-move-compiler = {path = "../compiler"}
-starcoin-crypto = {path = "../../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}

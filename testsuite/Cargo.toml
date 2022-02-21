@@ -26,7 +26,7 @@ starcoin-rpc-client = { path = "../rpc/client"}
 starcoin-storage = {path = "../storage"}
 starcoin-miner = {path = "../miner"}
 starcoin-node = {path = "../node"}
-starcoin-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-logger = {path = "../commons/logger"}
 starcoin-cmd = {package = "starcoin-cmd", path= "../cmd/starcoin"}
 scmd = {path = "../commons/scmd"}

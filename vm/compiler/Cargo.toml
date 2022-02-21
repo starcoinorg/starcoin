@@ -18,7 +18,7 @@ petgraph = "0.5.1"
 walkdir = "2.3"
 rayon = "1.5.1"
 itertools = "0.10.3"
-starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-vm-types = { path = "../types"}
 starcoin-logger = { path = "../../commons/logger"}
 

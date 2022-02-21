@@ -38,7 +38,7 @@ zeroize = "1.3.0"
 hex= "0.4.3"
 wasm-timer = "0.2"
 sc-peerset = {  path = "peerset" }
-starcoin-crypto = { path = "../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-types = {path = "../types"}
 network-p2p-types = {path = "./types"}

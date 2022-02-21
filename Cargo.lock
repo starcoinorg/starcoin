@@ -2077,7 +2077,7 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/diem?rev=59f3187dabfcd4fdf5f1a3d0248ca67a27aba498#59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
@@ -2085,7 +2085,6 @@ dependencies = [
  "bytes 1.1.0",
  "curve25519-dalek-fiat",
  "diem-crypto-derive",
- "diem-workspace-hack",
  "digest 0.9.0",
  "ed25519-dalek-fiat",
  "hex",
@@ -2109,9 +2108,8 @@ dependencies = [
 [[package]]
 name = "diem-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/diem?rev=59f3187dabfcd4fdf5f1a3d0248ca67a27aba498#59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
 dependencies = [
- "diem-workspace-hack",
  "proc-macro2 1.0.36",
  "quote 1.0.15",
  "syn 1.0.86",
@@ -6615,7 +6613,7 @@ dependencies = [
 [[package]]
 name = "openrpc-rs"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/openrpc-rs?rev=0138f18c54b51f18d5d7b06794190b05dcd2e0c3#0138f18c54b51f18d5d7b06794190b05dcd2e0c3"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=74b3925963898a48feeedbc6e71d507d0d3363b3#74b3925963898a48feeedbc6e71d507d0d3363b3"
 dependencies = [
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -8477,15 +8475,15 @@ dependencies = [
 [[package]]
 name = "schemars"
 version = "0.8.3"
-source = "git+https://github.com/starcoinorg/schemars?rev=08416753ea9fdb9ba27d255b37e036425b7c55a3#08416753ea9fdb9ba27d255b37e036425b7c55a3"
+source = "git+https://github.com/starcoinorg/schemars?rev=730b678898fee6ebbfc8ed8b6f950f7630682d74#730b678898fee6ebbfc8ed8b6f950f7630682d74"
 dependencies = [
- "diem-crypto",
  "dyn-clone",
  "move-core-types",
  "multiaddr",
  "schemars_derive 0.8.3",
  "serde 1.0.136",
  "serde_json",
+ "starcoin-crypto",
 ]
 
 [[package]]
@@ -8503,7 +8501,7 @@ dependencies = [
 [[package]]
 name = "schemars_derive"
 version = "0.8.3"
-source = "git+https://github.com/starcoinorg/schemars?rev=08416753ea9fdb9ba27d255b37e036425b7c55a3#08416753ea9fdb9ba27d255b37e036425b7c55a3"
+source = "git+https://github.com/starcoinorg/schemars?rev=730b678898fee6ebbfc8ed8b6f950f7630682d74#730b678898fee6ebbfc8ed8b6f950f7630682d74"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",
@@ -9628,9 +9626,10 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
 dependencies = [
  "anyhow",
- "bcs-ext",
+ "bcs",
  "diem-crypto",
  "diem-crypto-derive",
  "hex",
@@ -9646,6 +9645,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",
@@ -10358,7 +10358,7 @@ dependencies = [
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "network-api",
  "network-p2p-types",
- "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=0138f18c54b51f18d5d7b06794190b05dcd2e0c3)",
+ "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=74b3925963898a48feeedbc6e71d507d0d3363b3)",
  "schemars 0.8.3",
  "serde 1.0.136",
  "serde-helpers",

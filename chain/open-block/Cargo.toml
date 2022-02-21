@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.41"
 starcoin-types = {path = "../../types"}
 starcoin-executor = {path = "../../executor", package="starcoin-executor"}
-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-state-api = {path = "../../state/api"}
 starcoin-chain-api = {path = "../api"}

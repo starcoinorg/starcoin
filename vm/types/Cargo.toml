@@ -31,15 +31,15 @@ move-ir-types = { git = "https://github.com/starcoinorg/diem", rev = "59f3187dab
 
 bcs-ext = { package = "bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
-starcoin-crypto = { path = "../../commons/crypto" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-accumulator = { path = "../../commons/accumulator"}
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="08416753ea9fdb9ba27d255b37e036425b7c55a3"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="730b678898fee6ebbfc8ed8b6f950f7630682d74"}
 [dev-dependencies]
 proptest = "1.0.0"
 proptest-derive = "0.3.0"
 vm = { git = "https://github.com/starcoinorg/diem",package = "move-binary-format", rev = "59f3187dabfcd4fdf5f1a3d0248ca67a27aba498", features = ["fuzzing"]}
-starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
 [features]
