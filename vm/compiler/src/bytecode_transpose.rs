@@ -11,7 +11,7 @@ impl ModuleBytecodeDowgrader {
             VERSION_4 => Self::from_v4_to_v3(m),
             VERSION_3 => {
                 let mut bytes = vec![];
-                m.serialize(&mut bytes)?;
+                m.serialize_to_version(&mut bytes, VERSION_3)?;
                 Ok(bytes)
             }
             _ => anyhow::bail!("unsupport module bytecode version {}", m.version),
