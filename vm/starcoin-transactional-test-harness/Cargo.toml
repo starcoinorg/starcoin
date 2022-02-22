@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-transactional-test-harness"
-version = "1.10.0-rc.2"
+version = "1.10.1"
 edition = "2018"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"

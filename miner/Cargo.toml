@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-miner"
-version = "1.10.0-rc.2"
+version = "1.10.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
