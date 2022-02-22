@@ -50,7 +50,6 @@ pub use api_quota::{ApiQuotaConfig, QuotaDuration};
 pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
-pub use diem_temppath::TempPath;
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
@@ -68,6 +67,8 @@ pub use rpc_config::{
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
+use tempfile::NamedTempFile;
+pub use tempfile::TempPath;
 pub use txpool_config::TxPoolConfig;
 
 pub static CRATE_VERSION: &str = crate_version!();
@@ -102,14 +103,16 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
 }
 
 pub fn temp_path() -> DataDirPath {
-    let temp_path = TempPath::new();
-    temp_path.create_as_dir().expect("Create temp dir fail.");
+    let temp_path = NamedTempFile::new()
+        .expect("Create temp dir fail.")
+        .into_temp_path();
     DataDirPath::TempPath(Arc::from(temp_path))
 }
 
 pub fn temp_path_with_dir(dir: PathBuf) -> DataDirPath {
-    let temp_path = TempPath::new_with_temp_dir(dir);
-    temp_path.create_as_dir().expect("Create temp dir fail.");
+    let temp_path = NamedTempFile::new_in(dir)
+        .expect("Create temp dir fail.")
+        .into_temp_path();
     DataDirPath::TempPath(Arc::from(temp_path))
 }
 
@@ -229,10 +232,24 @@ impl std::fmt::Display for StarcoinOpt {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum DataDirPath {
     PathBuf(PathBuf),
     TempPath(Arc<TempPath>),
+}
+
+impl PartialEq for DataDirPath {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (DataDirPath::PathBuf(path1), DataDirPath::PathBuf(path2)) => path1 == path2,
+            (DataDirPath::TempPath(path1), DataDirPath::TempPath(path2)) => {
+                let p1: &Path = path1;
+                let p2: &Path = path2;
+                p1 == p2
+            }
+            (_, _) => false,
+        }
+    }
 }
 
 impl DataDirPath {

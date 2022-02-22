@@ -11,7 +11,7 @@ anyhow = "1.0.41"
 thiserror = "1.0"
 serde = { version = "1.0.130" }
 starcoin-types = {path = "../types"}
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 chrono = "0.4"
 byteorder = "1.4.3"
@@ -24,7 +24,7 @@ num_enum = "0.5.6"
 #state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../commons/accumulator"}
-starcoin-proptest-helpers = { path = "../commons/proptest-helpers", optional = true}
+#starcoin-proptest-helpers = { path = "../commons/proptest-helpers", optional = true}
 forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-metrics = { path = "../commons/metrics"}
@@ -47,4 +47,4 @@ stest = { path = "../commons/stest"}
 
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "starcoin-proptest-helpers",  "starcoin-types/fuzzing"]
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]

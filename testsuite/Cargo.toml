@@ -14,7 +14,7 @@ serde_bytes = "0.11"
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 clap = "2.33.3"
 structopt = "0.3.26"
-regex = "1.4.3"
+regex = "1.5.4"
 starcoin-config = {path = "../config"}
 starcoin-consensus = {path = "../consensus"}
 starcoin-executor = {path = "../executor"}
@@ -26,7 +26,7 @@ starcoin-rpc-client = { path = "../rpc/client"}
 starcoin-storage = {path = "../storage"}
 starcoin-miner = {path = "../miner"}
 starcoin-node = {path = "../node"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-logger = {path = "../commons/logger"}
 starcoin-cmd = {package = "starcoin-cmd", path= "../cmd/starcoin"}
 scmd = {path = "../commons/scmd"}
