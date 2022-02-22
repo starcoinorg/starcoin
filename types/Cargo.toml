@@ -29,7 +29,7 @@ starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3.12"
 starcoin-accumulator = {path = "../commons/accumulator"}
 forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="188719f089f0cd551168ec1c102ffcbfca2559fc"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="5bb034597f4bddd577f5d9baaabe5a41e9236d2f"}
 
 [features]
 default = []

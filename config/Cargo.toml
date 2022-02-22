@@ -34,6 +34,6 @@ starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
 stdlib = { path = "../vm/stdlib"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="188719f089f0cd551168ec1c102ffcbfca2559fc"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="5bb034597f4bddd577f5d9baaabe5a41e9236d2f"}
 starcoin-metrics = { path = "../commons/metrics" }
 libc = "^0.2"

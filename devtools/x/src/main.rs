@@ -13,59 +13,59 @@ use std::{boxed::Box, io::Write};
 use structopt::StructOpt;
 
 pub mod bench {
-    pub use diem_x::bench::*;
+    pub use x::bench::*;
 }
 pub mod build {
-    pub use diem_x::build::*;
+    pub use x::build::*;
 }
 pub mod check {
-    pub use diem_x::check::*;
+    pub use x::check::*;
 }
 pub mod changed_since {
-    pub use diem_x::changed_since::*;
+    pub use x::changed_since::*;
 }
 pub mod clippy {
-    pub use diem_x::clippy::*;
+    pub use x::clippy::*;
 }
 pub mod config {
-    pub use diem_x::config::*;
+    pub use x::config::*;
 }
 pub mod context {
-    pub use diem_x::context::*;
+    pub use x::context::*;
 }
 pub mod diff_summary {
-    pub use diem_x::diff_summary::*;
+    pub use x::diff_summary::*;
 }
 pub mod fix {
-    pub use diem_x::fix::*;
+    pub use x::fix::*;
 }
 pub mod fmt {
-    pub use diem_x::fmt::*;
+    pub use x::fmt::*;
 }
 pub mod generate_summaries {
-    pub use diem_x::generate_summaries::*;
+    pub use x::generate_summaries::*;
 }
 pub mod installer {
-    pub use diem_x::installer::*;
+    pub use x::installer::*;
 }
 
 pub mod lint {
-    pub use diem_x::lint::*;
+    pub use x::lint::*;
 }
 pub mod playground {
-    pub use diem_x::playground::*;
+    pub use x::playground::*;
 }
 pub mod test;
 
 pub mod nextest {
-    pub use diem_x::nextest::*;
+    pub use x::nextest::*;
 }
 
 pub mod cargo {
-    pub use diem_x::cargo::*;
+    pub use x::cargo::*;
 }
 pub mod tools {
-    pub use diem_x::tools::*;
+    pub use x::tools::*;
 }
 
 pub mod utils;
