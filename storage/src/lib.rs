@@ -12,7 +12,6 @@ use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
-use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Error, Result};
 use crypto::HashValue;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -258,7 +257,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
-    instance: StorageInstance,
+    // instance: StorageInstance,
 }
 
 impl Storage {
@@ -277,13 +276,9 @@ impl Storage {
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            instance,
+            // instance,
         };
         Ok(storage)
-    }
-
-    pub fn check_upgrade(&mut self) -> Result<()> {
-        DBUpgrade::check_upgrade(self)
     }
 
     pub fn get_block_accumulator_storage(&self) -> AccumulatorStorage<BlockAccumulatorStorage> {

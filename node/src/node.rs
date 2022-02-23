@@ -280,18 +280,19 @@ impl NodeService {
             config.storage.rocksdb_config().max_open_files
         );
         check_open_fds_limit(config.storage.rocksdb_config().max_open_files as u64 + RES_FDS)?;
-        let mut storage = Storage::new(StorageInstance::new_cache_and_db_instance(
+        let mut storage_instance = StorageInstance::new_cache_and_db_instance(
             CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
             DBStorage::new(
                 config.storage.dir(),
                 config.storage.rocksdb_config(),
                 storage_metrics,
             )?,
-        ))?;
+        );
+
         let start_time = SystemTime::now();
-        storage.check_upgrade()?;
+        storage_instance.check_upgrade()?;
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
-        let storage = Arc::new(storage);
+        let storage = Arc::new(Storage::new(storage_instance)?);
         registry.put_shared(storage.clone()).await?;
         let (chain_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
