@@ -12,7 +12,7 @@ anyhow = "1.0.41"
 move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem",rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
 #datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
 datatest-stable = "0.1.1"
-starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-vm-types = { path = "../types"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-move-compiler = { path = "../../vm/compiler"}
