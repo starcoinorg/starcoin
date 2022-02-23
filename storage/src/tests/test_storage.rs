@@ -25,7 +25,7 @@ use std::path::Path;
 
 #[test]
 fn test_reopen() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let key = HashValue::random();
     let value = HashValue::zero();
     {
@@ -48,7 +48,7 @@ fn test_reopen() {
 
 #[test]
 fn test_open_read_only() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
     let key = HashValue::random();
     let value = HashValue::zero();
@@ -73,7 +73,7 @@ fn test_open_read_only() {
 
 #[test]
 fn test_storage() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
@@ -104,7 +104,7 @@ fn test_storage() {
 
 #[test]
 fn test_iter() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
@@ -138,7 +138,7 @@ fn test_iter() {
 
 #[test]
 fn test_two_level_storage() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
@@ -199,7 +199,7 @@ fn test_two_level_storage() {
 
 #[test]
 fn test_two_level_storage_read_through() -> Result<()> {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
 
     let transaction_info1 = RichTransactionInfo::new(
         HashValue::random(),
@@ -250,7 +250,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
 
 #[test]
 fn test_missing_key_handle() -> Result<()> {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
@@ -342,7 +342,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
 
 #[stest::test]
 pub fn test_db_upgrade() -> Result<()> {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let txn_info_ids = generate_old_db(tmpdir.path())?;
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),

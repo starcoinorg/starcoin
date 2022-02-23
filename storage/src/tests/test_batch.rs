@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 #[test]
 fn test_db_batch() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let db_storage =
         Arc::new(DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap());
     let mut write_batch = CodecWriteBatch::new();
@@ -135,7 +135,7 @@ fn test_cache_batch() {
 
 #[test]
 fn test_batch_comm() {
-    let tmpdir = starcoin_config::temp_path();
+    let tmpdir = starcoin_config::temp_dir();
     let key = HashValue::random();
     let value = HashValue::zero();
     let db = DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();

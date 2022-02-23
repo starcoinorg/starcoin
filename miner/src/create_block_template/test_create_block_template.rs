@@ -12,7 +12,7 @@ use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetworkID;
-use starcoin_config::{temp_path, NodeConfig, StarcoinOpt};
+use starcoin_config::{temp_dir, NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
@@ -31,7 +31,7 @@ fn test_create_block_template() {
 fn test_create_block_template_by_net(net: ChainNetworkID) {
     debug!("test_create_block_template_by_net {:?}", net);
     let mut opt = StarcoinOpt::default();
-    let temp_path = temp_path();
+    let temp_path = temp_dir();
     opt.net = Some(net);
     opt.base_data_dir = Some(temp_path.path().to_path_buf());
 

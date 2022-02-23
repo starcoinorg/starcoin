@@ -45,7 +45,7 @@ proptest! {
             1..10
         ),
     ) {
-        let tmpdir = starcoin_config::temp_path();
+        let tmpdir = starcoin_config::temp_dir();
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(None),
             DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),

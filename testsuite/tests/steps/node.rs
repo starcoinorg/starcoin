@@ -29,7 +29,7 @@ pub fn steps() -> Steps<MyWorld> {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetworkID::HALLEY);
             opt.metrics.disable_metrics = Some(false);
-            opt.base_data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
+            opt.base_data_dir = Some(PathBuf::from(starcoin_config::temp_dir().as_ref()));
             let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
         })

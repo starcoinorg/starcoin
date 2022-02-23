@@ -13,7 +13,7 @@ use starcoin_config::RocksdbConfig;
 fn test_storage() {
     let storage = Storage::new(StorageInstance::new_db_instance(
         DBStorage::new(
-            starcoin_config::temp_path().as_ref(),
+            starcoin_config::temp_dir().as_ref(),
             RocksdbConfig::default(),
             None,
         )

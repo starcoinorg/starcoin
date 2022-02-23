@@ -23,6 +23,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use structopt::clap::crate_version;
 use structopt::StructOpt;
+use tempfile::TempDir;
 
 mod account_vault_config;
 mod api_config;
@@ -67,8 +68,6 @@ pub use rpc_config::{
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
-use tempfile::NamedTempFile;
-pub use tempfile::TempPath;
 pub use txpool_config::TxPoolConfig;
 
 pub static CRATE_VERSION: &str = crate_version!();
@@ -102,18 +101,14 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     NodeConfig::load_with_opt(opt)
 }
 
-pub fn temp_path() -> DataDirPath {
-    let temp_path = NamedTempFile::new()
-        .expect("Create temp dir fail.")
-        .into_temp_path();
-    DataDirPath::TempPath(Arc::from(temp_path))
+pub fn temp_dir() -> DataDirPath {
+    let temp_dir = TempDir::new().expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_dir))
 }
 
-pub fn temp_path_with_dir(dir: PathBuf) -> DataDirPath {
-    let temp_path = NamedTempFile::new_in(dir)
-        .expect("Create temp dir fail.")
-        .into_temp_path();
-    DataDirPath::TempPath(Arc::from(temp_path))
+pub fn temp_dir_in(dir: PathBuf) -> DataDirPath {
+    let temp_dir = TempDir::new_in(dir).expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_dir))
 }
 
 /// Parse a single key-value pair
@@ -235,7 +230,7 @@ impl std::fmt::Display for StarcoinOpt {
 #[derive(Clone, Debug)]
 pub enum DataDirPath {
     PathBuf(PathBuf),
-    TempPath(Arc<TempPath>),
+    TempPath(Arc<TempDir>),
 }
 
 impl PartialEq for DataDirPath {
@@ -243,9 +238,7 @@ impl PartialEq for DataDirPath {
         match (self, other) {
             (DataDirPath::PathBuf(path1), DataDirPath::PathBuf(path2)) => path1 == path2,
             (DataDirPath::TempPath(path1), DataDirPath::TempPath(path2)) => {
-                let p1: &Path = path1;
-                let p2: &Path = path2;
-                p1 == p2
+                path1.path() == path2.path()
             }
             (_, _) => false,
         }
@@ -291,7 +284,7 @@ impl BaseConfig {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
             None => {
                 if id.is_dev() || id.is_test() {
-                    temp_path()
+                    temp_dir()
                 } else {
                     DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
                 }

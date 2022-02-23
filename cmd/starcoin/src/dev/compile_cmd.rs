@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_config::temp_path;
+use starcoin_config::temp_dir;
 use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
@@ -77,7 +77,7 @@ impl CommandAction for CompileCommand {
             source_file_or_dir
         );
 
-        let temp_path = temp_path();
+        let temp_path = temp_dir();
         let mut deps = restore_stdlib_in_dir(temp_path.path())?;
 
         // add extra deps
