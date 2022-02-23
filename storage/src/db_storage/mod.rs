@@ -150,11 +150,15 @@ impl DBStorage {
         Ok(())
     }
 
-    pub fn drop_one_cf(&mut self, name: &str) -> Result<(), Error> {
-        for cf in &self.cfs {
-            if cf == &name {
-                self.db.drop_cf(name)?;
-                break;
+    pub fn drop_unused_cfs(&mut self, names: Vec<&str>) -> Result<(), Error> {
+        for name in names {
+            for cf in &self.cfs {
+                if cf == &name {
+                    self.db.drop_cf(name)?;
+                    let opt = Options::default();
+                    self.db.create_cf(name, &opt)?;
+                    break;
+                }
             }
         }
         Ok(())

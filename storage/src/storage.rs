@@ -94,6 +94,15 @@ impl StorageInstance {
             _ => None,
         }
     }
+
+    pub fn db_mut(&mut self) -> Option<Arc<DBStorage>> {
+        match self {
+            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
+                Some(db.clone())
+            }
+            _ => None,
+        }
+    }
 }
 
 impl InnerStore for StorageInstance {

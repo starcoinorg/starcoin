@@ -282,7 +282,7 @@ impl Storage {
         Ok(storage)
     }
 
-    pub fn check_upgrade(self) -> Result<Self> {
+    pub fn check_upgrade(&mut self) -> Result<()> {
         DBUpgrade::check_upgrade(self)
     }
 

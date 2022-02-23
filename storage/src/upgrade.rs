@@ -1,26 +1,26 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockBodyStorage;
 use crate::transaction_info::OldTransactionInfoStorage;
 use crate::{
     CodecKVStore, RichTransactionInfo, Storage, StorageVersion, TransactionStore,
-    BLOCK_BODY_PREFIX_NAME,
+    BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use logger::prelude::{debug, info, warn};
 use starcoin_types::transaction::Transaction;
 use std::cmp::Ordering;
+use std::sync::Arc;
 
 pub struct DBUpgrade;
 
 impl DBUpgrade {
-    pub fn check_upgrade(storage: Storage) -> Result<Storage> {
+    pub fn check_upgrade(storage: &mut Storage) -> Result<()> {
         let version_in_db = storage.chain_info_storage.get_storage_version()?;
         let version_in_code = StorageVersion::current_version();
         match version_in_db.cmp(&version_in_code) {
             Ordering::Less => {
-                Self::do_upgrade(version_in_db, version_in_code, &storage)?;
+                Self::do_upgrade(version_in_db, version_in_code, storage)?;
                 storage
                     .chain_info_storage
                     .set_storage_version(version_in_code)?;
@@ -36,10 +36,10 @@ impl DBUpgrade {
             }
         }
 
-        Ok(storage)
+        Ok(())
     }
 
-    fn db_upgrade_v1_v2(storage: &Storage) -> Result<()> {
+    fn db_upgrade_v1_v2(storage: &mut Storage) -> Result<()> {
         let old_transaction_info_storage = OldTransactionInfoStorage::new(storage.instance.clone());
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
@@ -130,24 +130,26 @@ impl DBUpgrade {
         Ok(())
     }
 
-    fn db_upgrade_v2_v3(storage: &Storage) -> Result<()> {
-        // todo use drop_one_cf BLOCK_BODY_PREFIX_NAME TRANSACTION_INFO_PREFIX_NAME
+    fn db_upgrade_v2_v3(storage: &mut Storage) -> Result<()> {
         // https://github.com/facebook/rocksdb/issues/1295
-        let block_body_stoarge = BlockBodyStorage::new(storage.instance.clone());
-        let mut iter = block_body_stoarge.iter()?;
-        iter.seek_to_first();
-
-        for item in iter {
-            block_body_stoarge.remove(item?.0)?
-        }
-        info!("remove unused column {}", BLOCK_BODY_PREFIX_NAME);
+        let mut db = storage
+            .instance
+            .db_mut()
+            .ok_or_else(|| format_err!("Can not find dbstorage"))?;
+        Arc::get_mut(&mut db)
+            .ok_or_else(|| format_err!("Arc::get_mut dbstorage error"))?
+            .drop_unused_cfs(vec![BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME])?;
+        info!(
+            "remove unused column {}, column {}",
+            BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME
+        );
         Ok(())
     }
 
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
-        storage: &Storage,
+        storage: &mut Storage,
     ) -> Result<()> {
         info!(
             "Upgrade db from {:?} to {:?}",

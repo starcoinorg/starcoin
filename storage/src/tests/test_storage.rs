@@ -348,10 +348,10 @@ pub fn test_db_upgrade() -> Result<()> {
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
-    let storage = Storage::new(instance.clone())?;
+    let mut storage = Storage::new(instance.clone())?;
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
 
-    let storage = storage.check_upgrade()?;
+    storage.check_upgrade()?;
     for txn_info_id in txn_info_ids {
         assert!(
             old_transaction_info_storage.get(txn_info_id)?.is_none(),
