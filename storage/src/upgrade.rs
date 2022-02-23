@@ -24,7 +24,7 @@ impl DBUpgrade {
             let chain_info_storage = ChainInfoStorage::new(instance.clone());
             chain_info_storage.get_storage_version()?
         };
-        // make Arc::strong_count(&instance) == 1
+        // make sure Arc::strong_count(&instance) == 1
         let version_in_code = StorageVersion::current_version();
         match version_in_db.cmp(&version_in_code) {
             Ordering::Less => {

@@ -96,6 +96,7 @@ impl StorageInstance {
         }
     }
 
+    // make sure Arc::strong_count(&db) == 1 unless will get None
     pub fn db_mut(&mut self) -> Option<&mut DBStorage> {
         match self {
             StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
