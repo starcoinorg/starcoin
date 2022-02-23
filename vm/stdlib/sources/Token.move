@@ -94,7 +94,7 @@ module Token {
     const MAX_PRECISION: u8 = 38;
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
-    public fun register_token<TokenType: store>(
+    public fun register_token<TokenType>(
         account: &signer,
         precision: u8,
     ) {
@@ -138,7 +138,7 @@ module Token {
     }
 
     /// Remove mint capability from `signer`.
-    public fun remove_mint_capability<TokenType: store>(signer: &signer): MintCapability<TokenType>
+    public fun remove_mint_capability<TokenType>(signer: &signer): MintCapability<TokenType>
     acquires MintCapability {
         move_from<MintCapability<TokenType>>(Signer::address_of(signer))
     }
@@ -149,7 +149,7 @@ module Token {
     }
 
     /// Add mint capability to `signer`.
-    public fun add_mint_capability<TokenType: store>(signer: &signer, cap: MintCapability<TokenType>) {
+    public fun add_mint_capability<TokenType>(signer: &signer, cap: MintCapability<TokenType>) {
         move_to(signer, cap)
     }
 
@@ -159,7 +159,7 @@ module Token {
     }
 
     /// Destroy the given mint capability.
-    public fun destroy_mint_capability<TokenType: store>(cap: MintCapability<TokenType>) {
+    public fun destroy_mint_capability<TokenType>(cap: MintCapability<TokenType>) {
         let MintCapability<TokenType> { } = cap;
     }
 
@@ -167,7 +167,7 @@ module Token {
     }
 
     /// remove the token burn capability from `signer`.
-    public fun remove_burn_capability<TokenType: store>(signer: &signer): BurnCapability<TokenType>
+    public fun remove_burn_capability<TokenType>(signer: &signer): BurnCapability<TokenType>
     acquires BurnCapability {
         move_from<BurnCapability<TokenType>>(Signer::address_of(signer))
     }
@@ -178,7 +178,7 @@ module Token {
     }
 
     /// Add token burn capability to `signer`.
-    public fun add_burn_capability<TokenType: store>(signer: &signer, cap: BurnCapability<TokenType>) {
+    public fun add_burn_capability<TokenType>(signer: &signer, cap: BurnCapability<TokenType>) {
         move_to(signer, cap)
     }
 
@@ -188,7 +188,7 @@ module Token {
     }
 
     /// Destroy the given burn capability.
-    public fun destroy_burn_capability<TokenType: store>(cap: BurnCapability<TokenType>) {
+    public fun destroy_burn_capability<TokenType>(cap: BurnCapability<TokenType>) {
         let BurnCapability<TokenType> { } = cap;
     }
 
@@ -197,7 +197,7 @@ module Token {
 
     /// Return `amount` tokens.
     /// Fails if the sender does not have a published MintCapability.
-    public fun mint<TokenType: store>(account: &signer, amount: u128): Token<TokenType>
+    public fun mint<TokenType>(account: &signer, amount: u128): Token<TokenType>
     acquires TokenInfo, MintCapability {
         mint_with_capability(
             borrow_global<MintCapability<TokenType>>(Signer::address_of(account)),
@@ -214,7 +214,7 @@ module Token {
     /// The caller must have a reference to a MintCapability.
     /// Only the Association account can acquire such a reference, and it can do so only via
     /// `borrow_sender_mint_capability`
-    public fun mint_with_capability<TokenType: store>(
+    public fun mint_with_capability<TokenType>(
         _capability: &MintCapability<TokenType>,
         amount: u128,
     ): Token<TokenType> acquires TokenInfo {
@@ -227,7 +227,7 @@ module Token {
                 old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
     }
 
-    fun do_mint<TokenType: store>(amount: u128): Token<TokenType> acquires TokenInfo {
+    fun do_mint<TokenType>(amount: u128): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         let (token_address, module_name, token_name) = name_of_token<TokenType>();
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
@@ -249,7 +249,7 @@ module Token {
 
     /// Deprecated since @v3
     /// Issue a `FixedTimeMintKey` with given `MintCapability`.
-    public fun issue_fixed_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
+    public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                      _amount: u128, _period: u64): FixedTimeMintKey<TokenType>{
         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
@@ -259,7 +259,7 @@ module Token {
 
     /// Deprecated since @v3
     /// Issue a `LinearTimeMintKey` with given `MintCapability`.
-    public fun issue_linear_mint_key<TokenType: store>( _capability: &MintCapability<TokenType>,
+    public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                                 _amount: u128, _period: u64): LinearTimeMintKey<TokenType>{
         abort Errors::deprecated(EDEPRECATED_FUNCTION)
     }
@@ -268,17 +268,17 @@ module Token {
     }
 
     /// Destroy `LinearTimeMintKey`, for deprecated
-    public fun destroy_linear_time_key<TokenType: store>(key: LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
+    public fun destroy_linear_time_key<TokenType>(key: LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time, period} = key;
         (total, minted, start_time, period)
     }
 
-    public fun read_linear_time_key<TokenType: store>(key: &LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
+    public fun read_linear_time_key<TokenType>(key: &LinearTimeMintKey<TokenType>): (u128, u128, u64, u64) {
         (key.total, key.minted, key.start_time, key.period)
     }
 
     /// Burn some tokens of `signer`.
-    public fun burn<TokenType: store>(account: &signer, tokens: Token<TokenType>)
+    public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
     acquires TokenInfo, BurnCapability {
         burn_with_capability(
             borrow_global<BurnCapability<TokenType>>(Signer::address_of(account)),
@@ -292,7 +292,7 @@ module Token {
     }
 
     /// Burn tokens with the given `BurnCapability`.
-    public fun burn_with_capability<TokenType: store>(
+    public fun burn_with_capability<TokenType>(
         _capability: &BurnCapability<TokenType>,
         tokens: Token<TokenType>,
     ) acquires TokenInfo {
@@ -316,7 +316,7 @@ module Token {
     }
 
     /// Create a new Token::Token<TokenType> with a value of 0
-    public fun zero<TokenType: store>(): Token<TokenType> {
+    public fun zero<TokenType>(): Token<TokenType> {
         Token<TokenType> { value: 0 }
     }
 
@@ -325,7 +325,7 @@ module Token {
 
 
     /// Public accessor for the value of a token
-    public fun value<TokenType: store>(token: &Token<TokenType>): u128 {
+    public fun value<TokenType>(token: &Token<TokenType>): u128 {
         token.value
     }
 
@@ -334,7 +334,7 @@ module Token {
     }
 
     /// Splits the given token into two and returns them both
-    public fun split<TokenType: store>(
+    public fun split<TokenType>(
         token: Token<TokenType>,
         value: u128,
     ): (Token<TokenType>, Token<TokenType>) {
@@ -351,7 +351,7 @@ module Token {
     /// The original token will have value = original value - `value`
     /// The new token will have a value = `value`
     /// Fails if the tokens value is less than `value`
-    public fun withdraw<TokenType: store>(
+    public fun withdraw<TokenType>(
         token: &mut Token<TokenType>,
         value: u128,
     ): Token<TokenType> {
@@ -369,7 +369,7 @@ module Token {
 
     /// Merges two tokens of the same token and returns a new token whose
     /// value is equal to the sum of the two inputs
-    public fun join<TokenType: store>(
+    public fun join<TokenType>(
         token1: Token<TokenType>,
         token2: Token<TokenType>,
     ): Token<TokenType> {
@@ -386,7 +386,7 @@ module Token {
     /// "Merges" the two tokens
     /// The token passed in by reference will have a value equal to the sum of the two tokens
     /// The `check` token is consumed in the process
-    public fun deposit<TokenType: store>(token: &mut Token<TokenType>, check: Token<TokenType>) {
+    public fun deposit<TokenType>(token: &mut Token<TokenType>, check: Token<TokenType>) {
         let Token { value } = check;
         token.value = token.value + value;
     }
@@ -400,7 +400,7 @@ module Token {
     /// Fails if the value is non-zero
     /// The amount of Token in the system is a tightly controlled property,
     /// so you cannot "burn" any non-zero amount of Token
-    public fun destroy_zero<TokenType: store>(token: Token<TokenType>) {
+    public fun destroy_zero<TokenType>(token: Token<TokenType>) {
         let Token { value } = token;
         assert!(value == 0, Errors::invalid_state(EDESTROY_TOKEN_NON_ZERO))
     }
@@ -410,7 +410,7 @@ module Token {
     }
 
     /// Returns the scaling_factor for the `TokenType` token.
-    public fun scaling_factor<TokenType: store>(): u128 acquires TokenInfo {
+    public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
@@ -420,7 +420,7 @@ module Token {
     }
 
     /// Return the total amount of token of type `TokenType`.
-    public fun market_cap<TokenType: store>(): u128 acquires TokenInfo {
+    public fun market_cap<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).total_value
     }
@@ -430,7 +430,7 @@ module Token {
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.
-    public fun is_registered_in<TokenType: store>(token_address: address): bool {
+    public fun is_registered_in<TokenType>(token_address: address): bool {
         exists<TokenInfo<TokenType>>(token_address)
     }
 
@@ -439,7 +439,7 @@ module Token {
     }
 
     /// Return true if the type `TokenType1` is same with `TokenType2`
-    public fun is_same_token<TokenType1: store, TokenType2: store>(): bool {
+    public fun is_same_token<TokenType1, TokenType2>(): bool {
         return token_code<TokenType1>() == token_code<TokenType2>()
     }
 
@@ -448,7 +448,7 @@ module Token {
     }
 
     /// Return the TokenType's address
-    public fun token_address<TokenType: store>(): address {
+    public fun token_address<TokenType>(): address {
         let (addr, _, _) = name_of<TokenType>();
         addr
     }
@@ -464,7 +464,7 @@ module Token {
 }
 
     /// Return the token code for the registered token.
-    public fun token_code<TokenType: store>(): TokenCode {
+    public fun token_code<TokenType>(): TokenCode {
         let (addr, module_name, name) = name_of<TokenType>();
         TokenCode {
             addr,
@@ -484,14 +484,14 @@ module Token {
     spec fun spec_token_code<TokenType>(): TokenCode;
 
     /// Return Token's module address, module name, and type name of `TokenType`.
-    native fun name_of<TokenType: store>(): (address, vector<u8>, vector<u8>);
+    native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);
 
     spec name_of {
         pragma opaque = true;
         aborts_if false;
     }
 
-    fun name_of_token<TokenType: store>(): (address, vector<u8>, vector<u8>) {
+    fun name_of_token<TokenType>(): (address, vector<u8>, vector<u8>) {
         name_of<TokenType>()
     }
 
