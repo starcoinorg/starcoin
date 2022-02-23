@@ -12,7 +12,6 @@ use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
-use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Error, Result};
 use crypto::HashValue;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -113,22 +112,44 @@ static VEC_PREFIX_NAME_V2: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
+static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    vec![
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+        BLOCK_PREFIX_NAME,
+        BLOCK_HEADER_PREFIX_NAME,
+        BLOCK_BODY_PREFIX_NAME, // unused column
+        BLOCK_INFO_PREFIX_NAME,
+        BLOCK_TRANSACTIONS_PREFIX_NAME,
+        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
+        STATE_NODE_PREFIX_NAME,
+        CHAIN_INFO_PREFIX_NAME,
+        TRANSACTION_PREFIX_NAME,
+        TRANSACTION_INFO_PREFIX_NAME, // unused column
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_HASH_PREFIX_NAME,
+        CONTRACT_EVENT_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME,
+    ]
+});
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
     V1 = 1,
     V2 = 2,
+    V3 = 3,
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V2
+        StorageVersion::V3
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
         match self {
             StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
+            StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
         }
     }
 }
@@ -236,7 +257,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
-    instance: StorageInstance,
+    // instance: StorageInstance,
 }
 
 impl Storage {
@@ -254,14 +275,10 @@ impl Storage {
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
-            chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            instance,
+            chain_info_storage: ChainInfoStorage::new(instance),
+            // instance,
         };
         Ok(storage)
-    }
-
-    pub fn check_upgrade(self) -> Result<Self> {
-        DBUpgrade::check_upgrade(self)
     }
 
     pub fn get_block_accumulator_storage(&self) -> AccumulatorStorage<BlockAccumulatorStorage> {

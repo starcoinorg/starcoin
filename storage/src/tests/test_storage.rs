@@ -344,14 +344,15 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
 pub fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_path();
     let txn_info_ids = generate_old_db(tmpdir.path())?;
-    let instance = StorageInstance::new_cache_and_db_instance(
+    let mut instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
+
+    instance.check_upgrade()?;
     let storage = Storage::new(instance.clone())?;
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
 
-    let storage = storage.check_upgrade()?;
     for txn_info_id in txn_info_ids {
         assert!(
             old_transaction_info_storage.get(txn_info_id)?.is_none(),

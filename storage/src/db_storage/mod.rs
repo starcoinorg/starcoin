@@ -150,6 +150,21 @@ impl DBStorage {
         Ok(())
     }
 
+    pub fn drop_unused_cfs(&mut self, names: Vec<&str>) -> Result<(), Error> {
+        // https://github.com/facebook/rocksdb/issues/1295
+        for name in names {
+            for cf in &self.cfs {
+                if cf == &name {
+                    self.db.drop_cf(name)?;
+                    let opt = Options::default();
+                    self.db.create_cf(name, &opt)?;
+                    break;
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Flushes all memtable data. This is only used for testing `get_approximate_sizes_cf` in unit
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
