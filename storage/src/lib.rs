@@ -275,7 +275,7 @@ impl Storage {
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
-            chain_info_storage: ChainInfoStorage::new(instance.clone()),
+            chain_info_storage: ChainInfoStorage::new(instance),
             // instance,
         };
         Ok(storage)
