@@ -151,6 +151,7 @@ impl DBStorage {
     }
 
     pub fn drop_unused_cfs(&mut self, names: Vec<&str>) -> Result<(), Error> {
+        // https://github.com/facebook/rocksdb/issues/1295
         for name in names {
             for cf in &self.cfs {
                 if cf == &name {
