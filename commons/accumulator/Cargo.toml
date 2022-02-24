@@ -30,3 +30,4 @@ proptest-derive = "0.3.0"
 [features]
 default = []
 fuzzing = ["starcoin-crypto/fuzzing"]
+avx512f = ["starcoin-crypto/avx512f"]
