@@ -624,7 +624,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "pprof",
  "proptest",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "starcoin-account-api",
  "starcoin-accumulator",
@@ -1984,7 +1984,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "serde-name 0.1.2",
@@ -2191,7 +2191,7 @@ checksum = "97c6ac152eba578c1c53d2cefe8ad02e239e3d6f971b0f1ef3cb54cd66037fa0"
 dependencies = [
  "curve25519-dalek-fiat",
  "ed25519",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde 1.0.136",
  "serde_bytes",
  "sha2 0.9.9",
@@ -2499,7 +2499,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "serde_bytes",
@@ -2903,7 +2903,7 @@ dependencies = [
  "nonzero_ext",
  "parking_lot 0.12.0",
  "quanta",
- "rand 0.8.4",
+ "rand 0.8.5",
  "smallvec 1.8.0",
 ]
 
@@ -4083,7 +4083,7 @@ dependencies = [
  "log 0.4.14",
  "prost",
  "prost-build",
- "rand 0.8.4",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -4110,7 +4110,7 @@ dependencies = [
  "pin-project 1.0.10",
  "prost",
  "prost-build",
- "rand 0.8.4",
+ "rand 0.8.5",
  "ring",
  "rw-stream-sink",
  "sha2 0.10.1",
@@ -4253,7 +4253,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.14",
- "rand 0.8.4",
+ "rand 0.8.5",
  "smallvec 1.8.0",
  "socket2 0.4.4",
  "void",
@@ -4307,7 +4307,7 @@ dependencies = [
  "log 0.4.14",
  "prost",
  "prost-build",
- "rand 0.8.4",
+ "rand 0.8.5",
  "sha2 0.10.1",
  "snow",
  "static_assertions",
@@ -4380,7 +4380,7 @@ dependencies = [
  "pin-project 1.0.10",
  "prost",
  "prost-build",
- "rand 0.8.4",
+ "rand 0.8.5",
  "smallvec 1.8.0",
  "static_assertions",
  "thiserror",
@@ -4404,7 +4404,7 @@ dependencies = [
  "log 0.4.14",
  "prost",
  "prost-build",
- "rand 0.8.4",
+ "rand 0.8.5",
  "sha2 0.10.1",
  "thiserror",
  "unsigned-varint 0.7.1",
@@ -4555,7 +4555,7 @@ dependencies = [
  "libsecp256k1-core",
  "libsecp256k1-gen-ecmult",
  "libsecp256k1-gen-genmult",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde 1.0.136",
  "sha2 0.9.9",
  "typenum",
@@ -5168,7 +5168,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "ref-cast",
  "serde 1.0.136",
  "serde_bytes",
@@ -5475,7 +5475,7 @@ dependencies = [
  "num",
  "once_cell",
  "pretty",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde 1.0.136",
  "serde_json",
  "simplelog",
@@ -5504,7 +5504,7 @@ dependencies = [
  "num",
  "once_cell",
  "pretty",
- "rand 0.8.4",
+ "rand 0.8.5",
  "regex",
  "serde 1.0.136",
  "serde_json",
@@ -5821,7 +5821,7 @@ version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10a8690bf09abf659851e58cd666c3d37ac6af07c2bd7a9e332cfba471715775"
 dependencies = [
- "rand 0.8.4",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -5936,7 +5936,7 @@ dependencies = [
  "itertools 0.10.3",
  "network-p2p-types",
  "parking_lot 0.12.0",
- "rand 0.8.4",
+ "rand 0.8.5",
  "schemars 0.8.3",
  "serde 1.0.136",
  "starcoin-crypto",
@@ -5975,7 +5975,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "pin-project 0.4.29",
  "prometheus",
- "rand 0.8.4",
+ "rand 0.8.5",
  "sc-peerset",
  "serde 1.0.136",
  "serde_json",
@@ -6000,7 +6000,7 @@ dependencies = [
  "bytes 1.1.0",
  "derive_more",
  "libp2p",
- "rand 0.8.4",
+ "rand 0.8.5",
  "sc-peerset",
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -6840,7 +6840,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d5285893bb5eb82e6aaf5d59ee909a06a16737a8970984dd7746ba9283498d6"
 dependencies = [
  "phf_shared",
- "rand 0.8.4",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -7176,7 +7176,7 @@ dependencies = [
  "lazy_static 1.4.0",
  "num-traits 0.2.14",
  "quick-error 2.0.1",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_xorshift 0.3.0",
  "regex-syntax",
@@ -7453,14 +7453,13 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e7573632e6454cf6b99d7aac4ccca54be06da05aca2ef7423d22d27d4d4bcd8"
+checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
  "rand_chacha 0.3.1",
  "rand_core 0.6.3",
- "rand_hc 0.3.1",
 ]
 
 [[package]]
@@ -7542,15 +7541,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core 0.5.1",
-]
-
-[[package]]
-name = "rand_hc"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d51e9f596de227fda2ea6c84607f5558e196eeaf43c986b724ba4fb8fdf497e7"
-dependencies = [
- "rand_core 0.6.3",
 ]
 
 [[package]]
@@ -8232,7 +8222,7 @@ dependencies = [
  "futures 0.3.21",
  "libp2p",
  "log 0.4.14",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde_json",
  "sp-utils",
  "wasm-timer",
@@ -8306,7 +8296,7 @@ dependencies = [
  "cli-table",
  "ctrlc",
  "once_cell",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rust-flatten-json",
  "rustyline",
  "serde 1.0.136",
@@ -8859,7 +8849,7 @@ dependencies = [
  "aes-gcm 0.9.4",
  "blake2",
  "chacha20poly1305",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "ring",
  "rustc_version 0.3.3",
@@ -8901,7 +8891,7 @@ dependencies = [
  "futures 0.3.21",
  "httparse",
  "log 0.4.14",
- "rand 0.8.4",
+ "rand 0.8.5",
  "sha-1 0.9.8",
 ]
 
@@ -8987,7 +8977,7 @@ dependencies = [
  "futures 0.3.21",
  "hex",
  "parking_lot 0.12.0",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "serde_json",
@@ -9010,7 +9000,7 @@ dependencies = [
  "bcs-ext",
  "futures 0.3.21",
  "hex",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -9056,7 +9046,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -9103,7 +9093,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "sp-utils",
  "starcoin-account-api",
@@ -9141,7 +9131,7 @@ dependencies = [
  "async-trait",
  "futures 0.3.21",
  "network-api",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "starcoin-accumulator",
@@ -9204,7 +9194,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.21",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "starcoin-chain",
@@ -9238,7 +9228,7 @@ dependencies = [
  "move-errmapgen",
  "network-api",
  "network-p2p-types",
- "rand 0.8.4",
+ "rand 0.8.5",
  "scmd",
  "serde 1.0.136",
  "serde_json",
@@ -9295,7 +9285,7 @@ dependencies = [
  "num_enum",
  "once_cell",
  "parking_lot 0.12.0",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -9326,7 +9316,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "rust-argon2",
  "sha3 0.10.1",
@@ -9351,7 +9341,7 @@ dependencies = [
  "diem-crypto-derive",
  "hex",
  "once_cell",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "serde-name 0.2.0",
@@ -9391,7 +9381,7 @@ dependencies = [
  "byteorder 1.4.3",
  "hmac 0.7.1",
  "pbkdf2",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "sha2 0.8.2",
 ]
@@ -9456,7 +9446,7 @@ version = "1.10.0-rc.2"
 dependencies = [
  "anyhow",
  "itertools 0.10.3",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rayon",
  "starcoin-accumulator",
  "starcoin-config",
@@ -9671,7 +9661,7 @@ dependencies = [
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libloading",
  "parking_lot 0.12.0",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "rust-argon2",
  "serde 1.0.136",
@@ -9752,7 +9742,7 @@ dependencies = [
  "num",
  "once_cell",
  "pretty",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde 1.0.136",
  "serde_json",
  "shell-words",
@@ -9780,7 +9770,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "num_enum",
- "rand 0.8.4",
+ "rand 0.8.5",
  "ripemd160",
  "smallvec 1.8.0",
  "starcoin-crypto",
@@ -9814,7 +9804,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.0",
  "prometheus",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde 1.0.136",
  "serde_json",
  "starcoin-config",
@@ -10140,7 +10130,7 @@ dependencies = [
  "futures 0.3.21",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde_json",
  "starcoin-config",
  "starcoin-logger",
@@ -10337,7 +10327,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rocksdb",
  "serde 1.0.136",
  "starcoin-accumulator",
@@ -10396,7 +10386,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "pin-project 1.0.10",
  "pin-utils",
- "rand 0.8.4",
+ "rand 0.8.5",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",
@@ -10559,7 +10549,7 @@ dependencies = [
  "parking_lot 0.12.0",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "serde 1.0.136",
  "serde_derive",
@@ -10628,7 +10618,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -10664,7 +10654,7 @@ dependencies = [
  "move-vm-runtime",
  "num_enum",
  "once_cell",
- "rand 0.8.4",
+ "rand 0.8.5",
  "rand_core 0.6.3",
  "starcoin-config",
  "starcoin-crypto",
@@ -10699,7 +10689,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
- "rand 0.8.4",
+ "rand 0.8.5",
  "schemars 0.8.3",
  "serde 1.0.136",
  "serde-helpers",
@@ -11115,7 +11105,7 @@ dependencies = [
  "percent-encoding 2.1.0",
  "pest 2.1.3",
  "pest_derive 2.1.0",
- "rand 0.8.4",
+ "rand 0.8.5",
  "regex",
  "serde 1.0.136",
  "serde_json",
@@ -11200,7 +11190,7 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "network-rpc-core",
- "rand 0.8.4",
+ "rand 0.8.5",
  "serde 1.0.136",
  "serde_json",
  "starcoin-account-api",
@@ -11863,7 +11853,7 @@ dependencies = [
  "ipnet",
  "lazy_static 1.4.0",
  "log 0.4.14",
- "rand 0.8.4",
+ "rand 0.8.5",
  "smallvec 1.8.0",
  "thiserror",
  "tinyvec",
@@ -12873,7 +12863,7 @@ dependencies = [
  "log 0.4.14",
  "nohash-hasher",
  "parking_lot 0.11.2",
- "rand 0.8.4",
+ "rand 0.8.5",
  "static_assertions",
 ]
 

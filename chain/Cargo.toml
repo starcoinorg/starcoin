@@ -30,7 +30,7 @@ starcoin-vm-types = { path = "../vm/types"}
 proptest = { version = "1.0.0", default-features = false, optional = true }
 proptest-derive = { version = "0.3.0", default-features = false, optional = true }
 sp-utils = {path = "../commons/utils"}
-rand = "0.8.4"
+rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 
 [dev-dependencies]
