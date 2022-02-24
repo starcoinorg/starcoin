@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.41"
 itertools = { version = "0.10.3", default-features = false }
-rand = "0.8.4"
+rand = "0.8.5"
 rayon = "1"
 structopt = "0.3.26"
 executor = {path = "../../executor", package="starcoin-executor" }
