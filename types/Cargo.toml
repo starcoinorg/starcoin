@@ -34,3 +34,4 @@ schemars = {git = "https://github.com/starcoinorg/schemars", rev="88baec6c9c57e9
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]
+avx512f = ["starcoin-crypto/avx512f"]

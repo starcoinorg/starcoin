@@ -19,3 +19,6 @@ anyhow = "1.0"
 serde = "1.0.130"
 serde_yaml = "0.8"
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
+
+[features]
+avx512f = ["starcoin-crypto/avx512f"]

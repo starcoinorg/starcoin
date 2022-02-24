@@ -45,3 +45,4 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "vm/fuzzing", "starcoin-crypto/fuzzing", "move-core-types/fuzzing"]
+avx512f = ["starcoin-crypto/avx512f"]
