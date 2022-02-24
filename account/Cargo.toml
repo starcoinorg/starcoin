@@ -19,7 +19,7 @@ starcoin-account-api = {path = "./api"}
 bcs-ext ={package= "bcs-ext", path = "../commons/bcs_ext" }
 starcoin-types = { path = "../types"}
 starcoin-config = { path = "../config"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}
 starcoin-decrypt = {path = "../commons/decrypt"}
 starcoin-storage = {path = "../storage"}
 starcoin-logger = {path = "../commons/logger"}

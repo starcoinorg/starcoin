@@ -15,7 +15,7 @@ anyhow = "1.0.41"
 structopt = "0.3.26"
 async-std = "1.10"
 futures = "0.3.12"
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}
 starcoin-config = { path = "../../config"}
 starcoin-genesis = { path = "../../genesis"}
 starcoin-types = { path = "../../types"}

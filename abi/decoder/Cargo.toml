@@ -21,4 +21,4 @@ starcoin-abi-types = {path = "../types"}
 starcoin-abi-resolver = {path = "../resolver"}
 bcs-ext = {path = "../../commons/bcs_ext"}
 bcs = "0.1"
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="960ebefac4dd54e6f9302db9f9429141ce3ea67a"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="88baec6c9c57e92718f1d84d2722677f9e2118cb"}

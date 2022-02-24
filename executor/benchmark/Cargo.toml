@@ -13,7 +13,7 @@ rand = "0.8.5"
 rayon = "1"
 structopt = "0.3.26"
 executor = {path = "../../executor", package="starcoin-executor" }
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 types = { package="starcoin-types", path = "../../types"}
 vm-runtime = { package="starcoin-vm-runtime", path = "../../vm/vm-runtime"}

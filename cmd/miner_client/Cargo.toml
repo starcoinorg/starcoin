@@ -16,7 +16,7 @@ consensus = { path = "../../consensus", package = "starcoin-consensus" }
 tokio = { version = "0.3", features = ["full"] }
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}
 jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
 jsonrpc-server-utils = { version = "17.0.0" }
 jsonrpc-core-client = { version = "17.0.0" }

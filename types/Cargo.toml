@@ -22,14 +22,14 @@ serde_json = "1.0"
 thiserror = "1.0.30"
 num_enum = "0.5.6"
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}
 starcoin-uint = {path = "uint"}
 network-p2p-types = { path = "../network-p2p/types"}
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3.12"
 starcoin-accumulator = {path = "../commons/accumulator"}
 forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="960ebefac4dd54e6f9302db9f9429141ce3ea67a"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="88baec6c9c57e92718f1d84d2722677f9e2118cb"}
 
 [features]
 default = []

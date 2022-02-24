@@ -17,4 +17,4 @@ bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 merkletree = {version="0.21.0", features=["chaincore"]}
 rust-crypto = "~0.2"
 starcoin-vm-types = {path = "../../vm/types"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}

@@ -42,7 +42,7 @@ starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-account-service = { path = "../../account/service"}
 starcoin-statedb = { path = "../../state/statedb"}
 starcoin-state-tree = { path = "../../state/state-tree"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "b4887ba2f28171c0e1d825a03d6ab7fd456a7a02"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}
 starcoin-txpool-api = {path = "../../txpool/api"}
