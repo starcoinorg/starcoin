@@ -10526,16 +10526,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-transactional-tests"
-version = "1.10.0-rc.2"
-dependencies = [
- "anyhow",
- "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "starcoin-logger",
- "starcoin-transactional-test-harness",
-]
-
-[[package]]
 name = "starcoin-tx-factory"
 version = "1.10.0-rc.2"
 dependencies = [
