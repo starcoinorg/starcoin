@@ -20,11 +20,14 @@ once_cell = "1.8.0"
 include_dir = "0.6.2"
 sha2 = "0.9.1"
 log = "0.4.14"
+simplelog = "0.9.0"
 fs_extra = "1.2.0"
 clap = "2.33.3"
 serde = { version = "1.0.130", default-features = false }
 rayon = "1.5.1"
 itertools = "0.10.3"
+tempfile = "3.2.0"
+starcoin-framework = { path = "../starcoin-framework"}
 
 [dev-dependencies]
 datatest-stable = "0.1.1"
