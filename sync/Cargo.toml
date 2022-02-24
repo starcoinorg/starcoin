@@ -20,7 +20,7 @@ starcoin-chain = { path = "../chain" }
 config = {path = "../config", package="starcoin-config"}
 network = { path = "../network", package = "starcoin-network" }
 starcoin-types = { path = "../types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
 starcoin-genesis = {path = "../genesis"}

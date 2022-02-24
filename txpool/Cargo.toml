@@ -26,7 +26,7 @@ stest = {path = "../commons/stest"}
 types = { package = "starcoin-types", path = "../types"}
 starcoin-txpool-api = {package = "starcoin-txpool-api", path ="api"}
 starcoin-state-api = {path = "../state/api"}
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
 transaction-pool = "2.0.3"
 storage = {path = "../storage", package="starcoin-storage"}
 starcoin-statedb={ path="../state/statedb" }

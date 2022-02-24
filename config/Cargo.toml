@@ -17,7 +17,7 @@ toml = { version = "0.5.8", default-features = false }
 structopt = "0.3.26"
 git-version = "0.3.5"
 names = {version= "0.12.0", default-features=false}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
 once_cell = "1.8.0"
 hex= "0.4.3"
 num_enum = "0.5.6"
@@ -34,6 +34,6 @@ starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
 stdlib = { path = "../vm/stdlib"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="5bb034597f4bddd577f5d9baaabe5a41e9236d2f"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="960ebefac4dd54e6f9302db9f9429141ce3ea67a"}
 starcoin-metrics = { path = "../commons/metrics" }
 libc = "^0.2"

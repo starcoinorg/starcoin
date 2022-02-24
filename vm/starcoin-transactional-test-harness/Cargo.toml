@@ -29,7 +29,7 @@ move-core-types = { git = "https://github.com/starcoinorg/move", rev = "1d252312
 move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
 
 bcs-ext = {path = "../../commons/bcs_ext"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
 stdlib = {path = "../stdlib"}
 starcoin-genesis = {path = "../../genesis"}
 starcoin-config = { path = "../../config"}

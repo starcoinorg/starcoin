@@ -669,14 +669,18 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
+ "clap 2.34.0",
+ "env_logger 0.9.0",
  "lazy_static 1.4.0",
  "lazycell",
+ "log 0.4.14",
  "peeking_take_while",
  "proc-macro2 1.0.36",
  "quote 1.0.15",
  "regex",
  "rustc-hash",
  "shlex",
+ "which",
 ]
 
 [[package]]
@@ -1968,18 +1972,21 @@ checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 [[package]]
 name = "diem-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e2ed4bfd60eeca3d95da869ff978ab4596048761#e2ed4bfd60eeca3d95da869ff978ab4596048761"
 dependencies = [
  "aes-gcm 0.8.0",
  "anyhow",
  "bcs",
+ "bindgen",
  "bytes 1.1.0",
+ "cc",
  "curve25519-dalek-fiat",
  "diem-crypto-derive",
  "digest 0.9.0",
  "ed25519-dalek-fiat",
  "hex",
  "hkdf",
+ "libc",
  "mirai-annotations",
  "once_cell",
  "proptest",
@@ -1999,7 +2006,7 @@ dependencies = [
 [[package]]
 name = "diem-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e2ed4bfd60eeca3d95da869ff978ab4596048761#e2ed4bfd60eeca3d95da869ff978ab4596048761"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",
@@ -6385,7 +6392,7 @@ dependencies = [
 [[package]]
 name = "openrpc-rs"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/openrpc-rs?rev=039609e1e22febf135623cae6bae028de79379e6#039609e1e22febf135623cae6bae028de79379e6"
+source = "git+https://github.com/starcoinorg/openrpc-rs?rev=6851a29639cccd8889fcbcefbd8c17d993f2905b#6851a29639cccd8889fcbcefbd8c17d993f2905b"
 dependencies = [
  "schemars 0.8.3",
  "serde 1.0.136",
@@ -8241,7 +8248,7 @@ dependencies = [
 [[package]]
 name = "schemars"
 version = "0.8.3"
-source = "git+https://github.com/starcoinorg/schemars?rev=5bb034597f4bddd577f5d9baaabe5a41e9236d2f#5bb034597f4bddd577f5d9baaabe5a41e9236d2f"
+source = "git+https://github.com/starcoinorg/schemars?rev=960ebefac4dd54e6f9302db9f9429141ce3ea67a#960ebefac4dd54e6f9302db9f9429141ce3ea67a"
 dependencies = [
  "dyn-clone",
  "move-core-types",
@@ -8267,7 +8274,7 @@ dependencies = [
 [[package]]
 name = "schemars_derive"
 version = "0.8.3"
-source = "git+https://github.com/starcoinorg/schemars?rev=5bb034597f4bddd577f5d9baaabe5a41e9236d2f#5bb034597f4bddd577f5d9baaabe5a41e9236d2f"
+source = "git+https://github.com/starcoinorg/schemars?rev=960ebefac4dd54e6f9302db9f9429141ce3ea67a#960ebefac4dd54e6f9302db9f9429141ce3ea67a"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",
@@ -9333,7 +9340,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e2ed4bfd60eeca3d95da869ff978ab4596048761#e2ed4bfd60eeca3d95da869ff978ab4596048761"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9352,7 +9359,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=78aaf55a8b85a5eff208037e0cc798cf985e1a4e#78aaf55a8b85a5eff208037e0cc798cf985e1a4e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e2ed4bfd60eeca3d95da869ff978ab4596048761#e2ed4bfd60eeca3d95da869ff978ab4596048761"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",
@@ -10053,7 +10060,7 @@ dependencies = [
  "jsonrpc-server-utils 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "network-api",
  "network-p2p-types",
- "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=039609e1e22febf135623cae6bae028de79379e6)",
+ "openrpc-rs 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=6851a29639cccd8889fcbcefbd8c17d993f2905b)",
  "schemars 0.8.3",
  "serde 1.0.136",
  "serde-helpers",

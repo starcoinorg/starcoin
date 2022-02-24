@@ -26,7 +26,7 @@ starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-sync-api = { path = "../../sync/api"}
 starcoin-config = { path = "../../config"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "e2ed4bfd60eeca3d95da869ff978ab4596048761"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-abi-types = {path = "../../abi/types"}
@@ -38,8 +38,8 @@ serde-helpers = {path = "../../commons/serde-helpers"}
 network-p2p-types = {path = "../../network-p2p/types"}
 network-api = {path = "../../network/api", package="network-api"}
 jsonrpc-derive = {git = "https://github.com/starcoinorg/jsonrpc",rev="2f6c2b33d3048d57a85347ee735b312df0117b15"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="5bb034597f4bddd577f5d9baaabe5a41e9236d2f"}
-openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="039609e1e22febf135623cae6bae028de79379e6"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="960ebefac4dd54e6f9302db9f9429141ce3ea67a"}
+openrpc-rs = { git="https://github.com/starcoinorg/openrpc-rs",rev="6851a29639cccd8889fcbcefbd8c17d993f2905b"}
 structopt = "0.3.26"
 starcoin-accumulator = {path = "../../commons/accumulator"}
 [[bin]]
