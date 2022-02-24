@@ -24,24 +24,21 @@ futures = "0.3"
 tokio = {version = "0.2", features = ["full"]}
 tempfile = "~3"
 
-move-cli = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
-move-package = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
-move-disassembler = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
-move-errmapgen = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
-diem-workspace-hack = { package="diem-workspace-hack", git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
-move-coverage =  { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
-move-binary-format = { git = "https://github.com/starcoinorg/diem", rev = "59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"}
-move-compiler = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498"  }
-move-core-types = { git = "https://github.com/starcoinorg/diem", rev = "59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
-# move-vm-types = { git = "https://github.com/starcoinorg/diem", rev = "59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/diem", rev="59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
+move-cli = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
+move-package = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+move-disassembler = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+workspace-hack = { package="workspace-hack", git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+move-coverage =  { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"}
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
 resource-viewer = { path = "../resource-viewer", package = "starcoin-resource-viewer" }
-move-unit-test = { git = "https://github.com/starcoinorg/diem", rev = "59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
-move-command-line-common = { git = "https://github.com/starcoinorg/diem", rev = "59f3187dabfcd4fdf5f1a3d0248ca67a27aba498" }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
 datatest-stable = {git = "https://github.com/starcoinorg/diem-devtools", branch="feature/pub-test-opts"}
-
-
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-logger = {path = "../../commons/logger"}
 starcoin-types = { path = "../../types" }
@@ -49,12 +46,14 @@ starcoin-config ={path = "../../config"}
 stdlib = {path = "../stdlib"}
 starcoin-vm-runtime = {path = "../vm-runtime", features=["testing"]}
 starcoin-move-compiler = {path = "../compiler"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev="78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
 starcoin-rpc-client = {path = "../../rpc/client"}
 starcoin-rpc-api = {path = "../../rpc/api"}
 starcoin-transactional-test-harness = {path = "../starcoin-transactional-test-harness"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+
 [dev-dependencies]
+
 
 [[bin]]
 name = "mpm"

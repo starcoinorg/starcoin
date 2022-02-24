@@ -21,7 +21,7 @@ use std::sync::Arc;
 
 fn bench_get_with_proof(c: &mut Criterion) {
     ::logger::init();
-    let tmp_dir = starcoin_config::temp_path();
+    let tmp_dir = starcoin_config::temp_dir();
     let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
 
     let mem_store = Arc::new(MockStateNodeStore::new()) as Arc<dyn StateNodeStore>;
@@ -58,7 +58,7 @@ fn bench_put_and_commit(c: &mut Criterion) {
     let mut group = c.benchmark_group("put_and_commit");
     group.sample_size(80);
     for i in vec![1u64, 5, 10, 50, 100].into_iter() {
-        let tmp_dir = starcoin_config::temp_path();
+        let tmp_dir = starcoin_config::temp_dir();
         let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
         let mem_store = Arc::new(MockStateNodeStore::new()) as Arc<dyn StateNodeStore>;
         let mut rng: StdRng = {

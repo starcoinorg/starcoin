@@ -6,7 +6,7 @@ use crate::Genesis;
 use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
 use starcoin_account_api::AccountPrivateKey;
-use starcoin_config::{temp_path, ChainNetwork};
+use starcoin_config::{temp_dir, ChainNetwork};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_state_api::{ChainState, StateReaderExt, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
@@ -106,7 +106,7 @@ pub fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u12
 }
 
 pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<Module> {
-    let temp_dir = temp_path();
+    let temp_dir = temp_dir();
     let stdlib_files =
         restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
     let (_, compiled_result) =
@@ -120,7 +120,7 @@ pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<
 }
 #[allow(unused)]
 pub fn compile_script(code: impl AsRef<str>) -> Vec<u8> {
-    let temp_dir = temp_path();
+    let temp_dir = temp_dir();
     let stdlib_files =
         restore_stdlib_in_dir(temp_dir.path()).expect("get stdlib modules should be ok");
     let mut compile_unit = starcoin_move_compiler::compile_source_string_no_report(

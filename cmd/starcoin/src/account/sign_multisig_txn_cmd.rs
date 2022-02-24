@@ -5,7 +5,6 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use short_hex_str::AsShortHexStr;
 use starcoin_account_api::AccountPublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
@@ -258,9 +257,9 @@ impl CommandAction for GenerateMultisigTxnCommand {
         // output the txn, send this to other participants to sign, or just submit it.
         let output_file = {
             let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
-            // use hash's short str as output file name
-            let file_name = signed_txn.crypto_hash().short_str();
-            output_dir.push(file_name.as_str());
+            // use hash's as output file name
+            let file_name = signed_txn.crypto_hash().to_hex();
+            output_dir.push(file_name);
             output_dir.set_extension("multisig-txn");
             output_dir
         };

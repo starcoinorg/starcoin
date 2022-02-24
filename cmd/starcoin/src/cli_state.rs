@@ -62,7 +62,7 @@ impl CliState {
             std::fs::create_dir_all(temp_dir.as_path())
                 .unwrap_or_else(|e| panic!("Create cli temp dir {:?} fail, err:{:?}", temp_dir, e))
         }
-        let temp_dir = starcoin_config::temp_path_with_dir(temp_dir);
+        let temp_dir = starcoin_config::temp_dir_in(temp_dir);
 
         Self {
             net,
