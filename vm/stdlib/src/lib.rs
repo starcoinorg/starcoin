@@ -1,4 +1,4 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
@@ -33,9 +33,8 @@ use std::{
 
 mod compat;
 pub use compat::*;
+pub use starcoin_framework::SourceFiles;
 pub use starcoin_move_compiler::utils::iterate_directory;
-
-pub const STD_LIB_DIR: &str = "sources";
 
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
 
@@ -61,12 +60,12 @@ pub const ERROR_DESC_EXTENSION: &str = "errmap";
 pub const ERROR_DESCRIPTIONS: &[u8] =
     std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
 
-pub const STDLIB_DIR: Dir = include_dir!("sources");
+pub const STDLIB_DIR: Dir = starcoin_framework::SOURCES_DIR;
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
 static FRESH_MOVELANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
-    build_stdlib()
+    build_stdlib(STARCOIN_FRAMEWORK_SOURCES.files.as_slice())
         .values()
         .map(|m| {
             let mut blob = vec![];
@@ -135,6 +134,8 @@ pub static PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::ne
     }
 });
 
+pub use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
+
 /// Return all versions of stdlib, include latest.
 pub fn stdlib_versions() -> Vec<StdlibVersion> {
     STDLIB_VERSIONS.clone()
@@ -184,27 +185,13 @@ fn module_to_package(
     Package::new(modules.into_iter().map(Module::new).collect(), init_script)
 }
 
-pub fn restore_stdlib_in_dir(dir: &Path) -> anyhow::Result<Vec<String>> {
-    let mut deps = vec![];
-    for dep in STDLIB_DIR.files() {
-        let path = dir.join(dep.path());
-        std::fs::write(path.as_path(), dep.contents())?;
-        deps.push(path.display().to_string());
-    }
-    Ok(deps)
+pub fn stdlib_files() -> Vec<String> {
+    STARCOIN_FRAMEWORK_SOURCES.files.clone()
 }
 
-pub(crate) fn stdlib_files() -> Vec<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(STD_LIB_DIR);
-
-    let dirfiles = starcoin_move_compiler::utils::iterate_directory(&path);
-    starcoin_move_compiler::utils::filter_move_files(dirfiles).collect::<Vec<_>>()
-}
-
-pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
+pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {
     let compiled_units = {
-        let (files, units_res) = Compiler::new(&stdlib_files(), &[])
+        let (files, units_res) = Compiler::new(targets, &[])
             .set_named_address_values(starcoin_framework_named_addresses())
             .build()
             .unwrap();
@@ -252,33 +239,38 @@ pub fn build_stdlib_doc() {
     build_doc(STD_LIB_DOC_DIR, "", stdlib_files().as_slice(), "")
 }
 
-pub fn build_script_abis() {
+pub fn build_script_abis(dep_path: Option<&Path>) {
     stdlib_files().par_iter().for_each(|file| {
         build_abi(
             COMPILED_SCRIPTS_ABI_DIR,
             &[file.clone()],
-            STD_LIB_DIR,
+            dep_path,
             COMPILED_TRANSACTION_SCRIPTS_DIR,
         )
     });
 }
 
 #[allow(clippy::field_reassign_with_default)]
-fn build_abi(output_path: &str, sources: &[String], dep_path: &str, compiled_script_path: &str) {
+fn build_abi(
+    output_path: &str,
+    sources: &[String],
+    dep_path: Option<&Path>,
+    compiled_script_path: &str,
+) {
     let mut options = move_prover::cli::Options::default();
     options.move_sources = sources.to_vec();
     options.move_named_address_values = starcoin_framework_named_addresses()
         .iter()
         .map(|(k, v)| format!("{}={}", k, v))
         .collect();
-    if !dep_path.is_empty() {
-        options.move_deps = vec![dep_path.to_string()]
+    if let Some(dep_path) = dep_path {
+        options.move_deps = vec![dep_path.display().to_string()]
     }
     options.verbosity_level = LevelFilter::Warn;
     options.run_abigen = true;
     options.abigen.output_directory = output_path.to_string();
     options.abigen.compiled_script_directory = compiled_script_path.to_string();
-    options.setup_logging_for_test();
+    //options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
 
@@ -302,7 +294,7 @@ fn build_doc(output_path: &str, doc_path: &str, sources: &[String], dep_path: &s
         options.docgen.doc_path = vec![doc_path.to_string()];
     }
     options.docgen.output_directory = output_path.to_string();
-    options.setup_logging_for_test();
+    //options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
 
@@ -329,7 +321,7 @@ fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
     options.verbosity_level = LevelFilter::Warn;
     options.run_errmapgen = true;
     options.errmapgen.output_file = output_path.to_string();
-    options.setup_logging_for_test();
+    //options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
 

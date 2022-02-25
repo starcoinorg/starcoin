@@ -5,7 +5,6 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_config::temp_dir;
 use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
@@ -17,7 +16,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use stdlib::restore_stdlib_in_dir;
+use stdlib::stdlib_files;
 use structopt::StructOpt;
 
 /// Compile module or script, support compile source dir.
@@ -77,8 +76,7 @@ impl CommandAction for CompileCommand {
             source_file_or_dir
         );
 
-        let temp_path = temp_dir();
-        let mut deps = restore_stdlib_in_dir(temp_path.path())?;
+        let mut deps = stdlib_files();
 
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());

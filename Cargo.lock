@@ -9492,6 +9492,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-framework"
+version = "11.0.0"
+dependencies = [
+ "anyhow",
+ "include_dir",
+ "log 0.4.14",
+ "once_cell",
+ "tempfile",
+ "walkdir",
+]
+
+[[package]]
 name = "starcoin-generator"
 version = "1.10.0-rc.2"
 dependencies = [
@@ -10504,16 +10516,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-transactional-tests"
-version = "1.10.0-rc.2"
-dependencies = [
- "anyhow",
- "datatest-stable 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "starcoin-logger",
- "starcoin-transactional-test-harness",
-]
-
-[[package]]
 name = "starcoin-tx-factory"
 version = "1.10.0-rc.2"
 dependencies = [
@@ -10750,9 +10752,12 @@ dependencies = [
  "rayon",
  "serde 1.0.136",
  "sha2 0.9.9",
+ "simplelog",
  "starcoin-crypto",
+ "starcoin-framework",
  "starcoin-move-compiler",
  "starcoin-vm-types",
+ "tempfile",
  "walkdir",
 ]
 

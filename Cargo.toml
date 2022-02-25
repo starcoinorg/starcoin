@@ -79,7 +79,6 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
-    "vm/transactional-tests",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -100,7 +99,8 @@ members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
-    "devtools/x"
+    "devtools/x",
+    "vm/starcoin-framework"
 ]
 
 default-members = [
@@ -168,7 +168,6 @@ default-members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
-    "vm/transactional-tests",
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
