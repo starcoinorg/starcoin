@@ -99,8 +99,7 @@ members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
-    "devtools/x",
-    "vm/starcoin-framework"
+    "devtools/x"
 ]
 
 default-members = [

@@ -1,9 +1,0 @@
-processed 3 tasks
-
-task 2 'run'. lines 6-16:
-{
-  "gas_used": 35928,
-  "status": {
-    "Keep": "Executed"
-  }
-}
