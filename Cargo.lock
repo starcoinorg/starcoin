@@ -14,8 +14,8 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1be241f88f3b1e7e9a3fbe3b5a8a0f6915b5a1d7ee0d9a248d3376d01068cc60"
 dependencies = [
- "actix-rt",
- "actix_derive",
+ "actix-rt 1.1.1",
+ "actix_derive 0.5.0",
  "bitflags",
  "bytes 0.5.6",
  "crossbeam-channel 0.4.4",
@@ -31,6 +31,30 @@ dependencies = [
  "tokio-util 0.3.1",
  "trust-dns-proto 0.19.7",
  "trust-dns-resolver 0.19.7",
+]
+
+[[package]]
+name = "actix"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f728064aca1c318585bf4bb04ffcfac9e75e508ab4e8b1bd9ba5dfe04e2cbed5"
+dependencies = [
+ "actix-rt 2.6.0",
+ "actix_derive 0.6.0",
+ "bitflags",
+ "bytes 1.1.0",
+ "crossbeam-channel 0.5.2",
+ "futures-core",
+ "futures-sink",
+ "futures-task",
+ "futures-util",
+ "log 0.4.14",
+ "once_cell",
+ "parking_lot 0.12.0",
+ "pin-project-lite 0.2.8",
+ "smallvec 1.8.0",
+ "tokio 1.17.0",
+ "tokio-util 0.7.0",
 ]
 
 [[package]]
@@ -59,6 +83,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-rt"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdf3f2183be1241ed4dd22611850b85d38de0b08a09f1f7bcccbd0809084b359"
+dependencies = [
+ "futures-core",
+ "tokio 1.17.0",
+]
+
+[[package]]
 name = "actix-threadpool"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -78,6 +112,17 @@ name = "actix_derive"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b95aceadaf327f18f0df5962fedc1bde2f870566a0b9f65c89508a3b1f79334c"
+dependencies = [
+ "proc-macro2 1.0.36",
+ "quote 1.0.15",
+ "syn 1.0.86",
+]
+
+[[package]]
+name = "actix_derive"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d44b8fee1ced9671ba043476deddef739dd0959bf77030b26b738cc591737a7"
 dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.15",
@@ -9659,8 +9704,8 @@ dependencies = [
 name = "starcoin-miner-client"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.13.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "byteorder 1.4.3",
@@ -9907,8 +9952,8 @@ dependencies = [
 name = "starcoin-node"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.13.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "async-trait",
@@ -10095,8 +10140,8 @@ dependencies = [
 name = "starcoin-rpc-client"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.13.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "bcs-ext",
@@ -10157,8 +10202,8 @@ dependencies = [
 name = "starcoin-rpc-server"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.13.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "api-limiter",
  "bcs",
@@ -10231,8 +10276,8 @@ dependencies = [
 name = "starcoin-service-registry"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.13.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "async-std",
  "async-trait",
@@ -10766,8 +10811,8 @@ dependencies = [
 name = "stest"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.13.0",
+ "actix-rt 1.1.1",
  "anyhow",
  "futures 0.3.21",
  "log 0.4.14",
@@ -10781,8 +10826,8 @@ dependencies = [
 name = "stest-macro"
 version = "1.10.0-rc.2"
 dependencies = [
- "actix",
- "actix-rt",
+ "actix 0.10.0",
+ "actix-rt 1.1.1",
  "darling 0.10.2",
  "quote 1.0.15",
  "stest",
@@ -11696,6 +11741,20 @@ name = "tokio-util"
 version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e99e1983e5d376cd8eb4b66604d2e99e79f5bd988c3055891dcd8c9e2604cc0"
+dependencies = [
+ "bytes 1.1.0",
+ "futures-core",
+ "futures-sink",
+ "log 0.4.14",
+ "pin-project-lite 0.2.8",
+ "tokio 1.17.0",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64910e1b9c1901aaf5375561e35b9c057d95ff41a44ede043a03e09279eabaf1"
 dependencies = [
  "bytes 1.1.0",
  "futures-core",
