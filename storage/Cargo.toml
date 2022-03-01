@@ -15,7 +15,7 @@ crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/st
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 chrono = "0.4"
 byteorder = "1.4.3"
-lru = "0.7.0"
+lru = "0.7.3"
 parking_lot = "0.12.0"
 proptest = { version = "1.0.0", optional = true }
 proptest-derive = { version = "0.3.0", optional = true }
