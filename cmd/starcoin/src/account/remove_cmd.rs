@@ -35,10 +35,9 @@ impl CommandAction for RemoveCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().account_client();
         let opt: &RemoveOpt = ctx.opt();
-
-        let account_info = client.account_remove(opt.account_address, opt.password.clone())?;
+        let account_info = client.remove_account(opt.account_address, opt.password.clone())?;
         Ok(account_info)
     }
 

@@ -65,7 +65,6 @@ impl CommandAction for UpgradeModuleProposalCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
-
         let module_version = opt.version;
         let upgrade_package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
         eprintln!(

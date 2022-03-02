@@ -139,7 +139,7 @@ impl CommandAction for CompileCommand {
                     "{}",
                     String::from_utf8_lossy(
                         starcoin_move_compiler::diagnostics::report_diagnostics_to_color_buffer(
-                            &sources, e
+                            &sources, e,
                         )
                         .as_slice()
                     )

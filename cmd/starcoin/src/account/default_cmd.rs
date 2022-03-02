@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -33,15 +33,16 @@ impl CommandAction for DefaultCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt: &DefaultOpt = ctx.opt();
-
+        let account_client = ctx.state().account_client();
         match opt.account_address.as_ref() {
             None => {
-                let default_account = ctx.state().default_account()?;
+                let default_account = account_client.get_default_account()?.ok_or_else(|| {
+                    format_err!("Can not find default account, Please input from account.")
+                })?;
                 Ok(default_account)
             }
             Some(addr) => {
-                let client = ctx.state().client();
-                let default_account = client.set_default_account(*addr)?;
+                let default_account = account_client.set_default_account(*addr)?;
                 Ok(default_account)
             }
         }

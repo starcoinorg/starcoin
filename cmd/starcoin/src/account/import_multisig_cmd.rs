@@ -26,7 +26,7 @@ pub struct ImportMultisigOpt {
     /// if account_address is absent, generate address by public_key.
     account_address: Option<AccountAddress>,
 
-    #[structopt(long = "pubkey", max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(long = "pubkey", max_values = 32, parse(try_from_str = Ed25519PublicKey::from_encoded_string))]
     /// public keys of other participants in this multisig account.
     public_keys: Vec<Ed25519PublicKey>,
 
@@ -34,7 +34,7 @@ pub struct ImportMultisigOpt {
     /// In multi-sig case, a threshold is needed.
     threshold: u8,
 
-    #[structopt(long = "prikey", max_values = 32, parse(try_from_str=Ed25519PrivateKey::from_encoded_string))]
+    #[structopt(long = "prikey", max_values = 32, parse(try_from_str = Ed25519PrivateKey::from_encoded_string))]
     /// hex encoded private key, if you control multi private keys, provide multi args.
     private_keys: Vec<Ed25519PrivateKey>,
 
@@ -55,7 +55,7 @@ impl CommandAction for ImportMultisigCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().account_client();
         let opt: &ImportMultisigOpt = ctx.opt();
 
         let mut private_keys = vec![];
@@ -91,7 +91,7 @@ impl CommandAction for ImportMultisigCommand {
         let address = opt
             .account_address
             .unwrap_or_else(|| private_key.public_key().derived_address());
-        let account = client.account_import(
+        let account = client.import_account(
             address,
             private_key.to_bytes().to_vec(),
             opt.password.clone(),

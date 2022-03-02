@@ -52,8 +52,7 @@ impl CommandAction for GetCoinCommand {
         let opt = ctx.opt();
         let state = ctx.state();
         let net = ctx.state().net();
-        let client = ctx.state().client();
-
+        let account_client = ctx.state().account_client();
         let to = ctx.state().get_account_or_default(opt.address_or_receipt)?;
 
         let transaction_info = if net.is_test_or_dev() {
@@ -63,7 +62,7 @@ impl CommandAction for GetCoinCommand {
                 blocking: !opt.no_blocking,
                 ..Default::default()
             };
-            client.account_unlock(sender, "".to_string(), Duration::from_secs(300))?;
+            account_client.unlock_account(sender, "".to_string(), Duration::from_secs(300))?;
             state
                 .build_and_execute_transaction(
                     txn_opt,

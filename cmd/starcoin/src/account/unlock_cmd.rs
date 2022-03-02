@@ -41,7 +41,7 @@ impl CommandAction for UnlockCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let account_client = ctx.state().account_client();
         let opt: &UnlockOpt = ctx.opt();
         let account_address = if let Some(account_address) = opt.account_address {
             account_address
@@ -50,7 +50,8 @@ impl CommandAction for UnlockCommand {
         };
 
         let duration = Duration::from_secs(opt.duration as u64);
-        let account = client.account_unlock(account_address, opt.password.clone(), duration)?;
+        let account =
+            account_client.unlock_account(account_address, opt.password.clone(), duration)?;
         Ok(account)
     }
 

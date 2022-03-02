@@ -28,8 +28,8 @@ impl CommandAction for CreateCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<AccountInfo> {
-        let client = ctx.state().client();
-        let account = client.account_create(ctx.opt().password.clone())?;
+        let account_client = ctx.state().account_client();
+        let account = account_client.create_account(ctx.opt().password.clone())?;
         Ok(account)
     }
 

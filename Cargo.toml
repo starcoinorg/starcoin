@@ -60,6 +60,7 @@ members = [
     "account/api",
     "account",
     "account/service",
+    "account/provider",
     "rpc/api",
     "rpc/middleware",
     "rpc/client",

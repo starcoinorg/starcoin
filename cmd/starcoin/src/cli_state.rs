@@ -5,7 +5,7 @@ use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use anyhow::{bail, format_err, Result};
 use serde::de::DeserializeOwned;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
-use starcoin_account_api::AccountInfo;
+use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
@@ -34,6 +34,7 @@ pub struct CliState {
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
+    account_client: Box<dyn AccountProvider>,
 }
 
 impl CliState {
@@ -48,6 +49,7 @@ impl CliState {
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
+        rpc_client: Box<dyn AccountProvider>,
     ) -> CliState {
         let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
             .clone()
@@ -71,6 +73,7 @@ impl CliState {
             node_handle,
             data_dir,
             temp_dir,
+            account_client: rpc_client,
         }
     }
 
@@ -82,6 +85,9 @@ impl CliState {
         &self.client
     }
 
+    pub fn account_client(&self) -> &dyn AccountProvider {
+        self.account_client.as_ref()
+    }
     pub fn temp_dir(&self) -> &Path {
         self.temp_dir.path()
     }
@@ -100,16 +106,18 @@ impl CliState {
     }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
-        self.client
-            .account_default()?
+        self.account_client
+            .get_default_account()?
             .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
     }
 
     /// Get account from node managed wallet.
     pub fn get_account(&self, account_address: AccountAddress) -> Result<AccountInfo> {
-        self.client.account_get(account_address)?.ok_or_else(|| {
-            format_err!("Can not find WalletAccount by address: {}", account_address)
-        })
+        self.account_client
+            .get_account(account_address)?
+            .ok_or_else(|| {
+                format_err!("Can not find WalletAccount by address: {}", account_address)
+            })
     }
 
     pub fn get_account_or_default(
@@ -117,9 +125,11 @@ impl CliState {
         account_address: Option<AccountAddress>,
     ) -> Result<AccountInfo> {
         if let Some(account_address) = account_address {
-            self.client.account_get(account_address)?.ok_or_else(|| {
-                format_err!("Can not find WalletAccount by address: {}", account_address)
-            })
+            self.account_client
+                .get_account(account_address)?
+                .ok_or_else(|| {
+                    format_err!("Can not find WalletAccount by address: {}", account_address)
+                })
         } else {
             self.default_account()
         }
@@ -250,7 +260,6 @@ impl CliState {
             Some(self.decode_txn_payload(raw_txn.payload())?.try_into()?);
 
         let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
-
         if only_dry_run
             || !matches!(
                 execute_result.dry_run_output.txn_output.status,
@@ -260,8 +269,7 @@ impl CliState {
             eprintln!("txn dry run failed");
             return Ok(execute_result);
         }
-        let signed_txn = self.client.account_sign_txn(raw_txn)?;
-
+        let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
         let txn_hash = signed_txn.id();
         self.client.submit_transaction(signed_txn)?;
         eprintln!("txn {} submitted.", txn_hash);
