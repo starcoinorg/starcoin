@@ -35,10 +35,10 @@ impl CommandAction for ChangePasswordCmd {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
         let opt: &ChangePasswordOpt = ctx.opt();
+        let account_client = ctx.state().account_client();
         let account_info =
-            client.account_change_password(opt.account_address, opt.password.clone())?;
+            account_client.change_account_password(opt.account_address, opt.password.clone())?;
         Ok(account_info)
     }
 

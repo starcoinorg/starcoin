@@ -25,6 +25,7 @@ use structopt::clap::crate_version;
 use structopt::StructOpt;
 use tempfile::TempDir;
 
+pub mod account_provider_config;
 mod account_vault_config;
 mod api_config;
 mod api_quota;
@@ -45,6 +46,7 @@ mod txpool_config;
 
 use thiserror::Error;
 
+use crate::account_provider_config::AccountProviderConfig;
 use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
@@ -215,6 +217,8 @@ pub struct StarcoinOpt {
     #[serde(default)]
     #[structopt(flatten)]
     pub stratum: StratumConfig,
+    #[structopt(flatten)]
+    pub account_provider: AccountProviderConfig,
 }
 
 impl std::fmt::Display for StarcoinOpt {
@@ -442,6 +446,8 @@ pub struct NodeConfig {
     pub logger: LoggerConfig,
     #[serde(default)]
     pub stratum: StratumConfig,
+    #[serde(default)]
+    pub account_provider: AccountProviderConfig,
 }
 
 impl std::fmt::Display for NodeConfig {
@@ -509,7 +515,8 @@ impl NodeConfig {
         self.vault.merge_with_opt(opt, base.clone())?;
         self.metrics.merge_with_opt(opt, base.clone())?;
         self.logger.merge_with_opt(opt, base.clone())?;
-        self.stratum.merge_with_opt(opt, base)?;
+        self.stratum.merge_with_opt(opt, base.clone())?;
+        self.account_provider.merge_with_opt(opt, base)?;
         Ok(())
     }
 }
@@ -552,6 +559,7 @@ pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
         )))
     }
 }
+
 #[cfg(not(unix))]
 pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
     Ok(())

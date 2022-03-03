@@ -33,6 +33,7 @@ network-p2p-types = { path = "../network-p2p/types"}
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-system = {path = "../commons/system", package="starcoin-system"}
 network-api = {path = "../network/api", package="network-api"}
+starcoin-account-api = {path = "../account/api"}
 stdlib = { path = "../vm/stdlib"}
 schemars = {git = "https://github.com/starcoinorg/schemars", rev="5bb034597f4bddd577f5d9baaabe5a41e9236d2f"}
 starcoin-metrics = { path = "../commons/metrics" }

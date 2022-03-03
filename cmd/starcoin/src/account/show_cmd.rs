@@ -41,26 +41,27 @@ impl CommandAction for ShowCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let rpc_client = ctx.state().client();
+        let account_client = ctx.state().account_client();
         let opt = ctx.opt();
         let account_address = if let Some(address_or_receipt) = opt.address_or_receipt {
             address_or_receipt
         } else {
-            let default_account = client
-                .account_default()?
+            let default_account = account_client
+                .get_default_account()?
                 .ok_or_else(|| format_err!("Default account should exist."))?;
             default_account.address
         };
-        let account = client
-            .account_get(account_address)?
+        let account = account_client
+            .get_account(account_address)?
             .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
 
-        let chain_state_reader = client.state_reader(opt.state_root.unwrap_or_default())?;
+        let chain_state_reader = rpc_client.state_reader(opt.state_root.unwrap_or_default())?;
         let sequence_number = chain_state_reader
             .get_account_resource(*account.address())?
             .map(|res| res.sequence_number());
 
-        let resources = client.state_list_resource(
+        let resources = rpc_client.state_list_resource(
             *account.address(),
             false,
             Some(chain_state_reader.state_root()),

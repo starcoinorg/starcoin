@@ -31,6 +31,7 @@ starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-account-api = {path = "../../account/api"}
+starcoin-account-provider={path = "../../account/provider"}
 starcoin-chain-api = {path = "../../chain/api"}
 network-p2p-types = {path = "../../network-p2p/types"}
 scmd = { path = "../../commons/scmd" }

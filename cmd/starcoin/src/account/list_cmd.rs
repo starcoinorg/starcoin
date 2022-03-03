@@ -25,8 +25,8 @@ impl CommandAction for ListCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
-        let accounts = client.account_list()?;
+        let client = ctx.state().account_client();
+        let accounts = client.get_accounts()?;
         Ok(accounts)
     }
 }

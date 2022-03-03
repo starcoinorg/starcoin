@@ -46,9 +46,8 @@ impl CommandAction for ImportCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
         let opt: &ImportOpt = ctx.opt();
-
+        let client = ctx.state().account_client();
         let private_key = match (opt.from_input.as_ref(), opt.from_file.as_ref()) {
             (Some(p), _) => AccountPrivateKey::from_encoded_string(p)?,
             (None, Some(p)) => {
@@ -63,7 +62,7 @@ impl CommandAction for ImportCommand {
         let address = opt
             .account_address
             .unwrap_or_else(|| private_key.public_key().derived_address());
-        let account = client.account_import(
+        let account = client.import_account(
             address,
             private_key.to_bytes().to_vec(),
             opt.password.clone(),

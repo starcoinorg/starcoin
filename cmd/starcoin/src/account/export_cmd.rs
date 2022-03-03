@@ -37,9 +37,9 @@ impl CommandAction for ExportCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().account_client();
         let opt: &ExportOpt = ctx.opt();
-        let data = client.account_export(opt.account_address, opt.password.clone())?;
+        let data = client.export_account(opt.account_address, opt.password.clone())?;
         let private_key = AccountPrivateKey::try_from(data.as_slice())?;
         let encoded = private_key.to_encoded_string()?;
         if let Some(output_file) = &opt.output_file {

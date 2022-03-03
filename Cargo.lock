@@ -9013,6 +9013,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-account-provider"
+version = "1.10.0-rc.2"
+dependencies = [
+ "anyhow",
+ "starcoin-account",
+ "starcoin-account-api",
+ "starcoin-config",
+ "starcoin-rpc-client",
+ "starcoin-types",
+]
+
+[[package]]
 name = "starcoin-account-service"
 version = "1.10.0-rc.2"
 dependencies = [
@@ -9236,6 +9248,7 @@ dependencies = [
  "starcoin-abi-resolver",
  "starcoin-abi-types",
  "starcoin-account-api",
+ "starcoin-account-provider",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-consensus",
@@ -9290,6 +9303,7 @@ dependencies = [
  "schemars 0.8.3",
  "serde 1.0.136",
  "serde_json",
+ "starcoin-account-api",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
