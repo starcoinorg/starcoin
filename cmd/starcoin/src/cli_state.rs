@@ -49,7 +49,7 @@ impl CliState {
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
-        rpc_client: Box<dyn AccountProvider>,
+        account_client: Box<dyn AccountProvider>,
     ) -> CliState {
         let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
             .clone()
@@ -73,7 +73,7 @@ impl CliState {
             node_handle,
             data_dir,
             temp_dir,
-            account_client: rpc_client,
+            account_client,
         }
     }
 
