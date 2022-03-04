@@ -11269,6 +11269,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "starcoin-account-api",
+ "starcoin-account-provider",
  "starcoin-chain",
  "starcoin-cmd",
  "starcoin-config",
