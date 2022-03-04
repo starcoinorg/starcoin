@@ -8,10 +8,12 @@ use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp
 use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
-use starcoin_config::RocksdbConfig;
+use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::Path;
+
+const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
@@ -92,7 +94,7 @@ impl DBStorage {
             rocksdb_opts.create_missing_column_families(true);
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
-
+        check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(DBStorage {
             db,
             cfs: column_families,
