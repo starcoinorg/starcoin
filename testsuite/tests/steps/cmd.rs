@@ -8,8 +8,10 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use scmd::CmdContext;
 use serde_json::Value;
+use starcoin_account_provider::ProviderFactory;
 use starcoin_cmd::add_command;
 use starcoin_cmd::{CliState, StarcoinOpt};
+use starcoin_config::account_provider_config::AccountProviderConfig;
 use starcoin_config::{APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -30,13 +32,20 @@ pub fn steps() -> Steps<MyWorld> {
     builder
         .then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {
             let client = world.default_rpc_client.as_ref().take().unwrap();
-
+            let chain_id = client.node_info().unwrap().net.chain_id();
+            let account_client = ProviderFactory::create_provider(
+                client.clone(),
+                chain_id,
+                &AccountProviderConfig::default(),
+            )
+            .unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(
                 node_info.net,
                 client.clone(),
                 Some(Duration::from_secs(5)),
                 None,
+                account_client,
             );
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(
                 CRATE_VERSION,
