@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use clap::Parser;
@@ -16,13 +19,14 @@ use starcoin_types::account_config::{
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
+use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::value::MoveValue;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
+
 #[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
@@ -30,7 +34,7 @@ pub struct Options {
     /// starcoin node http rpc url
     node_url: String,
     #[clap(short = 'i')]
-    /// airdrop input csv. columns: `address,auth_key,amount`
+    /// airdrop input csv. columns: `address,amount`
     airdrop_file: PathBuf,
     #[clap(short, long, default_value = "32")]
     /// batch size to do transfer
@@ -40,7 +44,6 @@ pub struct Options {
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub struct AirdropInfo {
     address: AccountAddress,
-    auth_key: AuthenticationKey,
     amount: u128,
 }
 
@@ -111,13 +114,6 @@ async fn main() -> Result<()> {
                 .map(MoveValue::Address)
                 .collect(),
         );
-        let auth_keys = MoveValue::Vector(
-            airdrops
-                .iter()
-                .map(|info| info.auth_key)
-                .map(|v| MoveValue::vector_u8(v.to_vec()))
-                .collect(),
-        );
         let amounts = MoveValue::Vector(
             airdrops
                 .iter()
@@ -131,11 +127,10 @@ async fn main() -> Result<()> {
                 genesis_address(),
                 Identifier::new("TransferScripts").unwrap(),
             ),
-            Identifier::new("batch_peer_to_peer").unwrap(),
+            Identifier::new("batch_peer_to_peer_v2").unwrap(),
             vec![stc_type_tag()],
             vec![
                 addresses.simple_serialize().unwrap(),
-                auth_keys.simple_serialize().unwrap(),
                 amounts.simple_serialize().unwrap(),
             ],
         );
