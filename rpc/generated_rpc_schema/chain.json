@@ -286,7 +286,7 @@
           ],
           "properties": {
             "body": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -321,7 +321,7 @@
                         "properties": {
                           "authenticator": {
                             "description": "Public key and signature to authenticate",
-                            "anyOf": [
+                            "oneOf": [
                               {
                                 "description": "Single signature",
                                 "type": "object",
@@ -396,7 +396,7 @@
                               "decoded_payload": {
                                 "anyOf": [
                                   {
-                                    "anyOf": [
+                                    "oneOf": [
                                       {
                                         "description": "A transaction that executes code.",
                                         "type": "object",
@@ -812,7 +812,7 @@
           ],
           "properties": {
             "body": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -847,7 +847,7 @@
                         "properties": {
                           "authenticator": {
                             "description": "Public key and signature to authenticate",
-                            "anyOf": [
+                            "oneOf": [
                               {
                                 "description": "Single signature",
                                 "type": "object",
@@ -922,7 +922,7 @@
                               "decoded_payload": {
                                 "anyOf": [
                                   {
-                                    "anyOf": [
+                                    "oneOf": [
                                       {
                                         "description": "A transaction that executes code.",
                                         "type": "object",
@@ -1333,7 +1333,7 @@
             ],
             "properties": {
               "body": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "required": [
@@ -1368,7 +1368,7 @@
                           "properties": {
                             "authenticator": {
                               "description": "Public key and signature to authenticate",
-                              "anyOf": [
+                              "oneOf": [
                                 {
                                   "description": "Single signature",
                                   "type": "object",
@@ -1443,7 +1443,7 @@
                                 "decoded_payload": {
                                   "anyOf": [
                                     {
-                                      "anyOf": [
+                                      "oneOf": [
                                         {
                                           "description": "A transaction that executes code.",
                                           "type": "object",
@@ -2047,7 +2047,7 @@
               "properties": {
                 "authenticator": {
                   "description": "Public key and signature to authenticate",
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "description": "Single signature",
                       "type": "object",
@@ -2122,7 +2122,7 @@
                     "decoded_payload": {
                       "anyOf": [
                         {
-                          "anyOf": [
+                          "oneOf": [
                             {
                               "description": "A transaction that executes code.",
                               "type": "object",
@@ -2351,7 +2351,7 @@
             },
             "status": {
               "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -2517,7 +2517,7 @@
               },
               "status": {
                 "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "string",
                     "enum": [
@@ -2695,7 +2695,7 @@
             },
             "status": {
               "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -3279,7 +3279,7 @@
               },
               "status": {
                 "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "string",
                     "enum": [
@@ -3628,7 +3628,7 @@
                 },
                 "status": {
                   "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "string",
                       "enum": [

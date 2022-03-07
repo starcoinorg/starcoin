@@ -35,7 +35,7 @@
           ],
           "properties": {
             "consensus": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -95,7 +95,7 @@
               ]
             },
             "net": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [

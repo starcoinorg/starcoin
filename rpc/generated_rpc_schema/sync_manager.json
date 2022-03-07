@@ -229,7 +229,7 @@
               }
             },
             "state": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
