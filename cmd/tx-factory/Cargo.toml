@@ -18,7 +18,7 @@ futures = "0.3.12"
 tokio = { version = "0.2", features = ["full"] }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-types = {path = "../../types"}
 starcoin-rpc-client = { path = "../../rpc/client"}
