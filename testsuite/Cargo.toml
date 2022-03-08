@@ -14,7 +14,7 @@ serde_bytes = "0.11"
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 clap = "2.33.3"
 structopt = "0.3.26"
-regex = "1.5.4"
+regex = "1.5.5"
 starcoin-config = { path = "../config" }
 starcoin-consensus = { path = "../consensus" }
 starcoin-executor = { path = "../executor" }
