@@ -30,7 +30,7 @@ hex="~0.4"
 indicatif = "0.15.0"
 logger = {path = "../../commons/logger",package="starcoin-logger"}
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.6", features = ["flamegraph"] }
+pprof = { version = "0.7", features = ["flamegraph"] }
 
 
 [[bin]]
