@@ -3,6 +3,7 @@
 
 use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use anyhow::{bail, format_err, Result};
+use bcs_ext::BCSCodec;
 use serde::de::DeserializeOwned;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
@@ -270,8 +271,8 @@ impl CliState {
             return Ok(execute_result);
         }
         let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
-        let txn_hash = signed_txn.id();
-        self.client.submit_transaction(signed_txn)?;
+        let signed_txn_hex = hex::encode(signed_txn.encode()?);
+        let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
         eprintln!("txn {} submitted.", txn_hash);
         let execute_output = if blocking {
             self.watch_txn(txn_hash)?
