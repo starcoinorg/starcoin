@@ -22,7 +22,7 @@ netowrk-rpc-derive = {path = "derive", package = "network-rpc-derive"}
 network-rpc-core = { path = "core"}
 config = {path = "../config", package="starcoin-config"}
 starcoin-logger = {path = "../commons/logger"}
-crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 prometheus = "0.13.0"
 network-api = { path="../network/api" }
 bcs-ext = { path = "../commons/bcs_ext", package = "bcs-ext" }

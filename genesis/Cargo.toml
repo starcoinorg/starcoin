@@ -14,7 +14,7 @@ structopt = "0.3.26"
 once_cell = "1.8.0"
 include_dir = "0.6.2"
 starcoin-types = {path = "../types", features = ["fuzzing"]}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 serde = { version = "1.0.130" }
 starcoin-config = { path = "../config"}
 starcoin-executor = { path = "../executor"}

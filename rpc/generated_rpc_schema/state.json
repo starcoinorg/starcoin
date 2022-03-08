@@ -24,7 +24,7 @@
                 "format": "AccountAddress"
               },
               "path": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "required": [
@@ -91,7 +91,7 @@
                 "format": "AccountAddress"
               },
               "path": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "required": [
@@ -328,7 +328,7 @@
                           "type": "string"
                         },
                         {
-                          "anyOf": [
+                          "oneOf": [
                             {
                               "type": "object",
                               "required": [
@@ -478,7 +478,7 @@
               }
             },
             "AnnotatedMoveValueView": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -619,7 +619,7 @@
                 "format": "AccountAddress"
               },
               "path": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "required": [
@@ -855,7 +855,7 @@
                             },
                             "type_tag": {
                               "description": "The expected type. In Move scripts, this does contain generics type parameters.",
-                              "anyOf": [
+                              "oneOf": [
                                 {
                                   "type": "string",
                                   "enum": [
@@ -1031,7 +1031,7 @@
                         "description": "return types",
                         "type": "array",
                         "items": {
-                          "anyOf": [
+                          "oneOf": [
                             {
                               "type": "string",
                               "enum": [
@@ -1258,7 +1258,7 @@
                             },
                             "type_abi": {
                               "description": "type of the field",
-                              "anyOf": [
+                              "oneOf": [
                                 {
                                   "type": "string",
                                   "enum": [
@@ -1464,7 +1464,7 @@
               }
             },
             "TypeInstantiation": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
