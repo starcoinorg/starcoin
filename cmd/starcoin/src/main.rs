@@ -122,6 +122,7 @@ fn run() -> Result<()> {
 }
 
 #[rustfmt::skip]
+#[allow(clippy::print_literal)]
 fn print_logo(){
     println!("{}{}{}","\x1b[34;1m",r#"                                 
                                                 (%&&&&(%&%(  &#   
