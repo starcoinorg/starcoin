@@ -224,7 +224,14 @@ impl NodeService {
 
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
-            let mut system = System::builder().stop_on_panic(true).name("main").build();
+            let system = System::with_tokio_rt(|| {
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .on_thread_stop(|| println!("main thread stopped"))
+                    .thread_name("main")
+                    .build()
+                    .expect("failed to create tokio runtime for main")
+            });
             system.block_on(async {
                 match Self::init_system(config, logger_handle).await {
                     Err(e) => {

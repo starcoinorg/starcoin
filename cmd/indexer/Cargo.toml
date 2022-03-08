@@ -19,10 +19,10 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-types = {path= "../../types" }
 starcoin-rpc-api = {path = "../../rpc/api" }
 starcoin-logger = {path = "../../commons/logger"}
-jsonrpc-core-client="~17"
-tokio={version="0.2", features=["full"]}
+jsonrpc-core-client="18"
+tokio = {version = "^1", features=["full"]}
 futures-util = "~0.3"
-futures-retry="~0.5"
+futures-retry="0.6"
 
 [[bin]]
 name="starcoin_indexer"

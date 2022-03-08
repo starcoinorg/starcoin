@@ -28,6 +28,6 @@ starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = {version = "^1", features = ["full"] }
 hex = "0.4.3"
 stest = { path = "../commons/stest"}

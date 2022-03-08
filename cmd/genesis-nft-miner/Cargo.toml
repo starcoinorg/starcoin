@@ -17,6 +17,6 @@ clap = { version = "3.0.0-rc.7", features=["derive"] }
 serde = "1.0.130"
 serde_json = "~1"
 hex = "0.4"
-jsonrpc-core-client="~17"
+jsonrpc-core-client="18"
 rpassword = "~5"
-tokio={version="0.2", features=["full"]}
+tokio = {version = "^1", features=["full"]}

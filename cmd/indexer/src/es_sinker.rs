@@ -396,7 +396,7 @@ mod tests {
     use starcoin_crypto::HashValue;
     use std::str::FromStr;
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     #[ignore]
     async fn test_update_tip_header() {
         let es_url = "http://localhost:9200";

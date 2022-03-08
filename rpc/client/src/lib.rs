@@ -135,11 +135,18 @@ impl RpcClient {
         let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into(); //Self::create_client_inner(conn_source.clone()).map_err(map_err)?;
         let pubsub_client = inner.pubsub_client.clone();
         let handle = std::thread::spawn(move || {
-            let sys = System::new("client-actix-system");
-            let watcher = ChainWatcher::launch();
-
-            tx.send(watcher).unwrap();
-            let _ = sys.run();
+            let sys = System::with_tokio_rt(|| {
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .on_thread_stop(|| println!("client-actix-system thread stopped"))
+                    .thread_name("client-actix-system")
+                    .build()
+                    .expect("failed to create tokio runtime for client-actix-system")
+            });
+            sys.block_on(async {
+                let watcher = ChainWatcher::launch();
+                tx.send(watcher).unwrap();
+            });
         });
         let watcher = futures::executor::block_on(rx).expect("Init chain watcher fail.");
         watcher.do_send(StartSubscribe {

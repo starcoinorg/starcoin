@@ -1,7 +1,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
-use futures::{StreamExt, TryStream, TryStreamExt};
+use futures::{TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::TypeTagView;
@@ -126,8 +126,7 @@ fn blocking_display_notification<T, F>(
 ) where
     F: Fn(&T) -> String,
 {
-    let mut rt = tokio::runtime::Builder::new()
-        .basic_scheduler()
+    let rt = tokio::runtime::Builder::new_multi_thread()
         .build()
         .expect("should able to create tokio runtime");
     let stdin = tokio::io::stdin();
@@ -135,8 +134,8 @@ fn blocking_display_notification<T, F>(
     rt.block_on(async move {
         loop {
             tokio::select! {
-               maybe_quit = lines.next()  => {
-                   if let Some(Ok(q)) = maybe_quit {
+               maybe_quit = lines.next_line()  => {
+                   if let Ok(Some(q)) = maybe_quit {
                        if q.as_str() == "q" {
                            break;
                        }

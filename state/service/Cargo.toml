@@ -19,6 +19,7 @@ starcoin-state-api = { path = "../api" }
 starcoin-statedb = { path = "../statedb" }
 starcoin-storage = { path = "../../storage" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
+tokio = "1"
 
 [dev-dependencies]
 test-helper = { path = "../../test-helper" }

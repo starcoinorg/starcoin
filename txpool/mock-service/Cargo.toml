@@ -14,5 +14,5 @@ crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/st
 starcoin-txpool-api = {package = "starcoin-txpool-api", path ="../api"}
 stest = {path = "../../commons/stest"}
 futures-channel = "0.3"
-
+tokio = "1"
 [dev-dependencies]

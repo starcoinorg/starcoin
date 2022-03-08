@@ -3,6 +3,7 @@
 
 //! The stest lib enhances the rust test framework with some useful functions.
 
+use actix::System;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::stream::StreamExt;
@@ -10,7 +11,6 @@ use futures::Future;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 pub use stest_macro::test;
-pub use tokio::{runtime::Runtime, task::LocalSet};
 
 pub mod actix_export {
     pub use actix_rt::*;
@@ -47,7 +47,7 @@ pub fn make_channel<T>() -> (UnboundedSender<Result<T>>, UnboundedReceiver<Resul
 }
 
 pub async fn timeout_future<T>(timeout: u64, tx: UnboundedSender<Result<T>>) {
-    actix::clock::delay_for(Duration::from_secs(timeout)).await;
+    tokio::time::sleep(Duration::from_secs(timeout)).await;
     let _ = tx.unbounded_send(Err(format_err!(
         "test timeout for wait {} seconds",
         timeout
@@ -59,14 +59,16 @@ where
     F: Future<Output = T> + Send + 'static,
     T: Send + 'static,
 {
-    let join = tokio::task::spawn_local(f);
-    let t = join.await;
-    let _ = tx.unbounded_send(t.map_err(Into::<anyhow::Error>::into));
+    let res = System::current().arbiter().spawn(async move {
+        tx.unbounded_send(Ok(f.await)).unwrap();
+    });
+    if !res {
+        panic!("stest default system is died!")
+    }
 }
 
 pub async fn wait_result<T>(mut rx: UnboundedReceiver<Result<T>>) -> T {
     let result = rx.next().await;
-    actix_rt::System::current().stop();
     match result {
         Some(Ok(t)) => t,
         Some(Err(e)) => panic!("test fail: {:?}", e),

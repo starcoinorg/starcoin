@@ -284,9 +284,8 @@ pub struct RemoteStateView {
 
 impl RemoteStateView {
     pub fn from_url(rpc_url: &str, block_number: Option<u64>) -> Result<Self> {
-        let mut rt = tokio::runtime::Builder::new()
+        let rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("remote-state-worker")
-            .threaded_scheduler()
             .enable_all()
             .build()?;
 
