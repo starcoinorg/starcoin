@@ -282,6 +282,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn submit_hex_transaction(&self, txn: String) -> anyhow::Result<HashValue> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_hex_transaction(txn))
+            .map_err(map_err)
+    }
+
     pub fn get_pending_txn_by_hash(
         &self,
         txn_hash: HashValue,
