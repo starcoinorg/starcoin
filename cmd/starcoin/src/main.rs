@@ -10,7 +10,6 @@ use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
-use starcoin_vm_types::values::debug::print_locals;
 use std::sync::Arc;
 use std::time::Duration;
 
