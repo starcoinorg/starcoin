@@ -10,6 +10,7 @@ use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
+use starcoin_vm_types::values::debug::print_locals;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -107,6 +108,7 @@ fn run() -> Result<()> {
         move |_app, _opt, state| {
             info!("Start console, disable stderr output.");
             logger_handle.disable_stderr();
+            print_logo();
             (*scmd::DEFAULT_CONSOLE_CONFIG, Some(state.history_file()))
         },
         |_, _, state| {
@@ -157,9 +159,7 @@ fn print_logo(){
 
 fn main() {
     match run() {
-        Ok(()) => {
-            print_logo();
-        }
+        Ok(()) => {}
         Err(e) => {
             match e.downcast::<NodeStartError>() {
                 Ok(e) => match e {
