@@ -9,13 +9,13 @@ edition = "2021"
 [dependencies]
 walkdir = "2.3"
 anyhow = "1.0.41"
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "9d56913f8c0bf9188b4d10062f7c9c22ada7ee6b"  }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-vm-types = { path = "../types"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-move-compiler = { path = "../../vm/compiler"}
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "9d56913f8c0bf9188b4d10062f7c9c22ada7ee6b"  }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "9d56913f8c0bf9188b4d10062f7c9c22ada7ee6b"  }
+move-prover = { git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
 once_cell = "1.8.0"
 include_dir = "0.6.2"
 sha2 = "0.9.1"
