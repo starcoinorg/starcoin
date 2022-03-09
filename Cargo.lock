@@ -2504,7 +2504,6 @@ dependencies = [
  "mirai-annotations",
  "num-derive",
  "num-traits 0.2.14",
- "once_cell",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -5218,7 +5217,6 @@ dependencies = [
  "move-bytecode-source-map",
  "move-command-line-common",
  "move-coverage 0.1.0",
- "once_cell",
  "petgraph 0.5.1",
  "serde 1.0.136",
  "structopt 0.3.26",
@@ -6346,9 +6344,9 @@ checksum = "a9a7ab5d64814df0fe4a4b5ead45ed6c5f181ee3ff04ba344313a6c80446c5d4"
 
 [[package]]
 name = "once_cell"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
+checksum = "87f3e037eac156d1775da914196f0f37741a274155e34a0b7e427c35d2a2ecb9"
 
 [[package]]
 name = "oorandom"
@@ -8936,7 +8934,6 @@ dependencies = [
  "bcs-ext",
  "hex",
  "move-binary-format",
- "once_cell",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=6972da92f4360e1779168bb3fe0274c521d324e2)",
  "serde 1.0.136",
  "serde_bytes",
@@ -9083,7 +9080,6 @@ dependencies = [
  "futures 0.3.21",
  "hex",
  "network-api",
- "once_cell",
  "starcoin-chain",
  "starcoin-chain-api",
  "starcoin-config",
@@ -9109,7 +9105,6 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "clap 2.34.0",
- "once_cell",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -9171,7 +9166,6 @@ dependencies = [
  "bcs-ext",
  "futures 0.3.21",
  "futures-timer",
- "once_cell",
  "parking_lot 0.12.0",
  "proptest",
  "proptest-derive",
@@ -9623,7 +9617,6 @@ dependencies = [
  "anyhow",
  "futures 0.3.21",
  "hyper 0.13.10",
- "once_cell",
  "prometheus",
  "psutil",
  "serde_json",
@@ -9835,7 +9828,6 @@ dependencies = [
  "network-p2p",
  "network-p2p-types",
  "network-rpc-core",
- "once_cell",
  "parking_lot 0.12.0",
  "prometheus",
  "rand 0.8.5",
@@ -10007,7 +9999,6 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.21",
- "once_cell",
  "parking_lot 0.12.0",
  "starcoin-accumulator",
  "starcoin-chain-api",
@@ -10065,7 +10056,6 @@ dependencies = [
  "hex",
  "move-binary-format",
  "move-core-types",
- "once_cell",
  "serde 1.0.136",
  "serde_json",
  "starcoin-vm-types",
@@ -10163,7 +10153,6 @@ dependencies = [
  "anyhow",
  "futures 0.3.21",
  "jsonrpc-core 17.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "once_cell",
  "rand 0.8.5",
  "serde_json",
  "starcoin-config",
@@ -10416,7 +10405,6 @@ dependencies = [
  "itertools 0.10.3",
  "network-api",
  "network-rpc-core",
- "once_cell",
  "parking_lot 0.12.0",
  "pin-project 1.0.10",
  "pin-utils",
@@ -10569,7 +10557,6 @@ dependencies = [
  "linked-hash-map",
  "log 0.4.14",
  "network-api",
- "once_cell",
  "parking_lot 0.12.0",
  "proptest",
  "proptest-derive",
@@ -10639,7 +10626,6 @@ dependencies = [
  "itertools 0.10.3",
  "network-p2p-types",
  "num_enum",
- "once_cell",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",

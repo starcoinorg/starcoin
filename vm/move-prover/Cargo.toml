@@ -22,7 +22,7 @@ move-prover-test-utils = {git = "https://github.com/starcoinorg/move", rev = "31
 move-command-line-common= {git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df" }
 shell-words = "1.0.0"
 walkdir = "2.3"
-once_cell = "1.7.2"
+once_cell = "1.10.0"
 tempfile = "3.2"
 
 itertools = "0.10.3"
