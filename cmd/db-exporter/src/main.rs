@@ -31,15 +31,13 @@ use starcoin_storage::{
 use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::ops::Add;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -47,9 +45,9 @@ use std::time::SystemTime;
 use structopt::StructOpt;
 //use forkable_jellyfish_merkle::node_type::LeafNode;
 use starcoin_statedb::ChainStateDB;
-use starcoin_types::state_set::{AccountStateSet, ChainStateSet, StateSet};
 use starcoin_statedb::ChainStateReader;
-use starcoin_statedb::ChainStateWriter;
+use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
@@ -955,6 +953,7 @@ pub fn execute_transaction_with_fixed_account(
 }
 
 /// manifest_file layout
+/// block_info block.header.hash
 /// block block.header.hash
 /// block_accumulator accumulator_root_hash
 /// txn_accumulator accumulator_root_hash
@@ -997,10 +996,29 @@ pub fn export_snapshot(
         .get_block_info_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block info {} error", cur_num))?;
     let state_root = block.header.state_root();
-    //let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(state_root));
     let statedb = ChainStateDB::new(storage.clone(), Some(state_root));
-
     let mut mainfest_list = vec![];
+
+    // save block_info
+    let bar = ProgressBar::new(cur_num);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let filename = format!("snapshot_block_info_{}.csv", cur_num);
+    mainfest_list.push((output.join(filename.clone()), block.header.id()));
+    let mut file = File::create(output.join(filename))?;
+    for i in 1..=cur_num {
+        let block_info = chain
+            .get_block_info_by_number(i)?
+            .ok_or_else(|| format_err!("get block info {} error", i))?;
+
+        writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
+        bar.set_message(format!("save block_info {}", i).as_str());
+        bar.inc(1);
+    }
+    file.flush()?;
+    bar.finish();
     // save block
     let bar = ProgressBar::new(cur_num);
     bar.set_style(
@@ -1025,10 +1043,11 @@ pub fn export_snapshot(
     // save block_accumulator
     let block_accumulator_info = block_info.get_block_accumulator_info();
     // XXX FIXME
-    let block_accumulator_leaves =
-        chain
-            .get_block_accumulator()
-            .get_leaves(1, false, block_accumulator_info.num_leaves - 1)?;
+    let block_accumulator_leaves = chain.get_block_accumulator().get_leaves(
+        1,
+        false,
+        block_accumulator_info.num_leaves - 1,
+    )?;
     let filename = format!(
         "snapshot_{}_{}.csv",
         BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, cur_num
@@ -1090,10 +1109,7 @@ pub fn export_snapshot(
 
     // get state
     let filename = format!("snapshot_{}_{}.csv", STATE_NODE_PREFIX_NAME, cur_num);
-    mainfest_list.push((
-        output.join(filename.clone()),
-        state_root,
-    ));
+    mainfest_list.push((output.join(filename.clone()), state_root));
     let mut file = File::create(output.join(filename))?;
     let global_states = statedb.dump()?;
     let bar = ProgressBar::new(global_states.len() as u64);
@@ -1103,7 +1119,12 @@ pub fn export_snapshot(
     );
     index = 1;
     for (account_address, account_state_set) in global_states.into_inner() {
-        writeln!(file, "{} {}", serde_json::to_string(&account_address)?, serde_json::to_string(&account_state_set)?)?;
+        writeln!(
+            file,
+            "{} {}",
+            serde_json::to_string(&account_address)?,
+            serde_json::to_string(&account_state_set)?
+        )?;
         bar.set_message(format!("write state {}", index).as_str());
         index += 1;
         bar.inc(1);
@@ -1117,7 +1138,7 @@ pub fn export_snapshot(
 
     // XXX FIXME BUG remove ""
     for (path, hash) in mainfest_list.iter() {
-        writeln!(file, "{:?} {}", path.to_str().unwrap(), hash)?;
+        writeln!(file, "{} {}", path.display(), hash)?;
     }
     file.flush()?;
 
@@ -1159,7 +1180,20 @@ pub fn apply_snapshot(
         let reader = BufReader::new(File::open(PathBuf::from(file_name))?);
         println!("file_name {} hash {}", file_name, hash);
         let verify_hash = HashValue::from_hex_literal(hash)?;
-        if file_name.contains("snapshot_block") {
+        if file_name.contains("snapshot_block_info") {
+            for line in reader.lines() {
+                let line = line?;
+                let block_info: BlockInfo = serde_json::from_str(line.as_str())?;
+                block_hash = Some(block_info.block_id);
+                storage.save_block_info(block_info)?;
+            }
+            if Some(verify_hash) == block_hash {
+                println!("snapshot_block_info hash match");
+            } else {
+                println!("snapshot_block_info hash not match");
+                std::process::exit(1);
+            }
+        } else if file_name.contains("snapshot_block") {
             for line in reader.lines() {
                 let line = line?;
                 let block: Block = serde_json::from_str(line.as_str())?;
@@ -1182,11 +1216,17 @@ pub fn apply_snapshot(
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
             }
             chain.get_block_accumulator().flush()?;
-            println!("block accumulator hash {}", chain.get_txn_accumulator().root_hash());
+            println!(
+                "block accumulator hash {}",
+                chain.get_txn_accumulator().root_hash()
+            );
             if chain.get_block_accumulator().root_hash() == verify_hash {
                 println!("snapshot_{} hash match", BLOCK_ACCUMULATOR_NODE_PREFIX_NAME);
             } else {
-                println!("snapshot_{} hash not match", BLOCK_ACCUMULATOR_NODE_PREFIX_NAME);
+                println!(
+                    "snapshot_{} hash not match",
+                    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME
+                );
                 std::process::exit(1);
             }
         } else if file_name.contains(TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME) {
@@ -1199,9 +1239,15 @@ pub fn apply_snapshot(
             }
             chain.get_txn_accumulator().flush()?;
             if chain.get_txn_accumulator().root_hash() == verify_hash {
-                println!("snapshot_{} hash match", TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME);
+                println!(
+                    "snapshot_{} hash match",
+                    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+                );
             } else {
-                println!("snapshot_{} hash not match", TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME);
+                println!(
+                    "snapshot_{} hash not match",
+                    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+                );
                 std::process::exit(1);
             }
         } else {
@@ -1209,8 +1255,8 @@ pub fn apply_snapshot(
             for line in reader.lines() {
                 let line = line?;
                 let strs: Vec<&str> = line.split(" ").collect();
-                let account_address : AccountAddress = serde_json::from_str(strs[0])?;
-                let account_state_set : AccountStateSet = serde_json::from_str(strs[1])?;
+                let account_address: AccountAddress = serde_json::from_str(strs[0])?;
+                let account_state_set: AccountStateSet = serde_json::from_str(strs[1])?;
                 account_states.push((account_address, account_state_set));
             }
             let chain_state_set = ChainStateSet::new(account_states);
