@@ -51,12 +51,12 @@ jobs:
           args: -p starcoin-move-prover
       - name: check changed files
         run: bash ./scripts/changed-files.sh
-#      - name: integration test dev environment
-#        env:
-#          RUST_LOG: info
-#          RUST_BACKTRACE: full
-#          STARCOIN_WS: ${{ secrets.STARCOIN_WS }}
-#        uses: actions-rs/cargo@v1
-#        with:
-#          command: test
-#          args: --test integration -- -e cmd
+      - name: integration test dev environment
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: full
+          STARCOIN_WS: ${{ secrets.STARCOIN_WS }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test integration -- -e cmd
