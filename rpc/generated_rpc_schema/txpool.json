@@ -22,7 +22,7 @@
             "properties": {
               "authenticator": {
                 "description": "Public key and signature to authenticate",
-                "anyOf": [
+                "oneOf": [
                   {
                     "description": "Single signature",
                     "type": "object",
@@ -121,7 +121,7 @@
                     "minimum": 0.0
                   },
                   "payload": {
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "description": "A transaction that executes code.",
                         "type": "object",
@@ -371,7 +371,7 @@
             "properties": {
               "authenticator": {
                 "description": "Public key and signature to authenticate",
-                "anyOf": [
+                "oneOf": [
                   {
                     "description": "Single signature",
                     "type": "object",
@@ -446,7 +446,7 @@
                   "decoded_payload": {
                     "anyOf": [
                       {
-                        "anyOf": [
+                        "oneOf": [
                           {
                             "description": "A transaction that executes code.",
                             "type": "object",
@@ -647,7 +647,7 @@
           "properties": {
             "authenticator": {
               "description": "Public key and signature to authenticate",
-              "anyOf": [
+              "oneOf": [
                 {
                   "description": "Single signature",
                   "type": "object",
@@ -722,7 +722,7 @@
                 "decoded_payload": {
                   "anyOf": [
                     {
-                      "anyOf": [
+                      "oneOf": [
                         {
                           "description": "A transaction that executes code.",
                           "type": "object",

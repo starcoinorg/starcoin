@@ -82,7 +82,7 @@
                     "type": "string"
                   },
                   {
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "type": "object",
                         "required": [
@@ -229,7 +229,7 @@
               }
             },
             "AnnotatedMoveValueView": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -379,7 +379,7 @@
           "title": "Array_of_AnnotatedMoveValueView",
           "type": "array",
           "items": {
-            "anyOf": [
+            "oneOf": [
               {
                 "type": "object",
                 "required": [
@@ -517,7 +517,7 @@
           },
           "definitions": {
             "AnnotatedMoveValueView": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -773,7 +773,7 @@
                 ],
                 "properties": {
                   "args": {
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "type": "object",
                         "required": [
@@ -925,7 +925,7 @@
               }
             },
             "explained_status": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -1061,7 +1061,7 @@
               "type": "string"
             },
             "status": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -1173,7 +1173,7 @@
                         "format": "AccountAddress"
                       },
                       "path": {
-                        "anyOf": [
+                        "oneOf": [
                           {
                             "type": "object",
                             "required": [
@@ -1212,7 +1212,7 @@
                   "value": {
                     "anyOf": [
                       {
-                        "anyOf": [
+                        "oneOf": [
                           {
                             "type": "object",
                             "required": [
@@ -1274,7 +1274,7 @@
                                                   },
                                                   "type_tag": {
                                                     "description": "The expected type. In Move scripts, this does contain generics type parameters.",
-                                                    "anyOf": [
+                                                    "oneOf": [
                                                       {
                                                         "type": "string",
                                                         "enum": [
@@ -1450,7 +1450,7 @@
                                               "description": "return types",
                                               "type": "array",
                                               "items": {
-                                                "anyOf": [
+                                                "oneOf": [
                                                   {
                                                     "type": "string",
                                                     "enum": [
@@ -1677,7 +1677,7 @@
                                                   },
                                                   "type_abi": {
                                                     "description": "type of the field",
-                                                    "anyOf": [
+                                                    "oneOf": [
                                                       {
                                                         "type": "string",
                                                         "enum": [
@@ -1919,7 +1919,7 @@
               }
             },
             "TypeInstantiation": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -2161,7 +2161,7 @@
               }
             },
             "explained_status": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -2297,7 +2297,7 @@
               "type": "string"
             },
             "status": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -2409,7 +2409,7 @@
                         "format": "AccountAddress"
                       },
                       "path": {
-                        "anyOf": [
+                        "oneOf": [
                           {
                             "type": "object",
                             "required": [
@@ -2448,7 +2448,7 @@
                   "value": {
                     "anyOf": [
                       {
-                        "anyOf": [
+                        "oneOf": [
                           {
                             "type": "object",
                             "required": [
@@ -2510,7 +2510,7 @@
                                                   },
                                                   "type_tag": {
                                                     "description": "The expected type. In Move scripts, this does contain generics type parameters.",
-                                                    "anyOf": [
+                                                    "oneOf": [
                                                       {
                                                         "type": "string",
                                                         "enum": [
@@ -2686,7 +2686,7 @@
                                               "description": "return types",
                                               "type": "array",
                                               "items": {
-                                                "anyOf": [
+                                                "oneOf": [
                                                   {
                                                     "type": "string",
                                                     "enum": [
@@ -2913,7 +2913,7 @@
                                                   },
                                                   "type_abi": {
                                                     "description": "type of the field",
-                                                    "anyOf": [
+                                                    "oneOf": [
                                                       {
                                                         "type": "string",
                                                         "enum": [
@@ -3155,7 +3155,7 @@
               }
             },
             "TypeInstantiation": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -3342,7 +3342,7 @@
                   },
                   "type_tag": {
                     "description": "The expected type. In Move scripts, this does contain generics type parameters.",
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "type": "string",
                         "enum": [
@@ -3518,7 +3518,7 @@
               "description": "return types",
               "type": "array",
               "items": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "string",
                     "enum": [
@@ -3704,7 +3704,7 @@
           },
           "definitions": {
             "TypeInstantiation": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -3920,7 +3920,7 @@
                   },
                   "type_abi": {
                     "description": "type of the field",
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "type": "string",
                         "enum": [
@@ -4028,7 +4028,7 @@
                     "type": "boolean"
                   },
                   "ty": {
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "type": "string",
                         "enum": [
@@ -4172,7 +4172,7 @@
               }
             },
             "TypeInstantiation": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [
@@ -4337,7 +4337,7 @@
                         },
                         "type_tag": {
                           "description": "The expected type. In Move scripts, this does contain generics type parameters.",
-                          "anyOf": [
+                          "oneOf": [
                             {
                               "type": "string",
                               "enum": [
@@ -4513,7 +4513,7 @@
                     "description": "return types",
                     "type": "array",
                     "items": {
-                      "anyOf": [
+                      "oneOf": [
                         {
                           "type": "string",
                           "enum": [
@@ -4740,7 +4740,7 @@
                         },
                         "type_abi": {
                           "description": "type of the field",
-                          "anyOf": [
+                          "oneOf": [
                             {
                               "type": "string",
                               "enum": [
@@ -4941,7 +4941,7 @@
               }
             },
             "TypeInstantiation": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "string",
                   "enum": [

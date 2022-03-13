@@ -23,7 +23,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 use structopt::clap::crate_version;
 use structopt::StructOpt;
+use tempfile::TempDir;
 
+pub mod account_provider_config;
 mod account_vault_config;
 mod api_config;
 mod api_quota;
@@ -44,13 +46,13 @@ mod txpool_config;
 
 use thiserror::Error;
 
+use crate::account_provider_config::AccountProviderConfig;
 use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
 pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
-pub use diem_temppath::TempPath;
 pub use genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, FutureBlockParameter,
     FutureBlockParameterResolver, GenesisBlockParameter, GenesisBlockParameterConfig,
@@ -101,16 +103,14 @@ pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     NodeConfig::load_with_opt(opt)
 }
 
-pub fn temp_path() -> DataDirPath {
-    let temp_path = TempPath::new();
-    temp_path.create_as_dir().expect("Create temp dir fail.");
-    DataDirPath::TempPath(Arc::from(temp_path))
+pub fn temp_dir() -> DataDirPath {
+    let temp_dir = TempDir::new().expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_dir))
 }
 
-pub fn temp_path_with_dir(dir: PathBuf) -> DataDirPath {
-    let temp_path = TempPath::new_with_temp_dir(dir);
-    temp_path.create_as_dir().expect("Create temp dir fail.");
-    DataDirPath::TempPath(Arc::from(temp_path))
+pub fn temp_dir_in(dir: PathBuf) -> DataDirPath {
+    let temp_dir = TempDir::new_in(dir).expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_dir))
 }
 
 /// Parse a single key-value pair
@@ -217,6 +217,8 @@ pub struct StarcoinOpt {
     #[serde(default)]
     #[structopt(flatten)]
     pub stratum: StratumConfig,
+    #[structopt(flatten)]
+    pub account_provider: AccountProviderConfig,
 }
 
 impl std::fmt::Display for StarcoinOpt {
@@ -229,10 +231,22 @@ impl std::fmt::Display for StarcoinOpt {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum DataDirPath {
     PathBuf(PathBuf),
-    TempPath(Arc<TempPath>),
+    TempPath(Arc<TempDir>),
+}
+
+impl PartialEq for DataDirPath {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (DataDirPath::PathBuf(path1), DataDirPath::PathBuf(path2)) => path1 == path2,
+            (DataDirPath::TempPath(path1), DataDirPath::TempPath(path2)) => {
+                path1.path() == path2.path()
+            }
+            (_, _) => false,
+        }
+    }
 }
 
 impl DataDirPath {
@@ -274,7 +288,7 @@ impl BaseConfig {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
             None => {
                 if id.is_dev() || id.is_test() {
-                    temp_path()
+                    temp_dir()
                 } else {
                     DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
                 }
@@ -432,6 +446,8 @@ pub struct NodeConfig {
     pub logger: LoggerConfig,
     #[serde(default)]
     pub stratum: StratumConfig,
+    #[serde(default)]
+    pub account_provider: AccountProviderConfig,
 }
 
 impl std::fmt::Display for NodeConfig {
@@ -499,7 +515,8 @@ impl NodeConfig {
         self.vault.merge_with_opt(opt, base.clone())?;
         self.metrics.merge_with_opt(opt, base.clone())?;
         self.logger.merge_with_opt(opt, base.clone())?;
-        self.stratum.merge_with_opt(opt, base)?;
+        self.stratum.merge_with_opt(opt, base.clone())?;
+        self.account_provider.merge_with_opt(opt, base)?;
         Ok(())
     }
 }
@@ -542,6 +559,7 @@ pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
         )))
     }
 }
+
 #[cfg(not(unix))]
 pub fn check_open_fds_limit(max_files: u64) -> Result<(), ConfigError> {
     Ok(())

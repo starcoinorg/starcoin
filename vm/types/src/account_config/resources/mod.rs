@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod account;
+pub mod auto_accept_token;
 pub mod balance;
 pub mod key_rotation_capability;
 pub mod module_upgrade_strategy;

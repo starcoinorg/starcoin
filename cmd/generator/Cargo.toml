@@ -18,7 +18,7 @@ scmd = { path = "../../commons/scmd" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
-starcoin-crypto = { path = "../../commons/crypto" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-storage = { path = "../../storage" }
 starcoin-genesis = { path = "../../genesis" }
 starcoin-account-api = { path = "../../account/api" }

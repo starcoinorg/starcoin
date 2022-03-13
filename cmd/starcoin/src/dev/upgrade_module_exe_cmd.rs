@@ -42,7 +42,6 @@ impl CommandAction for UpgradeModuleExeCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let upgrade_package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
-
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
             TransactionPayload::Package(upgrade_package),

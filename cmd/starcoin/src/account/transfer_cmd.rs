@@ -53,7 +53,6 @@ impl CommandAction for TransferCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let receiver_address = opt.receiver;
-
         let token_code = opt
             .token_code
             .clone()

@@ -23,7 +23,7 @@ network-p2p-types = {path = "../network-p2p/types"}
 network-p2p = {path = "../network-p2p"}
 starcoin-logger = {path = "../commons/logger"}
 
-starcoin-crypto = {path = "../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 bcs-ext = { package="bcs-ext", path = "../commons/bcs_ext" }
 
 fnv = "1.0.6"
@@ -31,9 +31,9 @@ zeroize = "1.3.0"
 bitflags = "1.3.2"
 
 tempfile = "3.1.0"
-rand = "0.8.4"
+rand = "0.8.5"
 parking_lot = "0.12.0"
-lru = "0.7.0"
+lru = "0.7.3"
 
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
@@ -51,7 +51,6 @@ starcoin-network-rpc = { path = "../network-rpc" }
 network-rpc-core = { path = "../network-rpc/core" }
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-storage = { path = "../storage" }
-once_cell = "1.8.0"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

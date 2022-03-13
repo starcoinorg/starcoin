@@ -7,7 +7,7 @@ publish = false
 edition = "2021"
 
 [dependencies]
-starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 serde = { version = "1.0.130", default-features = false }
 uint = "0.9.3"
 hex = { version = "0.4.3", default-features = false }

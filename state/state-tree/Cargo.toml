@@ -11,7 +11,7 @@ edition = "2021"
 anyhow = "1.0.41"
 parking_lot = "0.12.0"
 starcoin-types = {path = "../../types"}
-starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 serde = { version = "1.0.130" }
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state-store-api"}

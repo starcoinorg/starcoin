@@ -8,10 +8,12 @@ use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp
 use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
-use starcoin_config::RocksdbConfig;
+use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::path::Path;
+
+const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
@@ -92,7 +94,7 @@ impl DBStorage {
             rocksdb_opts.create_missing_column_families(true);
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
-
+        check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(DBStorage {
             db,
             cfs: column_families,
@@ -146,6 +148,21 @@ impl DBStorage {
     pub fn drop_cf(&mut self) -> Result<(), Error> {
         for cf in self.cfs.clone() {
             self.db.drop_cf(cf)?;
+        }
+        Ok(())
+    }
+
+    pub fn drop_unused_cfs(&mut self, names: Vec<&str>) -> Result<(), Error> {
+        // https://github.com/facebook/rocksdb/issues/1295
+        for name in names {
+            for cf in &self.cfs {
+                if cf == &name {
+                    self.db.drop_cf(name)?;
+                    let opt = Options::default();
+                    self.db.create_cf(name, &opt)?;
+                    break;
+                }
+            }
         }
         Ok(())
     }

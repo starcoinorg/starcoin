@@ -1,11 +1,14 @@
-// Copyright (c) The Diem Core Contributors
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
 
 use clap::{App, Arg};
 use itertools::Itertools;
+use log::LevelFilter;
+use simplelog::{Config, SimpleLogger};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;
@@ -20,6 +23,7 @@ use starcoin_vm_types::{
     transaction::{Module, Package},
 };
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use std::path::Path;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
     build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map,
@@ -138,7 +142,8 @@ fn full_update_with_version(version_number: u64) -> PathBuf {
 }
 
 fn replace_stdlib_by_path(
-    module_path: &mut PathBuf,
+    source_dir: &Path,
+    module_path: &Path,
     new_modules: BTreeMap<String, CompiledModule>,
 ) {
     if module_path.exists() {
@@ -148,10 +153,8 @@ fn replace_stdlib_by_path(
     for (name, module) in new_modules {
         let mut bytes = Vec::new();
         module.serialize(&mut bytes).unwrap();
-        module_path.push(name);
-        module_path.set_extension(COMPILED_EXTENSION);
-        save_binary(module_path.as_path(), &bytes);
-        module_path.pop();
+        let mv_file = module_path.join(name).with_extension(COMPILED_EXTENSION);
+        save_binary(mv_file.as_path(), &bytes);
     }
 
     // Generate documentation
@@ -162,7 +165,7 @@ fn replace_stdlib_by_path(
     // Generate script ABIs
     std::fs::remove_dir_all(&COMPILED_SCRIPTS_ABI_DIR).unwrap_or(());
     std::fs::create_dir_all(&COMPILED_SCRIPTS_ABI_DIR).unwrap();
-    build_script_abis();
+    build_script_abis(Some(source_dir));
 
     build_stdlib_error_code_map();
 }
@@ -171,6 +174,7 @@ fn replace_stdlib_by_path(
 // modules/scripts, and changes in the Move compiler will not be reflected in the stdlib used for
 // genesis, and everywhere else across the code-base unless otherwise specified.
 fn main() {
+    SimpleLogger::init(LevelFilter::Info, Config::default()).expect("init logger failed.");
     // pass argument 'version' to generate new release
     // for example, "cargo run -- --version 1"
     let cli = App::new("stdlib")
@@ -303,10 +307,8 @@ fn main() {
         .join("../../vm/stdlib");
     std::env::set_current_dir(&base_path).expect("failed to change directory");
 
-    // Write the stdlib blob
-    let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-    module_path.push(STDLIB_DIR_NAME);
-    let new_modules = build_stdlib();
+    let sources = &STARCOIN_FRAMEWORK_SOURCES;
+    let new_modules = build_stdlib(&sources.files);
 
     if !no_check_compatibility {
         if let Some((pre_stable_version, pre_stable_modules)) = pre_version
@@ -354,7 +356,13 @@ fn main() {
         }
     }
 
-    replace_stdlib_by_path(&mut module_path, new_modules.clone());
+    // Write the stdlib blob
+    let module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(STDLIB_DIR_NAME);
+    replace_stdlib_by_path(
+        sources.tempdir.path(),
+        module_path.as_path(),
+        new_modules.clone(),
+    );
 
     if generate_new_version {
         let dest_dir = full_update_with_version(version_number);

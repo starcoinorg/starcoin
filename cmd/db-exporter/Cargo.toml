@@ -13,7 +13,7 @@ starcoin-config = { path = "../../config"}
 starcoin-chain = { path = "../../chain"}
 starcoin-genesis = { path = "../../genesis"}
 starcoin-storage = {path = "../../storage"}
-starcoin-crypto = {path = "../../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-types = {path = "../../types"}
 starcoin-executor = {path = "../../executor"}
@@ -30,7 +30,7 @@ hex="~0.4"
 indicatif = "0.15.0"
 logger = {path = "../../commons/logger",package="starcoin-logger"}
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.6", features = ["flamegraph"] }
+pprof = { version = "0.7", features = ["flamegraph"] }
 
 
 [[bin]]

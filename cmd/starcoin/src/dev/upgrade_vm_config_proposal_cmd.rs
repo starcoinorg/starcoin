@@ -43,7 +43,6 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-
         let genesis_config = opt.net.genesis_config().clone();
         let onchain_vm_config = {
             let client = ctx.state().client();

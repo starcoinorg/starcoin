@@ -4,6 +4,7 @@
 pub use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::{DBStorage, SchemaIterator};
+use crate::upgrade::DBUpgrade;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use crypto::HashValue;
@@ -93,6 +94,20 @@ impl StorageInstance {
             }
             _ => None,
         }
+    }
+
+    // make sure Arc::strong_count(&db) == 1 unless will get None
+    pub fn db_mut(&mut self) -> Option<&mut DBStorage> {
+        match self {
+            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
+                Arc::get_mut(db)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn check_upgrade(&mut self) -> Result<()> {
+        DBUpgrade::check_upgrade(self)
     }
 }
 

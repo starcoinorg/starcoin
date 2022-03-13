@@ -14,7 +14,7 @@ futures-timer = "3.0"
 types = { path = "../types", package = "starcoin-types" }
 starcoin-storage = { path = "../storage" }
 starcoin-service-registry = { path = "../commons/service-registry" }
-crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
+crypto = { package = "starcoin-crypto", git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-config = { path = "../config"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../commons/accumulator"}
 starcoin-chain = { path = "../chain" }
@@ -27,7 +27,7 @@ parking_lot = "0.12"
 forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}
-rand = "0.8.4"
+rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 starcoin-vm-runtime = { path = "../vm/vm-runtime"}
 starcoin-network-api = {path = "../network/api", package="network-api"}
@@ -35,7 +35,7 @@ executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor
 futures = "0.3.12"
 logger = {path = "../commons/logger",package="starcoin-logger"}
 [target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.6", features = ["flamegraph", "criterion"] }
+pprof = { version = "0.7", features = ["flamegraph", "criterion"] }
 [dev-dependencies]
 
 # see https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options

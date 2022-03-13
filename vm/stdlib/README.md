@@ -1,6 +1,8 @@
-# Starcoin Move standard library and framework
+# Starcoin Move standard library
 
 Starcoin Move stdlib include the Move standard library and starcoin Move framework.
+
+Note: The Starcoin Move Framework code is migrate to [starcoin-framework](https://github.com/starcoinorg/starcoin-framework/). This project is provide capability for integration starcoin-framework with starcoin genesis.
 
 ## Compilation and Generation
 
@@ -21,11 +23,6 @@ Get help
 ```shell
 cargo run -- --help
 ```
-
-## Test
-
-1. Add a test to [functional-tests](../functional-tests/tests/testsuite), such as: `test_xxx.move`
-2. Run the test `cargo test -p starcoin-functional-tests test_xxx.move `
 
 ## Generate genesis file
 
@@ -50,8 +47,8 @@ The overall structure of the Starcoin stdlib is as follows:
 │   ├── latest                          # the latest stdlib compiled
 │       ├── error_descriptions/*.errmap         # Generated error descriptions for use by the Move Explain tool
 │       ├── stdlib/*.mv                         # The compiled Move bytecode of the Starcoin stdlib latest source modules
+│       ├── docs/*.md                           # Generated documentation for the Starcoin move framework modules
 │       └── transaction_scripts/abi             # Generated ABIs for script function transactions, and all new transactions
-│   └── releaqse_notes.md
 ├── modules                                 # Starcoin stdlib source modules, script modules, and generated documentation
 │   ├── *.move
 │   └── doc/*.md                      # Generated documentation for the Starcoin stdlib and framework modules

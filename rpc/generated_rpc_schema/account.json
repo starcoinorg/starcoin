@@ -37,7 +37,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -110,7 +110,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -182,7 +182,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -247,7 +247,7 @@
                 "type": "boolean"
               },
               "public_key": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "required": [
@@ -324,7 +324,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -458,7 +458,7 @@
                 ],
                 "properties": {
                   "args": {
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "type": "object",
                         "required": [
@@ -584,7 +584,7 @@
                 "minimum": 0.0
               },
               "payload": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "description": "A transaction that executes code.",
                     "type": "object",
@@ -769,7 +769,7 @@
           "properties": {
             "authenticator": {
               "description": "Public key and signature to authenticate",
-              "anyOf": [
+              "oneOf": [
                 {
                   "description": "Single signature",
                   "type": "object",
@@ -868,7 +868,7 @@
                   "minimum": 0.0
                 },
                 "payload": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "description": "A transaction that executes code.",
                       "type": "object",
@@ -1092,7 +1092,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -1165,7 +1165,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -1254,7 +1254,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -1335,7 +1335,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -1451,7 +1451,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [
@@ -1579,7 +1579,7 @@
               "type": "boolean"
             },
             "public_key": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [

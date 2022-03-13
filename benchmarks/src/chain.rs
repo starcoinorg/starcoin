@@ -7,7 +7,7 @@ use rand::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
-use starcoin_config::{temp_path, ChainNetwork, DataDirPath, RocksdbConfig};
+use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
@@ -29,7 +29,7 @@ pub struct ChainBencher {
 impl ChainBencher {
     pub fn new(num: Option<u64>) -> Self {
         let net = ChainNetwork::new_test();
-        let temp_path = temp_path();
+        let temp_path = temp_dir();
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(None),

@@ -1,28 +1,35 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use clap::Parser;
 use jsonrpc_core_client::{RpcChannel, RpcError};
 use serde::Deserialize;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
-use starcoin_rpc_api::types::{TransactionInfoView, TransactionStatusView};
+use starcoin_rpc_api::types::{ResourceView, TransactionInfoView, TransactionStatusView};
 use starcoin_rpc_api::{
     chain::ChainClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
 };
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::{
-    account_struct_tag, genesis_address, stc_type_tag, AccountResource,
-};
+use starcoin_types::account_config::{account_struct_tag, genesis_address, AccountResource};
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
+use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
+use starcoin_vm_types::account_config::auto_accept_token::AutoAcceptToken;
+use starcoin_vm_types::account_config::{stc_type_tag, BalanceResource, STC_TOKEN_CODE};
+use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::value::MoveValue;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
+
 #[derive(Parser, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
@@ -30,22 +37,72 @@ pub struct Options {
     /// starcoin node http rpc url
     node_url: String,
     #[clap(short = 'i')]
-    /// airdrop input csv. columns: `address,auth_key,amount`
+    /// airdrop input csv. columns: `address,amount`
     airdrop_file: PathBuf,
     #[clap(short, long, default_value = "32")]
     /// batch size to do transfer
     batch_size: usize,
+
+    #[clap(
+        short = 't',
+        long = "token-code",
+        name = "token-code",
+        help = "token's code to drop, for example: 0x1::STC::STC, default is STC."
+    )]
+    token_code: Option<TokenCode>,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 pub struct AirdropInfo {
     address: AccountAddress,
-    auth_key: AuthenticationKey,
     amount: u128,
 }
 
 fn map_rpc_error(err: RpcError) -> anyhow::Error {
     anyhow::anyhow!(format!("{}", err))
+}
+
+async fn is_accept_token(
+    address: AccountAddress,
+    token_type: StructTag,
+    client: &StateClient,
+) -> Result<bool> {
+    let account = client
+        .get_resource(address, AccountResource::struct_tag().into(), None)
+        .await
+        .map_err(map_rpc_error)?;
+
+    // if account do not exist on chain, will auto create when transfer token to the account.
+    if account.is_none() {
+        return Ok(true);
+    }
+
+    let balance = client
+        .get_resource(
+            address,
+            BalanceResource::struct_tag_for_token(token_type).into(),
+            None,
+        )
+        .await
+        .map_err(map_rpc_error)?;
+
+    if balance.is_some() {
+        return Ok(true);
+    }
+
+    let auto_accept_token: Option<ResourceView> = client
+        .get_resource(address, AutoAcceptToken::struct_tag().into(), None)
+        .await
+        .map_err(map_rpc_error)?;
+
+    let auto_accept = match auto_accept_token {
+        Some(view) => {
+            let auto_accept_token = view.decode::<AutoAcceptToken>()?;
+            auto_accept_token.enable()
+        }
+        None => false,
+    };
+    Ok(auto_accept)
 }
 
 #[tokio::main]
@@ -63,13 +120,27 @@ async fn main() -> Result<()> {
     let node_client = NodeClient::from(channel.clone());
     let chain_id: u8 = chain_client.id().await.map_err(map_rpc_error)?.id;
 
+    let token_type: StructTag = options
+        .token_code
+        .unwrap_or_else(|| STC_TOKEN_CODE.clone())
+        .try_into()?;
+    let is_stc = stc_type_tag().eq(&TypeTag::Struct(token_type.clone()));
+
     let airdrop_infos: Vec<AirdropInfo> = {
         let mut csv_reader = csv::ReaderBuilder::default()
             .has_headers(false)
             .from_path(airdrop_file.as_path())?;
         let mut leafs = Vec::with_capacity(4096);
         for record in csv_reader.deserialize() {
-            let data = record?;
+            let data: AirdropInfo = record?;
+            if !is_stc && !is_accept_token(data.address, token_type.clone(), &state_client).await? {
+                println!(
+                    "{} does not accepted the token {}, skip.",
+                    data.address,
+                    token_type.to_string()
+                );
+                continue;
+            }
             leafs.push(data);
         }
         leafs
@@ -91,7 +162,12 @@ async fn main() -> Result<()> {
             AccountAddress::from_str(address.as_str())?
         }
     };
-    println!("Will act as sender {}", sender);
+
+    println!(
+        "Will act as sender {}, token: {}",
+        sender,
+        token_type.to_string()
+    );
 
     // read from onchain
     let account_sequence_number = {
@@ -111,13 +187,6 @@ async fn main() -> Result<()> {
                 .map(MoveValue::Address)
                 .collect(),
         );
-        let auth_keys = MoveValue::Vector(
-            airdrops
-                .iter()
-                .map(|info| info.auth_key)
-                .map(|v| MoveValue::vector_u8(v.to_vec()))
-                .collect(),
-        );
         let amounts = MoveValue::Vector(
             airdrops
                 .iter()
@@ -131,11 +200,10 @@ async fn main() -> Result<()> {
                 genesis_address(),
                 Identifier::new("TransferScripts").unwrap(),
             ),
-            Identifier::new("batch_peer_to_peer").unwrap(),
-            vec![stc_type_tag()],
+            Identifier::new("batch_peer_to_peer_v2").unwrap(),
+            vec![token_type.clone().into()],
             vec![
                 addresses.simple_serialize().unwrap(),
-                auth_keys.simple_serialize().unwrap(),
                 amounts.simple_serialize().unwrap(),
             ],
         );

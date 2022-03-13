@@ -53,7 +53,7 @@ pub fn steps() -> Steps<MyWorld> {
             let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(None),
                 DBStorage::new(
-                    starcoin_config::temp_path().as_ref(),
+                    starcoin_config::temp_dir().as_ref(),
                     RocksdbConfig::default(),
                     None,
                 )

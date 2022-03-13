@@ -35,13 +35,13 @@ impl CommandAction for SignMessageCmd {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let client = ctx.state().account_client();
         let sender = ctx.state().get_account_or_default(opt.sender)?;
-        let signed_message = client.account_sign_message(sender.address, opt.message.clone())?;
+        let signed_message = client.sign_message(sender.address, opt.message.clone())?;
 
         let hex = signed_message.to_string();
         Ok(SignResult {
-            msg: signed_message.0,
+            msg: signed_message,
             hex,
         })
     }

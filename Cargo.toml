@@ -4,13 +4,11 @@ members = [
     "benchmarks",
     "commons/stest",
     "commons/bcs_ext",
-    "commons/crypto",
     "commons/decrypt",
     "commons/logger",
     "commons/scmd",
     "commons/metrics",
     "commons/utils",
-    "commons/proptest-helpers",
     "commons/service-registry",
     "commons/timeout-join-handler",
     "commons/serde-helpers",
@@ -43,7 +41,6 @@ members = [
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
-    "devtools/x",
     "node/api",
     "node",
     "sync",
@@ -63,12 +60,12 @@ members = [
     "account/api",
     "account",
     "account/service",
+    "account/provider",
     "rpc/api",
     "rpc/middleware",
     "rpc/client",
     "rpc/server",
     "vm/types",
-
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
@@ -83,7 +80,6 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
-    "vm/transactional-tests",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -103,20 +99,19 @@ members = [
     "stratum",
     "cmd/miner_client/api",
     "cmd/db-exporter",
-    "cmd/genesis-nft-miner"
+    "cmd/genesis-nft-miner",
+    "devtools/x"
 ]
 
 default-members = [
     "benchmarks",
     "commons/stest",
     "commons/bcs_ext",
-    "commons/crypto",
     "commons/decrypt",
     "commons/logger",
     "commons/scmd",
     "commons/metrics",
     "commons/utils",
-    "commons/proptest-helpers",
     "commons/service-registry",
     "commons/timeout-join-handler",
     "commons/serde-helpers",
@@ -173,7 +168,6 @@ default-members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
-    "vm/transactional-tests",
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
@@ -237,36 +231,3 @@ starcoin-vm-runtime.debug = 1
 
 [profile.release.package."*"]
 debug = false
-
-#[patch."https://github.com/starcoinorg/diem"]
-#move-bytecode-source-map = {git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-bytecode-verifier = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#diem-crypto = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#diem-crypto-derive = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#diem-proptest-helpers = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#diem-temppath = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#diem-workspace-hack = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-disassembler = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-docgen = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-errmapgen = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-binary-format = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-command-line-common = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-transactional-test-runner= { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-core-types={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-coverage={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-ir-types={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-compiler={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-model={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-prover={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-prover-test-utils={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-stdlib={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-unit-test={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-vm-runtime={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-vm-types={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#short-hex-str={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#x = { git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#x-core={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#x-lint={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-resource-viewer={ git = "https://github.com/lerencao/libra", branch="debug/temp"  }
-#move-cli = { git = "https://github.com/lerencao/libra", branch="debug/temp" }
-#move-package = { git = "https://github.com/lerencao/libra", branch="debug/temp" }

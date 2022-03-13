@@ -369,7 +369,7 @@ mod tests {
                 continue;
             }
             let net = ChainNetwork::new_builtin(id);
-            let temp_dir = starcoin_config::temp_path();
+            let temp_dir = starcoin_config::temp_dir();
             do_test_genesis(&net, temp_dir.path())?;
         }
         Ok(())
@@ -382,7 +382,7 @@ mod tests {
             ChainId::new(123),
             BuiltinNetworkID::Test.genesis_config().clone(),
         )?;
-        let temp_dir = starcoin_config::temp_path();
+        let temp_dir = starcoin_config::temp_dir();
         do_test_genesis(&net, temp_dir.path())
     }
 

@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.41"
 bitflags = "1.3.2"
 bytes = "1"
-once_cell = "1.8.0"
+once_cell = "1.10.0"
 async-trait = "0.1"
 asynchronous-codec = "0.5"
 
@@ -24,9 +24,9 @@ futures-timer = "3.0"
 linked-hash-map = "0.5.4"
 linked_hash_set = "0.1.3"
 log = "0.4.14"
-lru = "0.7.0"
+lru = "0.7.3"
 parking_lot = "0.12.0"
-rand = "0.8.4"
+rand = "0.8.5"
 pin-project = "0.4.27"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
@@ -38,7 +38,7 @@ zeroize = "1.3.0"
 hex= "0.4.3"
 wasm-timer = "0.2"
 sc-peerset = {  path = "peerset" }
-starcoin-crypto = { path = "../commons/crypto"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-types = {path = "../types"}
 network-p2p-types = {path = "./types"}

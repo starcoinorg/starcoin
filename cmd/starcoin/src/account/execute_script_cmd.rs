@@ -54,9 +54,7 @@ impl CommandAction for ExecuteScriptCommand {
         let opt = ctx.opt();
         let type_tags = opt.type_tags.clone().unwrap_or_default();
         let args = opt.args.clone().unwrap_or_default();
-
         let bytedata = { load_bytecode_file(opt.mv_file.as_path())? };
-
         let txn_payload = match bytedata {
             // script
             (bytecode, true) => {
@@ -67,7 +65,6 @@ impl CommandAction for ExecuteScriptCommand {
                 bail!("bytecode is not a script!");
             }
         };
-
         ctx.state()
             .build_and_execute_transaction(opt.transaction_opts.clone(), txn_payload)
     }

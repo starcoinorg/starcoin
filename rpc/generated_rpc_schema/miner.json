@@ -112,7 +112,7 @@
               "format": "HashValue"
             },
             "strategy": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "required": [

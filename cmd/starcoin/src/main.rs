@@ -3,6 +3,7 @@
 use anyhow::Result;
 use scmd::error::CmdError;
 use scmd::CmdContext;
+use starcoin_account_provider::ProviderFactory;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
@@ -70,11 +71,18 @@ fn run() -> Result<()> {
             };
 
             let node_info = client.node_info()?;
+            let client = Arc::new(client);
+            let rpc_client = ProviderFactory::create_provider(
+                client.clone(),
+                node_info.net.chain_id(),
+                &opt.account_provider,
+            )?;
             let state = CliState::new(
                 node_info.net,
-                Arc::new(client),
+                client,
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
+                rpc_client,
             );
             Ok(state)
         },
@@ -99,6 +107,7 @@ fn run() -> Result<()> {
         move |_app, _opt, state| {
             info!("Start console, disable stderr output.");
             logger_handle.disable_stderr();
+            print_logo();
             (*scmd::DEFAULT_CONSOLE_CONFIG, Some(state.history_file()))
         },
         |_, _, state| {
@@ -111,6 +120,40 @@ fn run() -> Result<()> {
         },
     );
     add_command(context).exec()
+}
+
+#[rustfmt::skip]
+#[allow(clippy::print_literal)]
+fn print_logo(){
+    println!("{}{}{}","\x1b[34;1m",r#"                                 
+                                                (%&&&&(%&%(  &#   
+                                        ,#%%%&%%%#/        (%&&% 
+                                %#%#%%%%#&&%                 %& 
+                                / %%%                          #& 
+                            &#%%%#%%%%#                        *&% 
+                        (#%%%#/ %%%%%%#                      #&%
+                    #%#%%#&&   #%%%%%%%(                   &%%&   
+                (#%%##      #%%%%%%%%%/                *%%      
+            #%%%&#%%##&&&&%%%(%%%%%%%%%%%&&&&&&&& &%  (&#/#       
+            ((##%%%%%%%%%%%%%%%%%%%%%%%%&&&&&&&%%  ####          
+        ###%#(& &#%%%%%%%%%%%%%%%%%%%%%&&&&%##&(%&%             
+        (#%##       (#%%%%%%%%%%%%%%%%%%&%#(#%%#                 
+        (###(%           &&#%%%%%%%%%%%%%%&%%#&&                   
+    ####                %%%%%%%%%%%%(    %%                     
+    /###/                #%%%%%%%%#%%#     %%#                    
+    /###(                (%%%%%%#%%%##%%%(  *%%#                   
+    ###(                (%%%%###&#     %&#%%&(%%%                  
+    (##(&              &#%#(#               %%&&%                  
+    (###%#       (%%%#((&                    &&%#                 
+        (#%%%%%%#(
+            
+     ██████╗████████╗ █████╗ ██████╗  █████╗  █████╗ ██╗███╗  ██╗
+    ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║████╗ ██║
+    ╚█████╗    ██║   ███████║██████╔╝██║  ╚═╝██║  ██║██║██╔██╗██║
+     ╚═══██╗   ██║   ██╔══██║██╔══██╗██║  ██╗██║  ██║██║██║╚████║
+    ██████╔╝   ██║   ██║  ██║██║  ██║╚█████╔╝╚█████╔╝██║██║ ╚███║
+    ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝ ╚═╝╚═╝  ╚══╝                                                                                                             
+    "#,"\x1b[0m");
 }
 
 fn main() {

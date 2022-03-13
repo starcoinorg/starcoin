@@ -10,6 +10,7 @@ use move_package_manager::compatibility_check_cmd::{
 };
 use move_package_manager::releasement::{handle_release, Releasement};
 use move_package_manager::{run_transactional_test, TransactionalTestCommand};
+use starcoin_config::genesis_config;
 use starcoin_vm_runtime::natives::starcoin_natives;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -78,9 +79,13 @@ fn main() -> Result<()> {
             &cmd,
             natives,
         ),
-        Commands::Sandbox { storage_dir, cmd } => {
-            cmd.handle_command(natives, &error_descriptions, move_args, &storage_dir)
-        }
+        Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
+            natives,
+            &genesis_config::LATEST_GAS_SCHEDULE,
+            &error_descriptions,
+            move_args,
+            &storage_dir,
+        ),
         Commands::Experimental { storage_dir, cmd } => cmd.handle_command(move_args, &storage_dir),
         Commands::Release(releasement) => handle_release(move_args, releasement),
         Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),

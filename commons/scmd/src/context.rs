@@ -427,16 +427,8 @@ where
                     }
                 }
                 Err(ReadlineError::Interrupted) => {
-                    println!("CTRL-C");
-                    Self::do_quit(
-                        app.clone(),
-                        global_opt,
-                        state,
-                        quit_action,
-                        rl,
-                        history_file,
-                    );
-                    break;
+                    println!("Interrupted");
+                    continue;
                 }
                 Err(ReadlineError::Eof) => {
                     println!("CTRL-D");

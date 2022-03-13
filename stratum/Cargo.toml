@@ -21,7 +21,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-types = { path = "../types" }
 starcoin-miner = { path = "../miner" }
 starcoin-logger = { path = "../commons/logger" }
-starcoin-crypto = { path = "../commons/crypto" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-config = { path = "../config" }
 [dev-dependencies]
 stest = { path = "../commons/stest" }

@@ -34,7 +34,7 @@ impl CommandAction for ImportReadonlyCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().account_client();
         let opt: &ImportReadonlyOpt = ctx.opt();
 
         let public_key = AccountPublicKey::from_encoded_string(opt.from_input.as_str())?;
@@ -42,7 +42,7 @@ impl CommandAction for ImportReadonlyCommand {
         let address = opt
             .account_address
             .unwrap_or_else(|| public_key.derived_address());
-        let account = client.account_import_readonly(address, public_key.to_bytes())?;
+        let account = client.import_readonly_account(address, public_key.to_bytes())?;
         Ok(account)
     }
 }
