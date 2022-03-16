@@ -953,11 +953,12 @@ pub fn execute_transaction_with_fixed_account(
 }
 
 /// manifest_file layout
-/// block_info block.header.hash
-/// block block.header.hash
 /// block_accumulator accumulator_root_hash
+/// block block.header.hash
+/// block_info block.header.hash
 /// txn_accumulator accumulator_root_hash
-/// state           state_root_hash
+/// txn_info txn.hash
+/// state   state_root_hash
 pub fn export_snapshot(
     from_dir: PathBuf,
     output: PathBuf,
@@ -994,151 +995,157 @@ pub fn export_snapshot(
     println!("snapshot block height {}", cur_num);
     let block = chain
         .get_block_by_number(cur_num)?
-        .ok_or_else(|| format_err!("get block {} error", cur_num))?;
-    let mut block_info = BlockInfo::sample();
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let block_info = chain
+        .get_block_info(Some(block.id()))?
+        .ok_or_else(|| format_err!("get block info by hash {} error", block.id()))?;
     let state_root = block.header.state_root();
     let statedb = ChainStateDB::new(storage, Some(state_root));
     let mut mainfest_list = vec![];
 
-    // save block_info
-    let bar = ProgressBar::new(cur_num);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-    );
-    let filename = "snapshot_block_info.csv".to_string();
-    mainfest_list.push((output.join(filename.clone()), block.header.id()));
-    let mut file = File::create(output.join(filename))?;
-    for i in 1..=cur_num {
-        block_info = chain
-            .get_block_info_by_number(i)?
-            .ok_or_else(|| format_err!("get block info {} error", i))?;
-
-        writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
-        bar.set_message(format!("save block_info {}", i).as_str());
-        bar.inc(1);
-    }
-    file.flush()?;
-    bar.finish();
-
-    // save block
-    let bar = ProgressBar::new(cur_num);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
-    );
-    let filename = "snapshot_block.csv".to_string();
-    mainfest_list.push((output.join(filename.clone()), block.header.id()));
-    let mut file = File::create(output.join(filename))?;
-    for i in 1..=cur_num {
-        let block = chain
-            .get_block_by_number(i)?
-            .ok_or_else(|| format_err!("get block {} error", i))?;
-
-        writeln!(file, "{}", serde_json::to_string(&block)?)?;
-        bar.set_message(format!("save block {}", block.header().number()).as_str());
-        bar.inc(1);
-    }
-    file.flush()?;
-    bar.finish();
-
-    // save block_accumulator
+    // save block_accumulator block block_info column
     let block_accumulator_info = block_info.get_block_accumulator_info();
-    let block_accumulator_leaves = chain.get_block_accumulator().get_leaves(
-        1,
-        false,
-        block_accumulator_info.num_leaves - 1,
-    )?;
-    let filename = format!(
-        "snapshot_{}.csv",
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-    );
+    let name_block_accumulator = format!("snapshot_{}.csv", BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,);
     mainfest_list.push((
-        output.join(filename.clone()),
+        output.join(name_block_accumulator.clone()),
         block_accumulator_info.accumulator_root,
     ));
-    let bar = ProgressBar::new(block_accumulator_info.num_leaves);
+    let mut file_block_accumulator = File::create(output.join(name_block_accumulator))?;
+    let name_block = "snapshot_block.csv".to_string();
+    mainfest_list.push((output.join(name_block.clone()), block.header.id()));
+    let mut file_block = File::create(output.join(name_block))?;
+    let name_block_info = "snapshot_block_info.csv".to_string();
+    mainfest_list.push((output.join(name_block_info.clone()), block.header.id()));
+    let mut file_block_info = File::create(output.join(name_block_info))?;
+
+    let nums = block_accumulator_info.get_num_leaves() - 1;
+    let mut start_index = 0;
+    let mut index = 1;
+    let bar = ProgressBar::new(nums / 1000);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-    let mut file = File::create(output.join(filename))?;
-    let mut index = 1;
-    for hash in block_accumulator_leaves.iter() {
-        writeln!(file, "{}", hash)?;
+    while start_index < nums {
+        let max_size = if start_index + 1000 <= nums {
+            1000
+        } else {
+            nums - start_index
+        };
+        let block_hashs =
+            chain
+                .get_block_accumulator()
+                .get_leaves(start_index + 1, false, max_size)?;
+        start_index += max_size;
+        for hash in block_hashs.into_iter() {
+            writeln!(file_block_accumulator, "{}", hash)?;
+            let block = chain
+                .get_block(hash)?
+                .ok_or_else(|| format_err!("get block by hash {} error", hash))?;
+            writeln!(file_block, "{}", serde_json::to_string(&block)?)?;
+            let info = chain
+                .get_block_info(Some(hash))?
+                .ok_or_else(|| format_err!("get block info by hash {} error", hash))?;
+            writeln!(file_block_info, "{}", serde_json::to_string(&info)?)?;
+        }
+
         bar.set_message(format!("save block accumulator {}", index).as_str());
         bar.inc(1);
         index += 1;
     }
-    file.flush()?;
+    file_block_accumulator.flush()?;
+    file_block.flush()?;
+    file_block_info.flush()?;
     bar.finish();
 
     // save transaction_accumulator
     let txn_accumulator_info = block_info.get_txn_accumulator_info();
-    let filename = format!(
-        "snapshot_{}.csv",
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
-    );
-    let txn_accumulator_leaves =
-        chain
-            .get_txn_accumulator()
-            .get_leaves(1, false, txn_accumulator_info.num_leaves - 1)?;
+    let name_txn_accumulator = format!("snapshot_{}.csv", TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME);
     mainfest_list.push((
-        output.join(filename.clone()),
+        output.join(name_txn_accumulator.clone()),
         txn_accumulator_info.accumulator_root,
     ));
-    let bar = ProgressBar::new(txn_accumulator_info.num_leaves);
+    let mut file_txn_accumulator = File::create(output.join(name_txn_accumulator))?;
+    let nums = txn_accumulator_info.get_num_leaves() - 1;
+    /* let name_txn_info = "snapshot_txn_info.csv".to_string();
+    let txn_info_hash = chain
+         .get_txn_accumulator()
+         .get_leaf(nums)?
+         .ok_or_else(|| format_err!("get txn accumulator {} error", nums))?;
+     mainfest_list.push((output.join(name_txn_info.clone()), txn_info_hash));
+     let mut file_txn_info = File::create(output.join(name_txn_info))?; */
+
+    let mut start_index = 0;
+    let mut index = 1;
+    let bar = ProgressBar::new(nums / 1000);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-    let mut file = File::create(output.join(filename))?;
-    index = 0;
-    for hash in txn_accumulator_leaves.iter() {
-        writeln!(file, "{}", hash)?;
+
+    while start_index < nums {
+        let max_size = if start_index + 1000 <= nums {
+            1000
+        } else {
+            nums - start_index
+        };
+        let txn_info_hashs =
+            chain
+                .get_txn_accumulator()
+                .get_leaves(start_index + 1, false, max_size)?;
+        start_index += max_size;
+        for txn_hash in txn_info_hashs.into_iter() {
+            writeln!(file_txn_accumulator, "{}", txn_hash)?;
+            /*
+            let txn_info = chain
+                .get_transaction_info(txn_hash)?
+                .ok_or_else(|| format_err!("get txn_info {} error", txn_hash))?;
+            writeln!(file_txn_info, "{:?}", serde_json::to_string(&txn_info))?;
+             */
+        }
         bar.set_message(format!("save txn accumulator {}", index).as_str());
         bar.inc(1);
         index += 1;
     }
-    file.flush()?;
+    file_txn_accumulator.flush()?;
+    // file_txn_info.flush()?;
     bar.finish();
 
-    // contract event (todo)
-
-    // get all transaction (todo)
-
     // get state
-    let filename = format!("snapshot_{}.csv", STATE_NODE_PREFIX_NAME);
-    mainfest_list.push((output.join(filename.clone()), state_root));
-    let mut file = File::create(output.join(filename))?;
+    let mut index = 1;
+    let name_state = format!("snapshot_{}.csv", STATE_NODE_PREFIX_NAME);
+    mainfest_list.push((output.join(name_state.clone()), state_root));
+    let mut file_state = File::create(output.join(name_state))?;
     let global_states = statedb.dump()?;
-    let bar = ProgressBar::new(global_states.len() as u64);
+    let bar = ProgressBar::new(global_states.len() as u64 / 1000);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-    index = 1;
     for (account_address, account_state_set) in global_states.into_inner() {
         writeln!(
-            file,
+            file_state,
             "{} {}",
             serde_json::to_string(&account_address)?,
             serde_json::to_string(&account_state_set)?
         )?;
-        bar.set_message(format!("write state {}", index).as_str());
+
+        if index % 1000 == 0 {
+            bar.set_message(format!("write state {}", index).as_str());
+            bar.inc(1);
+        }
         index += 1;
-        bar.inc(1);
     }
-    file.flush()?;
+    file_state.flush()?;
     bar.finish();
 
     // save manifest
-    let filename = "manifest_snapshot.csv".to_string();
-    let mut file = File::create(output.join(filename))?;
+    let name_manifest = "manifest_snapshot.csv".to_string();
+    let mut file_manifest = File::create(output.join(name_manifest))?;
     for (path, hash) in mainfest_list.iter() {
-        writeln!(file, "{} {}", path.display(), hash)?;
+        writeln!(file_manifest, "{} {}", path.display(), hash)?;
     }
-    file.flush()?;
+    file_manifest.flush()?;
 
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("export snapshot use time: {:?}", use_time.as_secs());
@@ -1217,16 +1224,14 @@ pub fn apply_snapshot(
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
             }
             chain.get_block_accumulator().flush()?;
-            println!(
-                "block accumulator hash {}",
-                chain.get_txn_accumulator().root_hash()
-            );
             if chain.get_block_accumulator().root_hash() == verify_hash {
                 println!("snapshot_{} hash match", BLOCK_ACCUMULATOR_NODE_PREFIX_NAME);
             } else {
                 println!(
-                    "snapshot_{} hash not match",
-                    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME
+                    "snapshot_{} hash not match root_hash {} verify_hash {}",
+                    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+                    chain.get_block_accumulator().root_hash(),
+                    verify_hash
                 );
                 std::process::exit(1);
             }
@@ -1246,8 +1251,10 @@ pub fn apply_snapshot(
                 );
             } else {
                 println!(
-                    "snapshot_{} hash not match",
-                    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+                    "snapshot_{} hash not match root_hash {} verify_hash {}",
+                    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+                    chain.get_txn_accumulator().root_hash(),
+                    verify_hash
                 );
                 std::process::exit(1);
             }
