@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{BlockHeader, BlockInfo};
+use crate::block::{BlockHeader, BlockInfo, BlockNumber};
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
@@ -179,6 +179,51 @@ impl TryFrom<Vec<u8>> for StartupInfo {
 }
 
 impl TryInto<Vec<u8>> for StartupInfo {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct SnapshotHeight {
+    /// snapshot height block number
+    height: BlockNumber,
+}
+
+impl fmt::Display for SnapshotHeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SnapshotHeight {{")?;
+        write!(f, "height: {},", self.height)?;
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl SnapshotHeight {
+    pub fn new(height: BlockNumber) -> Self {
+        Self { height }
+    }
+
+    pub fn update_height(&mut self, new_height: BlockNumber) {
+        self.height = new_height;
+    }
+
+    pub fn get_height(&self) -> BlockNumber {
+        self.height
+    }
+}
+
+impl TryFrom<Vec<u8>> for SnapshotHeight {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        SnapshotHeight::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for SnapshotHeight {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Vec<u8>> {

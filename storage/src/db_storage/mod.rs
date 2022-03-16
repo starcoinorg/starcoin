@@ -349,6 +349,16 @@ impl InnerStore for DBStorage {
         })
     }
 
+    /*
+    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Vec<Result<Option<Vec<u8>>>> {
+        record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let result = self.db.multi_get_cf(cf_handle,keys.as_slice()).collect();
+          let  result = vec![];
+            result
+        })
+    } */
+
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics

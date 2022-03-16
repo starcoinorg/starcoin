@@ -6,29 +6,33 @@ use bcs_ext::Sample;
 use csv::Writer;
 use indicatif::{ProgressBar, ProgressStyle};
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::Accumulator;
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
-use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
+//use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_storage::block::FailedBlock;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
 use starcoin_storage::storage::{InnerStore, StorageInstance};
 use starcoin_storage::{
-    BlockStore, Storage, StorageVersion, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    FAILED_BLOCK_PREFIX_NAME,
+    BlockStore, Storage, StorageVersion, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+    BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME, STATE_NODE_PREFIX_NAME,
+    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
 };
 use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber};
-use starcoin_types::startup_info::StartupInfo;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::startup_info::{SnapshotHeight, StartupInfo};
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::fmt::{Debug, Formatter};
@@ -39,9 +43,15 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::SystemTime;
 use structopt::StructOpt;
+//use forkable_jellyfish_merkle::node_type::LeafNode;
+use starcoin_statedb::ChainStateDB;
+use starcoin_statedb::ChainStateReader;
+use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
+const SNAP_GAP: u64 = 128;
 
 pub fn export<W: std::io::Write>(
     db: &str,
@@ -198,6 +208,8 @@ enum Cmd {
     ApplyBlock(ApplyBlockOptions),
     StartupInfoBack(StartupInfoBackOptions),
     GenBlockTransactions(GenBlockTransactionsOptions),
+    ExportSnapshot(ExportSnapshotOptions),
+    ApplySnapshot(ApplySnapshotOptions),
 }
 
 #[derive(Debug, Clone, StructOpt)]
@@ -256,7 +268,7 @@ pub struct ApplyBlockOptions {
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
-    /// input file, like accounts.csv
+    /// input file, like ~/block_start_end.csv
     pub input_path: PathBuf,
     #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
@@ -315,6 +327,37 @@ pub struct GenBlockTransactionsOptions {
     #[structopt(long, short = "p", possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
+}
+
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(name = "export-snapshot", about = "export snapshot")]
+pub struct ExportSnapshotOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network, like main, proxima
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// output dir, like ~/, output filename like ~/manifest_snapshot.csv
+    pub output: PathBuf,
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub db_path: PathBuf,
+    /// export snapshot block number
+    #[structopt(long, short = "b")]
+    pub number: Option<BlockNumber>,
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "apply-snapshot", about = "apply snapshot")]
+pub struct ApplySnapshotOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// manifest file, like manifest-snapshot.csv
+    pub manifest_file: PathBuf,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -417,10 +460,12 @@ fn main() -> anyhow::Result<()> {
         }
         return result;
     }
+
     if let Cmd::StartupInfoBack(option) = cmd {
         let result = startup_info_back(option.to_path, option.back_size, option.net);
         return result;
     }
+
     if let Cmd::GenBlockTransactions(option) = cmd {
         let result = gen_block_transactions(
             option.to_path,
@@ -428,6 +473,16 @@ fn main() -> anyhow::Result<()> {
             option.trans_num,
             option.txn_type,
         );
+        return result;
+    }
+
+    if let Cmd::ExportSnapshot(option) = cmd {
+        let result = export_snapshot(option.db_path, option.output, option.net);
+        return result;
+    }
+
+    if let Cmd::ApplySnapshot(option) = cmd {
+        let result = apply_snapshot(option.to_path, option.manifest_file, option.net);
         return result;
     }
     Ok(())
@@ -894,5 +949,335 @@ pub fn execute_transaction_with_fixed_account(
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
     }
+    Ok(())
+}
+
+/// manifest_file layout
+/// block_info block.header.hash
+/// block block.header.hash
+/// block_accumulator accumulator_root_hash
+/// txn_accumulator accumulator_root_hash
+/// state           state_root_hash
+pub fn export_snapshot(
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+) -> anyhow::Result<()> {
+    let start_time = SystemTime::now();
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let num = chain.status().head().number();
+    let cur_num = if num <= SNAP_GAP { num } else { num - SNAP_GAP };
+    let cur_num = cur_num / net.genesis_config().consensus_config.epoch_block_count
+        * net.genesis_config().consensus_config.epoch_block_count;
+    println!("snapshot block height {}", cur_num);
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block {} error", cur_num))?;
+    let mut block_info = BlockInfo::sample();
+    let state_root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage, Some(state_root));
+    let mut mainfest_list = vec![];
+
+    // save block_info
+    let bar = ProgressBar::new(cur_num);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let filename = "snapshot_block_info.csv".to_string();
+    mainfest_list.push((output.join(filename.clone()), block.header.id()));
+    let mut file = File::create(output.join(filename))?;
+    for i in 1..=cur_num {
+        block_info = chain
+            .get_block_info_by_number(i)?
+            .ok_or_else(|| format_err!("get block info {} error", i))?;
+
+        writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
+        bar.set_message(format!("save block_info {}", i).as_str());
+        bar.inc(1);
+    }
+    file.flush()?;
+    bar.finish();
+
+    // save block
+    let bar = ProgressBar::new(cur_num);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let filename = "snapshot_block.csv".to_string();
+    mainfest_list.push((output.join(filename.clone()), block.header.id()));
+    let mut file = File::create(output.join(filename))?;
+    for i in 1..=cur_num {
+        let block = chain
+            .get_block_by_number(i)?
+            .ok_or_else(|| format_err!("get block {} error", i))?;
+
+        writeln!(file, "{}", serde_json::to_string(&block)?)?;
+        bar.set_message(format!("save block {}", block.header().number()).as_str());
+        bar.inc(1);
+    }
+    file.flush()?;
+    bar.finish();
+
+    // save block_accumulator
+    let block_accumulator_info = block_info.get_block_accumulator_info();
+    let block_accumulator_leaves = chain.get_block_accumulator().get_leaves(
+        1,
+        false,
+        block_accumulator_info.num_leaves - 1,
+    )?;
+    let filename = format!(
+        "snapshot_{}.csv",
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+    );
+    mainfest_list.push((
+        output.join(filename.clone()),
+        block_accumulator_info.accumulator_root,
+    ));
+    let bar = ProgressBar::new(block_accumulator_info.num_leaves);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let mut file = File::create(output.join(filename))?;
+    let mut index = 1;
+    for hash in block_accumulator_leaves.iter() {
+        writeln!(file, "{}", hash)?;
+        bar.set_message(format!("save block accumulator {}", index).as_str());
+        bar.inc(1);
+        index += 1;
+    }
+    file.flush()?;
+    bar.finish();
+
+    // save transaction_accumulator
+    let txn_accumulator_info = block_info.get_txn_accumulator_info();
+    let filename = format!(
+        "snapshot_{}.csv",
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+    );
+    let txn_accumulator_leaves =
+        chain
+            .get_txn_accumulator()
+            .get_leaves(1, false, txn_accumulator_info.num_leaves - 1)?;
+    mainfest_list.push((
+        output.join(filename.clone()),
+        txn_accumulator_info.accumulator_root,
+    ));
+    let bar = ProgressBar::new(txn_accumulator_info.num_leaves);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    let mut file = File::create(output.join(filename))?;
+    index = 0;
+    for hash in txn_accumulator_leaves.iter() {
+        writeln!(file, "{}", hash)?;
+        bar.set_message(format!("save txn accumulator {}", index).as_str());
+        bar.inc(1);
+        index += 1;
+    }
+    file.flush()?;
+    bar.finish();
+
+    // contract event (todo)
+
+    // get all transaction (todo)
+
+    // get state
+    let filename = format!("snapshot_{}.csv", STATE_NODE_PREFIX_NAME);
+    mainfest_list.push((output.join(filename.clone()), state_root));
+    let mut file = File::create(output.join(filename))?;
+    let global_states = statedb.dump()?;
+    let bar = ProgressBar::new(global_states.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    index = 1;
+    for (account_address, account_state_set) in global_states.into_inner() {
+        writeln!(
+            file,
+            "{} {}",
+            serde_json::to_string(&account_address)?,
+            serde_json::to_string(&account_state_set)?
+        )?;
+        bar.set_message(format!("write state {}", index).as_str());
+        index += 1;
+        bar.inc(1);
+    }
+    file.flush()?;
+    bar.finish();
+
+    // save manifest
+    let filename = "manifest_snapshot.csv".to_string();
+    let mut file = File::create(output.join(filename))?;
+    for (path, hash) in mainfest_list.iter() {
+        writeln!(file, "{} {}", path.display(), hash)?;
+    }
+    file.flush()?;
+
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("export snapshot use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+pub fn apply_snapshot(
+    to_dir: PathBuf,
+    manifest_file: PathBuf,
+    network: BuiltinNetworkID,
+) -> anyhow::Result<()> {
+    let start_time = SystemTime::now();
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = chain.status().head().number();
+    if cur_num > 0 {
+        println!("apply snapshot cur_num {} expect 0", cur_num);
+        std::process::exit(2);
+    }
+    let mut block_hash = HashValue::zero();
+    let mut block_height = 0;
+    let reader = BufReader::new(File::open(manifest_file)?);
+    for record in reader.lines() {
+        let record = record?;
+        let strs: Vec<&str> = record.split(' ').collect();
+        let file_name = strs[0];
+        let hash = strs[1];
+        let reader = BufReader::new(File::open(PathBuf::from(file_name))?);
+        let verify_hash = HashValue::from_hex_literal(hash)?;
+        if file_name.contains("snapshot_block_info") {
+            for line in reader.lines() {
+                let line = line?;
+                let block_info: BlockInfo = serde_json::from_str(line.as_str())?;
+                block_hash = block_info.block_id;
+                storage.save_block_info(block_info)?;
+            }
+            if verify_hash == block_hash {
+                println!("snapshot_block_info hash match");
+            } else {
+                println!("snapshot_block_info hash not match");
+                std::process::exit(1);
+            }
+        } else if file_name.contains("snapshot_block") {
+            for line in reader.lines() {
+                let line = line?;
+                let block: Block = serde_json::from_str(line.as_str())?;
+                block_hash = block.id();
+                block_height = block.header.number();
+                storage.commit_block(block)?;
+            }
+
+            if verify_hash == block_hash {
+                println!("snapshot_block hash match");
+            } else {
+                println!("snapshot_block hash not match");
+                std::process::exit(1);
+            }
+        } else if file_name.contains(BLOCK_ACCUMULATOR_NODE_PREFIX_NAME) {
+            // XXX FIXME use batch append
+            for line in reader.lines() {
+                let line = line?;
+                chain
+                    .get_block_accumulator()
+                    .append(&[HashValue::from_hex_literal(line.as_str())?])?;
+            }
+            chain.get_block_accumulator().flush()?;
+            println!(
+                "block accumulator hash {}",
+                chain.get_txn_accumulator().root_hash()
+            );
+            if chain.get_block_accumulator().root_hash() == verify_hash {
+                println!("snapshot_{} hash match", BLOCK_ACCUMULATOR_NODE_PREFIX_NAME);
+            } else {
+                println!(
+                    "snapshot_{} hash not match",
+                    BLOCK_ACCUMULATOR_NODE_PREFIX_NAME
+                );
+                std::process::exit(1);
+            }
+        } else if file_name.contains(TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME) {
+            // XXX FIXME use batch append
+            for line in reader.lines() {
+                let line = line?;
+                chain
+                    .get_txn_accumulator()
+                    .append(&[HashValue::from_hex_literal(line.as_str())?])?;
+            }
+            chain.get_txn_accumulator().flush()?;
+            if chain.get_txn_accumulator().root_hash() == verify_hash {
+                println!(
+                    "snapshot_{} hash match",
+                    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+                );
+            } else {
+                println!(
+                    "snapshot_{} hash not match",
+                    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+                );
+                std::process::exit(1);
+            }
+        } else {
+            let mut account_states = vec![];
+            for line in reader.lines() {
+                let line = line?;
+                let strs: Vec<&str> = line.split(' ').collect();
+                let account_address: AccountAddress = serde_json::from_str(strs[0])?;
+                let account_state_set: AccountStateSet = serde_json::from_str(strs[1])?;
+                account_states.push((account_address, account_state_set));
+            }
+            let chain_state_set = ChainStateSet::new(account_states);
+            chain.chain_state().apply(chain_state_set)?;
+            if chain.chain_state_reader().state_root() == verify_hash {
+                println!("snapshot_state hash match");
+            } else {
+                println!("snapshot_state hash match");
+                std::process::exit(1);
+            }
+        }
+    }
+
+    // save startup_info
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    // save import snapshot height
+    let snapshot_height = SnapshotHeight::new(block_height);
+    storage.save_snapshot_height(snapshot_height)?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("apply snapshot use time: {:?}", use_time.as_secs());
     Ok(())
 }

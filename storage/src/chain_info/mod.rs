@@ -5,7 +5,7 @@ use crate::storage::{ColumnFamily, InnerStorage, KVStore};
 use crate::{StorageVersion, CHAIN_INFO_PREFIX_NAME};
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_types::startup_info::StartupInfo;
+use starcoin_types::startup_info::{SnapshotHeight, StartupInfo};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -26,6 +26,7 @@ impl ChainInfoStorage {
     const STARTUP_INFO_KEY: &'static str = "startup_info";
     const GENESIS_KEY: &'static str = "genesis";
     const STORAGE_VERSION_KEY: &'static str = "storage_version";
+    const SNAPSHOT_HEIGHT_KEY: &'static str = "snapshot_height";
 
     pub fn get_startup_info(&self) -> Result<Option<StartupInfo>> {
         self.get(Self::STARTUP_INFO_KEY.as_bytes())
@@ -77,6 +78,21 @@ impl ChainInfoStorage {
         self.put_sync(
             Self::STORAGE_VERSION_KEY.as_bytes().to_vec(),
             vec![version as u8],
+        )
+    }
+
+    pub fn get_snapshot_height(&self) -> Result<SnapshotHeight> {
+        self.get(Self::SNAPSHOT_HEIGHT_KEY.as_bytes())
+            .and_then(|bytes| match bytes {
+                Some(bytes) => Ok(bytes.try_into()?),
+                None => Ok(SnapshotHeight::new(0)),
+            })
+    }
+
+    pub fn save_snapshot_height(&self, snapshot_height: SnapshotHeight) -> Result<()> {
+        self.put_sync(
+            Self::SNAPSHOT_HEIGHT_KEY.as_bytes().to_vec(),
+            snapshot_height.try_into()?,
         )
     }
 }

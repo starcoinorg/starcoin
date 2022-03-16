@@ -21,7 +21,7 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotHeight};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -210,6 +210,9 @@ pub trait BlockStore {
         &self,
         block_id: HashValue,
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>>;
+
+    fn get_snapshot_height(&self) -> Result<SnapshotHeight>;
+    fn save_snapshot_height(&self, startup_info: SnapshotHeight) -> Result<()>;
 }
 
 pub trait BlockTransactionInfoStore {
@@ -433,6 +436,15 @@ impl BlockStore for Storage {
         block_id: HashValue,
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
         self.block_storage.get_failed_block_by_id(block_id)
+    }
+
+    // XXX FIXME
+    fn get_snapshot_height(&self) -> Result<SnapshotHeight> {
+        self.chain_info_storage.get_snapshot_height()
+    }
+
+    fn save_snapshot_height(&self, snapshot_height: SnapshotHeight) -> Result<()> {
+        self.chain_info_storage.save_snapshot_height(snapshot_height)
     }
 }
 
