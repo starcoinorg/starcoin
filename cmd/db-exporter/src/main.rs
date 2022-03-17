@@ -1250,17 +1250,16 @@ pub fn apply_snapshot(
                 {
                     let line = line?;
                     chain
-                        .get_txn_accumulator()
-                        .append(&[HashValue::from_hex_literal(line.as_str())?])?;
+                        .append_txn_leaves(&[HashValue::from_hex_literal(line.as_str())?])?;
 
                     if index % 10 == 0 {
-                        chain.get_block_accumulator().flush()?;
+                        chain.txn_leaves_flush()?;
                         index = 0;
                     }
                     index += 1;
                 }
             }
-            chain.get_txn_accumulator().flush()?;
+            chain.txn_leaves_flush()?;
             if chain.get_txn_accumulator().root_hash() == verify_hash {
                 println!(
                     "snapshot_{} hash match",
