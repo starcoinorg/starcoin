@@ -1217,11 +1217,17 @@ pub fn apply_snapshot(
             }
         } else if file_name.contains(BLOCK_ACCUMULATOR_NODE_PREFIX_NAME) {
             // XXX FIXME use batch append
+            let mut index = 1;
             for line in reader.lines() {
                 let line = line?;
                 chain
                     .get_block_accumulator()
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
+                if index % 1000 == 0 {
+                    chain.get_block_accumulator().flush()?;
+                    index = 0;
+                }
+                index += 1;
             }
             chain.get_block_accumulator().flush()?;
             if chain.get_block_accumulator().root_hash() == verify_hash {
@@ -1236,12 +1242,19 @@ pub fn apply_snapshot(
                 std::process::exit(1);
             }
         } else if file_name.contains(TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME) {
+            let mut index = 1;
             // XXX FIXME use batch append
             for line in reader.lines() {
                 let line = line?;
                 chain
                     .get_txn_accumulator()
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
+
+                if index % 1000 == 0 {
+                    chain.get_block_accumulator().flush()?;
+                    index = 0;
+                }
+                index += 1;
             }
             chain.get_txn_accumulator().flush()?;
             if chain.get_txn_accumulator().root_hash() == verify_hash {

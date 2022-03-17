@@ -212,7 +212,7 @@ pub trait BlockStore {
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>>;
 
     fn get_snapshot_height(&self) -> Result<SnapshotHeight>;
-    fn save_snapshot_height(&self, startup_info: SnapshotHeight) -> Result<()>;
+    fn save_snapshot_height(&self, snapshot_height: SnapshotHeight) -> Result<()>;
 }
 
 pub trait BlockTransactionInfoStore {
