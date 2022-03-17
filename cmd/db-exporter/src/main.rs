@@ -6,7 +6,7 @@ use bcs_ext::Sample;
 use csv::Writer;
 use indicatif::{ProgressBar, ProgressStyle};
 use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::Accumulator;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
@@ -958,7 +958,6 @@ pub fn execute_transaction_with_fixed_account(
 /// block block.header.hash
 /// block_info block.header.hash
 /// txn_accumulator accumulator_root_hash
-/// txn_info txn.hash
 /// state   state_root_hash
 pub fn export_snapshot(
     from_dir: PathBuf,
@@ -1218,22 +1217,28 @@ pub fn apply_snapshot(
             }
         } else if file_name.contains(BLOCK_ACCUMULATOR_NODE_PREFIX_NAME) {
             // XXX FIXME use batch append
-       //     let mut index = 1;
+            let block_accumulator = MerkleAccumulator::new_with_info(
+                chain.status().info.block_accumulator_info,
+                Arc::new(storage.get_block_accumulator_storage()),
+            );
+            let mut index = 1;
+            let mut leaves = vec![];
             for line in reader.lines() {
                 let line = line?;
-                chain
-                    .get_block_accumulator()
-                    .append(&[HashValue::from_hex_literal(line.as_str())?])?;
-                chain.get_block_accumulator().flush()?;
-                /*
-                if index % 10 == 0 {
-                    chain.get_block_accumulator().flush()?;
+                leaves.push(HashValue::from_hex_literal(line.as_str())?);
+                if index % BATCH_SIZE == 0 {
+                    block_accumulator.append(&leaves)?;
+                    block_accumulator.flush()?;
+                    leaves.clear();
                     index = 0;
                 }
-                index += 1; */
+                index += 1;
             }
-            chain.get_block_accumulator().flush()?;
-            if chain.get_block_accumulator().root_hash() == verify_hash {
+            if leaves.len() > 0 {
+                block_accumulator.append(&leaves)?;
+                block_accumulator.flush()?;
+            }
+            if block_accumulator.root_hash() == verify_hash {
                 println!("snapshot_{} hash match", BLOCK_ACCUMULATOR_NODE_PREFIX_NAME);
             } else {
                 println!(
@@ -1245,23 +1250,28 @@ pub fn apply_snapshot(
                 std::process::exit(1);
             }
         } else if file_name.contains(TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME) {
+            let txn_accumulator = MerkleAccumulator::new_with_info(
+                chain.status().info.txn_accumulator_info,
+                Arc::new(storage.get_transaction_accumulator_storage()),
+            );
             let mut index = 1;
-            // XXX FIXME use batch append
+            let mut leaves = vec![];
             for line in reader.lines() {
-                {
-                    let line = line?;
-                    chain
-                        .append_txn_leaves(&[HashValue::from_hex_literal(line.as_str())?])?;
-
-                    if index % 10 == 0 {
-                        chain.txn_leaves_flush()?;
-                        index = 0;
-                    }
-                    index += 1;
+                let line = line?;
+                leaves.push(HashValue::from_hex_literal(line.as_str())?);
+                if index % BATCH_SIZE == 0 {
+                    txn_accumulator.append(&leaves)?;
+                    txn_accumulator.flush()?;
+                    leaves.clear();
+                    index = 0;
                 }
+                index += 1;
             }
-            chain.txn_leaves_flush()?;
-            if chain.get_txn_accumulator().root_hash() == verify_hash {
+            if leaves.len() > 0 {
+                txn_accumulator.append(&leaves)?;
+                txn_accumulator.flush()?;
+            }
+            if txn_accumulator.root_hash() == verify_hash {
                 println!(
                     "snapshot_{} hash match",
                     TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
