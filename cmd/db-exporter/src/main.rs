@@ -1223,7 +1223,7 @@ pub fn apply_snapshot(
                 chain
                     .get_block_accumulator()
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
-                if index % 1000 == 0 {
+                if index % 10 == 0 {
                     chain.get_block_accumulator().flush()?;
                     index = 0;
                 }
@@ -1250,7 +1250,7 @@ pub fn apply_snapshot(
                     .get_txn_accumulator()
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
 
-                if index % 1000 == 0 {
+                if index % 10 == 0 {
                     chain.get_block_accumulator().flush()?;
                     index = 0;
                 }
