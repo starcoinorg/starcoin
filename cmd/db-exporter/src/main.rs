@@ -1223,6 +1223,7 @@ pub fn apply_snapshot(
                 chain
                     .get_block_accumulator()
                     .append(&[HashValue::from_hex_literal(line.as_str())?])?;
+                chain.get_block_accumulator().flush()?;
                 /*
                 if index % 10 == 0 {
                     chain.get_block_accumulator().flush()?;
