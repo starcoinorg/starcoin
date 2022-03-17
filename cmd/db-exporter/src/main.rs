@@ -52,6 +52,7 @@ use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
 const SNAP_GAP: u64 = 128;
+const BATCH_SIZE: u64 = 1000;
 
 pub fn export<W: std::io::Write>(
     db: &str,
@@ -1021,14 +1022,14 @@ pub fn export_snapshot(
     let nums = block_accumulator_info.get_num_leaves() - 1;
     let mut start_index = 0;
     let mut index = 1;
-    let bar = ProgressBar::new(nums / 1000);
+    let bar = ProgressBar::new(nums / BATCH_SIZE);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
     while start_index < nums {
-        let max_size = if start_index + 1000 <= nums {
-            1000
+        let max_size = if start_index + BATCH_SIZE <= nums {
+            BATCH_SIZE
         } else {
             nums - start_index
         };
@@ -1077,15 +1078,15 @@ pub fn export_snapshot(
 
     let mut start_index = 0;
     let mut index = 1;
-    let bar = ProgressBar::new(nums / 1000);
+    let bar = ProgressBar::new(nums / BATCH_SIZE);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
 
     while start_index < nums {
-        let max_size = if start_index + 1000 <= nums {
-            1000
+        let max_size = if start_index + BATCH_SIZE <= nums {
+            BATCH_SIZE
         } else {
             nums - start_index
         };
@@ -1117,7 +1118,7 @@ pub fn export_snapshot(
     mainfest_list.push((output.join(name_state.clone()), state_root));
     let mut file_state = File::create(output.join(name_state))?;
     let global_states = statedb.dump()?;
-    let bar = ProgressBar::new(global_states.len() as u64 / 1000);
+    let bar = ProgressBar::new(global_states.len() as u64 / BATCH_SIZE);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
@@ -1130,7 +1131,7 @@ pub fn export_snapshot(
             serde_json::to_string(&account_state_set)?
         )?;
 
-        if index % 1000 == 0 {
+        if index % BATCH_SIZE == 0 {
             bar.set_message(format!("write state {}", index).as_str());
             bar.inc(1);
         }
