@@ -444,7 +444,8 @@ impl BlockStore for Storage {
     }
 
     fn save_snapshot_height(&self, snapshot_height: SnapshotHeight) -> Result<()> {
-        self.chain_info_storage.save_snapshot_height(snapshot_height)
+        self.chain_info_storage
+            .save_snapshot_height(snapshot_height)
     }
 }
 
