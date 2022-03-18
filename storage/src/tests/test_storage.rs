@@ -374,13 +374,13 @@ pub fn test_snapshot_range() -> Result<()> {
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
-    let storage = Storage::new(instance.clone())?;
+    let storage = Storage::new(instance)?;
     let snapshot_range = storage.get_snapshot_range()?;
     assert!(snapshot_range.is_none(), "export snapshot_range is none");
     let snapshot_range = SnapshotRange::new(1, 1000);
     storage.save_snapshot_range(snapshot_range)?;
     let snapshot_range = storage.get_snapshot_range()?;
-    assert_eq!(snapshot_range.is_some(), true);
+    assert!(snapshot_range.is_some(), "expect snapshot_range is some");
     let snapshot_range = snapshot_range.unwrap();
     assert_eq!(snapshot_range.get_start(), 1);
     assert_eq!(snapshot_range.get_end(), 1000);

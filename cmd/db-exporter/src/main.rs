@@ -1148,7 +1148,7 @@ pub fn export_snapshot(
 
     // save manifest
     let name_manifest = "manifest.csv".to_string();
-    let mut file_manifest = File::create(output.clone().join(name_manifest))?;
+    let mut file_manifest = File::create(output.join(name_manifest))?;
     for (path, num, hash) in mainfest_list {
         writeln!(file_manifest, "{} {} {}", path, num, hash)?;
     }
@@ -1203,12 +1203,13 @@ fn import_column(
         }
         if index % BATCH_SIZE == 0 {
             bar.set_message(format!("import {} {}", column, index / BATCH_SIZE).as_str());
+            bar.inc(1);
         }
         index += 1;
     }
     match column.as_str() {
         BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
-            if leaves.len() > 0 {
+            if !leaves.is_empty() {
                 accumulator.append(&leaves)?;
                 accumulator.flush()?;
             }
@@ -1292,8 +1293,8 @@ pub fn apply_snapshot(
         file_list.push((column, nums, verify_hash));
     }
     let mbar = MultiProgress::new();
-    for i in 0..file_list.len() - 1 {
-        let (column, nums, verify_hash) = file_list[i].clone();
+    for item in file_list.iter().take(file_list.len() - 1) {
+        let (column, nums, verify_hash) = item.clone();
         let storage2 = storage.clone();
         let accumulator = match column.as_str() {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
