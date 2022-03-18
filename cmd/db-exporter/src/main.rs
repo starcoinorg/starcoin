@@ -4,8 +4,9 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
@@ -17,14 +18,13 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
-use std::collections::HashMap;
-//use starcoin_state_tree::{StateNodeStore, StateTree};
-use serde_json::from_str;
-use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_statedb::ChainStateDB;
+use starcoin_statedb::ChainStateReader;
 use starcoin_storage::block::FailedBlock;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::{ColumnFamily, ValueCodec};
+use starcoin_storage::storage::ValueCodec;
 use starcoin_storage::storage::{ColumnFamilyName, InnerStore, StorageInstance};
 use starcoin_storage::{
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
@@ -35,7 +35,8 @@ use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::startup_info::{SnapshotHeight, StartupInfo};
+use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::fmt::{Debug, Formatter};
@@ -45,14 +46,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
-use std::thread::Thread;
 use std::time::SystemTime;
 use structopt::StructOpt;
-//use forkable_jellyfish_merkle::node_type::LeafNode;
-use starcoin_statedb::ChainStateDB;
-use starcoin_statedb::ChainStateReader;
-use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
@@ -964,11 +959,11 @@ fn export_column(
     output: PathBuf,
     column: ColumnFamilyName,
     nums: u64,
+    bar: ProgressBar,
 ) -> Result<()> {
     let mut file = File::create(output.join(column))?;
     let mut index = 1;
     let mut start_index = 0;
-    let bar = ProgressBar::new(nums / BATCH_SIZE);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
@@ -987,7 +982,6 @@ fn export_column(
                     writeln!(file, "{}", hash)?;
                 }
             }
-
             BLOCK_PREFIX_NAME => {
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + 1, false, max_size)?;
@@ -1086,23 +1080,19 @@ pub fn export_snapshot(
         txn_accumulator_info.get_num_leaves() - 1,
         txn_accumulator_info.accumulator_root,
     ));
-
-    let block_accumulator = MerkleAccumulator::new_with_info(
-        block_accumulator_info.clone(),
-        storage.get_accumulator_store(AccumulatorStoreType::Block),
-    );
-    let txn_accumulator = MerkleAccumulator::new_with_info(
-        txn_accumulator_info.clone(),
-        storage.get_accumulator_store(AccumulatorStoreType::Transaction),
-    );
+    let mbar = MultiProgress::new();
     for (column, nums, _hash) in mainfest_list.clone() {
         let accumulator = match column {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
-                block_accumulator.fork(None)
+                MerkleAccumulator::new_with_info(
+                    block_accumulator_info.clone(),
+                    storage.get_accumulator_store(AccumulatorStoreType::Block),
+                )
             }
-            TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
-                txn_accumulator.fork(None)
-            }
+            TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => MerkleAccumulator::new_with_info(
+                txn_accumulator_info.clone(),
+                storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+            ),
             _ => {
                 println!("{} not process", column);
                 std::process::exit(1);
@@ -1110,54 +1100,58 @@ pub fn export_snapshot(
         };
         let storage2 = storage.clone();
         let output2 = output.clone();
-        let handle = thread::spawn(move || {
-            export_column(storage2, accumulator, output2, column, nums)
-        });
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let handle =
+            thread::spawn(move || export_column(storage2, accumulator, output2, column, nums, bar));
         handles.push(handle);
     }
 
     // get state
-    let mut index = 1;
-   // let nums = Mutex(0);
     let state_root = block.header.state_root();
     let statedb = ChainStateDB::new(storage, Some(state_root));
     let output2 = output.clone();
+
+
+    let global_states = statedb.dump()?;
+    let nums = global_states.len() as BlockNumber;
+    let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
     let state_handler = thread::spawn(move || {
-        let mut file_state = File::create(output2.join(STATE_NODE_PREFIX_NAME))?;
-        let global_states = statedb.dump()?;
-        let bar = ProgressBar::new(global_states.len() as u64 / BATCH_SIZE);
+        let mut index = 1;
+        let mut file = File::create(output2.join(STATE_NODE_PREFIX_NAME))?;
         bar.set_style(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
         );
         for (account_address, account_state_set) in global_states.into_inner() {
             writeln!(
-                file_state,
+                file,
                 "{} {}",
                 serde_json::to_string(&account_address)?,
                 serde_json::to_string(&account_state_set)?
             )?;
 
             if index % BATCH_SIZE == 0 {
-                bar.set_message(format!("write state {}", index).as_str());
+                bar.set_message(format!("write state {}", index / BATCH_SIZE).as_str());
                 bar.inc(1);
             }
             index += 1;
         }
-        file_state.flush()?;
+        file.flush()?;
         bar.finish();
         Ok(())
     });
     handles.push(state_handler);
 
-    for thr in handles {
-        thr.join().unwrap().unwrap();
-    }
-
-    mainfest_list.push((STATE_NODE_PREFIX_NAME, 10000, state_root));
+    /*
+    https://github.com/console-rs/indicatif/blob/0.15.0/examples/multi.rs
+    for handle in handles {
+        handle.join().unwrap().unwrap();
+    } */
+    mbar.join_and_clear()?;
+    mainfest_list.push((STATE_NODE_PREFIX_NAME, nums, state_root));
 
     // save manifest
-    let name_manifest = "manifest_snapshot.csv".to_string();
+    let name_manifest = "manifest.csv".to_string();
     let mut file_manifest = File::create(output.clone().join(name_manifest))?;
     for (path, num, hash) in mainfest_list {
         writeln!(file_manifest, "{} {} {}", path, num, hash)?;
@@ -1169,34 +1163,31 @@ pub fn export_snapshot(
     Ok(())
 }
 
-/*
 fn import_column(
     storage: Arc<Storage>,
-    accumulator: Option<MerkleAccumulator>,
+    accumulator: MerkleAccumulator,
     input_path: PathBuf,
-    column: ColumnFamilyName,
-    nums: u64,
+    column: String,
     verify_hash: HashValue,
+    bar: ProgressBar,
 ) -> Result<()> {
-    let reader = BufReader::new(File::open(input_path.join(column))?);
+    let reader = BufReader::new(File::open(input_path.join(column.clone()))?);
     let mut index = 1;
     let mut leaves = vec![];
     let mut block_hash = HashValue::zero();
-    let bar = ProgressBar::new(nums / BATCH_SIZE);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
     for line in reader.lines() {
         let line = line?;
-        match column {
+        match column.as_str() {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
                 leaves.push(HashValue::from_hex_literal(line.as_str())?);
                 if index % BATCH_SIZE == 0 {
-                    accumulator.unwrap().append(&leaves)?;
-                    accumulator.unwrap().flush()?;
+                    accumulator.append(&leaves)?;
+                    accumulator.flush()?;
                     leaves.clear();
-                    index = 0;
                 }
             }
             BLOCK_PREFIX_NAME => {
@@ -1215,23 +1206,23 @@ fn import_column(
             }
         }
         if index % BATCH_SIZE == 0 {
-            bar.set_message(format!("save {} {}", column, index).as_str());
+            bar.set_message(format!("save {} {}", column, index / BATCH_SIZE).as_str());
         }
         index += 1;
     }
-    match column {
+    match column.as_str() {
         BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
             if leaves.len() > 0 {
-                accumulator.unwrap().append(&leaves)?;
-                accumulator.unwrap().flush()?;
+                accumulator.append(&leaves)?;
+                accumulator.flush()?;
             }
-            if accumulator.unwrap().root_hash() == verify_hash {
+            if accumulator.root_hash() == verify_hash {
                 println!("{} hash match", column);
             } else {
                 println!(
                     "{} hash not match root_hash {} verify_hash {}",
                     column,
-                    accumulator.unwrap().root_hash(),
+                    accumulator.root_hash(),
                     verify_hash
                 );
                 std::process::exit(1);
@@ -1253,17 +1244,15 @@ fn import_column(
             std::process::exit(1);
         }
     }
+    bar.finish();
     Ok(())
 }
-
- */
 
 pub fn apply_snapshot(
     to_dir: PathBuf,
     input_path: PathBuf,
     network: BuiltinNetworkID,
 ) -> anyhow::Result<()> {
-    /*
     let start_time = SystemTime::now();
     let net = ChainNetwork::new_builtin(network);
     let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
@@ -1284,10 +1273,12 @@ pub fn apply_snapshot(
         println!("apply snapshot cur_num {} expect 0", cur_num);
         std::process::exit(2);
     }
+
     let mut block_hash = HashValue::zero();
-    let mut block_height = 0;
+    let block_height = 1;
     let mut handles = vec![];
-    let reader = BufReader::new(File::open(manifest_file)?);
+    let reader = BufReader::new(File::open(input_path.join("manifest.csv"))?);
+    let mut file_list = vec![];
     for record in reader.lines() {
         let record = record?;
         let str_list: Vec<&str> = record.split(' ').collect();
@@ -1295,44 +1286,106 @@ pub fn apply_snapshot(
             println!("manifest.csv {} error", record);
             std::process::exit(1);
         }
-        let column = str_list[0];
-        let nums = from_str(str_list[1])?;
+        let column = str_list[0].to_string();
+        let nums = str_list[1].parse::<BlockNumber>()?;
         let verify_hash = HashValue::from_hex_literal(str_list[2])?;
-        let mut accumulator = None;
-        if column == BLOCK_ACCUMULATOR_NODE_PREFIX_NAME {
-            accumulator = Some(MerkleAccumulator::new_with_info(
-                chain.status().info.block_accumulator_info,
-                Arc::new(storage.get_block_accumulator_storage()),
-            ));
-        } else if column == TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME {
-            accumulator = Some(MerkleAccumulator::new_with_info(
-                chain.status().info.txn_accumulator_info,
-                Arc::new(storage.get_transaction_accumulator_storage()),
-            ));
+        if str_list[0] == BLOCK_PREFIX_NAME {
+            block_hash = verify_hash;
         }
+        file_list.push((column, nums, verify_hash));
+    }
+    let mbar = MultiProgress::new();
+    for i in 0..file_list.len() - 1 {
+        let (column, nums, verify_hash) = file_list[i].clone();
+        let storage2 = storage.clone();
+        let accumulator = match column.as_str() {
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
+                MerkleAccumulator::new_with_info(
+                    chain.status().info.block_accumulator_info,
+                    storage.get_accumulator_store(AccumulatorStoreType::Block),
+                )
+            }
+            TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => MerkleAccumulator::new_with_info(
+                chain.status().info.txn_accumulator_info,
+                storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+            ),
+            _ => {
+                println!("{} not process", column);
+                std::process::exit(1);
+            }
+        };
+        let input_path2 = input_path.clone();
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
         let handle = thread::spawn(move || {
             import_column(
-                storage.clone(),
+                storage2,
                 accumulator,
-                input_path.clone(),
+                input_path2,
                 column,
-                nums,
                 verify_hash,
+                bar,
             )
         });
         handles.push(handle);
     }
-    for handle in handles {
-        handle.join();
+    // STATE_NODE_PREFIX_NAME
+    if let Some((column, nums, verify_hash)) = file_list.last().cloned() {
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let handle = thread::spawn(move || {
+            let reader = BufReader::new(File::open(input_path.join(column))?);
+            bar.set_style(
+                ProgressStyle::default_bar()
+                    .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+            );
+            let mut index = 1;
+            let mut account_states = vec![];
+            for line in reader.lines() {
+                let line = line?;
+                let strs: Vec<&str> = line.split(' ').collect();
+                let account_address: AccountAddress = serde_json::from_str(strs[0])?;
+                let account_state_set: AccountStateSet = serde_json::from_str(strs[1])?;
+                account_states.push((account_address, account_state_set));
+                index += 1;
+                if index % BATCH_SIZE == 0 {
+                    bar.set_message(
+                        format!(
+                            "save {} index {}",
+                            STATE_NODE_PREFIX_NAME,
+                            index / BATCH_SIZE
+                        )
+                        .as_str(),
+                    );
+                    bar.inc(1);
+                }
+            }
+            bar.finish();
+            let chain_state_set = ChainStateSet::new(account_states);
+            chain.chain_state().apply(chain_state_set)?;
+            if chain.chain_state_reader().state_root() == verify_hash {
+                println!("snapshot_state hash match");
+            } else {
+                println!("snapshot_state hash match");
+                std::process::exit(1);
+            }
+            Ok(())
+        });
+        handles.push(handle);
     }
+    /*
+    https://github.com/console-rs/indicatif/blob/0.15.0/examples/multi.rs
+    for handle in handles {
+        handle.join().unwrap().unwrap();
+    } */
+    mbar.join_and_clear()?;
 
     // save startup_info
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
-    // save import snapshot height
-    let snapshot_height = SnapshotHeight::new(block_height);
-    storage.save_snapshot_height(snapshot_height)?;
+    // save import snapshot range
+    // XXX FIXME
+    let snapshot_height = SnapshotRange::new(block_height);
+    storage.save_snapshot_range(snapshot_height)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
-    println!("apply snapshot use time: {:?}", use_time.as_secs()); */
+    println!("apply snapshot use time: {:?}", use_time.as_secs());
     Ok(())
 }

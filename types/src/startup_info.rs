@@ -187,12 +187,12 @@ impl TryInto<Vec<u8>> for StartupInfo {
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
-pub struct SnapshotHeight {
+pub struct SnapshotRange {
     /// snapshot height block number
     height: BlockNumber,
 }
 
-impl fmt::Display for SnapshotHeight {
+impl fmt::Display for SnapshotRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SnapshotHeight {{")?;
         write!(f, "height: {},", self.height)?;
@@ -201,7 +201,7 @@ impl fmt::Display for SnapshotHeight {
     }
 }
 
-impl SnapshotHeight {
+impl SnapshotRange {
     pub fn new(height: BlockNumber) -> Self {
         Self { height }
     }
@@ -215,15 +215,15 @@ impl SnapshotHeight {
     }
 }
 
-impl TryFrom<Vec<u8>> for SnapshotHeight {
+impl TryFrom<Vec<u8>> for SnapshotRange {
     type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self> {
-        SnapshotHeight::decode(value.as_slice())
+        SnapshotRange::decode(value.as_slice())
     }
 }
 
-impl TryInto<Vec<u8>> for SnapshotHeight {
+impl TryInto<Vec<u8>> for SnapshotRange {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Vec<u8>> {
