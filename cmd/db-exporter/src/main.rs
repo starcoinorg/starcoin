@@ -1111,7 +1111,6 @@ pub fn export_snapshot(
     let statedb = ChainStateDB::new(storage, Some(state_root));
     let output2 = output.clone();
 
-
     let global_states = statedb.dump()?;
     let nums = global_states.len() as BlockNumber;
     let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
@@ -1141,13 +1140,13 @@ pub fn export_snapshot(
         Ok(())
     });
     handles.push(state_handler);
-
+    mbar.join_and_clear()?;
     /*
     https://github.com/console-rs/indicatif/blob/0.15.0/examples/multi.rs
+       */
     for handle in handles {
         handle.join().unwrap().unwrap();
-    } */
-    mbar.join_and_clear()?;
+    }
     mainfest_list.push((STATE_NODE_PREFIX_NAME, nums, state_root));
 
     // save manifest
@@ -1317,14 +1316,7 @@ pub fn apply_snapshot(
         let input_path2 = input_path.clone();
         let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
         let handle = thread::spawn(move || {
-            import_column(
-                storage2,
-                accumulator,
-                input_path2,
-                column,
-                verify_hash,
-                bar,
-            )
+            import_column(storage2, accumulator, input_path2, column, verify_hash, bar)
         });
         handles.push(handle);
     }
