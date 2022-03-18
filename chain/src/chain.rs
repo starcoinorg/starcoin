@@ -516,22 +516,6 @@ impl BlockChain {
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
     }
-
-    pub fn append_txn_leaves(&self, leaves: &[HashValue]) -> Result<HashValue> {
-        self.txn_accumulator.append(leaves)
-    }
-
-    pub fn txn_leaves_flush(&self) -> Result<()> {
-        self.txn_accumulator.flush()
-    }
-
-    pub fn append_block_leaves(&self, leaves: &[HashValue]) -> Result<HashValue> {
-        self.block_accumulator.append(leaves)
-    }
-
-    pub fn block_leaves_flush(&self) -> Result<()> {
-        self.block_accumulator.flush()
-    }
 }
 
 impl ChainReader for BlockChain {
