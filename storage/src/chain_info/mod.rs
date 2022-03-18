@@ -81,11 +81,11 @@ impl ChainInfoStorage {
         )
     }
 
-    pub fn get_snapshot_range(&self) -> Result<SnapshotRange> {
+    pub fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>> {
         self.get(Self::SNAPSHOT_RANGE_KEY.as_bytes())
             .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(bytes.try_into()?),
-                None => Ok(SnapshotRange::new(0)),
+                Some(bytes) => Ok(Some(bytes.try_into()?)),
+                None => Ok(None),
             })
     }
 

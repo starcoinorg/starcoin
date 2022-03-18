@@ -1008,7 +1008,7 @@ fn export_column(
             }
         };
         start_index += max_size;
-        bar.set_message(format!("save {} {}", column, index).as_str());
+        bar.set_message(format!("export {} {}", column, index).as_str());
         bar.inc(1);
         index += 1;
     }
@@ -1130,7 +1130,7 @@ pub fn export_snapshot(
             )?;
 
             if index % BATCH_SIZE == 0 {
-                bar.set_message(format!("write state {}", index / BATCH_SIZE).as_str());
+                bar.set_message(format!("export state {}", index / BATCH_SIZE).as_str());
                 bar.inc(1);
             }
             index += 1;
@@ -1141,9 +1141,6 @@ pub fn export_snapshot(
     });
     handles.push(state_handler);
     mbar.join_and_clear()?;
-    /*
-    https://github.com/console-rs/indicatif/blob/0.15.0/examples/multi.rs
-       */
     for handle in handles {
         handle.join().unwrap().unwrap();
     }
@@ -1205,7 +1202,7 @@ fn import_column(
             }
         }
         if index % BATCH_SIZE == 0 {
-            bar.set_message(format!("save {} {}", column, index / BATCH_SIZE).as_str());
+            bar.set_message(format!("import {} {}", column, index / BATCH_SIZE).as_str());
         }
         index += 1;
     }
@@ -1274,7 +1271,7 @@ pub fn apply_snapshot(
     }
 
     let mut block_hash = HashValue::zero();
-    let block_height = 1;
+    let mut block_num = 1;
     let mut handles = vec![];
     let reader = BufReader::new(File::open(input_path.join("manifest.csv"))?);
     let mut file_list = vec![];
@@ -1290,6 +1287,7 @@ pub fn apply_snapshot(
         let verify_hash = HashValue::from_hex_literal(str_list[2])?;
         if str_list[0] == BLOCK_PREFIX_NAME {
             block_hash = verify_hash;
+            block_num = nums;
         }
         file_list.push((column, nums, verify_hash));
     }
@@ -1341,7 +1339,7 @@ pub fn apply_snapshot(
                 if index % BATCH_SIZE == 0 {
                     bar.set_message(
                         format!(
-                            "save {} index {}",
+                            "import {} index {}",
                             STATE_NODE_PREFIX_NAME,
                             index / BATCH_SIZE
                         )
@@ -1363,20 +1361,17 @@ pub fn apply_snapshot(
         });
         handles.push(handle);
     }
-    /*
-    https://github.com/console-rs/indicatif/blob/0.15.0/examples/multi.rs
+    mbar.join_and_clear()?;
     for handle in handles {
         handle.join().unwrap().unwrap();
-    } */
-    mbar.join_and_clear()?;
+    }
 
     // save startup_info
     let startup_info = StartupInfo::new(block_hash);
     storage.save_startup_info(startup_info)?;
     // save import snapshot range
-    // XXX FIXME
-    let snapshot_height = SnapshotRange::new(block_height);
-    storage.save_snapshot_range(snapshot_height)?;
+    let snapshot_range = SnapshotRange::new(1, block_num);
+    storage.save_snapshot_range(snapshot_range)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply snapshot use time: {:?}", use_time.as_secs());
     Ok(())

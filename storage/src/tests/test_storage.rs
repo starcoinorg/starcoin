@@ -17,6 +17,7 @@ use crypto::HashValue;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
+use starcoin_types::startup_info::SnapshotRange;
 use starcoin_types::transaction::{
     RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo,
 };
@@ -363,5 +364,25 @@ pub fn test_db_upgrade() -> Result<()> {
             "expect RichTransactionInfo is some"
         );
     }
+    Ok(())
+}
+
+#[test]
+pub fn test_snapshot_range() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
+    );
+    let storage = Storage::new(instance.clone())?;
+    let snapshot_range = storage.get_snapshot_range()?;
+    assert!(snapshot_range.is_none(), "export snapshot_range is none");
+    let snapshot_range = SnapshotRange::new(1, 1000);
+    storage.save_snapshot_range(snapshot_range)?;
+    let snapshot_range = storage.get_snapshot_range()?;
+    assert_eq!(snapshot_range.is_some(), true);
+    let snapshot_range = snapshot_range.unwrap();
+    assert_eq!(snapshot_range.get_start(), 1);
+    assert_eq!(snapshot_range.get_end(), 1000);
     Ok(())
 }

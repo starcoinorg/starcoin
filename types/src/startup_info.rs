@@ -188,30 +188,34 @@ impl TryInto<Vec<u8>> for StartupInfo {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct SnapshotRange {
-    /// snapshot height block number
-    height: BlockNumber,
+    /// snapshot [start, end] block number
+    start: BlockNumber,
+    end: BlockNumber,
 }
 
 impl fmt::Display for SnapshotRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SnapshotHeight {{")?;
-        write!(f, "height: {},", self.height)?;
-        write!(f, "}}")?;
+        write!(f, "SnapshotHeight [{}, {}],", self.start, self.end)?;
         Ok(())
     }
 }
 
 impl SnapshotRange {
-    pub fn new(height: BlockNumber) -> Self {
-        Self { height }
+    pub fn new(start: BlockNumber, end: BlockNumber) -> Self {
+        Self { start, end }
     }
 
-    pub fn update_height(&mut self, new_height: BlockNumber) {
-        self.height = new_height;
+    pub fn update_range(&mut self, start: BlockNumber, end: BlockNumber) {
+        self.start = start;
+        self.end = end;
     }
 
-    pub fn get_height(&self) -> BlockNumber {
-        self.height
+    pub fn get_start(&self) -> BlockNumber {
+        self.start
+    }
+
+    pub fn get_end(&self) -> BlockNumber {
+        self.end
     }
 }
 

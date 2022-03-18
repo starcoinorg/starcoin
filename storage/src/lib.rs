@@ -211,7 +211,7 @@ pub trait BlockStore {
         block_id: HashValue,
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>>;
 
-    fn get_snapshot_range(&self) -> Result<SnapshotRange>;
+    fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
 }
 
@@ -438,13 +438,12 @@ impl BlockStore for Storage {
         self.block_storage.get_failed_block_by_id(block_id)
     }
 
-    fn get_snapshot_range(&self) -> Result<SnapshotRange> {
+    fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>> {
         self.chain_info_storage.get_snapshot_range()
     }
 
     fn save_snapshot_range(&self, snapshot_range: SnapshotRange) -> Result<()> {
-        self.chain_info_storage
-            .save_snapshot_range(snapshot_range)
+        self.chain_info_storage.save_snapshot_range(snapshot_range)
     }
 }
 
