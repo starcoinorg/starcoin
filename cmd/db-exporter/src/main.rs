@@ -337,7 +337,7 @@ pub struct ExportSnapshotOptions {
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
     #[structopt(long, short = "o", parse(from_os_str))]
-    /// output dir, like ~/, output filename like ~/manifest_snapshot.csv
+    /// output dir, like ~/, manifest.csv will write in output dir
     pub output: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
@@ -357,8 +357,8 @@ pub struct ApplySnapshotOptions {
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
-    /// manifest file, like manifest-snapshot.csv
-    pub manifest_file: PathBuf,
+    /// input_path, manifest.csv in this dir
+    pub input_path: PathBuf,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -483,7 +483,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ApplySnapshot(option) = cmd {
-        let result = apply_snapshot(option.to_path, option.manifest_file, option.net);
+        let result = apply_snapshot(option.to_path, option.input_path, option.net);
         return result;
     }
     Ok(())
