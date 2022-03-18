@@ -9847,7 +9847,6 @@ dependencies = [
  "tempfile",
  "test-helper",
  "tokio 0.2.25",
- "yamux",
  "zeroize",
 ]
 
