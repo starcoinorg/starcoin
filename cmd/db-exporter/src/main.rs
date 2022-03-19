@@ -1017,7 +1017,7 @@ fn export_column(
     Ok(())
 }
 
-/// manifest_file layout
+/// manifest.csv layout
 /// block_accumulator num accumulator_root_hash
 /// block num block.header.hash
 /// block_info num block.header.hash
@@ -1054,9 +1054,17 @@ pub fn export_snapshot(
     .expect("create block chain should success.");
     let num = chain.status().head().number();
     let cur_num = if num <= SNAP_GAP { num } else { num - SNAP_GAP };
-    let cur_num = cur_num / net.genesis_config().consensus_config.epoch_block_count
-        * net.genesis_config().consensus_config.epoch_block_count;
-    println!("snapshot block height {}", cur_num);
+    let cur_block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
+        .expect("create block chain should success.");
+    let cur_num = chain.epoch().start_block_number();
+    println!(
+        "chain height {} snapshot block height {}",
+        chain_info.head().number(),
+        cur_num
+    );
     let block = chain
         .get_block_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
@@ -1355,7 +1363,11 @@ pub fn apply_snapshot(
             if chain.chain_state_reader().state_root() == verify_hash {
                 println!("snapshot_state hash match");
             } else {
-                println!("snapshot_state hash match");
+                println!(
+                    "snapshot_state hash not match state_root {} verify_hash {}",
+                    chain.chain_state_reader().state_root(),
+                    verify_hash
+                );
                 std::process::exit(1);
             }
             Ok(())
