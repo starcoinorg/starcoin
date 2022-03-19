@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{BlockHeader, BlockInfo};
+use crate::block::{BlockHeader, BlockInfo, BlockNumber};
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
 use schemars::JsonSchema;
@@ -179,6 +179,55 @@ impl TryFrom<Vec<u8>> for StartupInfo {
 }
 
 impl TryInto<Vec<u8>> for StartupInfo {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct SnapshotRange {
+    /// snapshot [start, end] block number
+    start: BlockNumber,
+    end: BlockNumber,
+}
+
+impl fmt::Display for SnapshotRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SnapshotHeight [{}, {}],", self.start, self.end)?;
+        Ok(())
+    }
+}
+
+impl SnapshotRange {
+    pub fn new(start: BlockNumber, end: BlockNumber) -> Self {
+        Self { start, end }
+    }
+
+    pub fn update_range(&mut self, start: BlockNumber, end: BlockNumber) {
+        self.start = start;
+        self.end = end;
+    }
+
+    pub fn get_start(&self) -> BlockNumber {
+        self.start
+    }
+
+    pub fn get_end(&self) -> BlockNumber {
+        self.end
+    }
+}
+
+impl TryFrom<Vec<u8>> for SnapshotRange {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        SnapshotRange::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for SnapshotRange {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Vec<u8>> {

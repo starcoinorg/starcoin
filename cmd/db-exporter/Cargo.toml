@@ -14,12 +14,14 @@ starcoin-chain = { path = "../../chain"}
 starcoin-genesis = { path = "../../genesis"}
 starcoin-storage = {path = "../../storage"}
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
+starcoin-statedb = { path = "../../state/statedb"}
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-types = {path = "../../types"}
 starcoin-executor = {path = "../../executor"}
 starcoin-consensus = { path = "../../consensus" }
 starcoin-transaction-builder = { path = "../../vm/transaction-builder"}
 starcoin-account-api = { path = "../../account/api"}
+starcoin-accumulator = { path = "../../commons/accumulator", package = "starcoin-accumulator" }
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 structopt = "~0.3"
 csv = "~1"
