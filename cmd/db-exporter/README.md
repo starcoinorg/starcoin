@@ -68,3 +68,35 @@ OPTIONS:
 ARGS:
     <verifier>    Verify type:  Basic, Consensus, Full, None, eg [possible values: Basic, Consensus, Full, None]
 ```
+starcoin_db_export export_snapshot
+```shell
+./starcoin_db_exporter export-snapshot -i ~/.starcoin/main -n main -o ~/snapshot
+USAGE:
+    starcoin_db_exporter export-snapshot [OPTIONS] --db-path <db-path> --net <net> --output <output>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -i, --db-path <db-path>        starcoin node db path. like ~/.starcoin/main
+    -t, --increment <increment>    enable increment export snapshot
+    -n, --net <net>                Chain Network, like main, proxima
+    -o, --output <output>          output dir, like ~/, manifest.csv will write in output dir
+```
+
+starcoin_db_export apply_snapshot
+```shell
+./starcoin_db_exporter apply-snapshot -i ~/snapshot -n main -o ~/.starcoin/main
+USAGE:
+    starcoin_db_exporter apply-snapshot --input-path <input-path> --net <net> --to-path <to-path>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -i, --input-path <input-path>    input_path, manifest.csv in this dir
+    -n, --net <net>                  Chain Network
+    -o, --to-path <to-path>          starcoin node db path. like ~/.starcoin/main
+```

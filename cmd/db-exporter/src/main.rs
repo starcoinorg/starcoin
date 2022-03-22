@@ -39,8 +39,10 @@ use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -342,9 +344,9 @@ pub struct ExportSnapshotOptions {
     #[structopt(long, short = "i", parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub db_path: PathBuf,
-    /// export snapshot block number
-    #[structopt(long, short = "b")]
-    pub number: Option<BlockNumber>,
+    #[structopt(long, short = "t")]
+    /// enable increment export snapshot
+    pub increment: Option<bool>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -478,7 +480,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     if let Cmd::ExportSnapshot(option) = cmd {
-        let result = export_snapshot(option.db_path, option.output, option.net);
+        let result = export_snapshot(option.db_path, option.output, option.net, option.increment);
         return result;
     }
 
@@ -486,6 +488,7 @@ fn main() -> anyhow::Result<()> {
         let result = apply_snapshot(option.to_path, option.input_path, option.net);
         return result;
     }
+
     Ok(())
 }
 
@@ -958,33 +961,39 @@ fn export_column(
     accumulator: MerkleAccumulator,
     output: PathBuf,
     column: ColumnFamilyName,
-    nums: u64,
+    start_num: u64,
+    num: u64,
     bar: ProgressBar,
 ) -> Result<()> {
-    let mut file = File::create(output.join(column))?;
+    // start_num > 1 increment export
+    let mut file = if start_num > 1 {
+        OpenOptions::new().append(true).open(output.join(column))?
+    } else {
+        File::create(output.join(column))?
+    };
     let mut index = 1;
     let mut start_index = 0;
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
     );
-    while start_index < nums {
-        let max_size = if start_index + BATCH_SIZE <= nums {
+    while start_index < num {
+        let max_size = if start_index + BATCH_SIZE <= num {
             BATCH_SIZE
         } else {
-            nums - start_index
+            num - start_index
         };
 
         match column {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
-                let ids = accumulator.get_leaves(start_index + 1, false, max_size)?;
+                let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
                 for hash in ids {
                     writeln!(file, "{}", hash)?;
                 }
             }
             BLOCK_PREFIX_NAME => {
                 // will cache ids
-                let ids = accumulator.get_leaves(start_index + 1, false, max_size)?;
+                let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
                 for hash in ids {
                     let block = storage
                         .get_block(hash)?
@@ -994,7 +1003,7 @@ fn export_column(
             }
             BLOCK_INFO_PREFIX_NAME => {
                 // will cache ids
-                let ids = accumulator.get_leaves(start_index + 1, false, max_size)?;
+                let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
                 for hash in ids {
                     let block_info = storage
                         .get_block_info(hash)?
@@ -1009,6 +1018,7 @@ fn export_column(
         };
         start_index += max_size;
         bar.set_message(format!("export {} {}", column, index).as_str());
+        println!("export {} percent {}", column, index * 100 / num);
         bar.inc(1);
         index += 1;
     }
@@ -1027,6 +1037,7 @@ pub fn export_snapshot(
     from_dir: PathBuf,
     output: PathBuf,
     network: BuiltinNetworkID,
+    increment: Option<bool>,
 ) -> anyhow::Result<()> {
     let start_time = SystemTime::now();
     let net = ChainNetwork::new_builtin(network);
@@ -1052,19 +1063,63 @@ pub fn export_snapshot(
         None,
     )
     .expect("create block chain should success.");
-    let num = chain.status().head().number();
-    let cur_num = if num <= SNAP_GAP { num } else { num - SNAP_GAP };
+    let block_num = chain.status().head().number();
+    let cur_num = if block_num <= SNAP_GAP {
+        block_num
+    } else {
+        block_num - SNAP_GAP
+    };
     let cur_block = chain
         .get_block_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
     let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
         .expect("create block chain should success.");
     let cur_num = chain.epoch().start_block_number();
-    println!(
-        "chain height {} snapshot block height {}",
-        chain_info.head().number(),
-        cur_num
-    );
+
+    // increment export read num
+    let inc_export = increment.unwrap_or(false);
+    let mut old_snapshot_nums: HashMap<String, u64> = HashMap::new();
+    if inc_export {
+        let reader = BufReader::new(File::open(output.join("manifest.csv"))?);
+        for record in reader.lines() {
+            let record = record?;
+            let str_list: Vec<&str> = record.split(' ').collect();
+            if str_list.len() != 3 {
+                println!("manifest.csv {} error", record);
+                std::process::exit(1);
+            }
+            let column = str_list[0].to_string();
+            let num = str_list[1].parse::<u64>()?;
+            old_snapshot_nums.insert(column, num);
+        }
+        if old_snapshot_nums.len() != 5 {
+            println!("increment export snapshot manifest.cvs error");
+            std::process::exit(1);
+        }
+        let old_block_num = *old_snapshot_nums.get(BLOCK_PREFIX_NAME).ok_or_else(|| {
+            format_err!(
+                "increment export snapshot get {} number error",
+                BLOCK_PREFIX_NAME
+            )
+        })?;
+        if old_block_num + BLOCK_GAP >= cur_num {
+            println!("increment snapshot gap too small");
+            return Ok(());
+        }
+        println!(
+            "chain height {} snapshot block cur height {} old height {}",
+            chain_info.head().number(),
+            cur_num,
+            old_block_num
+        );
+    } else {
+        println!(
+            "chain height {} snapshot block height {}",
+            chain_info.head().number(),
+            cur_num
+        );
+    }
+
     let block = chain
         .get_block_by_number(cur_num)?
         .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
@@ -1089,7 +1144,7 @@ pub fn export_snapshot(
         txn_accumulator_info.accumulator_root,
     ));
     let mbar = MultiProgress::new();
-    for (column, nums, _hash) in mainfest_list.clone() {
+    for (column, num_record, _hash) in mainfest_list.clone() {
         let accumulator = match column {
             BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
                 MerkleAccumulator::new_with_info(
@@ -1106,11 +1161,15 @@ pub fn export_snapshot(
                 std::process::exit(1);
             }
         };
+        let old_start_num = *old_snapshot_nums.get(column).unwrap_or(&0);
+        let num = num_record - old_start_num;
+        let start_num = old_start_num + 1;
         let storage2 = storage.clone();
         let output2 = output.clone();
-        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
-        let handle =
-            thread::spawn(move || export_column(storage2, accumulator, output2, column, nums, bar));
+        let bar = mbar.add(ProgressBar::new(num / BATCH_SIZE));
+        let handle = thread::spawn(move || {
+            export_column(storage2, accumulator, output2, column, start_num, num, bar)
+        });
         handles.push(handle);
     }
 
@@ -1152,6 +1211,7 @@ pub fn export_snapshot(
     for handle in handles {
         handle.join().unwrap().unwrap();
     }
+
     mainfest_list.push((STATE_NODE_PREFIX_NAME, nums, state_root));
 
     // save manifest
