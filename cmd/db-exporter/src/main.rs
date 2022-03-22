@@ -1018,7 +1018,6 @@ fn export_column(
         };
         start_index += max_size;
         bar.set_message(format!("export {} {}", column, index).as_str());
-        println!("export {} percent {}", column, index * 100 / num);
         bar.inc(1);
         index += 1;
     }
