@@ -38,7 +38,7 @@ serde_json = { version="1.0", features = ["arbitrary_precision"]}
 derive_more = "0.99.14"
 async-trait = "0.1.51"
 stest = { path = "../commons/stest" }
-async-std = "1.10"
+async-std = "1.11"
 
 prometheus = "0.13.0"
 
