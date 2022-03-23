@@ -221,6 +221,18 @@ where
         Ok(StateSet::new(states))
     }
 
+    pub fn dump_iter(&self) -> Result<JellyfishMerkleIterator<K, CachedTreeReader<K> >> {
+        let cur_root_hash = self.root_hash();
+        let mut cache_guard = self.cache.lock();
+        let cache = cache_guard.deref_mut();
+        let reader = CachedTreeReader {
+            store: self.storage.as_ref(),
+            cache,
+        };
+        let iterator = JellyfishMerkleIterator::new(&reader, cur_root_hash, HashValue::zero())?;
+        Ok(iterator)
+    }
+
     /// passing None value with a key means delete the key
     fn updates(&self, updates: Vec<(K, Option<Blob>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
