@@ -1,6 +1,6 @@
 [package]
 name = "move-package-manager"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 description = "CLI frontend for the Move compiler and VM"
 repository = "https://github.com/starcoinorg/starcion"
 homepage = "https://diem.com"
