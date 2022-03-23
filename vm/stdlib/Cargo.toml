@@ -19,7 +19,7 @@ move-compiler = { git = "https://github.com/starcoinorg/move", rev = "314436e8ab
 once_cell = "1.10.0"
 include_dir = "0.6.2"
 sha2 = "0.9.1"
-log = "0.4.14"
+log = "0.4.16"
 simplelog = "0.9.0"
 fs_extra = "1.2.0"
 clap = "2.33.3"
