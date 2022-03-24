@@ -6,11 +6,11 @@ edition = "2021"
 
 [dependencies]
 
-jsonrpc-tcp-server = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
-jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
-jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95", features = ["arbitrary_precision"] }
-jsonrpc-pubsub = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
-jsonrpc-core-client = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
+jsonrpc-tcp-server = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
+jsonrpc-derive = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
+jsonrpc-core = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9", features = ["arbitrary_precision"] }
+jsonrpc-pubsub = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
+jsonrpc-core-client = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 serde = { version = "1.0.130" }
 hex = { version = "0.4.3", default-features = false }

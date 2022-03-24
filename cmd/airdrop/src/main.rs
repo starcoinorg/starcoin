@@ -235,7 +235,7 @@ async fn main() -> Result<()> {
                 None => {
                     println!("wait txn to be mined, {}", txn_hash);
                     // sleep 10s.
-                    tokio::time::delay_for(Duration::from_secs(5)).await;
+                    tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
                 }
                 Some(txn_info) => {

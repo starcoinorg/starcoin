@@ -4,8 +4,9 @@
 use crate::json_encoder::JsonEncoder;
 use futures::future;
 use hyper::{
+    server::Server,
     service::{make_service_fn, service_fn},
-    Body, Method, Request, Response, Server, StatusCode,
+    Body, Method, Request, Response, StatusCode,
 };
 use prometheus::{hostname_grouping_key, BasicAuthentication, Registry};
 use prometheus::{Encoder, TextEncoder};

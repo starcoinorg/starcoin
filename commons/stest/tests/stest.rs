@@ -35,7 +35,7 @@ fn test_ok() -> anyhow::Result<()> {
 #[stest::test(timeout = 1)]
 #[should_panic]
 async fn test_async_timeout() {
-    stest::actix_export::time::delay_for(Duration::from_secs(6)).await;
+    tokio::time::sleep(Duration::from_secs(6)).await;
 }
 
 struct MyActor;

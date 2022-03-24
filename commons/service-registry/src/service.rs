@@ -6,8 +6,8 @@ use crate::service_actor::{EventMessage, ServiceActor};
 use crate::service_cache::ServiceCache;
 use crate::{RegistryAsyncService, RegistryService};
 use crate::{ServiceRef, ServiceRequest};
-use actix::fut::{wrap_future, IntoActorFuture};
-use actix::{ActorContext, ActorFuture, AsyncContext, Context};
+use actix::fut::wrap_future;
+use actix::{ActorContext, ActorFutureExt, AsyncContext, Context};
 use anyhow::{format_err, Result};
 use futures::channel::oneshot::{channel, Receiver};
 use futures::executor::block_on;
@@ -142,7 +142,7 @@ where
                     );
                 }
             });
-        self.ctx.wait(fut.into_future());
+        self.ctx.wait(fut);
     }
 
     pub fn add_stream<M, MS>(&mut self, stream: MS)
@@ -171,7 +171,7 @@ where
                     );
                 }
             });
-        self.ctx.wait(fut.into_future());
+        self.ctx.wait(fut);
     }
 
     pub fn broadcast<M>(&mut self, msg: M)

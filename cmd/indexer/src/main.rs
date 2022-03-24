@@ -239,9 +239,8 @@ fn main() -> anyhow::Result<()> {
     let _log_handle = starcoin_logger::init();
     let opts: Options = Options::parse();
     info!("opts: {:?}", &opts);
-    let mut rt = runtime::Builder::new()
+    let rt = runtime::Builder::new_multi_thread()
         .thread_name("starcoin-indexer")
-        .threaded_scheduler()
         .enable_all()
         .build()?;
     let channel: ChainClient = rt

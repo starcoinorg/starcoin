@@ -25,6 +25,7 @@ starcoin-chain-api = { path = "../api" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-state-api = { path = "../../state/api" }
 starcoin-chain = { path = "../" }
+tokio = "1"
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }

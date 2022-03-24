@@ -21,7 +21,7 @@ impl ProviderFactory {
                 config
                     .account_dir
                     .as_ref()
-                    .ok_or(anyhow!("expect dir for local account"))?,
+                    .ok_or_else(|| anyhow!("expect dir for local account"))?,
                 chain_id,
             ) {
                 Ok(p) => Ok(Box::new(p)),

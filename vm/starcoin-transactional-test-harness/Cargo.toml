@@ -15,9 +15,9 @@ anyhow = "~1"
 structopt = "~0.3"
 bcs = "~0.1"
 itertools = "~0.10"
-jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
-jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
-tokio = {version = "0.2", features = ["full"]}
+jsonrpc-core-client = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-client-transports = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"] }
+tokio = {version = "^1", features = ["full"]}
 dashmap = "~5"
 serde = { version = "1" }
 serde_json = { version = "1" }

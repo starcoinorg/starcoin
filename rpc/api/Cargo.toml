@@ -13,10 +13,10 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 hex = "0.4.3"
 async-trait = "0.1"
-jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
-jsonrpc-server-utils = "17.1.0"
-jsonrpc-pubsub = "17.0.0"
-jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
+jsonrpc-server-utils = "18"
+jsonrpc-pubsub = "18"
+jsonrpc-core-client = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}

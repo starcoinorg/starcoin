@@ -39,10 +39,14 @@ fn main() {
         }
     };
     let user = opts.user;
-    let mut system = System::builder()
-        .stop_on_panic(true)
-        .name("starcoin-miner")
-        .build();
+    let system = System::with_tokio_rt(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .on_thread_stop(|| println!("starcoin-miner thread stopped"))
+            .thread_name("starcoin-miner")
+            .build()
+            .expect("failed to create tokio runtime for starcoin-miner")
+    });
     if let Err(err) = system.block_on(async move {
         let registry = RegistryService::launch();
         let _ = registry.put_shared(config).await?;

@@ -36,7 +36,7 @@ rand_core = { version = "0.6.3", default-features = false }
 stdlib = { path = "../vm/stdlib" }
 stest = { path = "../commons/stest" }
 starcoin-account-api = { path = "../account/api" }
-tokio = { version = "0.2", features = ["full"] }
+tokio = {version = "^1", features = ["full"] }
 starcoin-genesis = { path = "../genesis" }
 proptest = "1.0.0"
 proptest-derive = { version = "0.3.0" }
