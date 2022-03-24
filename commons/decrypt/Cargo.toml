@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 pbkdf2="0.3"
 hmac = "0.7"
-sha2 = "0.8"
+sha2 = "0.10"
 aes-gcm = "0.9"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
