@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.41"
 structopt = "0.3.26"
-async-std = "1.10"
+async-std = "1.11"
 futures = "0.3.12"
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-config = { path = "../../config"}

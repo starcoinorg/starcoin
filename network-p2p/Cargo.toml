@@ -45,14 +45,14 @@ network-p2p-types = {path = "./types"}
 prometheus = "0.13.0"
 ip_network = "0.3.4"
 bs58 = "0.3.1"
-async-std = "1.10.0"
+async-std = "1.11.0"
 
 
 [dependencies.libp2p]
 version = "0.42.2"
 [dev-dependencies]
 stest = {path = "../commons/stest"}
-async-std = "1.10"
+async-std = "1.11"
 tempfile = "3.1.0"
 
 
