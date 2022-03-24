@@ -1,6 +1,6 @@
 use anyhow::Result;
 use forkable_jellyfish_merkle::blob::Blob;
-use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
+use forkable_jellyfish_merkle::iterator::{JellyfishMerkleIntoIterator, JellyfishMerkleIterator};
 use forkable_jellyfish_merkle::node_type::{Node, NodeKey};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
@@ -12,6 +12,7 @@ use starcoin_state_store_api::*;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::marker::PhantomData;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -221,7 +222,22 @@ where
         Ok(StateSet::new(states))
     }
 
-    pub fn dump_iter(&self) -> Result<JellyfishMerkleIterator<K, CachedTreeReader<K> >> {
+    pub fn dump_iter(&self) -> Result<JellyfishMerkleIntoIterator<K, StorageTreeReader<K>>> {
+        let cur_root_hash = self.root_hash();
+        let iterator = JellyfishMerkleIntoIterator::new(
+            StorageTreeReader {
+                store: self.storage.clone(),
+                raw_key: PhantomData,
+            },
+            cur_root_hash,
+            HashValue::zero(),
+        )?;
+        Ok(iterator)
+    }
+
+    /// Dump StateSet to file
+    /* use db_export io writer interface?
+    pub fn dump_to_file(&self) -> Result<()> {
         let cur_root_hash = self.root_hash();
         let mut cache_guard = self.cache.lock();
         let cache = cache_guard.deref_mut();
@@ -230,8 +246,13 @@ where
             cache,
         };
         let iterator = JellyfishMerkleIterator::new(&reader, cur_root_hash, HashValue::zero())?;
-        Ok(iterator)
-    }
+        let mut states = vec![];
+        for item in iterator {
+            let item = item?;
+            states.push((item.0.encode_key()?, item.1.into()));
+        }
+        Ok(StateSet::new(states))
+    } */
 
     /// passing None value with a key means delete the key
     fn updates(&self, updates: Vec<(K, Option<Blob>)>) -> Result<HashValue> {
@@ -318,6 +339,26 @@ where
         }
         if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
             return Ok(Some(n));
+        }
+        match self.store.get(node_key) {
+            Ok(Some(n)) => Ok(Some(n.try_into()?)),
+            Ok(None) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+pub struct StorageTreeReader<K: RawKey> {
+    store: Arc<dyn StateNodeStore>,
+    raw_key: PhantomData<K>,
+}
+impl<K> TreeReader<K> for StorageTreeReader<K>
+where
+    K: RawKey,
+{
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>> {
+        if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
+            return Ok(Some(Node::new_null()));
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),

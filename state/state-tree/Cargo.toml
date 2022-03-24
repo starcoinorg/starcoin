@@ -16,3 +16,7 @@ serde = { version = "1.0.130" }
 forkable-jellyfish-merkle = { path = "../../commons/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state-store-api"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
+
+[dev-dependencies]
+starcoin-config = {path = "../../config"}
+starcoin-storage = {path = "../../storage"}
