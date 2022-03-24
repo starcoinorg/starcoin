@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.41"
 futures = "0.3.12"
 serde = { version = "1.0.130", features = ["derive"] }
-log = "0.4.14"
+log = "0.4.16"
 network-rpc-derive = { path = "../derive" }
 num_enum = "0.5.7"
 bcs-ext = { path = "../../commons/bcs_ext", package = "bcs-ext" }
