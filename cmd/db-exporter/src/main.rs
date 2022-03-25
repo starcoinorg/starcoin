@@ -1205,7 +1205,7 @@ pub fn export_snapshot(
         }
         file.flush()?;
         bar.finish();
-        nums2.store(index, Ordering::Relaxed);
+        nums2.store(index - 1, Ordering::Relaxed);
         Ok(())
     });
     handles.push(state_handler);
