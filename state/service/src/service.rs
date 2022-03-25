@@ -12,6 +12,7 @@ use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
     ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
 };
+use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::state_set::AccountStateSet;
@@ -202,6 +203,10 @@ impl ChainStateReader for Inner {
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
+        unimplemented!()
+    }
+
+    fn dump_iter(&self) -> Result<AccountStateSetIterator> {
         unimplemented!()
     }
 }

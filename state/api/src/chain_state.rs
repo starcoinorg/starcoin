@@ -6,6 +6,7 @@ use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::write_set::WriteSet;
@@ -133,6 +134,8 @@ pub trait ChainStateReader: StateView {
     fn state_root(&self) -> HashValue;
 
     fn dump(&self) -> Result<ChainStateSet>;
+
+    fn dump_iter(&self) -> Result<AccountStateSetIterator>;
 }
 
 pub trait ChainStateWriter {
