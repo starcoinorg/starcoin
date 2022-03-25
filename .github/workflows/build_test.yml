@@ -1,4 +1,4 @@
-name: 1.Build and Test
+name: 1. Build and Test
 on:
   pull_request:
     branches:
