@@ -239,25 +239,6 @@ where
         Ok(iterator)
     }
 
-    /// Dump StateSet to file
-    /* use db_export io writer interface?
-    pub fn dump_to_file(&self) -> Result<()> {
-        let cur_root_hash = self.root_hash();
-        let mut cache_guard = self.cache.lock();
-        let cache = cache_guard.deref_mut();
-        let reader = CachedTreeReader {
-            store: self.storage.as_ref(),
-            cache,
-        };
-        let iterator = JellyfishMerkleIterator::new(&reader, cur_root_hash, HashValue::zero())?;
-        let mut states = vec![];
-        for item in iterator {
-            let item = item?;
-            states.push((item.0.encode_key()?, item.1.into()));
-        }
-        Ok(StateSet::new(states))
-    } */
-
     /// passing None value with a key means delete the key
     fn updates(&self, updates: Vec<(K, Option<Blob>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();

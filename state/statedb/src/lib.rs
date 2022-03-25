@@ -391,10 +391,12 @@ impl ChainStateReader for ChainStateDB {
 
     fn dump(&self) -> Result<ChainStateSet> {
         //TODO check cache dirty object.
-        //TODO performance optimize.
-        let global_states = self.state_tree.dump()?;
+        let global_states_iter = self.state_tree.dump_iter()?;
         let mut account_states = vec![];
-        for (address_bytes, account_state_bytes) in global_states.iter() {
+        for item in global_states_iter {
+            let item = item?;
+            let account_address = item.0;
+            let account_state_bytes = Vec::from(item.1);
             let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
 
             let mut state_sets = vec![];
@@ -418,10 +420,7 @@ impl ChainStateReader for ChainStateDB {
             }
             let account_state_set = AccountStateSet::new(state_sets);
 
-            account_states.push((
-                AccountAddress::decode_key(address_bytes.as_slice())?,
-                account_state_set,
-            ));
+            account_states.push((account_address, account_state_set));
         }
         Ok(ChainStateSet::new(account_states))
     }
