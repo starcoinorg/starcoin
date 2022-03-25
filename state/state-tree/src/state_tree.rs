@@ -12,10 +12,10 @@ use starcoin_state_store_api::*;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
-use std::marker::PhantomData;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct StateCache<K: RawKey> {
     root_hash: HashValue,
     change_set: TreeUpdateBatch<K>,
@@ -224,10 +224,14 @@ where
 
     pub fn dump_iter(&self) -> Result<JellyfishMerkleIntoIterator<K, StorageTreeReader<K>>> {
         let cur_root_hash = self.root_hash();
+        let cache = {
+            let cache_guard = self.cache.lock();
+            cache_guard.clone()
+        };
         let iterator = JellyfishMerkleIntoIterator::new(
             StorageTreeReader {
                 store: self.storage.clone(),
-                raw_key: PhantomData,
+                cache,
             },
             cur_root_hash,
             HashValue::zero(),
@@ -350,7 +354,7 @@ where
 
 pub struct StorageTreeReader<K: RawKey> {
     store: Arc<dyn StateNodeStore>,
-    raw_key: PhantomData<K>,
+    cache: StateCache<K>,
 }
 impl<K> TreeReader<K> for StorageTreeReader<K>
 where
@@ -359,6 +363,9 @@ where
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>> {
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
+        }
+        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
+            return Ok(Some(n));
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),

@@ -205,7 +205,6 @@ pub fn test_state_storage_dump() -> Result<()> {
     let value2 = vec![3u8, 4u8];
     state.put(hash_value2, value2.clone());
     state.commit()?;
-    state.flush()?;
     let state_set = state.dump()?;
     assert_eq!(2, state_set.len());
     let mut iter = state.dump_iter()?;
