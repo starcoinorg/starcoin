@@ -3,12 +3,7 @@ use crate::mock::MockStateNodeStore;
 use anyhow::Result;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::{HashValueKey, RawKey};
-use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::*;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -192,11 +187,7 @@ pub fn test_repeat_commit() -> Result<()> {
 
 #[test]
 pub fn test_state_storage_dump() -> Result<()> {
-    let tmpdir = starcoin_config::temp_dir();
-    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new(None),
-        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
-    ))?;
+    let storage = MockStateNodeStore::new();
     let state = StateTree::new(Arc::new(storage), None);
     let hash_value1 = HashValueKey(HashValue::random());
     let value1 = vec![1u8, 2u8];
@@ -214,6 +205,7 @@ pub fn test_state_storage_dump() -> Result<()> {
     let mut kv2 = HashMap::new();
     let v1 = iter.next().unwrap()?;
     let v2 = iter.next().unwrap()?;
+    assert!(iter.next().is_none(), "iter next should none");
     kv2.insert(v1.0, v1.1);
     kv2.insert(v2.0, v2.1);
     assert_eq!(kv1, kv2);
