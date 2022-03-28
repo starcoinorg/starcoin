@@ -438,8 +438,8 @@ impl InnerStore for DBStorage {
         })
     }
 
-    fn multiple_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
-        record_metrics("db", prefix_name, "multiple_get", self.metrics.as_ref()).call(|| {
+    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             let cf_handles = iter::repeat(&cf_handle)
                 .take(keys.len())
