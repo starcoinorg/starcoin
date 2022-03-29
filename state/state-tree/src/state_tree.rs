@@ -396,6 +396,7 @@ impl Iterator for AccountStateSetIterator {
                 let state_set = match storage_root {
                     Some(storage_root) => {
                         let data_type = DataType::from_index(idx as u8).ok()?;
+                        // TODO move support map resource have many elem, consider use iter
                         match data_type {
                             DataType::CODE => Some(
                                 StateTree::<ModuleName>::new(
