@@ -5,7 +5,8 @@ use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecWriteBatch, InnerStore, ValueCodec};
-use crate::DEFAULT_PREFIX_NAME;
+use crate::{DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2};
+use anyhow::Result;
 use crypto::HashValue;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
@@ -162,4 +163,65 @@ fn test_batch_comm() {
     }
     let result = db.write_batch(DEFAULT_PREFIX_NAME, new_batch2);
     assert!(result.is_ok());
+}
+
+#[test]
+fn test_write_batch_multi_get() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let db_storage =
+        Arc::new(DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap());
+    let mut write_batch = CodecWriteBatch::new();
+    let transaction_info1 = RichTransactionInfo::new(
+        HashValue::random(),
+        rand::random(),
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
+        rand::random(),
+        rand::random(),
+    );
+    let id1 = transaction_info1.id();
+    write_batch.put(id1, transaction_info1.clone()).unwrap();
+    let transaction_info2 = RichTransactionInfo::new(
+        HashValue::random(),
+        rand::random(),
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            1,
+            KeptVMStatus::Executed,
+        ),
+        rand::random(),
+        rand::random(),
+    );
+    let id2 = transaction_info2.id();
+    write_batch.put(id2, transaction_info2.clone()).unwrap();
+    db_storage.write_batch(
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        write_batch.try_into().unwrap(),
+    )?;
+
+    let infos = db_storage.multi_get(
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        vec![id1.to_vec(), id2.to_vec()],
+    )?;
+    assert_eq!(
+        RichTransactionInfo::decode_value(&infos.get(0).unwrap().clone().unwrap()).unwrap(),
+        transaction_info1
+    );
+    assert_eq!(
+        RichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap()).unwrap(),
+        transaction_info2
+    );
+    Ok(())
+}
+
+#[test]
+fn test_batch_comm_multi_get() -> Result<()> {
+    Ok(())
 }
