@@ -10088,6 +10088,7 @@ dependencies = [
  "starcoin-rpc-server",
  "starcoin-service-registry",
  "starcoin-state-api",
+ "starcoin-state-tree",
  "starcoin-sync-api",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -10238,6 +10239,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-service-registry",
  "starcoin-state-api",
+ "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
@@ -10268,6 +10270,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-state-store-api",
  "starcoin-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]

@@ -1,8 +1,10 @@
 use super::*;
 use crate::mock::MockStateNodeStore;
 use anyhow::Result;
+use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::{HashValueKey, RawKey};
 use starcoin_crypto::hash::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// change the `n`th nibble to `nibble`
@@ -180,5 +182,32 @@ pub fn test_repeat_commit() -> Result<()> {
     state.commit()?;
     let root_hash2 = state.root_hash();
     assert_eq!(root_hash1, root_hash2);
+    Ok(())
+}
+
+#[test]
+pub fn test_state_storage_dump() -> Result<()> {
+    let storage = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(storage), None);
+    let hash_value1 = HashValueKey(HashValue::random());
+    let value1 = vec![1u8, 2u8];
+    state.put(hash_value1, value1.clone());
+    let hash_value2 = HashValueKey(HashValue::random());
+    let value2 = vec![3u8, 4u8];
+    state.put(hash_value2, value2.clone());
+    state.commit()?;
+    let state_set = state.dump()?;
+    assert_eq!(2, state_set.len());
+    let mut iter = state.dump_iter()?;
+    let mut kv1 = HashMap::new();
+    kv1.insert(hash_value1, Blob::from(value1));
+    kv1.insert(hash_value2, Blob::from(value2));
+    let mut kv2 = HashMap::new();
+    let v1 = iter.next().unwrap()?;
+    let v2 = iter.next().unwrap()?;
+    assert!(iter.next().is_none(), "iter next should none");
+    kv2.insert(v1.0, v1.1);
+    kv2.insert(v2.0, v2.1);
+    assert_eq!(kv1, kv2);
     Ok(())
 }

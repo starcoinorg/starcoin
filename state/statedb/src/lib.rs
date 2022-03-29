@@ -14,6 +14,7 @@ pub use starcoin_state_api::{
     ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
 use starcoin_state_tree::mock::MockStateNodeStore;
+use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
@@ -389,6 +390,7 @@ impl ChainStateReader for ChainStateDB {
         self.state_tree.root_hash()
     }
 
+    // this interface on large records is slow, use dump_iter
     fn dump(&self) -> Result<ChainStateSet> {
         //TODO check cache dirty object.
         //TODO performance optimize.
@@ -424,6 +426,16 @@ impl ChainStateReader for ChainStateDB {
             ));
         }
         Ok(ChainStateSet::new(account_states))
+    }
+
+    // we have test 17514004 records cost 79598 seconds
+    // the env is Intel(R) Xeon(R) Platinum 8275CL CPU @ 3.00GHz, 8 CPU and 16 GB memory
+    // os is ubuntu 18.04.6 LTS
+    // TODO future have 20 million records use increment export optimize
+    fn dump_iter(&self) -> Result<AccountStateSetIterator> {
+        let jmt_into_iter = self.state_tree.dump_iter()?;
+        let iter = AccountStateSetIterator::new(self.store.clone(), jmt_into_iter);
+        Ok(iter)
     }
 }
 

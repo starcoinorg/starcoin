@@ -1,6 +1,6 @@
 use anyhow::Result;
 use forkable_jellyfish_merkle::blob::Blob;
-use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
+use forkable_jellyfish_merkle::iterator::{JellyfishMerkleIntoIterator, JellyfishMerkleIterator};
 use forkable_jellyfish_merkle::node_type::{Node, NodeKey};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
@@ -9,12 +9,18 @@ use forkable_jellyfish_merkle::{
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::*;
 use starcoin_state_store_api::*;
-use starcoin_types::state_set::StateSet;
+use starcoin_types::access_path::DataType;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_state::AccountState;
+use starcoin_types::language_storage::StructTag;
+use starcoin_types::state_set::{AccountStateSet, StateSet};
+use starcoin_vm_types::access_path::ModuleName;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct StateCache<K: RawKey> {
     root_hash: HashValue,
     change_set: TreeUpdateBatch<K>,
@@ -221,6 +227,23 @@ where
         Ok(StateSet::new(states))
     }
 
+    pub fn dump_iter(&self) -> Result<JellyfishMerkleIntoIterator<K, StorageTreeReader<K>>> {
+        let cur_root_hash = self.root_hash();
+        let cache = {
+            let cache_guard = self.cache.lock();
+            cache_guard.clone()
+        };
+        let iterator = JellyfishMerkleIntoIterator::new(
+            StorageTreeReader {
+                store: self.storage.clone(),
+                cache,
+            },
+            cur_root_hash,
+            HashValue::zero(),
+        )?;
+        Ok(iterator)
+    }
+
     /// passing None value with a key means delete the key
     fn updates(&self, updates: Vec<(K, Option<Blob>)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
@@ -312,5 +335,93 @@ where
             Ok(None) => Ok(None),
             Err(e) => Err(e),
         }
+    }
+}
+
+pub struct StorageTreeReader<K: RawKey> {
+    store: Arc<dyn StateNodeStore>,
+    cache: StateCache<K>,
+}
+impl<K> TreeReader<K> for StorageTreeReader<K>
+where
+    K: RawKey,
+{
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K>>> {
+        if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
+            return Ok(Some(Node::new_null()));
+        }
+        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
+            return Ok(Some(n));
+        }
+        match self.store.get(node_key) {
+            Ok(Some(n)) => Ok(Some(n.try_into()?)),
+            Ok(None) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+pub struct AccountStateSetIterator {
+    store: Arc<dyn StateNodeStore>,
+    jmt_into_iter: JellyfishMerkleIntoIterator<AccountAddress, StorageTreeReader<AccountAddress>>,
+}
+
+impl AccountStateSetIterator {
+    pub fn new(
+        store: Arc<dyn StateNodeStore>,
+        jmt_into_iter: JellyfishMerkleIntoIterator<
+            AccountAddress,
+            StorageTreeReader<AccountAddress>,
+        >,
+    ) -> Self {
+        Self {
+            store,
+            jmt_into_iter,
+        }
+    }
+}
+
+impl Iterator for AccountStateSetIterator {
+    type Item = (AccountAddress, AccountStateSet);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.jmt_into_iter.next();
+        if let Some(item) = item {
+            let item = item.ok()?;
+            let account_address = item.0;
+            let account_state_bytes = Vec::from(item.1);
+            let account_state: AccountState = account_state_bytes.as_slice().try_into().ok()?;
+            let mut state_sets = vec![];
+            for (idx, storage_root) in account_state.storage_roots().iter().enumerate() {
+                let state_set = match storage_root {
+                    Some(storage_root) => {
+                        let data_type = DataType::from_index(idx as u8).ok()?;
+                        // TODO move support map resource have many elem, consider use iter
+                        match data_type {
+                            DataType::CODE => Some(
+                                StateTree::<ModuleName>::new(
+                                    self.store.clone(),
+                                    Some(*storage_root),
+                                )
+                                .dump()
+                                .ok()?,
+                            ),
+                            DataType::RESOURCE => Some(
+                                StateTree::<StructTag>::new(
+                                    self.store.clone(),
+                                    Some(*storage_root),
+                                )
+                                .dump()
+                                .ok()?,
+                            ),
+                        }
+                    }
+                    None => None,
+                };
+                state_sets.push(state_set);
+            }
+            return Some((account_address, AccountStateSet::new(state_sets)));
+        }
+        None
     }
 }
