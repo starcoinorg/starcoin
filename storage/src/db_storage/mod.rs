@@ -450,9 +450,7 @@ impl InnerStore for DBStorage {
                 .map(|(key, handle)| (handle, key.as_slice()))
                 .collect::<Vec<_>>();
 
-
-            let result =
-                self.db.multi_get_cf(keys_multi);
+            let result = self.db.multi_get_cf(keys_multi);
             let mut res = vec![];
             for item in result {
                 let item = item?;
