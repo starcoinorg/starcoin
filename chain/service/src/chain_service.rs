@@ -229,6 +229,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     access_path,
                 )?,
             ))),
+            ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
+                self.inner.get_block_infos(ids)?,
+            ))),
         }
     }
 }
@@ -298,6 +301,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_blocks(ids)
     }
 
+    // XXX FIXME different get_blocks
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
         let mut headers = Vec::new();
         self.get_blocks(ids)?.into_iter().for_each(|block| {
@@ -405,6 +409,10 @@ impl ReadableChainService for ChainReaderServiceInner {
             event_index,
             access_path,
         )
+    }
+
+    fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
+        self.storage.get_block_infos(ids)
     }
 }
 

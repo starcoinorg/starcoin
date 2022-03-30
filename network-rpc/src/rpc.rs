@@ -91,13 +91,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         req: GetTxnsWithHash,
     ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
         let storage = self.storage.clone();
-        let fut = async move {
-            let mut data = vec![];
-            for id in req.ids {
-                data.push(storage.get_transaction(id)?);
-            }
-            Ok(data)
-        };
+        let fut = async move { storage.get_transactions(req.ids) };
         Box::pin(fut)
     }
 
@@ -159,9 +153,10 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 ))
                 .into());
             }
-            let mut headers = Vec::new();
-            for hash in hashes {
-                headers.push(chain_reader.clone().get_header_by_hash(&hash).await?);
+            let heads = chain_reader.clone().get_headers(hashes).await?;
+            let mut headers = vec![];
+            for header in heads {
+                headers.push(Some(header));
             }
             Ok(headers)
         };
@@ -182,10 +177,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 ))
                 .into());
             }
-            let mut infos = Vec::new();
-            for hash in hashes {
-                infos.push(chain_reader.get_block_info_by_hash(&hash).await?);
-            }
+            let infos = chain_reader.get_block_infos(hashes).await?;
             Ok(infos)
         };
         Box::pin(fut)
@@ -205,14 +197,10 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 ))
                 .into());
             }
-
-            let mut bodies = Vec::new();
-            for hash in hashes {
-                let body = chain_reader
-                    .get_block_by_hash(hash)
-                    .await?
-                    .map(|block| block.body);
-                bodies.push(body);
+            let blocks = chain_reader.get_blocks(hashes).await?;
+            let mut bodies = vec![];
+            for block in blocks {
+                bodies.push(block.map(|block| block.body));
             }
             Ok(bodies)
         };

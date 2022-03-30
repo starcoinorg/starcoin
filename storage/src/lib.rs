@@ -225,6 +225,10 @@ pub trait BlockTransactionInfoStore {
     /// if not transaction info match with the `txn_hash`, return empty Vec.
     fn get_transaction_info_ids_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<HashValue>>;
     fn save_transaction_infos(&self, vec_txn_info: Vec<RichTransactionInfo>) -> Result<()>;
+    fn get_transaction_infos(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<RichTransactionInfo>>>;
 }
 pub trait ContractEventStore {
     /// Save events by key `txn_info_id`.
@@ -245,6 +249,7 @@ pub trait TransactionStore {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
     fn save_transaction(&self, txn_info: Transaction) -> Result<()>;
     fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<()>;
+    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -479,10 +484,9 @@ impl BlockTransactionInfoStore for Storage {
     ) -> Result<Vec<RichTransactionInfo>, Error> {
         let mut transaction_info_vec = vec![];
         if let Some(transaction_info_ids) = self.transaction_info_hash_storage.get(txn_hash)? {
-            for id in transaction_info_ids {
-                if let Some(transaction_info) = self.get_transaction_info(id)? {
-                    transaction_info_vec.push(transaction_info);
-                }
+            let txn_infos = self.get_transaction_infos(transaction_info_ids)?;
+            for transaction_info in txn_infos.into_iter().flatten() {
+                transaction_info_vec.push(transaction_info);
             }
         }
         Ok(transaction_info_vec)
@@ -501,6 +505,13 @@ impl BlockTransactionInfoStore for Storage {
             .save_transaction_infos(vec_txn_info.as_slice())?;
         self.transaction_info_storage
             .save_transaction_infos(vec_txn_info)
+    }
+
+    fn get_transaction_infos(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<RichTransactionInfo>>> {
+        self.transaction_info_storage.get_transaction_infos(ids)
     }
 }
 
@@ -533,6 +544,13 @@ impl TransactionStore for Storage {
     fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<(), Error> {
         self.transaction_storage.save_transaction_batch(txn_vec)
     }
+
+    fn get_transactions(
+        &self,
+        txn_hash_vec: Vec<HashValue>,
+    ) -> Result<Vec<Option<Transaction>>, Error> {
+        self.transaction_storage.multiple_get(txn_hash_vec)
+    }
 }
 
 /// Chain storage define
@@ -563,12 +581,14 @@ pub trait Store:
     ) -> Result<Vec<RichTransactionInfo>, Error> {
         let txn_info_ids = self.get_block_txn_info_ids(block_id)?;
         let mut txn_infos = vec![];
-        for hash in txn_info_ids {
-            match self.get_transaction_info(hash)? {
+        let txn_opt_infos = self.get_transaction_infos(txn_info_ids.clone())?;
+
+        for (i, info) in txn_opt_infos.into_iter().enumerate() {
+            match info {
                 Some(info) => txn_infos.push(info),
                 None => bail!(
-                    "invalid state: txn info {} of block {} should exist",
-                    hash,
+                    "invalid state: txn info {:?} of block {} should exist",
+                    txn_info_ids.get(i),
                     block_id
                 ),
             }

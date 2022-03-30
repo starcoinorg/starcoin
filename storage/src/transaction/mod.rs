@@ -40,6 +40,10 @@ impl TransactionStore for TransactionStorage {
             CodecWriteBatch::new_puts(txn_vec.into_iter().map(|txn| (txn.id(), txn)).collect());
         self.write_batch(batch)
     }
+
+    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>> {
+        self.multiple_get(txn_hash_vec)
+    }
 }
 
 #[cfg(test)]
