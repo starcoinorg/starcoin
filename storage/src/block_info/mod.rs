@@ -13,6 +13,7 @@ pub trait BlockInfoStore {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;
     fn get_block_info(&self, hash_value: HashValue) -> Result<Option<BlockInfo>>;
     fn delete_block_info(&self, block_hash: HashValue) -> Result<()>;
+    fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
 }
 
 define_storage!(

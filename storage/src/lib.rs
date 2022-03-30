@@ -458,6 +458,14 @@ impl BlockInfoStore for Storage {
     fn delete_block_info(&self, block_hash: HashValue) -> Result<(), Error> {
         self.block_info_storage.remove(block_hash)
     }
+
+    fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
+        Ok(self
+            .block_info_storage
+            .multiple_get(ids)?
+            .into_iter()
+            .collect())
+    }
 }
 
 impl BlockTransactionInfoStore for Storage {
