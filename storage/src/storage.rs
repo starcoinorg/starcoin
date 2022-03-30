@@ -19,10 +19,7 @@ pub type ColumnFamilyName = &'static str;
 #[allow(clippy::upper_case_acronyms)]
 pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
-    fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
-        //TODO optimize
-        keys.into_iter().map(|k| self.get(k.as_slice())).collect()
-    }
+    fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
@@ -230,8 +227,30 @@ impl InnerStore for StorageInstance {
         match self {
             StorageInstance::CACHE { cache } => cache.multi_get(prefix_name, keys),
             StorageInstance::DB { db } => db.multi_get(prefix_name, keys),
-            // XXX FIXME
-            StorageInstance::CacheAndDb { cache: _cache, db } => db.multi_get(prefix_name, keys),
+            StorageInstance::CacheAndDb { cache, db } => {
+                let mut result = cache.multi_get(prefix_name, keys.clone())?;
+                let mut db_idxs = vec![];
+                let mut db_keys = vec![];
+                // cache may be evict record
+                for (idx, item) in result.iter().enumerate() {
+                    if item.is_none() {
+                        db_idxs.push(idx);
+                        if let Some(key) = keys.get(idx) {
+                            db_keys.push(key.clone());
+                        }
+                    }
+                }
+                if db_idxs.is_empty() {
+                    return Ok(result);
+                }
+                let values = db.multi_get(prefix_name, db_keys)?;
+                for (idx, value) in db_idxs.into_iter().zip(values) {
+                    if let Some(res) = result.get_mut(idx) {
+                        *res = value;
+                    }
+                }
+                Ok(result)
+            }
         }
     }
 }
@@ -276,6 +295,10 @@ where
 {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         self.instance.get(self.prefix_name, key.to_vec())
+    }
+
+    fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        self.instance.multi_get(self.prefix_name, keys)
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
