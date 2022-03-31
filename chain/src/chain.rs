@@ -566,13 +566,18 @@ impl ChainReader for BlockChain {
             None => self.current_header().number(),
             Some(number) => number,
         };
+
+        let num_leaves = self.block_accumulator.num_leaves();
+        if end_num > num_leaves {
+            bail!("Can not find block by number {}", end_num);
+        }
         let ids = self.get_block_ids(end_num, true, count)?;
         let block_opts = self.storage.get_blocks(ids)?;
         let mut blocks = vec![];
         for (idx, block) in block_opts.into_iter().enumerate() {
             match block {
                 Some(block) => blocks.push(block),
-                None => bail!("Can not find block by number {}", idx),
+                None => bail!("Can not find block by number {}", end_num.saturating_sub(idx as u64)),
             }
         }
         Ok(blocks)
