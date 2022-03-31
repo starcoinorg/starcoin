@@ -227,7 +227,15 @@ impl InnerStore for StorageInstance {
         match self {
             StorageInstance::CACHE { cache } => cache.multi_get(prefix_name, keys),
             StorageInstance::DB { db } => db.multi_get(prefix_name, keys),
-            StorageInstance::CacheAndDb { cache, db } => {
+            StorageInstance::CacheAndDb { db, .. } => {
+                /* https://github.com/facebook/rocksdb/wiki/Block-Cache#lru-cache
+                * if use multi_get from CacheStorage, cache may evict some records
+                    should check every Option<Vec<u8>> is not none, if have none
+                    we need multi_get these from db
+                    I, test db multi_get performence is better than from CacheStorage
+                 */
+
+                /*
                 let mut result = cache.multi_get(prefix_name, keys.clone())?;
                 let mut db_idxs = vec![];
                 let mut db_keys = vec![];
@@ -250,6 +258,8 @@ impl InnerStore for StorageInstance {
                     }
                 }
                 Ok(result)
+                 */
+                db.multi_get(prefix_name, keys)
             }
         }
     }

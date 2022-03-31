@@ -757,7 +757,7 @@ impl ChainReader for BlockChain {
             match info {
                 Some(info) => infos.push(info),
                 None => bail!(
-                    "cannot find hash({:?}) on main chain(head: {})",
+                    "cannot find hash({:?}) on head: {}",
                     hashes.get(i),
                     chain_header.id()
                 ),
