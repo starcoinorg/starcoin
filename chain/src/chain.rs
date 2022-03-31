@@ -566,14 +566,16 @@ impl ChainReader for BlockChain {
             None => self.current_header().number(),
             Some(number) => number,
         };
-        let end_num_exclusive = end_num.saturating_add(1);
-        (end_num_exclusive.saturating_sub(count)..end_num_exclusive)
-            .rev()
-            .map(|idx| {
-                self.get_block_by_number(idx)?
-                    .ok_or_else(|| format_err!("Can not find block by number {}", idx))
-            })
-            .collect()
+        let ids = self.get_block_ids(end_num, true, count)?;
+        let block_opts = self.storage.get_blocks(ids)?;
+        let mut blocks = vec![];
+        for (idx, block) in block_opts.into_iter().enumerate() {
+            match block {
+                Some(block) => blocks.push(block),
+                None => bail!("Can not find block by number {}", idx),
+            }
+        }
+        Ok(blocks)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
