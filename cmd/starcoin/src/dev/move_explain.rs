@@ -4,23 +4,23 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::vm_status::AbortLocation;
 use starcoin_vm_types::{identifier::Identifier, language_storage::ModuleId};
-use structopt::StructOpt;
 use vm_status_translator::{explain_move_abort, MoveAbortExplain};
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "move-explain", alias = "move_explain")]
+#[derive(Debug, Parser)]
+#[clap(name = "move-explain", alias = "move_explain")]
 pub struct MoveExplainOpt {
     /// The location (module id) returned with a `MoveAbort` error
-    #[structopt(short = "l")]
+    #[clap(short = 'l')]
     location: Option<String>,
     /// The abort code returned with a `MoveAbort` error
-    #[structopt(short = "a")]
+    #[clap(short = 'a')]
     abort_code: u64,
 }
 

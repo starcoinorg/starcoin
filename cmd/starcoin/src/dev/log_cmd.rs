@@ -4,18 +4,18 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_logger::{prelude::*, LogPattern};
-use structopt::StructOpt;
 
 /// log level command option
-#[derive(Debug, StructOpt)]
-#[structopt(name = "level")]
+#[derive(Debug, Parser)]
+#[clap(name = "level")]
 pub struct LogLevelOpt {
-    #[structopt(name = "level")]
+    #[clap(name = "level")]
     level: Level,
 
-    #[structopt(
+    #[clap(
         name = "logger",
         help = "set logger's level, if not present, set global level"
     )]
@@ -43,10 +43,10 @@ impl CommandAction for LogLevelCommand {
 }
 
 /// Log pattern command option
-#[derive(Debug, StructOpt)]
-#[structopt(name = "pattern")]
+#[derive(Debug, Parser)]
+#[clap(name = "pattern")]
 pub struct LogPatternOpt {
-    #[structopt(name = "pattern")]
+    #[clap(name = "pattern")]
     /// Set log pattern, support default|withline or custom pattern string.
     pattern: LogPattern,
 }

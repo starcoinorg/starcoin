@@ -135,7 +135,7 @@ fn test_example_config_compact() -> Result<()> {
             "--stratum-address",
             "127.0.0.1",
         ];
-        let opt = StarcoinOpt::from_iter_safe(args)?;
+        let opt = StarcoinOpt::try_parse_from(args)?;
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(

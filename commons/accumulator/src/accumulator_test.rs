@@ -252,7 +252,7 @@ fn test_flush() {
     let _root_hash = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     //get from storage
-    for node_hash in leaves.clone() {
+    for node_hash in leaves {
         let node = mock_store.get_node(node_hash).unwrap();
         assert!(node.is_some());
     }

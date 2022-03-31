@@ -1,26 +1,26 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::Parser;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
-use structopt::StructOpt;
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
     name = "Move Explain",
     about = "Explain Move abort codes. Errors are defined as a global category + module-specific reason for the error."
 )]
 struct Args {
     /// The location (module id) returned with a `MoveAbort` error
-    #[structopt(long = "location", short = "l")]
+    #[clap(long = "location", short = 'l')]
     location: String,
     /// The abort code returned with a `MoveAbort` error
-    #[structopt(long = "abort-code", short = "a")]
+    #[clap(long = "abort-code", short = 'a')]
     abort_code: u64,
 }
 
 fn main() {
-    let args = Args::from_args();
+    let args = Args::parse();
 
     let mut location = args.location.trim().split("::");
     let mut address_literal = location.next().expect("Could not find address").to_string();

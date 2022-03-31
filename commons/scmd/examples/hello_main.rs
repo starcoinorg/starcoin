@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use clap::Parser;
 use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
-use scmd::{CmdContext, Command, CommandAction, ExecContext};
+use scmd::{CmdContext, CommandAction, CustomCommand, ExecContext};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "hello")]
+#[derive(Debug, Parser)]
+#[clap(name = "hello")]
 struct GlobalOpts {
-    #[structopt(short = "c", default_value = "0")]
+    #[clap(short = 'c', default_value = "0")]
     counter: usize,
-    #[structopt(short = "r")]
+    #[clap(short = 'r')]
     #[allow(unused)]
     required: String,
 }
@@ -60,10 +60,10 @@ impl User {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "list", alias = "list_alias")]
+#[derive(Debug, Parser)]
+#[clap(name = "list", alias = "list_alias")]
 struct ListOpts {
-    #[structopt(long, short = "m", default_value = "5")]
+    #[clap(long, short = 'm', default_value = "5")]
     max_size: usize,
 }
 
@@ -88,10 +88,10 @@ impl CommandAction for ListCommand {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "show")]
+#[derive(Debug, Parser)]
+#[clap(name = "show")]
 struct ShowOpts {
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     index: usize,
 }
 
@@ -111,18 +111,18 @@ impl CommandAction for ShowCommand {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "alpha")]
+#[derive(Debug, Parser)]
+#[clap(name = "alpha")]
 struct AlphaOpts {
-    #[structopt(short = "n", default_value = "alpha_default")]
+    #[clap(short = 'n', default_value = "alpha_default")]
     #[allow(unused)]
     name: String,
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "alpha_sub1")]
+#[derive(Debug, Parser)]
+#[clap(name = "alpha_sub1")]
 struct AlphaSub1Opts {
-    #[structopt(short = "n", default_value = "alpha_sub1_default")]
+    #[clap(short = 'n', default_value = "alpha_sub1_default")]
     #[allow(unused)]
     name: String,
 }
@@ -143,10 +143,10 @@ impl Counter {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "beta")]
+#[derive(Debug, Parser)]
+#[clap(name = "beta")]
 struct BetaOpts {
-    #[structopt(short = "n", default_value = "beta_default")]
+    #[clap(short = 'n', default_value = "beta_default")]
     #[allow(unused)]
     name: String,
 }
@@ -170,10 +170,10 @@ impl CommandAction for BetaCommand {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "beta_sub1")]
+#[derive(Debug, Parser)]
+#[clap(name = "beta_sub1")]
 struct BetaSub1Opts {
-    #[structopt(short = "n", default_value = "beta_default")]
+    #[clap(short = 'n', default_value = "beta_default")]
     #[allow(unused)]
     name: String,
 }
@@ -198,10 +198,10 @@ impl CommandAction for BetaSub1Command {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "test")]
+#[derive(Debug, Parser)]
+#[clap(name = "test")]
 struct TestOpts {
-    #[structopt(short = "d")]
+    #[clap(short = 'd')]
     #[allow(unused)]
     debug: bool,
 }
@@ -228,7 +228,7 @@ pub(crate) fn init_context() -> CmdContext<Counter, GlobalOpts> {
         .command(ListCommand)
         .command(ShowCommand)
         .command(
-            Command::with_name("alpha").subcommand(Command::with_action_fn(
+            CustomCommand::with_name("alpha").subcommand(CustomCommand::with_action_fn(
                 |ctx: &ExecContext<Counter, GlobalOpts, AlphaSub1Opts>| -> Result<()> {
                     println!(
                         "hello global_opts:{:?} {:?} state:{:?}",
@@ -241,7 +241,7 @@ pub(crate) fn init_context() -> CmdContext<Counter, GlobalOpts> {
             )),
         )
         .command(BetaCommand.into_cmd().subcommand(BetaSub1Command {}))
-        .command(Command::with_action_fn(
+        .command(CustomCommand::with_action_fn(
             |ctx: &ExecContext<Counter, GlobalOpts, TestOpts>| -> Result<()> {
                 println!(
                     "hello test global_opts:{:?} {:?} state:{:?}",

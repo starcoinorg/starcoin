@@ -15,7 +15,7 @@ starcoin-vm-types = {path = "../../vm/types"}
 bcs-ext = {path = "../../commons/bcs_ext"}
 anyhow = "~1"
 async-trait = "~0.1"
-clap = { version = "3.0.0-rc.7", features=["derive"] }
+clap = { version = "3", features = ["derive"] }
 elasticsearch = "7.10.0-alpha.1"
 serde = "1.0.130"
 serde_json = "~1"

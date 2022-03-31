@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use network_p2p_types::network_state::NetworkState;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "state")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "state")]
 pub struct StateOpt {}
 
 pub struct StateCommand;

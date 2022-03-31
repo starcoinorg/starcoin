@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::PeerInfoView;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "peers")]
+#[derive(Debug, Parser)]
+#[clap(name = "peers")]
 pub struct PeersOpt {}
 
 pub struct PeersCommand;

@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::Deserialize;
 use serde::Serialize;
@@ -13,17 +14,16 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use std::convert::TryInto;
-use structopt::StructOpt;
 
 /// Generate keypair
-#[derive(Debug, StructOpt)]
-#[structopt(name = "generate-keypair")]
+#[derive(Debug, Parser)]
+#[clap(name = "generate-keypair")]
 pub struct GenerateKeypairOpt {
-    #[structopt(short = "s", name = "seed")]
+    #[clap(short = 's', name = "seed")]
     /// random seed for generate keypair, should been a 32 bytes hex string.
     seed: Option<String>,
     /// How many keypair to generate
-    #[structopt(short = "c", name = "count")]
+    #[clap(short = 'c', name = "count")]
     count: Option<u32>,
 }
 

@@ -5,20 +5,20 @@ use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use structopt::StructOpt;
 
 /// Execute a script function.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "execute-function")]
+#[derive(Debug, Parser)]
+#[clap(name = "execute-function")]
 pub struct ExecuteScriptFunctionOpt {
-    #[structopt(
-    short = "t",
+    #[clap(
+    short = 't',
     long = "type_tag",
     name = "type-tag",
     parse(try_from_str = parse_type_tag)
@@ -26,14 +26,14 @@ pub struct ExecuteScriptFunctionOpt {
     /// type tags for the script
     type_tags: Option<Vec<TypeTag>>,
 
-    #[structopt(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(long = "function", name = "script-function")]
+    #[clap(long = "function", name = "script-function")]
     /// script function to execute, example: 0x1::TransferScripts::peer_to_peer_v2
     script_function: FunctionIdView,
 }

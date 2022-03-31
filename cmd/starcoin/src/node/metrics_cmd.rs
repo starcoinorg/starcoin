@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use std::collections::HashMap;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "metrics")]
+#[derive(Debug, Parser)]
+#[clap(name = "metrics")]
 pub struct MetricsOpt {}
 
 pub struct MetricsCommand;

@@ -3,12 +3,12 @@
 
 use crate::{CommandAction, EmptyOpt, FnCommandAction, NoneAction};
 use anyhow::Result;
-use clap::{App, ArgMatches};
+use clap::Parser;
+use clap::{ArgMatches, Command};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use structopt::StructOpt;
 
 pub(crate) enum HistoryOp {
     Skip,
@@ -17,7 +17,7 @@ pub(crate) enum HistoryOp {
 
 pub(crate) trait CommandExec<State, GlobalOpt>
 where
-    GlobalOpt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
     State: 'static,
 {
     /// return HistoryOp and execute result value.
@@ -26,17 +26,17 @@ where
         &mut self,
         state: Arc<State>,
         global_opt: Arc<GlobalOpt>,
-        arg_matches: &ArgMatches<'_>,
+        arg_matches: &ArgMatches,
     ) -> Result<(HistoryOp, Value)>;
 
-    fn get_app(&mut self) -> &mut App<'static, 'static>;
+    fn get_command(&mut self) -> &mut Command<'static>;
 }
 
 pub struct ExecContext<State, GlobalOpt, Opt>
 where
     State: 'static,
-    GlobalOpt: StructOpt + 'static,
-    Opt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
+    Opt: Parser + 'static,
 {
     state: Arc<State>,
     global_opt: Arc<GlobalOpt>,
@@ -45,8 +45,8 @@ where
 
 impl<State, GlobalOpt, Opt> ExecContext<State, GlobalOpt, Opt>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
 {
     pub fn new(state: Arc<State>, global_opt: Arc<GlobalOpt>, opt: Arc<Opt>) -> Self {
         Self {
@@ -68,29 +68,29 @@ where
     }
 }
 
-pub struct Command<State, GlobalOpt, Opt, ReturnItem, Action>
+pub struct CustomCommand<State, GlobalOpt, Opt, ReturnItem, Action>
 where
-    GlobalOpt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
     State: 'static,
-    Opt: StructOpt + 'static,
+    Opt: Parser + 'static,
     ReturnItem: serde::Serialize + 'static,
     Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>
         + 'static,
 {
-    app: App<'static, 'static>,
+    app: Command<'static>,
     action: Option<Action>,
     subcommands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
     global_opt: PhantomData<GlobalOpt>,
     opt_type: PhantomData<Opt>,
 }
 
-impl<State, GlobalOpt> Command<State, GlobalOpt, EmptyOpt, (), NoneAction<State, GlobalOpt>>
+impl<State, GlobalOpt> CustomCommand<State, GlobalOpt, EmptyOpt, (), NoneAction<State, GlobalOpt>>
 where
-    GlobalOpt: StructOpt,
+    GlobalOpt: Parser,
 {
     pub fn with_name(name: &str) -> Self {
         Self {
-            app: App::new(name),
+            app: Command::new(name),
             action: None,
             subcommands: HashMap::new(),
             global_opt: PhantomData,
@@ -100,10 +100,16 @@ where
 }
 
 impl<State, GlobalOpt, Opt, ReturnItem>
-    Command<State, GlobalOpt, Opt, ReturnItem, FnCommandAction<State, GlobalOpt, Opt, ReturnItem>>
+    CustomCommand<
+        State,
+        GlobalOpt,
+        Opt,
+        ReturnItem,
+        FnCommandAction<State, GlobalOpt, Opt, ReturnItem>,
+    >
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize,
 {
     pub fn with_action_fn<A>(action: A) -> Self
@@ -111,7 +117,7 @@ where
         A: Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<ReturnItem> + 'static,
     {
         Self {
-            app: Opt::clap(),
+            app: Opt::command(),
             action: Some(FnCommandAction::new(action)),
             subcommands: HashMap::new(),
             global_opt: PhantomData,
@@ -120,16 +126,17 @@ where
     }
 }
 
-impl<State, GlobalOpt, Opt, ReturnItem, Action> Command<State, GlobalOpt, Opt, ReturnItem, Action>
+impl<State, GlobalOpt, Opt, ReturnItem, Action>
+    CustomCommand<State, GlobalOpt, Opt, ReturnItem, Action>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize + 'static,
     Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
     pub fn new() -> Self {
         Self {
-            app: Opt::clap(),
+            app: Opt::command(),
             action: None,
             subcommands: HashMap::new(),
             global_opt: PhantomData,
@@ -139,7 +146,7 @@ where
 
     pub fn with_action(action: Action) -> Self {
         Self {
-            app: Opt::clap(),
+            app: Opt::command(),
             action: Some(action),
             subcommands: HashMap::new(),
             global_opt: PhantomData,
@@ -156,13 +163,13 @@ where
         self.app.get_name()
     }
 
-    pub fn app(&self) -> &App<'static, 'static> {
+    pub fn app(&self) -> &Command<'static> {
         &self.app
     }
 
     pub fn subcommand<SubOpt, SubReturnItem, SubAction, CMD>(mut self, subcommand: CMD) -> Self
     where
-        SubOpt: StructOpt + 'static,
+        SubOpt: Parser + 'static,
         SubReturnItem: serde::Serialize + 'static,
         SubAction: CommandAction<
                 State = State,
@@ -170,7 +177,7 @@ where
                 Opt = SubOpt,
                 ReturnItem = SubReturnItem,
             > + 'static,
-        CMD: Into<Command<State, GlobalOpt, SubOpt, SubReturnItem, SubAction>> + 'static,
+        CMD: Into<CustomCommand<State, GlobalOpt, SubOpt, SubReturnItem, SubAction>> + 'static,
     {
         let subcommand = subcommand.into();
         let name = subcommand.name();
@@ -219,10 +226,10 @@ where
 }
 
 impl<State, GlobalOpt, Opt, ReturnItem, Action> Default
-    for Command<State, GlobalOpt, Opt, ReturnItem, Action>
+    for CustomCommand<State, GlobalOpt, Opt, ReturnItem, Action>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize + 'static,
     Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
@@ -232,10 +239,10 @@ where
 }
 
 impl<State, GlobalOpt, Opt, ReturnItem, Action> CommandExec<State, GlobalOpt>
-    for Command<State, GlobalOpt, Opt, ReturnItem, Action>
+    for CustomCommand<State, GlobalOpt, Opt, ReturnItem, Action>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize + 'static,
     Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
@@ -243,25 +250,21 @@ where
         &mut self,
         state: Arc<State>,
         global_opt: Arc<GlobalOpt>,
-        arg_matches: &ArgMatches<'_>,
+        arg_matches: &ArgMatches,
     ) -> Result<(HistoryOp, Value)> {
-        let opt = Arc::new(Opt::from_clap(arg_matches));
+        let opt = Arc::new(Opt::from_arg_matches(arg_matches)?);
         let ctx = ExecContext::new(state, global_opt, opt);
         let value = if self.has_subcommand() {
-            let (subcmd_name, subcmd_matches) = arg_matches.subcommand();
-            match subcmd_name {
-                "" => self.exec_action(&ctx)?,
-                subcmd_name => {
-                    let subcmd = self.subcommands.get_mut(subcmd_name);
-                    match (subcmd, subcmd_matches) {
-                        (Some(subcmd), Some(subcmd_matches)) => {
-                            subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?
-                        }
-                        _ => unreachable!(
-                            "this should not happen, because sub cmd has check by clip."
-                        ),
+            if let Some((subcmd_name, subcmd_matches)) = arg_matches.subcommand() {
+                let subcmd = self.subcommands.get_mut(subcmd_name);
+                match (subcmd, subcmd_matches) {
+                    (Some(subcmd), subcmd_matches) => {
+                        subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?
                     }
+                    _ => unreachable!("this should not happen, because sub cmd has check by clip."),
                 }
+            } else {
+                self.exec_action(&ctx)?
             }
         } else {
             self.exec_action(&ctx)?
@@ -269,20 +272,20 @@ where
         Ok(value)
     }
 
-    fn get_app(&mut self) -> &mut App<'static, 'static> {
+    fn get_command(&mut self) -> &mut Command<'static> {
         &mut self.app
     }
 }
 
 impl<C, State, GlobalOpt, Opt, ReturnItem> From<C>
-    for Command<C::State, C::GlobalOpt, C::Opt, C::ReturnItem, C>
+    for CustomCommand<C::State, C::GlobalOpt, C::Opt, C::ReturnItem, C>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize,
     C: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>,
 {
     fn from(action: C) -> Self {
-        Command::with_action(action)
+        CustomCommand::with_action(action)
     }
 }

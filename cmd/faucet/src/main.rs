@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use clap::Parser;
 use futures::executor;
 use starcoin_faucet::{faucet::Faucet, web};
 use starcoin_rpc_client::RpcClient;
@@ -9,27 +10,26 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_value::TokenValue;
 use starcoin_types::account_config::STCUnit;
 use std::path::PathBuf;
-use structopt::StructOpt;
 use tiny_http::Server;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "starcoin-faucet", about = "Starcoin")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "starcoin-faucet", about = "Starcoin")]
 pub struct FaucetOpt {
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     pub ipc_path: PathBuf,
-    #[structopt(long, short = "a", default_value = "0.0.0.0:8000")]
+    #[clap(long, short = 'a', default_value = "0.0.0.0:8000")]
     pub server_addr: String,
-    #[structopt(long, short = "d")]
+    #[clap(long, short = 'd')]
     pub faucet_address: Option<AccountAddress>,
-    #[structopt(long, short = "p", default_value = "")]
+    #[clap(long, short = 'p', default_value = "")]
     pub faucet_account_password: String,
-    #[structopt(long, short = "m", default_value = "1 STC")]
+    #[clap(long, short = 'm', default_value = "1 STC")]
     pub max_amount_pre_request: TokenValue<STCUnit>,
 }
 
 fn main() -> Result<()> {
     let _logger_handle = starcoin_logger::init();
-    let opts: FaucetOpt = FaucetOpt::from_args();
+    let opts: FaucetOpt = FaucetOpt::parse();
     let client = RpcClient::connect_ipc(opts.ipc_path.as_path()).expect("Failed to connect ipc");
 
     let account = match opts.faucet_address.as_ref() {

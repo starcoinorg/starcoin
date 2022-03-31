@@ -3,10 +3,10 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
-use structopt::StructOpt;
 
 static LOGGER_FILE_NAME: &str = "starcoin.log";
 
@@ -14,26 +14,26 @@ const DEFAULT_MAX_FILE_SIZE: u64 = 1024 * 1024 * 1024;
 const MAX_FILE_SIZE_FOR_TEST: u64 = 10 * 1024 * 1024;
 const DEFAULT_MAX_BACKUP: u32 = 7;
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct LoggerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "logger-disable-stderr", long, help = "disable stderr logger")]
+    #[clap(name = "logger-disable-stderr", long, help = "disable stderr logger")]
     pub disable_stderr: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "logger-disable-file", long, help = "disable file logger")]
+    #[clap(name = "logger-disable-file", long, help = "disable file logger")]
     pub disable_file: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "logger-max-file-size", long)]
+    #[clap(name = "logger-max-file-size", long)]
     pub max_file_size: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "logger-max-backup", long)]
+    #[clap(name = "logger-max-backup", long)]
     pub max_backup: Option<u32>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
 }

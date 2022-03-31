@@ -5,22 +5,22 @@ use crate::cli_state::CliState;
 use crate::view::{ExecutionOutputView, FilePathOrHex};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::SignedUserTransactionView;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::convert::TryInto;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 /// Submit a SignedTransaction file or hex to transaction pool.
-#[structopt(name = "submit-txn", alias = "submit-multisig-txn")]
+#[clap(name = "submit-txn", alias = "submit-multisig-txn")]
 pub struct SubmitTxnOpt {
-    #[structopt(name = "signed-txn-file-or-hex", required = true)]
+    #[clap(name = "signed-txn-file-or-hex", required = true)]
     /// file contains the signed txn or hex string
     signed_txn_file_or_hex: FilePathOrHex,
 
-    #[structopt(
-        short = "b",
+    #[clap(
+        short = 'b',
         name = "blocking-mode",
         long = "blocking",
         help = "blocking wait txn mined"

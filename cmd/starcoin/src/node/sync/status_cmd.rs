@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::sync_status::SyncStatus;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "status")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "status")]
 pub struct StatusOpt {}
 
 pub struct StatusCommand;

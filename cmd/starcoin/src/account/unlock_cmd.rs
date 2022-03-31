@@ -4,25 +4,25 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::time::Duration;
-use structopt::StructOpt;
 
 /// Unlock the account
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "unlock")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "unlock")]
 pub struct UnlockOpt {
-    #[structopt(short = "p", default_value = "")]
+    #[clap(short = 'p', default_value = "")]
     password: String,
-    #[structopt(
-        short = "d",
+    #[clap(
+        short = 'd',
         help = "keep account unlock for how long(in seconds) from now",
         default_value = "300"
     )]
     duration: u32,
-    #[structopt(
+    #[clap(
         name = "account_address",
         help = "The wallet account address witch to unlock, if absent, unlock the default wallet."
     )]

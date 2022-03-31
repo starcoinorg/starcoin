@@ -1,3 +1,4 @@
+use clap::Parser;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use starcoin_crypto::HashValue;
@@ -16,7 +17,6 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use structopt::StructOpt;
 
 #[derive(Serialize, Debug)]
 pub struct AccountData<R: Serialize> {
@@ -152,36 +152,36 @@ fn parse_struct_tag(input: &str) -> anyhow::Result<StructTag> {
     }
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "resource-exporter", about = "onchain resource exporter")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "resource-exporter", about = "onchain resource exporter")]
 pub struct ExporterOptions {
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// output file, like accounts.csv
     pub output: PathBuf,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// block id which snapshot at.
     pub block_id: HashValue,
 
-    #[structopt(
-        short="r",
+    #[clap(
+        short='r',
         default_value = "0x1::Account::Balance<0x1::STC::STC>",
         parse(try_from_str=parse_struct_tag)
     )]
     /// resource struct tag.
     resource_type: StructTag,
 
-    #[structopt(min_values = 1, required = true)]
+    #[clap(min_values = 1, required = true)]
     /// fields of the struct to output. it use pointer syntax of serde_json.
     /// like: /authentication_key /sequence_number /deposit_events/counter
     pub fields: Vec<String>,
 }
 
 fn main() -> anyhow::Result<()> {
-    let option: ExporterOptions = ExporterOptions::from_args();
+    let option: ExporterOptions = ExporterOptions::parse();
     let output = option.output.as_path();
     let block_id = option.block_id;
     let resource = option.resource_type.clone();

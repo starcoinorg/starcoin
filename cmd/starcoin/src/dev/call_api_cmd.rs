@@ -4,10 +4,10 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde_json::Value;
 use starcoin_rpc_client::Params;
-use structopt::StructOpt;
 
 /// Call rpc api command
 ///  Some examples:
@@ -15,14 +15,14 @@ use structopt::StructOpt;
 ///  dev call-api node.info
 ///  dev call-api chain.get_block_by_number [0]
 ///  ```
-#[derive(Debug, StructOpt)]
-#[structopt(name = "call-api")]
+#[derive(Debug, Parser)]
+#[clap(name = "call-api")]
 pub struct CallApiOpt {
-    #[structopt(name = "rpc-api-name")]
+    #[clap(name = "rpc-api-name")]
     /// api name to call, example: node.info
     rpc_api_name: String,
 
-    #[structopt(name = "api-params")]
+    #[clap(name = "api-params")]
     /// api params, should be a json array string
     params: Option<String>,
 }

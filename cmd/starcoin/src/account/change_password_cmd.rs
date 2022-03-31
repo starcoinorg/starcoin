@@ -4,22 +4,22 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Change account password, should unlock the account before change password.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "change-password")]
+#[derive(Debug, Parser)]
+#[clap(name = "change-password")]
 pub struct ChangePasswordOpt {
-    #[structopt(
+    #[clap(
         name = "account_address",
         help = "The wallet account address which to change password."
     )]
     account_address: AccountAddress,
 
-    #[structopt(short, name = "password")]
+    #[clap(short, name = "password")]
     password: String,
 }
 

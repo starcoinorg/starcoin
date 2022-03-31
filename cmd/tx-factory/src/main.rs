@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use clap::Parser;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
@@ -18,62 +19,61 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, Default)]
-#[structopt(name = "txfactory", about = "tx generator for starcoin")]
+#[derive(Debug, Clone, Parser, Default)]
+#[clap(name = "txfactory", about = "tx generator for starcoin")]
 pub struct TxFactoryOpt {
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub ipc_path: PathBuf,
-    #[structopt(
+    #[clap(
         long,
-        short = "i",
+        short = 'i',
         default_value = "1000",
         help = "interval(in ms) of txn gen"
     )]
     pub interval: u64,
-    #[structopt(
+    #[clap(
         long,
-        short = "a",
+        short = 'a',
         help = "account used to send txn, use default account if not specified"
     )]
     pub account_address: Option<AccountAddress>,
-    #[structopt(long, short = "p", default_value = "")]
+    #[clap(long, short = 'p', default_value = "")]
     pub account_password: String,
 
-    #[structopt(
+    #[clap(
         long,
-        short = "r",
+        short = 'r',
         help = "address to receive balance, default faucet address"
     )]
     pub receiver_address: Option<AccountAddress>,
 
-    #[structopt(long, short = "k", help = "this option is deprecated")]
+    #[clap(long, short = 'k', help = "this option is deprecated")]
     pub _receiver_public_key: Option<String>,
 
-    #[structopt(long = "stress", short = "s", help = "is stress test or not")]
+    #[clap(long = "stress", short = 's', help = "is stress test or not")]
     pub stress: bool,
 
-    #[structopt(
+    #[clap(
         long,
-        short = "n",
+        short = 'n',
         default_value = "30",
         help = "numbers of account will be created"
     )]
     pub account_num: u32,
 
-    #[structopt(
+    #[clap(
         long,
-        short = "t",
+        short = 't',
         default_value = "20",
         help = "count of round number"
     )]
     pub round_num: u32,
-    #[structopt(long, short = "w", default_value = "60", help = "watch_timeout")]
+    #[clap(long, short = 'w', default_value = "60", help = "watch_timeout")]
     pub watch_timeout: u32,
-    #[structopt(
+    #[clap(
         long,
-        short = "b",
+        short = 'b',
         default_value = "50",
         help = "create account batch size"
     )]
@@ -116,7 +116,7 @@ fn get_account_or_default(
 
 fn main() {
     let _logger_handler = starcoin_logger::init();
-    let opts: TxFactoryOpt = TxFactoryOpt::from_args();
+    let opts: TxFactoryOpt = TxFactoryOpt::parse();
 
     let account_address = opts.account_address;
     let interval = Duration::from_millis(opts.interval);

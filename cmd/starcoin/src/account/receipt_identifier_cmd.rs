@@ -4,17 +4,17 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Encode or decode the receipt_identifier
-#[derive(Debug, StructOpt)]
-#[structopt(name = "receipt-identifier")]
+#[derive(Debug, Parser)]
+#[clap(name = "receipt-identifier")]
 pub struct ReceiptIdentifierOpt {
-    #[structopt(name = "address_or_receipt")]
+    #[clap(name = "address_or_receipt")]
     address_or_receipt: AccountAddress,
 }
 

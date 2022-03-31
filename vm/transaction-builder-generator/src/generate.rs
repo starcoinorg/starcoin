@@ -7,15 +7,15 @@
 //! cargo run -p transaction-builder-generator -- --help
 //! '''
 
+use clap::Parser;
 use serde_generate as serdegen;
 use serde_reflection::Registry;
 use std::path::PathBuf;
-use structopt::{clap::arg_enum, StructOpt};
+use std::str::FromStr;
 use transaction_builder_generator as buildgen;
 use transaction_builder_generator::is_supported_abi;
 
-arg_enum! {
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 enum Language {
     Python3,
     Rust,
@@ -23,10 +23,27 @@ enum Language {
     Java,
     Dart,
 }
+impl Language {
+    fn variants() -> [&'static str; 5] {
+        ["python3", "rust", "cpp", "java", "dart"]
+    }
+}
+impl FromStr for Language {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "python3" => Ok(Language::Python3),
+            "rust" => Ok(Language::Rust),
+            "cpp" => Ok(Language::Cpp),
+            "java" => Ok(Language::Java),
+            "dart" => Ok(Language::Dart),
+            _ => Err(format!("Unsupported language: {}", s)),
+        }
+    }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
     name = "Transaction builder generator",
     about = "Generate code for Move script builders"
 )]
@@ -35,15 +52,15 @@ struct Options {
     abi_directory: PathBuf,
 
     /// Language for code generation.
-    #[structopt(long, possible_values = &Language::variants(), case_insensitive = true, default_value = "Python3")]
+    #[clap(long, possible_values = Language::variants(), default_value = "python3")]
     language: Language,
 
     /// Directory where to write generated modules (otherwise print code on stdout).
-    #[structopt(long)]
+    #[clap(long)]
     target_source_dir: Option<PathBuf>,
 
     /// Also install the diem types described by the given YAML file, along with the BCS runtime.
-    #[structopt(long)]
+    #[clap(long)]
     with_diem_types: Option<PathBuf>,
 
     /// Module name for the transaction builders installed in the `target_source_dir`.
@@ -51,30 +68,30 @@ struct Options {
     /// * In Java, this is expected to be a package name, e.g. "com.test" to create Java files in `com/test`.
     /// * In Go, this is expected to be of the format "go_module/path/go_package_name",
     /// and `diem_types` is assumed to be in "go_module/path/diem_types".
-    #[structopt(long)]
+    #[clap(long)]
     module_name: Option<String>,
 
     /// Optional package name (Python) or module path (Go) of the Serde and BCS runtime dependencies.
-    #[structopt(long)]
+    #[clap(long)]
     serde_package_name: Option<String>,
 
     /// Optional version number for the `diem_types` module (useful in Rust).
     /// If `--with-diem-types` is passed, this will be the version of the generated `diem_types` module.
-    #[structopt(long, default_value = "0.1.0")]
+    #[clap(long, default_value = "0.1.0")]
     diem_version_number: String,
 
     /// Optional package name (Python) or module path (Go) of the `diem_types` dependency.
-    #[structopt(long)]
+    #[clap(long)]
     diem_package_name: Option<String>,
 
     /// Read custom code for Diem containers from the given file paths. Containers will be matched with file stems.
     /// (e.g. `AddressAccount` <- `path/to/AddressAccount.py`)
-    #[structopt(long)]
+    #[clap(long)]
     with_custom_diem_code: Vec<PathBuf>,
 }
 
 fn main() {
-    let options = Options::from_args();
+    let options = Options::parse();
     let abis =
         buildgen::read_abis(&options.abi_directory).expect("Failed to read ABI in directory");
     let abis = abis

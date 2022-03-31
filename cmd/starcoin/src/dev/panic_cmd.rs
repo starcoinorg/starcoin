@@ -4,15 +4,15 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 
 ///Manual trigger panic, only work for dev network.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "panic")]
+#[derive(Debug, Parser)]
+#[clap(name = "panic")]
 pub struct PanicOpt {
     /// if set remote, panic at Backend, otherwise panic at cli.
-    #[structopt(short = "r")]
+    #[clap(short = 'r')]
     remote: bool,
 }
 

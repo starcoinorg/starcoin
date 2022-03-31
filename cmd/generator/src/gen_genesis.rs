@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::init_or_load_data_dir;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
@@ -12,14 +13,13 @@ use starcoin_config::StarcoinOpt;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Generate starcoin config, account, storage and genesis in data_dir
-#[derive(Debug, StructOpt)]
-#[structopt(name = "genesis")]
+#[derive(Debug, Parser)]
+#[clap(name = "genesis")]
 pub struct GenGenesisOpt {
     ///Default account password, default is empty string.
-    #[structopt(long, short = "s")]
+    #[clap(long, short = 's')]
     password: Option<String>,
 }
 

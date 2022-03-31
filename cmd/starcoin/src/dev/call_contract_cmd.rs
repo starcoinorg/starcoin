@@ -4,10 +4,10 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_abi_decoder::DecodedMoveValue;
 use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView};
-use structopt::StructOpt;
 
 /// Call Contract command
 ///  Some examples:
@@ -17,21 +17,21 @@ use structopt::StructOpt;
 ///  # 0x1::Account::balance<0x1::STC::STC>(0x726098b70ba8aa2cc172af19af8804)
 ///  dev call --function 0x1::Account::balance -t 0x1::STC::STC --arg 0x726098b70ba8aa2cc172af19af8804
 ///  ```
-#[derive(Debug, StructOpt)]
-#[structopt(name = "call")]
+#[derive(Debug, Parser)]
+#[clap(name = "call")]
 pub struct CallContractOpt {
-    #[structopt(long)]
+    #[clap(long)]
     /// function to execute, example: 0x1::Block::current_block_number
     function: FunctionIdView,
-    #[structopt(
-        short = "t",
+    #[clap(
+        short = 't',
         long = "type_tag",
         name = "type-tag",
         help = "can specify multi type_tag"
     )]
     type_tags: Option<Vec<TypeTagView>>,
 
-    #[structopt(
+    #[clap(
         long = "arg",
         name = "transaction-args",
         help = "can specify multi arg"

@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
 use starcoin_rpc_api::types::{CodeView, ResourceView, StrView};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
-use structopt::StructOpt;
 
 /// Get state data command
 ///  Some examples:
@@ -17,22 +17,22 @@ use structopt::StructOpt;
 ///  state get code 0x1::Account
 ///  state get resource 0x1 0x1::Account::Account
 ///  ```
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get")]
+#[derive(Debug, Parser)]
+#[clap(name = "get")]
 pub enum GetOpt {
     Code {
-        #[structopt(help = "module id like: 0x1::Account")]
+        #[clap(help = "module id like: 0x1::Account")]
         module_id: StrView<ModuleId>,
-        #[structopt(long, short = "n")]
+        #[clap(long, short = 'n')]
         /// Get state at a special block height.
         block_number: Option<u64>,
     },
     Resource {
-        #[structopt(help = "account address")]
+        #[clap(help = "account address")]
         address: AccountAddress,
-        #[structopt(help = "resource struct tag,", default_value = "0x1::Account::Account")]
+        #[clap(help = "resource struct tag,", default_value = "0x1::Account::Account")]
         resource_type: StrView<StructTag>,
-        #[structopt(long, short = "n")]
+        #[clap(long, short = 'n')]
         /// Get state at a special block height.
         block_number: Option<u64>,
     },

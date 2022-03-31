@@ -1,25 +1,25 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use structopt::StructOpt;
+use clap::Parser;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 struct Opt {
-    #[structopt(long, default_value = "200")]
+    #[clap(long, default_value = "200")]
     num_accounts: usize,
 
-    #[structopt(long, default_value = "1000000")]
+    #[clap(long, default_value = "1000000")]
     init_account_balance: u64,
 
-    #[structopt(long, default_value = "20")]
+    #[clap(long, default_value = "20")]
     block_size: usize,
 
-    #[structopt(long, default_value = "10")]
+    #[clap(long, default_value = "10")]
     num_transfer_blocks: usize,
 }
 
 fn main() {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     logger::init();
 

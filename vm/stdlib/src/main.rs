@@ -3,7 +3,7 @@
 
 #![forbid(unsafe_code)]
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use itertools::Itertools;
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
@@ -177,58 +177,58 @@ fn main() {
     SimpleLogger::init(LevelFilter::Info, Config::default()).expect("init logger failed.");
     // pass argument 'version' to generate new release
     // for example, "cargo run -- --version 1"
-    let cli = App::new("stdlib")
+    let cli = Command::new("stdlib")
         .name("Move standard library")
         .author("The Starcoin Core Contributors")
         .after_help("this command can be used to generate an incremental package, with init script included.")
         .arg(
-            Arg::with_name("version")
-                .short("v")
+            Arg::new("version")
+                .short('v')
                 .long("version")
                 .takes_value(true)
                 .value_name("VERSION")
                 .help("version number for compiled stdlib, for example 1. don't forget to record the release note"),
         )
         .arg(
-            Arg::with_name("pre-version")
-                .short("p")
+            Arg::new("pre-version")
+                .short('p')
                 .long("pre-version")
                 .takes_value(true)
                 .value_name("PRE_VERSION")
                 .help("pre version of stdlib to generate diff and check compatibility with"))
         .arg(
-            Arg::with_name("no-check-compatibility")
-                .short("n")
+            Arg::new("no-check-compatibility")
+                .short('n')
                 .long("no-check-compatibility")
                 .help("don't check compatibility between the old and new standard library"),
         )
         .arg(
-        Arg::with_name("init-script-module")
-            .short("m")
+        Arg::new("init-script-module")
+            .short('m')
             .long("init-script-module")
             .takes_value(true)
             .value_name("MODULE")
             .help("module name of init script function"),
         ).arg(
-        Arg::with_name("init-script-function")
-            .short("f")
+        Arg::new("init-script-function")
+            .short('f')
             .long("init-script-function")
             .takes_value(true)
             .value_name("FUNC")
             .help("function name of init script function"),
         ).arg(
-        Arg::with_name("init-script-type-args")
-            .short("t")
+        Arg::new("init-script-type-args")
+            .short('t')
             .long("init-script-type-args")
-            .multiple(true)
+            .multiple_occurrences(true)
             .takes_value(true)
             .value_name("TYPE_ARGS")
             .help("type args of init script function"),
         ).arg(
-        Arg::with_name("init-script-args")
-            .short("a")
+        Arg::new("init-script-args")
+            .short('a')
             .long("init-script-args")
-            .multiple(true)
+            .multiple_occurrences(true)
             .takes_value(true)
             .value_name("ARGS")
             .help("args of init script function"),

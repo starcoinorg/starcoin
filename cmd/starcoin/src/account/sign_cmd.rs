@@ -4,21 +4,21 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Sign a message by the account's private key.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "sign-message")]
+#[derive(Debug, Parser)]
+#[clap(name = "sign-message")]
 pub struct SignMessageOpt {
-    #[structopt(short = "s")]
+    #[clap(short = 's')]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 
-    #[structopt(short = "m", long = "message", name = "signing-message")]
+    #[clap(short = 'm', long = "message", name = "signing-message")]
     message: SigningMessage,
 }
 

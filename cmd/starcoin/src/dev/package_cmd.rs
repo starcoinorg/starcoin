@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -22,28 +23,27 @@ use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 
 /// Build a modules package.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "package")]
+#[derive(Debug, Parser)]
+#[clap(name = "package")]
 pub struct PackageOpt {
-    #[structopt(
+    #[clap(
         name = "mv-file-or-dir",
         help = "path for move bytecode file, can be a folder.",
         parse(from_os_str)
     )]
     mv_file_or_dir: PathBuf,
 
-    #[structopt(
+    #[clap(
         long = "function",
         name = "script-function",
         help = "init script function to execute, example: 0x123::MyScripts::init_script"
     )]
     init_script: Option<FunctionIdView>,
 
-    #[structopt(
-    short = "t",
+    #[clap(
+    short = 't',
     long = "type_tag",
     name = "type-tag",
     parse(try_from_str = parse_type_tag)
@@ -51,18 +51,18 @@ pub struct PackageOpt {
     /// type tags for the script
     type_tags: Option<Vec<TypeTag>>,
 
-    #[structopt(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 
-    #[structopt(short = "o", name = "out-dir", help = "out dir", parse(from_os_str))]
+    #[clap(short = 'o', name = "out-dir", help = "out dir", parse(from_os_str))]
     out_dir: Option<PathBuf>,
 
-    #[structopt(short = "n", name = "package-name", long = "name")]
+    #[clap(short = 'n', name = "package-name", long = "name")]
     /// package file name, if absent, use file hash as name.
     package_name: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// Should output hex string of package.
     hex: bool,
 }

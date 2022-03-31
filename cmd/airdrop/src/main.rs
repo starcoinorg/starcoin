@@ -136,8 +136,7 @@ async fn main() -> Result<()> {
             if !is_stc && !is_accept_token(data.address, token_type.clone(), &state_client).await? {
                 println!(
                     "{} does not accepted the token {}, skip.",
-                    data.address,
-                    token_type.to_string()
+                    data.address, token_type
                 );
                 continue;
             }
@@ -163,11 +162,7 @@ async fn main() -> Result<()> {
         }
     };
 
-    println!(
-        "Will act as sender {}, token: {}",
-        sender,
-        token_type.to_string()
-    );
+    println!("Will act as sender {}, token: {}", sender, token_type);
 
     // read from onchain
     let account_sequence_number = {

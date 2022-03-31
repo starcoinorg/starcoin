@@ -5,15 +5,15 @@ use crate::cli_state::CliState;
 use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Lock the account
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "lock")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "lock")]
 pub struct LockOpt {
-    #[structopt(
+    #[clap(
         name = "account_address",
         help = "The wallet account address witch to lock, if absent, lock the default wallet."
     )]

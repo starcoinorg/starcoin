@@ -1,19 +1,19 @@
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountProviderStrategy;
 use std::path::PathBuf;
 use std::sync::Arc;
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct AccountProviderConfig {
     /// Path to the local account provider dir, load the accounts from local dir path
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "local-account-dir", parse(from_os_str))]
+    #[clap(long = "local-account-dir", parse(from_os_str))]
     pub account_dir: Option<PathBuf>,
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     provider_strategy: AccountProviderStrategy,
 }
 

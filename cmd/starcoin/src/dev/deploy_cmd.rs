@@ -6,19 +6,19 @@ use crate::dev::dev_helper;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::{ensure, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Deploy Move modules
-#[derive(Debug, StructOpt)]
-#[structopt(name = "deploy")]
+#[derive(Debug, Parser)]
+#[clap(name = "deploy")]
 pub struct DeployOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(name = "mv-or-package-file")]
+    #[clap(name = "mv-or-package-file")]
     /// move bytecode file path or package binary path
     mv_or_package_file: PathBuf,
 }

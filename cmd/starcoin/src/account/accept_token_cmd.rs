@@ -5,6 +5,7 @@ use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
@@ -12,16 +13,15 @@ use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
 use std::convert::TryInto;
-use structopt::StructOpt;
 
 /// Accept a new token, this operator will call 0x1::Account::accept_token function.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "accept-token", alias = "accept_token")]
+#[derive(Debug, Parser)]
+#[clap(name = "accept-token", alias = "accept_token")]
 pub struct AcceptTokenOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(
+    #[clap(
         name = "token-code",
         help = "token's code to accept, for example:  0x1::DummyToken::DummyToken "
     )]

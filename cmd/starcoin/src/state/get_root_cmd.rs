@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-root", alias = "get_root")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-root", alias = "get_root")]
 pub struct GetOpt {}
 
 pub struct GetRootCommand;

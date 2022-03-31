@@ -4,16 +4,16 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::BlockInfoView;
 use starcoin_types::block::BlockNumber;
-use structopt::StructOpt;
 
 /// Get block info by number
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-block-info", alias = "get_block_info")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-block-info", alias = "get_block_info")]
 pub struct GetBlockInfoOpt {
-    #[structopt(name = "number")]
+    #[clap(name = "number")]
     number: BlockNumber,
 }
 

@@ -14,8 +14,8 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     transaction_argument::TransactionArgument,
 };
+use move_transactional_test_runner::framework;
 use move_transactional_test_runner::{
-    framework,
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, RawAddress, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
@@ -47,6 +47,7 @@ use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 
+use clap::Parser;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -66,7 +67,6 @@ use starcoin_vm_types::{
 use std::convert::TryFrom;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, PRECOMPILED_STARCOIN_FRAMEWORK};
-use structopt::StructOpt;
 
 mod in_memory_state_cache;
 pub mod remote_state;
@@ -116,73 +116,73 @@ impl FromStr for RawPublicKey {
     }
 }
 
-#[derive(StructOpt, Debug, Default)]
+#[derive(Parser, Debug, Default)]
 pub struct ExtraInitArgs {
-    #[structopt(name = "rpc", long)]
+    #[clap(name = "rpc", long)]
     /// use remote starcoin rpc as initial state.
     rpc: Option<String>,
-    #[structopt(long = "block-number", requires("rpc"))]
+    #[clap(long = "block-number", requires("rpc"))]
     /// block number to read state from. default to latest block number.
     block_number: Option<u64>,
 
-    #[structopt(long = "network", short, conflicts_with("rpc"))]
+    #[clap(long = "network", short, conflicts_with("rpc"))]
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
 
-    #[structopt(long = "public-keys", parse(try_from_str = parse_named_key))]
+    #[clap(long = "public-keys", parse(try_from_str = parse_named_key))]
     public_keys: Option<Vec<(Identifier, Ed25519PublicKey)>>,
-    // #[structopt(long = "private-keys", parse(try_from_str = parse_named_private_key))]
+    // #[clap(long = "private-keys", parse(try_from_str = parse_named_private_key))]
     // private_keys: Option<Vec<(Identifier, Ed25519PrivateKey)>>,
 }
 
 /// Starcoin-specific arguments for the publish command.
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct StarcoinPublishArgs {
-    #[structopt(short = "k", long = "public-key")]
+    #[clap(short = 'k', long = "public-key")]
     public_key: Option<RawPublicKey>,
 }
 
 /// Starcoin-specifc arguments for the run command,
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct StarcoinRunArgs {
-    #[structopt(short = "k", long = "public-key")]
+    #[clap(short = 'k', long = "public-key")]
     public_key: Option<RawPublicKey>,
 
-    #[structopt(short, long)]
+    #[clap(short, long)]
     /// print detailed outputs
     verbose: bool,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub enum StarcoinSubcommands {
-    #[structopt(name = "faucet")]
+    #[clap(name = "faucet")]
     Faucet {
-        #[structopt(long="addr", parse(try_from_str=RawAddress::parse))]
+        #[clap(long="addr", parse(try_from_str=RawAddress::parse))]
         address: RawAddress,
-        #[structopt(long = "amount", default_value = "100000000000")]
+        #[clap(long = "amount", default_value = "100000000000")]
         initial_balance: u128,
-        #[structopt(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+        #[clap(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
         public_key: Option<Ed25519PublicKey>,
     },
 
-    #[structopt(name = "block")]
+    #[clap(name = "block")]
     NewBlock {
-        #[structopt(long, parse(try_from_str=RawAddress::parse))]
+        #[clap(long, parse(try_from_str=RawAddress::parse))]
         author: Option<RawAddress>,
-        #[structopt(long)]
+        #[clap(long)]
         timestamp: Option<u64>,
-        #[structopt(long)]
+        #[clap(long)]
         number: Option<u64>,
-        #[structopt(long)]
+        #[clap(long)]
         uncles: Option<u64>,
     },
-    #[structopt(name = "call")]
+    #[clap(name = "call")]
     ContractCall {
-        #[structopt(name = "FUNCTION")]
+        #[clap(name = "FUNCTION")]
         name: FunctionIdView,
-        #[structopt(long = "args", short = "i")]
+        #[clap(long = "args", short = 'i')]
         args: Vec<TransactionArgumentView>,
-        #[structopt(long = "type-args", short = "t")]
+        #[clap(long = "type-args", short = 't')]
         type_args: Vec<TypeTagView>,
     },
 }

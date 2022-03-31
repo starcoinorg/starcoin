@@ -3,6 +3,7 @@
 
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
+use clap::{IntoApp, Parser};
 use csv::Writer;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use starcoin_account_api::AccountInfo;
@@ -50,8 +51,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
-use structopt::StructOpt;
-
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
 const SNAP_GAP: u64 = 128;
@@ -197,14 +196,13 @@ impl FromStr for DbSchema {
     }
 }
 
-#[derive(StructOpt)]
-#[structopt(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
+#[derive(Parser)]
 struct Opt {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     cmd: Option<Cmd>,
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 enum Cmd {
     Exporter(ExporterOptions),
     Checkkey(CheckKeyOptions),
@@ -216,83 +214,83 @@ enum Cmd {
     ApplySnapshot(ApplySnapshotOptions),
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "db-exporter", about = "starcoin db exporter")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "db-exporter", about = "starcoin db exporter")]
 pub struct ExporterOptions {
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// output file, like accounts.csv, default is stdout.
     pub output: Option<PathBuf>,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
-    #[structopt(long, short = "s")]
+    #[clap(long, short = 's')]
     /// the table of database which to export, block,block_header
     pub schema: DbSchema,
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "checkkey", about = "starcoin db check key")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "checkkey", about = "starcoin db check key")]
 pub struct CheckKeyOptions {
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
-    #[structopt(long, short = "n",
+    #[clap(long, short = 'n',
     possible_values=&["block", "block_header"],)]
     pub cf_name: String,
-    #[structopt(long, short = "b")]
+    #[clap(long, short = 'b')]
     pub block_hash: HashValue,
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "export-block-range", about = "export block range")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "export-block-range", about = "export block range")]
 pub struct ExportBlockRangeOptions {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// output dir, like ~/, output filename like ~/block_start_end.csv
     pub output: PathBuf,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub db_path: PathBuf,
-    #[structopt(long, short = "s")]
+    #[clap(long, short = 's')]
     pub start: BlockNumber,
-    #[structopt(long, short = "e")]
+    #[clap(long, short = 'e')]
     pub end: BlockNumber,
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "apply-block-range", about = "apply block range")]
+#[derive(Debug, Parser)]
+#[clap(name = "apply-block-range", about = "apply block range")]
 pub struct ApplyBlockOptions {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[structopt(long, short = "i", parse(from_os_str))]
-    /// input file, like ~/block_start_end.csv
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// input file, like accounts.csv
     pub input_path: PathBuf,
-    #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
+    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Option<Verifier>,
-    #[structopt(long, short = "w")]
+    #[clap(long, short = 'w')]
     /// Watch metrics logs.
     pub watch: bool,
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "startup_info_back", about = "startup info back")]
+#[derive(Debug, Parser)]
+#[clap(name = "startup_info_back", about = "startup info back")]
 pub struct StartupInfoBackOptions {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
     /// startupinfo BlockNumber back off size
-    #[structopt(long, short = "b")]
+    #[clap(long, short = 'b')]
     pub back_size: Option<u64>,
 }
 #[derive(Debug, Copy, Clone)]
@@ -318,58 +316,58 @@ impl FromStr for Txntype {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "gen_block_transactions", about = "gen block transactions")]
+#[derive(Debug, Parser)]
+#[clap(name = "gen_block_transactions", about = "gen block transactions")]
 pub struct GenBlockTransactionsOptions {
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/halley
     pub to_path: PathBuf,
-    #[structopt(long, short = "b")]
+    #[clap(long, short = 'b')]
     pub block_num: Option<u64>,
-    #[structopt(long, short = "t")]
+    #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[structopt(long, short = "p", possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "export-snapshot", about = "export snapshot")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "export-snapshot", about = "export snapshot")]
 pub struct ExportSnapshotOptions {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// output dir, like ~/, manifest.csv will write in output dir
     pub output: PathBuf,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub db_path: PathBuf,
-    #[structopt(long, short = "t")]
+    #[clap(long, short = 't')]
     /// enable increment export snapshot
     pub increment: Option<bool>,
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "apply-snapshot", about = "apply snapshot")]
+#[derive(Debug, Parser)]
+#[clap(name = "apply-snapshot", about = "apply snapshot")]
 pub struct ApplySnapshotOptions {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[structopt(long, short = "o", parse(from_os_str))]
+    #[clap(long, short = 'o', parse(from_os_str))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[structopt(long, short = "i", parse(from_os_str))]
+    #[clap(long, short = 'i', parse(from_os_str))]
     /// input_path, manifest.csv in this dir
     pub input_path: PathBuf,
 }
 
 fn main() -> anyhow::Result<()> {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let cmd = match opt.cmd {
         Some(cmd) => cmd,
         None => {
-            Opt::clap().print_help().ok();
+            Opt::command().print_help().ok();
             return Ok(());
         }
     };

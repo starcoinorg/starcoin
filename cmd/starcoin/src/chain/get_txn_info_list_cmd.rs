@@ -4,22 +4,22 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::TransactionInfoView;
-use structopt::StructOpt;
 
 /// Get transaction infos list
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-txn-info-list", alias = "get_txn_info_list")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-txn-info-list", alias = "get_txn_info_list")]
 pub struct GetTransactionInfoListOpt {
     /// The global transaction index for start scan.
-    #[structopt(name = "start-index", alias = "start_index", long, short = "s")]
+    #[clap(name = "start-index", alias = "start_index", long, short = 's')]
     start_index: u64,
 
-    #[structopt(name = "reverse", long, short = "r")]
+    #[clap(name = "reverse", long, short = 'r')]
     reverse: Option<bool>,
 
-    #[structopt(name = "count", long, short = "c", default_value = "32")]
+    #[clap(name = "count", long, short = 'c', default_value = "32")]
     count: u64,
 }
 

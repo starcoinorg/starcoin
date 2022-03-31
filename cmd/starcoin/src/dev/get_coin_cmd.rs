@@ -5,6 +5,7 @@ use crate::cli_state::CliState;
 use crate::view::TransactionOptions;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::TransactionInfoView;
 use starcoin_transaction_builder::encode_transfer_script_by_token_code;
@@ -15,24 +16,23 @@ use starcoin_vm_types::account_config::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_value::TokenValue;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::time::Duration;
-use structopt::StructOpt;
 
 /// Get stc to default account.
 /// This command only available in dev network.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-coin", alias = "get_coin")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-coin", alias = "get_coin")]
 pub struct GetCoinOpt {
-    #[structopt(short = "v", default_value = "1STC")]
+    #[clap(short = 'v', default_value = "1STC")]
     /// the amount of stc, eg: 1STC
     amount: TokenValue<STCUnit>,
-    #[structopt(
+    #[clap(
         name = "no-blocking-mode",
         long = "no-blocking",
         help = "not blocking wait txn mined"
     )]
     no_blocking: bool,
 
-    #[structopt(name = "address_or_receipt")]
+    #[clap(name = "address_or_receipt")]
     /// The account's address or receipt to send coin, if absent, send to the default account.
     address_or_receipt: Option<AccountAddress>,
 }

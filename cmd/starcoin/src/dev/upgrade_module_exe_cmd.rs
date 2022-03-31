@@ -6,20 +6,20 @@ use crate::dev::dev_helper;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Execute module upgrade plan, submit a package transaction.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "module-exe", alias = "module_exe")]
+#[derive(Debug, Parser)]
+#[clap(name = "module-exe", alias = "module_exe")]
 pub struct UpgradeModuleExeOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(
-        short = "m",
+    #[clap(
+        short = 'm',
         name = "mv-or-package-file",
         long = "mv-or-package-file",
         parse(from_os_str)

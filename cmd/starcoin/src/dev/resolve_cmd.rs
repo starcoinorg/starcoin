@@ -4,31 +4,31 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_rpc_api::types::{FunctionIdView, ModuleIdView, StructTagView};
-use structopt::StructOpt;
 
 /// Resolve Function/Struct/Module get ABI.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "resolve")]
+#[derive(Debug, Parser)]
+#[clap(name = "resolve")]
 pub enum ResolveOpt {
     /// dev resolve function 0x1::TransferScripts::peer_to_peer_v2
     Function {
-        #[structopt()]
+        #[clap()]
         ///function_id like: 0x1::TransferScripts::peer_to_peer_v2
         function_id: FunctionIdView,
     },
     /// dev resolve struct 0x1::Account::Account
     Struct {
-        #[structopt()]
+        #[clap()]
         ///struct_tag like: 0x1::Account::Account
         struct_tag: StructTagView,
     },
     /// dev resolve module 0x1::Account
     Module {
-        #[structopt()]
+        #[clap()]
         ///module_id like: 0x1::Account
         module_id: ModuleIdView,
     },

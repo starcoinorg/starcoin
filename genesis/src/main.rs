@@ -1,24 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::Parser;
 use starcoin_config::BuiltinNetworkID;
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::{Genesis, GENESIS_GENERATED_DIR};
 use starcoin_logger::prelude::*;
 use std::path::Path;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "genesis_generator")]
+#[derive(Debug, Parser)]
+#[clap(name = "genesis_generator")]
 pub struct GenesisGeneratorOpt {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network to generate genesis, if omit this, generate all network's genesis.
     pub net: Option<BuiltinNetworkID>,
 }
 
 fn main() {
     let _logger = starcoin_logger::init();
-    let opts = GenesisGeneratorOpt::from_args();
+    let opts = GenesisGeneratorOpt::parse();
     let networks: Vec<BuiltinNetworkID> = match opts.net {
         Some(network) => vec![network],
         None => BuiltinNetworkID::networks(),

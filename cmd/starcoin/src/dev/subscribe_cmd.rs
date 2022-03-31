@@ -1,46 +1,46 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use futures::{TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::TypeTagView;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::event::EventKey;
-use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
 
 /// Subscribe chain event.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "event")]
+#[derive(Debug, Parser)]
+#[clap(name = "event")]
 pub struct SubscribeEventOpt {
-    #[structopt(
-        short = "f",
+    #[clap(
+        short = 'f',
         long = "from",
         name = "from_block",
         help = "from block number"
     )]
     from_block: Option<u64>,
-    #[structopt(short = "t", long = "to", name = "to_block", help = "to block number")]
+    #[clap(short = 't', long = "to", name = "to_block", help = "to block number")]
     to_block: Option<u64>,
-    #[structopt(
-        short = "k",
+    #[clap(
+        short = 'k',
         long = "event-key",
         name = "event_key",
         help = "event key",
-        multiple = true
+        multiple_occurrences = true
     )]
     event_key: Option<Vec<EventKey>>,
-    #[structopt(long = "address", name = "address", multiple = true)]
+    #[clap(long = "address", name = "address", multiple_occurrences = true)]
     /// events of which addresses to subscribe
     addresses: Option<Vec<AccountAddress>>,
-    #[structopt(long = "type_tag", name = "type-tag", multiple = true)]
+    #[clap(long = "type_tag", name = "type-tag", multiple_occurrences = true)]
     /// type tags of the events to subscribe
     type_tags: Option<Vec<TypeTagView>>,
-    #[structopt(short = "l", long = "limit", name = "limit")]
+    #[clap(short = 'l', long = "limit", name = "limit")]
     /// limit return size
     limit: Option<usize>,
-    #[structopt(long = "decode")]
+    #[clap(long = "decode")]
     /// whether decode event
     decode: bool,
 }
@@ -77,8 +77,8 @@ impl CommandAction for SubscribeEventCommand {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "new_block")]
+#[derive(Debug, Parser)]
+#[clap(name = "new_block")]
 pub struct SubscribeBlockOpt {}
 pub struct SubscribeBlockCommand;
 impl CommandAction for SubscribeBlockCommand {
@@ -98,8 +98,8 @@ impl CommandAction for SubscribeBlockCommand {
         Ok(())
     }
 }
-#[derive(Debug, StructOpt)]
-#[structopt(name = "new_pending_txn")]
+#[derive(Debug, Parser)]
+#[clap(name = "new_pending_txn")]
 pub struct SubscribeNewTxnOpt {}
 pub struct SubscribeNewTxnCommand;
 impl CommandAction for SubscribeNewTxnCommand {

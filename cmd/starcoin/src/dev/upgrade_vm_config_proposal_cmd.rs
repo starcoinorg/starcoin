@@ -6,6 +6,7 @@ use crate::dev::sign_txn_helper::get_dao_config;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use move_command_line_common::testing::format_diff;
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::BuiltinNetworkID;
@@ -14,17 +15,16 @@ use starcoin_transaction_builder::build_vm_config_upgrade_proposal;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::transaction::TransactionPayload;
-use structopt::StructOpt;
 
 /// Submit a VM config upgrade proposal
-#[derive(Debug, StructOpt)]
-#[structopt(name = "vm-config-proposal", alias = "vm_config_proposal")]
+#[derive(Debug, Parser)]
+#[clap(name = "vm-config-proposal", alias = "vm_config_proposal")]
 #[allow(clippy::upper_case_acronyms)]
 pub struct UpgradeVMConfigProposalOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(short = "n", name = "net", long = "net")]
+    #[clap(short = 'n', name = "net", long = "net")]
     /// The network id for copy config
     net: BuiltinNetworkID,
 }

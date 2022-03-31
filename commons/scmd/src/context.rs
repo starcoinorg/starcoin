@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::error::CmdError;
-use crate::{print_action_result, Command, CommandAction, CommandExec, HistoryOp, OutputFormat};
+use crate::{
+    print_action_result, CommandAction, CommandExec, CustomCommand, HistoryOp, OutputFormat,
+};
 use anyhow::Result;
-use clap::{crate_authors, App, Arg, SubCommand};
+use clap::Parser;
+use clap::{Arg, Command};
 use once_cell::sync::Lazy;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -14,7 +17,6 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use structopt::StructOpt;
 
 pub use rustyline::{
     config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
@@ -38,22 +40,22 @@ static OUTPUT_FORMAT_ARG: &str = "output-format";
 pub struct CmdContext<State, GlobalOpt>
 where
     State: 'static,
-    GlobalOpt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
 {
-    app: App<'static, 'static>,
+    app: Command<'static>,
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
-    default_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+    default_action: Box<dyn FnOnce(Command, GlobalOpt, State)>,
     state_initializer: Box<dyn FnOnce(&GlobalOpt) -> Result<State>>,
     console_support: Option<(
-        Box<dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>)>,
-        Box<dyn FnOnce(App, GlobalOpt, State)>,
+        Box<dyn FnOnce(&Command, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>)>,
+        Box<dyn FnOnce(Command, GlobalOpt, State)>,
     )>,
 }
 
 impl<State, GlobalOpt> CmdContext<State, GlobalOpt>
 where
     State: 'static,
-    GlobalOpt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
 {
     /// Init new CmdContext with State
     pub fn with_state(
@@ -94,20 +96,19 @@ where
     ) -> Self
     where
         I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
-        D: FnOnce(App, GlobalOpt, State) + 'static,
+        D: FnOnce(Command, GlobalOpt, State) + 'static,
     {
-        let mut app = GlobalOpt::clap();
+        let mut app = GlobalOpt::command();
         app = app
             .version(version)
             .long_version(long_version.unwrap_or(version))
             .arg(
-                Arg::with_name(OUTPUT_FORMAT_ARG)
-                    .short("o")
+                Arg::new(OUTPUT_FORMAT_ARG)
+                    .short('o')
                     .help("set output-format, support [json|table]")
                     .takes_value(true)
                     .default_value("json"),
             );
-        app = Self::set_app_author(app);
         Self {
             app,
             commands: HashMap::new(),
@@ -126,30 +127,24 @@ where
 
     pub fn with_console_support<I, Q>(mut self, init_action: I, quit_action: Q) -> Self
     where
-        I: FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>) + 'static,
-        Q: FnOnce(App, GlobalOpt, State) + 'static,
+        I: FnOnce(&Command, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>)
+            + 'static,
+        Q: FnOnce(Command, GlobalOpt, State) + 'static,
     {
         self.app = self.app.subcommand(
-            SubCommand::with_name("console").help("Start an interactive command console"),
+            Command::new("console").override_help("Start an interactive command console"),
         );
         self.console_support = Some((Box::new(init_action), Box::new(quit_action)));
         self
     }
 
-    //remove this after clap upgrade
-    //use of deprecated item 'std::sync::ONCE_INIT': the `new` function is now preferred
-    #[allow(deprecated)]
-    fn set_app_author<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
-        app.author(crate_authors!("\n"))
-    }
-
     pub fn command<Opt, ReturnItem, Action, CMD>(mut self, command: CMD) -> Self
     where
-        Opt: StructOpt + 'static,
+        Opt: Parser + 'static,
         ReturnItem: serde::Serialize + 'static,
         Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>
             + 'static,
-        CMD: Into<Command<State, GlobalOpt, Opt, ReturnItem, Action>> + 'static,
+        CMD: Into<CustomCommand<State, GlobalOpt, Opt, ReturnItem, Action>> + 'static,
     {
         let command = command.into();
         let name = command.name();
@@ -174,7 +169,7 @@ where
         Self::app_help_message(&mut self.app)
     }
 
-    fn app_help_message(app: &mut App) -> String {
+    fn app_help_message(app: &mut Command) -> String {
         let mut help_message = vec![];
         app.write_long_help(&mut help_message)
             .expect("format help message fail.");
@@ -205,7 +200,7 @@ where
     {
         let mut app = self.app;
         let matches = app
-            .get_matches_from_safe_borrow(iter)
+            .try_get_matches_from_mut(iter)
             .map_err(CmdError::ClapError)?;
         let output_format = matches
             .value_of(OUTPUT_FORMAT_ARG)
@@ -213,83 +208,88 @@ where
             .parse()
             .expect("parse output-format must success.");
 
-        let global_opt = GlobalOpt::from_clap(&matches);
+        let global_opt = GlobalOpt::from_arg_matches(&matches)?;
         let state = (self.state_initializer)(&global_opt)?;
 
-        let (cmd_name, arg_matches) = matches.subcommand();
-        let default_action = self.default_action;
-        let result = match cmd_name {
-            "console" => {
-                if let Some((init_action, quit_action)) = self.console_support {
-                    let commands = self.commands;
-
-                    Self::console_inner(
-                        app,
-                        global_opt,
-                        state,
-                        commands,
-                        init_action,
-                        quit_action,
-                        output_format,
-                    );
-                    Ok(Value::Null)
-                } else {
-                    unreachable!("this should not happen, console cmd is check by clap.")
-                }
-            }
-            "" => {
-                default_action(app, global_opt, state);
-                Ok(Value::Null)
-            }
-            cmd_name => {
-                let cmd = self.commands.get_mut(cmd_name);
-                match (cmd, arg_matches) {
-                    (Some(cmd), Some(arg_matches)) => {
-                        let (_, value) =
-                            cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
-                        Ok(value)
+        if let Some((cmd_name, arg_matches)) = matches.subcommand() {
+            let result = match cmd_name {
+                "console" => {
+                    if let Some((init_action, quit_action)) = self.console_support {
+                        let commands = self.commands;
+                        Self::console_inner(
+                            app,
+                            global_opt,
+                            state,
+                            commands,
+                            init_action,
+                            quit_action,
+                            output_format,
+                        );
+                        Ok(Value::Null)
+                    } else {
+                        unreachable!("this should not happen, console cmd is check by clap.")
                     }
-                    _ => Err(CmdError::need_help(Self::app_help_message(&mut app)).into()),
                 }
-            }
-        };
-        Ok((output_format, result))
+                cmd_name => {
+                    let cmd = self.commands.get_mut(cmd_name);
+                    match (cmd, arg_matches) {
+                        (Some(cmd), arg_matches) => {
+                            let (_, value) =
+                                cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)?;
+                            Ok(value)
+                        }
+                        _ => Err(CmdError::need_help(Self::app_help_message(&mut app)).into()),
+                    }
+                }
+            };
+            Ok((output_format, result))
+        } else {
+            (self.default_action)(app, global_opt, state);
+            Ok((output_format, Ok(Value::Null)))
+        }
     }
 
     fn console_inner(
-        app: App,
+        app: Command,
         global_opt: GlobalOpt,
         state: State,
         mut commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
         init_action: Box<
-            dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>),
+            dyn FnOnce(&Command, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>),
         >,
-        quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+        quit_action: Box<dyn FnOnce(Command, GlobalOpt, State)>,
         mut output_format: OutputFormat,
     ) {
         //insert version, quit, history command
         let mut app = app
             .subcommand(
-                SubCommand::with_name("version")
-                    .help("Print app version.")
+                Command::new("version")
+                    .override_help("Print app version.")
                     .display_order(995),
             )
             .subcommand(
-                SubCommand::with_name("output")
-                    .arg(Arg::from_usage("[format] 'Output format: JSON|TABLE'"))
-                    .help("Set console output format.")
+                Command::new("output")
+                    .arg(
+                        Arg::new("format")
+                            .takes_value(true)
+                            .possible_values(&["json", "table"])
+                            .ignore_case(true)
+                            .default_value("json")
+                            .help("Output format should be json or table."),
+                    )
+                    .override_help("Set console output format.")
                     .display_order(996),
             )
             .subcommand(
-                SubCommand::with_name("history")
-                    .arg(Arg::from_usage("-c, --clear 'Clear console history.'"))
-                    .help("Command to show or clear history")
+                Command::new("history")
+                    .arg(Arg::new("clear").short('c').help("Clear history."))
+                    .override_help("Command to show or clear history")
                     .display_order(997),
             )
             .subcommand(
-                SubCommand::with_name("quit")
+                Command::new("quit")
                     .aliases(&["exit", "q!"])
-                    .help("Quit from console.")
+                    .override_help("Quit from console.")
                     .display_order(998),
             );
 
@@ -363,9 +363,9 @@ where
                         }
                         "version" => {
                             let mut out = std::io::stdout();
-                            let _ = app
-                                .write_long_version(&mut out)
-                                .expect("write version to stdout should success");
+                            let version = app.render_long_version();
+                            out.write_all(version.as_bytes())
+                                .expect("write version to stdout should be success");
                             // write a `\n` for flush stdout
                             out.write_all("\n".as_bytes())
                                 .expect("write to stdout should success");
@@ -387,8 +387,8 @@ where
                             let cmd = commands.get_mut(cmd_name);
                             match cmd {
                                 Some(cmd) => {
-                                    let app = cmd.get_app();
-                                    match app.get_matches_from_safe_borrow(params) {
+                                    let app = cmd.get_command();
+                                    match app.try_get_matches_from_mut(params) {
                                         Ok(arg_matches) => {
                                             let cmd_result = cmd.exec(
                                                 state.clone(),
@@ -451,10 +451,10 @@ where
     }
 
     fn do_quit(
-        app: App,
+        app: Command,
         global_opt: Arc<GlobalOpt>,
         state: Arc<State>,
-        quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+        quit_action: Box<dyn FnOnce(Command, GlobalOpt, State)>,
         mut rl: Editor<()>,
         history_file: Option<PathBuf>,
     ) {

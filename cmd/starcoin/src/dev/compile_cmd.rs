@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
@@ -17,36 +18,35 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use stdlib::stdlib_files;
-use structopt::StructOpt;
 
 /// Compile module or script, support compile source dir.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "compile")]
+#[derive(Debug, Parser)]
+#[clap(name = "compile")]
 pub struct CompileOpt {
-    #[structopt(
-        short = "s",
+    #[clap(
+        short = 's',
         long = "sender",
         name = "sender address",
         help = "hex encoded string, like 0x0, 0x1"
     )]
     sender: Option<AccountAddress>,
 
-    #[structopt(
-        short = "d",
+    #[clap(
+        short = 'd',
         name = "dependency_path",
         long = "dep",
         help = "path of dependency used to build, support multi deps"
     )]
     deps: Option<Vec<String>>,
 
-    #[structopt(short = "o", name = "out_dir", help = "out dir", parse(from_os_str))]
+    #[clap(short = 'o', name = "out_dir", help = "out dir", parse(from_os_str))]
     out_dir: Option<PathBuf>,
 
-    #[structopt(name = "source_file_or_dir", help = "source file path")]
+    #[clap(name = "source_file_or_dir", help = "source file path")]
     source_file_or_dir: PathBuf,
 
     /// Do not automatically run the bytecode verifier
-    #[structopt(long = "no-verify")]
+    #[clap(long = "no-verify")]
     pub no_verify: bool,
 }
 

@@ -1,6 +1,7 @@
 pub mod compatibility_check_cmd;
 pub mod releasement;
 use anyhow::Result;
+use clap::Parser;
 use move_cli::Move;
 use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
@@ -14,13 +15,13 @@ use move_package::source_package::layout::SourcePackageLayout;
 use once_cell::sync::Lazy;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct TransactionalTestCommand {
-    #[structopt(flatten)]
+    // FIXME
+    #[clap(flatten)]
     test_opts: datatest_stable::TestOpts,
-    #[structopt(long = "ub")]
+    #[clap(long = "ub")]
     /// update test baseline.
     update_baseline: bool,
 }

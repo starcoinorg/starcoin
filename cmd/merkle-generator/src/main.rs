@@ -1,3 +1,4 @@
+use clap::Parser;
 use merkle_generator::{encode, DataProof, Sha3Algorithm};
 use merkletree::merkle::{next_pow2, MerkleTree};
 use merkletree::store::VecStore;
@@ -5,16 +6,15 @@ use serde::Deserialize;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::fmt::Debug;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "merkle-generator", about = "merkle proof generator")]
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "merkle-generator", about = "merkle proof generator")]
 pub struct ExporterOptions {
-    #[structopt(long, short, parse(from_os_str))]
+    #[clap(long, short, parse(from_os_str))]
     /// intput csv without header, like rewards.csv
     pub input: PathBuf,
 
-    #[structopt(parse(from_os_str))]
+    #[clap(parse(from_os_str))]
     /// merkle output json file, like merkle.json
     pub output: PathBuf,
 }
@@ -26,7 +26,7 @@ struct InputData {
 }
 
 fn main() -> anyhow::Result<()> {
-    let option: ExporterOptions = ExporterOptions::from_args();
+    let option: ExporterOptions = ExporterOptions::parse();
     let mut csv_reader = csv::ReaderBuilder::default()
         .has_headers(false)
         .from_path(option.input.as_path())?;

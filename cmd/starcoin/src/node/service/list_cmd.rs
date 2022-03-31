@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceInfo;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "list")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "list")]
 pub struct ListOpt {}
 
 pub struct ListCommand;

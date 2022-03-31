@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ValidCryptoMaterialStringExt;
@@ -11,17 +12,16 @@ use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::account_address::AccountAddress;
 use std::convert::TryFrom;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Export account's private key.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "export")]
+#[derive(Debug, Parser)]
+#[clap(name = "export")]
 pub struct ExportOpt {
-    #[structopt(name = "account_address")]
+    #[clap(name = "account_address")]
     account_address: AccountAddress,
-    #[structopt(short = "p", default_value = "")]
+    #[clap(short = 'p', default_value = "")]
     password: String,
-    #[structopt(short = "o", parse(from_os_str))]
+    #[clap(short = 'o', parse(from_os_str))]
     output_file: Option<PathBuf>,
 }
 

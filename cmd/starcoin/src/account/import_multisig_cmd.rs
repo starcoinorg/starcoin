@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use itertools::Itertools;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
@@ -12,33 +13,32 @@ use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
 use starcoin_crypto::{PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Import multisin account.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "import-multisig")]
+#[derive(Debug, Parser)]
+#[clap(name = "import-multisig")]
 pub struct ImportMultisigOpt {
-    #[structopt(short = "p", default_value = "")]
+    #[clap(short = 'p', default_value = "")]
     /// a password to protect imported account.
     password: String,
 
-    #[structopt(name = "addr", long)]
+    #[clap(name = "addr", long)]
     /// if account_address is absent, generate address by public_key.
     account_address: Option<AccountAddress>,
 
-    #[structopt(long = "pubkey", max_values = 32, parse(try_from_str = Ed25519PublicKey::from_encoded_string))]
+    #[clap(long = "pubkey", max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public keys of other participants in this multisig account.
     public_keys: Vec<Ed25519PublicKey>,
 
-    #[structopt(short = "t", name = "threshold")]
+    #[clap(short = 't', name = "threshold")]
     /// In multi-sig case, a threshold is needed.
     threshold: u8,
 
-    #[structopt(long = "prikey", max_values = 32, parse(try_from_str = Ed25519PrivateKey::from_encoded_string))]
+    #[clap(long = "prikey", max_values = 32, parse(try_from_str=Ed25519PrivateKey::from_encoded_string))]
     /// hex encoded private key, if you control multi private keys, provide multi args.
     private_keys: Vec<Ed25519PrivateKey>,
 
-    #[structopt(long = "prikey-file", max_values = 32)]
+    #[clap(long = "prikey-file", max_values = 32)]
     /// private key file contain the hex-encoded private key, if you control multi private keys, provide multi args.
     private_key_files: Vec<PathBuf>,
 }

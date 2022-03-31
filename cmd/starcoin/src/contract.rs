@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
 use starcoin_rpc_api::types::{AnnotatedMoveStructView, StrView};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
-use structopt::StructOpt;
 
 /// Get contract data command
 /// Note: this command is deprecated, please use `state get` command.
@@ -18,17 +18,17 @@ use structopt::StructOpt;
 ///  contract get code 0x1::Account
 ///  contract get resource 0x1 0x1::Account::Account
 ///  ```
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get")]
+#[derive(Debug, Parser)]
+#[clap(name = "get")]
 pub enum GetContractDataOpt {
     Code {
-        #[structopt(help = "module id like: 0x1::Account")]
+        #[clap(help = "module id like: 0x1::Account")]
         module_id: StrView<ModuleId>,
     },
     Resource {
-        #[structopt(help = "account address")]
+        #[clap(help = "account address")]
         address: AccountAddress,
-        #[structopt(
+        #[clap(
             help = "resource struct tag,",
             default_value = "0x1::Account::Balance<0x1::STC::STC>"
         )]

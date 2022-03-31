@@ -3,11 +3,11 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
-use structopt::StructOpt;
 
 /// Port selected RocksDB options for tuning underlying rocksdb instance of DiemDB.
 /// see https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h
@@ -15,24 +15,24 @@ use structopt::StructOpt;
 /// https://github.com/facebook/rocksdb/wiki/WAL-Performance
 /// wal_bytes_per_sync, bytes_per_sync see https://github.com/facebook/rocksdb/wiki/IO#range-sync
 /// for detailed explanations.
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(default, deny_unknown_fields)]
 pub struct RocksdbConfig {
-    #[structopt(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
+    #[clap(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
     pub max_open_files: i32,
-    #[structopt(
+    #[clap(
         name = "rocksdb-max-total-wal-sizes",
         long,
         help = "rocksdb max total WAL sizes"
     )]
     pub max_total_wal_size: u64,
-    #[structopt(
+    #[clap(
         name = "rocksdb-wal-bytes-per-sync",
         long,
         help = "rocksdb wal bytes per sync"
     )]
     pub wal_bytes_per_sync: u64,
-    #[structopt(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
+    #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: u64,
 }
 
@@ -68,15 +68,15 @@ impl Default for RocksdbConfig {
 static DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("starcoindb/db"));
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct StorageConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
+    #[clap(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
     pub max_open_files: Option<i32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "rocksdb-max-total-wal-sizes",
         long,
         help = "rocksdb max total WAL sizes"
@@ -84,15 +84,15 @@ pub struct StorageConfig {
     pub max_total_wal_size: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "cache-sizes", long, help = "cache sizes")]
+    #[clap(name = "cache-sizes", long, help = "cache sizes")]
     pub cache_size: Option<usize>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "rocksdb-wal-bytes-per-sync",
         long,
         help = "rocksdb wal bytes per sync"
@@ -100,7 +100,7 @@ pub struct StorageConfig {
     pub wal_bytes_per_sync: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
+    #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: Option<u64>,
 }
 

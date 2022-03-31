@@ -1,16 +1,16 @@
 use anyhow::Result;
+use clap::Parser;
 use starcoin_rpc_api::{
     account, chain, contract_api, debug, miner, network_manager, node, node_manager, state,
     sync_manager, txpool,
 };
 use std::fs::{create_dir_all, File};
 use std::path::Path;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "genesis_generator")]
+#[derive(Debug, Parser)]
+#[clap(name = "genesis_generator")]
 pub struct RpcSchemaGenerateOpt {
-    #[structopt(long, short = "d", default_value = "generated_rpc_schema")]
+    #[clap(long, short = 'd', default_value = "generated_rpc_schema")]
     /// data dir to generate rpc schema.
     pub data_dir: String,
 }
@@ -29,7 +29,7 @@ macro_rules! generate_rpc_schema_docs {
 }
 
 fn main() {
-    let opts = RpcSchemaGenerateOpt::from_args();
+    let opts = RpcSchemaGenerateOpt::parse();
     generate_rpc_schema_docs!(
         {
             let data_dir = Path::new(&opts.data_dir);

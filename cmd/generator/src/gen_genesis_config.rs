@@ -3,6 +3,7 @@
 
 use crate::cli_state::CliState;
 use anyhow::{bail, ensure, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetworkID;
@@ -10,11 +11,10 @@ use starcoin_config::{BaseConfig, StarcoinOpt};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Generate starcoin genesis config in data_dir
-#[derive(Debug, StructOpt)]
-#[structopt(name = "genesis_config")]
+#[derive(Debug, Parser)]
+#[clap(name = "genesis_config")]
 pub struct GenGenesisConfigOpt {}
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -4,15 +4,15 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::peer_info::{Multiaddr, PeerId};
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "get_address")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "get_address")]
 ///Get address by peer id
 pub struct GetAddressOpt {
-    #[structopt(name = "peer-id")]
+    #[clap(name = "peer-id")]
     peer_id: Option<PeerId>,
 }
 

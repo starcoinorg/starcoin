@@ -5,37 +5,37 @@ use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
-use structopt::StructOpt;
 
 /// Transfer token's command, this command will send a transaction to the chain.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "transfer")]
+#[derive(Debug, Parser)]
+#[clap(name = "transfer")]
 pub struct TransferOpt {
-    #[structopt(short = "r", long = "receiver", alias = "receipt")]
+    #[clap(short = 'r', long = "receiver", alias = "receipt")]
     /// transfer to, accept address (start with 0x) or receipt_identifier (start with stc)
     receiver: AccountAddress,
 
-    #[structopt(short = "k", name = "public-key", long = "public-key")]
+    #[clap(short = 'k', name = "public-key", long = "public-key")]
     /// this option is deprecated
     _public_key: Option<String>,
 
-    #[structopt(short = "v")]
+    #[clap(short = 'v')]
     amount: u128,
 
-    #[structopt(
-        short = "t",
+    #[clap(
+        short = 't',
         long = "token-code",
         name = "token-code",
         help = "token's code to transfer, for example: 0x1::STC::STC, default is STC."
     )]
     token_code: Option<TokenCode>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 }
 
