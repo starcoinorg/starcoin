@@ -59,13 +59,19 @@ starcoin -n main console
 
 ## Connect to remote node
 
-Connect main network seed nodes:
+Connect to main network seed nodes:
 
 ```shell
 starcoin --connect ws://main.seed.starcoin.org:9870 console
 ```
 
 >note: Account-related commands cannot be used when connecting remotely
+
+Connect to main network seed nodes and use a local account database for using Account-related commands
+
+```shell
+starcoin --connect ws://main.seed.starcoin.org:9870 --local-account-dir ~/.starcoin/account_vaults console
+```
 
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
 

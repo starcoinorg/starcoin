@@ -1,7 +1,7 @@
 ---
 name: Bug Report
 about: Create a report to help Starcoin to improve
-title: "bug: "
+title: "[bug]"
 labels: "bug"
 assignees: ""
 ---
