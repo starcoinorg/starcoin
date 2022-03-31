@@ -577,7 +577,10 @@ impl ChainReader for BlockChain {
         for (idx, block) in block_opts.into_iter().enumerate() {
             match block {
                 Some(block) => blocks.push(block),
-                None => bail!("Can not find block by number {}", end_num.saturating_sub(idx as u64)),
+                None => bail!(
+                    "Can not find block by number {}",
+                    end_num.saturating_sub(idx as u64)
+                ),
             }
         }
         Ok(blocks)
