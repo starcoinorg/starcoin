@@ -106,6 +106,18 @@ impl InnerStore for CacheStorage {
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         self.write_batch(prefix_name, batch)
     }
+
+    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        let mut cache = self.cache.lock();
+        let mut result = vec![];
+        for key in keys.into_iter() {
+            let item = cache
+                .get(&compose_key(prefix_name.to_string(), key))
+                .cloned();
+            result.push(item);
+        }
+        Ok(result)
+    }
 }
 
 fn compose_key(prefix_name: String, source_key: Vec<u8>) -> Vec<u8> {

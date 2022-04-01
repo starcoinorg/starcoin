@@ -115,6 +115,15 @@ impl<T> AsResultType for Result<Option<T>> {
     }
 }
 
+impl<T> AsResultType for Result<Vec<Option<T>>> {
+    fn as_result_type(&self) -> ResultType {
+        match self {
+            Ok(_) => ResultType::OK,
+            Err(_) => ResultType::ERROR,
+        }
+    }
+}
+
 pub struct MetricsRecord<'a> {
     storage_type: &'a str,
     key_type: &'a str,
