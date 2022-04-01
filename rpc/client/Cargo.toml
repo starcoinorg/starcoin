@@ -24,7 +24,7 @@ jsonrpc-pubsub = "18"
 jsonrpc-core-client = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"] }
 futures = "0.3.12"
-parity-tokio-ipc = "0.8"
+parity-tokio-ipc = "0.9"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}

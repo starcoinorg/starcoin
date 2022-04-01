@@ -3660,7 +3660,7 @@ dependencies = [
  "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.16",
- "parity-tokio-ipc 0.9.0",
+ "parity-tokio-ipc",
  "serde 1.0.136",
  "serde_json",
  "tokio 1.17.0",
@@ -3792,7 +3792,7 @@ dependencies = [
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.16",
- "parity-tokio-ipc 0.9.0",
+ "parity-tokio-ipc",
  "parking_lot 0.11.2",
  "tower-service",
 ]
@@ -4867,29 +4867,6 @@ dependencies = [
  "log 0.4.16",
  "mio 0.6.23",
  "slab",
-]
-
-[[package]]
-name = "mio-named-pipes"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0840c1c50fd55e521b247f949c241c9997709f23bd7f023b9762cd561e935656"
-dependencies = [
- "log 0.4.16",
- "mio 0.6.23",
- "miow 0.3.7",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "mio-uds"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afcb699eb26d4332647cc848492bbc15eafb26f08d0304550d5aa1f612e066f0"
-dependencies = [
- "iovec",
- "libc",
- "mio 0.6.23",
 ]
 
 [[package]]
@@ -6475,22 +6452,6 @@ name = "parity-send-wrapper"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa9777aa91b8ad9dd5aaa04a9b6bcb02c7f1deb952fca5a66034d5e63afc5c6f"
-
-[[package]]
-name = "parity-tokio-ipc"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd7f6c69d7687501b2205fe51ade1d7b8797bb3aa141fe5bf13dd78c0483bc89"
-dependencies = [
- "futures 0.3.21",
- "libc",
- "log 0.4.16",
- "mio-named-pipes",
- "miow 0.3.7",
- "rand 0.7.3",
- "tokio 0.2.25",
- "winapi 0.3.9",
-]
 
 [[package]]
 name = "parity-tokio-ipc"
@@ -10075,7 +10036,7 @@ dependencies = [
  "log 0.4.16",
  "network-api",
  "network-p2p-types",
- "parity-tokio-ipc 0.8.0",
+ "parity-tokio-ipc",
  "parking_lot 0.12.0",
  "serde 1.0.136",
  "serde_json",
@@ -11426,13 +11387,10 @@ dependencies = [
  "futures-core",
  "iovec",
  "lazy_static 1.4.0",
- "libc",
  "memchr",
  "mio 0.6.23",
- "mio-uds",
  "pin-project-lite 0.1.12",
  "slab",
- "tokio-macros 0.2.6",
 ]
 
 [[package]]
@@ -11451,7 +11409,7 @@ dependencies = [
  "pin-project-lite 0.2.8",
  "signal-hook-registry",
  "socket2 0.4.4",
- "tokio-macros 1.7.0",
+ "tokio-macros",
  "winapi 0.3.9",
 ]
 
@@ -11496,17 +11454,6 @@ dependencies = [
  "bytes 0.4.12",
  "futures 0.1.31",
  "log 0.4.16",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
-dependencies = [
- "proc-macro2 1.0.36",
- "quote 1.0.16",
- "syn 1.0.89",
 ]
 
 [[package]]
