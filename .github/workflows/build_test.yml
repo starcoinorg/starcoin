@@ -37,20 +37,20 @@ jobs:
         with:
           command: clippy
           args: --all-targets
-      - name: build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --all
-      - name: test
-        run: bash ./scripts/auto_rerun_test.sh
-      - name: move-prover-test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p starcoin-move-prover
-      - name: check changed files
-        run: bash ./scripts/changed-files.sh
+      # - name: build
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: build
+      #     args: --all
+      # - name: test
+      #   run: bash ./scripts/auto_rerun_test.sh
+      # - name: move-prover-test
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: -p starcoin-move-prover
+      # - name: check changed files
+      #   run: bash ./scripts/changed-files.sh
       - name: integration test dev environment
         env:
           RUST_LOG: info
