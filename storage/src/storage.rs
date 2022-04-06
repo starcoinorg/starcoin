@@ -19,10 +19,7 @@ pub type ColumnFamilyName = &'static str;
 #[allow(clippy::upper_case_acronyms)]
 pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
-    fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
-        //TODO optimize
-        keys.into_iter().map(|k| self.get(k.as_slice())).collect()
-    }
+    fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
@@ -43,6 +40,7 @@ pub trait InnerStore: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
+    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
 ///Storage instance type define
@@ -224,6 +222,47 @@ impl InnerStore for StorageInstance {
             }
         }
     }
+
+    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        match self {
+            StorageInstance::CACHE { cache } => cache.multi_get(prefix_name, keys),
+            StorageInstance::DB { db } => db.multi_get(prefix_name, keys),
+            StorageInstance::CacheAndDb { db, .. } => {
+                /* https://github.com/facebook/rocksdb/wiki/Block-Cache#lru-cache
+                * if use multi_get from CacheStorage, cache may evict some records
+                    should check every Option<Vec<u8>> is not none, if have none
+                    we need multi_get these from db
+                    test db multi_get performence is better than  CacheStorage
+                 */
+
+                /*
+                let mut result = cache.multi_get(prefix_name, keys.clone())?;
+                let mut db_idxs = vec![];
+                let mut db_keys = vec![];
+                // cache may be evict record
+                for (idx, item) in result.iter().enumerate() {
+                    if item.is_none() {
+                        db_idxs.push(idx);
+                        if let Some(key) = keys.get(idx) {
+                            db_keys.push(key.clone());
+                        }
+                    }
+                }
+                if db_idxs.is_empty() {
+                    return Ok(result);
+                }
+                let values = db.multi_get(prefix_name, db_keys)?;
+                for (idx, value) in db_idxs.into_iter().zip(values) {
+                    if let Some(res) = result.get_mut(idx) {
+                        *res = value;
+                    }
+                }
+                Ok(result)
+                 */
+                db.multi_get(prefix_name, keys)
+            }
+        }
+    }
 }
 
 pub trait ColumnFamily: Send + Sync {
@@ -266,6 +305,10 @@ where
 {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
         self.instance.get(self.prefix_name, key.to_vec())
+    }
+
+    fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        self.instance.multi_get(self.prefix_name, keys)
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {

@@ -15,7 +15,7 @@ async fn test_onshot() {
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let bus2 = bus.clone();
     let arbiter = Arbiter::new();
-    arbiter.exec_fn(move || loop {
+    arbiter.spawn_fn(move || loop {
         let result = bus2.broadcast(MyMessage {}).is_ok();
         debug!("broadcast result: {}", result);
         sleep(Duration::from_millis(50));
@@ -32,7 +32,7 @@ async fn test_channel() {
     let bus = registry.service_ref::<BusService>().await.unwrap();
     let bus2 = bus.clone();
     let arbiter = Arbiter::new();
-    arbiter.exec_fn(move || loop {
+    arbiter.spawn_fn(move || loop {
         let result = bus2.broadcast(MyMessage {}).is_ok();
         debug!("broadcast result: {}", result);
         sleep(Duration::from_millis(50));

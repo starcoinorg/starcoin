@@ -37,7 +37,7 @@
                 "properties": {
                   "endpoint": {
                     "description": "How we are connected to the node.",
-                    "anyOf": [
+                    "oneOf": [
                       {
                         "description": "We are dialing the given address.",
                         "type": "object",

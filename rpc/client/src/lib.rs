@@ -1029,7 +1029,7 @@ impl RpcClient {
     }
     pub fn close(self) {
         if let Err(e) = self.chain_watcher.try_send(chain_watcher::StopWatcher) {
-            error!("Try to stop chain watcher error: {:?}", e);
+            debug!("Try to stop chain watcher error: {:?}", e);
         }
 
         if let Err(e) = {

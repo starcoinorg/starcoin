@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use move_binary_format::file_format_common::VERSION_3;
 use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
@@ -5,6 +8,7 @@ use move_cli::Move;
 use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use move_core_types::language_storage::TypeTag;
 use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowgrader;
 use starcoin_types::transaction::parse_transaction_argument;
 use starcoin_vm_types::language_storage::FunctionId;
@@ -17,7 +21,7 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 
 #[derive(StructOpt)]
 pub struct Releasement {
-    #[structopt(name = "move-version", long = "move-version", default_value="3", possible_values=&["3", "4"])]
+    #[structopt(name = "move-version", long = "move-version", default_value="4", possible_values=&["3", "4"])]
     /// specify the move lang version for the release.
     /// currently, only v3, v4 are supported.
     language_version: u8,
@@ -105,7 +109,11 @@ pub fn handle_release(
         release_dir
     };
     std::fs::write(&release_path, package_bytes)?;
-    println!("Release done: {}", release_path.display());
+    println!(
+        "Release done: {}, package hash: {}",
+        release_path.display(),
+        p.crypto_hash()
+    );
     Ok(())
 }
 

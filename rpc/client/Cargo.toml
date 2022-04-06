@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-rpc-client"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -12,28 +12,29 @@ thiserror = "1.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 hex = "~0.4"
-actix = "0.10.0"
-actix-rt = "1.1"
-tokio = "0.2"
-log = "0.4.14"
+actix = "0.13"
+actix-rt = "2.6"
+tokio = "^1"
+log = "0.4.16"
 parking_lot = "0.12.0"
-jsonrpc-core = { version = "17.0.0", features = ["arbitrary_precision"] }
-jsonrpc-derive = "17.0.0"
-jsonrpc-server-utils = "17.1.0"
-jsonrpc-pubsub = "17.0.0"
-jsonrpc-core-client = { version = "17.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
-jsonrpc-client-transports = { version = "17.0.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
+jsonrpc-core = { version = "18", features = ["arbitrary_precision"] }
+jsonrpc-derive = "18"
+jsonrpc-server-utils = "18"
+jsonrpc-pubsub = "18"
+jsonrpc-core-client = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-client-transports = { version = "18", features = ["http", "ipc", "ws", "arbitrary_precision"] }
 futures = "0.3.12"
-parity-tokio-ipc = { version = "0.9"}
+parity-tokio-ipc = "0.8"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-rpc-api = {path = "../api"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-state-api = { path = "../../state/api"}
-async-std = "1.10"
+starcoin-state-tree = { path = "../../state/state-tree"}
+async-std = "1.11"
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-service-registry = { path = "../../commons/service-registry" }

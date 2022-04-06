@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-cmd"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -11,8 +11,8 @@ anyhow = "1.0.41"
 rand = "0.8.5"
 serde = { version = "1.0.130" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-crossbeam-channel = "0.5.1"
-tokio = { version = "0.2", features = ["full"] }
+crossbeam-channel = "0.5.4"
+tokio = {version = "^1", features = ["full"] }
 futures = "0.3.12"
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 structopt = "0.3.26"
@@ -20,7 +20,7 @@ itertools = "0.10.3"
 
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-types = { path = "../../types"}
 starcoin-rpc-api = { path = "../../rpc/api"}
 starcoin-rpc-client = { path = "../../rpc/client" }
@@ -31,6 +31,7 @@ starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-account-api = {path = "../../account/api"}
+starcoin-account-provider={path = "../../account/provider"}
 starcoin-chain-api = {path = "../../chain/api"}
 network-p2p-types = {path = "../../network-p2p/types"}
 scmd = { path = "../../commons/scmd" }
@@ -48,13 +49,13 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 vm-status-translator = {path = "../../vm/vm-status-translator"}
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
 network-api = {path = "../../network/api", package="network-api"}
 starcoin-network-rpc-api = {path = "../../network-rpc/api"}
 starcoin-abi-decoder = {path = "../../abi/decoder"}
 starcoin-abi-resolver = {path = "../../abi/resolver"}
 starcoin-abi-types = {path = "../../abi/types"}
-move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
+move-command-line-common = {git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df" }
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}

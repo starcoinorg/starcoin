@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-uint"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2021"
 
 [dependencies]
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 serde = { version = "1.0.130", default-features = false }
 uint = "0.9.3"
 hex = { version = "0.4.3", default-features = false }

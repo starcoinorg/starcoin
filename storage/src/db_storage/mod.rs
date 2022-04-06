@@ -8,10 +8,13 @@ use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp
 use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
-use starcoin_config::RocksdbConfig;
+use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::collections::HashSet;
+use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
+
+const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct DBStorage {
@@ -92,7 +95,7 @@ impl DBStorage {
             rocksdb_opts.create_missing_column_families(true);
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
-
+        check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(DBStorage {
             db,
             cfs: column_families,
@@ -432,6 +435,28 @@ impl InnerStore for DBStorage {
             }
             self.db.write_opt(db_batch, &Self::sync_write_options())?;
             Ok(())
+        })
+    }
+
+    fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+        record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
+            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handles = iter::repeat(&cf_handle)
+                .take(keys.len())
+                .collect::<Vec<_>>();
+            let keys_multi = keys
+                .iter()
+                .zip(cf_handles)
+                .map(|(key, handle)| (handle, key.as_slice()))
+                .collect::<Vec<_>>();
+
+            let result = self.db.multi_get_cf(keys_multi);
+            let mut res = vec![];
+            for item in result {
+                let item = item?;
+                res.push(item);
+            }
+            Ok(res)
         })
     }
 }

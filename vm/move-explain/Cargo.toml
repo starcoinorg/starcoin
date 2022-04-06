@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-move-explain"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Diem Association <opensource@diem.org>"]
 description = "Diem Move abort code explanations"
 repository = "https://github.com/diem/diem"
@@ -12,7 +12,7 @@ edition = "2021"
 [dependencies]
 structopt = "0.3.26"
 stdlib = { package="stdlib", path = "../stdlib"}
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df" }
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 
 [features]

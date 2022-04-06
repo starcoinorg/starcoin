@@ -56,7 +56,7 @@ pub struct GenerateMultisigTxnOpt {
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[structopt(long = "arg", name = "transaction-arg",  parse(try_from_str = parse_transaction_argument))]
+    #[structopt(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument))]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 
@@ -102,7 +102,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let rpc_client = ctx.state().client();
+        let account_client = ctx.state().account_client();
 
         let type_tags = opt.type_tags.clone().unwrap_or_default();
         let args = opt.args.clone().unwrap_or_default();
@@ -119,8 +120,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 );
                 let payload = TransactionPayload::ScriptFunction(script_function);
 
-                let node_info = client.node_info()?;
-                let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
+                let node_info = rpc_client.node_info()?;
+                let chain_state_reader = rpc_client.state_reader(StateRootOption::Latest)?;
                 let account_resource = chain_state_reader.get_account_resource(sender)?;
 
                 if account_resource.is_none() {
@@ -172,10 +173,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
         );
         // sign the multi txn using my private keys.
         let sender = raw_txn.sender();
-        let account = ctx
-            .state()
-            .client()
-            .account_get(sender)?
+        let account = account_client
+            .get_account(sender)?
             .ok_or_else(|| anyhow::anyhow!("cannot find multisig address {}", sender))?;
         let account_public_key = match &account.public_key {
             AccountPublicKey::Single(_) => {
@@ -211,8 +210,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 }
             }
         }
-
-        let partial_signed_txn = client.account_sign_txn(raw_txn)?;
+        let signer_address = raw_txn.sender();
+        let partial_signed_txn = account_client.sign_txn(raw_txn, signer_address)?;
         let my_signatures = if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
             partial_signed_txn.authenticator()
         {

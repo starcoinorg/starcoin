@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::clock::Duration;
+use std::time::Duration;
+
 use common::cal_service::CalService;
 use common::loop_task_service::{GetTaskStatus, LoopTaskService, StartTaskEvent};
 use futures_timer::Delay;

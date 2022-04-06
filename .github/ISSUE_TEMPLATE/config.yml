@@ -2,5 +2,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Starcoin Community Support
-    url: https://github.com/starcoinorg/starcoin/discussions
+    url: https://github.com/starcoinorg/starcoin-cookbook/issues/new?labels=question&template=02_QUESTION.md&title=%5Bquestion%5D
     about: Please ask and answer questions here.

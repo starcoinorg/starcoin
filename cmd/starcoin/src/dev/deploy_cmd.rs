@@ -36,7 +36,6 @@ impl CommandAction for DeployCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-
         let package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
 
         let package_address = package.package_address();

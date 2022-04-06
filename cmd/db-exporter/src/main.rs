@@ -4,44 +4,58 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::Sample;
 use csv::Writer;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use starcoin_account_api::AccountInfo;
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::verifier::{
     BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier, Verifier,
 };
-use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
+use starcoin_statedb::ChainStateDB;
+use starcoin_statedb::ChainStateReader;
 use starcoin_storage::block::FailedBlock;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::ValueCodec;
-use starcoin_storage::storage::{InnerStore, StorageInstance};
+use starcoin_storage::storage::{ColumnFamilyName, InnerStore, StorageInstance};
 use starcoin_storage::{
-    BlockStore, Storage, StorageVersion, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    FAILED_BLOCK_PREFIX_NAME,
+    BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+    BLOCK_HEADER_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME, BLOCK_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    STATE_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
 };
 use starcoin_transaction_builder::build_signed_empty_txn;
 use starcoin_types::account::Account;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber};
-use starcoin_types::startup_info::StartupInfo;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::startup_info::{SnapshotRange, StartupInfo};
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::thread;
 use std::time::SystemTime;
 use structopt::StructOpt;
 
 const BLOCK_GAP: u64 = 1000;
 const BACK_SIZE: u64 = 10000;
+const SNAP_GAP: u64 = 128;
+const BATCH_SIZE: u64 = 1000;
 
 pub fn export<W: std::io::Write>(
     db: &str,
@@ -198,6 +212,8 @@ enum Cmd {
     ApplyBlock(ApplyBlockOptions),
     StartupInfoBack(StartupInfoBackOptions),
     GenBlockTransactions(GenBlockTransactionsOptions),
+    ExportSnapshot(ExportSnapshotOptions),
+    ApplySnapshot(ApplySnapshotOptions),
 }
 
 #[derive(Debug, Clone, StructOpt)]
@@ -256,7 +272,7 @@ pub struct ApplyBlockOptions {
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
     #[structopt(long, short = "i", parse(from_os_str))]
-    /// input file, like accounts.csv
+    /// input file, like ~/block_start_end.csv
     pub input_path: PathBuf,
     #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
@@ -315,6 +331,37 @@ pub struct GenBlockTransactionsOptions {
     #[structopt(long, short = "p", possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
     /// txn type
     pub txn_type: Txntype,
+}
+
+#[derive(Debug, Clone, StructOpt)]
+#[structopt(name = "export-snapshot", about = "export snapshot")]
+pub struct ExportSnapshotOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network, like main, proxima
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// output dir, like ~/, manifest.csv will write in output dir
+    pub output: PathBuf,
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub db_path: PathBuf,
+    #[structopt(long, short = "t")]
+    /// enable increment export snapshot
+    pub increment: Option<bool>,
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "apply-snapshot", about = "apply snapshot")]
+pub struct ApplySnapshotOptions {
+    #[structopt(long, short = "n")]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    #[structopt(long, short = "o", parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+    #[structopt(long, short = "i", parse(from_os_str))]
+    /// input_path, manifest.csv in this dir
+    pub input_path: PathBuf,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -417,10 +464,12 @@ fn main() -> anyhow::Result<()> {
         }
         return result;
     }
+
     if let Cmd::StartupInfoBack(option) = cmd {
         let result = startup_info_back(option.to_path, option.back_size, option.net);
         return result;
     }
+
     if let Cmd::GenBlockTransactions(option) = cmd {
         let result = gen_block_transactions(
             option.to_path,
@@ -430,6 +479,17 @@ fn main() -> anyhow::Result<()> {
         );
         return result;
     }
+
+    if let Cmd::ExportSnapshot(option) = cmd {
+        let result = export_snapshot(option.db_path, option.output, option.net, option.increment);
+        return result;
+    }
+
+    if let Cmd::ApplySnapshot(option) = cmd {
+        let result = apply_snapshot(option.to_path, option.input_path, option.net);
+        return result;
+    }
+
     Ok(())
 }
 
@@ -894,5 +954,511 @@ pub fn execute_transaction_with_fixed_account(
         let startup_info = StartupInfo::new(block_hash);
         storage.save_startup_info(startup_info)?;
     }
+    Ok(())
+}
+
+fn export_column(
+    storage: Arc<Storage>,
+    accumulator: MerkleAccumulator,
+    output: PathBuf,
+    column: ColumnFamilyName,
+    start_num: u64,
+    num: u64,
+    bar: ProgressBar,
+) -> Result<()> {
+    // start_num > 1 increment export
+    let mut file = if start_num > 1 {
+        OpenOptions::new().append(true).open(output.join(column))?
+    } else {
+        File::create(output.join(column))?
+    };
+    let mut index = 1;
+    let mut start_index = 0;
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    while start_index < num {
+        let max_size = if start_index + BATCH_SIZE <= num {
+            BATCH_SIZE
+        } else {
+            num - start_index
+        };
+
+        match column {
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
+                let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
+                for hash in ids {
+                    writeln!(file, "{}", hash)?;
+                }
+            }
+            BLOCK_PREFIX_NAME => {
+                // will cache ids
+                let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
+                let blocks = storage.get_blocks(ids.clone())?;
+                for (i, block) in blocks.into_iter().enumerate() {
+                    let block = block.ok_or_else(|| {
+                        format_err!("get block by hash {} error", ids.get(i).unwrap())
+                    })?;
+                    writeln!(file, "{}", serde_json::to_string(&block)?)?;
+                }
+            }
+            BLOCK_INFO_PREFIX_NAME => {
+                // will cache ids
+                let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
+                let block_infos = storage.get_block_infos(ids.clone())?;
+                for (i, block_info) in block_infos.into_iter().enumerate() {
+                    let block_info = block_info.ok_or_else(|| {
+                        format_err!("get block by hash {} error", ids.get(i).unwrap())
+                    })?;
+                    writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
+                }
+            }
+            _ => {
+                println!("{} not process", column);
+                std::process::exit(1);
+            }
+        };
+        start_index += max_size;
+        bar.set_message(format!("export {} {}", column, index).as_str());
+        bar.inc(1);
+        index += 1;
+    }
+    file.flush()?;
+    bar.finish();
+    Ok(())
+}
+
+/// manifest.csv layout
+/// block_accumulator num accumulator_root_hash
+/// block num block.header.hash
+/// block_info num block.header.hash
+/// txn_accumulator num accumulator_root_hash
+/// state  num state_root_hash
+pub fn export_snapshot(
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+    increment: Option<bool>,
+) -> anyhow::Result<()> {
+    let start_time = SystemTime::now();
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block_num = chain.status().head().number();
+    let cur_num = if block_num <= SNAP_GAP {
+        block_num
+    } else {
+        block_num - SNAP_GAP
+    };
+    let cur_block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)
+        .expect("create block chain should success.");
+    let cur_num = chain.epoch().start_block_number();
+
+    // increment export read num
+    let inc_export = increment.unwrap_or(false);
+    let mut old_snapshot_nums: HashMap<String, u64> = HashMap::new();
+    if inc_export {
+        let reader = BufReader::new(File::open(output.join("manifest.csv"))?);
+        for record in reader.lines() {
+            let record = record?;
+            let str_list: Vec<&str> = record.split(' ').collect();
+            if str_list.len() != 3 {
+                println!("manifest.csv {} error", record);
+                std::process::exit(1);
+            }
+            let column = str_list[0].to_string();
+            let num = str_list[1].parse::<u64>()?;
+            old_snapshot_nums.insert(column, num);
+        }
+        if old_snapshot_nums.len() != 5 {
+            println!("increment export snapshot manifest.cvs error");
+            std::process::exit(1);
+        }
+        let old_block_num = *old_snapshot_nums.get(BLOCK_PREFIX_NAME).ok_or_else(|| {
+            format_err!(
+                "increment export snapshot get {} number error",
+                BLOCK_PREFIX_NAME
+            )
+        })?;
+        if old_block_num + BLOCK_GAP >= cur_num {
+            println!("increment snapshot gap too small");
+            return Ok(());
+        }
+        println!(
+            "chain height {} snapshot block cur height {} old height {}",
+            chain_info.head().number(),
+            cur_num,
+            old_block_num
+        );
+    } else {
+        println!(
+            "chain height {} snapshot block height {}",
+            chain_info.head().number(),
+            cur_num
+        );
+    }
+
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+    let block_info = chain
+        .get_block_info(Some(block.id()))?
+        .ok_or_else(|| format_err!("get block info by hash {} error", block.id()))?;
+    let block_accumulator_info = block_info.get_block_accumulator_info();
+    let mut mainfest_list = vec![];
+    let mut handles = Vec::with_capacity(5);
+
+    mainfest_list.push((
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
+        cur_num,
+        block_accumulator_info.accumulator_root,
+    ));
+    mainfest_list.push((BLOCK_PREFIX_NAME, cur_num, block.header.id()));
+    mainfest_list.push((BLOCK_INFO_PREFIX_NAME, cur_num, block.header.id()));
+    let txn_accumulator_info = block_info.get_txn_accumulator_info();
+    mainfest_list.push((
+        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+        txn_accumulator_info.get_num_leaves() - 1,
+        txn_accumulator_info.accumulator_root,
+    ));
+    let mbar = MultiProgress::new();
+    for (column, num_record, _hash) in mainfest_list.clone() {
+        let accumulator = match column {
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
+                MerkleAccumulator::new_with_info(
+                    block_accumulator_info.clone(),
+                    storage.get_accumulator_store(AccumulatorStoreType::Block),
+                )
+            }
+            TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => MerkleAccumulator::new_with_info(
+                txn_accumulator_info.clone(),
+                storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+            ),
+            _ => {
+                println!("{} not process", column);
+                std::process::exit(1);
+            }
+        };
+        let old_start_num = *old_snapshot_nums.get(column).unwrap_or(&0);
+        let num = num_record - old_start_num;
+        let start_num = old_start_num + 1;
+        let storage2 = storage.clone();
+        let output2 = output.clone();
+        let bar = mbar.add(ProgressBar::new(num / BATCH_SIZE));
+        let handle = thread::spawn(move || {
+            export_column(storage2, accumulator, output2, column, start_num, num, bar)
+        });
+        handles.push(handle);
+    }
+
+    // get state
+    let state_root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage, Some(state_root));
+    let output2 = output.clone();
+    // 20000000 is a pseudo number
+    let nums = Arc::new(AtomicU64::default());
+    let nums2 = nums.clone();
+    let bar = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
+    let state_handler = thread::spawn(move || {
+        let mut index = 1;
+        let mut file = File::create(output2.join(STATE_NODE_PREFIX_NAME))?;
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+        );
+        let global_states_iter = statedb.dump_iter()?;
+        for (account_address, account_state_set) in global_states_iter {
+            writeln!(
+                file,
+                "{} {}",
+                serde_json::to_string(&account_address)?,
+                serde_json::to_string(&account_state_set)?
+            )?;
+
+            if index % BATCH_SIZE == 0 {
+                bar.set_message(format!("export state {}", index / BATCH_SIZE).as_str());
+                bar.inc(1);
+            }
+            index += 1;
+        }
+        file.flush()?;
+        bar.finish();
+        nums2.store(index - 1, Ordering::Relaxed);
+        Ok(())
+    });
+    handles.push(state_handler);
+    mbar.join_and_clear()?;
+    for handle in handles {
+        handle.join().unwrap().unwrap();
+    }
+
+    mainfest_list.push((
+        STATE_NODE_PREFIX_NAME,
+        nums.load(Ordering::Relaxed),
+        state_root,
+    ));
+    println!(
+        "{} nums {}",
+        STATE_NODE_PREFIX_NAME,
+        nums.load(Ordering::Relaxed)
+    );
+
+    // save manifest
+    let name_manifest = "manifest.csv".to_string();
+    let mut file_manifest = File::create(output.join(name_manifest))?;
+    for (path, num, hash) in mainfest_list {
+        writeln!(file_manifest, "{} {} {}", path, num, hash)?;
+    }
+    file_manifest.flush()?;
+
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("export snapshot use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+fn import_column(
+    storage: Arc<Storage>,
+    accumulator: MerkleAccumulator,
+    input_path: PathBuf,
+    column: String,
+    verify_hash: HashValue,
+    bar: ProgressBar,
+) -> Result<()> {
+    let reader = BufReader::new(File::open(input_path.join(column.clone()))?);
+    let mut index = 1;
+    let mut leaves = vec![];
+    let mut block_hash = HashValue::zero();
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+    );
+    for line in reader.lines() {
+        let line = line?;
+        match column.as_str() {
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
+                leaves.push(HashValue::from_hex_literal(line.as_str())?);
+                if index % BATCH_SIZE == 0 {
+                    accumulator.append(&leaves)?;
+                    accumulator.flush()?;
+                    leaves.clear();
+                }
+            }
+            BLOCK_PREFIX_NAME => {
+                let block: Block = serde_json::from_str(line.as_str())?;
+                block_hash = block.id();
+                storage.commit_block(block)?;
+            }
+            BLOCK_INFO_PREFIX_NAME => {
+                let block_info: BlockInfo = serde_json::from_str(line.as_str())?;
+                block_hash = block_info.block_id;
+                storage.save_block_info(block_info)?;
+            }
+            _ => {
+                println!("{} not process", column);
+                std::process::exit(1);
+            }
+        }
+        if index % BATCH_SIZE == 0 {
+            bar.set_message(format!("import {} {}", column, index / BATCH_SIZE).as_str());
+            bar.inc(1);
+        }
+        index += 1;
+    }
+    match column.as_str() {
+        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => {
+            if !leaves.is_empty() {
+                accumulator.append(&leaves)?;
+                accumulator.flush()?;
+            }
+            if accumulator.root_hash() == verify_hash {
+                println!("{} hash match", column);
+            } else {
+                println!(
+                    "{} hash not match root_hash {} verify_hash {}",
+                    column,
+                    accumulator.root_hash(),
+                    verify_hash
+                );
+                std::process::exit(1);
+            }
+        }
+        BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
+            if verify_hash == block_hash {
+                println!("{} hash match", column);
+            } else {
+                println!(
+                    "{} hash not match block_hash {} verify_hash {}",
+                    column, block_hash, verify_hash
+                );
+                std::process::exit(1);
+            }
+        }
+        _ => {
+            println!("{} not process", column);
+            std::process::exit(1);
+        }
+    }
+    bar.finish();
+    Ok(())
+}
+
+pub fn apply_snapshot(
+    to_dir: PathBuf,
+    input_path: PathBuf,
+    network: BuiltinNetworkID,
+) -> anyhow::Result<()> {
+    let start_time = SystemTime::now();
+    let net = ChainNetwork::new_builtin(network);
+    let db_stoarge = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_stoarge,
+    ))?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let mut chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = chain.status().head().number();
+    if cur_num > 0 {
+        println!("apply snapshot cur_num {} expect 0", cur_num);
+        std::process::exit(2);
+    }
+
+    let mut block_hash = HashValue::zero();
+    let mut block_num = 1;
+    let mut handles = vec![];
+    let reader = BufReader::new(File::open(input_path.join("manifest.csv"))?);
+    let mut file_list = vec![];
+    for record in reader.lines() {
+        let record = record?;
+        let str_list: Vec<&str> = record.split(' ').collect();
+        if str_list.len() != 3 {
+            println!("manifest.csv {} error", record);
+            std::process::exit(1);
+        }
+        let column = str_list[0].to_string();
+        let nums = str_list[1].parse::<BlockNumber>()?;
+        let verify_hash = HashValue::from_hex_literal(str_list[2])?;
+        if str_list[0] == BLOCK_PREFIX_NAME {
+            block_hash = verify_hash;
+            block_num = nums;
+        }
+        file_list.push((column, nums, verify_hash));
+    }
+    let mbar = MultiProgress::new();
+    for item in file_list.iter().take(file_list.len() - 1) {
+        let (column, nums, verify_hash) = item.clone();
+        let storage2 = storage.clone();
+        let accumulator = match column.as_str() {
+            BLOCK_ACCUMULATOR_NODE_PREFIX_NAME | BLOCK_PREFIX_NAME | BLOCK_INFO_PREFIX_NAME => {
+                MerkleAccumulator::new_with_info(
+                    chain.status().info.block_accumulator_info,
+                    storage.get_accumulator_store(AccumulatorStoreType::Block),
+                )
+            }
+            TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME => MerkleAccumulator::new_with_info(
+                chain.status().info.txn_accumulator_info,
+                storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+            ),
+            _ => {
+                println!("{} not process", column);
+                std::process::exit(1);
+            }
+        };
+        let input_path2 = input_path.clone();
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let handle = thread::spawn(move || {
+            import_column(storage2, accumulator, input_path2, column, verify_hash, bar)
+        });
+        handles.push(handle);
+    }
+    // STATE_NODE_PREFIX_NAME
+    if let Some((column, nums, verify_hash)) = file_list.last().cloned() {
+        let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+        let handle = thread::spawn(move || {
+            let reader = BufReader::new(File::open(input_path.join(column))?);
+            bar.set_style(
+                ProgressStyle::default_bar()
+                    .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
+            );
+            let mut index = 1;
+            let mut account_states = vec![];
+            for line in reader.lines() {
+                let line = line?;
+                let strs: Vec<&str> = line.split(' ').collect();
+                let account_address: AccountAddress = serde_json::from_str(strs[0])?;
+                let account_state_set: AccountStateSet = serde_json::from_str(strs[1])?;
+                account_states.push((account_address, account_state_set));
+                index += 1;
+                if index % BATCH_SIZE == 0 {
+                    bar.set_message(
+                        format!(
+                            "import {} index {}",
+                            STATE_NODE_PREFIX_NAME,
+                            index / BATCH_SIZE
+                        )
+                        .as_str(),
+                    );
+                    bar.inc(1);
+                }
+            }
+            bar.finish();
+            let chain_state_set = ChainStateSet::new(account_states);
+            chain.chain_state().apply(chain_state_set)?;
+            if chain.chain_state_reader().state_root() == verify_hash {
+                println!("snapshot_state hash match");
+            } else {
+                println!(
+                    "snapshot_state hash not match state_root {} verify_hash {}",
+                    chain.chain_state_reader().state_root(),
+                    verify_hash
+                );
+                std::process::exit(1);
+            }
+            Ok(())
+        });
+        handles.push(handle);
+    }
+    mbar.join_and_clear()?;
+    for handle in handles {
+        handle.join().unwrap().unwrap();
+    }
+
+    // save startup_info
+    let startup_info = StartupInfo::new(block_hash);
+    storage.save_startup_info(startup_info)?;
+    // save import snapshot range
+    let snapshot_range = SnapshotRange::new(1, block_num);
+    storage.save_snapshot_range(snapshot_range)?;
+    let use_time = SystemTime::now().duration_since(start_time)?;
+    println!("apply snapshot use time: {:?}", use_time.as_secs());
     Ok(())
 }

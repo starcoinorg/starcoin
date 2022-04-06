@@ -16,7 +16,7 @@ use starcoin_account_service::{AccountEventService, AccountService, AccountStora
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::{check_open_fds_limit, NodeConfig};
+use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
@@ -56,8 +56,6 @@ use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-
-const RES_FDS: u64 = 4096;
 
 pub struct NodeService {
     registry: ServiceRef<RegistryService>,
@@ -226,7 +224,14 @@ impl NodeService {
 
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
-            let mut system = System::builder().stop_on_panic(true).name("main").build();
+            let system = System::with_tokio_rt(|| {
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .on_thread_stop(|| debug!("main thread stopped"))
+                    .thread_name("main")
+                    .build()
+                    .expect("failed to create tokio runtime for main")
+            });
             system.block_on(async {
                 match Self::init_system(config, logger_handle).await {
                     Err(e) => {
@@ -279,7 +284,6 @@ impl NodeService {
             "rocksdb max open files {}",
             config.storage.rocksdb_config().max_open_files
         );
-        check_open_fds_limit(config.storage.rocksdb_config().max_open_files as u64 + RES_FDS)?;
         let mut storage_instance = StorageInstance::new_cache_and_db_instance(
             CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
             DBStorage::new(

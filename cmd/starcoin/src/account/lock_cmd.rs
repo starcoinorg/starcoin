@@ -32,11 +32,11 @@ impl CommandAction for LockCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().account_client();
         let opt: &LockOpt = ctx.opt();
         let account = ctx.state().get_account_or_default(opt.account_address)?;
 
-        client.account_lock(account.address)?;
+        client.lock_account(account.address)?;
         Ok(StringView {
             result: account.address.to_string(),
         })

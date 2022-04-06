@@ -1,6 +1,6 @@
 [package]
 name = "test-helper"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.41"
 thiserror = "1.0"
 backtrace = "0.3"
-tokio = { version = "0.2", features = ["full"] }
+tokio = {version = "^1", features = ["full"] }
 futures = "0.3.12"
 futures-timer = "3.0"
 hex= "0.4.3"
@@ -27,7 +27,7 @@ starcoin-chain-notify = { path = "../chain/chain-notify" }
 starcoin-rpc-server = { path = "../rpc/server" }
 starcoin-storage = { path = "../storage" }
 starcoin-miner = { path = "../miner" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-logger = { path = "../commons/logger" }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm/types" }

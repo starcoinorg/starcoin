@@ -21,6 +21,7 @@
 [![Build and Test](https://github.com/starcoinorg/starcoin/workflows/Build%20and%20Test/badge.svg)](https://github.com/starcoinorg/starcoin/actions?query=workflow%3A%22Build+and+Test%22+branch%3Amaster)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/starcoinorg/starcoin/branch/master/graph/badge.svg)](https://codecov.io/gh/starcoinorg/starcoin)
+[![LoC](https://tokei.rs/b1/github/starcoinorg/starcoin?category=lines)](https://github.com/starcoinorg/starcoin)
 
 
 ## Build from source
@@ -58,13 +59,19 @@ starcoin -n main console
 
 ## Connect to remote node
 
-Connect main network seed nodes:
+Connect to the main network seed nodes:
 
 ```shell
 starcoin --connect ws://main.seed.starcoin.org:9870 console
 ```
 
 >note: Account-related commands cannot be used when connecting remotely
+
+Connect to the main network seed nodes and use a local account database for using Account-related commands
+
+```shell
+starcoin --connect ws://main.seed.starcoin.org:9870 --local-account-dir ~/.starcoin/account_vaults console
+```
 
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
 

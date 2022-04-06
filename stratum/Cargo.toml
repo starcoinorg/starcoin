@@ -1,16 +1,16 @@
 [package]
 name = "starcoin-stratum"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 
 [dependencies]
 
-jsonrpc-tcp-server = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
-jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
-jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95", features = ["arbitrary_precision"] }
-jsonrpc-pubsub = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
-jsonrpc-core-client = { git = "https://github.com/starcoinorg/jsonrpc", rev = "aa123579ca617026ee8f52f1590bc9d39fdaac95" }
+jsonrpc-tcp-server = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
+jsonrpc-derive = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
+jsonrpc-core = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9", features = ["arbitrary_precision"] }
+jsonrpc-pubsub = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
+jsonrpc-core-client = { git = "https://github.com/lemonhx/jsonrpc", rev = "1d8a58e642a919af65a3d9d5ee94bca3eef321e9" }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 serde = { version = "1.0.130" }
 hex = { version = "0.4.3", default-features = false }
@@ -21,7 +21,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-types = { path = "../types" }
 starcoin-miner = { path = "../miner" }
 starcoin-logger = { path = "../commons/logger" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "78aaf55a8b85a5eff208037e0cc798cf985e1a4e"}
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d871dfb4216f034ee334a575926c101574d9d6dc"}
 starcoin-config = { path = "../config" }
 [dev-dependencies]
 stest = { path = "../commons/stest" }

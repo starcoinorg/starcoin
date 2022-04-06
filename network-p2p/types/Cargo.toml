@@ -1,6 +1,6 @@
 [package]
 name = "network-p2p-types"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -15,7 +15,7 @@ serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 libp2p = { version = "0.42.2", default-features = false, features = ["request-response"] }
 sc-peerset = { path = "../peerset"}
-schemars = {git = "https://github.com/starcoinorg/schemars", rev="5bb034597f4bddd577f5d9baaabe5a41e9236d2f"}
+schemars = {git = "https://github.com/starcoinorg/schemars", rev="6972da92f4360e1779168bb3fe0274c521d324e2"}
 [features]
 default = []
 

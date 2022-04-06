@@ -197,7 +197,7 @@ impl Registry {
 
         let arbiter = Arbiter::new();
         let registry_ref = self.service_ref.clone();
-        let addr = ServiceActor::start_in_arbiter(&arbiter, move |_ctx| f(registry_ref));
+        let addr = ServiceActor::start_in_arbiter(&arbiter.handle(), move |_ctx| f(registry_ref));
         let service_ref: ServiceRef<S> = addr.into();
         let holder = ServiceHolder::new(arbiter, service_ref.clone());
         self.services.push(Box::new(holder));
@@ -313,7 +313,7 @@ impl ServiceFactory<RegistryService> for RegistryService {
 impl RegistryService {
     pub fn launch() -> ServiceRef<Self> {
         let arbiter = Arbiter::new();
-        let addr = ServiceActor::start_in_arbiter(&arbiter, |ctx| {
+        let addr = ServiceActor::start_in_arbiter(&arbiter.handle(), |ctx| {
             let service_ref: ServiceRef<RegistryService> = ctx.address().into();
             ServiceActor::new::<RegistryService>(service_ref)
         });

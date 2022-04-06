@@ -15,10 +15,14 @@ pub mod common;
 #[stest::test]
 fn test_service_panic() {
     //Fixme Expect the system stop on panic,but this feature not work as expect.
-    let mut sys = System::builder()
-        .stop_on_panic(true)
-        .name("panic_test")
-        .build();
+    let sys = System::with_tokio_rt(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .on_thread_stop(|| println!("panic_test thread stopped"))
+            .thread_name("panic_test")
+            .build()
+            .expect("failed to create tokio runtime for panic_test")
+    });
     sys.block_on(async {
         let registry = RegistryService::launch();
         let service_ref = registry.register::<PanicService>().await.unwrap();

@@ -3,6 +3,7 @@ use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
+use std::collections::HashMap;
 
 fn random_bytes() -> Vec<u8> {
     HashValue::random().to_vec()
@@ -99,5 +100,37 @@ fn test_state_version() -> Result<()> {
     let old_state2 = chain_state_db_ori.get(&access_path)?.unwrap();
     assert_eq!(old_state, old_state2);
 
+    Ok(())
+}
+
+#[test]
+fn test_state_db_dump_iter() -> Result<()> {
+    let storage = MockStateNodeStore::new();
+    let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
+    let access_path1 = AccessPath::random_resource();
+    let state1 = random_bytes();
+    chain_state_db.apply_write_set(to_write_set(access_path1, state1))?;
+    let access_path2 = AccessPath::random_resource();
+    let state2 = random_bytes();
+    chain_state_db.apply_write_set(to_write_set(access_path2, state2))?;
+    chain_state_db.commit()?;
+    chain_state_db.flush()?;
+
+    let global_state1 = chain_state_db.dump()?;
+    assert_eq!(
+        global_state1.state_sets().len(),
+        2,
+        "unexpect state_set length."
+    );
+    let mut kv1 = HashMap::new();
+    for item in global_state1.into_inner() {
+        kv1.insert(item.0, item.1);
+    }
+    let mut kv2 = HashMap::new();
+    let global_states_iter = chain_state_db.dump_iter()?;
+    for item in global_states_iter {
+        kv2.insert(item.0, item.1);
+    }
+    assert_eq!(kv1, kv2);
     Ok(())
 }

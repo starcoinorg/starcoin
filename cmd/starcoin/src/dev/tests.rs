@@ -1,5 +1,6 @@
 use crate::CliState;
 use anyhow::{format_err, Result};
+use starcoin_account_provider::ProviderFactory;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
@@ -192,9 +193,15 @@ fn test_upgrade_module() {
     let config = Arc::new(node_config);
     let node_handle = run_node_by_config(config.clone()).unwrap();
     let rpc_service = node_handle.rpc_service().unwrap();
-    let rpc_client = RpcClient::connect_local(rpc_service).unwrap();
+    let rpc_client = Arc::new(RpcClient::connect_local(rpc_service).unwrap());
     let node_info = rpc_client.node_info().unwrap();
-    let cli_state = CliState::new(node_info.net, Arc::new(rpc_client), None, None);
+    let account_client = ProviderFactory::create_provider(
+        rpc_client.clone(),
+        config.net().chain_id(),
+        &config.account_provider,
+    )
+    .unwrap();
+    let cli_state = CliState::new(node_info.net, rpc_client, None, None, account_client);
     cli_state
         .client()
         .account_unlock(
@@ -433,9 +440,15 @@ fn test_only_new_module() {
     let config = Arc::new(node_config);
     let node_handle = run_node_by_config(config.clone()).unwrap();
     let rpc_service = node_handle.rpc_service().unwrap();
-    let rpc_client = RpcClient::connect_local(rpc_service).unwrap();
+    let rpc_client = Arc::new(RpcClient::connect_local(rpc_service).unwrap());
     let node_info = rpc_client.node_info().unwrap();
-    let cli_state = CliState::new(node_info.net, Arc::new(rpc_client), None, None);
+    let account_client = ProviderFactory::create_provider(
+        rpc_client.clone(),
+        config.net().chain_id(),
+        &config.account_provider,
+    )
+    .unwrap();
+    let cli_state = CliState::new(node_info.net, rpc_client, None, None, account_client);
     cli_state
         .client()
         .account_unlock(

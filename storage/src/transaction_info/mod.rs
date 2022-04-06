@@ -108,4 +108,11 @@ impl TransactionInfoStorage {
         }
         self.write_batch(batch)
     }
+
+    pub(crate) fn get_transaction_infos(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<RichTransactionInfo>>, Error> {
+        self.multiple_get(ids)
+    }
 }

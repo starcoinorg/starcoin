@@ -5,6 +5,7 @@ use crate::{gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof};
 use anyhow::{anyhow, Result};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
+use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
@@ -86,6 +87,10 @@ impl ChainStateReader for RemoteChainStateReader {
         }
     }
     fn dump(&self) -> Result<ChainStateSet> {
+        unimplemented!()
+    }
+
+    fn dump_iter(&self) -> Result<AccountStateSetIterator> {
         unimplemented!()
     }
 }

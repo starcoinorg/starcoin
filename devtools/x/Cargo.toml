@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-x"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -17,14 +17,14 @@ guppy = { version = "0.9.0", features = ["summaries"] }
 indoc = "1.0.3"
 toml = "0.5.8"
 env_logger = "0.9.0"
-log = "0.4.14"
+log = "0.4.16"
 chrono = "0.4.19"
 globset = "0.4.8"
 regex = "1.5.4"
 rayon = "1.5.1"
 indexmap = "1.6.2"
 camino = { version = "1" }
-x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
-#diem-workspace-hack = { package="workspace-hack", git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
-x = { package="x", git = "https://github.com/starcoinorg/move", rev = "1d252312cdce83c10c93be349c21390a2b9a465a"  }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
+#diem-workspace-hack = { package="workspace-hack", git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }
+x = { package="x", git = "https://github.com/starcoinorg/move", rev = "314436e8ab94f4cff2699d8cd0f62b96c1d2a6df"  }

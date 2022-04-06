@@ -1,8 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::time::Duration;
+
 use crate::common::cal_service::{CalAsyncService, CalService};
-use actix::clock::Duration;
 use anyhow::Result;
 use futures_timer::Delay;
 use log::{error, info};

@@ -3,7 +3,7 @@ description = "Connectivity manager based on reputation"
 homepage = "http://parity.io"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 name = "sc-peerset"
-version = "1.10.0-rc.2"
+version = "1.11.1-alpha"
 authors = ["Parity Technologies <admin@parity.io>", "Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2021"
 repository = "https://github.com/paritytech/substrate/"
@@ -17,7 +17,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 futures = "0.3.12"
 libp2p = { version = "0.42.2", default-features = false }
 sp-utils = { path = "../../commons/utils" }
-log = "0.4.14"
+log = "0.4.16"
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 wasm-timer = "0.2"
 
