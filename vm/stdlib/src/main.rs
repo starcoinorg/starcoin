@@ -26,10 +26,9 @@ use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::Path;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
-    build_script_abis, build_stdlib, build_stdlib_doc, build_stdlib_error_code_map,
-    load_compiled_modules, load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION,
-    COMPILED_OUTPUT_PATH, COMPILED_SCRIPTS_ABI_DIR, LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
-    STD_LIB_DOC_DIR,
+    build_stdlib, build_stdlib_error_code_map, load_compiled_modules,
+    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
+    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
 };
 
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
@@ -142,7 +141,7 @@ fn full_update_with_version(version_number: u64) -> PathBuf {
 }
 
 fn replace_stdlib_by_path(
-    source_dir: &Path,
+    _source_dir: &Path,
     module_path: &Path,
     new_modules: BTreeMap<String, CompiledModule>,
 ) {
@@ -156,18 +155,7 @@ fn replace_stdlib_by_path(
         let mv_file = module_path.join(name).with_extension(COMPILED_EXTENSION);
         save_binary(mv_file.as_path(), &bytes);
     }
-
-    // Generate documentation
-    std::fs::remove_dir_all(&STD_LIB_DOC_DIR).unwrap_or(());
-    std::fs::create_dir_all(&STD_LIB_DOC_DIR).unwrap();
-    build_stdlib_doc();
-
-    // Generate script ABIs
-    std::fs::remove_dir_all(&COMPILED_SCRIPTS_ABI_DIR).unwrap_or(());
-    std::fs::create_dir_all(&COMPILED_SCRIPTS_ABI_DIR).unwrap();
-    build_script_abis(Some(source_dir));
-
-    build_stdlib_error_code_map();
+    build_stdlib_error_code_map()
 }
 
 // Generates the compiled stdlib and transaction scripts. Until this is run changes to the source

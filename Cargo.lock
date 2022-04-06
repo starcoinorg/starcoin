@@ -10717,7 +10717,6 @@ dependencies = [
  "move-compiler",
  "move-prover",
  "once_cell",
- "rayon",
  "serde 1.0.136",
  "sha2 0.9.9",
  "simplelog",
