@@ -6,17 +6,25 @@ spec:
   template:
     spec:
       nodeSelector:
-        starcoin/node-pool: ci-pool
+        node-pool: ci-pool
       image: starcoin/starcoin-builder:sha-cbd4ad4
-      env:
-        - name: RUNNER_FEATURE_FLAG_EPHEMERAL
-          value: "true"
       repository: starcoinorg/starcoin
+      ephemeral: true
+      tolerations:
+        - key: "app"
+          operator: "Equal"
+          value: "ci"
+          effect: "NoExecute"
       serviceAccountName: github-runner
       resources:
         requests:
-          cpu: "30.0"
-          memory: "64Gi"
+          #cpu: "30.0"
+          #memory: "64Gi"
+          cpu: "15.0"
+          memory: "32Gi"
+          ephemeral-storage: "40Gi"
+        limits:
+          ephemeral-storage: "50Gi"
       # If set to false, there are no privileged container and you cannot use docker.
       dockerEnabled: true
       # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
@@ -25,8 +33,13 @@ spec:
       # Valid if dockerdWithinRunnerContainer is not true
       dockerdContainerResources:
         requests:
-          cpu: "30.0"
-          memory: "64Gi"
+          #cpu: "30.0"
+          #memory: "64Gi"
+          cpu: "15.0"
+          memory: "32Gi"
+          ephemeral-storage: "40Gi"
+        limits:
+          ephemeral-storage: "50Gi"
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
@@ -36,10 +49,16 @@ metadata:
 spec:
   scaleTargetRef:
     name: starcoin-runner-deployment
-  minReplicas: 1
+  minReplicas: 0
   maxReplicas: 6
   scaleDownDelaySecondsAfterScaleOut: 120
-  metrics:
-    - type: TotalNumberOfQueuedAndInProgressWorkflowRuns
-      repositoryNames:
-        - starcoinorg/starcoin
+  scaleUpTriggers:
+  - githubEvent:
+      pullRequest:
+        types: ["synchronize"]
+        branches: ["master"]
+      checkRun:
+        types: ["created"]
+        status: "queued"
+    amount: 2
+    duration: "2m"
