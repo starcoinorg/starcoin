@@ -4,7 +4,7 @@
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
-use actix::{Addr, System};
+use actix::{Addr, Arbiter, System};
 use anyhow::anyhow;
 use bcs_ext::BCSCodec;
 use futures::channel::oneshot;
@@ -89,7 +89,8 @@ pub struct RpcClient {
     provider: ConnectionProvider,
     chain_watcher: Addr<ChainWatcher>,
     //hold the watch thread handle.
-    watcher_handle: JoinHandle<()>,
+    watcher_thread: JoinHandle<()>,
+    watcher_thread_exit_sender: oneshot::Sender<()>,
 }
 
 struct ConnectionProvider {
@@ -134,18 +135,24 @@ impl RpcClient {
         let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
         let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into(); //Self::create_client_inner(conn_source.clone()).map_err(map_err)?;
         let pubsub_client = inner.pubsub_client.clone();
+        let (handle_exit_sender, handle_exit_receiver) = oneshot::channel::<()>();
         let handle = std::thread::spawn(move || {
-            let sys = System::with_tokio_rt(|| {
+            let _sys = System::with_tokio_rt(|| {
                 tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
-                    .on_thread_stop(|| debug!("client-actix-system thread stopped"))
+                    .on_thread_stop(|| println!("client-actix-system thread stopped"))
                     .thread_name("client-actix-system")
                     .build()
                     .expect("failed to create tokio runtime for client-actix-system")
             });
-            sys.block_on(async {
+            let arbiter = Arbiter::new();
+            let spawn_result = arbiter.spawn(async {
                 let watcher = ChainWatcher::launch();
                 tx.send(watcher).unwrap();
+            });
+            assert!(spawn_result);
+            futures::executor::block_on(async {
+                let _ = handle_exit_receiver.await;
             });
         });
         let watcher = futures::executor::block_on(rx).expect("Init chain watcher fail.");
@@ -156,7 +163,8 @@ impl RpcClient {
             inner: Mutex::new(Some(inner)),
             provider,
             chain_watcher: watcher,
-            watcher_handle: handle,
+            watcher_thread: handle,
+            watcher_thread_exit_sender: handle_exit_sender,
         })
     }
 
@@ -1023,8 +1031,12 @@ impl RpcClient {
         if let Err(e) = self.chain_watcher.try_send(chain_watcher::StopWatcher) {
             debug!("Try to stop chain watcher error: {:?}", e);
         }
-        if let Err(e) = self.watcher_handle.join() {
-            debug!("Wait chain watcher thread stop error: {:?}", e);
+
+        if let Err(e) = {
+            self.watcher_thread_exit_sender.send(()).unwrap();
+            self.watcher_thread.join()
+        } {
+            error!("Wait chain watcher thread stop error: {:?}", e);
         }
     }
 }
