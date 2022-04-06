@@ -46,6 +46,7 @@ use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
@@ -994,20 +995,22 @@ fn export_column(
             BLOCK_PREFIX_NAME => {
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
-                for hash in ids {
-                    let block = storage
-                        .get_block(hash)?
-                        .ok_or_else(|| format_err!("get block by hash {} error", hash))?;
+                let blocks = storage.get_blocks(ids.clone())?;
+                for (i, block) in blocks.into_iter().enumerate() {
+                    let block = block.ok_or_else(|| {
+                        format_err!("get block by hash {} error", ids.get(i).unwrap())
+                    })?;
                     writeln!(file, "{}", serde_json::to_string(&block)?)?;
                 }
             }
             BLOCK_INFO_PREFIX_NAME => {
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
-                for hash in ids {
-                    let block_info = storage
-                        .get_block_info(hash)?
-                        .ok_or_else(|| format_err!("get block by hash {} error", hash))?;
+                let block_infos = storage.get_block_infos(ids.clone())?;
+                for (i, block_info) in block_infos.into_iter().enumerate() {
+                    let block_info = block_info.ok_or_else(|| {
+                        format_err!("get block by hash {} error", ids.get(i).unwrap())
+                    })?;
                     writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
                 }
             }
@@ -1176,10 +1179,10 @@ pub fn export_snapshot(
     let state_root = block.header.state_root();
     let statedb = ChainStateDB::new(storage, Some(state_root));
     let output2 = output.clone();
-
-    let global_states = statedb.dump()?;
-    let nums = global_states.len() as BlockNumber;
-    let bar = mbar.add(ProgressBar::new(nums / BATCH_SIZE));
+    // 20000000 is a pseudo number
+    let nums = Arc::new(AtomicU64::default());
+    let nums2 = nums.clone();
+    let bar = mbar.add(ProgressBar::new(20000000 / BATCH_SIZE));
     let state_handler = thread::spawn(move || {
         let mut index = 1;
         let mut file = File::create(output2.join(STATE_NODE_PREFIX_NAME))?;
@@ -1187,7 +1190,8 @@ pub fn export_snapshot(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:100.cyan/blue} {percent}% {msg}"),
         );
-        for (account_address, account_state_set) in global_states.into_inner() {
+        let global_states_iter = statedb.dump_iter()?;
+        for (account_address, account_state_set) in global_states_iter {
             writeln!(
                 file,
                 "{} {}",
@@ -1203,6 +1207,7 @@ pub fn export_snapshot(
         }
         file.flush()?;
         bar.finish();
+        nums2.store(index - 1, Ordering::Relaxed);
         Ok(())
     });
     handles.push(state_handler);
@@ -1211,7 +1216,16 @@ pub fn export_snapshot(
         handle.join().unwrap().unwrap();
     }
 
-    mainfest_list.push((STATE_NODE_PREFIX_NAME, nums, state_root));
+    mainfest_list.push((
+        STATE_NODE_PREFIX_NAME,
+        nums.load(Ordering::Relaxed),
+        state_root,
+    ));
+    println!(
+        "{} nums {}",
+        STATE_NODE_PREFIX_NAME,
+        nums.load(Ordering::Relaxed)
+    );
 
     // save manifest
     let name_manifest = "manifest.csv".to_string();

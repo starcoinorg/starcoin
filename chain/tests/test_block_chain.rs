@@ -202,13 +202,11 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
 }
 
 #[stest::test(timeout = 120)]
-#[allow(clippy::vec_init_then_push)]
 fn test_uncle() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner();
     // 3. mock chain apply
-    let mut uncles = Vec::new();
-    uncles.push(uncle_block_header.clone());
+    let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), miner, uncles);
     mock_chain.apply(block).unwrap();
     assert!(mock_chain.head().head_block().block.uncles().is_some());
@@ -223,13 +221,11 @@ fn test_uncle() {
 }
 
 #[stest::test(timeout = 120)]
-#[allow(clippy::vec_init_then_push)]
 fn test_uncle_exist() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
     // 3. mock chain apply
-    let mut uncles = Vec::new();
-    uncles.push(uncle_block_header.clone());
+    let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
     assert!(mock_chain.head().head_block().block.uncles().is_some());
@@ -243,14 +239,12 @@ fn test_uncle_exist() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
 
     // 4. uncle exist
-    let mut uncles = Vec::new();
-    uncles.push(uncle_block_header);
+    let uncles = vec![uncle_block_header];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     assert!(mock_chain.apply(block).is_err());
 }
 
 #[stest::test(timeout = 120)]
-#[allow(clippy::vec_init_then_push)]
 fn test_uncle_son() {
     let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -260,36 +254,31 @@ fn test_uncle_son() {
     fork_block_chain.apply(uncle_son).unwrap();
 
     // 4. mock chain apply
-    let mut uncles = Vec::new();
-    uncles.push(uncle_son_block_header);
+    let uncles = vec![uncle_son_block_header];
     let block = product_a_block(mock_chain.head(), miner, uncles);
     assert!(mock_chain.apply(block).is_err());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
 #[stest::test(timeout = 120)]
-#[allow(clippy::vec_init_then_push)]
 fn test_random_uncle() {
     let (mut mock_chain, _, _) = gen_uncle();
     let miner = mock_chain.miner();
 
     // 3. random BlockHeader and apply
-    let mut uncles = Vec::new();
-    uncles.push(BlockHeader::random());
+    let uncles = vec![BlockHeader::random()];
     let block = product_a_block(mock_chain.head(), miner, uncles);
     assert!(mock_chain.apply(block).is_err());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
 #[stest::test(timeout = 480)]
-#[allow(clippy::vec_init_then_push)]
 fn test_switch_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
 
     // 3. mock chain apply
-    let mut uncles = Vec::new();
-    uncles.push(uncle_block_header.clone());
+    let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
     assert!(mock_chain.head().head_block().block.uncles().is_some());
@@ -322,7 +311,6 @@ fn test_switch_epoch() {
 }
 
 #[stest::test(timeout = 480)]
-#[allow(clippy::vec_init_then_push)]
 fn test_uncle_in_diff_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -347,8 +335,7 @@ fn test_uncle_in_diff_epoch() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 
     // 5. mock chain apply
-    let mut uncles = Vec::new();
-    uncles.push(uncle_block_header);
+    let uncles = vec![uncle_block_header];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     assert!(mock_chain.apply(block).is_err());
 }
@@ -473,5 +460,16 @@ fn test_get_blocks_by_number() -> Result<()> {
         .head()
         .get_blocks_by_number(None, u64::max_value())?;
     assert_eq!(blocks.len(), 11);
+
+    let number = blocks.len() as u64;
+    let number = number.saturating_add(1);
+    let result = mock_chain
+        .head()
+        .get_blocks_by_number(Some(blocks.len() as u64 + 1), u64::max_value());
+    assert!(
+        result.is_err(),
+        "result cannot find block by number {}",
+        number
+    );
     Ok(())
 }

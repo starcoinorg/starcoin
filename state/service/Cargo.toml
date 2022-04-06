@@ -18,6 +18,7 @@ starcoin-config = { path = "../../config" }
 starcoin-state-api = { path = "../api" }
 starcoin-statedb = { path = "../statedb" }
 starcoin-storage = { path = "../../storage" }
+starcoin-state-tree = { path = "../state-tree"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 tokio = "1"
 

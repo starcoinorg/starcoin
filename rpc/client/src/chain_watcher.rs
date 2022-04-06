@@ -69,11 +69,11 @@ impl ChainWatcher {
 impl Actor for ChainWatcher {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
-        info!("ChainWater actor started");
+        debug!("ChainWater actor started");
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("ChainWater actor stopped");
+        debug!("ChainWater actor stopped");
     }
 }
 
