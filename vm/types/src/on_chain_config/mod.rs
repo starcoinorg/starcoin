@@ -60,13 +60,12 @@ impl ConfigID {
     }
 }
 
-#[allow(clippy::vec_init_then_push)]
 pub static ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
-    let mut configs: Vec<ConfigID> = Vec::new();
-    configs.push(Version::config_id());
-    configs.push(ConsensusConfig::config_id());
-    configs.push(DaoConfig::config_id());
-    configs
+    vec![
+        Version::config_id(),
+        ConsensusConfig::config_id(),
+        DaoConfig::config_id(),
+    ]
 });
 
 #[derive(Clone, Debug, PartialEq)]
