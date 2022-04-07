@@ -3,7 +3,11 @@ use crate::mock::MockStateNodeStore;
 use anyhow::Result;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::{HashValueKey, RawKey};
+use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::*;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -214,7 +218,13 @@ pub fn test_state_storage_dump() -> Result<()> {
 
 #[test]
 pub fn test_state_multi_commit_missing_node() -> Result<()> {
-    let storage = MockStateNodeStore::new();
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_db_instance(DBStorage::new(
+        tmpdir.path(),
+        RocksdbConfig::default(),
+        None,
+    )?);
+    let storage = Storage::new(instance)?;
     let state = StateTree::new(Arc::new(storage.clone()), None);
     let hash_value1 = HashValueKey(HashValue::random());
     let value1 = vec![1u8, 2u8];
@@ -241,7 +251,13 @@ pub fn test_state_multi_commit_missing_node() -> Result<()> {
 
 #[test]
 pub fn test_state_multi_commit_and_flush() -> Result<()> {
-    let storage = MockStateNodeStore::new();
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_db_instance(DBStorage::new(
+        tmpdir.path(),
+        RocksdbConfig::default(),
+        None,
+    )?);
+    let storage = Storage::new(instance)?;
     let state = StateTree::new(Arc::new(storage.clone()), None);
     let hash_value1 = HashValueKey(HashValue::random());
     let value1 = vec![1u8, 2u8];
