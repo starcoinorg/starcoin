@@ -10,7 +10,6 @@ use move_bytecode_verifier::{dependencies, verify_module};
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::FullyCompiledProgram;
 use once_cell::sync::Lazy;
-use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -80,7 +79,6 @@ static FRESH_MOVELANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
 /// This is why we include it here.
 pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("compiled");
 
-const COMPILED_TRANSACTION_SCRIPTS_DIR: &str = "compiled/latest/transaction_scripts";
 pub const LATEST_VERSION: &str = "latest";
 
 pub static STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
@@ -233,69 +231,6 @@ pub fn save_binary(path: &Path, binary: &[u8]) {
     }
 
     File::create(path).unwrap().write_all(binary).unwrap();
-}
-
-pub fn build_stdlib_doc() {
-    build_doc(STD_LIB_DOC_DIR, "", stdlib_files().as_slice(), "")
-}
-
-pub fn build_script_abis(dep_path: Option<&Path>) {
-    stdlib_files().par_iter().for_each(|file| {
-        build_abi(
-            COMPILED_SCRIPTS_ABI_DIR,
-            &[file.clone()],
-            dep_path,
-            COMPILED_TRANSACTION_SCRIPTS_DIR,
-        )
-    });
-}
-
-#[allow(clippy::field_reassign_with_default)]
-fn build_abi(
-    output_path: &str,
-    sources: &[String],
-    dep_path: Option<&Path>,
-    compiled_script_path: &str,
-) {
-    let mut options = move_prover::cli::Options::default();
-    options.move_sources = sources.to_vec();
-    options.move_named_address_values = starcoin_framework_named_addresses()
-        .iter()
-        .map(|(k, v)| format!("{}={}", k, v))
-        .collect();
-    if let Some(dep_path) = dep_path {
-        options.move_deps = vec![dep_path.display().to_string()]
-    }
-    options.verbosity_level = LevelFilter::Warn;
-    options.run_abigen = true;
-    options.abigen.output_directory = output_path.to_string();
-    options.abigen.compiled_script_directory = compiled_script_path.to_string();
-    //options.setup_logging_for_test();
-    move_prover::run_move_prover_errors_to_stderr(options).unwrap();
-}
-
-#[allow(clippy::field_reassign_with_default)]
-fn build_doc(output_path: &str, doc_path: &str, sources: &[String], dep_path: &str) {
-    let mut options = move_prover::cli::Options::default();
-    options.move_sources = sources.to_vec();
-    if !dep_path.is_empty() {
-        options.move_deps = vec![dep_path.to_string()]
-    }
-    options.move_named_address_values = starcoin_framework_named_addresses()
-        .iter()
-        .map(|(k, v)| format!("{}={}", k, v))
-        .collect();
-    options.verbosity_level = LevelFilter::Warn;
-    options.run_docgen = true;
-    options.docgen.include_impl = true;
-    options.docgen.include_private_fun = true;
-    options.docgen.specs_inlined = false;
-    if !doc_path.is_empty() {
-        options.docgen.doc_path = vec![doc_path.to_string()];
-    }
-    options.docgen.output_directory = output_path.to_string();
-    //options.setup_logging_for_test();
-    move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
 
 pub fn build_stdlib_error_code_map() {

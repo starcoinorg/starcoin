@@ -190,15 +190,6 @@ impl BlockVerifier for BasicVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            current_id == new_block_parent,
-            "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
-            current_id,
-            new_block_parent,
-            new_block_header.number()
-        );
-
-        verify_block!(
-            VerifyBlockField::Header,
             new_block_header.timestamp() > current.timestamp(),
             "Invalid block: block timestamp too old, parent time:{}, block time: {}, number:{}.",
             current.timestamp(),

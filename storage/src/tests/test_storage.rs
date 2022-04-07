@@ -386,3 +386,87 @@ pub fn test_snapshot_range() -> Result<()> {
     assert_eq!(snapshot_range.get_end(), 1000);
     Ok(())
 }
+
+#[test]
+pub fn test_cache_evict_multi_get() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new_with_capacity(2, None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
+    );
+    let storage = Storage::new(instance.clone())?;
+    let transaction_info1 = RichTransactionInfo::new(
+        HashValue::random(),
+        rand::random(),
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
+        rand::random(),
+        rand::random(),
+    );
+    let id1 = transaction_info1.id();
+
+    let transaction_info2 = RichTransactionInfo::new(
+        HashValue::random(),
+        rand::random(),
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
+        rand::random(),
+        rand::random(),
+    );
+    let id2 = transaction_info2.id();
+
+    let transaction_info3 = RichTransactionInfo::new(
+        HashValue::random(),
+        rand::random(),
+        TransactionInfo::new(
+            HashValue::random(),
+            HashValue::zero(),
+            vec![].as_slice(),
+            0,
+            KeptVMStatus::Executed,
+        ),
+        rand::random(),
+        rand::random(),
+    );
+    let id3 = transaction_info3.id();
+    storage
+        .transaction_info_storage
+        .put(id1, transaction_info1.clone())?;
+    storage
+        .transaction_info_storage
+        .put(id2, transaction_info2.clone())?;
+    storage
+        .transaction_info_storage
+        .put(id3, transaction_info3.clone())?;
+    let cache_storage = instance.cache().unwrap();
+    let cache_infos = cache_storage.multi_get(
+        TRANSACTION_INFO_PREFIX_NAME_V2,
+        vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
+    )?;
+    assert!(&cache_infos.get(0).unwrap().is_none(), "id1 has evicted");
+    assert_eq!(
+        RichTransactionInfo::decode_value(&cache_infos.get(1).unwrap().clone().unwrap())?,
+        transaction_info2
+    );
+    assert_eq!(
+        RichTransactionInfo::decode_value(&cache_infos.get(2).unwrap().clone().unwrap())?,
+        transaction_info3
+    );
+    let infos = storage
+        .transaction_info_storage
+        .multiple_get(vec![id1, id2, id3])?;
+    assert_eq!(infos.get(0).unwrap().clone().unwrap(), transaction_info1);
+    assert_eq!(infos.get(1).unwrap().clone().unwrap(), transaction_info2);
+    assert_eq!(infos.get(2).unwrap().clone().unwrap(), transaction_info3);
+    Ok(())
+}

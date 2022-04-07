@@ -310,7 +310,6 @@ async fn test_verify_new_epoch_block_uncle_should_none_failed() {
 }
 
 #[stest::test]
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_can_not_be_uncle_is_member_failed() {
     let times = 5;
     let (mut writeable_block_chain_service, node_config, storage) =
@@ -327,8 +326,7 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
         .get_header_by_number(times - 2)
         .unwrap()
         .unwrap();
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     let apply_failed = apply_with_illegal_uncle(
         node_config.net(),
         uncles,
@@ -342,7 +340,6 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
 }
 
 #[stest::test]
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     // 1. chain
     let times = 7;
@@ -379,8 +376,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
 
     // 3. new block
     let uncle_header = new_branch.current_header();
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     let apply_failed = apply_with_illegal_uncle(
         node_config.net(),
         uncles,
@@ -393,7 +389,6 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     }
 }
 
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block> {
     let count = 5;
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -404,8 +399,7 @@ async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block>
             .with_timestamp((duration_since_epoch().as_millis() + 1000) as u64)
             .build();
     }
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     apply_with_illegal_uncle(
         node_config.net(),
         uncles,
@@ -426,7 +420,6 @@ async fn test_verify_illegal_uncle_future_timestamp_failed() {
     }
 }
 
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.genesis_block_parameter =
@@ -465,8 +458,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     }
 
     // 3. main and create a new block with uncle block
-    let mut uncles = Vec::new();
-    uncles.push(uncle_block_header);
+    let uncles = vec![uncle_block_header];
     let mut main_block_chain = mock_chain.fork_new_branch(None).unwrap();
     let (block_template, _) = main_block_chain
         .create_block_template(*miner.address(), None, Vec::new(), uncles, None)
@@ -533,12 +525,10 @@ async fn test_verify_block_used_gas_failed() {
 }
 
 #[stest::test]
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_txn_count_failed() {
     // TODO: fix me
     let (mut new_block, mut main) = new_block_and_main().await;
-    let mut txns = Vec::new();
-    txns.push(SignedUserTransaction::mock());
+    let txns = vec![SignedUserTransaction::mock()];
     let mut body = new_block.body.clone();
     body.transactions = txns;
     new_block.body = body;
@@ -659,7 +649,6 @@ async fn test_verify_uncles_count_failed() {
     debug!("expect apply failed : {:?}", apply_failed.err().unwrap());
 }
 
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
     let count = 5;
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -676,8 +665,7 @@ async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
             )
             .build();
     }
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     apply_with_illegal_uncle(
         node_config.net(),
         uncles,
@@ -696,7 +684,6 @@ async fn test_verify_uncles_number_failed() {
     }
 }
 
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     let count = 5;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -731,8 +718,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
         }
     }
 
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     apply_with_illegal_uncle(
         node_config.net(),
         uncles,
@@ -751,14 +737,12 @@ async fn test_verify_uncles_in_old_epoch_failed() {
 }
 
 #[stest::test]
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncles_uncle_exist_failed() {
     let count = 5;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     let net = node_config.net();
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     info!(
         "number 1 : {}",
         writeable_block_chain_service
@@ -828,7 +812,6 @@ async fn test_some_uncles_in_block_failed() {
 }
 
 #[stest::test]
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncle_and_parent_number_failed() {
     let count = 5;
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -863,8 +846,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
         .number();
     assert_eq!(old_number + 1, new_number);
 
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
 
     let apply_failed = apply_with_illegal_uncle(
         node_config.net(),
@@ -879,7 +861,6 @@ async fn test_verify_uncle_and_parent_number_failed() {
 }
 
 #[stest::test]
-#[allow(clippy::vec_init_then_push)]
 async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let count = TEST_CONFIG.consensus_config.epoch_block_count;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
@@ -905,8 +886,7 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
         (uncle_parent_header.number() + 1)
     );
 
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
+    let uncles = vec![uncle_header];
     let apply_failed = apply_with_illegal_uncle(
         node_config.net(),
         uncles,

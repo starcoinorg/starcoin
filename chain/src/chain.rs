@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, FullVerifier};
-use anyhow::{ensure, format_err, Result};
+use anyhow::{bail, ensure, format_err, Result};
 use consensus::Consensus;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
@@ -566,14 +566,24 @@ impl ChainReader for BlockChain {
             None => self.current_header().number(),
             Some(number) => number,
         };
-        let end_num_exclusive = end_num.saturating_add(1);
-        (end_num_exclusive.saturating_sub(count)..end_num_exclusive)
-            .rev()
-            .map(|idx| {
-                self.get_block_by_number(idx)?
-                    .ok_or_else(|| format_err!("Can not find block by number {}", idx))
-            })
-            .collect()
+
+        let num_leaves = self.block_accumulator.num_leaves();
+        if end_num > num_leaves {
+            bail!("Can not find block by number {}", end_num);
+        }
+        let ids = self.get_block_ids(end_num, true, count)?;
+        let block_opts = self.storage.get_blocks(ids)?;
+        let mut blocks = vec![];
+        for (idx, block) in block_opts.into_iter().enumerate() {
+            match block {
+                Some(block) => blocks.push(block),
+                None => bail!(
+                    "Can not find block by number {}",
+                    end_num.saturating_sub(idx as u64)
+                ),
+            }
+        }
+        Ok(blocks)
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
@@ -746,19 +756,20 @@ impl ChainReader for BlockChain {
         max_size: u64,
     ) -> Result<Vec<RichTransactionInfo>> {
         let chain_header = self.current_header();
-        let hash_list = self
+        let hashes = self
             .txn_accumulator
             .get_leaves(start_index, reverse, max_size)?;
         let mut infos = vec![];
-        for hash in hash_list {
-            let info = self.storage.get_transaction_info(hash)?.ok_or_else(|| {
-                anyhow::anyhow!(format!(
-                    "cannot find hash({}) on main chain(head: {})",
-                    hash,
+        let txn_infos = self.storage.get_transaction_infos(hashes.clone())?;
+        for (i, info) in txn_infos.into_iter().enumerate() {
+            match info {
+                Some(info) => infos.push(info),
+                None => bail!(
+                    "cannot find hash({:?}) on head: {}",
+                    hashes.get(i),
                     chain_header.id()
-                ))
-            })?;
-            infos.push(info);
+                ),
+            }
         }
         Ok(infos)
     }

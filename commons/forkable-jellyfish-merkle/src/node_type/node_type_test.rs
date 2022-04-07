@@ -722,7 +722,6 @@ impl NaiveInternalNode {
         BinaryTreeNode::new_internal(begin, width, left, right)
     }
 
-    #[allow(clippy::vec_init_then_push)]
     fn get_child_with_siblings(&self, n: u8) -> (Option<NodeKey>, Vec<HashValue>) {
         let mut current_node = Rc::clone(&self.root);
         let mut siblings = Vec::new();

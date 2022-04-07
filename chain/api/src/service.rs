@@ -65,6 +65,8 @@ pub trait ReadableChainService {
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
+
+    fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
 }
 
 /// Writeable block chain service trait
@@ -129,6 +131,8 @@ pub trait ChainAsyncService:
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
+
+    async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
 }
 
 #[async_trait::async_trait]
@@ -414,6 +418,15 @@ where
             Ok(*proof)
         } else {
             bail!("get transactin proof error")
+        }
+    }
+
+    async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
+        let response = self.send(ChainRequest::GetBlockInfos(hashes)).await??;
+        if let ChainResponse::BlockInfoVec(block_infos) = response {
+            Ok(*block_infos)
+        } else {
+            bail!("get block_infos error")
         }
     }
 }

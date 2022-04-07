@@ -227,7 +227,7 @@ impl NodeService {
             let system = System::with_tokio_rt(|| {
                 tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
-                    .on_thread_stop(|| println!("main thread stopped"))
+                    .on_thread_stop(|| debug!("main thread stopped"))
                     .thread_name("main")
                     .build()
                     .expect("failed to create tokio runtime for main")

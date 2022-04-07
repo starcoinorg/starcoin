@@ -24,7 +24,6 @@ simplelog = "0.9.0"
 fs_extra = "1.2.0"
 clap = { version = "3", features = ["derive"] }
 serde = { version = "1.0.130", default-features = false }
-rayon = "1.5.1"
 itertools = "0.10.3"
 tempfile = "3.2.0"
 starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "cf1deda180af40a8b3e26c0c7b548c4c290cd7e7"  }

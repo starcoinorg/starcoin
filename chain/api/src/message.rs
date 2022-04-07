@@ -59,6 +59,7 @@ pub enum ChainRequest {
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     },
+    GetBlockInfos(Vec<HashValue>),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -86,4 +87,5 @@ pub enum ChainResponse {
     MainEvents(Vec<ContractEventInfo>),
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
+    BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
 }

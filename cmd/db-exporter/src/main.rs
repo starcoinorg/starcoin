@@ -993,20 +993,22 @@ fn export_column(
             BLOCK_PREFIX_NAME => {
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
-                for hash in ids {
-                    let block = storage
-                        .get_block(hash)?
-                        .ok_or_else(|| format_err!("get block by hash {} error", hash))?;
+                let blocks = storage.get_blocks(ids.clone())?;
+                for (i, block) in blocks.into_iter().enumerate() {
+                    let block = block.ok_or_else(|| {
+                        format_err!("get block by hash {} error", ids.get(i).unwrap())
+                    })?;
                     writeln!(file, "{}", serde_json::to_string(&block)?)?;
                 }
             }
             BLOCK_INFO_PREFIX_NAME => {
                 // will cache ids
                 let ids = accumulator.get_leaves(start_index + start_num, false, max_size)?;
-                for hash in ids {
-                    let block_info = storage
-                        .get_block_info(hash)?
-                        .ok_or_else(|| format_err!("get block by hash {} error", hash))?;
+                let block_infos = storage.get_block_infos(ids.clone())?;
+                for (i, block_info) in block_infos.into_iter().enumerate() {
+                    let block_info = block_info.ok_or_else(|| {
+                        format_err!("get block by hash {} error", ids.get(i).unwrap())
+                    })?;
                     writeln!(file, "{}", serde_json::to_string(&block_info)?)?;
                 }
             }
