@@ -218,7 +218,7 @@ pub fn test_state_multi_commit_missing_node() -> Result<()> {
     let state = StateTree::new(Arc::new(storage.clone()), None);
     let hash_value1 = HashValueKey(HashValue::random());
     let value1 = vec![1u8, 2u8];
-    state.put(hash_value1, value1.clone());
+    state.put(hash_value1, value1);
     state.commit()?;
     let root_hash1 = state.root_hash();
     let hash_value2 = HashValueKey(HashValue::random());

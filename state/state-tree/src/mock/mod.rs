@@ -8,7 +8,7 @@ use starcoin_state_store_api::{StateNode, StateNodeStore};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-#[derive(Default,Clone)]
+#[derive(Default, Clone)]
 pub struct MockStateNodeStore {
     nodes: Arc<RwLock<HashMap<HashValue, StateNode>>>,
 }
