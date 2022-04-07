@@ -211,3 +211,57 @@ pub fn test_state_storage_dump() -> Result<()> {
     assert_eq!(kv1, kv2);
     Ok(())
 }
+
+#[test]
+pub fn test_state_multi_commit_missing_node() -> Result<()> {
+    let storage = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(storage.clone()), None);
+    let hash_value1 = HashValueKey(HashValue::random());
+    let value1 = vec![1u8, 2u8];
+    state.put(hash_value1, value1.clone());
+    state.commit()?;
+    let root_hash1 = state.root_hash();
+    let hash_value2 = HashValueKey(HashValue::random());
+    let value12 = vec![12u8, 2u8];
+    let value2 = vec![3u8, 4u8];
+    state.put(hash_value1, value12.clone());
+    state.put(hash_value2, value2.clone());
+    state.commit()?;
+    state.flush()?;
+    let root_hash2 = state.root_hash();
+    let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
+    let result = state1.get(&hash_value1);
+    assert!(result.is_err(), "Missing node at HashValue");
+
+    let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
+    assert_eq!(state2.get(&hash_value1)?, Some(value12));
+    assert_eq!(state2.get(&hash_value2)?, Some(value2));
+    Ok(())
+}
+
+#[test]
+pub fn test_state_multi_commit_and_flush() -> Result<()> {
+    let storage = MockStateNodeStore::new();
+    let state = StateTree::new(Arc::new(storage.clone()), None);
+    let hash_value1 = HashValueKey(HashValue::random());
+    let value1 = vec![1u8, 2u8];
+    state.put(hash_value1, value1.clone());
+    state.commit()?;
+    state.flush()?;
+    let root_hash1 = state.root_hash();
+    let hash_value2 = HashValueKey(HashValue::random());
+    let value12 = vec![12u8, 2u8];
+    let value2 = vec![3u8, 4u8];
+    state.put(hash_value1, value12.clone());
+    state.put(hash_value2, value2.clone());
+    state.commit()?;
+    state.flush()?;
+    let root_hash2 = state.root_hash();
+    let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
+    assert_eq!(state1.get(&hash_value1)?, Some(value1));
+
+    let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
+    assert_eq!(state2.get(&hash_value1)?, Some(value12));
+    assert_eq!(state2.get(&hash_value2)?, Some(value2));
+    Ok(())
+}
