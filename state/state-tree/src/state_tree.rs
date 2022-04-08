@@ -212,7 +212,12 @@ where
             cache_guard.split_off_idx = Some(cache_guard.change_set_list.len());
             cache_guard.change_set_list.clone()
         };
-        debug!("change_sets_lists len {}", change_set_list.len());
+
+        // multi thread StateCache::and_changeset and StateTree flush may produce this situation
+        if change_set_list.is_empty() {
+            return Ok(());
+        }
+        debug!("change_set_list len {}", change_set_list.len());
         let mut root_hash = HashValue::default();
 
         let mut node_map = BTreeMap::new();
