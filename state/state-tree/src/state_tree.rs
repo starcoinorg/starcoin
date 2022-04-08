@@ -6,6 +6,7 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
+use logger::prelude::debug;
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::*;
 use starcoin_state_store_api::*;
@@ -24,6 +25,7 @@ use std::sync::Arc;
 pub struct StateCache<K: RawKey> {
     root_hash: HashValue,
     change_set: TreeUpdateBatch<K>,
+    change_set_list: Vec<(HashValue, TreeUpdateBatch<K>)>,
 }
 
 impl<K> StateCache<K>
@@ -34,16 +36,19 @@ where
         Self {
             root_hash: initial_root,
             change_set: TreeUpdateBatch::default(),
+            change_set_list: Vec::new(),
         }
     }
 
+    // XXX FIXME use slice
     fn reset(&mut self, root_hash: HashValue) {
         self.root_hash = root_hash;
         self.change_set = TreeUpdateBatch::default();
+        self.change_set_list.clear();
     }
 
     fn add_changeset(&mut self, root_hash: HashValue, cs: TreeUpdateBatch<K>) {
-        let cur_change_set = &mut self.change_set;
+        let mut cur_change_set = TreeUpdateBatch::default();
         let mut cs_num_stale_leaves = cs.num_stale_leaves;
         for stale_node in cs.stale_node_index_batch.iter() {
             match cur_change_set.node_batch.remove(&stale_node.node_key) {
@@ -70,8 +75,11 @@ where
                 cur_change_set.num_new_leaves += 1;
             }
         }
+        self.change_set_list
+            .push((root_hash, cur_change_set.clone()));
 
         self.root_hash = root_hash;
+        self.change_set = cur_change_set;
     }
 }
 
@@ -196,11 +204,19 @@ where
 
     /// commit the state change into underline storage.
     pub fn flush(&self) -> Result<()> {
-        let (root_hash, change_sets) = self.change_sets();
+        let change_set_list = {
+            let cache_guard = self.cache.lock();
+            cache_guard.change_set_list.clone()
+        };
+        debug!("change_sets_lists len {}", change_set_list.len());
+        let mut root_hash = HashValue::default();
 
         let mut node_map = BTreeMap::new();
-        for (nk, n) in change_sets.node_batch.into_iter() {
-            node_map.insert(nk, n.try_into()?);
+        for (hash, change_sets) in change_set_list.into_iter() {
+            for (nk, n) in change_sets.node_batch.into_iter() {
+                node_map.insert(nk, n.try_into()?);
+            }
+            root_hash = hash;
         }
         self.storage.write_nodes(node_map)?;
         // and then advance the storage root hash
@@ -300,6 +316,11 @@ where
         let cache_guard = self.cache.lock();
         (cache_guard.root_hash, cache_guard.change_set.clone())
     }
+
+    fn change_set_list(&self) -> Vec<(HashValue, TreeUpdateBatch<K>)> {
+        let cache_guard = self.cache.lock();
+        cache_guard.change_set_list.clone()
+    }
     // TODO: to keep atomic with other commit.
     // TODO: think about the WriteBatch trait position.
     // pub fn save<T>(&self, batch: &mut T) -> Result<()>
@@ -327,8 +348,10 @@ where
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
         }
-        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
-            return Ok(Some(n));
+        for change_set in self.cache.change_set_list.iter() {
+            if let Some(n) = change_set.1.node_batch.get(node_key).cloned() {
+                return Ok(Some(n));
+            }
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),
@@ -350,8 +373,10 @@ where
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
         }
-        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
-            return Ok(Some(n));
+        for change_set in self.cache.change_set_list.iter() {
+            if let Some(n) = change_set.1.node_batch.get(node_key).cloned() {
+                return Ok(Some(n));
+            }
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),

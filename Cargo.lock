@@ -10298,6 +10298,7 @@ dependencies = [
  "serde 1.0.136",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-state-store-api",
  "starcoin-storage",
  "starcoin-types",
