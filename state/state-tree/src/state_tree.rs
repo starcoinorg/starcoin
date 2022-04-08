@@ -317,6 +317,7 @@ where
         (cache_guard.root_hash, cache_guard.change_set.clone())
     }
 
+    #[allow(dead_code)]
     fn change_set_list(&self) -> Vec<(HashValue, TreeUpdateBatch<K>)> {
         let cache_guard = self.cache.lock();
         cache_guard.change_set_list.clone()

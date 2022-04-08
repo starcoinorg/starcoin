@@ -62,7 +62,7 @@ fn test_starcoin_merkle() -> Result<()> {
     }
 
     {
-        // change to previout state root.
+        // change to previous state root.
         let old_chain_state = chain_state.fork_at(state_root);
         // let state_root = chain_state.state_root();
         let _expected_root = MoveValue::vector_u8(state_root.to_vec());
