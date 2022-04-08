@@ -213,13 +213,13 @@ where
             cache_guard.change_set_list.clone()
         };
 
-        // multi thread StateCache::and_changeset and StateTree flush may produce this situation
+        debug!("change_set_list len {}", change_set_list.len());
+        // when self::commit call self::updates(&self, updates: Vec<(K, Option<Blob>)>)
+        // the param updates is empty cause this situation
         if change_set_list.is_empty() {
             return Ok(());
         }
-        debug!("change_set_list len {}", change_set_list.len());
         let mut root_hash = HashValue::default();
-
         let mut node_map = BTreeMap::new();
         for (hash, change_sets) in change_set_list.into_iter() {
             for (nk, n) in change_sets.node_batch.into_iter() {
