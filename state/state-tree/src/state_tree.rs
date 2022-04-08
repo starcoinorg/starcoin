@@ -26,6 +26,7 @@ pub struct StateCache<K: RawKey> {
     root_hash: HashValue,
     change_set: TreeUpdateBatch<K>,
     change_set_list: Vec<(HashValue, TreeUpdateBatch<K>)>,
+    split_off_idx: Option<usize>,
 }
 
 impl<K> StateCache<K>
@@ -37,18 +38,22 @@ where
             root_hash: initial_root,
             change_set: TreeUpdateBatch::default(),
             change_set_list: Vec::new(),
+            split_off_idx: None,
         }
     }
 
-    // XXX FIXME use slice
     fn reset(&mut self, root_hash: HashValue) {
         self.root_hash = root_hash;
         self.change_set = TreeUpdateBatch::default();
-        self.change_set_list.clear();
+        self.change_set_list = if let Some(split_idx) = self.split_off_idx {
+            self.change_set_list.split_off(split_idx)
+        } else {
+            Vec::new()
+        };
     }
 
     fn add_changeset(&mut self, root_hash: HashValue, cs: TreeUpdateBatch<K>) {
-        let mut cur_change_set = TreeUpdateBatch::default();
+        let cur_change_set = &mut self.change_set;
         let mut cs_num_stale_leaves = cs.num_stale_leaves;
         for stale_node in cs.stale_node_index_batch.iter() {
             match cur_change_set.node_batch.remove(&stale_node.node_key) {
@@ -77,9 +82,7 @@ where
         }
         self.change_set_list
             .push((root_hash, cur_change_set.clone()));
-
         self.root_hash = root_hash;
-        self.change_set = cur_change_set;
     }
 }
 
@@ -205,7 +208,8 @@ where
     /// commit the state change into underline storage.
     pub fn flush(&self) -> Result<()> {
         let change_set_list = {
-            let cache_guard = self.cache.lock();
+            let mut cache_guard = self.cache.lock();
+            cache_guard.split_off_idx = Some(cache_guard.change_set_list.len());
             cache_guard.change_set_list.clone()
         };
         debug!("change_sets_lists len {}", change_set_list.len());
@@ -317,11 +321,6 @@ where
         (cache_guard.root_hash, cache_guard.change_set.clone())
     }
 
-    #[allow(dead_code)]
-    fn change_set_list(&self) -> Vec<(HashValue, TreeUpdateBatch<K>)> {
-        let cache_guard = self.cache.lock();
-        cache_guard.change_set_list.clone()
-    }
     // TODO: to keep atomic with other commit.
     // TODO: think about the WriteBatch trait position.
     // pub fn save<T>(&self, batch: &mut T) -> Result<()>
