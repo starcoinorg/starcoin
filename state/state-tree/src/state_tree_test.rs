@@ -228,7 +228,7 @@ pub fn test_state_multi_commit_missing_node() -> Result<()> {
     let state = StateTree::new(Arc::new(storage.clone()), None);
     let hash_value1 = HashValueKey(HashValue::random());
     let value1 = vec![1u8, 2u8];
-    state.put(hash_value1, value1);
+    state.put(hash_value1, value1.clone());
     state.commit()?;
     let root_hash1 = state.root_hash();
     let hash_value2 = HashValueKey(HashValue::random());
@@ -240,8 +240,7 @@ pub fn test_state_multi_commit_missing_node() -> Result<()> {
     state.flush()?;
     let root_hash2 = state.root_hash();
     let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
-    let result = state1.get(&hash_value1);
-    assert!(result.is_ok(), "Missing node at HashValue");
+    assert_eq!(state1.get(&hash_value1)?, Some(value1));
 
     let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
     assert_eq!(state2.get(&hash_value1)?, Some(value12));

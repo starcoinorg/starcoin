@@ -353,10 +353,8 @@ where
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
         }
-        for change_set in self.cache.change_set_list.iter() {
-            if let Some(n) = change_set.1.node_batch.get(node_key).cloned() {
-                return Ok(Some(n));
-            }
+        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
+            return Ok(Some(n));
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),
@@ -378,10 +376,8 @@ where
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
         }
-        for change_set in self.cache.change_set_list.iter() {
-            if let Some(n) = change_set.1.node_batch.get(node_key).cloned() {
-                return Ok(Some(n));
-            }
+        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
+            return Ok(Some(n));
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),
