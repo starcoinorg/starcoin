@@ -43,7 +43,7 @@ pub fn test_put_blob() -> Result<()> {
     assert_eq!(state.get(&account1)?, Some(vec![0, 0, 0]));
     assert_eq!(state.get(&update_nibble(&hash_value, 0, 8))?, None);
 
-    let (root, updates) = state.change_sets();
+    let (root, updates) = state.last_change_sets().unwrap();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
     assert_eq!(updates.num_new_leaves, 1);
@@ -56,12 +56,12 @@ pub fn test_put_blob() -> Result<()> {
     let new_root_hash = state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
-    let (root, updates) = state.change_sets();
+    let (root, updates) = state.last_change_sets().unwrap();
     assert_eq!(root, new_root_hash);
     assert_eq!(updates.num_stale_leaves, 0);
-    assert_eq!(updates.num_new_leaves, 2);
-    assert_eq!(updates.node_batch.len(), 3);
-    assert_eq!(updates.stale_node_index_batch.len(), 1);
+    assert_eq!(updates.num_new_leaves, 1);
+    assert_eq!(updates.node_batch.len(), 2);
+    assert_eq!(updates.stale_node_index_batch.len(), 0);
 
     // modify existed account
     state.put(account1, vec![1, 1, 1]);
@@ -69,12 +69,12 @@ pub fn test_put_blob() -> Result<()> {
     let new_root_hash = state.commit()?;
     assert_eq!(state.root_hash(), new_root_hash);
     assert_eq!(state.get(&account1)?, Some(vec![1, 1, 1]));
-    let (root, updates) = state.change_sets();
+    let (root, updates) = state.last_change_sets().unwrap();
     assert_eq!(root, new_root_hash);
-    assert_eq!(updates.num_stale_leaves, 0);
-    assert_eq!(updates.num_new_leaves, 2);
-    assert_eq!(updates.node_batch.len(), 3);
-    assert_eq!(updates.stale_node_index_batch.len(), 1);
+    assert_eq!(updates.num_stale_leaves, 1);
+    assert_eq!(updates.num_new_leaves, 1);
+    assert_eq!(updates.node_batch.len(), 2);
+    assert_eq!(updates.stale_node_index_batch.len(), 2);
 
     let account3 = update_nibble(&account1, 2, 3);
     for (k, v) in vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])] {
@@ -90,11 +90,11 @@ pub fn test_put_blob() -> Result<()> {
     assert_eq!(state.get(&account2)?, Some(vec![0, 0, 0]));
     assert_eq!(state.get(&account3)?, Some(vec![0, 0, 0]));
 
-    let (_, updates) = state.change_sets();
-    assert_eq!(updates.num_stale_leaves, 0);
-    assert_eq!(updates.num_new_leaves, 3);
-    assert_eq!(updates.node_batch.len(), 6);
-    assert_eq!(updates.stale_node_index_batch.len(), 1);
+    let (_, updates) = state.last_change_sets().unwrap();
+    assert_eq!(updates.num_stale_leaves, 1);
+    assert_eq!(updates.num_new_leaves, 2);
+    assert_eq!(updates.node_batch.len(), 5);
+    assert_eq!(updates.stale_node_index_batch.len(), 2);
     Ok(())
 }
 

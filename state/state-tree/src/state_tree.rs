@@ -24,7 +24,6 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct StateCache<K: RawKey> {
     root_hash: HashValue,
-    change_set: TreeUpdateBatch<K>,
     change_set_list: Vec<(HashValue, TreeUpdateBatch<K>)>,
     split_off_idx: Option<usize>,
 }
@@ -36,7 +35,6 @@ where
     pub fn new(initial_root: HashValue) -> Self {
         Self {
             root_hash: initial_root,
-            change_set: TreeUpdateBatch::default(),
             change_set_list: Vec::new(),
             split_off_idx: None,
         }
@@ -44,7 +42,6 @@ where
 
     fn reset(&mut self, root_hash: HashValue) {
         self.root_hash = root_hash;
-        self.change_set = TreeUpdateBatch::default();
         self.change_set_list = if let Some(split_idx) = self.split_off_idx {
             self.change_set_list.split_off(split_idx)
         } else {
@@ -53,7 +50,7 @@ where
     }
 
     fn add_changeset(&mut self, root_hash: HashValue, cs: TreeUpdateBatch<K>) {
-        let cur_change_set = &mut self.change_set;
+        let mut cur_change_set = TreeUpdateBatch::default();
         let mut cs_num_stale_leaves = cs.num_stale_leaves;
         for stale_node in cs.stale_node_index_batch.iter() {
             match cur_change_set.node_batch.remove(&stale_node.node_key) {
@@ -81,7 +78,7 @@ where
             }
         }
         self.change_set_list
-            .push((root_hash, cur_change_set.clone()));
+            .push((root_hash, cur_change_set));
         self.root_hash = root_hash;
     }
 }
@@ -318,9 +315,16 @@ where
     // }
 
     /// get all changes so far based on initial root_hash.
+    /*
     pub fn change_sets(&self) -> (HashValue, TreeUpdateBatch<K>) {
         let cache_guard = self.cache.lock();
         (cache_guard.root_hash, cache_guard.change_set.clone())
+    } */
+
+    /// get last changes root_hash
+    pub fn last_change_sets(&self) -> Option<(HashValue, TreeUpdateBatch<K>)> {
+        let cache_gurad = self.cache.lock();
+        cache_gurad.change_set_list.last().cloned()
     }
 
     // TODO: to keep atomic with other commit.
@@ -350,8 +354,10 @@ where
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
         }
-        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
-            return Ok(Some(n));
+        for change_set in self.cache.change_set_list.iter().rev() {
+            if let Some(n) = change_set.1.node_batch.get(node_key).cloned() {
+                return Ok(Some(n));
+            }
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),
@@ -373,8 +379,10 @@ where
         if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
             return Ok(Some(Node::new_null()));
         }
-        if let Some(n) = self.cache.change_set.node_batch.get(node_key).cloned() {
-            return Ok(Some(n));
+        for change_set in self.cache.change_set_list.iter().rev() {
+            if let Some(n) = change_set.1.node_batch.get(node_key).cloned() {
+                return Ok(Some(n));
+            }
         }
         match self.store.get(node_key) {
             Ok(Some(n)) => Ok(Some(n.try_into()?)),
