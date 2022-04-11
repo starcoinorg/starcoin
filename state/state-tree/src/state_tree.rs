@@ -284,9 +284,6 @@ where
         };
         let tree = JellyfishMerkleTree::new(&reader);
         let (new_state_root, change_set) = tree.updates(Some(cur_root_hash), updates)?;
-        // cache.root_hashes.push(new_state_root);
-        // cache.change_sets.push(change_set);
-        // cache.root_hash = new_state_root;
         cache.add_changeset(new_state_root, change_set);
         Ok(new_state_root)
     }
