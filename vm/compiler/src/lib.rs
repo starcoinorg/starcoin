@@ -205,11 +205,11 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
 }
 
 /// check module compatibility
-pub fn check_compiled_module_compat(pre: &CompiledModule, new: &CompiledModule) -> bool {
+pub fn check_compiled_module_compat(pre: &CompiledModule, new: &CompiledModule) -> Compatibility {
     let old = Module::new(pre);
     let new = Module::new(new);
 
-    Compatibility::check(&old, &new).is_fully_compatible()
+    Compatibility::check(&old, &new)
 }
 
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
