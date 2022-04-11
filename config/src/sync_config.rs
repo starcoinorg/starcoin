@@ -3,17 +3,17 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use network_api::PeerStrategy;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use structopt::StructOpt;
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct SyncConfig {
     /// peer select strategy
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "peer-select-strategy",
         long,
         help = "peer select strategy, default random."
@@ -22,7 +22,7 @@ pub struct SyncConfig {
 
     /// max retry times, then sync task will failed
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "max-retry-times",
         long,
         help = "max retry times once sync block failed, default 15."

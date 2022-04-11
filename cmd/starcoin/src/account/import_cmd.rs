@@ -4,25 +4,25 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Import account by private key to node wallet.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "import")]
+#[derive(Debug, Parser)]
+#[clap(name = "import")]
 pub struct ImportOpt {
-    #[structopt(short = "p", default_value = "")]
+    #[clap(short = 'p', default_value = "")]
     password: String,
 
-    #[structopt(name = "input", short = "i", help = "input of private key")]
+    #[clap(name = "input", short = 'i', help = "input of private key")]
     from_input: Option<String>,
 
-    #[structopt(
-        short = "f",
+    #[clap(
+        short = 'f',
         help = "file path of private key",
         parse(from_os_str),
         conflicts_with("input")
@@ -30,7 +30,7 @@ pub struct ImportOpt {
     from_file: Option<PathBuf>,
 
     /// if account_address is absent, generate address by public_key.
-    #[structopt(name = "account_address")]
+    #[clap(name = "account_address")]
     account_address: Option<AccountAddress>,
 }
 

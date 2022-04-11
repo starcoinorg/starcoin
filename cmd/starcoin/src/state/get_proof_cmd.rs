@@ -4,16 +4,16 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::StateWithProofView;
 use starcoin_types::access_path::AccessPath;
-use structopt::StructOpt;
 
 /// Get state and proof with access_path, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-proof", alias = "get_proof")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-proof", alias = "get_proof")]
 pub struct GetOpt {
-    #[structopt(name = "access_path")]
+    #[clap(name = "access_path")]
     /// access_path of code or resource, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
     access_path: AccessPath,
 }

@@ -4,27 +4,27 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "set_reputation")]
+#[derive(Debug, Parser)]
+#[clap(name = "set_reputation")]
 pub struct ReportPeerOpt {
-    #[structopt(name = "peer")]
+    #[clap(name = "peer")]
     /// format: multiaddr/p2p/peer_id
     peer: String,
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     /// set reputation
     reputation: Reputation,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 enum Reputation {
     /// banned the peer
     Banned,
     /// set the reput change score for the peer
     Reput {
-        #[structopt(long)]
+        #[clap(long)]
         score: i32,
     },
 }

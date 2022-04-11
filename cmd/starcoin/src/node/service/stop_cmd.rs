@@ -4,16 +4,16 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceInfo;
 use std::thread::sleep;
 use std::time::Duration;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "stop")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "stop")]
 pub struct StopOpt {
-    #[structopt(name = "name")]
+    #[clap(name = "name")]
     name: String,
 }
 

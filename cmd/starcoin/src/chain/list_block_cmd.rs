@@ -4,18 +4,18 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::BlockHeaderView;
 use starcoin_types::block::BlockNumber;
-use structopt::StructOpt;
 
 /// List latest `count` blocks before `number`. if `number` is absent, use head block number.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "list-block", alias = "list_block")]
+#[derive(Debug, Parser)]
+#[clap(name = "list-block", alias = "list_block")]
 pub struct ListBlockOpt {
-    #[structopt(name = "number", long, short = "n")]
+    #[clap(name = "number", long, short = 'n')]
     number: Option<BlockNumber>,
-    #[structopt(name = "count", long, short = "c", default_value = "10")]
+    #[clap(name = "count", long, short = 'c', default_value = "10")]
     count: u64,
 }
 

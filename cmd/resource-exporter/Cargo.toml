@@ -17,7 +17,7 @@ starcoin-vm-types = {path = "../../vm/types"}
 starcoin-types = {path = "../../types"}
 bcs-ext = { package="bcs-ext", path = "../../commons/bcs_ext" }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
-structopt = "~0.3"
+clap = { version = "3", features = ["derive"] }
 csv = "~1"
 serde = "~1"
 serde_json = {version="~1", features=["arbitrary_precision"]}

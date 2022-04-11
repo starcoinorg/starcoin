@@ -4,14 +4,14 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "add_peer")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "add_peer")]
 ///Add a known peer
 pub struct AddPeerOpt {
-    #[structopt(name = "peer")]
+    #[clap(name = "peer")]
     /// format: multiaddr/p2p/peer_id
     peer: String,
 }

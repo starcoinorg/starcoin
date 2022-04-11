@@ -2,22 +2,39 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use clap::arg_enum;
 use consensus::{Consensus, ConsensusVerifyError};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 
-arg_enum! {
-    #[derive(Debug)]
-    pub enum Verifier {
-        Basic,
-        Consensus,
-        Full,
-        None
+#[derive(Debug)]
+pub enum Verifier {
+    Basic,
+    Consensus,
+    Full,
+    None,
+}
+
+impl Verifier {
+    pub fn variants() -> [&'static str; 4] {
+        ["basic", "consensus", "full", "none"]
+    }
+}
+
+impl FromStr for Verifier {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "basic" => Ok(Verifier::Basic),
+            "consensus" => Ok(Verifier::Consensus),
+            "full" => Ok(Verifier::Full),
+            "none" => Ok(Verifier::None),
+            _ => Err(format!("invalid verifier type: {}", s)),
+        }
     }
 }
 

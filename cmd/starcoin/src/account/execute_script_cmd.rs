@@ -5,6 +5,7 @@ use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::load_bytecode_file;
 use starcoin_types::transaction::{
@@ -13,14 +14,13 @@ use starcoin_types::transaction::{
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Execute a script
-#[derive(Debug, StructOpt)]
-#[structopt(name = "execute-script")]
+#[derive(Debug, Parser)]
+#[clap(name = "execute-script")]
 pub struct ExecuteScriptOpt {
-    #[structopt(
-    short = "t",
+    #[clap(
+    short = 't',
     long = "type_tag",
     name = "type-tag",
     help = "can specify multi type_tag",
@@ -28,13 +28,13 @@ pub struct ExecuteScriptOpt {
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
     args: Option<Vec<TransactionArgument>>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(name = "mv_file", parse(from_os_str))]
+    #[clap(name = "mv_file", parse(from_os_str))]
     /// bytecode file of the script to execute.
     mv_file: PathBuf,
 }

@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::node::NodeInfo;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "info")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "info")]
 pub struct InfoOpt {}
 
 pub struct InfoCommand;

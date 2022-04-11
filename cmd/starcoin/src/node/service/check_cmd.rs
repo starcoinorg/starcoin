@@ -4,14 +4,14 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceStatus;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "check")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "check")]
 pub struct CheckOpt {
-    #[structopt(name = "name")]
+    #[clap(name = "name")]
     name: String,
 }
 

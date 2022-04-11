@@ -5,11 +5,11 @@ use crate::{
     get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, StarcoinOpt,
 };
 use anyhow::Result;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use starcoin_metrics::{get_metric_from_registry, Registry};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-use structopt::StructOpt;
 
 pub static DEFAULT_METRIC_SERVER_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
@@ -17,22 +17,22 @@ pub static DEFAULT_METRIC_PUSH_AUTH_PASSWORD: &str = "";
 
 pub static DEFAULT_METRIC_NAMESPACE: &str = "starcoin";
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct PushParameterConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "push-server-url", long)]
+    #[clap(name = "push-server-url", long)]
     /// Metrics push server url
     pub push_server_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "auth-username", long)]
+    #[clap(name = "auth-username", long)]
     /// Metrics push server auth username
     pub auth_username: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "auth-password", long)]
+    #[clap(name = "auth-password", long)]
     /// Metrics push server auth password
     pub auth_password: Option<String>,
-    #[structopt(name = "push-interval", long, default_value = "5")]
+    #[clap(name = "push-interval", long, default_value = "5")]
     pub interval: u64,
 }
 impl PushParameterConfig {
@@ -55,39 +55,39 @@ impl PushParameterConfig {
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize, Serialize, StructOpt)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct MetricsConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "disable-metrics", long, help = "disable metrics")]
+    #[clap(name = "disable-metrics", long, help = "disable metrics")]
     /// disable the metrics server, this flag support both cli and config.
     pub disable_metrics: Option<bool>,
 
     #[serde(default)]
-    #[structopt(flatten)]
+    #[clap(flatten)]
     /// Metrics push server parameter
     pub push_config: PushParameterConfig,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "metrics-address", long)]
+    #[clap(name = "metrics-address", long)]
     /// Metrics server listen address, default is 0.0.0.0
     pub address: Option<IpAddr>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "metrics-port", long)]
+    #[clap(name = "metrics-port", long)]
     /// Metrics server port, default is 9101
     pub port: Option<u16>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     metrics_address: Option<SocketAddr>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     registry: Option<Registry>,
 }
 

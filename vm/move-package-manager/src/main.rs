@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use clap::Parser;
 use move_cli::package::cli::handle_package_commands;
 use move_cli::{experimental, package, sandbox, Move, DEFAULT_STORAGE_DIR};
 use move_core_types::errmap::ErrorMapping;
@@ -13,62 +14,60 @@ use move_package_manager::{run_transactional_test, TransactionalTestCommand};
 use starcoin_config::genesis_config;
 use starcoin_vm_runtime::natives::starcoin_natives;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub struct CliOptions {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     move_args: Move,
 
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     cmd: Commands,
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub enum Commands {
     /// Execute a package command. Executed in the current directory or the closest containing Move
     /// package.
-    #[structopt(name = "package")]
+    #[clap(name = "package")]
     Package {
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: package::cli::PackageCommand,
     },
     /// Release the package.
-    #[structopt(name = "release")]
+    #[clap(name = "release")]
     Release(Releasement),
     /// Execute a sandbox command.
-    #[structopt(name = "sandbox")]
+    #[clap(name = "sandbox")]
     Sandbox {
         /// Directory storing Move resources, events, and module bytecodes produced by module publishing
         /// and script execution.
-        #[structopt(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
+        #[clap(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
         storage_dir: PathBuf,
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: sandbox::cli::SandboxCommand,
     },
     /// (Experimental) Run static analyses on Move source or bytecode.
-    #[structopt(name = "experimental")]
+    #[clap(name = "experimental")]
     Experimental {
         /// Directory storing Move resources, events, and module bytecodes produced by module publishing
         /// and script execution.
-        #[structopt(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
+        #[clap(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
         storage_dir: PathBuf,
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: experimental::cli::ExperimentalCommand,
     },
-
     /// Run transaction tests in spectests dir.
-    #[structopt(name = "spectest")]
+    #[clap(name = "spectest")]
     TransactionalTest(TransactionalTestCommand),
     /// Check compatibility of modules comparing with remote chain chate.
-    #[structopt(name = "check-compatibility")]
+    #[clap(name = "check-compatibility")]
     CompatibilityCheck(CompatibilityCheckCommand),
 }
 
 fn main() -> Result<()> {
     let error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
-    let args: CliOptions = CliOptions::from_args();
+    let args: CliOptions = CliOptions::parse();
     let move_args = &args.move_args;
     let natives = starcoin_natives();
     match args.cmd {

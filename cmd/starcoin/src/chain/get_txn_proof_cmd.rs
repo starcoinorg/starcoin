@@ -4,26 +4,26 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{ensure, format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_chain_api::TransactionInfoWithProof;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::TransactionInfoWithProofView;
 use starcoin_vm_types::access_path::AccessPath;
 use std::convert::TryInto;
-use structopt::StructOpt;
 
 /// Get transaction proof
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-txn-proof")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-txn-proof")]
 pub struct GetTransactionProofOpt {
     /// The block hash for get txn accumulator root
-    #[structopt(name = "block-hash", long, short = "b")]
+    #[clap(name = "block-hash", long, short = 'b')]
     block_hash: HashValue,
-    #[structopt(name = "transaction-global-index", long, short = "t")]
+    #[clap(name = "transaction-global-index", long, short = 't')]
     transaction_global_index: u64,
-    #[structopt(name = "event-index", long, short = "e")]
+    #[clap(name = "event-index", long, short = 'e')]
     event_index: Option<u64>,
-    #[structopt(name = "access-path", long, short = "a")]
+    #[clap(name = "access-path", long, short = 'a')]
     access_path: Option<AccessPath>,
 }
 

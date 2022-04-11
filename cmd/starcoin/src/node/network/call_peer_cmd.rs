@@ -5,23 +5,23 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_network_rpc_api::Ping;
 use starcoin_rpc_api::types::StrView;
 use starcoin_types::peer_info::PeerId;
-use structopt::StructOpt;
 
 /// Call peer method by p2p network, just for diagnose network problem.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "call_peer")]
+#[derive(Debug, Parser)]
+#[clap(name = "call_peer")]
 pub struct CallPeerOpt {
-    #[structopt(short = "p", long = "peer-id")]
+    #[clap(short = 'p', long = "peer-id")]
     peer_id: PeerId,
     /// rpc path, if absent, use ping method.
-    #[structopt(short = "r", long = "rpc-method")]
+    #[clap(short = 'r', long = "rpc-method")]
     rpc_method: Option<String>,
     /// request message serialize by lcs and encode by hex
-    #[structopt(short = "m", long = "message")]
+    #[clap(short = 'm', long = "message")]
     message: Option<String>,
 }
 

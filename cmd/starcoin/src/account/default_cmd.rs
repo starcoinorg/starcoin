@@ -4,16 +4,16 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Set or show the default account
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "default")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "default")]
 pub struct DefaultOpt {
-    #[structopt(
+    #[clap(
         name = "account_address",
         help = "set default address to this, if not provided, display current default address"
     )]

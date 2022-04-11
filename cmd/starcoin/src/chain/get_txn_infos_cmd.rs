@@ -4,16 +4,16 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::TransactionInfoView;
-use structopt::StructOpt;
 
 /// Get transaction infos by block hash.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-txn-infos")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-txn-infos")]
 pub struct GetTxnInfosOpt {
-    #[structopt(name = "block-hash")]
+    #[clap(name = "block-hash")]
     block_hash: HashValue,
 }
 

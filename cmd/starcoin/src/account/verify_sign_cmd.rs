@@ -4,16 +4,16 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_types::sign_message::SignedMessage;
-use structopt::StructOpt;
 
 /// Verify the the message signed by the sign command.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "verify-sign-message")]
+#[derive(Debug, Parser)]
+#[clap(name = "verify-sign-message")]
 pub struct VerifySignMessageOpt {
-    #[structopt(short = "m")]
+    #[clap(short = 'm')]
     signed_message: SignedMessage,
 }
 

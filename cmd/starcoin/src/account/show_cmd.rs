@@ -5,6 +5,7 @@ use crate::cli_state::CliState;
 use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::StateRootOption;
@@ -13,18 +14,17 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::BalanceResource;
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
-use structopt::StructOpt;
 
 /// Show a account info, only the accounts managed by the current node are supported
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "show")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "show")]
 pub struct ShowOpt {
-    #[structopt(name = "address_or_receipt")]
+    #[clap(name = "address_or_receipt")]
     /// The account's address to show, if absent, show the default account.
     address_or_receipt: Option<AccountAddress>,
 
     //`b` and `block_id` for compat with previous cli option.
-    #[structopt(name = "state-root", long, short = "b", alias = "block_id")]
+    #[clap(name = "state-root", long, short = 'b', alias = "block_id")]
     /// The block number or block hash for get state, if absent, use latest block state_root.
     state_root: Option<StateRootOption>,
 }

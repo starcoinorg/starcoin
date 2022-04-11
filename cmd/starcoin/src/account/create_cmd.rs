@@ -4,15 +4,15 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
-use structopt::StructOpt;
 
 /// Create a new account
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "create")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "create")]
 pub struct CreateOpt {
-    #[structopt(short = "p")]
+    #[clap(short = 'p')]
     password: String,
 }
 

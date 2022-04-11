@@ -5,6 +5,7 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::helper::{load_config, save_config};
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
+use clap::Parser;
 use git_version::git_version;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -21,8 +22,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
-use structopt::clap::crate_version;
-use structopt::StructOpt;
 use tempfile::TempDir;
 
 pub mod account_provider_config;
@@ -72,7 +71,7 @@ pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService}
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
-pub static CRATE_VERSION: &str = crate_version!();
+pub static CRATE_VERSION: &str = clap::crate_version!();
 pub static GIT_VERSION: &str = git_version!(
     args = ["--tags", "--dirty", "--always"],
     fallback = "unknown"
@@ -114,7 +113,7 @@ pub fn temp_dir_in(dir: PathBuf) -> DataDirPath {
 }
 
 /// Parse a single key-value pair
-fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn std::error::Error>>
+fn parse_key_val<T, U>(s: &str) -> Result<(T, U), String>
 where
     T: std::str::FromStr,
     T::Err: Into<Box<dyn std::error::Error + 'static>>,
@@ -125,8 +124,14 @@ where
         .find('=')
         .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
     Ok((
-        s[..pos].parse().map_err(Into::into)?,
-        s[pos + 1..].parse().map_err(Into::into)?,
+        s[..pos]
+            .parse()
+            .map_err(Into::into)
+            .map_err(|err| format!("{:?}", err))?,
+        s[pos + 1..]
+            .parse()
+            .map_err(Into::into)
+            .map_err(|err| format!("{:?}", err))?,
     ))
 }
 
@@ -168,56 +173,56 @@ static OPT_NET_HELP: &str = r#"Chain Network
     Custom network first start should also set the `genesis-config` option.
     Use starcoin_generator command to generate a genesis config."#;
 
-#[derive(Clone, Debug, StructOpt, Default, Serialize, Deserialize)]
-#[structopt(name = "starcoin", about = "Starcoin")]
+#[derive(Clone, Debug, Parser, Default, Serialize, Deserialize)]
+#[clap(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long, short = "c")]
+    #[clap(long, short = 'c')]
     /// Connect and attach to a node
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "data-dir", short = "d", parse(from_os_str))]
+    #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long, short = "n", help = OPT_NET_HELP)]
+    #[clap(long, short = 'n', help = OPT_NET_HELP)]
     pub net: Option<ChainNetworkID>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "watch-timeout")]
+    #[clap(long = "watch-timeout")]
     /// Watch timeout in seconds
     pub watch_timeout: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "genesis-config")]
+    #[clap(long = "genesis-config")]
     /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     /// This option only work for node init start.
     pub genesis_config: Option<String>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub rpc: RpcConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub logger: LoggerConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub metrics: MetricsConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub miner: MinerConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub network: NetworkConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub txpool: TxPoolConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub storage: StorageConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub sync: SyncConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub vault: AccountVaultConfig,
     #[serde(default)]
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub stratum: StratumConfig,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub account_provider: AccountProviderConfig,
 }
 

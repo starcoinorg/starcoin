@@ -4,18 +4,18 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::SignedUserTransactionView;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Get txn data by its hash
-#[derive(Debug, StructOpt)]
-#[structopt(name = "pending-txn")]
+#[derive(Debug, Parser)]
+#[clap(name = "pending-txn")]
 pub struct PendingTxnOpt {
-    #[structopt(name = "hash", help = "hash of the txn")]
+    #[clap(name = "hash", help = "hash of the txn")]
     hash: HashValue,
 }
 
@@ -39,12 +39,12 @@ impl CommandAction for PendingTxnCommand {
 }
 
 /// Get pending txns of sender
-#[derive(Debug, StructOpt)]
-#[structopt(name = "pending-txns")]
+#[derive(Debug, Parser)]
+#[clap(name = "pending-txns")]
 pub struct PendingTxnsOpt {
-    #[structopt(name = "sender", help = "sender of pending txns")]
+    #[clap(name = "sender", help = "sender of pending txns")]
     sender: AccountAddress,
-    #[structopt(name = "max-len", long = "max", help = "max num to return")]
+    #[clap(name = "max-len", long = "max", help = "max num to return")]
     max_len: Option<u32>,
 }
 
@@ -68,8 +68,8 @@ impl CommandAction for PendingTxnsCommand {
 }
 
 ///Get tx pool status
-#[derive(Debug, StructOpt)]
-#[structopt(name = "status")]
+#[derive(Debug, Parser)]
+#[clap(name = "status")]
 pub struct TxPoolStatusOpt {}
 
 pub struct TxPoolStatusCommand;

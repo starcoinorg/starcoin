@@ -7,6 +7,7 @@ use crate::dev::sign_txn_helper::get_dao_config;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
@@ -16,21 +17,20 @@ use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 /// Submit a module upgrade proposal
-#[derive(Debug, StructOpt)]
-#[structopt(name = "module-proposal", alias = "module_proposal")]
+#[derive(Debug, Parser)]
+#[clap(name = "module-proposal", alias = "module_proposal")]
 pub struct UpgradeModuleProposalOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(short = "e", name = "enforced", long = "enforced")]
+    #[clap(short = 'e', name = "enforced", long = "enforced")]
     /// enforced upgrade regardless of compatible or not
     enforced: bool,
 
-    #[structopt(
-        short = "m",
+    #[clap(
+        short = 'm',
         name = "mv-or-package-file",
         long = "mv-or-package-file",
         parse(from_os_str)
@@ -38,11 +38,11 @@ pub struct UpgradeModuleProposalOpt {
     /// path for module or package file.
     mv_or_package_file: PathBuf,
 
-    #[structopt(short = "v", name = "module-version", long = "module-version")]
+    #[clap(short = 'v', name = "module-version", long = "module-version")]
     /// new version number for the modules
     version: u64,
 
-    #[structopt(
+    #[clap(
         name = "dao-token",
         long = "dao-token",
         default_value = "0x1::STC::STC"

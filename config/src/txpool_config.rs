@@ -3,38 +3,38 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use starcoin_system::get_free_mem_size;
 use std::sync::Arc;
-use structopt::StructOpt;
 
 pub const DEFAULT_MEM_SIZE: u64 = 128 * 1024 * 1024; // 128M
 
-#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct TxPoolConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-max-count", long)]
+    #[clap(name = "txpool-max-count", long)]
     /// Maximal number of transactions in the pool. default to 4096
     max_count: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-max-per-sender", long)]
+    #[clap(name = "txpool-max-per-sender", long)]
     /// Maximal number of transactions from single sender. default to 128
     max_per_sender: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-max-mem-usage", long)]
+    #[clap(name = "txpool-max-mem-usage", long)]
     /// Maximal memory usage. Default to half of current free mem of system.
     max_mem_usage: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-tx-propagate-interval", long)]
+    #[clap(name = "txpool-tx-propagate-interval", long)]
     /// interval(s) of tx propagation timer. default to 2.
     tx_propagate_interval: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "txpool-min-gas-price", long)]
+    #[clap(name = "txpool-min-gas-price", long)]
     /// reject transaction whose gas_price is less than the min_gas_price. default to 1.
     min_gas_price: Option<u64>,
 }

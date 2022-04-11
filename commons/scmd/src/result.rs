@@ -52,7 +52,7 @@ pub fn print_action_result(
         OutputFormat::JSON => {
             // if in console, and is err, print error directly.
             if console_mode && result.is_err() {
-                println!("{}", result.unwrap_err().to_string());
+                println!("{}", result.unwrap_err());
                 return Ok(());
             }
 
@@ -72,7 +72,7 @@ pub fn print_action_result(
             match result {
                 Ok(value) => print_table(value)?,
                 // err may contains help message, so directly print err.
-                Err(err) => println!("{}", err.to_string()),
+                Err(err) => println!("{}", err),
             };
             Ok(())
         }

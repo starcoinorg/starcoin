@@ -6,22 +6,22 @@ use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
 
+use clap::Parser;
 use move_core_types::resolver::ModuleResolver;
 use starcoin_config::BuiltinNetworkID;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_transactional_test_harness::remote_state::RemoteStateView;
-use structopt::StructOpt;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub struct CompatibilityCheckCommand {
-    #[structopt(name = "rpc", long)]
+    #[clap(name = "rpc", long)]
     /// use remote starcoin rpc as initial state.
     rpc: Option<String>,
-    #[structopt(long = "block-number", requires("rpc"))]
+    #[clap(long = "block-number", requires("rpc"))]
     /// block number to read state from. default to latest block number.
     block_number: Option<u64>,
 
-    #[structopt(long = "network", short, conflicts_with("rpc"))]
+    #[clap(long = "network", short, conflicts_with("rpc"))]
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
 }

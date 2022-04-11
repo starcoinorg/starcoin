@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::init_or_load_data_dir;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_chain::ChainReader;
@@ -14,14 +15,13 @@ use starcoin_storage::BlockStore;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::startup_info::StartupInfo;
 use std::time::SystemTime;
-use structopt::StructOpt;
 
 ///Generate starcoin config and data, just for test.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "data")]
+#[derive(Debug, Parser)]
+#[clap(name = "data")]
 pub struct GenDataOpt {
     ///How many block to generate.
-    #[structopt(long, short = "s", default_value = "100")]
+    #[clap(long, short = 's', default_value = "100")]
     count: u64,
 }
 

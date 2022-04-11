@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use actix::System;
+use clap::Parser;
 use logger::prelude::*;
 use starcoin_config::MinerClientConfig;
 use starcoin_miner_client::miner::MinerClientService;
@@ -12,24 +13,23 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_stratum::rpc::LoginRequest;
 use starcoin_types::time::RealTimeService;
 use std::sync::Arc;
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, Default)]
-#[structopt(name = "starcoin-miner", about = "Starcoin Miner")]
+#[derive(Debug, Clone, Parser, Default)]
+#[clap(name = "starcoin-miner", about = "Starcoin Miner")]
 pub struct StarcoinOpt {
-    #[structopt(long, short = "a", default_value = "127.0.0.1:9870")]
+    #[clap(long, short = 'a', default_value = "127.0.0.1:9870")]
     pub server: String,
-    #[structopt(long, short = "u")]
+    #[clap(long, short = 'u')]
     pub user: String,
-    #[structopt(long, short = "n", default_value = "1")]
+    #[clap(long, short = 'n', default_value = "1")]
     pub thread_num: u16,
-    #[structopt(long, short = "p")]
+    #[clap(long, short = 'p')]
     pub plugin_path: Option<String>,
 }
 
 fn main() {
     let _logger_handle = logger::init();
-    let opts: StarcoinOpt = StarcoinOpt::from_args();
+    let opts: StarcoinOpt = StarcoinOpt::parse();
     let config = {
         MinerClientConfig {
             server: Some(opts.server.clone()),

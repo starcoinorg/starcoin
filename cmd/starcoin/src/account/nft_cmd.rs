@@ -4,41 +4,41 @@
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::{CliState, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::on_chain_resource::nft::{IdentifierNFT, NFTGallery, NFT, NFTUUID};
 use starcoin_vm_types::transaction::TransactionPayload;
-use structopt::StructOpt;
 
 /// Some commands for nft.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "nft")]
+#[derive(Debug, Parser)]
+#[clap(name = "nft")]
 #[allow(clippy::large_enum_variant)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum NFTOpt {
     /// List all NFT in the NFTGallery of the account
-    #[structopt(name = "list")]
+    #[clap(name = "list")]
     List {
-        #[structopt(name = "address")]
+        #[clap(name = "address")]
         /// The account's address to list, if absent, show the default account.
         address: Option<AccountAddress>,
     },
     /// List all IdentifierNFT of the account
-    #[structopt(name = "ident", alias = "identifier")]
+    #[clap(name = "ident", alias = "identifier")]
     Identifier {
-        #[structopt(name = "address")]
+        #[clap(name = "address")]
         /// The account's address to show, if absent, show the default account.
         address: Option<AccountAddress>,
     },
     /// Transfer NFT to `receiver`
-    #[structopt(name = "transfer")]
+    #[clap(name = "transfer")]
     Transfer {
-        #[structopt(long = "uuid")]
+        #[clap(long = "uuid")]
         uuid: NFTUUID,
-        #[structopt(short = "r", long = "receiver")]
+        #[clap(short = 'r', long = "receiver")]
         receiver: AccountAddress,
-        #[structopt(flatten)]
+        #[clap(flatten)]
         transaction_opts: TransactionOptions,
     },
 }

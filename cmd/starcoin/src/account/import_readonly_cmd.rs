@@ -4,21 +4,21 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPublicKey};
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Import a readonly account by public key
-#[derive(Debug, StructOpt)]
-#[structopt(name = "import-readonly")]
+#[derive(Debug, Parser)]
+#[clap(name = "import-readonly")]
 pub struct ImportReadonlyOpt {
-    #[structopt(name = "input", short = "i", help = "input of public key")]
+    #[clap(name = "input", short = 'i', help = "input of public key")]
     from_input: String,
 
     /// if account_address is absent, generate address by public_key.
-    #[structopt(name = "account_address")]
+    #[clap(name = "account_address")]
     account_address: Option<AccountAddress>,
 }
 

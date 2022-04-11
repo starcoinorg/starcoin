@@ -3,37 +3,37 @@
 
 use crate::{CliState, StarcoinOpt};
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use structopt::StructOpt;
 
 /// Some commands for node manager.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "manager")]
+#[derive(Debug, Parser)]
+#[clap(name = "manager")]
 pub enum NodeManagerOpt {
     /// Delete the block and block info of `block-hash`
     /// Note: this command may broken the block database in node.
-    #[structopt(name = "delete-block")]
+    #[clap(name = "delete-block")]
     DeleteBlock {
-        #[structopt(name = "block-hash")]
+        #[clap(name = "block-hash")]
         block_hash: HashValue,
     },
     /// Re execute block of `block-hash` and save result to database, for fix database broken.
-    #[structopt(name = "re-execute-block")]
+    #[clap(name = "re-execute-block")]
     ReExecuteBlock {
-        #[structopt(name = "block-hash")]
+        #[clap(name = "block-hash")]
         block_hash: HashValue,
     },
     /// Reset the node chain to block of `block-hash`, and clean all blocks after the block.
     /// Note: this command may broken the block database in node.
-    #[structopt(name = "reset")]
+    #[clap(name = "reset")]
     Reset {
-        #[structopt(name = "block-hash")]
+        #[clap(name = "block-hash")]
         block_hash: HashValue,
     },
     /// Delete the failed block record from database.
     DeleteFailedBlock {
-        #[structopt(name = "block-hash")]
+        #[clap(name = "block-hash")]
         block_hash: HashValue,
     },
 }

@@ -14,7 +14,7 @@ mod txpool;
 pub mod view;
 
 pub use cli_state::CliState;
-use scmd::{CmdContext, Command};
+use scmd::{CmdContext, CustomCommand};
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
 
@@ -23,7 +23,7 @@ pub fn add_command(
 ) -> CmdContext<CliState, StarcoinOpt> {
     context
         .command(
-            Command::with_name("account")
+            CustomCommand::with_name("account")
                 .subcommand(account::CreateCommand)
                 .subcommand(account::ShowCommand)
                 .subcommand(account::TransferCommand)
@@ -50,20 +50,20 @@ pub fn add_command(
                 .subcommand(account::nft_cmd::NFTCommand),
         )
         .command(
-            Command::with_name("state")
+            CustomCommand::with_name("state")
                 .subcommand(state::ListCmd)
                 .subcommand(state::GetCommand)
                 .subcommand(state::GetProofCommand)
                 .subcommand(state::GetRootCommand),
         )
         .command(
-            Command::with_name("node")
+            CustomCommand::with_name("node")
                 .subcommand(node::InfoCommand)
                 .subcommand(node::PeersCommand)
                 .subcommand(node::MetricsCommand)
                 .subcommand(node::manager::NodeManagerCommand)
                 .subcommand(
-                    Command::with_name("service")
+                    CustomCommand::with_name("service")
                         .subcommand(node::service::ListCommand)
                         .subcommand(node::service::StartCommand)
                         .subcommand(node::service::CheckCommand)
@@ -72,7 +72,7 @@ pub fn add_command(
                     //.subcommand(node::service::ShutdownSystemCommand),
                 )
                 .subcommand(
-                    Command::with_name("sync")
+                    CustomCommand::with_name("sync")
                         .subcommand(node::sync::StartCommand)
                         .subcommand(node::sync::StatusCommand)
                         .subcommand(node::sync::ProgressCommand)
@@ -80,7 +80,7 @@ pub fn add_command(
                         .subcommand(node::sync::PeerScoreCommand)
                 )
                 .subcommand(
-                Command::with_name("network")
+                CustomCommand::with_name("network")
                     .subcommand(node::network::StateCommand)
                     .subcommand(node::network::KnownPeersCommand)
                     .subcommand(node::network::GetAddressCommand)
@@ -92,7 +92,7 @@ pub fn add_command(
             ),
         )
         .command(
-            Command::with_name("chain")
+            CustomCommand::with_name("chain")
                 .subcommand(chain::InfoCommand)
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::ListBlockCommand)
@@ -106,13 +106,13 @@ pub fn add_command(
                 .subcommand(chain::GetBlockInfoCommand),
         )
         .command(
-            Command::with_name("txpool")
+            CustomCommand::with_name("txpool")
                 .subcommand(txpool::PendingTxnCommand)
                 .subcommand(txpool::PendingTxnsCommand)
                 .subcommand(txpool::TxPoolStatusCommand),
         )
         .command(
-            Command::with_name("dev")
+            CustomCommand::with_name("dev")
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::move_explain::MoveExplain)
                 .subcommand(dev::CompileCommand)
@@ -127,14 +127,14 @@ pub fn add_command(
                 .subcommand(dev::resolve_cmd::ResolveCommand)
                 .subcommand(dev::call_api_cmd::CallApiCommand)
                 .subcommand(
-                    Command::with_name("subscribe")
+                    CustomCommand::with_name("subscribe")
                         .with_about("Subscribe the chain events")
                         .subcommand(dev::SubscribeBlockCommand)
                         .subcommand(dev::SubscribeEventCommand)
                         .subcommand(dev::SubscribeNewTxnCommand),
                 )
                 .subcommand(
-                    Command::with_name("log")
+                    CustomCommand::with_name("log")
                         .with_about("Set node's log level and pattern.")
                         .subcommand(dev::log_cmd::LogLevelCommand)
                         .subcommand(dev::log_cmd::LogPatternCommand),
@@ -143,5 +143,5 @@ pub fn add_command(
                 .subcommand(dev::sleep_cmd::SleepCommand)
                 .subcommand(dev::gen_block_cmd::GenBlockCommand),
         )
-        .command(Command::with_name("contract").subcommand(contract::GetContractDataCommand))
+        .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
 }

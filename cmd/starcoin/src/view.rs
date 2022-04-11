@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::format_err;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
@@ -22,26 +23,25 @@ use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, Default)]
+#[derive(Debug, Clone, Parser, Default)]
 pub struct TransactionOptions {
-    #[structopt(short = "s", long)]
+    #[clap(short = 's', long)]
     /// the account address for signing transaction, if `sender` is absent, use default account.
     pub sender: Option<AccountAddress>,
 
-    #[structopt(long = "sequence-number")]
+    #[clap(long = "sequence-number")]
     /// transaction's sequence_number
     /// if a transaction in the pool, you want to replace it, can use this option to set transaction's sequence_number
     /// otherwise please let cli to auto get sequence_number from onchain and txpool.
     pub sequence_number: Option<u64>,
 
-    #[structopt(short = "g", name = "max-gas-amount")]
+    #[clap(short = 'g', name = "max-gas-amount")]
     /// max gas used to deploy the module
     pub max_gas_amount: Option<u64>,
 
-    #[structopt(
-        short = "p",
+    #[clap(
+        short = 'p',
         long = "gas-unit-price",
         alias = "gas-price",
         name = "price of gas unit"
@@ -49,15 +49,15 @@ pub struct TransactionOptions {
     /// gas price used to deploy the module
     pub gas_unit_price: Option<u64>,
 
-    #[structopt(name = "expiration-time-secs", long = "expiration-time-secs")]
+    #[clap(name = "expiration-time-secs", long = "expiration-time-secs")]
     /// how long(in seconds) the txn stay alive from now
     pub expiration_time_secs: Option<u64>,
 
-    #[structopt(short = "b", name = "blocking-mode", long = "blocking")]
+    #[clap(short = 'b', name = "blocking-mode", long = "blocking")]
     /// blocking wait txn mined
     pub blocking: bool,
 
-    #[structopt(long = "dry-run")]
+    #[clap(long = "dry-run")]
     /// dry-run mode, only get transaction output, do not change chain state.
     pub dry_run: bool,
 }

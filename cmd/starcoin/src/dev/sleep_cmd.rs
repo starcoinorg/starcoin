@@ -4,15 +4,15 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 
 /// Let time pass for a period, only available in test or dev chain.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "sleep")]
+#[derive(Debug, Parser)]
+#[clap(name = "sleep")]
 pub struct SleepOpt {
-    #[structopt(
-        short = "t",
+    #[clap(
+        short = 't',
         long = "time",
         name = "sleep time in milliseconds",
         default_value = "1",

@@ -4,17 +4,17 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "ban_peer")]
+#[derive(Debug, Parser)]
+#[clap(name = "ban_peer")]
 /// Ban peer
 pub struct BanPeerOpt {
-    #[structopt(name = "peer")]
+    #[clap(name = "peer")]
     /// format: multiaddr/p2p/peer_id
     peer: String,
-    #[structopt(name = "ban", long = "ban")]
+    #[clap(name = "ban", long = "ban")]
     /// whether ban the peer
     ban: Option<bool>,
 }

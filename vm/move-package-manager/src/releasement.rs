@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::Parser;
 use move_binary_format::file_format_common::VERSION_3;
 use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
@@ -15,27 +16,26 @@ use starcoin_vm_types::language_storage::FunctionId;
 use starcoin_vm_types::parser::parse_type_tag;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
 use std::path::PathBuf;
-use structopt::StructOpt;
 
 pub const DEFAULT_RELEASE_DIR: &str = "release";
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub struct Releasement {
-    #[structopt(name = "move-version", long = "move-version", default_value="4", possible_values=&["3", "4"])]
+    #[clap(name = "move-version", long = "move-version", default_value="4", possible_values=&["3", "4"])]
     /// specify the move lang version for the release.
     /// currently, only v3, v4 are supported.
     language_version: u8,
 
-    #[structopt(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]
+    #[clap(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]
     /// dir to store released blob
     release_dir: PathBuf,
 
-    #[structopt(long = "function", name = "script-function")]
+    #[clap(long = "function", name = "script-function")]
     /// init script function to execute, example: 0x123::MyScripts::init_script
     init_script: Option<FunctionId>,
 
-    #[structopt(
-    short = "t",
+    #[clap(
+    short = 't',
     long = "type_tag",
     name = "type-tag",
     parse(try_from_str = parse_type_tag)
@@ -43,7 +43,7 @@ pub struct Releasement {
     /// type tags for the init script function
     type_tags: Option<Vec<TypeTag>>,
 
-    #[structopt(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
     /// args for the init script function
     args: Option<Vec<TransactionArgument>>,
 }

@@ -1,6 +1,6 @@
 use crate::{
-    get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, StarcoinOpt,
-    StructOpt,
+    get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, Parser,
+    StarcoinOpt,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -12,23 +12,23 @@ const DEFAULT_STRATUM_PORT: u16 = 9880;
 // UNSPECIFIED is 0.0.0.0
 const DEFAULT_STRATUM_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct StratumConfig {
     #[serde(skip)]
-    #[structopt(name = "disable-stratum", long, help = "disable stratum")]
+    #[clap(name = "disable-stratum", long, help = "disable stratum")]
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "stratum-port", long)]
+    #[clap(name = "stratum-port", long)]
     /// Default tcp port is 9880
     pub port: Option<u16>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "stratum-address")]
+    #[clap(long = "stratum-address")]
     /// Stratum address, default is 0.0.0.0
     pub address: Option<IpAddr>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
 }

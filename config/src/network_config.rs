@@ -7,6 +7,7 @@ use crate::{
     ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
+use clap::Parser;
 use network_api::messages::{NotificationMessage, BLOCK_PROTOCOL_NAME};
 use network_p2p_types::{
     is_memory_addr, memory_addr,
@@ -27,15 +28,14 @@ use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use structopt::StructOpt;
 
 pub static DEFAULT_NETWORK_PORT: u16 = 9840;
 static NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key"));
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct NetworkRpcQuotaConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "p2prpc-default-global-api-quota",
         long,
         help = "default global p2p rpc quota, eg: 1000/s"
@@ -43,7 +43,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "p2prpc-custom-global-api-quota",
         long,
         number_of_values = 1,
@@ -55,7 +55,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "p2prpc-default-user-api-quota",
         long,
         help = "default p2p rpc quota of a peer, eg: 1000/s"
@@ -63,7 +63,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(
+    #[clap(
         name = "p2prpc-custom-user-api-quota",
         long,
         help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
@@ -118,7 +118,7 @@ impl NetworkRpcQuotaConfiguration {
     }
 }
 //for avoid conflict between seed vec and subcommand, so define a custom type to parse seeds.
-//https://github.com/TeXitoi/structopt/issues/367
+//https://github.com/TeXitoi/clap/issues/367
 #[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Seeds(pub Vec<MultiaddrWithPeerId>);
 impl Seeds {
@@ -161,86 +161,86 @@ impl From<Vec<MultiaddrWithPeerId>> for Seeds {
         Seeds(seeds)
     }
 }
-#[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
+#[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "node-name")]
+    #[clap(long = "node-name")]
     /// Node network name, just for display, if absent will generate a random name.
     pub node_name: Option<String>,
 
     #[serde(skip)]
-    #[structopt(long = "node-key")]
+    #[clap(long = "node-key")]
     /// Node network private key string
     /// This option is skip for config file, only support cli option, after init will write the key to node_key_file
     pub node_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    #[clap(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Seeds::is_empty")]
     #[serde(default)]
-    #[structopt(long = "seed", default_value = "")]
+    #[clap(long = "seed", default_value = "")]
     /// P2P network seed, multi seed should use ',' as delimiter.
     pub seeds: Seeds,
 
     /// Enable peer discovery on local networks.
     /// By default this option is `false`. only support cli option.
     #[serde(skip)]
-    #[structopt(long = "discover-local")]
+    #[clap(long = "discover-local")]
     pub discover_local: Option<bool>,
 
     #[serde(skip)]
-    #[structopt(long = "disable-seed")]
+    #[clap(long = "disable-seed")]
     /// Do not connect to seed node, include builtin and config seed.
     /// This option is skip for config file, only support cli option.
     pub disable_seed: bool,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long)]
+    #[clap(long)]
     /// min peers to propagate new block and new transactions. Default 8.
     min_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long)]
+    #[clap(long)]
     ///max peers to propagate new block and new transactions. Default 128.
     max_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long)]
+    #[clap(long)]
     ///max count for incoming peers. Default 25.
     max_incoming_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long)]
+    #[clap(long)]
     ///max count for outgoing connected peers. Default 75.
     /// max peers = max_incoming_peers + max_outgoing_peers
     max_outgoing_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(long)]
+    #[clap(long)]
     /// p2p network listen address, Default is /ip4/0.0.0.0/tcp/9840
     listen: Option<Multiaddr>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     network_keypair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
 
     #[serde(skip)]
-    #[structopt(skip)]
+    #[clap(skip)]
     generate_listen: Option<Multiaddr>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[structopt(name = "unsupported-protocols", long, use_delimiter = true)]
+    #[clap(name = "unsupported-protocols", long, use_value_delimiter = true)]
     pub unsupported_protocols: Option<Vec<String>>,
 }
 

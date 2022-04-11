@@ -1,18 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Command, ExecContext};
+use crate::{CustomCommand, ExecContext};
 use anyhow::Result;
+use clap::Parser;
 use std::marker::PhantomData;
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, Default, StructOpt)]
+#[derive(Debug, Clone, Default, Parser)]
 pub struct EmptyOpt {}
 
 pub trait CommandAction {
     type State;
-    type GlobalOpt: StructOpt;
-    type Opt: StructOpt;
+    type GlobalOpt: Parser;
+    type Opt: Parser;
     type ReturnItem: serde::Serialize;
 
     fn run(
@@ -25,7 +25,9 @@ pub trait CommandAction {
         false
     }
 
-    fn into_cmd(self) -> Command<Self::State, Self::GlobalOpt, Self::Opt, Self::ReturnItem, Self>
+    fn into_cmd(
+        self,
+    ) -> CustomCommand<Self::State, Self::GlobalOpt, Self::Opt, Self::ReturnItem, Self>
     where
         Self: std::marker::Sized,
     {
@@ -36,8 +38,8 @@ pub trait CommandAction {
 pub struct FnCommandAction<State, GlobalOpt, Opt, ReturnItem>
 where
     State: 'static,
-    GlobalOpt: StructOpt + 'static,
-    Opt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
+    Opt: Parser + 'static,
     ReturnItem: serde::Serialize,
 {
     action: Box<dyn Fn(&ExecContext<State, GlobalOpt, Opt>) -> Result<ReturnItem>>,
@@ -45,8 +47,8 @@ where
 
 impl<State, GlobalOpt, Opt, ReturnItem> FnCommandAction<State, GlobalOpt, Opt, ReturnItem>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize,
 {
     pub fn new<A>(action: A) -> Self
@@ -62,8 +64,8 @@ where
 impl<State, GlobalOpt, Opt, ReturnItem> CommandAction
     for FnCommandAction<State, GlobalOpt, Opt, ReturnItem>
 where
-    GlobalOpt: StructOpt,
-    Opt: StructOpt,
+    GlobalOpt: Parser,
+    Opt: Parser,
     ReturnItem: serde::Serialize,
 {
     type State = State;
@@ -82,7 +84,7 @@ where
 pub struct NoneAction<State, GlobalOpt>
 where
     State: 'static,
-    GlobalOpt: StructOpt + 'static,
+    GlobalOpt: Parser + 'static,
 {
     state_type: PhantomData<State>,
     global_opt_type: PhantomData<GlobalOpt>,
@@ -90,7 +92,7 @@ where
 
 impl<State, GlobalOpt> CommandAction for NoneAction<State, GlobalOpt>
 where
-    GlobalOpt: StructOpt,
+    GlobalOpt: Parser,
 {
     type State = State;
     type GlobalOpt = GlobalOpt;

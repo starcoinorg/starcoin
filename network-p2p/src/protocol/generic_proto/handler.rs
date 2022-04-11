@@ -544,9 +544,10 @@ impl ProtocolsHandler for NotifsHandler {
 
     fn inject_fully_negotiated_outbound(
         &mut self,
-        (handshake, substream): <Self::OutboundProtocol as OutboundUpgrade<NegotiatedSubstream>>::Output,
+        hs: <Self::OutboundProtocol as OutboundUpgrade<NegotiatedSubstream>>::Output,
         protocol_index: Self::OutboundOpenInfo,
     ) {
+        let (handshake, substream) = hs;
         match self.protocols[protocol_index].state {
             State::Closed {
                 ref mut pending_opening,

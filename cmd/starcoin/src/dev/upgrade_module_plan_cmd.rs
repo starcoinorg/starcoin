@@ -5,33 +5,33 @@ use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_transaction_builder::build_module_upgrade_plan;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::TransactionPayload;
-use structopt::StructOpt;
 
 /// Execute the module upgrade proposal and submit module upgrade plan.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "module-plan", alias = "module_plan")]
+#[derive(Debug, Parser)]
+#[clap(name = "module-plan", alias = "module_plan")]
 pub struct UpgradeModulePlanOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[structopt(short = "a", name = "proposer-address", long = "proposer_address")]
+    #[clap(short = 'a', name = "proposer-address", long = "proposer_address")]
     /// the account address for proposer.
     proposer_address: Option<AccountAddress>,
 
-    #[structopt(
-        short = "i",
+    #[clap(
+        short = 'i',
         name = "proposal-id",
         long = "proposal-id",
         help = "proposal id."
     )]
     proposal_id: u64,
 
-    #[structopt(
+    #[clap(
         name = "dao-token",
         long = "dao-token",
         default_value = "0x1::STC::STC"

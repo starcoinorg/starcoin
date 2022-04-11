@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::Parser;
 use sp_utils::stop_watch::start_watch;
 use starcoin_chain::verifier::Verifier;
 use starcoin_chain::verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier};
@@ -16,30 +17,29 @@ use starcoin_types::startup_info::StartupInfo;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "replay")]
+#[derive(Debug, Parser)]
+#[clap(name = "replay")]
 pub struct ReplayOpt {
-    #[structopt(long, short = "n")]
+    #[clap(long, short = 'n')]
     /// Chain Network to replay.
     pub net: Option<BuiltinNetworkID>,
-    #[structopt(short = "f", long, parse(from_os_str))]
+    #[clap(short = 'f', long, parse(from_os_str))]
     /// Replay data dir.
     pub from: PathBuf,
-    #[structopt(short = "t", long, parse(from_os_str))]
+    #[clap(short = 't', long, parse(from_os_str))]
     /// Target dir.
     pub to: PathBuf,
-    #[structopt(long)]
+    #[clap(long)]
     /// replay from start to this block, include this block. default to all.
     pub end_block: Option<u64>,
-    #[structopt(long, short = "c", default_value = "20000")]
+    #[clap(long, short = 'c', default_value = "20000")]
     /// Number of block.
     pub block_num: u64,
-    #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
+    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Verifier,
-    #[structopt(long, short = "w")]
+    #[clap(long, short = 'w')]
     /// Watch metrics logs.
     pub watch: bool,
 }
@@ -47,7 +47,7 @@ pub struct ReplayOpt {
 // deprecated use starcoin_db_exporter replace
 fn main() -> anyhow::Result<()> {
     let _logger = starcoin_logger::init();
-    let opts: ReplayOpt = ReplayOpt::from_args();
+    let opts: ReplayOpt = ReplayOpt::parse();
 
     let network = match opts.net {
         Some(network) => network,

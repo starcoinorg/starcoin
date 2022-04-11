@@ -4,24 +4,24 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetTransactionOption;
 use starcoin_rpc_api::types::TransactionView;
-use structopt::StructOpt;
 
 /// Get transaction by txn hash or block hash and txn idx in the block
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-txn", alias = "get_txn")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-txn", alias = "get_txn")]
 pub struct GetTransactionOpt {
-    #[structopt(name = "txn-hash")]
+    #[clap(name = "txn-hash")]
     /// txn hash
     txn_hash: Option<HashValue>,
 
-    #[structopt(name = "block-hash", long, required_unless = "txn-hash")]
+    #[clap(name = "block-hash", long, required_unless_present = "txn-hash")]
     /// block hash which include the txn, only used when txn-hash is missing.
     block_hash: Option<HashValue>,
-    #[structopt(name = "idx", long, required_unless = "txn-hash")]
+    #[clap(name = "idx", long, required_unless_present = "txn-hash")]
     /// the index(start from 0) of the txn in the block
     idx: Option<u64>,
 }

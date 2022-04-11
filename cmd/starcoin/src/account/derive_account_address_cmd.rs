@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use itertools::Itertools;
 use scmd::{CommandAction, ExecContext};
 use serde::Deserialize;
@@ -13,17 +14,16 @@ use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use structopt::StructOpt;
 
 /// Derive an address by public key.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "derive-address")]
+#[derive(Debug, Parser)]
+#[clap(name = "derive-address")]
 pub struct DeriveAddressOpt {
-    #[structopt(short = "p", long = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[clap(short = 'p', long = "pubkey", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
     /// public key used to derive address.If multi public keys is provided, a multi-sig account address is derived.
     public_key: Vec<Ed25519PublicKey>,
 
-    #[structopt(short = "t", name = "threshold")]
+    #[clap(short = 't', name = "threshold")]
     /// In multi-sig case, a threshold is needed, default to the num of public keys.
     threshold: Option<u8>,
 }

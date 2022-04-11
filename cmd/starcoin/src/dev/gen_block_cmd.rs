@@ -5,14 +5,14 @@ use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::{ensure, Result};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_transaction_builder::build_empty_script;
 use starcoin_types::transaction::TransactionPayload;
-use structopt::StructOpt;
 
 /// Trigger a new block in dev.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "gen-block")]
+#[derive(Debug, Parser)]
+#[clap(name = "gen-block")]
 pub struct GenBlockOpt {}
 
 pub struct GenBlockCommand;

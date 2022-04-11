@@ -4,12 +4,12 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetBlockOption;
 use starcoin_rpc_api::types::BlockView;
 use std::str::FromStr;
-use structopt::StructOpt;
 
 #[derive(Debug, Clone, Copy)]
 pub enum HashOrNumber {
@@ -18,10 +18,10 @@ pub enum HashOrNumber {
 }
 
 /// Get block by hash or number.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "get-block", alias = "get_block")]
+#[derive(Debug, Parser)]
+#[clap(name = "get-block", alias = "get_block")]
 pub struct GetBlockOpt {
-    #[structopt(name = "hash-or-number")]
+    #[clap(name = "hash-or-number")]
     hash_or_number: HashOrNumber,
 }
 

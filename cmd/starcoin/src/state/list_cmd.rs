@@ -4,6 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
 use starcoin_abi_resolver::ABIResolver;
@@ -12,7 +13,6 @@ use starcoin_rpc_client::StateRootOption;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_view::StateView;
-use structopt::StructOpt;
 
 /// List state data command
 ///  Some examples:
@@ -20,22 +20,22 @@ use structopt::StructOpt;
 ///  state list code 0x1
 ///  state list resource 0x1
 ///  ```
-#[derive(Debug, StructOpt)]
-#[structopt(name = "list")]
+#[derive(Debug, Parser)]
+#[clap(name = "list")]
 pub enum ListDataOpt {
     Code {
-        #[structopt(help = "account address")]
+        #[clap(help = "account address")]
         address: AccountAddress,
 
-        #[structopt(long, short = "n")]
+        #[clap(long, short = 'n')]
         /// Get state at a special block height.
         block_number: Option<u64>,
     },
     Resource {
-        #[structopt(help = "account address")]
+        #[clap(help = "account address")]
         address: AccountAddress,
 
-        #[structopt(long, short = "n")]
+        #[clap(long, short = 'n')]
         /// Get state at a special block height.
         block_number: Option<u64>,
     },

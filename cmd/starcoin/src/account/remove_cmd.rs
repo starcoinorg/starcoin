@@ -4,19 +4,19 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use starcoin_vm_types::account_address::AccountAddress;
-use structopt::StructOpt;
 
 /// Remove account from local wallet. This operate do not affect the on chain account.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "remove")]
+#[derive(Debug, Parser)]
+#[clap(name = "remove")]
 pub struct RemoveOpt {
     ///The account password, if the account is readonly account, do not require password
-    #[structopt(short = "p")]
+    #[clap(short = 'p')]
     password: Option<String>,
-    #[structopt(
+    #[clap(
         name = "account_address",
         help = "The wallet account address which to remove, the default account can not bean removed."
     )]

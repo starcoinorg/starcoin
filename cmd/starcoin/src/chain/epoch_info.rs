@@ -4,17 +4,17 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
 use starcoin_vm_types::on_chain_resource::EpochInfo;
-use structopt::StructOpt;
 
 /// Show epoch info.
-#[derive(Debug, StructOpt)]
-#[structopt(name = "epoch-info", alias = "epoch_info")]
+#[derive(Debug, Parser)]
+#[clap(name = "epoch-info", alias = "epoch_info")]
 pub struct EpochInfoOpt {
-    #[structopt(name = "state-root", long, short = "n", alias = "block-number")]
+    #[clap(name = "state-root", long, short = 'n', alias = "block-number")]
     /// The block number or block hash for get state, if absent, use latest block state_root.
     state_root: Option<StateRootOption>,
 }
