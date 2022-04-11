@@ -77,8 +77,7 @@ where
                 cur_change_set.num_new_leaves += 1;
             }
         }
-        self.change_set_list
-            .push((root_hash, cur_change_set));
+        self.change_set_list.push((root_hash, cur_change_set));
         self.root_hash = root_hash;
     }
 }
