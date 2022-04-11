@@ -153,6 +153,40 @@ pub struct StarcoinRunArgs {
     verbose: bool,
 }
 
+#[derive(clap::Args, Debug)]
+#[clap(name = "faucet")]
+struct FaucetSub {
+    #[clap(long="addr", parse(try_from_str=RawAddress::parse))]
+    address: RawAddress,
+    #[clap(long = "amount", default_value = "100000000000")]
+    initial_balance: u128,
+    #[clap(long = "public-key", parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    public_key: Option<Ed25519PublicKey>,
+}
+
+#[derive(clap::Args, Debug)]
+#[clap(name = "block")]
+struct BlockSub {
+    #[clap(long, parse(try_from_str=RawAddress::parse))]
+    author: Option<RawAddress>,
+    #[clap(long)]
+    timestamp: Option<u64>,
+    #[clap(long)]
+    number: Option<u64>,
+    #[clap(long)]
+    uncles: Option<u64>,
+}
+#[derive(clap::Args, Debug)]
+#[clap(name = "call")]
+struct CallSub {
+    #[clap(name = "FUNCTION")]
+    name: FunctionIdView,
+    #[clap(long = "args", short = 'i')]
+    args: Vec<TransactionArgumentView>,
+    #[clap(long = "type-args", short = 't')]
+    type_args: Vec<TypeTagView>,
+}
+
 #[derive(Parser, Debug)]
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
@@ -185,6 +219,51 @@ pub enum StarcoinSubcommands {
         #[clap(long = "type-args", short = 't')]
         type_args: Vec<TypeTagView>,
     },
+}
+
+impl From<FaucetSub> for StarcoinSubcommands {
+    fn from(sub: FaucetSub) -> Self {
+        Self::Faucet {
+            address: sub.address,
+            initial_balance: sub.initial_balance,
+            public_key: sub.public_key,
+        }
+    }
+}
+
+impl From<BlockSub> for StarcoinSubcommands {
+    fn from(sub: BlockSub) -> Self {
+        Self::NewBlock {
+            author: sub.author,
+            timestamp: sub.timestamp,
+            number: sub.number,
+            uncles: sub.uncles,
+        }
+    }
+}
+
+impl From<CallSub> for StarcoinSubcommands {
+    fn from(sub: CallSub) -> Self {
+        Self::ContractCall {
+            name: sub.name,
+            args: sub.args,
+            type_args: sub.type_args,
+        }
+    }
+}
+
+impl clap::Args for StarcoinSubcommands {
+    fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
+        let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
+        let block = BlockSub::augment_args(clap::Command::new("block"));
+        let call = CallSub::augment_args(clap::Command::new("call"));
+
+        cmd.subcommand(faucet).subcommand(block).subcommand(call)
+    }
+
+    fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
