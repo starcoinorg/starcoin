@@ -113,7 +113,7 @@ fn test_merkle_distributor() -> Result<()> {
                 .proof
                 .iter()
                 .map(|p| {
-                    hex::decode(p.as_str().strip_prefix("0x").unwrap_or_else(|| p.as_str()))
+                    hex::decode(p.as_str().strip_prefix("0x").unwrap_or(p.as_str()))
                         .unwrap()
                 })
                 .map(MoveValue::vector_u8)
@@ -161,7 +161,7 @@ fn test_merkle_distributor() -> Result<()> {
                 .proof
                 .iter()
                 .map(|p| {
-                    hex::decode(p.as_str().strip_prefix("0x").unwrap_or_else(|| p.as_str()))
+                    hex::decode(p.as_str().strip_prefix("0x").unwrap_or(p.as_str()))
                         .unwrap()
                 })
                 .map(MoveValue::vector_u8)

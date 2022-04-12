@@ -49,7 +49,7 @@ where
     }
 
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
-        let tx = tx.strip_prefix("0x").unwrap_or_else(|| tx.as_str());
+        let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
         let result = hex::decode(tx)
             .map_err(convert_to_rpc_error)
             .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))

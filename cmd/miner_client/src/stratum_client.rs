@@ -86,14 +86,12 @@ impl JobClient for StratumJobClient {
                 .extra
                 .ok_or_else(|| anyhow::anyhow!("submit missing field"))?;
             let r = srv
-                .send(SubmitSealRequest {
-                    0: ShareRequest {
+                .send(SubmitSealRequest(ShareRequest {
                         id: mint_extra.worker_id,
                         job_id: mint_extra.job_id,
                         nonce,
                         result: seal.hash_result,
-                    },
-                })
+                    }))
                 .await?;
             Ok::<(), anyhow::Error>(r)
         };

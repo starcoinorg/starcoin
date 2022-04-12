@@ -103,7 +103,7 @@ mod tests {
         let proof: anyhow::Result<Vec<Vec<u8>>, _> = proofs[0]
             .proof
             .iter()
-            .map(|p| hex::decode(p.as_str().strip_prefix("0x").unwrap_or_else(|| p.as_str())))
+            .map(|p| hex::decode(p.as_str().strip_prefix("0x").unwrap_or(p.as_str())))
             .collect();
         let proof = proof?;
         let mut computed_hash = HashValue::sha3_256_of(leaf.as_slice()).to_vec();

@@ -107,9 +107,7 @@ impl CommandAction for NFTCommand {
                     })
                     .collect();
                 let nfts: Vec<NFTView> = galleries?
-                    .into_iter()
-                    .map(|gallery| gallery.items)
-                    .flatten()
+                    .into_iter().flat_map(|gallery| gallery.items)
                     .map(NFTView::from)
                     .collect();
                 NFTResult::List(nfts)
