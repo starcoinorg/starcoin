@@ -36,7 +36,7 @@ pub fn test_put_blob_continue_commit_flush_same() -> Result<()> {
     let hash_value = HashValue::random().into();
     let account11 = update_nibble(&hash_value, 0, 1);
     let account11 = update_nibble(&account11, 2, 2);
-    let account21 = account11.clone();
+    let account21 = account11;
 
     state1.put(account11, vec![0, 0, 0]);
     assert_eq!(state1.get(&account11)?, Some(vec![0, 0, 0]));
