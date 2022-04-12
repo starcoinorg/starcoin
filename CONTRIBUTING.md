@@ -18,7 +18,12 @@ cargo build
 
 ### Code Style, Hints, and Testing
 
-All code formatting is enforced with [rustfmt](https://github.com/rust-lang/rustfmt) with a project-specific configuration and checked by github action.
+All code formatting is enforced with [rustfmt](https://github.com/rust-lang/rustfmt) with a project-specific configuration and checked by GitHub action.
+
+Rust code should follow the rust coding guidelines:
+
+* [rust-coding-guidelines](https://github.com/Rust-Coding-Guidelines/rust-coding-guidelines)
+* [rust-coding-guidelines-zh](https://github.com/Rust-Coding-Guidelines/rust-coding-guidelines-zh)
 
 
 ### Developer Workflow
