@@ -212,6 +212,7 @@ enum Cmd {
     GenBlockTransactions(GenBlockTransactionsOptions),
     ExportSnapshot(ExportSnapshotOptions),
     ApplySnapshot(ApplySnapshotOptions),
+    Prune(PruneOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -487,6 +488,8 @@ fn main() -> anyhow::Result<()> {
         let result = apply_snapshot(option.to_path, option.input_path, option.net);
         return result;
     }
+
+
 
     Ok(())
 }
