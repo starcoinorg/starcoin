@@ -9,7 +9,6 @@ use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowgrader;
 use starcoin_move_compiler::dependency_order::sort_by_dependency_order;
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
@@ -102,7 +101,10 @@ impl CommandAction for PackageCmd {
                 .collect::<Result<Vec<_>, _>>()?;
             sort_by_dependency_order(ms.iter())?
                 .into_iter()
-                .map(|m| ModuleBytecodeDowgrader::to_v3(&m).map(Module::new))
+                .map(|m| {
+                    let mut data = vec![];
+                    m.serialize(&mut data).map(move |_| Module::new(data))
+                })
                 .collect::<Result<Vec<_>>>()?
         };
 

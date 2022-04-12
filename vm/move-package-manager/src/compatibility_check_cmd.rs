@@ -41,7 +41,7 @@ pub fn handle_compatibility_check(
         )
     });
 
-    let remote_view = RemoteStateView::from_url(&rpc, cmd.block_number).unwrap();
+    let remote_view = RemoteStateView::from_url(&rpc, cmd.block_number)?;
 
     let mut incompatible_module_ids = vec![];
     for m in pkg.modules()? {
@@ -51,8 +51,9 @@ pub fn handle_compatibility_check(
             .map_err(|e| e.into_vm_status())?;
         if let Some(old) = old_module {
             let old_module = CompiledModule::deserialize(&old)?;
-            if !check_compiled_module_compat(&old_module, m) {
-                incompatible_module_ids.push(m.self_id());
+            let compatibility = check_compiled_module_compat(&old_module, m);
+            if !compatibility.is_fully_compatible() {
+                incompatible_module_ids.push((m.self_id(), compatibility));
             }
         }
     }
@@ -62,7 +63,10 @@ pub fn handle_compatibility_check(
             "Modules {} is incompatible with remote chain: {}!",
             incompatible_module_ids
                 .into_iter()
-                .map(|module_id| module_id.to_string())
+                .map(|(module_id, compat)| format!(
+                    "{}(struct_layout:{},struct_and_function_linking:{})",
+                    module_id, compat.struct_layout, compat.struct_and_function_linking
+                ))
                 .join(","),
             &rpc
         );
