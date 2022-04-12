@@ -279,7 +279,9 @@ pub fn expect_event<Event: MoveResource>(output: &TransactionOutput) -> Contract
     output
         .events()
         .iter()
-        .filter(|event| event.is::<Event>()).last().cloned()
+        .filter(|event| event.is::<Event>())
+        .last()
+        .cloned()
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }
 
@@ -289,7 +291,9 @@ pub fn expect_decode_event<Event: MoveResource + DeserializeOwned>(
     output
         .events()
         .iter()
-        .filter(|event| event.is::<Event>()).last().cloned()
+        .filter(|event| event.is::<Event>())
+        .last()
+        .cloned()
         .and_then(|event| event.decode_event::<Event>().ok())
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }

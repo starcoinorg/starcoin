@@ -36,9 +36,7 @@ fn verify_genesis_nft_address(mint_address: AccountAddress) -> Result<bool> {
         mint_proof
             .proof
             .iter()
-            .map(|p| {
-                hex::decode(p.as_str().strip_prefix("0x").unwrap_or(p.as_str())).unwrap()
-            })
+            .map(|p| hex::decode(p.as_str().strip_prefix("0x").unwrap_or(p.as_str())).unwrap())
             .map(MoveValue::vector_u8)
             .collect(),
     );
