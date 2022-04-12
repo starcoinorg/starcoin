@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_config::genesis_config::TOTAL_STC_AMOUNT;
+use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_executor::account::create_account_txn_sent_as_association;
 use starcoin_state_api::StateReaderExt;
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
@@ -13,7 +13,7 @@ use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_resource::dao::WithdrawToken;
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
-use starcoin_vm_types::token::stc::{STCUnit, STC_TOKEN_CODE, STC_TOKEN_CODE_STR};
+use starcoin_vm_types::token::stc::{STCUnit, G_STC_TOKEN_CODE, STC_TOKEN_CODE_STR};
 use starcoin_vm_types::transaction::{
     RawUserTransaction, ScriptFunction, Transaction, TransactionPayload,
 };
@@ -74,7 +74,7 @@ fn test_treasury_withdraw() -> Result<()> {
     let cap = chain_state.get_resource_by_access_path::<LinearWithdrawCapability>(
         LinearWithdrawCapability::resource_path_for(
             *alice.address(),
-            STC_TOKEN_CODE.clone().try_into()?,
+            G_STC_TOKEN_CODE.clone().try_into()?,
         ),
     )?;
     assert!(cap.is_some(), "expect LinearWithdrawCapability exist.");
@@ -99,7 +99,7 @@ fn test_treasury_withdraw_too_many() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
-    let withdraw_amount = TOTAL_STC_AMOUNT.scaling() / 2;
+    let withdraw_amount = G_TOTAL_STC_AMOUNT.scaling() / 2;
     let period = 1000u64;
 
     let vote_script_function = ScriptFunction::new(

@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-static HISTORY_FILE_NAME: &str = "history";
+static G_HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {
     net: ChainNetworkID,
@@ -52,7 +52,7 @@ impl CliState {
         node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
     ) -> CliState {
-        let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
+        let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
             .clone()
             .join("cli")
             .join(net.to_string());
@@ -99,7 +99,7 @@ impl CliState {
     }
 
     pub fn history_file(&self) -> PathBuf {
-        self.data_dir().join(HISTORY_FILE_NAME)
+        self.data_dir().join(G_HISTORY_FILE_NAME)
     }
 
     pub fn node_handle(&self) -> Option<&NodeHandle> {

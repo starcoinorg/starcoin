@@ -20,7 +20,7 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
 use starcoin_vm_types::account_config::auto_accept_token::AutoAcceptToken;
-use starcoin_vm_types::account_config::{stc_type_tag, BalanceResource, STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{stc_type_tag, BalanceResource, G_STC_TOKEN_CODE};
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
 
     let token_type: StructTag = options
         .token_code
-        .unwrap_or_else(|| STC_TOKEN_CODE.clone())
+        .unwrap_or_else(|| G_STC_TOKEN_CODE.clone())
         .try_into()?;
     let is_stc = stc_type_tag().eq(&TypeTag::Struct(token_type.clone()));
 

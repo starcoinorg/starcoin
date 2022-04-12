@@ -71,15 +71,17 @@ fn substitute_variable<S: ::std::hash::BuildHasher>(
     text: &str,
     vars: HashMap<&str, String, S>,
 ) -> String {
-    static PAT: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{\{([A-Za-z][A-Za-z0-9]*)\}\}").unwrap());
-    PAT.replace_all(text, |caps: &Captures| {
-        let name = &caps[1];
-        vars.get(name)
-            .map(|s| s.to_string())
-            //if name not found, replace with origin place holder {{name}}, '{{' in format represent '{'
-            .unwrap_or_else(|| format!("{{{{{}}}}}", name))
-    })
-    .to_string()
+    static G_PAT: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"\{\{([A-Za-z][A-Za-z0-9]*)\}\}").unwrap());
+    G_PAT
+        .replace_all(text, |caps: &Captures| {
+            let name = &caps[1];
+            vars.get(name)
+                .map(|s| s.to_string())
+                //if name not found, replace with origin place holder {{name}}, '{{' in format represent '{'
+                .unwrap_or_else(|| format!("{{{{{}}}}}", name))
+        })
+        .to_string()
 }
 
 /// perform Windows style line ending (CRLF) to Unix stype (LF) conversion in given file
@@ -304,14 +306,14 @@ mod tests {
                 struct M{
                     value: u64,
                 }
-                
+
                 struct M2{
                     value: u128,
                 }
 
                 public fun hello(){
                 }
-                
+
                 public fun hello2(){
                 }
             }

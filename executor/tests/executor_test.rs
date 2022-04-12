@@ -38,7 +38,7 @@ use test_helper::executor::{
 };
 // use test_helper::Account;
 use starcoin_state_api::StateReaderExt;
-use starcoin_types::account_config::STC_TOKEN_CODE;
+use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::account_config::core_code_address;
 use vm_runtime::starcoin_vm::StarcoinVM;
 
@@ -750,7 +750,7 @@ fn test_execute_transfer_txn() -> Result<()> {
         0,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        STC_TOKEN_CODE.clone(),
+        G_STC_TOKEN_CODE.clone(),
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
@@ -775,7 +775,7 @@ fn test_execute_transfer_txn() -> Result<()> {
         0,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        STC_TOKEN_CODE.clone(),
+        G_STC_TOKEN_CODE.clone(),
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );

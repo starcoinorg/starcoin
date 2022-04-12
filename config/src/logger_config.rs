@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-static LOGGER_FILE_NAME: &str = "starcoin.log";
+static G_LOGGER_FILE_NAME: &str = "starcoin.log";
 
 const DEFAULT_MAX_FILE_SIZE: u64 = 1024 * 1024 * 1024;
 const MAX_FILE_SIZE_FOR_TEST: u64 = 10 * 1024 * 1024;
@@ -47,7 +47,7 @@ impl LoggerConfig {
         if self.disable_file() {
             return None;
         }
-        let log_path = self.base().data_dir.join(LOGGER_FILE_NAME);
+        let log_path = self.base().data_dir.join(G_LOGGER_FILE_NAME);
         Some(log_path)
     }
 

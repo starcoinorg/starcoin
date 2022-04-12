@@ -63,7 +63,7 @@ pub const STDLIB_DIR: Dir = starcoin_framework::SOURCES_DIR;
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
-static FRESH_MOVELANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
+static G_FRESH_MOVELANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
     build_stdlib(STARCOIN_FRAMEWORK_SOURCES.files.as_slice())
         .values()
         .map(|m| {
@@ -81,7 +81,7 @@ pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("compiled");
 
 pub const LATEST_VERSION: &str = "latest";
 
-pub static STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
+pub static G_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
     let mut versions = COMPILED_MOVE_CODE_DIR
         .dirs()
         .iter()
@@ -93,9 +93,9 @@ pub static STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
     versions
 });
 
-static COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy::new(|| {
+static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy::new(|| {
     let mut map = HashMap::new();
-    for version in &*STDLIB_VERSIONS {
+    for version in &*G_STDLIB_VERSIONS {
         let modules = read_compiled_modules(*version);
         verify_compiled_modules(&modules);
         map.insert(*version, modules);
@@ -105,7 +105,7 @@ static COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy::new(|
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
-pub static PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
+pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
     let sources = stdlib_files();
     let compiler = Compiler::new(&sources, &[])
         .set_flags(Flags::empty().set_sources_shadow_deps(false))
@@ -136,12 +136,12 @@ pub use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
 
 /// Return all versions of stdlib, include latest.
 pub fn stdlib_versions() -> Vec<StdlibVersion> {
-    STDLIB_VERSIONS.clone()
+    G_STDLIB_VERSIONS.clone()
 }
 
 /// Return the latest stable version of stdlib.
 pub fn stdlib_latest_stable_version() -> Option<StdlibVersion> {
-    STDLIB_VERSIONS
+    G_STDLIB_VERSIONS
         .iter()
         .filter(|version| !version.is_latest())
         .last()
@@ -161,8 +161,8 @@ pub enum StdLibOptions {
 /// will be used.
 pub fn stdlib_modules(option: StdLibOptions) -> &'static [Vec<u8>] {
     match option {
-        StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
-        StdLibOptions::Compiled(version) => &*COMPILED_STDLIB
+        StdLibOptions::Fresh => &*G_FRESH_MOVELANG_STDLIB,
+        StdLibOptions::Compiled(version) => &*G_COMPILED_STDLIB
             .get(&version)
             .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version)),
     }

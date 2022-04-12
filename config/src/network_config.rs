@@ -29,8 +29,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub static DEFAULT_NETWORK_PORT: u16 = 9840;
-static NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key"));
+pub static G_DEFAULT_NETWORK_PORT: u16 = 9840;
+static G_NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_key"));
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct NetworkRpcQuotaConfiguration {
@@ -327,7 +327,7 @@ impl NetworkConfig {
     }
 
     fn node_key_file(&self) -> PathBuf {
-        let path = self.node_key_file.as_ref().unwrap_or(&NETWORK_KEY_FILE);
+        let path = self.node_key_file.as_ref().unwrap_or(&G_NETWORK_KEY_FILE);
         if path.is_absolute() {
             path.clone()
         } else {
@@ -365,9 +365,9 @@ impl NetworkConfig {
             let port = if base.net().is_test() {
                 get_random_available_port()
             } else if base.net().is_dev() {
-                get_available_port_from(DEFAULT_NETWORK_PORT)
+                get_available_port_from(G_DEFAULT_NETWORK_PORT)
             } else {
-                DEFAULT_NETWORK_PORT
+                G_DEFAULT_NETWORK_PORT
             };
 
             //test env use in memory transport.

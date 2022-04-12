@@ -17,7 +17,7 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{genesis_address, G_STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_resource::dao::{Proposal, ProposalAction};
@@ -264,7 +264,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_balance(&self, address: AccountAddress) -> Result<Option<u128>> {
-        self.get_balance_by_token_code(address, STC_TOKEN_CODE.clone())
+        self.get_balance_by_token_code(address, G_STC_TOKEN_CODE.clone())
     }
 
     /// Get balance by address and coin type
@@ -338,7 +338,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_stc_info(&self) -> Result<Option<TokenInfo>> {
-        self.get_token_info(STC_TOKEN_CODE.clone())
+        self.get_token_info(G_STC_TOKEN_CODE.clone())
     }
 
     fn get_treasury(&self, token_code: TokenCode) -> Result<Option<Treasury>> {
@@ -347,7 +347,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_stc_treasury(&self) -> Result<Option<Treasury>> {
-        self.get_treasury(STC_TOKEN_CODE.clone())
+        self.get_treasury(G_STC_TOKEN_CODE.clone())
     }
 
     fn get_proposal<A>(&self, token_code: TokenCode) -> Result<Option<Proposal<A>>>
@@ -362,7 +362,7 @@ pub trait StateReaderExt: StateView {
     where
         A: ProposalAction + DeserializeOwned,
     {
-        self.get_proposal(STC_TOKEN_CODE.clone())
+        self.get_proposal(G_STC_TOKEN_CODE.clone())
     }
 }
 

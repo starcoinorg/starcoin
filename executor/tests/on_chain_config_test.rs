@@ -14,7 +14,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::gas_schedule::{GasAlgebra, InternalGasUnits};
 use starcoin_vm_types::on_chain_config::{
     consensus_config_type_tag, vm_config_type_tag, ConsensusConfig, OnChainConfig, VMConfig,
-    CONSENSUS_CONFIG_IDENTIFIER,
+    G_CONSENSUS_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -49,7 +49,7 @@ fn test_modify_on_chain_consensus_config() -> Result<()> {
     //get consensus config
 
     let config = {
-        let module_id = ModuleId::new(genesis_address(), CONSENSUS_CONFIG_IDENTIFIER.clone());
+        let module_id = ModuleId::new(genesis_address(), G_CONSENSUS_CONFIG_IDENTIFIER.clone());
         let mut rets = starcoin_dev::playground::call_contract(
             &chain_state,
             module_id,

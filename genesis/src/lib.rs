@@ -35,7 +35,7 @@ use std::sync::Arc;
 mod errors;
 pub use errors::GenesisError;
 
-pub static GENESIS_GENERATED_DIR: &str = "generated";
+pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]

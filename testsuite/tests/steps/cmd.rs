@@ -12,16 +12,16 @@ use starcoin_account_provider::ProviderFactory;
 use starcoin_cmd::add_command;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::account_provider_config::AccountProviderConfig;
-use starcoin_config::{APP_VERSION, CRATE_VERSION};
+use starcoin_config::{G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 lazy_static! {
-    static ref SELECTOR_REGEX: Regex = Regex::new(r"@(?P<value>[^@\s]+)@").unwrap();
+    static ref G_SELECTOR_REGEX: Regex = Regex::new(r"@(?P<value>[^@\s]+)@").unwrap();
 }
 fn extract_selector_str(input: &str) -> HashSet<&str> {
-    SELECTOR_REGEX
+    G_SELECTOR_REGEX
         .captures_iter(input)
         .filter_map(|cap| cap.name("value").map(|find| find.as_str()))
         .collect()
@@ -48,8 +48,8 @@ pub fn steps() -> Steps<MyWorld> {
                 account_client,
             );
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(
-                CRATE_VERSION,
-                Some(APP_VERSION.as_str()),
+                G_CRATE_VERSION,
+                Some(G_APP_VERSION.as_str()),
                 state,
             );
             // get last cmd result as current parameter

@@ -52,7 +52,7 @@ impl CommandAction for GenGenesisCommand {
             init_or_load_data_dir(global_opt, opt.password.clone())?;
         Ok(GenGenesisResult {
             net: config.net().id().clone(),
-            config_path: config.data_dir().join(starcoin_config::CONFIG_FILE_PATH),
+            config_path: config.data_dir().join(starcoin_config::G_CONFIG_FILE_PATH),
             account_info: account,
             genesis: chain_info.genesis_hash(),
         })

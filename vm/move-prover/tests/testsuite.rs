@@ -22,7 +22,7 @@ const ENV_TEST_FEATURE: &str = "MVP_TEST_FEATURE";
 const ENV_TEST_ON_CI: &str = "MVP_TEST_ON_CI";
 const REGULAR_TEST_FLAGS: &[&str] = &["--dependency=../stdlib/sources"];
 
-static NOT_CONFIGURED_WARNED: AtomicBool = AtomicBool::new(false);
+static G_NOT_CONFIGURED_WARNED: AtomicBool = AtomicBool::new(false);
 
 /// A struct to describe a feature to test.
 struct Feature {
@@ -59,8 +59,8 @@ enum InclusionMode {
 }
 
 fn get_features() -> &'static [Feature] {
-    static TESTED_FEATURES: OnceCell<Vec<Feature>> = OnceCell::new();
-    TESTED_FEATURES.get_or_init(|| {
+    static G_TESTED_FEATURES: OnceCell<Vec<Feature>> = OnceCell::new();
+    G_TESTED_FEATURES.get_or_init(|| {
         vec![
             // Tests the default configuration.
             Feature {
@@ -171,7 +171,7 @@ fn test_runner_for_feature(path: &Path, feature: &Feature) -> datatest_stable::R
 
     if no_tools {
         options.prover.generate_only = true;
-        if NOT_CONFIGURED_WARNED
+        if G_NOT_CONFIGURED_WARNED
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
             .is_ok()
         {

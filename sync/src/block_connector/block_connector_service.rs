@@ -5,7 +5,7 @@ use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainServic
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
-use config::{NodeConfig, CRATE_VERSION};
+use config::{NodeConfig, G_CRATE_VERSION};
 use executor::VMMetrics;
 use logger::prelude::*;
 use network::NetworkServiceRef;
@@ -146,7 +146,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                     msg.get_block().clone(),
                                     Some(peer_id.clone()),
                                     format!("{:?}", e),
-                                    CRATE_VERSION.to_string(),
+                                    G_CRATE_VERSION.to_string(),
                                 )
                             {
                                 warn!(

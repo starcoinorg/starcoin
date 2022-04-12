@@ -147,7 +147,7 @@ impl Serialize for TokenCode {
 mod test {
     use crate::language_storage::{StructTag, TypeTag};
     use crate::parser::parse_type_tag;
-    use crate::token::stc::STC_TOKEN_CODE;
+    use crate::token::stc::G_STC_TOKEN_CODE;
     use crate::token::token_code::TokenCode;
     use serde::{Deserialize, Serialize};
     use std::convert::TryInto;
@@ -174,7 +174,7 @@ mod test {
     #[test]
     fn test_token_serialize() {
         let setting = Setting {
-            default_token: STC_TOKEN_CODE.clone(),
+            default_token: G_STC_TOKEN_CODE.clone(),
         };
         let json = serde_json::to_string(&setting).unwrap();
         let setting2: Setting = serde_json::from_str(json.as_str()).unwrap();

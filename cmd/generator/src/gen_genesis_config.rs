@@ -53,7 +53,7 @@ impl CommandAction for GenGenesisConfigCommand {
 
         let config_path = base
             .data_dir()
-            .join(starcoin_config::GENESIS_CONFIG_FILE_NAME);
+            .join(starcoin_config::G_GENESIS_CONFIG_FILE_NAME);
         // genesis config file auto generate in BaseConfig::default_with_opt
         ensure!(
             config_path.exists(),

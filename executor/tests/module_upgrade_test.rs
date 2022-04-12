@@ -1,6 +1,6 @@
 use anyhow::Result;
 use logger::prelude::*;
-use starcoin_config::genesis_config::TOTAL_STC_AMOUNT;
+use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::execute_readonly_function;
@@ -20,13 +20,13 @@ use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::{MoveLanguageVersion, TransactionPublishOption, Version};
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use statedb::ChainStateDB;
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
-use stdlib::{load_upgrade_package, StdlibCompat, STDLIB_VERSIONS};
+use stdlib::{load_upgrade_package, StdlibCompat, G_STDLIB_VERSIONS};
 use test_helper::dao::{
     dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_language_version,
 };
@@ -348,7 +348,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
 #[stest::test(timeout = 300)]
 fn test_stdlib_upgrade() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    let stdlib_versions = STDLIB_VERSIONS.clone();
+    let stdlib_versions = G_STDLIB_VERSIONS.clone();
     let mut current_version = stdlib_versions[0];
     genesis_config.stdlib_version = current_version;
     let net = ChainNetwork::new_custom(
@@ -550,13 +550,13 @@ where
             );
             assert_eq!(
                 chain_state.get_stc_info().unwrap().unwrap().total_value,
-                TOTAL_STC_AMOUNT.scaling()
+                G_TOTAL_STC_AMOUNT.scaling()
             );
             let withdraw_cap = chain_state
                 .get_resource_by_access_path::<LinearWithdrawCapability>(
                     LinearWithdrawCapability::resource_path_for(
                         association_address(),
-                        STC_TOKEN_CODE.clone().try_into()?,
+                        G_STC_TOKEN_CODE.clone().try_into()?,
                     ),
                 )?;
             assert!(

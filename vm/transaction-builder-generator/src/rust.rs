@@ -306,7 +306,7 @@ pub fn encode(self) -> TransactionPayload {{"#
             r#"
 /// Try to recognize a Diem `Script` and convert it into a structured object `ScriptCall`.
 pub fn decode(script: &Script) -> Option<ScriptCall> {{
-    match TRANSACTION_SCRIPT_DECODER_MAP.get({}) {{
+    match G_TRANSACTION_SCRIPT_DECODER_MAP.get({}) {{
         Some(decoder) => decoder(script),
         None => None,
     }}
@@ -326,7 +326,7 @@ pub fn decode(script: &Script) -> Option<ScriptCall> {{
 /// Try to recognize a Diem `TransactionPayload` and convert it into a structured object `ScriptFunctionCall`.
 pub fn decode(payload: &TransactionPayload) -> Option<ScriptFunctionCall> {{
     if let TransactionPayload::ScriptFunction(script) = payload {{
-        match SCRIPT_FUNCTION_DECODER_MAP.get(&format!("{{}}{{}}", {}, {})) {{
+        match G_SCRIPT_FUNCTION_DECODER_MAP.get(&format!("{{}}{{}}", {}, {})) {{
             Some(decoder) => decoder(payload),
             None => None,
         }}
@@ -579,7 +579,7 @@ TransactionPayload::ScriptFunction(ScriptFunction {{
             r#"
 type TransactionScriptDecoderMap = std::collections::HashMap<Vec<u8>, Box<dyn Fn(&Script) -> Option<ScriptCall> + std::marker::Sync + std::marker::Send>>;
 
-static TRANSACTION_SCRIPT_DECODER_MAP: once_cell::sync::Lazy<TransactionScriptDecoderMap> = once_cell::sync::Lazy::new(|| {{"#
+static G_TRANSACTION_SCRIPT_DECODER_MAP: once_cell::sync::Lazy<TransactionScriptDecoderMap> = once_cell::sync::Lazy::new(|| {{"#
         )?;
         self.out.indent();
         writeln!(
@@ -605,7 +605,7 @@ static TRANSACTION_SCRIPT_DECODER_MAP: once_cell::sync::Lazy<TransactionScriptDe
             r#"
 type ScriptFunctionDecoderMap = std::collections::HashMap<String, Box<dyn Fn(&TransactionPayload) -> Option<ScriptFunctionCall> + std::marker::Sync + std::marker::Send>>;
 
-static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<ScriptFunctionDecoderMap> = once_cell::sync::Lazy::new(|| {{"#
+static G_SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<ScriptFunctionDecoderMap> = once_cell::sync::Lazy::new(|| {{"#
         )?;
         self.out.indent();
         writeln!(
