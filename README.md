@@ -70,7 +70,7 @@ starcoin --connect ws://main.seed.starcoin.org:9870 console
 Connect to the main network seed nodes and use a local account database for using Account-related commands
 
 ```shell
-starcoin --connect ws://main.seed.starcoin.org:9870 --local-account-dir ~/.starcoin/account_vaults console
+starcoin --connect ws://main.seed.starcoin.org:9870 --local-account-dir ~/.starcoin/main/account_vaults console
 ```
 
 More detailed test network info please read [Join starcoin test network](https://developer.starcoin.org/en/setup/runnetwork/).
