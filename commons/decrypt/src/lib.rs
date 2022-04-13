@@ -89,7 +89,7 @@ fn derive_key(derivation_param: &KeyDerivationParams, secret: &[u8]) -> [u8; 32]
     pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha256>>(
         secret,
         &derivation_param.pbkdf2_salt,
-        derivation_param.pbkdf2_iterations as usize,
+        derivation_param.pbkdf2_iterations,
         &mut dk,
     );
     dk
