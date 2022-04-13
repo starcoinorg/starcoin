@@ -260,7 +260,7 @@ pub fn instruction_table_v2() -> Vec<GasCost> {
 }
 
 /// return latest instruction table, as `initial_instruction_table` function should not be modified.
-pub static LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
+pub static G_LATEST_INSTRUCTION_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
     let latest_ins = instruction_table_v2();
     debug_assert!(
         latest_ins.len() == Bytecode::VARIANT_COUNT,
@@ -373,7 +373,7 @@ pub fn v3_native_table() -> Vec<GasCost> {
         .collect::<Vec<_>>()
 }
 
-pub static LATEST_NATIVE_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
+pub static G_LATEST_NATIVE_TABLE: Lazy<Vec<GasCost>> = Lazy::new(|| {
     let native_table = v3_native_table();
 
     debug_assert!(

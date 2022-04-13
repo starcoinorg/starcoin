@@ -4,7 +4,7 @@
 use crate::metrics::BlockRelayerMetrics;
 use anyhow::{ensure, format_err, Result};
 use config::NodeConfig;
-use config::CRATE_VERSION;
+use config::G_CRATE_VERSION;
 use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -215,7 +215,7 @@ impl BlockRelayer {
             if let Ok(Some((_, _, _, version))) =
                 txpool.get_store().get_failed_block_by_id(block_id)
             {
-                if version == *CRATE_VERSION {
+                if version == *G_CRATE_VERSION {
                     warn!("Block is failed block : {:?}", block_id);
                 }
             } else {

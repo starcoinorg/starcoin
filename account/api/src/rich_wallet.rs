@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
-use starcoin_types::account_config::STC_TOKEN_CODE;
+use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload};
 use std::fmt;
 use std::marker::PhantomData;
@@ -62,7 +62,7 @@ impl Setting {
         Setting {
             default_expiration_timeout: 3600,
             default_gas_price: 1,
-            default_gas_token: STC_TOKEN_CODE.clone(),
+            default_gas_token: G_STC_TOKEN_CODE.clone(),
             is_default: false,
             is_readonly: false,
         }
@@ -72,7 +72,7 @@ impl Setting {
         Setting {
             default_expiration_timeout: 3600,
             default_gas_price: 1,
-            default_gas_token: STC_TOKEN_CODE.clone(),
+            default_gas_token: G_STC_TOKEN_CODE.clone(),
             is_default: false,
             is_readonly: true,
         }

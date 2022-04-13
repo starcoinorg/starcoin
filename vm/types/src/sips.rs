@@ -25,16 +25,16 @@ impl SIP {
     }
 }
 
-pub static SIP_2: SIP = SIP {
+pub static G_SIP_2: SIP = SIP {
     id: 2,
     module_name: "SIP_2",
     url: "https://github.com/starcoinorg/SIPs/tree/master/sip-1",
 };
 
-pub static SIP_3: SIP = SIP {
+pub static G_SIP_3: SIP = SIP {
     id: 3,
     module_name: "SIP_3",
     url: "https://github.com/starcoinorg/SIPs/tree/master/sip-1",
 };
 
-pub static SIPS: Lazy<Vec<SIP>> = Lazy::new(|| vec![SIP_2, SIP_3]);
+pub static G_SIPS: Lazy<Vec<SIP>> = Lazy::new(|| vec![G_SIP_2, G_SIP_3]);

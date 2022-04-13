@@ -14,7 +14,7 @@ use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
 use move_vm_runtime::session::Session;
 use once_cell::sync::Lazy;
-use starcoin_config::LATEST_GAS_SCHEDULE;
+use starcoin_config::G_LATEST_GAS_SCHEDULE;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{
@@ -34,7 +34,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{
     core_code_address, genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
-    EPILOGUE_NAME, EPILOGUE_V2_NAME, PROLOGUE_NAME,
+    G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
@@ -44,8 +44,8 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    MoveLanguageVersion, GAS_CONSTANTS_IDENTIFIER, INSTRUCTION_SCHEDULE_IDENTIFIER,
-    NATIVE_SCHEDULE_IDENTIFIER, VM_CONFIG_IDENTIFIER,
+    MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
+    G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
@@ -67,7 +67,7 @@ use starcoin_vm_types::{
 use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
-static ZERO_COST_SCHEDULE: Lazy<CostTable> =
+static G_ZERO_COST_SCHEDULE: Lazy<CostTable> =
     Lazy::new(|| zero_cost_schedule(NativeCostIndex::NUMBER_OF_NATIVE_FUNCTIONS));
 
 #[derive(Clone)]
@@ -100,7 +100,7 @@ impl StarcoinVM {
     pub fn load_configs(&mut self, state: &dyn StateView) -> Result<(), Error> {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
-                gas_schedule: LATEST_GAS_SCHEDULE.clone(),
+                gas_schedule: G_LATEST_GAS_SCHEDULE.clone(),
             });
             self.version = Some(Version { major: 1 });
             Ok(())
@@ -140,8 +140,8 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function(
                             state,
-                            &ModuleId::new(core_code_address(), VM_CONFIG_IDENTIFIER.to_owned()),
-                            INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
+                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
+                            G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
                         )?
@@ -157,8 +157,8 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function(
                             state,
-                            &ModuleId::new(core_code_address(), VM_CONFIG_IDENTIFIER.to_owned()),
-                            NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
+                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
+                            G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
                         )?
@@ -172,8 +172,8 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function(
                             state,
-                            &ModuleId::new(core_code_address(), VM_CONFIG_IDENTIFIER.to_owned()),
-                            GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
+                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
+                            G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
                         )?
@@ -649,8 +649,8 @@ impl StarcoinVM {
         session
             .as_mut()
             .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
-                &PROLOGUE_NAME,
+                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &G_PROLOGUE_NAME,
                 vec![gas_token_ty],
                 serialize_values(&vec![
                     MoveValue::Signer(genesis_address),
@@ -710,7 +710,7 @@ impl StarcoinVM {
         // From stdlib v5, the epilogue function add `txn_authentication_key_preimage` argument, change to epilogue_v2
         let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {
             (
-                &EPILOGUE_V2_NAME,
+                &G_EPILOGUE_V2_NAME,
                 serialize_values(&vec![
                     MoveValue::Signer(genesis_address),
                     MoveValue::Address(txn_data.sender),
@@ -727,7 +727,7 @@ impl StarcoinVM {
             )
         } else {
             (
-                &EPILOGUE_NAME,
+                &G_EPILOGUE_NAME,
                 serialize_values(&vec![
                     MoveValue::Signer(genesis_address),
                     MoveValue::Address(txn_data.sender),
@@ -745,7 +745,7 @@ impl StarcoinVM {
         session
             .as_mut()
             .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
+                &account_config::G_TRANSACTION_MANAGER_MODULE,
                 function_name,
                 vec![gas_token_ty],
                 args,
@@ -763,7 +763,7 @@ impl StarcoinVM {
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
         let max_gas_amount = GasUnits::new(0);
-        let cost_table = &ZERO_COST_SCHEDULE;
+        let cost_table = &G_ZERO_COST_SCHEDULE;
         let mut gas_status = {
             let mut gas_status = GasStatus::new(cost_table, max_gas_amount);
             gas_status.set_metering(false);
@@ -798,8 +798,8 @@ impl StarcoinVM {
         session
             .as_mut()
             .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
-                &account_config::BLOCK_PROLOGUE_NAME,
+                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &account_config::G_BLOCK_PROLOGUE_NAME,
                 vec![],
                 args,
                 &mut gas_status,
@@ -824,7 +824,7 @@ impl StarcoinVM {
             Ok(gas_schedule) => gas_schedule,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &LATEST_GAS_SCHEDULE
+                    &G_LATEST_GAS_SCHEDULE
                 } else {
                     return discard_error_vm_status(e);
                 }
@@ -914,7 +914,7 @@ impl StarcoinVM {
             Ok(gas_schedule) => gas_schedule,
             Err(e) => {
                 if remote_cache.is_genesis() {
-                    &LATEST_GAS_SCHEDULE
+                    &G_LATEST_GAS_SCHEDULE
                 } else {
                     return Ok(discard_error_vm_status(e));
                 }
@@ -1104,7 +1104,7 @@ impl StarcoinVM {
         });
         let data_cache = StateViewCache::new(state_view);
 
-        let cost_table = &ZERO_COST_SCHEDULE;
+        let cost_table = &G_ZERO_COST_SCHEDULE;
         let mut gas_status = {
             let mut gas_status = GasStatus::new(cost_table, GasUnits::new(0));
             gas_status.set_metering(false);

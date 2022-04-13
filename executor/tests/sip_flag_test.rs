@@ -8,7 +8,7 @@ use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::ScriptFunction;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
-use starcoin_vm_types::sips::{SIP, SIPS};
+use starcoin_vm_types::sips::{G_SIPS, SIP};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use test_helper::dao::dao_vote_test;
 use test_helper::executor::*;
@@ -23,7 +23,7 @@ pub const TEST_SIP_10000: &str = r#"
 fn test_sip_flags() -> Result<()> {
     let alice = Account::new();
     let (chain_state, net) = prepare_genesis();
-    for sip in SIPS.iter() {
+    for sip in G_SIPS.iter() {
         assert!(chain_state.is_activated(*sip)?);
     }
 

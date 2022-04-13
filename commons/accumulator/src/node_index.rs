@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct NodeIndex(u64);
 pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
-pub static NODE_ERROR_INDEX: Lazy<NodeIndex> =
+pub static G_NODE_ERROR_INDEX: Lazy<NodeIndex> =
     Lazy::new(|| NodeIndex::from_inorder_index(u64::max_value()));
 
 #[derive(Debug, Eq, PartialEq)]

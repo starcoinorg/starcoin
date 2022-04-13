@@ -6,7 +6,7 @@ use scmd::CmdContext;
 use starcoin_account_provider::ProviderFactory;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
-use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
+use starcoin_config::{Connect, G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
@@ -15,13 +15,13 @@ use std::time::Duration;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
-static EXIT_CODE_NEED_HELP: i32 = 120;
+static G_EXIT_CODE_NEED_HELP: i32 = 120;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
-        CRATE_VERSION,
-        Some(APP_VERSION.as_str()),
+        G_CRATE_VERSION,
+        Some(G_APP_VERSION.as_str()),
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {}", opt);
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
@@ -108,7 +108,7 @@ fn run() -> Result<()> {
             info!("Start console, disable stderr output.");
             logger_handle.disable_stderr();
             print_logo();
-            (*scmd::DEFAULT_CONSOLE_CONFIG, Some(state.history_file()))
+            (*scmd::G_DEFAULT_CONSOLE_CONFIG, Some(state.history_file()))
         },
         |_, _, state| {
             let (_, _, handle) = state.into_inner();
@@ -125,34 +125,34 @@ fn run() -> Result<()> {
 #[rustfmt::skip]
 #[allow(clippy::print_literal)]
 fn print_logo(){
-    println!("{}{}{}","\x1b[34;1m",r#"                                 
-                                                (%&&&&(%&%(  &#   
-                                        ,#%%%&%%%#/        (%&&% 
-                                %#%#%%%%#&&%                 %& 
-                                / %%%                          #& 
-                            &#%%%#%%%%#                        *&% 
+    println!("{}{}{}","\x1b[34;1m",r#"
+                                                (%&&&&(%&%(  &#
+                                        ,#%%%&%%%#/        (%&&%
+                                %#%#%%%%#&&%                 %&
+                                / %%%                          #&
+                            &#%%%#%%%%#                        *&%
                         (#%%%#/ %%%%%%#                      #&%
-                    #%#%%#&&   #%%%%%%%(                   &%%&   
-                (#%%##      #%%%%%%%%%/                *%%      
-            #%%%&#%%##&&&&%%%(%%%%%%%%%%%&&&&&&&& &%  (&#/#       
-            ((##%%%%%%%%%%%%%%%%%%%%%%%%&&&&&&&%%  ####          
-        ###%#(& &#%%%%%%%%%%%%%%%%%%%%%&&&&%##&(%&%             
-        (#%##       (#%%%%%%%%%%%%%%%%%%&%#(#%%#                 
-        (###(%           &&#%%%%%%%%%%%%%%&%%#&&                   
-    ####                %%%%%%%%%%%%(    %%                     
-    /###/                #%%%%%%%%#%%#     %%#                    
-    /###(                (%%%%%%#%%%##%%%(  *%%#                   
-    ###(                (%%%%###&#     %&#%%&(%%%                  
-    (##(&              &#%#(#               %%&&%                  
-    (###%#       (%%%#((&                    &&%#                 
+                    #%#%%#&&   #%%%%%%%(                   &%%&
+                (#%%##      #%%%%%%%%%/                *%%
+            #%%%&#%%##&&&&%%%(%%%%%%%%%%%&&&&&&&& &%  (&#/#
+            ((##%%%%%%%%%%%%%%%%%%%%%%%%&&&&&&&%%  ####
+        ###%#(& &#%%%%%%%%%%%%%%%%%%%%%&&&&%##&(%&%
+        (#%##       (#%%%%%%%%%%%%%%%%%%&%#(#%%#
+        (###(%           &&#%%%%%%%%%%%%%%&%%#&&
+    ####                %%%%%%%%%%%%(    %%
+    /###/                #%%%%%%%%#%%#     %%#
+    /###(                (%%%%%%#%%%##%%%(  *%%#
+    ###(                (%%%%###&#     %&#%%&(%%%
+    (##(&              &#%#(#               %%&&%
+    (###%#       (%%%#((&                    &&%#
         (#%%%%%%#(
-            
+
      ██████╗████████╗ █████╗ ██████╗  █████╗  █████╗ ██╗███╗  ██╗
     ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║████╗ ██║
     ╚█████╗    ██║   ███████║██████╔╝██║  ╚═╝██║  ██║██║██╔██╗██║
      ╚═══██╗   ██║   ██╔══██║██╔══██╗██║  ██╗██║  ██║██║██║╚████║
     ██████╔╝   ██║   ██║  ██║██║  ██║╚█████╔╝╚█████╔╝██║██║ ╚███║
-    ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝ ╚═╝╚═╝  ╚══╝                                                                                                             
+    ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝ ╚═╝╚═╝  ╚══╝
     "#,"\x1b[0m");
 }
 
@@ -165,15 +165,15 @@ fn main() {
                     //TODO not suggest clean data dir in main network.
                     NodeStartError::LoadConfigError(e) => {
                         error!("{:?}, please fix config.", e);
-                        std::process::exit(EXIT_CODE_NEED_HELP);
+                        std::process::exit(G_EXIT_CODE_NEED_HELP);
                     }
                     NodeStartError::StorageInitError(e) => {
                         error!("{:?}, please clean your data dir.", e);
-                        std::process::exit(EXIT_CODE_NEED_HELP);
+                        std::process::exit(G_EXIT_CODE_NEED_HELP);
                     }
                     NodeStartError::GenesisError(e) => {
                         error!("{:?}, please clean your data dir.", e);
-                        std::process::exit(EXIT_CODE_NEED_HELP);
+                        std::process::exit(G_EXIT_CODE_NEED_HELP);
                     }
                     NodeStartError::Other(e) => {
                         error!("Node exit for an unexpected error: {:?}", e);

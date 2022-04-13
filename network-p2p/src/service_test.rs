@@ -22,7 +22,7 @@ use std::thread;
 use std::{sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
-static TEST_CHAIN_INFO: Lazy<ChainInfo> =
+static G_TEST_CHAIN_INFO: Lazy<ChainInfo> =
     Lazy::new(|| ChainInfo::new(ChainId::new(0), HashValue::zero(), ChainStatus::random()));
 
 /// Builds a full node to be used for testing. Returns the node service and its associated events
@@ -36,7 +36,7 @@ fn build_test_full_node(
     let worker = NetworkWorker::new(config::Params {
         network_config: config,
         protocol_id: config::ProtocolId::from("/test-protocol-name"),
-        chain_info: TEST_CHAIN_INFO.clone(),
+        chain_info: G_TEST_CHAIN_INFO.clone(),
         metrics_registry: None,
     })
     .unwrap();

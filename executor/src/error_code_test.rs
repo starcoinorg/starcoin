@@ -18,7 +18,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::Package;
 use starcoin_vm_types::transaction::RawUserTransaction;
@@ -31,11 +31,11 @@ use test_helper::executor::{
     association_execute, execute_and_apply, move_abort_code, prepare_genesis,
 };
 
-pub static WRONG_TOKEN_CODE_FOR_TEST: Lazy<TokenCode> = Lazy::new(|| {
+pub static G_WRONG_TOKEN_CODE_FOR_TEST: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str("0x1::ABC::ABC").expect("Parse wrong token code should success.")
 });
 
-pub static DUMMY_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
+pub static G_DUMMY_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str("0x1::DummyToken::DummyToken")
         .expect("Parse dummy token code should success.")
 });
@@ -139,7 +139,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        WRONG_TOKEN_CODE_FOR_TEST.clone(),
+        G_WRONG_TOKEN_CODE_FOR_TEST.clone(),
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
@@ -174,7 +174,7 @@ fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        DUMMY_TOKEN_CODE.clone(),
+        G_DUMMY_TOKEN_CODE.clone(),
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
@@ -206,7 +206,7 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
         TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
             receiver,
             transfer_amount,
-            STC_TOKEN_CODE.clone(),
+            G_STC_TOKEN_CODE.clone(),
         )),
         max_gas,
         gas_price,

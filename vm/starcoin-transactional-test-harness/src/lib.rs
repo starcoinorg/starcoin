@@ -66,7 +66,7 @@ use starcoin_vm_types::{
 };
 use std::convert::TryFrom;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::{starcoin_framework_named_addresses, PRECOMPILED_STARCOIN_FRAMEWORK};
+use stdlib::{starcoin_framework_named_addresses, G_PRECOMPILED_STARCOIN_FRAMEWORK};
 
 mod in_memory_state_cache;
 pub mod remote_state;
@@ -1019,7 +1019,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
 /// Run the Starcoin transactional test flow, using the given file as input.
 pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    run_test_impl(path, Some(&*PRECOMPILED_STARCOIN_FRAMEWORK))
+    run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
 }
 
 pub fn run_test_impl(

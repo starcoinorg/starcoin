@@ -104,7 +104,8 @@ pub struct IntegrationTestCommand {
     /// update test baseline.
     update_baseline: bool,
 }
-static PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> = Lazy::new(|| Mutex::new(None));
+static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> =
+    Lazy::new(|| Mutex::new(None));
 pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
     let rerooted_path = {
         let path = &move_arg.package_path;
@@ -223,7 +224,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
 
     {
         // update the global
-        *PRE_COMPILED_LIB.lock().unwrap() = Some(pre_compiled_lib);
+        *G_PRE_COMPILED_LIB.lock().unwrap() = Some(pre_compiled_lib);
     }
 
     let spectests_dir = rerooted_path.join("spectests");
@@ -249,7 +250,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         move |path| {
             starcoin_transactional_test_harness::run_test_impl(
                 path,
-                PRE_COMPILED_LIB.lock().unwrap().as_ref(),
+                G_PRE_COMPILED_LIB.lock().unwrap().as_ref(),
             )
         },
         "integration-test".to_string(),

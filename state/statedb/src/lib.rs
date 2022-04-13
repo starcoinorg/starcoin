@@ -215,7 +215,7 @@ pub struct ChainStateDB {
     updates: RwLock<HashSet<AccountAddress>>,
 }
 
-static DEFAULT_CACHE_SIZE: usize = 10240;
+static G_DEFAULT_CACHE_SIZE: usize = 10240;
 
 impl ChainStateDB {
     pub fn mock() -> Self {
@@ -226,7 +226,7 @@ impl ChainStateDB {
         Self {
             store: store.clone(),
             state_tree: StateTree::new(store, root_hash),
-            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
             updates: RwLock::new(HashSet::new()),
         }
     }
@@ -241,7 +241,7 @@ impl ChainStateDB {
         Self {
             store: self.store.clone(),
             state_tree: StateTree::new(self.store.clone(), Some(state_root)),
-            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
             updates: RwLock::new(HashSet::new()),
         }
     }

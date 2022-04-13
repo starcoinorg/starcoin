@@ -12,7 +12,7 @@ use starcoin_transaction_builder::encode_transfer_script_by_token_code;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::account_config::STCUnit;
-use starcoin_vm_types::account_config::STC_TOKEN_CODE;
+use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_value::TokenValue;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::time::Duration;
@@ -69,7 +69,7 @@ impl CommandAction for GetCoinCommand {
                     TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
                         to.address,
                         opt.amount.scaling(),
-                        STC_TOKEN_CODE.clone(),
+                        G_STC_TOKEN_CODE.clone(),
                     )),
                 )?
                 .get_transaction_info()

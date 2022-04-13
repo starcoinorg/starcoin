@@ -7,7 +7,7 @@ use crate::block_connector::{
 use anyhow::Result;
 use config::{
     BuiltinNetworkID, ChainNetwork, GenesisBlockParameter, GenesisBlockParameterConfig, NodeConfig,
-    TEST_CONFIG,
+    G_TEST_CONFIG,
 };
 use consensus::Consensus;
 use logger::prelude::*;
@@ -690,9 +690,9 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
         uncle_block_and_writeable_block_chain(count, count - 2).await;
 
     let end_number = if begin_epoch {
-        TEST_CONFIG.consensus_config.epoch_block_count - 1
+        G_TEST_CONFIG.consensus_config.epoch_block_count - 1
     } else {
-        TEST_CONFIG.consensus_config.epoch_block_count + 1
+        G_TEST_CONFIG.consensus_config.epoch_block_count + 1
     };
     let old_epoch_num = writeable_block_chain_service.get_main().epoch().number();
     // create block loop
@@ -862,7 +862,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
 
 #[stest::test]
 async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
-    let count = TEST_CONFIG.consensus_config.epoch_block_count;
+    let count = G_TEST_CONFIG.consensus_config.epoch_block_count;
     let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 1).await;
 

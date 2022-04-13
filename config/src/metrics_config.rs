@@ -11,11 +11,11 @@ use starcoin_metrics::{get_metric_from_registry, Registry};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-pub static DEFAULT_METRIC_SERVER_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
-pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
-pub static DEFAULT_METRIC_PUSH_AUTH_PASSWORD: &str = "";
+pub static G_DEFAULT_METRIC_SERVER_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+pub static G_DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
+pub static G_DEFAULT_METRIC_PUSH_AUTH_PASSWORD: &str = "";
 
-pub static DEFAULT_METRIC_NAMESPACE: &str = "starcoin";
+pub static G_DEFAULT_METRIC_NAMESPACE: &str = "starcoin";
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -51,7 +51,7 @@ impl PushParameterConfig {
     pub fn auth_password(&self) -> String {
         self.auth_password
             .clone()
-            .unwrap_or_else(|| DEFAULT_METRIC_PUSH_AUTH_PASSWORD.to_owned())
+            .unwrap_or_else(|| G_DEFAULT_METRIC_PUSH_AUTH_PASSWORD.to_owned())
     }
 }
 
@@ -123,15 +123,15 @@ impl MetricsConfig {
     fn generate_address(&mut self) {
         if !self.disable_metrics() {
             self.metrics_address = Some(SocketAddr::new(
-                self.address.unwrap_or(DEFAULT_METRIC_SERVER_ADDRESS),
+                self.address.unwrap_or(G_DEFAULT_METRIC_SERVER_ADDRESS),
                 self.port.unwrap_or_else(|| {
                     let base = self.base();
                     if base.net.is_test() {
                         get_random_available_port()
                     } else if base.net.is_dev() {
-                        get_available_port_from(DEFAULT_METRIC_SERVER_PORT)
+                        get_available_port_from(G_DEFAULT_METRIC_SERVER_PORT)
                     } else {
-                        DEFAULT_METRIC_SERVER_PORT
+                        G_DEFAULT_METRIC_SERVER_PORT
                     }
                 }),
             ));
@@ -149,10 +149,10 @@ impl MetricsConfig {
         label: Option<(&str, &str)>,
     ) -> Option<Vec<starcoin_metrics::proto::Metric>> {
         //auto add namespace
-        let metric_name = if name.starts_with(DEFAULT_METRIC_NAMESPACE) {
+        let metric_name = if name.starts_with(G_DEFAULT_METRIC_NAMESPACE) {
             name.to_string()
         } else {
-            format!("{}_{}", DEFAULT_METRIC_NAMESPACE, name)
+            format!("{}_{}", G_DEFAULT_METRIC_NAMESPACE, name)
         };
         self.registry
             .as_ref()
@@ -179,7 +179,8 @@ impl ConfigModule for MetricsConfig {
         self.generate_address();
 
         if !self.disable_metrics() {
-            let registry = Registry::new_custom(Some(DEFAULT_METRIC_NAMESPACE.to_string()), None)?;
+            let registry =
+                Registry::new_custom(Some(G_DEFAULT_METRIC_NAMESPACE.to_string()), None)?;
             self.registry = Some(registry);
         }
 

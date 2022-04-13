@@ -15,9 +15,9 @@ const TIMESTAMP_FORMAT: &str = "%+";
 
 // Defined global slog logger
 lazy_static! {
-    static ref GLOBAL_SLOG_LOGGER: ArcSwap<Logger> =
+    static ref G_GLOBAL_SLOG_LOGGER: ArcSwap<Logger> =
         ArcSwap::from(Arc::new(Logger::root(Discard, o!())));
-    static ref SLOG_LEVEL: Arc<Mutex<slog::Level>> = Arc::new(Mutex::new(slog::Level::Info));
+    static ref G_SLOG_LEVEL: Arc<Mutex<slog::Level>> = Arc::new(Mutex::new(slog::Level::Info));
 }
 
 // A RuntimeLevelFilter will discard all log records whose log level is less than the level
@@ -29,11 +29,11 @@ pub struct RuntimeLevelFilter<D> {
 
 impl<D> RuntimeLevelFilter<D> {
     pub fn new(drain: D, level: slog::Level) -> Self {
-        let mut s = SLOG_LEVEL.lock().unwrap();
+        let mut s = G_SLOG_LEVEL.lock().unwrap();
         *s = level;
         RuntimeLevelFilter {
             drain,
-            level: SLOG_LEVEL.clone(),
+            level: G_SLOG_LEVEL.clone(),
         }
     }
 }
@@ -91,20 +91,20 @@ fn create_default_root_logger(
 
 pub fn init_slog_logger(file: PathBuf, enable_stderr: bool) -> Result<()> {
     let logger = create_default_root_logger(file, slog::Level::Info, enable_stderr)?;
-    GLOBAL_SLOG_LOGGER.store(Arc::new(logger));
+    G_GLOBAL_SLOG_LOGGER.store(Arc::new(logger));
     Ok(())
 }
 
 pub fn set_slog_level(level: &str) {
     let level = slog::Level::from_str(level).unwrap_or(slog::Level::Info);
-    let mut slog_level = SLOG_LEVEL.lock().unwrap();
+    let mut slog_level = G_SLOG_LEVEL.lock().unwrap();
     *slog_level = level;
 }
 
 pub fn disable_slog_stderr(log_path: PathBuf) {
     match create_default_root_logger(log_path, slog::Level::Info, false) {
         Ok(logger) => {
-            GLOBAL_SLOG_LOGGER.swap(Arc::new(logger));
+            G_GLOBAL_SLOG_LOGGER.swap(Arc::new(logger));
         }
         Err(e) => log::warn!("Failed to disable slog stderr:{}", e),
     };
@@ -114,5 +114,5 @@ pub fn with_logger<F, R>(f: F) -> R
 where
     F: FnOnce(&Logger) -> R,
 {
-    f(&(*GLOBAL_SLOG_LOGGER.load()))
+    f(&(*G_GLOBAL_SLOG_LOGGER.load()))
 }

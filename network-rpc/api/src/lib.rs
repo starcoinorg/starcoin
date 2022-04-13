@@ -32,7 +32,7 @@ pub const MAX_TXN_REQUEST_SIZE: u64 = 1000;
 pub const MAX_BLOCK_INFO_REQUEST_SIZE: u64 = 1000;
 pub const MAX_BLOCK_IDS_REQUEST_SIZE: u64 = 10000;
 
-pub static RPC_INFO: Lazy<RpcInfo> = Lazy::new(|| RpcInfo::new(gen_client::get_rpc_info()));
+pub static G_RPC_INFO: Lazy<RpcInfo> = Lazy::new(|| RpcInfo::new(gen_client::get_rpc_info()));
 
 pub trait RpcRequest {
     fn verify(&self) -> Result<()> {

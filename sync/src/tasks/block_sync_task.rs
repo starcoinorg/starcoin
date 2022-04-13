@@ -4,7 +4,7 @@
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Result};
-use config::CRATE_VERSION;
+use config::G_CRATE_VERSION;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -223,7 +223,7 @@ where
             .get_storage()
             .get_failed_block_by_id(block.id())?
         {
-            if version == *CRATE_VERSION {
+            if version == *G_CRATE_VERSION {
                 warn!(
                     "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, err: {}",
                     block.id(),
@@ -260,7 +260,7 @@ where
                             block,
                             peer_id.clone(),
                             error_msg,
-                            CRATE_VERSION.to_string(),
+                            G_CRATE_VERSION.to_string(),
                         )?;
                         if let Some(peer) = peer_id {
                             self.peer_provider.report_peer(peer, e.reputation());

@@ -19,7 +19,7 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
     fn create(ctx: &mut ServiceContext<NetworkActorService>) -> Result<NetworkActorService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let rpc_info = starcoin_network_rpc_api::RPC_INFO.clone();
+        let rpc_info = starcoin_network_rpc_api::G_RPC_INFO.clone();
         let txpool_service = ctx.service_ref::<TxPoolActorService>()?.clone();
         let block_relayer = ctx.service_ref::<BlockRelayer>()?.clone();
         let network_rpc_service = ctx.service_ref::<NetworkRpcService>()?.clone();

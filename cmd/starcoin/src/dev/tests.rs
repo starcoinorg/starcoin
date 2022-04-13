@@ -17,7 +17,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
@@ -231,7 +231,7 @@ fn test_upgrade_module() {
         2,
         dao_config.min_action_delay,
         false,
-        STC_TOKEN_CODE.clone(),
+        G_STC_TOKEN_CODE.clone(),
         config.net().stdlib_version(),
     );
 
@@ -274,7 +274,7 @@ fn test_upgrade_module() {
     let proposal_id = 0;
     let mut type_tags: Vec<TypeTag> = Vec::new();
     let module = parse_type_tag("0x1::UpgradeModuleDaoProposal::UpgradeModuleV2").unwrap();
-    type_tags.push(STC_TOKEN_CODE.clone().try_into().unwrap());
+    type_tags.push(G_STC_TOKEN_CODE.clone().try_into().unwrap());
     type_tags.push(module);
     let mut args: Vec<TransactionArgument> = Vec::new();
     let arg_1 = parse_transaction_argument("0x0000000000000000000000000a550c18").unwrap();
@@ -329,7 +329,7 @@ fn test_upgrade_module() {
     let module_upgrade_queue = build_module_upgrade_queue(
         association_address(),
         proposal_id,
-        STC_TOKEN_CODE.clone(),
+        G_STC_TOKEN_CODE.clone(),
         config.net().stdlib_version(),
     );
     let queue_txn = sign_txn_with_account_by_rpc_client(
@@ -365,7 +365,7 @@ fn test_upgrade_module() {
 
     // 7. plan
     let module_upgrade_plan =
-        build_module_upgrade_plan(association_address(), proposal_id, STC_TOKEN_CODE.clone());
+        build_module_upgrade_plan(association_address(), proposal_id, G_STC_TOKEN_CODE.clone());
     let plan_txn = sign_txn_with_account_by_rpc_client(
         &cli_state,
         default_account.address,

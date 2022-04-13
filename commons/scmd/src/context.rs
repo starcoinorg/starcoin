@@ -23,7 +23,7 @@ pub use rustyline::{
     Editor,
 };
 
-pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
+pub static G_DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
     ConsoleConfig::builder()
         .max_history_size(1000)
         .history_ignore_space(true)
@@ -35,7 +35,7 @@ pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
         .build()
 });
 
-static OUTPUT_FORMAT_ARG: &str = "output-format";
+static G_OUTPUT_FORMAT_ARG: &str = "output-format";
 
 pub struct CmdContext<State, GlobalOpt>
 where
@@ -103,7 +103,7 @@ where
             .version(version)
             .long_version(long_version.unwrap_or(version))
             .arg(
-                Arg::new(OUTPUT_FORMAT_ARG)
+                Arg::new(G_OUTPUT_FORMAT_ARG)
                     .short('o')
                     .help("set output-format, support [json|table]")
                     .takes_value(true)
@@ -120,7 +120,7 @@ where
 
     pub fn with_console_support_default(self) -> Self {
         self.with_console_support(
-            |_, _, _| -> (ConsoleConfig, Option<PathBuf>) { (*DEFAULT_CONSOLE_CONFIG, None) },
+            |_, _, _| -> (ConsoleConfig, Option<PathBuf>) { (*G_DEFAULT_CONSOLE_CONFIG, None) },
             |_, _, _| println!("Quit."),
         )
     }
@@ -203,7 +203,7 @@ where
             .try_get_matches_from_mut(iter)
             .map_err(CmdError::ClapError)?;
         let output_format = matches
-            .value_of(OUTPUT_FORMAT_ARG)
+            .value_of(G_OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
             .parse()
             .expect("parse output-format must success.");

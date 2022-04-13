@@ -23,11 +23,11 @@ mod move_lang_version;
 mod version;
 mod vm_config;
 pub use self::{
-    consensus_config::{consensus_config_type_tag, ConsensusConfig, CONSENSUS_CONFIG_IDENTIFIER},
+    consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
     genesis_gas_schedule::*,
     move_lang_version::MoveLanguageVersion,
-    version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
+    version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
@@ -60,7 +60,7 @@ impl ConfigID {
     }
 }
 
-pub static ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
+pub static G_ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
     vec![
         Version::config_id(),
         ConsensusConfig::config_id(),

@@ -81,7 +81,7 @@ fn main() -> Result<()> {
         ),
         Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,
-            &genesis_config::LATEST_GAS_SCHEDULE,
+            &genesis_config::G_LATEST_GAS_SCHEDULE,
             &error_descriptions,
             move_args,
             &storage_dir,

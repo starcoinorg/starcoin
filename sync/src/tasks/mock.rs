@@ -20,7 +20,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::RPC_INFO;
+use starcoin_network_rpc_api::G_RPC_INFO;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
@@ -150,7 +150,7 @@ impl SyncNodeMocker {
             peer_id.clone(),
             chain.chain_info(),
             NotificationMessage::protocols(),
-            RPC_INFO.clone().into_protocols(),
+            G_RPC_INFO.clone().into_protocols(),
         );
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
         Ok(Self::new_inner(
