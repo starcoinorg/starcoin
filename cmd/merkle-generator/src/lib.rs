@@ -96,7 +96,7 @@ mod tests {
         let merkle_data = include_str!("../examples/merkle-example.json");
         let merkle_data: serde_json::Value = serde_json::from_str(merkle_data)?;
         let root = merkle_data["root"].as_str().unwrap();
-        let root_in_bytes = hex::decode(root.strip_prefix("0x").unwrap_or(root))?;
+        let raw_root = hex::decode(root.strip_prefix("0x").unwrap_or(root))?;
         let proofs: Vec<DataProof> = serde_json::from_value(merkle_data["proofs"].clone())?;
 
         let leaf = encode(proofs[0].index, proofs[0].address, proofs[0].amount).unwrap();
@@ -120,7 +120,7 @@ mod tests {
             };
             computed_hash = HashValue::sha3_256_of(joined.as_slice()).to_vec();
         }
-        assert_eq!(root_in_bytes, computed_hash);
+        assert_eq!(raw_root, computed_hash);
         Ok(())
     }
 }

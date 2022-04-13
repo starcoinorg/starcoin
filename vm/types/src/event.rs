@@ -44,10 +44,10 @@ impl EventKey {
 
     /// Get the account address part in this event key
     pub fn get_creator_address(&self) -> AccountAddress {
-        let mut arr_bytes = [0u8; AccountAddress::LENGTH];
-        arr_bytes.copy_from_slice(&self.0[EventKey::LENGTH - AccountAddress::LENGTH..]);
+        let mut arr = [0u8; AccountAddress::LENGTH];
+        arr.copy_from_slice(&self.0[EventKey::LENGTH - AccountAddress::LENGTH..]);
 
-        AccountAddress::new(arr_bytes)
+        AccountAddress::new(arr)
     }
 
     /// If this is the `ith` EventKey` created by `get_creator_address()`, return `i`
@@ -65,11 +65,11 @@ impl EventKey {
 
     /// Create a unique handle by using an AccountAddress and a counter.
     pub fn new_from_address(addr: &AccountAddress, salt: u64) -> Self {
-        let mut output_bytes = [0; Self::LENGTH];
-        let (lhs, rhs) = output_bytes.split_at_mut(8);
+        let mut output = [0; Self::LENGTH];
+        let (lhs, rhs) = output.split_at_mut(8);
         lhs.copy_from_slice(&salt.to_le_bytes());
         rhs.copy_from_slice(addr.as_ref());
-        EventKey(output_bytes)
+        EventKey(output)
     }
 }
 

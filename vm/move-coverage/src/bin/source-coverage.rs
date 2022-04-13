@@ -47,9 +47,9 @@ fn main() {
         CoverageMap::from_binary_file(&args.input_trace_path).unwrap()
     };
 
-    let bytecode_bytes = fs::read(&args.module_binary_path).expect("Unable to read bytecode file");
+    let bytecode = fs::read(&args.module_binary_path).expect("Unable to read bytecode file");
     let compiled_module =
-        CompiledModule::deserialize(&bytecode_bytes).expect("Module blob can't be deserialized");
+        CompiledModule::deserialize(&bytecode).expect("Module blob can't be deserialized");
 
     let source_map = source_map_from_file(
         &Path::new(&args.module_binary_path).with_extension(source_map_extension),

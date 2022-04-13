@@ -58,9 +58,9 @@ fn get_modules(args: &Args) -> Vec<CompiledModule> {
     }
 
     if let Some(module_binary_path) = &args.module_binary_path {
-        let bytecode_bytes = fs::read(module_binary_path).expect("Unable to read bytecode file");
-        let compiled_module = CompiledModule::deserialize(&bytecode_bytes)
-            .expect("Module blob can't be deserialized");
+        let bytecode = fs::read(module_binary_path).expect("Unable to read bytecode file");
+        let compiled_module =
+            CompiledModule::deserialize(&bytecode).expect("Module blob can't be deserialized");
         modules.push(compiled_module);
     }
 

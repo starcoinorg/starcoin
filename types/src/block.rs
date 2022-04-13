@@ -230,12 +230,12 @@ impl BlockHeader {
         let mut blob = Vec::new();
         let raw_header: RawBlockHeader = self.to_owned().into();
         let raw_header_hash = raw_header.crypto_hash();
-        let mut diff_bytes = [0u8; 32];
-        raw_header.difficulty.to_big_endian(&mut diff_bytes);
+        let mut diff = [0u8; 32];
+        raw_header.difficulty.to_big_endian(&mut diff);
         let extend_and_nonce = [0u8; 12];
         blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
         blob.extend_from_slice(&extend_and_nonce);
-        blob.extend_from_slice(&diff_bytes);
+        blob.extend_from_slice(&diff);
         blob
     }
 
