@@ -10,7 +10,7 @@ use move_package_manager::compatibility_check_cmd::{
     handle_compatibility_check, CompatibilityCheckCommand,
 };
 use move_package_manager::releasement::{handle_release, Releasement};
-use move_package_manager::{run_transactional_test, TransactionalTestCommand};
+use move_package_manager::{run_integration_test, IntegrationTestCommand};
 use starcoin_config::genesis_config;
 use starcoin_vm_runtime::natives::starcoin_natives;
 use std::path::PathBuf;
@@ -56,9 +56,10 @@ pub enum Commands {
         #[clap(subcommand)]
         cmd: experimental::cli::ExperimentalCommand,
     },
-    /// Run transaction tests in spectests dir.
-    #[clap(name = "spectest")]
-    TransactionalTest(TransactionalTestCommand),
+    /// Run integration tests in tests dir.
+    #[clap(name = "integration-test", alias = "spectest")]
+    IntegrationTest(IntegrationTestCommand),
+
     /// Check compatibility of modules comparing with remote chain chate.
     #[clap(name = "check-compatibility")]
     CompatibilityCheck(CompatibilityCheckCommand),
@@ -71,7 +72,7 @@ fn main() -> Result<()> {
     let move_args = &args.move_args;
     let natives = starcoin_natives();
     match args.cmd {
-        Commands::TransactionalTest(cmd) => run_transactional_test(args.move_args, cmd),
+        Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
         Commands::Package { cmd } => handle_package_commands(
             &move_args.package_path,
             move_args.build_config.clone(),

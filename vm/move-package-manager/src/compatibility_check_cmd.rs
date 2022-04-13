@@ -1,12 +1,12 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::releasement::module;
-
+use clap::Parser;
 use itertools::Itertools;
-
 use move_binary_format::CompiledModule;
 use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
-
-use clap::Parser;
 use move_core_types::resolver::ModuleResolver;
 use starcoin_config::BuiltinNetworkID;
 use starcoin_move_compiler::check_compiled_module_compat;

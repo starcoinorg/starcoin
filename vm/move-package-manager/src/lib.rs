@@ -1,7 +1,8 @@
-pub mod compatibility_check_cmd;
-pub mod releasement;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
-use clap::Parser;
+use clap::{Args, Parser};
 use move_cli::Move;
 use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
@@ -13,20 +14,98 @@ use move_compiler::{
 use move_package::compilation::build_plan::BuildPlan;
 use move_package::source_package::layout::SourcePackageLayout;
 use once_cell::sync::Lazy;
+use std::fmt::Display;
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Mutex;
 
-#[derive(Parser, Debug)]
-pub struct TransactionalTestCommand {
-    // FIXME
+pub mod compatibility_check_cmd;
+pub mod releasement;
+
+#[derive(Debug, Args)]
+pub struct TestOpts {
+    /// The FILTER string is tested against the name of all tests, and only those tests whose names
+    /// contain the filter are run.
+    filter: Option<String>,
+
+    #[clap(long = "exact")]
+    /// Exactly match filters rather than by substring
+    filter_exact: bool,
+
+    #[clap(long, env = "RUST_TEST_THREADS", default_value = "32")]
+    /// Number of threads used for running tests in parallel
+    test_threads: NonZeroUsize,
+
+    #[clap(short = 'q', long)]
+    /// Output minimal information
+    quiet: bool,
+
+    #[clap(long)]
+    /// List all tests
+    list: bool,
+
+    #[clap(long)]
+    /// Configure formatting of output:
+    ///   pretty = Print verbose output;
+    ///   terse = Display one character per test;
+    ///   (json is unsupported, exists for compatibility with the default test harness)
+    #[clap(possible_values = Format::variants(), default_value_t, ignore_case = true)]
+    format: Format,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum Format {
+    Pretty,
+    Terse,
+    Json,
+}
+
+impl Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Format::Pretty => write!(f, "pretty"),
+            Format::Terse => write!(f, "terse"),
+            Format::Json => write!(f, "json"),
+        }
+    }
+}
+
+impl Format {
+    fn variants() -> Vec<&'static str> {
+        vec!["pretty", "terse"]
+    }
+}
+
+impl FromStr for Format {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Format, std::string::String> {
+        match s {
+            "pretty" => Ok(Format::Pretty),
+            "terse" => Ok(Format::Terse),
+            "json" => Ok(Format::Json),
+            _ => Err(format!("Unsupported format: {}", s)),
+        }
+    }
+}
+
+impl Default for Format {
+    fn default() -> Self {
+        Format::Pretty
+    }
+}
+
+#[derive(Args, Debug)]
+pub struct IntegrationTestCommand {
     #[clap(flatten)]
-    test_opts: datatest_stable::TestOpts,
+    test_opts: TestOpts,
     #[clap(long = "ub")]
     /// update test baseline.
     update_baseline: bool,
 }
 static PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> = Lazy::new(|| Mutex::new(None));
-pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> Result<()> {
+pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
     let rerooted_path = {
         let path = &move_arg.package_path;
         // Always root ourselves to the package root, and then compile relative to that.
@@ -141,59 +220,29 @@ pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> 
             .0;
         (pre_compiled_lib, compiled)
     };
-    // let (pre_compiled_lib, compiled_pacakge) = {
-    //     let compiled_package = move_arg
-    //         .build_config
-    //         .compile_package(&rerooted_path, &mut std::io::stdout())?;
-    //
-    //     let pre_compiled_lib = {
-    //         let build_root_path = rerooted_path.join(CompiledPackageLayout::Root.path());
-    //         let dep_paths = compiled_package
-    //             .transitive_dependencies()
-    //             .map(|dep_package| {
-    //                 build_root_path
-    //                     .join(dep_package.compiled_package_info.package_name.to_string())
-    //                     .join(CompiledPackageLayout::CompiledModules.path())
-    //                     .to_string_lossy()
-    //                     .to_string()
-    //             })
-    //             .collect::<Vec<_>>();
-    //         let tmp_interface_dir = tempfile::tempdir()?;
-    //         let in_scope_named_addrs = compiled_package
-    //             .compiled_package_info
-    //             .address_alias_instantiation
-    //             .iter()
-    //             .map(|(ident, addr)| {
-    //                 let parsed_addr =
-    //                     NumericalAddress::new(addr.into_bytes(), move_compiler::shared::NumberFormat::Hex);
-    //                 (ident.to_string(), parsed_addr)
-    //             })
-    //             .collect::<BTreeMap<_, _>>();
-    //         let pre_compiled_lib = match construct_pre_compiled_lib_from_compiler(
-    //             Compiler::new(&[], &dep_paths)
-    //                 .set_interface_files_dir(tmp_interface_dir.path().to_string_lossy().to_string())
-    //                 .set_flags(Flags::testing())
-    //                 .set_named_address_values(in_scope_named_addrs)
-    //                 .set_compiled_module_named_address_mapping(
-    //                     compiled_package
-    //                         .compiled_package_info
-    //                         .module_resolution_metadata
-    //                         .iter()
-    //                         .map(|(k, v)| (k.clone(), v.to_string()))
-    //                         .collect(),
-    //                 ),
-    //         )? {
-    //             Ok(full_program) => full_program,
-    //             Err((file, s)) => report_diagnostics(&file, s),
-    //         };
-    //         pre_compiled_lib
-    //     };
-    //     (pre_compiled_lib, compiled_pacakge)
-    // };
 
     {
         // update the global
         *PRE_COMPILED_LIB.lock().unwrap() = Some(pre_compiled_lib);
+    }
+
+    let spectests_dir = rerooted_path.join("spectests");
+    // for compatibility with old version mpm, check the spectests first.
+    let tests_dir = if spectests_dir.exists() && spectests_dir.is_dir() {
+        eprintln!(
+            r#"
+            Note: The new version of mpm changes the `spectests` to `integration-test`, and use the `tests` dir.
+            You can just move the `spectests` to `tests`.
+            "#
+        );
+        spectests_dir
+    } else {
+        rerooted_path.join("tests")
+    };
+
+    if !tests_dir.exists() || !tests_dir.is_dir() {
+        eprintln!("No integration tests file in the dir `tests`.");
+        return Ok(());
     }
 
     let requirements = datatest_stable::Requirements::new(
@@ -203,14 +252,37 @@ pub fn run_transactional_test(move_arg: Move, cmd: TransactionalTestCommand) -> 
                 PRE_COMPILED_LIB.lock().unwrap().as_ref(),
             )
         },
-        "transactional-test".to_string(),
-        rerooted_path.join("spectests").display().to_string(),
+        "integration-test".to_string(),
+        tests_dir.display().to_string(),
         r".*\.move".to_string(),
     );
 
     if cmd.update_baseline {
         std::env::set_var(UPDATE_BASELINE, "true");
     }
-    datatest_stable::runner_with_opts(&[requirements], cmd.test_opts);
+    let mut test_args = vec![
+        "test_runner".to_string(),
+        "--format".to_string(),
+        cmd.test_opts.format.to_string(),
+        "--test-threads".to_string(),
+        cmd.test_opts.test_threads.to_string(),
+    ];
+    if cmd.test_opts.list {
+        test_args.push("--list".to_string());
+    }
+    if cmd.test_opts.quiet {
+        test_args.push("--quiet".to_string());
+    }
+    if cmd.test_opts.filter_exact {
+        test_args.push("--exact".to_string());
+    }
+
+    if let Some(filter) = cmd.test_opts.filter {
+        test_args.push("--".to_string());
+        test_args.push(filter);
+    }
+
+    let test_opts = datatest_stable::TestOpts::try_parse_from(test_args.as_slice())?;
+    datatest_stable::runner_with_opts(&[requirements], test_opts);
     Ok(())
 }
