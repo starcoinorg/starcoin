@@ -21,11 +21,11 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_statedb::ChainStateReader;
-use starcoin_storage::block::FailedBlock;
+use starcoin_storage::block::{BlockHeaderStorage, FailedBlock};
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::ValueCodec;
+use starcoin_storage::storage::{CodecKVStore, ValueCodec};
 use starcoin_storage::storage::{ColumnFamilyName, InnerStore, StorageInstance};
 use starcoin_storage::{
     BlockStore, Storage, StorageVersion, Store, BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
@@ -363,6 +363,16 @@ pub struct ApplySnapshotOptions {
     pub input_path: PathBuf,
 }
 
+#[derive(Debug, Parser)]
+#[clap(name = "prune", about = "prune block")]
+pub struct PruneOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network
+    pub net: BuiltinNetworkID,
+    /// starcoin node db path. like ~/.starcoin/main
+    pub to_path: PathBuf,
+}
+
 fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
     let cmd = match opt.cmd {
@@ -489,7 +499,10 @@ fn main() -> anyhow::Result<()> {
         return result;
     }
 
-
+    if let Cmd::Prune(option) = cmd {
+        let result = prune(option.to_path, option.net);
+        return result;
+    }
 
     Ok(())
 }
@@ -1461,5 +1474,65 @@ pub fn apply_snapshot(
     storage.save_snapshot_range(snapshot_range)?;
     let use_time = SystemTime::now().duration_since(start_time)?;
     println!("apply snapshot use time: {:?}", use_time.as_secs());
+    Ok(())
+}
+
+fn prune(to_dir: PathBuf, network: BuiltinNetworkID) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::new(to_dir.join("starcoindb/db"), RocksdbConfig::default(), None)?;
+    let instance = StorageInstance::new_cache_and_db_instance(CacheStorage::new(None), db_storage);
+    let storage = Arc::new(Storage::new(instance.clone())?);
+    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), to_dir.as_ref())?;
+    let cur_chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let block_num = cur_chain.status().head().number();
+    let end_block_num = if block_num < BLOCK_GAP {
+        block_num
+    } else {
+        block_num - BLOCK_GAP
+    };
+    // XXX FIXME get prune info
+
+    let snapshot_range = storage.get_snapshot_range()?;
+    let mut cur_num = if snapshot_range.is_none() {
+        1
+    } else {
+        snapshot_range.unwrap().get_end() + 1
+    };
+
+    loop {
+        let cur_block = cur_chain
+            .get_block_by_number(cur_num)?
+            .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+
+        let chain = BlockChain::new(net.time_service(), cur_block.id(), storage.clone(), None)?;
+        if chain.epoch().end_block_number() > end_block_num {
+            break;
+        }
+
+        let block_header_storage = BlockHeaderStorage::new(instance.clone());
+        let mut iter = block_header_storage.iter()?;
+        iter.seek_to_first();
+        for item in iter {
+            let (id, block_header) = item?;
+            if block_header.number() >= chain.epoch().start_block_number()
+                && block_header.number() <= chain.epoch().end_block_number()
+            {
+                // XXX FIXME verify uncles
+                let hash = cur_chain.get_hash_by_number(block_header.number())?;
+                if hash.is_none() || hash != Some(id) {
+                    storage.delete_block(id)?;
+                    storage.delete_block_info(id)?;
+                }
+            }
+        }
+        // XXX FIXME SAVE epoch
+        cur_num = chain.epoch().end_block_number() + 1;
+    }
     Ok(())
 }

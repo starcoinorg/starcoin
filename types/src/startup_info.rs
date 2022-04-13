@@ -234,3 +234,32 @@ impl TryInto<Vec<u8>> for SnapshotRange {
         self.encode()
     }
 }
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct PruneInfo {
+    /// main chain Prune BlockNum
+    pub num: BlockNumber,
+}
+
+impl fmt::Display for PruneInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "PruneInfo num {}", self.num)?;
+        Ok(())
+    }
+}
+
+impl TryFrom<Vec<u8>> for PruneInfo {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self> {
+        PruneInfo::decode(value.as_slice())
+    }
+}
+
+impl TryInto<Vec<u8>> for PruneInfo {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+}
