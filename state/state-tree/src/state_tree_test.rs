@@ -355,7 +355,16 @@ pub fn test_state_multi_commit_and_flush() -> Result<()> {
     assert_eq!(state1.get(&hash_value1)?, Some(value1));
 
     let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
-    assert_eq!(state2.get(&hash_value1)?, Some(value12));
+    assert_eq!(state2.get(&hash_value1)?, Some(value12.clone()));
     assert_eq!(state2.get(&hash_value2)?, Some(value2));
+
+    state.remove(&hash_value1);
+    state.commit()?;
+    assert_eq!(state.get(&hash_value1)?, None);
+    state.flush()?;
+    assert_eq!(state2.get(&hash_value1)?, Some(value12));
+
+    let hash_value3 = HashValueKey(HashValue::random());
+    assert_eq!(state.get(&hash_value3)?, None);
     Ok(())
 }
